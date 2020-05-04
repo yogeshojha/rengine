@@ -1,0 +1,94 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.avatar {
+  position: relative;
+  display: inline-block;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1rem; }
+
+.avatar--group {
+  display: inline-flex;
+  margin-right: 15px; }
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+  object-fit: cover; }
+
+.avatar .avatar-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #bfc9d4;
+  color: #fff; }
+
+.avatar--group .avatar-xl {
+  margin-left: -1.28125rem; }
+
+.avatar--group .avatar {
+  margin-left: -.75rem; }
+
+.avatar--group img, .avatar--group .avatar .avatar-title {
+  border: 2px solid #ffffff; }
+
+.avatar-xl {
+  width: 5.125rem;
+  height: 5.125rem;
+  font-size: 1.70833rem; }
+
+.avatar-lg {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.33333rem; }
+
+.avatar-sm {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: .83333rem; }
+
+/*
+	Indicators
+*/
+.avatar-indicators:before {
+  content: "";
+  position: absolute;
+  bottom: 1%;
+  right: 5%;
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  border: 3px solid #fff; }
+
+.avatar-offline:before {
+  background-color: #bfc9d4; }
+
+.avatar-online:before {
+  background-color: #009688; }
+
+.avatar.translateY-axis img, .avatar.translateY-axis .avatar-title {
+  -webkit-transition: all 0.35s ease;
+  transition: all 0.35s ease; }
+
+.avatar.translateY-axis img:hover, .avatar.translateY-axis .avatar-title:hover {
+  -webkit-transform: translateY(-5px) scale(1.02);
+  transform: translateY(-5px) scale(1.02); }
+
+.avatar.translateX-axis img, .avatar.translateX-axis .avatar-title {
+  -webkit-transition: all 0.35s ease;
+  transition: all 0.35s ease; }
+
+.avatar.translateX-axis img:hover, .avatar.translateX-axis .avatar-title:hover {
+  -webkit-transform: translateX(5px) scale(1.02);
+  transform: translateX(5px) scale(1.02); }

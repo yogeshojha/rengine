@@ -1,0 +1,76 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    Simple Counter
+*/
+.simple--counter-container {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .simple--counter-container .counter-container {
+    margin-bottom: 23px; }
+    .simple--counter-container .counter-container .counter-content {
+      width: 100px;
+      height: 100px;
+      -webkit-box-shadow: 1px 2px 12px 0 rgba(31, 45, 61, 0.1);
+      box-shadow: 1px 2px 12px 0 rgba(31, 45, 61, 0.1);
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      border: 1px solid #e0e6ed; }
+  .simple--counter-container .s-counter {
+    font-size: 35px;
+    color: #1b55e2;
+    margin-bottom: 0; }
+  .simple--counter-container .s-counter-text {
+    color: #3b3f5c;
+    font-size: 15px;
+    margin-bottom: 0;
+    margin-top: 16px; }
+
+/*
+    With Icon
+*/
+.icon--counter-container {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .icon--counter-container .counter-container {
+    margin-bottom: 23px; }
+  .icon--counter-container .counter-ico {
+    color: #1b55e2;
+    font-size: 28px;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 6px; }
+  .icon--counter-container .counter-content {
+    width: 85px;
+    height: 85px;
+    -webkit-box-shadow: 1px 2px 12px 0 rgba(31, 45, 61, 0.1);
+    box-shadow: 1px 2px 12px 0 rgba(31, 45, 61, 0.1);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    border: 1px solid #e0e6ed;
+    margin: 0 0 12px 0; }
+  .icon--counter-container .ico-counter {
+    font-size: 25px;
+    color: #3b3f5c;
+    margin-bottom: 0; }
+  .icon--counter-container .ico-counter-text {
+    color: #888ea8;
+    font-size: 13px;
+    font-weight: 100;
+    letter-spacing: 1px; }

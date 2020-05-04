@@ -1,0 +1,158 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.widget-content-area {
+  padding: 10px 20px; }
+
+.toggle-code-snippet {
+  margin-bottom: -6px; }
+
+/*      Media Object      */
+.media {
+  margin-top: 20px;
+  margin-bottom: 20px; }
+  .media img {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px; }
+  .media .media-body {
+    align-self: center; }
+    .media .media-body .media-heading {
+      color: #3b3f5c;
+      font-weight: 700;
+      margin-bottom: 10px;
+      font-size: 17px;
+      letter-spacing: 1px; }
+    .media .media-body .media-text {
+      color: #515365;
+      margin-bottom: 0;
+      font-size: 14px;
+      letter-spacing: 0; }
+
+/*      Right Aligned   */
+.media-right-aligned .media img {
+  margin-right: 0;
+  margin-left: 15px; }
+
+/* 	Media Notation 	*/
+.notation-text .media:first-child {
+  border-top: none; }
+
+.notation-text .media .media-body .media-notation {
+  margin-top: 8px;
+  margin-bottom: 9px; }
+  .notation-text .media .media-body .media-notation a {
+    color: #515365;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 8px; }
+
+/* 	Media Notation With Icon	*/
+.notation-text-icon .media:first-child {
+  border-top: none; }
+
+.notation-text-icon .media .media-body .media-notation {
+  margin-top: 8px;
+  margin-bottom: 9px; }
+  .notation-text-icon .media .media-body .media-notation a {
+    color: #515365;
+    font-size: 13px;
+    font-weight: 700;
+    margin-right: 8px; }
+    .notation-text-icon .media .media-body .media-notation a svg {
+      color: #888ea8;
+      margin-right: 6px;
+      vertical-align: sub;
+      width: 18px;
+      height: 18px;
+      fill: rgba(0, 23, 55, 0.08); }
+
+/* 	With Labels	*/
+.m-o-label .media:first-child {
+  border-top: none; }
+
+.m-o-label .media .badge {
+  float: right; }
+
+/* 	Dropdown	*/
+.m-o-dropdown-list .media:first-child {
+  border-top: none; }
+
+.m-o-dropdown-list .media .media-heading {
+  display: flex;
+  justify-content: space-between; }
+  .m-o-dropdown-list .media .media-heading div.dropdown-list {
+    cursor: pointer;
+    color: #888ea8;
+    font-size: 18px;
+    float: right; }
+    .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item span {
+      align-self: center; }
+    .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item svg {
+      margin-left: 20px;
+      color: #888ea8;
+      align-self: center;
+      width: 20px;
+      height: 20px;
+      fill: rgba(0, 23, 55, 0.08); }
+    .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item:hover svg {
+      color: #1b55e2;
+      fill: rgba(27, 85, 226, 0.239216); }
+
+.m-o-dropdown-list .dropdown-menu {
+  border-radius: 6px;
+  min-width: 9rem;
+  border: 1px solid #ebedf2;
+  box-shadow: 0px 0px 15px 1px rgba(113, 106, 202, 0.2);
+  padding: 9px 0; }
+
+.m-o-dropdown-list .dropdown-item {
+  font-size: 14px;
+  color: #888ea8;
+  padding: 5px 12px;
+  display: flex;
+  justify-content: space-between; }
+  .m-o-dropdown-list .dropdown-item:hover {
+    color: #e95f2b;
+    text-decoration: none;
+    background-color: #f1f2f3; }
+
+/* 	Label Icon	*/
+.m-o-label-icon .media:first-child {
+  border-top: none; }
+
+.m-o-label-icon .media svg.label-icon {
+  align-self: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 16px; }
+  .m-o-label-icon .media svg.label-icon.label-success {
+    color: #8dbf42; }
+  .m-o-label-icon .media svg.label-icon.label-danger {
+    color: #ee3d49; }
+  .m-o-label-icon .media svg.label-icon.label-warning {
+    color: #ffbb44; }
+
+/* 	Checkbox	*/
+.m-o-chkbox .media:first-child {
+  border-top: none; }
+
+.m-o-chkbox .media .custom-checkbox .custom-control-input:checked ~ .custom-control-label::before {
+  background-color: #515365; }
+
+/* 	Checkbox	*/
+.m-o-radio .media:first-child {
+  border-top: none; }
+
+.m-o-radio .media .custom-radio .custom-control-input:checked ~ .custom-control-label::before {
+  background-color: #515365; }
+
+.custom-control-label::before {
+  background-color: #d3d3d3; }

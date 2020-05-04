@@ -1,0 +1,110 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.row .col-lg-12 .widget .widget-header h4 {
+  color: #000000;
+  font-size: 20px; }
+
+body {
+  color: #515365;
+  font-weight: 600; }
+
+.form-control {
+  border: 1px solid #ebedf2;
+  border-radius: 4px;
+  color: #F49499; }
+  .form-control:disabled, .form-control[readonly] {
+    background-color: #f1f2f3; }
+  .form-control:focus {
+    border-color: #5c1ac3; }
+
+.help-block, .help-inline {
+  color: #888ea8; }
+
+.input-group-addon {
+  background-color: #ebedf2;
+  color: #3b3f5c; }
+
+.dropdown-toggle:after {
+  color: #3b3f5c; }
+
+.has-warning .control-label, .has-warning .help-block {
+  color: #ffbb44; }
+
+.has-warning .form-control {
+  border-color: #ffbb44; }
+
+.has-error .control-label, .has-error .help-block {
+  color: #ee3d49; }
+
+.has-error .form-control {
+  border-color: #ee3d49; }
+
+.has-success .control-label, .has-success .help-block {
+  color: #009688; }
+
+.has-success .form-control {
+  border-color: #009688; }
+
+.ui-spinner-button {
+  border: 1px solid #ebedf2;
+  color: #d3d3d3; }
+
+.form-horizontal .radio, .form-horizontal .radio-inline {
+  color: #888ea8;
+  font-weight: normal; }
+
+div.tagsinput {
+  border: 1px solid #ebedf2; }
+  div.tagsinput span.tag {
+    background: #edf1f7;
+    border: 1px solid #ebedf2; }
+
+.select2-container .select2-choice {
+  border: 1px solid #ebedf2;
+  color: #888ea8;
+  font-size: 13px;
+  font-weight: normal; }
+
+.select2-default {
+  color: #888ea8 !important;
+  font-size: 13px !important;
+  font-weight: normal; }
+
+.select2-container .select2-choice .select2-arrow {
+  border: 1px solid #f1f2f3;
+  background: #fff; }
+
+.select2-container-multi .select2-choices {
+  border: 1px solid #ebedf2; }
+  .select2-container-multi .select2-choices .select2-search-choice {
+    border: 1px solid #f1f2f3;
+    color: #888ea8;
+    font-weight: normal;
+    font-size: 13px; }
+
+.checkbox, .radio {
+  position: relative;
+  display: block;
+  cursor: pointer; }
+
+.checkbox-inline, .radio-inline {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer; }
+
+.form-horizontal .checkbox, .form-horizontal .checkbox-inline, .form-horizontal .radio, .form-horizontal .radio-inline {
+  padding-top: 7px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.form-horizontal .checkbox, .form-horizontal .radio {
+  min-height: 27px; }

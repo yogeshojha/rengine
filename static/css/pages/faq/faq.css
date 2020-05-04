@@ -1,0 +1,261 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+body {
+  background-color: #f1f2f3; }
+
+/*Navbar*/
+nav .navbar-brand {
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff; }
+
+.navbar-expand .navbar-nav .nav-link {
+  color: #fff;
+  padding: 0 17px; }
+
+.fq-header-wrapper {
+  padding: 0 0;
+  background-color: #1b55e2;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 1000'%3E%3Cg %3E%3Ccircle fill='%232b50ed' cx='50' cy='0' r='50'/%3E%3Cg fill='%233154ea' %3E%3Ccircle cx='0' cy='50' r='50'/%3E%3Ccircle cx='100' cy='50' r='50'/%3E%3C/g%3E%3Ccircle fill='%233658e8' cx='50' cy='100' r='50'/%3E%3Cg fill='%233c5be5' %3E%3Ccircle cx='0' cy='150' r='50'/%3E%3Ccircle cx='100' cy='150' r='50'/%3E%3C/g%3E%3Ccircle fill='%23415fe2' cx='50' cy='200' r='50'/%3E%3Cg fill='%234662df' %3E%3Ccircle cx='0' cy='250' r='50'/%3E%3Ccircle cx='100' cy='250' r='50'/%3E%3C/g%3E%3Ccircle fill='%234b66dc' cx='50' cy='300' r='50'/%3E%3Cg fill='%235069d9' %3E%3Ccircle cx='0' cy='350' r='50'/%3E%3Ccircle cx='100' cy='350' r='50'/%3E%3C/g%3E%3Ccircle fill='%23546cd5' cx='50' cy='400' r='50'/%3E%3Cg fill='%23596fd2' %3E%3Ccircle cx='0' cy='450' r='50'/%3E%3Ccircle cx='100' cy='450' r='50'/%3E%3C/g%3E%3Ccircle fill='%235e72cf' cx='50' cy='500' r='50'/%3E%3Cg fill='%236275cb' %3E%3Ccircle cx='0' cy='550' r='50'/%3E%3Ccircle cx='100' cy='550' r='50'/%3E%3C/g%3E%3Ccircle fill='%236678c8' cx='50' cy='600' r='50'/%3E%3Cg fill='%236b7bc4' %3E%3Ccircle cx='0' cy='650' r='50'/%3E%3Ccircle cx='100' cy='650' r='50'/%3E%3C/g%3E%3Ccircle fill='%236f7ec0' cx='50' cy='700' r='50'/%3E%3Cg fill='%237381bc' %3E%3Ccircle cx='0' cy='750' r='50'/%3E%3Ccircle cx='100' cy='750' r='50'/%3E%3C/g%3E%3Ccircle fill='%237783b8' cx='50' cy='800' r='50'/%3E%3Cg fill='%237c86b4' %3E%3Ccircle cx='0' cy='850' r='50'/%3E%3Ccircle cx='100' cy='850' r='50'/%3E%3C/g%3E%3Ccircle fill='%238089b0' cx='50' cy='900' r='50'/%3E%3Cg fill='%23848bac' %3E%3Ccircle cx='0' cy='950' r='50'/%3E%3Ccircle cx='100' cy='950' r='50'/%3E%3C/g%3E%3Ccircle fill='%23888ea8' cx='50' cy='1000' r='50'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
+  background-size: contain; }
+  .fq-header-wrapper h1 {
+    font-size: 46px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px; }
+  .fq-header-wrapper p {
+    color: #d3d3d3;
+    font-size: 14px;
+    margin-bottom: 27px;
+    line-height: 25px; }
+  .fq-header-wrapper button {
+    border-radius: 30px;
+    padding: 10px 25px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    font-size: 16px;
+    background: transparent;
+    color: #fff; }
+    .fq-header-wrapper button:hover {
+      background-color: transparent;
+      color: #fff;
+      box-shadow: none; }
+  .fq-header-wrapper .banner-img img {
+    width: 582px;
+    height: 582px; }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .fq-header-wrapper {
+    background-image: none; } }
+
+/*
+    Common Question
+*/
+.faq .faq-layouting .fq-comman-question-wrapper {
+  padding: 52px 52px;
+  -webkit-box-shadow: 0 10px 30px 0 rgba(31, 45, 61, 0.1);
+  box-shadow: 0 10px 30px 0 rgba(31, 45, 61, 0.1);
+  border-radius: 15px;
+  background: #fff;
+  margin-top: -57px;
+  margin-bottom: 70px; }
+  .faq .faq-layouting .fq-comman-question-wrapper h3 {
+    font-size: 29px;
+    font-weight: 700;
+    margin-bottom: 40px; }
+  .faq .faq-layouting .fq-comman-question-wrapper ul {
+    padding: 0; }
+    .faq .faq-layouting .fq-comman-question-wrapper ul li {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #3b3f5c; }
+      .faq .faq-layouting .fq-comman-question-wrapper ul li:hover {
+        cursor: pointer;
+        color: #1b55e2; }
+      .faq .faq-layouting .fq-comman-question-wrapper ul li .icon-svg {
+        display: inline-block;
+        margin-right: 9px; }
+      .faq .faq-layouting .fq-comman-question-wrapper ul li svg {
+        color: #888ea8;
+        width: 19px;
+        height: 19px;
+        vertical-align: bottom; }
+      .faq .faq-layouting .fq-comman-question-wrapper ul li:hover svg {
+        color: #1b55e2; }
+
+.faq .faq-layouting .fq-tab-section {
+  margin-bottom: 70px; }
+  .faq .faq-layouting .fq-tab-section h2 {
+    font-size: 29px;
+    font-weight: 700;
+    margin-bottom: 40px; }
+  .faq .faq-layouting .fq-tab-section .accordion .card {
+    border: none;
+    margin-bottom: 26px;
+    -webkit-box-shadow: 2px 5px 17px 0 rgba(31, 45, 61, 0.1);
+    box-shadow: 2px 5px 17px 0 rgba(31, 45, 61, 0.1);
+    border-radius: 12px;
+    cursor: pointer; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header {
+      padding: 0;
+      border: none;
+      background: none; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header > div {
+        padding: 13px 21px;
+        font-weight: 600;
+        font-size: 16px;
+        color: #1b55e2; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div .faq-q-title {
+        overflow: hidden;
+        white-space: nowrap;
+        font-size: 13px;
+        color: #3b3f5c;
+        font-weight: 700; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div svg.feather-code {
+        width: 17px;
+        vertical-align: middle;
+        margin-right: 11px;
+        color: #888ea8; }
+    .faq .faq-layouting .fq-tab-section .accordion .card:hover .card-header div svg.feather-code {
+      color: #1b55e2; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] svg.feather-code {
+      color: #1b55e2; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div .like-faq {
+      display: inline-block;
+      float: right; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div svg.feather-thumbs-up {
+      cursor: pointer;
+      vertical-align: bottom;
+      margin-right: 10px;
+      width: 18px;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08); }
+    .faq .faq-layouting .fq-tab-section .accordion .card:hover .card-header div svg.feather-thumbs-up {
+      color: #1b55e2;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] svg.feather-thumbs-up {
+      color: #1b55e2;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div span.faq-like-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08); }
+    .faq .faq-layouting .fq-tab-section .accordion .card:hover .card-header div span.faq-like-count, .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] span.faq-like-count {
+      color: #1b55e2;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-body p {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 23px; }
+
+.faq .faq-layouting .fq-article-section {
+  margin-bottom: 90px; }
+  .faq .faq-layouting .fq-article-section h2 {
+    font-size: 29px;
+    font-weight: 700;
+    margin-bottom: 40px; }
+  .faq .faq-layouting .fq-article-section .card {
+    border: none;
+    -webkit-box-shadow: 2px 5px 17px 0 rgba(31, 45, 61, 0.1);
+    box-shadow: 2px 5px 17px 0 rgba(31, 45, 61, 0.1);
+    border-radius: 12px; }
+    .faq .faq-layouting .fq-article-section .card img {
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px; }
+    .faq .faq-layouting .fq-article-section .card .card-body .fq-rating {
+      margin-bottom: 13px; }
+      .faq .faq-layouting .fq-article-section .card .card-body .fq-rating svg {
+        width: 17px;
+        color: #e2a03f; }
+        .faq .faq-layouting .fq-article-section .card .card-body .fq-rating svg.checked {
+          fill: rgba(226, 160, 63, 0.541176); }
+    .faq .faq-layouting .fq-article-section .card .card-body h5.card-title {
+      font-weight: 700;
+      font-size: 20px;
+      margin-bottom: 21px; }
+    .faq .faq-layouting .fq-article-section .card .card-body p.card-text {
+      letter-spacing: 1px;
+      color: #888ea8; }
+    .faq .faq-layouting .fq-article-section .card .card-body p.meta-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1b55e2; }
+      .faq .faq-layouting .fq-article-section .card .card-body p.meta-text svg {
+        width: 18px;
+        vertical-align: bottom; }
+
+/*
+    Tab Section
+*/
+/*
+    Article Section
+*/
+/*
+    Mini Footer Wrapper
+*/
+#miniFooterWrapper {
+  color: #fff;
+  font-size: 14px;
+  border-top: solid 1px #ffffff;
+  padding: 14px;
+  -webkit-box-shadow: 0px -1px 20px 0 rgba(31, 45, 61, 0.1);
+  box-shadow: 0px -1px 20px 0 rgba(31, 45, 61, 0.1); }
+  #miniFooterWrapper .arrow {
+    background-color: #1b55e2;
+    border-radius: 50%;
+    position: absolute;
+    z-index: 2;
+    top: -33px;
+    width: 40px;
+    height: 40px;
+    box-shadow: 0px 0px 15px 1px rgba(113, 106, 202, 0.2);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    cursor: pointer; }
+    #miniFooterWrapper .arrow p {
+      align-self: center;
+      margin-bottom: 0;
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 1px; }
+  #miniFooterWrapper .copyright a {
+    color: #1b55e2;
+    font-weight: 700;
+    text-decoration: none; }
+
+/*
+    Media Query
+*/
+@media (max-width: 1199px) {
+  .fq-header-wrapper .banner-img img {
+    width: 340px;
+    height: 363px;
+    margin: 0 auto; } }
+
+@media (max-width: 767px) {
+  .fq-header-wrapper {
+    min-height: 640px; }
+  .faq .faq-layouting .fq-comman-question-wrapper {
+    margin-top: 32px; } }
+
+@media (max-width: 575px) {
+  .fq-header-wrapper .banner-img img {
+    width: 283px;
+    height: 363px; }
+  .faq .faq-layouting .fq-tab-section .accordion .card .card-header div svg.feather-code {
+    display: none; } }

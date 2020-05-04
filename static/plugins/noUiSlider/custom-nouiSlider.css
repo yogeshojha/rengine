@@ -1,0 +1,52 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.noUi-target {
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e0e6ed; }
+
+.noUi-horizontal {
+  height: 8px; }
+  .noUi-horizontal .noUi-handle {
+    width: 25px;
+    height: 20px;
+    top: -8px; }
+
+.noUi-handle:after, .noUi-handle:before {
+  display: none; }
+
+.noUi-connect {
+  background: #1b55e2; }
+
+.noUi-tooltip {
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600; }
+
+.noUi-horizontal .noUi-tooltip {
+  bottom: 148%; }
+
+.example-val {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1b55e2; }
+  .example-val span.precentage-val {
+    display: inline-block;
+    background: #ffffff;
+    border-radius: 5px;
+    color: #3b3f5c;
+    border: 1px solid #e0e6ed;
+    padding: 4px 6px;
+    font-size: 14px; }
