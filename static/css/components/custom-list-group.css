@@ -1,0 +1,215 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+==================
+    Switches
+==================
+*/
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 35px;
+  height: 18px; }
+  .switch input {
+    display: none; }
+  .switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ebedf2;
+    -webkit-transition: .4s;
+    transition: .4s; }
+    .switch .slider:before {
+      position: absolute;
+      content: "";
+      background-color: white;
+      -webkit-transition: .4s;
+      -ms-transition: .4s;
+      transition: .4s;
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch input:checked + .slider:before {
+    -webkit-transform: translateX(17px);
+    -ms-transform: translateX(17px);
+    transform: translateX(17px); }
+  .switch .slider.round {
+    border-radius: 34px; }
+    .switch .slider.round:before {
+      border-radius: 50%; }
+  .switch.s-secondary input:checked + .slider {
+    background-color: #5c1ac3; }
+  .switch.s-secondary input:focus + .slider {
+    box-shadow: 0 0 1px #5c1ac3; }
+
+/* Hide default HTML checkbox */
+/* The slider */
+/* Rounded Slider Switches */
+/*----------Theme checkbox---------*/
+.new-control {
+  position: relative;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  padding-left: 1.5rem;
+  margin-right: 1rem; }
+
+.new-control-input {
+  position: absolute;
+  z-index: -1;
+  opacity: 0; }
+
+.new-control.new-checkbox {
+  cursor: pointer;
+  color: #3b3f5c;
+  margin-bottom: 0; }
+  .new-control.new-checkbox .new-control-indicator {
+    position: absolute;
+    top: .25rem;
+    left: 0;
+    display: block;
+    width: 1rem;
+    height: 1rem;
+    pointer-events: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: #e0e6ed;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 50% 50%;
+    border-radius: 2px; }
+  .new-control.new-checkbox > input:checked ~ span.new-control-indicator {
+    background: #888ea8; }
+    .new-control.new-checkbox > input:checked ~ span.new-control-indicator:after {
+      display: block; }
+  .new-control.new-checkbox span.new-control-indicator:after {
+    border: solid #fff;
+    top: 50%;
+    left: 50%;
+    margin-left: -2px;
+    margin-top: -6px;
+    width: 5px;
+    height: 10px;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg);
+    content: '';
+    position: absolute;
+    display: none; }
+  .new-control.new-checkbox[class*="checkbox-outline-"] > input:checked ~ span.new-control-indicator {
+    background-color: transparent; }
+  .new-control.new-checkbox.new-checkbox-line-through.checkbox-outline-primary > input:checked ~ span.new-chk-content {
+    color: #1b55e2; }
+  .new-control.new-checkbox.checkbox-outline-primary > input:checked ~ span.new-control-indicator {
+    border: 1px solid #1b55e2; }
+    .new-control.new-checkbox.checkbox-outline-primary > input:checked ~ span.new-control-indicator:after {
+      border-color: #1b55e2; }
+  .new-control.new-checkbox.checkbox-primary > input:checked ~ span.new-control-indicator {
+    background: #1b55e2; }
+
+.list-group-item {
+  border: 1px solid #e0e6ed;
+  padding: 10px 12px; }
+  .list-group-item.active {
+    color: #fff;
+    background-color: #888ea8;
+    border-color: transparent;
+    box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.15); }
+
+.new-control-indicator {
+  background-color: #f1f2f3; }
+
+a.list-group-item.list-group-item-action.active i {
+  color: #010156; }
+
+code {
+  color: #e7515a; }
+
+.list-group-item-action:hover {
+  color: #3b3f5c;
+  background-color: #f1f2f3;
+  box-shadow: 0px 0px 12px 1px rgba(113, 106, 202, 0.08); }
+
+/*------list group-----*/
+/*
+    Icons Meta
+*/
+.list-group.list-group-icons-meta .list-group-item.active {
+  background-color: #888ea8; }
+  .list-group.list-group-icons-meta .list-group-item.active .media svg {
+    font-size: 27px;
+    color: #fff; }
+  .list-group.list-group-icons-meta .list-group-item.active .media .media-body h6, .list-group.list-group-icons-meta .list-group-item.active .media .media-body p {
+    color: #fff;
+    font-weight: 500; }
+
+.list-group.list-group-icons-meta .list-group-item .media svg {
+  width: 20px;
+  color: #1b55e2;
+  height: 20px; }
+
+.list-group.list-group-icons-meta .list-group-item .media .media-body h6 {
+  color: #3b3f5c;
+  font-weight: 700;
+  margin-bottom: 0;
+  font-size: 15px;
+  letter-spacing: 1px; }
+
+.list-group.list-group-icons-meta .list-group-item .media .media-body p {
+  color: #3b3f5c;
+  margin-bottom: 0;
+  font-size: 12px;
+  font-weight: 600; }
+
+.list-group.list-group-media .list-group-item.active {
+  background-color: #888ea8; }
+  .list-group.list-group-media .list-group-item.active .media .media-body h6, .list-group.list-group-media .list-group-item.active .media .media-body p {
+    color: #fff;
+    font-weight: 500; }
+
+.list-group.list-group-media .list-group-item .media img {
+  color: #1b55e2;
+  width: 42px;
+  height: 42px; }
+
+.list-group.list-group-media .list-group-item .media .media-body {
+  align-self: center; }
+  .list-group.list-group-media .list-group-item .media .media-body h6 {
+    color: #3b3f5c;
+    font-weight: 700;
+    margin-bottom: 0;
+    font-size: 16px;
+    letter-spacing: 1px; }
+  .list-group.list-group-media .list-group-item .media .media-body p {
+    color: #3b3f5c;
+    margin-bottom: 0;
+    font-size: 12px;
+    font-weight: 600; }
+
+.list-group.task-list-group .list-group-item-action.active {
+  background-color: #888ea8;
+  color: #fff; }
+  .list-group.task-list-group .list-group-item-action.active .new-control.new-checkbox {
+    color: #fff;
+    font-size: 14px; }
+
+/*
+    Image Meta
+*/
+/*
+    task-list-group
+*/

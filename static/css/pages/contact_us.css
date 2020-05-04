@@ -1,0 +1,131 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*      Map     */
+#basic_map1 {
+  width: 100%;
+  height: 757px; }
+
+/*  Contact Section Header     */
+.cu-contact-section {
+  position: relative;
+  padding: 0;
+  background-color: #c2d5ff; }
+  .cu-contact-section .cu-section-header {
+    position: absolute;
+    background: #3b3f5c;
+    z-index: 1;
+    width: 100%;
+    padding: 15px 34px;
+    color: #fff;
+    background-color: rgba(43, 80, 237, 0.109804); }
+    .cu-contact-section .cu-section-header h4 {
+      color: #fff;
+      font-size: 34px;
+      font-weight: 600;
+      letter-spacing: 3px; }
+    .cu-contact-section .cu-section-header p {
+      color: #fff;
+      font-size: 16px;
+      letter-spacing: 1px; }
+  .cu-contact-section .contact-form {
+    position: absolute;
+    top: 0;
+    right: 58px;
+    bottom: 0;
+    margin-top: auto;
+    margin-bottom: auto;
+    height: fit-content;
+    height: -moz-max-content;
+    height: -webkit-fit-content;
+    z-index: 2; }
+    .cu-contact-section .contact-form form {
+      background: #fff;
+      padding: 25px 35px;
+      border-radius: 10px;
+      margin-top: 24px;
+      margin-bottom: 24px;
+      -webkit-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
+      -moz-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06); }
+      .cu-contact-section .contact-form form .input-fields {
+        position: relative; }
+        .cu-contact-section .contact-form form .input-fields svg {
+          position: absolute;
+          top: 11px;
+          color: #1b55e2;
+          width: 20px;
+          left: 25px; }
+          .cu-contact-section .contact-form form .input-fields svg.feather-mail {
+            left: 12px;
+            top: 7px; }
+      .cu-contact-section .contact-form form h4 {
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 25px;
+        color: #3b3f5c; }
+      .cu-contact-section .contact-form form input {
+        padding: 8px 5px 8px 40px;
+        background-color: transparent;
+        font-weight: 600; }
+        .cu-contact-section .contact-form form input::-webkit-input-placeholder, .cu-contact-section .contact-form form input::-ms-input-placeholder, .cu-contact-section .contact-form form input::-moz-placeholder {
+          color: #d3d3d3;
+          font-size: 14px; }
+        .cu-contact-section .contact-form form input:focus {
+          background-color: #ffffff;
+          border-color: #3b3f5c; }
+  .cu-contact-section .n-chk {
+    display: inline-block; }
+  .cu-contact-section .form-group textarea {
+    padding: 8px 5px 8px 43px;
+    background-color: transparent;
+    margin-top: 15px;
+    resize: none; }
+    .cu-contact-section .form-group textarea::-webkit-input-placeholder, .cu-contact-section .form-group textarea::-ms-input-placeholder, .cu-contact-section .form-group textarea::-moz-placeholder {
+      color: #d3d3d3;
+      font-size: 14px; }
+    .cu-contact-section .form-group textarea:focus {
+      background-color: #ffffff;
+      border-color: #3b3f5c; }
+    .cu-contact-section .form-group textarea:-ms-input-placeholder {
+      color: #7b8489; }
+  .cu-contact-section form button {
+    border: none;
+    padding: 15px 25px;
+    display: block;
+    width: 100%; }
+
+/* 	Contact Content 	*/
+@media (max-width: 991px) {
+  .cu-contact-section .cu-section-header {
+    display: none; }
+  .cu-contact-section .contact-form {
+    right: 0;
+    left: 0;
+    margin-right: auto;
+    margin-left: auto;
+    margin-top: 0;
+    margin-bottom: 0; }
+    .cu-contact-section .contact-form form {
+      max-width: 530px;
+      margin: 0 auto;
+      width: 100%;
+      border-radius: 0; } }
+
+@media (max-width: 991px) {
+  body {
+    background: #fff; }
+  #basic_map1 {
+    display: none; } }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .cu-contact-section .contact-form form {
+    min-width: 530px;
+    width: 100%; } }

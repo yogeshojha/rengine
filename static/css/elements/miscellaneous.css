@@ -1,0 +1,16 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.jumbotron p {
+  text-align: left; }
+
+.display-4 {
+  word-wrap: break-word;
+  font-size: 45px; }
