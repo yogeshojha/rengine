@@ -23,15 +23,11 @@
     </div></div></div>
 
     <!-- TOP NAVBAR BEGIN -->
-    {% block navbar %}
     {% include 'base/_items/top_nav.html' %}
-    {% endblock navbar %}
     <!-- TOP NAVBAR ENDS -->
 
     <!--  BEGIN BREADCRUMB  -->
-    {% block breadcrumb %}
     {% include 'base/_items/breadcrumb.html' %}
-    {% endblock breadcrumb %}
     <!--  END BREADCRUMB  -->
 
     <!--  BEGIN MAIN CONTAINER  -->
@@ -49,11 +45,10 @@
         <!--  BEGIN CONTENT PART  -->
         <div id="content" class="main-content">
             <div class="layout-px-spacing">
-
                 <div class="row layout-top-spacing">
-                    {% block content %}
+                    {% block main_content %}
 
-                    {% endblock content %}
+                    {% endblock main_content %}
                 </div>
 
             </div>
