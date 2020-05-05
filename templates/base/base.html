@@ -6,17 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
     <title> {% block title %} {% endblock title %} </title>
-    <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}"/>
-    <link href="{% static 'css/loader.css' %}" rel="stylesheet" type="text/css" />
-    <script src="{% static 'js/loader.js' %}"></script>
+    <link href="{% static 'assets/css/loader.css' %}" rel="stylesheet" type="text/css" />
+    <script src="{% static 'assets/js/loader.js' %}"></script>
     <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700" rel="stylesheet">
     <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
-    <link href="{% static 'css/plugins.css' %}" rel="stylesheet" type="text/css" />
-    <style>
-    .layout-px-spacing {
-        min-height: calc(100vh - 166px)!important;
-    }
-    </style>
+    <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
+
+    <!-- load any page wise jquery or stylesheet -->
+
+    {% block custom_js_css_link %}
+    {% endblock custom_js_css_link %}
 </head>
 <body>
     <div id="load_screen"> <div class="loader"> <div class="loader-content">
@@ -24,15 +23,11 @@
     </div></div></div>
 
     <!-- TOP NAVBAR BEGIN -->
-    {% block navbar %}
     {% include 'base/_items/top_nav.html' %}
-    {% endblock navbar %}
     <!-- TOP NAVBAR ENDS -->
 
     <!--  BEGIN BREADCRUMB  -->
-    {% block breadcrumb %}
     {% include 'base/_items/breadcrumb.html' %}
-    {% endblock breadcrumb %}
     <!--  END BREADCRUMB  -->
 
     <!--  BEGIN MAIN CONTAINER  -->
@@ -50,11 +45,10 @@
         <!--  BEGIN CONTENT PART  -->
         <div id="content" class="main-content">
             <div class="layout-px-spacing">
-
                 <div class="row layout-top-spacing">
-                    {% block content %}
+                    {% block main_content %}
 
-                    {% endblock content %}
+                    {% endblock main_content %}
                 </div>
 
             </div>
@@ -64,16 +58,19 @@
     </div>
     <!-- END MAIN CONTAINER -->
 
-    <script src="{% static 'js/libs/jquery-3.1.1.min.js' %}"></script>
+    <script src="{% static 'assets/js/libs/jquery-3.1.1.min.js' %}"></script>
     <script src="{% static 'bootstrap/js/popper.min.js' %}"></script>
     <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
     <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
-    <script src="{% static 'js/app.js' %}"></script>
+    <script src="{% static 'assets/js/app.js' %}"></script>
     <script>
     $(document).ready(function() {
         App.init();
     });
     </script>
-    <script src="{% static 'js/custom.js' %}"></script>
+    <script src="{% static 'assets/js/custom.js' %}"></script>
+    {% block page_level_script %}
+
+    {% endblock page_level_script%}
 </body>
 </html>
