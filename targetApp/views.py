@@ -7,3 +7,6 @@ def index(request):
 
 def addTarget(request):
     return render(request, 'target/add.html')
+
+def listTarget(request):
+    return render(request, 'target/list.html')
