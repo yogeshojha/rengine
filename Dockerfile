@@ -7,7 +7,8 @@ RUN apt update -y && apt install -y \
   python3.8 \
   python3-dev \
   python3-pip \
-  wget
+  wget \
+  libpq-dev
 
 COPY requirements.txt /app/
 RUN pip3 install -r requirements.txt
