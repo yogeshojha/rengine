@@ -5,6 +5,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='targetIndex'),
-    path('add/', views.addTarget, name='addTarget'),
-    path('list/', views.listTarget, name='listTarget'),
+    path('add/', views.add_target_form, name='add_target_form'),
+    path('list/', views.list_target, name='list_target'),
 ]

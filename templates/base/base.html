@@ -37,13 +37,11 @@
         <div class="search-overlay"></div>
 
         <!--  BEGIN SIDEBAR  -->
-        {% block sidebar %}
         {% include 'base/_items/sidebar.html' %}
-        {% endblock sidebar %}
         <!--  END SIDEBAR  -->
-
         <!--  BEGIN CONTENT PART  -->
         <div id="content" class="main-content">
+
             <div class="layout-px-spacing">
                 <div class="row layout-top-spacing">
                     {% block main_content %}
@@ -64,10 +62,11 @@
     <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
     <script src="{% static 'assets/js/app.js' %}"></script>
     <script>
-    $(document).ready(function() {
-        App.init();
-    });
+        $(document).ready(function() {
+            App.init();
+        });
     </script>
+    <script src="{% static 'plugins/highlight/highlight.pack.js' %}"></script>
     <script src="{% static 'assets/js/custom.js' %}"></script>
     {% block page_level_script %}
 
