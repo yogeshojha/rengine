@@ -9,10 +9,12 @@ def index(request):
     return render(request, 'target/index.html')
 
 def add_target_form(request):
-    return render(request, 'target/add.html')
+    context = {"add_target_li": "active", "target_data_active": "true"}
+    return render(request, 'target/add.html', context)
 
 def list_target(request):
-    return render(request, 'target/list.html')
+    context = {"list_target_li": "active", "target_data_active": "true"}
+    return render(request, 'target/list.html', context)
 
 def add_target_db(request):
     if request.method == "POST":
