@@ -1,0 +1,66 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Add target for Recon
+{% endblock title %}
+
+
+{% block breadcrumb_title %}<h3>Add Target for Recon</h3>{% endblock breadcrumb_title %}
+
+{% block custom_js_css_link %}
+    <script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+    <link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+{% if messages %}
+{% for message in messages %}
+    <script type="text/javascript">
+        Snackbar.show({
+            text: '{{ message }}',
+            pos: 'top-right'
+        });
+    </script>
+{% endfor %}
+{% endif %}
+<div class="col-lg-12 layout-spacing">
+    <div class="statbox widget box box-shadow">
+        <div class="widget-header">
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="text-info">Add Target</h4>
+                </div>
+            </div>
+        </div>
+        <div class="widget-content widget-content-area">
+                <form class="simple-example" action="{% url 'add_target_form' %}" method="POST">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col-md-6 mb-4">
+                        <label for="domainName">Domain name</label>
+                        {{ form.domain_name }}
+                        {% if form.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {{ form.errors.domain_name|striptags }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <label for="domainDescription">Description</label>
+                        {{ form.domain_description }}
+                    </div>
+                </div>
+                <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Save</button>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/custom-jquery.steps.js' %}"></script>
+{% endblock page_level_script %}
