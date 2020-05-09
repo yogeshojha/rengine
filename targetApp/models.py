@@ -7,9 +7,5 @@ class Domain(models.Model):
     domain_description = models.TextField()
     insert_date = models.DateTimeField()
 
-    def save_domain(self):
-        self.insert_date = timezone.now()
-        self.save()
-
     def __str__(self):
         return self.domain_name
