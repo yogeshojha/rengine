@@ -1,5 +1,6 @@
 from django import forms
 from .models import Domain
+from .validators import validate_domain
 
 class AddDomainForm(forms.ModelForm):
     class Meta:
@@ -8,6 +9,7 @@ class AddDomainForm(forms.ModelForm):
 
 class RawDomainForm(forms.Form):
     domain_name = forms.CharField(
+                    validators=[validate_domain],
                     required=True,
                     widget=forms.TextInput(
                         attrs={
