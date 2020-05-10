@@ -31,8 +31,10 @@ def delete_domain(request, id):
     if request.method == "POST":
         obj.delete()
         responseData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Domain successfully deleted!')
     else:
         responseData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! Domain could not be deleted!')
     return http.JsonResponse(responseData)
 
 def update_target_form(request, id):

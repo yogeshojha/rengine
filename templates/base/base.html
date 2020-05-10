@@ -11,7 +11,8 @@
     <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700" rel="stylesheet">
     <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
-
+    <script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+    <link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
     <!-- load any page wise jquery or stylesheet -->
 
     {% block custom_js_css_link %}
@@ -44,6 +45,16 @@
 
             <div class="layout-px-spacing">
                 <div class="row layout-top-spacing">
+                    {% if messages %}
+                    {% for message in messages %}
+                        <script type="text/javascript">
+                            Snackbar.show({
+                                text: '{{ message }}',
+                                pos: 'top-right'
+                            });
+                        </script>
+                    {% endfor %}
+                    {% endif %}
                     {% block main_content %}
 
                     {% endblock main_content %}
