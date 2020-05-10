@@ -36,8 +36,15 @@ def delete_domain(request, id):
     return http.JsonResponse(responseData)
 
 def update_target_form(request, id):
-    domain = Domain.objects.get(pk=id)
+    domain = get_object_or_404(Domain, id=id)
     form = UpdateDomainForm()
-    form.set_value(domain.domain_name, domain.domain_description)
+    if request.method == "POST":
+        form = UpdateDomainForm(request.POST, instance=domain)
+        if form.is_valid():
+            form.save()
+            messages.add_message(request, messages.INFO, 'Domain edited successfully')
+            return http.HttpResponseRedirect(reverse('list_target'))
+    else:
+        form.set_value(domain.domain_name, domain.domain_description)
     context = {'list_target_li': 'active', 'target_data_active': 'true', "domain":domain, "form":form}
     return render(request, 'target/update.html', context)

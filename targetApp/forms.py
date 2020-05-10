@@ -26,7 +26,10 @@ class RawDomainForm(forms.Form):
                         "id": "domainDescription",
                     }
                 ))
-class UpdateDomainForm(forms.Form):
+class UpdateDomainForm(forms.ModelForm):
+    class Meta:
+        model = Domain
+        fields = ['domain_name', 'domain_description']
     domain_name = forms.CharField(
                     validators=[validate_domain],
                     required=True,
