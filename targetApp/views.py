@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django import http
 from .models import Domain
 from django.contrib import messages
@@ -25,3 +25,12 @@ def list_target(request):
     domains = Domain.objects
     context = {'list_target_li': 'active', 'target_data_active': 'true', 'domains': domains}
     return render(request, 'target/list.html', context)
+
+def delete_domain(request, id):
+    obj = get_object_or_404(Domain, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+    else:
+        responseData = {'status': 'false'}
+    return http.JsonResponse(responseData)

@@ -179,10 +179,13 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
   margin-right: 6px;
   vertical-align: middle;
   fill: rgba(0, 23, 55, 0.08);
-  cursor: pointer; }
+  cursor: pointer;
+}
 
 .table-hover:not(.table-dark) tbody tr:hover .table-cancel {
   color: #e7515a; }
+
+
 
 @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
   /* IE10+ CSS styles go here */
