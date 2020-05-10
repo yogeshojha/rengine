@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django import http
 from .models import Domain
 from django.contrib import messages
-from .forms import AddDomainForm, RawDomainForm
+from .forms import AddDomainForm, RawDomainForm, UpdateDomainForm
 from django.utils import timezone
 from django.urls import reverse
 
@@ -34,3 +34,10 @@ def delete_domain(request, id):
     else:
         responseData = {'status': 'false'}
     return http.JsonResponse(responseData)
+
+def update_target_form(request, id):
+    domain = Domain.objects.get(pk=id)
+    form = UpdateDomainForm()
+    form.set_value(domain.domain_name, domain.domain_description)
+    context = {'list_target_li': 'active', 'target_data_active': 'true', "domain":domain, "form":form}
+    return render(request, 'target/update.html', context)
