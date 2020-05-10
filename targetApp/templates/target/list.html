@@ -10,6 +10,11 @@ List all targets
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}<h3>List all Target for Recon</h3>{% endblock breadcrumb_title %}
@@ -46,7 +51,25 @@ List all targets
                                 <td>{{ domain.domain_description }}</td>
                                 <td>{{ domain.insert_date }}</td>
                                 <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
-                                <td class="text-center"><a href="javascript:void(0);" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle table-cancel"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></a></td>
+                                <td class="text-center">
+                                    <a class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Scan">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                        </svg>
+                                    </a>
+                                    <a href="{% url 'update_target_form' domain.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
+                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                        </svg>
+                                    </a>
+                                    <a onclick="delete_domain({{ domain.id }}, '{{ domain.domain_name }}')" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                                        </svg>
+                                    </a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -60,7 +83,10 @@ List all targets
 
 
 {% block page_level_script %}
+<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script>
 // var e;
 c1 = $('#style-2').DataTable({
@@ -84,5 +110,4 @@ c1 = $('#style-2').DataTable({
 });
 multiCheck(c1);
 </script>
-<h1>Hello</h1>
 {% endblock page_level_script %}

@@ -1,10 +1,4 @@
-/*
-=========================================
-|                                       |
-|           Scroll To Top               |
-|                                       |
-=========================================
-*/
+
 $('.scrollTop').click(function() {
     $("html, body").animate({scrollTop: 0});
 });
@@ -13,14 +7,6 @@ $('.scrollTop').click(function() {
 $('.navbar .dropdown.notification-dropdown > .dropdown-menu, .navbar .dropdown.message-dropdown > .dropdown-menu ').click(function(e) {
     e.stopPropagation();
 });
-
-/*
-=========================================
-|                                       |
-|       Multi-Check checkbox            |
-|                                       |
-=========================================
-*/
 
 function checkall(clickchk, relChkbox) {
 
@@ -33,18 +19,6 @@ function checkall(clickchk, relChkbox) {
     });
 }
 
-
-/*
-=========================================
-|                                       |
-|           MultiCheck                  |
-|                                       |
-=========================================
-*/
-
-/*
-    This MultiCheck Function is recommanded for datatable
-*/
 
 function multiCheck(tb_var) {
     tb_var.on("change", ".chk-parent", function() {
@@ -57,15 +31,6 @@ function multiCheck(tb_var) {
         $(this).parents("tr").toggleClass("active")
     })
 }
-
-/*
-=========================================
-|                                       |
-|           MultiCheck                  |
-|                                       |
-=========================================
-*/
-
 function checkall(clickchk, relChkbox) {
 
     var checker = $('#' + clickchk);
@@ -77,45 +42,13 @@ function checkall(clickchk, relChkbox) {
     });
 }
 
-/*
-=========================================
-|                                       |
-|               Tooltips                |
-|                                       |
-=========================================
-*/
-
 $('.bs-tooltip').tooltip();
 
-/*
-=========================================
-|                                       |
-|               Popovers                |
-|                                       |
-=========================================
-*/
-
 $('.bs-popover').popover();
-
-
-/*
-================================================
-|                                              |
-|               Rounded Tooltip                |
-|                                              |
-================================================
-*/
 
 $('.t-dot').tooltip({
     template: '<div class="tooltip status rounded-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
 })
-
-
-/*
-================================================
-|            IE VERSION Dector                 |
-================================================
-*/
 
 function GetIEVersion() {
   var sAgent = window.navigator.userAgent;

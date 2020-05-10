@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django import http
 from .models import Domain
 from django.contrib import messages
-from .forms import AddDomainForm, RawDomainForm
+from .forms import AddDomainForm, RawDomainForm, UpdateDomainForm
 from django.utils import timezone
 from django.urls import reverse
 
@@ -25,3 +25,28 @@ def list_target(request):
     domains = Domain.objects
     context = {'list_target_li': 'active', 'target_data_active': 'true', 'domains': domains}
     return render(request, 'target/list.html', context)
+
+def delete_domain(request, id):
+    obj = get_object_or_404(Domain, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Domain successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! Domain could not be deleted!')
+    return http.JsonResponse(responseData)
+
+def update_target_form(request, id):
+    domain = get_object_or_404(Domain, id=id)
+    form = UpdateDomainForm()
+    if request.method == "POST":
+        form = UpdateDomainForm(request.POST, instance=domain)
+        if form.is_valid():
+            form.save()
+            messages.add_message(request, messages.INFO, 'Domain edited successfully')
+            return http.HttpResponseRedirect(reverse('list_target'))
+    else:
+        form.set_value(domain.domain_name, domain.domain_description)
+    context = {'list_target_li': 'active', 'target_data_active': 'true', "domain":domain, "form":form}
+    return render(request, 'target/update.html', context)
