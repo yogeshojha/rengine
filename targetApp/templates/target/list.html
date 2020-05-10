@@ -57,7 +57,7 @@ List all targets
                                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                         </svg>
                                     </a>
-                                    <a href="#" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit" data-popup-url="">
+                                    <a href="{% url 'update_target_form' domain.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                                         </svg>
@@ -79,12 +79,11 @@ List all targets
         </div>
     </div>
 </div>
-{% include 'target/_items/modal.html' %}
-{% include 'target/_items/modal_script.html' %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
+<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
