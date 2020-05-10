@@ -14,6 +14,7 @@ List all targets
 <link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}<h3>List all Target for Recon</h3>{% endblock breadcrumb_title %}
@@ -56,7 +57,7 @@ List all targets
                                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                                         </svg>
                                     </a>
-                                    <a href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Edit">
+                                    <a href="#" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit" data-popup-url="">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                                         </svg>
@@ -78,6 +79,8 @@ List all targets
         </div>
     </div>
 </div>
+{% include 'target/_items/modal.html' %}
+{% include 'target/_items/modal_script.html' %}
 {% endblock main_content %}
 
 
