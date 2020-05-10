@@ -82,57 +82,6 @@ List all targets
 
 
 {% block page_level_script %}
-<script type="text/javascript">
-function delete_domain(id, domain_name)
-{
-    const delAPI = "../delete/"+id;
-    swal.queue([{
-        title: 'Are you sure you want to delete '+ domain_name +'?',
-        text: "You won't be able to revert this!",
-        type: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Delete',
-        padding: '2em',
-        showLoaderOnConfirm: true,
-        preConfirm: function() {
-          return fetch(delAPI, {
-	            method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken")
-                }
-            })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function(data) {
-               return location.reload();
-            })
-            .catch(function() {
-              swal.insertQueueStep({
-                type: 'error',
-                title: 'Oops! Unable to delete the domain!'
-              })
-            })
-        }
-    }])
-}
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-</script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
