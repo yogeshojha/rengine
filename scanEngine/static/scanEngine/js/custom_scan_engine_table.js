@@ -1,9 +1,10 @@
 $(document).ready(function() {
     var table = $('#show-hide-col').DataTable( {
         "searching": false,
-        "scrollY": "200px",
+        "scrollY": "280px",
         "paging": false,
         "info": false,
+        "ordering": false,
         "stripeClasses": [],
         "lengthMenu": [7, 10, 20, 50],
         "pageLength": 7
