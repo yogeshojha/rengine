@@ -1,6 +1,4 @@
 FROM ubuntu:20.04
-RUN mkdir /app
-WORKDIR /app
 
 RUN apt update -y && apt install -y \
   build-essential \
@@ -10,6 +8,8 @@ RUN apt update -y && apt install -y \
   wget \
   libpq-dev
 
-COPY requirements.txt /app/
-RUN pip3 install -r requirements.txt
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
+RUN mkdir /app
+WORKDIR /app
 COPY . /app/
