@@ -1,4 +1,5 @@
 from django.shortcuts import render
 
 def index(request):
-    return render(request, 'scanEngine/index.html')
+    context = {"scan_engine_nav_active": "true"}
+    return render(request, 'scanEngine/index.html', context)
