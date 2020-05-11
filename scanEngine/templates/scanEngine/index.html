@@ -30,23 +30,26 @@ Scan Engine
                             </div>
                             <div class="widget-content widget-content-area">
                                 <div class="toggle-list">
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="0">Name</a>
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="1">Position</a>
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="2">Office</a>
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="3">Age</a>
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="4">Start date</a>
-                                    <a class="btn toggle-vis mb-4 ml-2" data-column="5">Salary</a>
+                                    <div class="row">
+                                        <a class="btn toggle-vis mb-4 ml-2" data-column="1">Subdomain Discovery</a>
+                                        <a class="btn toggle-vis mb-4 ml-2" data-column="2">Directory & Files Discovery</a>
+                                        <a class="btn toggle-vis mb-4 ml-2" data-column="3">Subdomain Takeover</a>
+                                    </div>
+                                    <div class="row">
+                                        <a class="btn toggle-vis mb-4 ml-2" data-column="4">Parameter Discovery</a>
+                                        <a class="btn toggle-vis mb-4 ml-2" data-column="5">Port Scan</a>
+                                    </div>
                                 </div>
                                 <div class="table-responsive mb-4">
                                     <table id="show-hide-col" class="table table-hover" style="width:100%">
                                         <thead style="border-bottom: none;">
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Position</th>
-                                                <th>Office</th>
-                                                <th>Age</th>
-                                                <th>Start date</th>
-                                                <th>Salary</th>
+                                                <th>Engine Name</th>
+                                                <th>Subdomain Discovery</th>
+                                                <th>Directory & Files Discovery</th>
+                                                <th>Subdomain Takeover</th>
+                                                <th>Parameter Discovery</th>
+                                                <th>Port Scan</th>
                                                 <th class="text-center">Action</th>
                                             </tr>
                                         </thead>
@@ -54,26 +57,15 @@ Scan Engine
                                             <tr>
                                                 <td>Tiger Nixon</td>
                                                 <td>System Architect</td>
-                                                <td>Edinburgh</td>
                                                 <td>61</td>
                                                 <td>2011/04/25</td>
+                                                <td>$320,800</td>
                                                 <td>$320,800</td>
                                                 <td class="text-center">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle table-cancel"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                                                 </td>
                                             </tr>
                                         </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Position</th>
-                                                <th>Office</th>
-                                                <th>Age</th>
-                                                <th>Start date</th>
-                                                <th>Salary</th>
-                                                <th class="text-center">Action</th>
-                                            </tr>
-                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -87,5 +79,5 @@ Scan Engine
 
 {% block page_level_script %}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
+<script src="{% static 'scanEngine/js/custom_scan_engine_table.js' %}"></script>
 {% endblock page_level_script %}
