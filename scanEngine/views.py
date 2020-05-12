@@ -13,4 +13,4 @@ def add_engine(request):
     form = AddEngineForm()
     context = {'scan_engine_nav_active': 'true',
                 'form': form}
-    return render(request, 'scanEngine/add_engine.html')
+    return render(request, 'scanEngine/add_engine.html', context)

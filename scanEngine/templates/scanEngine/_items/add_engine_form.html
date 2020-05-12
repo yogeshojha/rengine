@@ -3,14 +3,80 @@
         <div class="widget-header">
             <div class="row">
                 <div class="col-12">
-                    <h4 class="text-info">Add Engine Type</h4>
+                    <h4 class="text-info">Add Scan Engine Name</h4>
                 </div>
             </div>
         </div>
         <div class="widget-content widget-content-area">
-                <form class="" action="index.html" method="post">
-                    {{form}}
-                </form>
+            <form class="simple-example" method="POST">
+                {% csrf_token %}
+                <div class="form-row layout-spacing">
+                    <div class="col-12">
+                        <label for="domainName" class="text-info">Engine name</label>
+                        {{ form.scan_type_name }}
+                    </div>
+                </div>
+                <div class="form-row layout-spacing">
+                    <table>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Subdomain Discovery</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                {{form.subdomain_discovery}}
+                                <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Subdomain Takeover</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                {{form.subdomain_takeover}}
+                                <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Directory and Files Search</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                {{form.dir_file_search}}
+                                <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Parameter Discovery</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                {{form.param_discovery}}
+                                <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Port Scan</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                {{form.port_scan}}
+                                <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Add Engine</button>
+            </form>
         </div>
     </div>
 </div>
