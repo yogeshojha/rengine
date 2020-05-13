@@ -1,3 +1,4 @@
 from django.db import models
 
-# Create your models here.
+class SubdomainModel(models.Model):
+    hello = models.CharField(max_length=500)
