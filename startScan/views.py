@@ -7,3 +7,6 @@ from django.urls import reverse
 
 def index(request):
     return render(request, 'startScan/index.html')
+
+def scan_history(request):
+    return render(request, 'startScan/history.html')
