@@ -10,6 +10,11 @@ Scan Engine
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_miscellaneous.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block main_content %}
@@ -138,7 +143,13 @@ Scan Engine
                                             {%endif%}
                                         </td>
                                         <td class="text-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle table-cancel"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.engine_name }}')" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                                </svg>
+                                            </a>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -155,6 +166,8 @@ Scan Engine
 
 
 {% block page_level_script %}
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'scanEngine/js/custom_scan_engine_table.js' %}"></script>
 {% endblock page_level_script %}
