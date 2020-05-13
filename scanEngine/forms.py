@@ -15,12 +15,17 @@ class AddEngineForm(forms.ModelForm):
                         }
                     ))
     subdomain_discovery = forms.BooleanField(
+                    required=True,
                     widget=forms.CheckboxInput(attrs={"checked":"", "disabled":""}))
     dir_file_search = forms.BooleanField(
+                    required=False,
                     widget=forms.CheckboxInput(attrs={}))
     subdomain_takeover = forms.BooleanField(
+                    required=False,
                     widget=forms.CheckboxInput(attrs={}))
     param_discovery = forms.BooleanField(
+                    required=False,
                     widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
+                    required=False,
                     widget=forms.CheckboxInput(attrs={"checked":""}))
