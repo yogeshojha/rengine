@@ -1,4 +1,8 @@
 from django.db import models
+from targetApp.models import Domain
+from scanEngine.models import EngineType
 
 class SubdomainModel(models.Model):
-    hello = models.CharField(max_length=500)
+    
+    def __str__(self):
+        return self.domain_name
