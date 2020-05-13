@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
     'targetApp.apps.TargetappConfig',
     'scanEngine.apps.ScanengineConfig',
+    'startScan.apps.StartscanConfig',
 ]
 
 MIDDLEWARE = [
