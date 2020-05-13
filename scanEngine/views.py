@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType
 from scanEngine.forms import AddEngineForm
 from django.contrib import messages
@@ -23,3 +23,15 @@ def add_engine(request):
     context = {'scan_engine_nav_active': 'true',
                 'form': form}
     return render(request, 'scanEngine/add_engine.html', context)
+
+
+def delete_engine(request, id):
+    obj = get_object_or_404(EngineType, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Engine successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! Engine could not be deleted!')
+    return http.JsonResponse(responseData)
