@@ -16,6 +16,8 @@ class ScannedSubdomains(models.Model):
     domain_name = models.ForeignKey(ScanHistoryModel, on_delete=models.CASCADE)
     open_ports = models.CharField(max_length=1000)
     takeover_possible = models.BooleanField()
+    http_status = models.IntegerField()
+    alive_subdomain = models.BooleanField()
     technology_stack = models.CharField(max_length=1000)
 
     def __str__(self):

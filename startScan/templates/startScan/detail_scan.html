@@ -34,34 +34,26 @@ Scan history
                         <thead>
                             <tr>
                                 <th>Serial</th>
-                                <th>Domain Name</th>
-                                <th>Scan Type</th>
-                                <th>Last Scanned On</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Action</th>
+                                <th>Subdomain</th>
+                                <th>HTTP Status</th>
+                                <th>Ports Open</th>
+                                <th>Technology Stack</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for scan_history in scan_history.all %}
+                            {% for subs in subdomain.all %}
                             <tr>
-                                <td class="checkbox-column"> {{ scan_history.id }} </td>
-                                <td>{{ scan_history.domain_name }}</td>
-                                <td>{{ scan_history.scan_type }}</td>
-                                <td>{{ scan_history.last_scan_date }}</td>
-                                <td class="text-center">
-                                    {% if scan_history.scan_status == 0 %}
-                                    <span class="shadow-none badge badge-danger">Failed</span>
-                                    {% elif scan_history.scan_status == 1 %}
-                                    <span class="shadow-none badge badge-primary">Scanning</span>
-                                    {% elif scan_history.scan_status == 2 %}
-                                    <span class="shadow-none badge badge-success">Succesful</span>
-                                    {% else %}
-                                    <span class="shadow-none badge badge-danger">Unknown</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-outline-primary">View</a>
-                                </td>
+                                <td class="checkbox-column"> {{ subs.id }} </td>
+                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
+                                    <td class="text-success">{{ subs.subdomain }}</td>
+                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
+                                    <td class="text-warning">{{ subs.subdomain }}</td>
+                                {% else %}
+                                    <td class="text-danger">{{ subs.subdomain }}</td>
+                                {% endif %}
+                                <td>{{subs.http_status}}</td>
+                                <td>{{ subs.open_ports }}</td>
+                                <td>{{ subs.technology_stack }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
