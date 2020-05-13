@@ -76,7 +76,7 @@ table.dataTable {
 }
 
 .table-hover:not(.table-dark) tbody tr:hover .table-scan {
-    color: #2962FF;
+    color: #2196f3;
 }
 
 .table-edit {
@@ -88,7 +88,7 @@ table.dataTable {
 }
 
 .table-hover:not(.table-dark) tbody tr:hover .table-edit {
-    color: #FF6D00;
+    color: #e2a03f;
 }
 .table-delete {
     color: #888ea8;
