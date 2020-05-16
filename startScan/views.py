@@ -3,6 +3,8 @@ from django.contrib import messages
 from django import http
 from django.urls import reverse
 from .models import ScanHistory, ScannedSubdomains
+from targetApp.models import Domain
+from scanEngine.models import EngineType
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -18,5 +20,7 @@ def detail_scan(request, id):
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
-    context = {'scan_history_active': 'true'}
+    domain = get_object_or_404(Domain, id=id)
+    engine = EngineType.objects.all()
+    context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}
     return render(request, 'startScan/start_scan_ui.html', context)
