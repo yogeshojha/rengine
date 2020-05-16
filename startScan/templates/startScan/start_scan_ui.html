@@ -1,0 +1,23 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Add Engine Type
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+    <h1>Hello World</h1>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/custom-jquery.steps.js' %}"></script>
+{% endblock page_level_script %}
