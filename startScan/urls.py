@@ -6,4 +6,5 @@ urlpatterns = [
     path('', views.index, name="start_scan"),
     path('history/', views.scan_history, name="scan_history"),
     path('detail/<int:id>', views.detail_scan, name='detail_scan'),
+    path('start/<int:id>', views.start_scan_ui, name='start_scan'),
 ]
