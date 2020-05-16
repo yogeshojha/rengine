@@ -51,7 +51,13 @@ Scan history
                                 {% else %}
                                     <td class="text-danger">{{ subs.subdomain }}</td>
                                 {% endif %}
-                                <td>{{subs.http_status}}</td>
+                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
+                                    <td class="text-success">{{ subs.http_status }}</td>
+                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
+                                    <td class="text-warning">{{ subs.http_status }}</td>
+                                {% else %}
+                                    <td class="text-danger">{{ subs.http_status }}</td>
+                                {% endif %}
                                 <td>{{ subs.open_ports }}</td>
                                 <td>{{ subs.technology_stack }}</td>
                             </tr>
@@ -94,4 +100,4 @@ c1 = $('#style-2').DataTable({
 });
 multiCheck(c1);
 </script>
-{% endblock page_level_script %}
+{% endblock page_level_script %}.http_status
