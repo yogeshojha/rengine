@@ -20,6 +20,8 @@ def detail_scan(request, id):
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
+    if request.method == "POST":
+        print(request.body)
     domain = get_object_or_404(Domain, id=id)
     engine = EngineType.objects
     context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}

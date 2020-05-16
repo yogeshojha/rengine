@@ -22,7 +22,7 @@ Start Scan
             </div>
         </div>
         <div class="widget-content widget-content-area">
-            <form class="simple-example" method="POST">
+            <form method="POST">
                 {% csrf_token %}
                 <div class="form-row">
                     <div class="col-md-12 mb-4">
@@ -32,7 +32,7 @@ Start Scan
                                 <li class="list-group-item list-group-item-action">
                                     <div class="n-chk">
                                         <label class="new-control new-checkbox checkbox-primary w-100 justify-content-between">
-                                            <input type="radio" class="new-control-input" name="scan_mode">
+                                            <input type="radio" class="new-control-input" name="scan_mode" value="{{engine.id}}">
                                             <span class="new-control-indicator"></span>
                                             <span class="ml-2">
                                                 <b>{{engine.scan_type_name}}</b>
@@ -121,7 +121,7 @@ Start Scan
                                                 </table>
                                             </span>
                                             <span class="ml-3 d-block">
-                                                <span class="badge badge-pills outline-badge-primary">Default</span>
+                                                <span class="badge badge-pills outline-badge-warning">Custom</span>
                                             </span>
                                         </label>
                                     </div>
