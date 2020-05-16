@@ -21,6 +21,6 @@ def detail_scan(request, id):
 
 def start_scan_ui(request, id):
     domain = get_object_or_404(Domain, id=id)
-    engine = EngineType.objects.all()
+    engine = EngineType.objects
     context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}
     return render(request, 'startScan/start_scan_ui.html', context)

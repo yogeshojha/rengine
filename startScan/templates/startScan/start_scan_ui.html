@@ -28,15 +28,97 @@ Start Scan
                     <div class="col-md-12 mb-4">
                         <h6>Select the scan type</h6>
                         <ul class="list-group task-list-group">
-                            {% for engine in engines %}
+                            {% for engine in engines.all %}
                                 <li class="list-group-item list-group-item-action">
                                     <div class="n-chk">
                                         <label class="new-control new-checkbox checkbox-primary w-100 justify-content-between">
                                             <input type="radio" class="new-control-input" name="scan_mode">
                                             <span class="new-control-indicator"></span>
                                             <span class="ml-2">
-                                                {{engine.scan_type_name}}
-                                                
+                                                <b>{{engine.scan_type_name}}</b>
+                                                <table style="margin-top:3%">
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Subdomain Discovery</>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.subdomain_discovery %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Subdomain Takeover</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.subdomain_takeover %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Directory and Files Search</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.dir_file_search %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Parameter Discovery</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.param_discovery %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Port Scan</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.port_scan %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                </table>
                                             </span>
                                             <span class="ml-3 d-block">
                                                 <span class="badge badge-pills outline-badge-primary">Default</span>
