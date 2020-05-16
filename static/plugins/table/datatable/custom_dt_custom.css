@@ -53,13 +53,8 @@ table.dataTable {
 }
 
 .style-2 .badge-primary {
-    color: #2196f3;
-    border: 2px dashed #2196f3;
-}
-
-.style-2 .badge-success {
-    color: #8dbf42;
-    border: 2px dashed #8dbf42;
+    color: #1b55e2;
+    border: 2px dashed #1b55e2;
 }
 
 .style-2 .badge-warning {

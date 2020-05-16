@@ -6,5 +6,4 @@ urlpatterns = [
     path('', include('dashboard.urls')),
     path('target/', include('targetApp.urls')),
     path('scanEngine/', include('scanEngine.urls')),
-    path('start_scan/', include('startScan.urls')),
 ]
