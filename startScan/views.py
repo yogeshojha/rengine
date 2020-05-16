@@ -13,6 +13,6 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 def detail_scan(request, id):
-    subdomain_details = ScannedSubdomains.objects.filter(scan_history_model__id=id)
+    subdomain_details = ScannedSubdomains.objects.filter(scan_history__id=id)
     context = {'scan_history_active': 'true', 'subdomain':subdomain_details}
     return render(request, 'startScan/detail_scan.html', context)
