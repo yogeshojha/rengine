@@ -44,9 +44,19 @@ def start_scan_ui(request, id):
     return render(request, 'startScan/start_scan_ui.html', context)
 
 def doScan(id, domain):
-    task = BackgroundScan.objects.get(pk=id)
-    subdomains = sublist3r.main(domain.domain_name, 40, 'hell.txt', ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
-    task.is_done = True
+    task = ScanHistory.objects.get(pk=id)
+    subdomains = sublist3r.main(domain.domain_name, False, 40, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
+    for subdomain in subdomains:
+        scanned = ScannedSubdomains()
+        scanned.subdomain = subdomain
+        scanned.scan_history = task
+        scanned.open_ports = "80"
+        scanned.takeover_possible = False
+        scanned.http_status = 200
+        scanned.alive_subdomain = True
+        scanned.technology_stack = "Test"
+        scanned.save()
+    task.scan_status = 2
     task.save()
 
 def checkScanStatus(request, id):
