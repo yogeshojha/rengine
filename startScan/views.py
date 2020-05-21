@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from .models import ScanHistory, ScannedSubdomains
 from targetApp.models import Domain
@@ -38,14 +38,15 @@ def start_scan_ui(request, id):
         t = threading.Thread(target=doScan, args=[task.id, domain])
         t.setDaemon(True)
         t.start()
-        return JsonResponse({'id':task.id})
+        messages.add_message(request, messages.INFO, 'Scan Started for ' + domain.domain_name)
+        return HttpResponseRedirect(reverse('scan_history'))
     engine = EngineType.objects
     context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}
     return render(request, 'startScan/start_scan_ui.html', context)
 
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
-    subdomains = sublist3r.main(domain.domain_name, False, 40, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
+    subdomains = sublist3r.main(domain.domain_name, 'temp.txt', 40, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
     for subdomain in subdomains:
         scanned = ScannedSubdomains()
         scanned.subdomain = subdomain
