@@ -3,12 +3,14 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
 from .models import ScanHistory, ScannedSubdomains
+from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 import threading
 from . import sublist3r
 from django.utils import timezone
-
+import requests
+import json
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -46,6 +48,7 @@ def start_scan_ui(request, id):
 
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
+    notif_hook = NotificationHooks.objects.filter(send_notif=True)
     subdomains = sublist3r.main(domain.domain_name, 40, False, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
     for subdomain in subdomains:
         scanned = ScannedSubdomains()
@@ -59,6 +62,10 @@ def doScan(id, domain):
         scanned.save()
     task.scan_status = 2
     task.save()
+    scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
+    headers = {'content-type': 'application/json'}
+    for notif in notif_hook:
+        requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
