@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django import http
 from .models import Domain
+from startScan.models import ScanHistory
 from django.contrib import messages
 from .forms import RawDomainForm, UpdateDomainForm
 from django.utils import timezone

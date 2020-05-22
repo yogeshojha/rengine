@@ -37,6 +37,9 @@ def start_scan_ui(request, id):
         task.scan_type = engine_object
         task.last_scan_date = timezone.now()
         task.save()
+        # save last scan for domain model
+        domain.last_scan_date = timezone.now()
+        domain.save()
         t = threading.Thread(target=doScan, args=[task.id, domain])
         t.setDaemon(True)
         t.start()
