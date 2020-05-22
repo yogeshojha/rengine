@@ -46,7 +46,7 @@ def start_scan_ui(request, id):
 
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
-    subdomains = sublist3r.main(domain.domain_name, 'temp.txt', 40, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
+    subdomains = sublist3r.main(domain.domain_name, 40, False, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
     for subdomain in subdomains:
         scanned = ScannedSubdomains()
         scanned.subdomain = subdomain
