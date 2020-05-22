@@ -1,3 +1,5 @@
 from django.contrib import admin
+from startScan.models import ScanHistory, ScannedSubdomains
 
-# Register your models here.
+admin.site.register(ScanHistory)
+admin.site.register(ScannedSubdomains)

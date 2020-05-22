@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-List all targets
+Scan history
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -17,8 +17,6 @@ List all targets
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
-{% block breadcrumb_title %}<h3>List all Target for Recon</h3>{% endblock breadcrumb_title %}
-
 {% block main_content %}
 <div class="col-lg-12 layout-spacing">
     <div class="col-lg-12">
@@ -26,7 +24,7 @@ List all targets
             <div class="widget-header">
                 <div class="row">
                     <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-                        <h4 class="text-info">All Targets</h4>
+                        <h4 class="text-info">Scan Result for</h4>
                     </div>
                 </div>
             </div>
@@ -35,41 +33,33 @@ List all targets
                     <table id="style-2" class="table style-2  table-hover">
                         <thead>
                             <tr>
-                                <th class="checkbox-column">Serial Number</th>
-                                <th>Domain Name</th>
-                                <th>Description</th>
-                                <th>Added on</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Action</th>
+                                <th>Serial</th>
+                                <th>Subdomain</th>
+                                <th>HTTP Status</th>
+                                <th>Ports Open</th>
+                                <th>Technology Stack</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for domain in domains.all %}
+                            {% for subs in subdomain.all %}
                             <tr>
-                                <td class="checkbox-column"> {{ domain.id }} </td>
-                                <td>{{ domain.domain_name }}</td>
-                                <td>{{ domain.domain_description }}</td>
-                                <td>{{ domain.insert_date }}</td>
-                                <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
-                                <td class="text-center">
-                                    <a href="{% url 'start_scan' domain.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Scan">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                        </svg>
-                                    </a>
-                                    <a href="{% url 'update_target_form' domain.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
-                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                        </svg>
-                                    </a>
-                                    <a onclick="delete_domain({{ domain.id }}, '{{ domain.domain_name }}')" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="15" y1="9" x2="9" y2="15"></line>
-                                            <line x1="9" y1="9" x2="15" y2="15"></line>
-                                        </svg>
-                                    </a>
-                                </td>
+                                <td class="checkbox-column"> {{ subs.id }} </td>
+                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
+                                    <td class="text-success">{{ subs.subdomain }}</td>
+                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
+                                    <td class="text-warning">{{ subs.subdomain }}</td>
+                                {% else %}
+                                    <td class="text-danger">{{ subs.subdomain }}</td>
+                                {% endif %}
+                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
+                                    <td class="text-success">{{ subs.http_status }}</td>
+                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
+                                    <td class="text-warning">{{ subs.http_status }}</td>
+                                {% else %}
+                                    <td class="text-danger">{{ subs.http_status }}</td>
+                                {% endif %}
+                                <td>{{ subs.open_ports }}</td>
+                                <td>{{ subs.technology_stack }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -83,7 +73,7 @@ List all targets
 
 
 {% block page_level_script %}
-<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
+<script src="{% static 'startScan/js/custom_scan.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
@@ -110,4 +100,4 @@ c1 = $('#style-2').DataTable({
 });
 multiCheck(c1);
 </script>
-{% endblock page_level_script %}
+{% endblock page_level_script %}.http_status

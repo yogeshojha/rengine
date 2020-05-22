@@ -1,0 +1,148 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Start Scan
+{% endblock title %}
+
+
+{% block custom_js_css_link %}>
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/components/custom-list-group.css' %}" rel="stylesheet" type="text/css">
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+<div class="col-lg-12 layout-spacing">
+    <div class="statbox widget box box-shadow">
+        <div class="widget-header">
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="text-info">Start scanning for <span class="text-danger">{{domain.domain_name}}</span></h4>
+                </div>
+            </div>
+        </div>
+        <div class="widget-content widget-content-area">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-row">
+                    <div class="col-md-12 mb-4">
+                        <h6>Select the scan type</h6>
+                        <ul class="list-group task-list-group">
+                            {% for engine in engines.all %}
+                                <li class="list-group-item list-group-item-action">
+                                    <div class="n-chk">
+                                        <label class="new-control new-checkbox checkbox-primary w-100 justify-content-between">
+                                            <input type="radio" class="new-control-input" name="scan_mode" value="{{engine.id}}">
+                                            <span class="new-control-indicator"></span>
+                                            <span class="ml-2">
+                                                <b>{{engine.scan_type_name}}</b>
+                                                <table style="margin-top:3%">
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Subdomain Discovery</>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.subdomain_discovery %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Subdomain Takeover</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.subdomain_takeover %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Directory and Files Search</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.dir_file_search %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Parameter Discovery</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.param_discovery %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>
+                                                            <p style="margin-right:1%">Port Scan</p>
+                                                        </td>
+                                                        <td>
+                                                            {% if engine.port_scan %}
+                                                                <div class="icon-container text-success">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg><span class="icon-name"></span>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="icon-container text-danger">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                                                </div>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </span>
+                                            <span class="ml-3 d-block">
+                                                <span class="badge badge-pills outline-badge-warning">Custom</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                <button class="btn btn-outline-primary submit-fn mt-2 float-right" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg> Start Scan</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/jquery.steps.min.js' %}"></script>
+<script src="{% static 'plugins/jquery-step/custom-jquery.steps.js' %}"></script>
+{% endblock page_level_script %}
