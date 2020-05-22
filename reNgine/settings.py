@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'targetApp.apps.TargetappConfig',
     'scanEngine.apps.ScanengineConfig',
     'startScan.apps.StartscanConfig',
+    'notification.apps.NotificationConfig',
 ]
 
 MIDDLEWARE = [

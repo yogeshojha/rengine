@@ -7,4 +7,5 @@ urlpatterns = [
     path('target/', include('targetApp.urls')),
     path('scanEngine/', include('scanEngine.urls')),
     path('start_scan/', include('startScan.urls')),
+    path('notification/', include('notification.urls')),
 ]
