@@ -6,6 +6,7 @@ Push Notifications
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
@@ -27,7 +28,7 @@ Push Notifications
                         <h4 class="text-info">Push Notification Hooks</h4>
                     </div>
                     <div class="col-6">
-                        <a href="{% url 'add_engine' %}" class="btn btn-outline-primary mb-2 float-right">Add New Hook</a>
+                        <a href="" class="btn btn-outline-primary mb-2 float-right">Add New Hook</a>
                     </div>
                 </div>
             </div>
@@ -49,11 +50,11 @@ Push Notifications
                                 <td>{{ hook.hook_name }}</td>
                                 <td>{{ hook.hook_url }}</td>
                                 <td class="text-center">
-                                    <a href="" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Scan">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                        </svg>
-                                    </a>
+                                    <label class="switch s-icons s-outline s-outline-info">
+                                        <input type="hidden" name="domain_id" value="hook.id" />
+                                        <input type="checkbox" name="port_scan" {% if hook.send_notif %}checked{% endif %} onchange="change_notif_status({{hook.id}})">
+                                        <span class="slider round"></span>
+                                    </label>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -68,7 +69,7 @@ Push Notifications
 
 
 {% block page_level_script %}
-<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
+<script src="{% static 'notification/js/custom_notif.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
