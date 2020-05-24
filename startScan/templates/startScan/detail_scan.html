@@ -67,9 +67,9 @@ Scan history
                         <tbody>
                             {% for domain in alive.all %}
                                 <tr>
-                                    <td>{{domain.url}}</td>
+                                    <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
                                     <td>{{domain.ip_address}}</td>
-                                    <td>{{domain.http_status}}</td>
+                                    <td><span class="badge badge-pills badge-danger">{{domain.http_status}}</span></td>
                                     <td>{{domain.page_title|truncatechars:30}}</td>
                                     <td>na</td>
                                     <td>na</td>
