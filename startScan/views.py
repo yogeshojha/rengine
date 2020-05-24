@@ -52,7 +52,7 @@ def start_scan_ui(request, id):
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    subdomains = sublist3r.main(domain.domain_name, 40, False, ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
+    subdomains = sublist3r.main(domain.domain_name, 40, 'hello.txt', ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
     for subdomain in subdomains:
         scanned = ScannedSubdomains()
         scanned.subdomain = subdomain
@@ -65,6 +65,8 @@ def doScan(id, domain):
         scanned.save()
     task.scan_status = 2
     task.save()
+
+    # notify on slack
     scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
     headers = {'content-type': 'application/json'}
     for notif in notif_hook:
