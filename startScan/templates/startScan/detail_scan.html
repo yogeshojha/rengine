@@ -18,55 +18,349 @@ Scan history
 {% endblock custom_js_css_link %}
 
 {% block main_content %}
-<div class="col-lg-12 layout-spacing">
-    <div class="col-lg-12">
-        <div class="statbox widget box box-shadow">
-            <div class="widget-header">
-                <div class="row">
-                    <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-                        <h4 class="text-info">Scan Result for</h4>
-                    </div>
-                </div>
-            </div>
-            <div class="widget-content widget-content-area">
-                <div class="table-responsive mb-4">
-                    <table id="style-2" class="table style-2  table-hover">
+<div class="col-lg-12 layout-px-spacing">
+    <div class="row layout-top-spacing">
+        <div class="col-xl-12 col-lg-12 col-sm-12  layout-spacing">
+            <div class="widget-content widget-content-area br-6">
+                <div class="table-responsive mb-4 mt-4">
+                    <table class="multi-table table table-hover" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Serial</th>
                                 <th>Subdomain</th>
-                                <th>HTTP Status</th>
-                                <th>Ports Open</th>
-                                <th>Technology Stack</th>
+                                <th>Ports</th>
+                                <th class="text-center">Takeover Possible</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for subs in subdomain.all %}
                             <tr>
-                                <td class="checkbox-column"> {{ subs.id }} </td>
-                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
-                                    <td class="text-success">{{ subs.subdomain }}</td>
-                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
-                                    <td class="text-warning">{{ subs.subdomain }}</td>
-                                {% else %}
-                                    <td class="text-danger">{{ subs.subdomain }}</td>
-                                {% endif %}
-                                {% if subs.http_status >= 200 and subs.http_status < 300 %}
-                                    <td class="text-success">{{ subs.http_status }}</td>
-                                {% elif subs.http_status >= 300 and subs.http_status < 400 %}
-                                    <td class="text-warning">{{ subs.http_status }}</td>
-                                {% else %}
-                                    <td class="text-danger">{{ subs.http_status }}</td>
-                                {% endif %}
-                                <td>{{ subs.open_ports }}</td>
-                                <td>{{ subs.technology_stack }}</td>
+                                <td>Tiger Nixon</td>
+                                <td>System Architect</td>
+                                <td>
+                                    <div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Possible"></div>
+                                </td>
+                                <td>Edinburgh</td>
                             </tr>
-                            {% endfor %}
                         </tbody>
+                    </table>
+                    <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Progress</th>
+                                <th>Office</th>
+                                <th>Age</th>
+                                <th>Salary</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Jena Gaines</td>
+                                <td>Office Manager</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 67%" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>30</td>
+                                <td>$90,560</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink1">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Haley Kennedy</td>
+                                <td>Senior Marketing Designer</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>43</td>
+                                <td>$313,500</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink2">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Tatyana Fitzpatrick</td>
+                                <td>Regional Director</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 64%" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>19</td>
+                                <td>$385,750</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink3">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Michael Silva</td>
+                                <td>Marketing Designer</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 71%" aria-valuenow="71" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>66</td>
+                                <td>$198,500</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink4">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Bradley Greer</td>
+                                <td>Software Engineer</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 57%" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>41</td>
+                                <td>$132,000</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink5" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink5">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Angelica Ramos</td>
+                                <td>Chief Executive Officer (CEO)</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-primary" role="progressbar" style="width: 29.56%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>47</td>
+                                <td>$1,200,000</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink6" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink6">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Suki Burks</td>
+                                <td>Developer</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-danger" role="progressbar" style="width: 82%" aria-valuenow="82" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>53</td>
+                                <td>$114,500</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink7" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink7">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Prescott Bartlett</td>
+                                <td>Technical Author</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-primary" role="progressbar" style="width: 34%" aria-valuenow="34" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>27</td>
+                                <td>$145,000</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink8" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink8">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Timothy Mooney</td>
+                                <td>Office Manager</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-danger" role="progressbar" style="width: 92%" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>37</td>
+                                <td>$136,200</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink9" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink9">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Bruno Nash</td>
+                                <td>Software Engineer</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-danger" role="progressbar" style="width: 87%" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>38</td>
+                                <td>$163,500</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink10" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink10">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Hermione Butler</td>
+                                <td>Regional Director</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-primary" role="progressbar" style="width: 29.56%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>47</td>
+                                <td>$356,250</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink11" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink11">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Lael Greer</td>
+                                <td>Systems Administrator</td>
+                                <td>
+                                    <div class="progress br-30">
+                                        <div class="progress-bar br-30 bg-primary" role="progressbar" style="width: 29.56%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>London</td>
+                                <td>21</td>
+                                <td>$103,500</td>
+                                <td class="text-center">
+                                    <div class="dropdown custom-dropdown">
+                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink12" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                                        </a>
+                                        <div class="dropdown-menu" aria-labelledby="dropdownMenuLink12">
+                                            <a class="dropdown-item" href="javascript:void(0);">View</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Edit</a>
+                                            <a class="dropdown-item" href="javascript:void(0);">Delete</a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Progress</th>
+                                <th>Office</th>
+                                <th>Age</th>
+                                <th>Salary</th>
+                                <th>Action</th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 {% endblock main_content %}
@@ -78,26 +372,23 @@ Scan history
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script>
-// var e;
-c1 = $('#style-2').DataTable({
-    headerCallback:function(e, a, t, n, s) {
-        e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-    },
-    columnDefs:[ {
-        targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-            return'<label class="new-control new-checkbox checkbox-outline-info  m-auto">\n<input type="checkbox" class="new-control-input child-chk select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+$(document).ready(function() {
+    $('table.multi-table').DataTable({
+        "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+        },
+        "stripeClasses": [],
+        "lengthMenu": [7, 10, 20, 50],
+        "pageLength": 20,
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
         }
-    }],
-    "oLanguage": {
-        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-        "sInfo": "Showing page _PAGE_ of _PAGES_",
-        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-        "sSearchPlaceholder": "Search...",
-        "sLengthMenu": "Results :  _MENU_",
-    },
-    "lengthMenu": [5, 10, 20, 50],
-    "pageLength": 5
-});
-multiCheck(c1);
+    });
+} );
 </script>
 {% endblock page_level_script %}.http_status

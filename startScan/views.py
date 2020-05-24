@@ -64,18 +64,21 @@ def doScan(id, domain):
         print("Oops!")
     # all scan happens here
     os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
-    # for subdomain in subdomains:
-    #     scanned = ScannedSubdomains()
-    #     scanned.subdomain = subdomain
-    #     scanned.scan_history = task
-    #     scanned.open_ports = "80"
-    #     scanned.takeover_possible = False
-    #     scanned.http_status = 200
-    #     scanned.alive_subdomain = True
-    #     scanned.technology_stack = "Test"
-    #     scanned.save()
-    # task.scan_status = 2
-    # task.save()
+
+    scan_results_file = results_dir+current_scan_dir+'/sorted_subdomain_collection.txt'
+    with open(scan_results_file) as subdomain_list:
+        for subdomain in subdomain_list:
+            scanned = ScannedSubdomains()
+            scanned.subdomain = subdomain
+            scanned.scan_history = task
+            scanned.open_ports = "80"
+            scanned.takeover_possible = False
+            scanned.http_status = 200
+            scanned.alive_subdomain = True
+            scanned.technology_stack = "Test"
+            scanned.save()
+    task.scan_status = 2
+    task.save()
 
     # notify on slack
     # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}

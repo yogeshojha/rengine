@@ -13,7 +13,7 @@ class ScanHistory(models.Model):
         return self.domain_name.domain_name + self.scan_type.scan_type_name + str(self.id)
 
 class ScannedSubdomains(models.Model):
-    subdomain = models.CharField(max_length=100)
+    subdomain = models.CharField(max_length=1000)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     open_ports = models.CharField(max_length=1000)
     takeover_possible = models.BooleanField()
