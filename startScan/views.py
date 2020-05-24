@@ -59,7 +59,8 @@ def doScan(id, domain):
         os.chdir(results_dir)
         os.mkdir(domain.domain_name+str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')))
     except:
-        print("failed")
+        # do something here
+        print("Oops!")
     # all scan happens here
 
     # for subdomain in subdomains:
