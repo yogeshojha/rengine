@@ -94,7 +94,7 @@ def doScan(id, domain):
                 subdomain_proto.ip_address = data['pages'][host]['addrs']
                 subdomain_proto.page_title = data['pages'][host]['pageTitle']
                 subdomain_proto.http_status = data['pages'][host]['status'][0:3]
-                subdomain_proto.screenshot_path = data['pages'][host]['screenshotPath']
+                subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
                 subdomain_proto.technology_stack = 'fake'
                 subdomain_proto.save()
 

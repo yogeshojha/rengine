@@ -34,17 +34,17 @@ Scan history
                         </thead>
                         <tbody>
                             {% for subs in subdomain.all %}
-                                <tr>
-                                    <td>{{subs.subdomain}}</td>
-                                    <td>{{subs.open_ports}}</td>
-                                    <td>
-                                        {% if subs.takeover_possible %}
-                                                <div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Possible"></div>
-                                        {% else %}
-                                                <div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Not Possible"></div>
-                                        {% endif %}
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td>{{subs.subdomain}}</td>
+                                <td>{{subs.open_ports}}</td>
+                                <td>
+                                    {% if subs.takeover_possible %}
+                                    <div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Possible"></div>
+                                    {% else %}
+                                    <div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Not Possible"></div>
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -66,56 +66,90 @@ Scan history
                         </thead>
                         <tbody>
                             {% for domain in alive.all %}
-                                <tr class="text-center">
-                                    <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
-                                    <td>{{domain.ip_address}}</td>
-                                    <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
-                                            <span class="badge badge-pills badge-success">
+                            <tr class="text-center">
+                                <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
+                                <td>{{domain.ip_address}}</td>
+                                <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
+                                    <span class="badge badge-pills badge-success">
                                         {% elif domain.http_status >= 300 and domain.http_status < 400 %}
                                         {% else %}
-                                            <span class="badge badge-pills badge-danger">
-                                        {% endif %}
-                                        {{domain.http_status}}</span>
-                                    </td>
-                                    <td>{{domain.page_title|truncatechars:30}}</td>
-                                    <td>na</td>
-                                    <td>Hello</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                        <span class="badge badge-pills badge-danger">
+                                            {% endif %}
+                                            {{domain.http_status}}</span>
+                                        </td>
+                                        <td>{{domain.page_title|truncatechars:30}}</td>
+                                        <td>na</td>
+                                        <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}">
+                                            Details
+                                        </button></td>
+                                        <div class="modal fade" id="tabsModal{{domain.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="tabsModalLabel">More Details about <a href="{{domain.url}}" class="text-info">{{domain.url}}</a>
+                                                            <br /><br />
+                                                            <span class="text-info">Page Title:</span> {{domain.page_title}}
+                                                        </h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                                                            <li class="nav-item">
+                                                                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{domain.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
+                                                            </li>
+                                                            <li class="nav-item">
+                                                                <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile{{domain.id}}" role="tab" aria-controls="profile" aria-selected="false">Other Headers</a>
+                                                            </li>
+                                                        </ul>
+                                                        <div class="tab-content" id="myTabContent">
+                                                            <div class="tab-pane fade show active" id="home{{domain.id}}" role="tabpanel" aria-labelledby="home-tab">
+                                                                &nbsp;
+                                                                <img src='/media/{{domain.screenshot_path}}' class="modal-content"/>
+                                                            </div>
+                                                            <div class="tab-pane fade" id="profile{{domain.id}}" role="tabpanel" aria-labelledby="profile-tab">
+                                                                <p class="modal-content">{{domain.id}}Coming....</p></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-    </div>
-</div>
-{% endblock main_content %}
+            {% endblock main_content %}
 
 
-{% block page_level_script %}
-<script src="{% static 'startScan/js/custom_scan.js' %}"></script>
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-<script>
-$(document).ready(function() {
-    $('table.multi-table').DataTable({
-        "oLanguage": {
-            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-            "sInfo": "Showing page _PAGE_ of _PAGES_",
-            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-            "sSearchPlaceholder": "Search...",
-            "sLengthMenu": "Results :  _MENU_",
-        },
-        "stripeClasses": [],
-        "lengthMenu": [7, 10, 20, 50],
-        "pageLength": 20,
-        drawCallback: function () {
-            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-            $('.dataTables_wrapper table').removeClass('table-striped');
-        }
-    });
-} );
-</script>
-{% endblock page_level_script %}.http_status
+            {% block page_level_script %}
+            <script src="{% static 'startScan/js/custom_scan.js' %}"></script>
+            <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+            <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+            <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+            <script>
+            $(document).ready(function() {
+                $('table.multi-table').DataTable({
+                    "oLanguage": {
+                        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+                        "sInfo": "Showing page _PAGE_ of _PAGES_",
+                        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+                        "sSearchPlaceholder": "Search...",
+                        "sLengthMenu": "Results :  _MENU_",
+                    },
+                    "stripeClasses": [],
+                    "lengthMenu": [7, 10, 20, 50],
+                    "pageLength": 20,
+                    drawCallback: function () {
+                        $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+                        $('.dataTables_wrapper table').removeClass('table-striped');
+                    }
+                });
+            } );
+        </script>
+        {% endblock page_level_script %}.http_status
