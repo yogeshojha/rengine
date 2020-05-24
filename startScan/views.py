@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
-from .models import ScanHistory, ScannedSubdomains
+from .models import ScanHistory, ScannedHost, ScannedSubdomainWithProtocols
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
@@ -23,7 +23,7 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 def detail_scan(request, id):
-    subdomain_details = ScannedSubdomains.objects.filter(scan_history__id=id)
+    subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
     context = {'scan_history_active': 'true', 'subdomain':subdomain_details}
     return render(request, 'startScan/detail_scan.html', context)
 
@@ -68,17 +68,16 @@ def doScan(id, domain):
     scan_results_file = results_dir+current_scan_dir+'/sorted_subdomain_collection.txt'
     with open(scan_results_file) as subdomain_list:
         for subdomain in subdomain_list:
-            scanned = ScannedSubdomains()
+            scanned = ScannedHost()
             scanned.subdomain = subdomain
             scanned.scan_history = task
-            scanned.open_ports = "80"
             scanned.takeover_possible = False
-            scanned.http_status = 200
-            scanned.alive_subdomain = True
-            scanned.technology_stack = "Test"
             scanned.save()
     task.scan_status = 2
     task.save()
+
+    # after subdomain discovery run aquatone for visual identification
+
 
     # notify on slack
     # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
