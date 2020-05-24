@@ -56,23 +56,30 @@ Scan history
                     <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
                         <thead>
                             <tr>
-                                <th>Subdomain URL</th>
-                                <th>IP Address</th>
-                                <th>Page Status</th>
-                                <th>Page Title</th>
-                                <th>Headers</th>
-                                <th>Technology Stack</th>
+                                <th class="text-center">Subdomain URL</th>
+                                <th class="text-center">IP Address</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Page Title</th>
+                                <th class="text-center">Technology Stack</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for domain in alive.all %}
-                                <tr>
+                                <tr class="text-center">
                                     <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
                                     <td>{{domain.ip_address}}</td>
-                                    <td><span class="badge badge-pills badge-danger">{{domain.http_status}}</span></td>
+                                    <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
+                                            <span class="badge badge-pills badge-success">
+                                        {% elif domain.http_status >= 300 and domain.http_status < 400 %}
+                                        {% else %}
+                                            <span class="badge badge-pills badge-danger">
+                                        {% endif %}
+                                        {{domain.http_status}}</span>
+                                    </td>
                                     <td>{{domain.page_title|truncatechars:30}}</td>
                                     <td>na</td>
-                                    <td>na</td>
+                                    <td>Hello</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

@@ -28,6 +28,8 @@ class ScannedSubdomainWithProtocols(models.Model):
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField()
     technology_stack = models.CharField(max_length=1000)
+    screenshot_path = models.CharField(max_length=500)
+
 
     def __str__(self):
         return self.url
