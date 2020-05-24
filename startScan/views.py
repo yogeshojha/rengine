@@ -7,10 +7,12 @@ from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 import threading
-from . import sublist3r
 from django.utils import timezone
+from datetime import datetime
 import requests
 import json
+import os
+
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -52,25 +54,32 @@ def start_scan_ui(request, id):
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    subdomains = sublist3r.main(domain.domain_name, 40, 'hello.txt', ports= None, silent=False, verbose= False, enable_bruteforce= False, engines=None)
-    for subdomain in subdomains:
-        scanned = ScannedSubdomains()
-        scanned.subdomain = subdomain
-        scanned.scan_history = task
-        scanned.open_ports = "80"
-        scanned.takeover_possible = False
-        scanned.http_status = 200
-        scanned.alive_subdomain = True
-        scanned.technology_stack = "Test"
-        scanned.save()
-    task.scan_status = 2
-    task.save()
+    results_dir = '/app/scan_results/'
+    try:
+        os.chdir(results_dir)
+        os.mkdir(domain.domain_name+str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')))
+    except:
+        print("failed")
+    # all scan happens here
+
+    # for subdomain in subdomains:
+    #     scanned = ScannedSubdomains()
+    #     scanned.subdomain = subdomain
+    #     scanned.scan_history = task
+    #     scanned.open_ports = "80"
+    #     scanned.takeover_possible = False
+    #     scanned.http_status = 200
+    #     scanned.alive_subdomain = True
+    #     scanned.technology_stack = "Test"
+    #     scanned.save()
+    # task.scan_status = 2
+    # task.save()
 
     # notify on slack
-    scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
-    headers = {'content-type': 'application/json'}
-    for notif in notif_hook:
-        requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
+    # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
+    # headers = {'content-type': 'application/json'}
+    # for notif in notif_hook:
+    #     requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)

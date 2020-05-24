@@ -51,3 +51,5 @@ docs/_build/
 .python-version
 
 .DS_Store
+
+scan_results/
