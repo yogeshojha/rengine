@@ -73,12 +73,14 @@ def doScan(id, domain):
             scanned.scan_history = task
             scanned.takeover_possible = False
             scanned.save()
+    # after subdomain discovery run aquatone for visual identification
+    with_protocol_path = results_dir + current_scan_dir + '/with_protocol_domains.txt'
+    output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
+    aquatone_command = 'cat {} | /app/tools/aquatone -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+    os.system(aquatone_command)
+
     task.scan_status = 2
     task.save()
-
-    # after subdomain discovery run aquatone for visual identification
-
-
     # notify on slack
     # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
     # headers = {'content-type': 'application/json'}
