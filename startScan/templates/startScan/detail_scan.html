@@ -65,18 +65,16 @@ Scan history
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>Jena Gaines</td>
-                                <td>Office Manager</td>
-                                <td>
-                                    <div class="progress br-30">
-                                        <div class="progress-bar br-30 bg-warning" role="progressbar" style="width: 67%" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                </td>
-                                <td>London</td>
-                                <td>30</td>
-                                <td>$90,560</td>
-                            </tr>
+                            {% for domain in alive.all %}
+                                <tr>
+                                    <td>{{domain.url}}</td>
+                                    <td>{{domain.ip_address}}</td>
+                                    <td>{{domain.http_status}}</td>
+                                    <td>{{domain.page_title|truncatechars:30}}</td>
+                                    <td>na</td>
+                                    <td>na</td>
+                                </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>

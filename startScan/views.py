@@ -23,7 +23,8 @@ def scan_history(request):
 
 def detail_scan(request, id):
     subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
-    context = {'scan_history_active': 'true', 'subdomain':subdomain_details}
+    subdomain_aqua_details = ScannedSubdomainWithProtocols.objects.filter(host__scan_history__id=id)
+    context = {'scan_history_active': 'true', 'subdomain':subdomain_details, 'alive': subdomain_aqua_details}
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):

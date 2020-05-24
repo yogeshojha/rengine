@@ -19,7 +19,7 @@ class ScannedHost(models.Model):
     takeover_possible = models.BooleanField()
 
     def __str__(self):
-        return self.subdomain
+        return str(self.scan_history.id)
 
 class ScannedSubdomainWithProtocols(models.Model):
     host = models.ForeignKey(ScannedHost, on_delete=models.CASCADE)
