@@ -54,17 +54,16 @@ def start_scan_ui(request, id):
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    results_dir = '/app/scan_results/'
+    results_dir = '/app/tools/scan_results/'
     os.chdir(results_dir)
     try:
         current_scan_dir = domain.domain_name+'__'+str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
-        os.chdir(current_scan_dir)
     except:
         # do something here
         print("Oops!")
     # all scan happens here
-
+    os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
     # for subdomain in subdomains:
     #     scanned = ScannedSubdomains()
     #     scanned.subdomain = subdomain
