@@ -60,7 +60,14 @@ Scan history
                             <tr>
                                 <td>{{subs.subdomain}}</td>
                                 <td>
-                                    {{subs.open_ports}}
+                                    {% if subs.open_ports == '' %}
+                                        <span class="badge badge-pills outline-badge-danger">Dead Subdomain</span>
+                                    {% endif %}
+                                    {% with subs.open_ports|split:"," as ports %}
+                                    {% for port in ports %}
+                                        <span class="badge badge-pills {% if port == '80' or port == '8080' or port == '443' %}outline-badge-success {% else %} outline-badge-warning{% endif %}">{{port}}</span>
+                                    {% endfor %}
+                                    {% endwith %}
                                 </td>
                                 <td>
                                     {% if subs.takeover_possible %}
