@@ -20,7 +20,30 @@ Scan history
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-12 col-lg-12 col-sm-12  layout-spacing">
+        <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+            <div class="widget-content widget-content-area br-6">
+                <h5 class="text-info">Scan Status</h5>
+                {% if scan_history.scan_status == 0 %}
+                <span class="shadow-none badge badge-danger">Failed</span>
+                {% elif scan_history.scan_status == 1 %}
+                    <h6>Scanning</h6>
+                    <div class="progress br-30" style="margin-top:2%">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                {% elif scan_history.scan_status == 2 %}
+                    <h6>Scanning</h6>
+                    <div class="progress br-30" style="margin-top:2%">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                {% else %}
+                <h6>Scanning</h6>
+                <div class="progress br-30" style="margin-top:2%">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-xl-12 col-lg-12 col-sm-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
                 <div class="table-responsive mb-4 mt-4">
@@ -151,5 +174,5 @@ Scan history
                     }
                 });
             } );
-        </script>
-        {% endblock page_level_script %}.http_status
+            </script>
+            {% endblock page_level_script %}.http_status
