@@ -8,3 +8,4 @@ rm -rf $2/subdomain*
 
 # check aliveness
 for i in $(cat $2/sorted_subdomain_collection.txt); do echo "http://$i" && echo "https://$i"; done >> $2/with_protocol_domains.txt
+cat $2/sorted_subdomain_collection.txt | /app/tools/httprobe | tee -a $2/alive.txt
