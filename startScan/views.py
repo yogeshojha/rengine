@@ -91,34 +91,34 @@ def doScan(id, domain):
         sub_domain.save()
 
     # after subdomain discovery run aquatone for visual identification
-    # with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-    # output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
-    # aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
-    # os.system(aquatone_command)
-    #
-    # aqua_json_path = output_aquatone_path + '/aquatone_session.json'
-    # with open(aqua_json_path, 'r') as json_file:
-    #     data = json.load(json_file)
-    #
-    # for host in data['pages']:
-    #     subdomain_details = ScannedHost.objects.get(scan_history__id=id, subdomain=data['pages'][host]['hostname'])
-    #     subdomain_proto = ScannedSubdomainWithProtocols()
-    #     subdomain_proto.host = subdomain_details
-    #     subdomain_proto.url = data['pages'][host]['url']
-    #     list_ip = data['pages'][host]['addrs']
-    #     ip_string = ','.join(list_ip)
-    #     subdomain_proto.ip_address = ip_string
-    #     subdomain_proto.page_title = data['pages'][host]['pageTitle']
-    #     subdomain_proto.http_status = data['pages'][host]['status'][0:3]
-    #     subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-    #     subdomain_proto.http_header_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['headersPath']
-    #     tech_list = []
-    #     if data['pages'][host]['tags'] is not None:
-    #         for tag in data['pages'][host]['tags']:
-    #             tech_list.append(tag['text'])
-    #     tech_string = ','.join(tech_list)
-    #     subdomain_proto.technology_stack = tech_string
-    #     subdomain_proto.save()
+    with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
+    output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
+    aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+    os.system(aquatone_command)
+
+    aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+    with open(aqua_json_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    for host in data['pages']:
+        subdomain_details = ScannedHost.objects.get(scan_history__id=id, subdomain=data['pages'][host]['hostname'])
+        subdomain_proto = ScannedSubdomainWithProtocols()
+        subdomain_proto.host = subdomain_details
+        subdomain_proto.url = data['pages'][host]['url']
+        list_ip = data['pages'][host]['addrs']
+        ip_string = ','.join(list_ip)
+        subdomain_proto.ip_address = ip_string
+        subdomain_proto.page_title = data['pages'][host]['pageTitle']
+        subdomain_proto.http_status = data['pages'][host]['status'][0:3]
+        subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+        subdomain_proto.http_header_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['headersPath']
+        tech_list = []
+        if data['pages'][host]['tags'] is not None:
+            for tag in data['pages'][host]['tags']:
+                tech_list.append(tag['text'])
+        tech_string = ','.join(tech_list)
+        subdomain_proto.technology_stack = tech_string
+        subdomain_proto.save()
     task.scan_status = 2
     task.save()
     # notify on slack
