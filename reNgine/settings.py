@@ -110,8 +110,9 @@ USE_L10N = True
 
 USE_TZ = True
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'uploads')
-MEDIA_URL = '/uploads/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'tools/scan_results') # 'data' is my media folder
+MEDIA_URL = '/media/'
+
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
