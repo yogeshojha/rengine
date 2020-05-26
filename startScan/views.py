@@ -78,17 +78,24 @@ def doScan(id, domain):
             scanned.scan_history = task
             scanned.takeover_possible = False
             scanned.save()
+
     # writing port results
-    port_json_result = open(port_results_file, 'r')
-    lines = port_json_result.readlines()
-    for line in lines:
-        json_st = json.loads(line.strip())
-        sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
-        if sub_domain.open_ports:
-            sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
-        else:
-            sub_domain.open_ports = str(json_st['port'])
-        sub_domain.save()
+    try:
+        port_json_result = open(port_results_file, 'r')
+        lines = port_json_result.readlines()
+        for line in lines:
+            try:
+                json_st = json.loads(line.strip())
+            except:
+                json_st = "{'host':'','port':''}"
+            sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
+            if sub_domain.open_ports:
+                sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
+            else:
+                sub_domain.open_ports = str(json_st['port'])
+            sub_domain.save()
+    except:
+        print('Port File doesnt exist')
 
     # after subdomain discovery run aquatone for visual identification
     with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
@@ -122,10 +129,10 @@ def doScan(id, domain):
     task.scan_status = 2
     task.save()
     # notify on slack
-    scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
-    headers = {'content-type': 'application/json'}
-    for notif in notif_hook:
-        requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
+    # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
+    # headers = {'content-type': 'application/json'}
+    # for notif in notif_hook:
+    #     requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
