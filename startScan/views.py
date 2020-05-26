@@ -80,7 +80,7 @@ def doScan(id, domain):
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/with_protocol_domains.txt'
         output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
-        aquatone_command = 'cat {} | /app/tools/aquatone --threads 3 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+        aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
         os.system(aquatone_command)
 
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
