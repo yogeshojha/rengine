@@ -59,7 +59,9 @@ Scan history
                             {% for subs in subdomain.all %}
                             <tr>
                                 <td>{{subs.subdomain}}</td>
-                                <td>{{subs.open_ports}}</td>
+                                <td>
+                                    {{subs.open_ports}}
+                                </td>
                                 <td>
                                     {% if subs.takeover_possible %}
                                     <div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Possible"></div>
