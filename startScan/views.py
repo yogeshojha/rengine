@@ -94,7 +94,9 @@ def doScan(id, domain):
                 subdomain_proto = ScannedSubdomainWithProtocols()
                 subdomain_proto.host = sub
                 subdomain_proto.url = data['pages'][host]['url']
-                subdomain_proto.ip_address = data['pages'][host]['addrs']
+                list_ip = data['pages'][host]['addrs']
+                ip_string = ','.join(list_ip)
+                subdomain_proto.ip_address = ip_string
                 subdomain_proto.page_title = data['pages'][host]['pageTitle']
                 subdomain_proto.http_status = data['pages'][host]['status'][0:3]
                 subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']

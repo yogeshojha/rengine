@@ -26,15 +26,15 @@ Scan history
                 {% if scan_history.scan_status == 0 %}
                 <span class="shadow-none badge badge-danger">Failed</span>
                 {% elif scan_history.scan_status == 1 %}
-                    <h6>Scanning</h6>
-                    <div class="progress br-30" style="margin-top:2%">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
+                <h6>Scanning</h6>
+                <div class="progress br-30" style="margin-top:2%">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
                 {% elif scan_history.scan_status == 2 %}
-                    <h6>Scanning</h6>
-                    <div class="progress br-30" style="margin-top:2%">
-                        <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
+                <h6>Scanning</h6>
+                <div class="progress br-30" style="margin-top:2%">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
                 {% else %}
                 <h6>Scanning</h6>
                 <div class="progress br-30" style="margin-top:2%">
@@ -132,47 +132,48 @@ Scan history
                                                                 <img src='/media/{{domain.screenshot_path}}' class="modal-content"/>
                                                             </div>
                                                             <div class="tab-pane fade" id="profile{{domain.id}}" role="tabpanel" aria-labelledby="profile-tab">
-                                                                <p class="modal-content">{{domain.id}}Coming....</p></div>
+                                                                <p class="modal-content">{{domain.id}}Coming....</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </div>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endblock main_content %}
+        </div>
+        {% endblock main_content %}
 
 
-            {% block page_level_script %}
-            <script src="{% static 'startScan/js/custom_scan.js' %}"></script>
-            <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-            <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-            <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-            <script>
-            $(document).ready(function() {
-                $('table.multi-table').DataTable({
-                    "oLanguage": {
-                        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-                        "sInfo": "Showing page _PAGE_ of _PAGES_",
-                        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-                        "sSearchPlaceholder": "Search...",
-                        "sLengthMenu": "Results :  _MENU_",
-                    },
-                    "stripeClasses": [],
-                    "lengthMenu": [7, 10, 20, 50],
-                    "pageLength": 20,
-                    drawCallback: function () {
-                        $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-                        $('.dataTables_wrapper table').removeClass('table-striped');
-                    }
-                });
-            } );
-            </script>
-            {% endblock page_level_script %}.http_status
+        {% block page_level_script %}
+        <script src="{% static 'startScan/js/custom_scan.js' %}"></script>
+        <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+        <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+        <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+        <script>
+        $(document).ready(function() {
+            $('table.multi-table').DataTable({
+                "oLanguage": {
+                    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+                    "sInfo": "Showing page _PAGE_ of _PAGES_",
+                    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+                    "sSearchPlaceholder": "Search...",
+                    "sLengthMenu": "Results :  _MENU_",
+                },
+                "stripeClasses": [],
+                "lengthMenu": [7, 10, 20, 50],
+                "pageLength": 20,
+                drawCallback: function () {
+                    $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+                    $('.dataTables_wrapper table').removeClass('table-striped');
+                }
+            });
+        } );
+        </script>
+        {% endblock page_level_script %}.http_status
