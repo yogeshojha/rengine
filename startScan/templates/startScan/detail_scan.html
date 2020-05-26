@@ -108,7 +108,11 @@ Scan history
                                         </td>
                                         <td>{{domain.page_title|truncatechars:30}}</td>
                                         <td>
-                                            {{domain.technology_stack}}
+                                            {% with domain.technology_stack|split:"," as techs %}
+                                                {% for tech in techs %}
+                                                    <span class="badge badge-pills outline-badge-success">{{tech}}</span>
+                                                {% endfor %}
+                                            {% endwith %}
                                         </td>
                                         <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}">
                                             Details

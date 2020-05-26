@@ -80,7 +80,7 @@ def doScan(id, domain):
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/with_protocol_domains.txt'
         output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
-        aquatone_command = 'cat {} | /app/tools/aquatone -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+        aquatone_command = 'cat {} | /app/tools/aquatone --threads 3 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
         os.system(aquatone_command)
 
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
@@ -98,20 +98,24 @@ def doScan(id, domain):
             subdomain_proto.page_title = data['pages'][host]['pageTitle']
             subdomain_proto.http_status = data['pages'][host]['status'][0:3]
             subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-            subdomain_proto.technology_stack = data['pages'][host]['tags']
+            tech_list = []
+            if data['pages'][host]['tags'] is not None:
+                for tag in data['pages'][host]['tags']:
+                    tech_list.append(tag['text'])
+            tech_string = ','.join(tech_list)
+            subdomain_proto.technology_stack = tech_string
             subdomain_proto.save()
 
 
         task.scan_status = 2
     except:
         task.scan_status = 0
-    task.scan_status = 2
     task.save()
     # notify on slack
-    # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
-    # headers = {'content-type': 'application/json'}
-    # for notif in notif_hook:
-    #     requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
+    scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
+    headers = {'content-type': 'application/json'}
+    for notif in notif_hook:
+        requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
