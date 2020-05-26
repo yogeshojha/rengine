@@ -1,6 +1,6 @@
 {% extends 'base/base.html' %}
 {% load static %}
-
+{% load custom_tags %}
 {% block title %}
 Scan history
 {% endblock title %}
@@ -91,7 +91,13 @@ Scan history
                             {% for domain in alive.all %}
                             <tr class="text-center">
                                 <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
-                                <td>{{domain.ip_address}}</td>
+                                <td>
+                                    {% with domain.ip_address|split:"," as ips %}
+                                        {% for ip in ips %}
+                                            <a href="#" class="text-muted">{{ ip }}</a><br />
+                                        {% endfor %}
+                                    {% endwith %}
+                                </td>
                                 <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
                                     <span class="badge badge-pills badge-success">
                                         {% elif domain.http_status >= 300 and domain.http_status < 400 %}
@@ -101,7 +107,9 @@ Scan history
                                             {{domain.http_status}}</span>
                                         </td>
                                         <td>{{domain.page_title|truncatechars:30}}</td>
-                                        <td>na</td>
+                                        <td>
+                                            {{domain.technology_stack}}
+                                        </td>
                                         <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}">
                                             Details
                                         </button></td>
