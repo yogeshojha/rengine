@@ -93,9 +93,9 @@ Scan history
                                 <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
                                 <td>
                                     {% with domain.ip_address|split:"," as ips %}
-                                        {% for ip in ips %}
-                                            <a href="#" class="text-muted">{{ ip }}</a><br />
-                                        {% endfor %}
+                                    {% for ip in ips %}
+                                    <a href="#" class="text-muted">{{ ip }}</a><br />
+                                    {% endfor %}
                                     {% endwith %}
                                 </td>
                                 <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
@@ -109,12 +109,12 @@ Scan history
                                         <td>{{domain.page_title|truncatechars:30}}</td>
                                         <td>
                                             {% with domain.technology_stack|split:"," as techs %}
-                                                {% for tech in techs %}
-                                                    <span class="badge badge-pills outline-badge-success">{{tech}}</span>
-                                                {% endfor %}
+                                            {% for tech in techs %}
+                                            <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
+                                            {% endfor %}
                                             {% endwith %}
                                         </td>
-                                        <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}">
+                                        <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}" onclick="fetch_http_headers({{domain.id}}, '{{domain.http_header_path}}')">
                                             Details
                                         </button></td>
                                         <div class="modal fade" id="tabsModal{{domain.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
@@ -123,7 +123,7 @@ Scan history
                                                     <div class="modal-header">
                                                         <h5 class="modal-title" id="tabsModalLabel">More Details about <a href="{{domain.url}}" class="text-info">{{domain.url}}</a>
                                                             <br /><br />
-                                                            <span class="text-info">Page Title:</span> {{domain.page_title}}
+                                                            <span id='page-title' class="text-info">Page Title:</span> {{domain.page_title}}
                                                         </h5>
                                                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                             <span aria-hidden="true">&times;</span>
@@ -135,7 +135,7 @@ Scan history
                                                                 <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{domain.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
                                                             </li>
                                                             <li class="nav-item">
-                                                                <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile{{domain.id}}" role="tab" aria-controls="profile" aria-selected="false">Other Headers</a>
+                                                                <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{domain.id}}" role="tab" aria-controls="header" aria-selected="false">Headers</a>
                                                             </li>
                                                         </ul>
                                                         <div class="tab-content" id="myTabContent">
@@ -143,8 +143,12 @@ Scan history
                                                                 &nbsp;
                                                                 <img src='/media/{{domain.screenshot_path}}' class="modal-content"/>
                                                             </div>
-                                                            <div class="tab-pane fade" id="profile{{domain.id}}" role="tabpanel" aria-labelledby="profile-tab">
-                                                                <p class="modal-content">{{domain.id}}Coming....</p>
+                                                            <div class="tab-pane fade" id="header{{domain.id}}" role="tabpanel" aria-labelledby="header-tab">
+                                                                <p class="modal-content">
+                                                                    <pre id="txt-file-content">
+
+                                                                    </div>
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -164,10 +168,16 @@ Scan history
 
 
         {% block page_level_script %}
-        <script src="{% static 'startScan/js/custom_scan.js' %}"></script>
         <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
         <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
         <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+        <script type="text/javascript">
+        function fetch_http_headers(id, http_header_path){
+            fetch('/media/'+http_header_path)
+            .then(response => response.text())
+            .then(text => $("#tabsModal"+id+" #txt-file-content").text(text))
+        }
+        </script>
         <script>
         $(document).ready(function() {
             $('table.multi-table').DataTable({

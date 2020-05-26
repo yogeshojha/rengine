@@ -98,6 +98,7 @@ def doScan(id, domain):
             subdomain_proto.page_title = data['pages'][host]['pageTitle']
             subdomain_proto.http_status = data['pages'][host]['status'][0:3]
             subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+            subdomain_proto.http_header_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['headersPath']
             tech_list = []
             if data['pages'][host]['tags'] is not None:
                 for tag in data['pages'][host]['tags']:
@@ -105,8 +106,6 @@ def doScan(id, domain):
             tech_string = ','.join(tech_list)
             subdomain_proto.technology_stack = tech_string
             subdomain_proto.save()
-
-
         task.scan_status = 2
     except:
         task.scan_status = 0

@@ -29,6 +29,7 @@ class ScannedSubdomainWithProtocols(models.Model):
     http_status = models.IntegerField()
     technology_stack = models.CharField(max_length=1000)
     screenshot_path = models.CharField(max_length=500)
+    http_header_path = models.CharField(max_length=500)
 
 
     def __str__(self):
