@@ -61,11 +61,11 @@ Scan history
                                 <td>{{subs.subdomain}}</td>
                                 <td>
                                     {% if subs.open_ports == '' %}
-                                        <span class="badge badge-pills outline-badge-danger">Dead Subdomain</span>
+                                    <span class="badge badge-pills outline-badge-danger">Dead Subdomain</span>
                                     {% endif %}
                                     {% with subs.open_ports|split:"," as ports %}
                                     {% for port in ports %}
-                                        <span class="badge badge-pills {% if port == '80' or port == '8080' or port == '443' %}outline-badge-success {% else %} outline-badge-warning{% endif %}">{{port}}</span>
+                                    <span class="badge badge-pills {% if port == '80' or port == '8080' or port == '443' %}outline-badge-success {% else %} outline-badge-warning{% endif %}" style="margin:1%">{{port}}</span>
                                     {% endfor %}
                                     {% endwith %}
                                 </td>
@@ -123,9 +123,10 @@ Scan history
                                             {% endfor %}
                                             {% endwith %}
                                         </td>
-                                        <td><button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}" onclick="fetch_http_headers({{domain.id}}, '{{domain.http_header_path}}')">
-                                            Details
-                                        </button></td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}" onclick="fetch_http_headers({{domain.id}}, '{{domain.http_header_path}}', '{{domain.screenshot_path}}')">
+                                            Details</button>
+                                        </td>
                                         <div class="modal fade" id="tabsModal{{domain.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
                                             <div class="modal-dialog modal-lg" role="document">
                                                 <div class="modal-content">
@@ -150,13 +151,13 @@ Scan history
                                                         <div class="tab-content" id="myTabContent">
                                                             <div class="tab-pane fade show active" id="home{{domain.id}}" role="tabpanel" aria-labelledby="home-tab">
                                                                 &nbsp;
-                                                                <img src='/media/{{domain.screenshot_path}}' class="modal-content"/>
+                                                                <img id="screenshot{{domain.id}}" src="" alt="" class="modal-content">
+                                                                <!--<img src='/media/{{domain.screenshot_path}}' class="modal-content"/>-->
                                                             </div>
                                                             <div class="tab-pane fade" id="header{{domain.id}}" role="tabpanel" aria-labelledby="header-tab">
                                                                 <p class="modal-content">
                                                                     <pre id="txt-file-content">
-
-                                                                    </div>
+                                                                    </pre>
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -164,47 +165,49 @@ Scan history
                                                 </div>
                                             </div>
                                         </div>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </div>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-        {% endblock main_content %}
+    </div>
+    {% endblock main_content %}
 
 
-        {% block page_level_script %}
-        <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-        <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-        <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-        <script type="text/javascript">
-        function fetch_http_headers(id, http_header_path){
-            fetch('/media/'+http_header_path)
-            .then(response => response.text())
-            .then(text => $("#tabsModal"+id+" #txt-file-content").text(text))
+    {% block page_level_script %}
+    <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+    <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+    <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+    <script type="text/javascript">
+    function fetch_http_headers(id, http_header_path, screenshot_path){
+        $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
+        fetch('/media/'+http_header_path)
+        .then(response => response.text())
+        .then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
+    }
+</script>
+<script>
+$(document).ready(function() {
+    $('table.multi-table').DataTable({
+        "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+        },
+        "stripeClasses": [],
+        "lengthMenu": [7, 10, 20, 50],
+        "pageLength": 20,
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
         }
-        </script>
-        <script>
-        $(document).ready(function() {
-            $('table.multi-table').DataTable({
-                "oLanguage": {
-                    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-                    "sInfo": "Showing page _PAGE_ of _PAGES_",
-                    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-                    "sSearchPlaceholder": "Search...",
-                    "sLengthMenu": "Results :  _MENU_",
-                },
-                "stripeClasses": [],
-                "lengthMenu": [7, 10, 20, 50],
-                "pageLength": 20,
-                drawCallback: function () {
-                    $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-                    $('.dataTables_wrapper table').removeClass('table-striped');
-                }
-            });
-        } );
-        </script>
-        {% endblock page_level_script %}.http_status
+    });
+} );
+</script>
+{% endblock page_level_script %}.http_status
