@@ -129,10 +129,10 @@ def doScan(id, domain):
     task.scan_status = 2
     task.save()
     # notify on slack
-    # scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
-    # headers = {'content-type': 'application/json'}
-    # for notif in notif_hook:
-    #     requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
+    scan_status_msg = {'text': "reEngine finished scanning " + domain.domain_name}
+    headers = {'content-type': 'application/json'}
+    for notif in notif_hook:
+        requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
