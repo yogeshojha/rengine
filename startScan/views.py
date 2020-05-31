@@ -2,12 +2,12 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
-from .models import ScanHistory, ScannedHost
+from .models import ScanHistory, ScannedHost, ScanActivity
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 import threading
-from django.utils import timezone
+from django.utils import timezone, dateformat
 from datetime import datetime
 import requests
 import json
@@ -23,9 +23,11 @@ def scan_history(request):
 
 def detail_scan(request, id):
     subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
+    scan_activity = ScanActivity.objects.filter(scan_of__id=id)
     context = {'scan_history_active': 'true',
                 'subdomain':subdomain_details,
-                'scan_history':scan_history}
+                'scan_history':scan_history,
+                'scan_activity':scan_activity}
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
@@ -54,6 +56,13 @@ def start_scan_ui(request, id):
 
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
+    scan_activity = ScanActivity()
+    scan_activity.scan_of = task
+    scan_activity.title = "Scan Started for " + domain.domain_name
+    scan_activity.time = dateformat.format(timezone.now(), 'M d H:i')
+    scan_activity.status = 2
+    scan_activity.save()
+
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
     results_dir = '/app/tools/scan_results/'
     os.chdir(results_dir)

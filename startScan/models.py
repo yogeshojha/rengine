@@ -2,6 +2,7 @@ from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 
+
 class ScanHistory(models.Model):
     last_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
@@ -27,3 +28,13 @@ class ScannedHost(models.Model):
 
     def __str__(self):
         return str(self.scan_history.id)
+
+
+class ScanActivity(models.Model):
+    scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    title = models.CharField(max_length=1000)
+    time = models.CharField(max_length=100)
+    status = models.IntegerField()
+
+    def __str__(self):
+        return str(self.title)
