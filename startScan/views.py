@@ -93,8 +93,6 @@ def doScan(id, domain):
     naabu_command = 'cat {} | /app/tools/naabu -oJ -o {}'.format(subdomain_scan_results_file, port_results_file)
     os.system(naabu_command)
 
-
-
     # writing port results
     try:
         port_json_result = open(port_results_file, 'r')
@@ -168,6 +166,15 @@ def doScan(id, domain):
         tech_string = ','.join(tech_list)
         sub_domain.technology_stack = tech_string
         sub_domain.save()
+
+
+    # get endpoints from wayback engine
+    update_last_activity()
+    save_scan_activity(task, "Fetching endpoints", 1)
+    wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
+
+    wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
+    os.system(wayback_command)
 
     task.scan_status = 2
     task.save()

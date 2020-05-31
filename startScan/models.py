@@ -30,6 +30,16 @@ class ScannedHost(models.Model):
         return str(self.scan_history.id)
 
 
+class WayBackEndPoint(models.Model):
+    url_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    http_url = models.CharField(max_length=1000)
+    content_length = models.IntegerField(default=0)
+    page_title = models.CharField(max_length=1000)
+    http_status = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.page_title
+
 class ScanActivity(models.Model):
     scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     title = models.CharField(max_length=1000)
