@@ -211,7 +211,7 @@ Scan history
                     <tbody>
                         {% for endpoint in  endpoints%}
                             <tr>
-                                <td><a href="{{endpoint.http_url}}" target="_blank">{{endpoint.http_url}}</a></td>
+                                <td><a href="{{endpoint.http_url}}" target="_blank">{{endpoint.http_url|getpath}}</a></td>
                                 <td>
                                     {% if endpoint.http_status > 0 %}
                                         <span class="badge badge-pills {% if endpoint.http_status >= 200 and endpoint.http_status < 300 %}badge-success {% elif endpoint.http_status >= 300 and endpoint.http_status < 400 %} badge-warning {% elif endpoint.http_status >= 400 and endpoint.http_status < 500 %}badge-danger {% else %}badge-danger{% endif %}">{{endpoint.http_status}}</span>
