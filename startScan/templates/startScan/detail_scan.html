@@ -29,13 +29,14 @@ Scan history
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
                 <div class="table-responsive mb-4 mt-4">
-                    <table class="multi-table table table-hover" style="width:100%">
+                    <table class="multi-table table" style="width:100%">
                         <thead>
                             <tr>
                                 <th>Subdomain</th>
                                 <th>Ports</th>
                                 <th>Page Title</th>
                                 <th>Content Length</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -43,7 +44,7 @@ Scan history
                             <tr>
                                 <td><a href="{{subs.http_url}}" class="text-info" target="_blank">{{subs.subdomain}}</a>
                                     {% if subs.http_status > 0 %}
-                                        <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
+                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
                                     {% else %}
                                     {% endif %}
                                 </td>
@@ -59,6 +60,9 @@ Scan history
                                 </td>
                                 <td>{{subs.page_title}}</td>
                                 <td>{{subs.content_length}}</td>
+                                <td class="text-center">
+                                    <a href="#" class="btn btn-outline-primary">More</a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -86,6 +90,7 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 <script>
 $(document).ready(function() {
     $('table.multi-table').DataTable({
+        "order": [[ 3, "desc" ]],
         "oLanguage": {
             "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
             "sInfo": "Showing page _PAGE_ of _PAGES_",
