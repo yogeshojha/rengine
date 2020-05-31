@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
-from .models import ScanHistory, ScannedHost, ScannedSubdomainWithProtocols
+from .models import ScanHistory, ScannedHost
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
@@ -23,11 +23,9 @@ def scan_history(request):
 
 def detail_scan(request, id):
     subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
-    subdomain_aqua_details = ScannedSubdomainWithProtocols.objects.filter(host__scan_history__id=id)
     context = {'scan_history_active': 'true',
                 'subdomain':subdomain_details,
-                'scan_history':scan_history,
-                'alive': subdomain_aqua_details}
+                'scan_history':scan_history}
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
@@ -60,7 +58,7 @@ def doScan(id, domain):
     results_dir = '/app/tools/scan_results/'
     os.chdir(results_dir)
     try:
-        current_scan_dir = domain.domain_name+'__'+str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+        current_scan_dir = domain.domain_name+'_'+str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
     except:
         # do something here
@@ -68,16 +66,22 @@ def doScan(id, domain):
     # all scan happens here
     os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
 
-    scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
-    port_results_file = results_dir + current_scan_dir + '/ports.json'
+    subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 
-    with open(scan_results_file) as subdomain_list:
+    with open(subdomain_scan_results_file) as subdomain_list:
         for subdomain in subdomain_list:
             scanned = ScannedHost()
             scanned.subdomain = subdomain.rstrip('\n')
             scanned.scan_history = task
-            scanned.takeover_possible = False
             scanned.save()
+
+    # after all subdomain has been discovered run naabu to discover the ports
+    port_results_file = results_dir + current_scan_dir + '/ports.json'
+
+    naabu_command = 'cat {} | /app/tools/naabu -oJ -o {}'.format(subdomain_scan_results_file, port_results_file)
+    os.system(naabu_command)
+
+
 
     # writing port results
     try:
@@ -97,35 +101,38 @@ def doScan(id, domain):
     except:
         print('Port File doesnt exist')
 
+
+    
+
     # after subdomain discovery run aquatone for visual identification
-    with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-    output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
-    aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
-    os.system(aquatone_command)
-
-    aqua_json_path = output_aquatone_path + '/aquatone_session.json'
-    with open(aqua_json_path, 'r') as json_file:
-        data = json.load(json_file)
-
-    for host in data['pages']:
-        subdomain_details = ScannedHost.objects.get(scan_history__id=id, subdomain=data['pages'][host]['hostname'])
-        subdomain_proto = ScannedSubdomainWithProtocols()
-        subdomain_proto.host = subdomain_details
-        subdomain_proto.url = data['pages'][host]['url']
-        list_ip = data['pages'][host]['addrs']
-        ip_string = ','.join(list_ip)
-        subdomain_proto.ip_address = ip_string
-        subdomain_proto.page_title = data['pages'][host]['pageTitle']
-        subdomain_proto.http_status = data['pages'][host]['status'][0:3]
-        subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-        subdomain_proto.http_header_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['headersPath']
-        tech_list = []
-        if data['pages'][host]['tags'] is not None:
-            for tag in data['pages'][host]['tags']:
-                tech_list.append(tag['text'])
-        tech_string = ','.join(tech_list)
-        subdomain_proto.technology_stack = tech_string
-        subdomain_proto.save()
+    # with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
+    # output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
+    # aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+    # os.system(aquatone_command)
+    #
+    # aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+    # with open(aqua_json_path, 'r') as json_file:
+    #     data = json.load(json_file)
+    #
+    # for host in data['pages']:
+    #     subdomain_details = ScannedHost.objects.get(scan_history__id=id, subdomain=data['pages'][host]['hostname'])
+    #     subdomain_proto = ScannedSubdomainWithProtocols()
+    #     subdomain_proto.host = subdomain_details
+    #     subdomain_proto.url = data['pages'][host]['url']
+    #     list_ip = data['pages'][host]['addrs']
+    #     ip_string = ','.join(list_ip)
+    #     subdomain_proto.ip_address = ip_string
+    #     subdomain_proto.page_title = data['pages'][host]['pageTitle']
+    #     subdomain_proto.http_status = data['pages'][host]['status'][0:3]
+    #     subdomain_proto.screenshot_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+    #     subdomain_proto.http_header_path = current_scan_dir + '/aquascreenshots/' + data['pages'][host]['headersPath']
+    #     tech_list = []
+    #     if data['pages'][host]['tags'] is not None:
+    #         for tag in data['pages'][host]['tags']:
+    #             tech_list.append(tag['text'])
+    #     tech_string = ','.join(tech_list)
+    #     subdomain_proto.technology_stack = tech_string
+    #     subdomain_proto.save()
     task.scan_status = 2
     task.save()
     # notify on slack
