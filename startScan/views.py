@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse
-from .models import ScanHistory, ScannedHost, ScanActivity
+from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
@@ -25,11 +25,13 @@ def detail_scan(request, id):
     subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
     alive_count = ScannedHost.objects.filter(scan_history__id=id).exclude(http_status__exact=0).count()
     scan_activity = ScanActivity.objects.filter(scan_of__id=id)
+    endpoints = WayBackEndPoint.objects.filter(url_of__id=id)
     context = {'scan_history_active': 'true',
                 'subdomain':subdomain_details,
                 'scan_history':scan_history,
                 'scan_activity':scan_activity,
-                'alive_count':alive_count
+                'alive_count':alive_count,
+                'endpoints':endpoints
                 }
     return render(request, 'startScan/detail_scan.html', context)
 
@@ -173,8 +175,22 @@ def doScan(id, domain):
     save_scan_activity(task, "Fetching endpoints", 1)
     wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
 
-    wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
+    wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau -providers wayback | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
     os.system(wayback_command)
+
+    wayback_json_result = open(wayback_results_file, 'r')
+    lines = wayback_json_result.readlines()
+    for line in lines:
+        json_st = json.loads(line.strip())
+        endpoint = WayBackEndPoint()
+        endpoint.url_of = task
+        endpoint.http_url = json_st['url']
+        endpoint.content_length = json_st['content-length']
+        endpoint.http_status = json_st['status-code']
+        endpoint.page_title = json_st['title']
+        endpoint.save()
+
+
 
     task.scan_status = 2
     task.save()
