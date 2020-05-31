@@ -41,8 +41,11 @@ Scan history
                         <tbody>
                             {% for subs in subdomain.all %}
                             <tr>
-                                <td>{{subs.subdomain}}
-                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badhe-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
+                                <td><a href="{{subs.http_url}}" class="text-info" target="_blank">{{subs.subdomain}}</a>
+                                    {% if subs.http_status > 0 %}
+                                        <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
+                                    {% else %}
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if subs.open_ports == '' %}

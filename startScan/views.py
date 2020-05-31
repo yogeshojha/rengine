@@ -102,7 +102,24 @@ def doScan(id, domain):
         print('Port File doesnt exist')
 
 
-    
+    # once port scan is complete then run httpx, this has to run in background thread later
+    httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
+
+    httpx_command = 'cat {} | /app/tools/httpx -json -o {}'.format(subdomain_scan_results_file, httpx_results_file)
+    os.system(httpx_command)
+
+
+    # writing httpx results
+    httpx_json_result = open(httpx_results_file, 'r')
+    lines = httpx_json_result.readlines()
+    for line in lines:
+        json_st = json.loads(line.strip())
+        sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['url'].split("//")[-1])
+        sub_domain.http_url = json_st['url']
+        sub_domain.http_status = json_st['status-code']
+        sub_domain.page_title = json_st['title']
+        sub_domain.content_length = json_st['content-length']
+        sub_domain.save()
 
     # after subdomain discovery run aquatone for visual identification
     # with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
