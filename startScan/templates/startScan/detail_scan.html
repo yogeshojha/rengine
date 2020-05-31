@@ -63,26 +63,28 @@ Scan history
                                 <td>{{subs.page_title}}</td>
                                 <td>
                                     {% if subs.technology_stack %}
-                                        {% with subs.technology_stack|split:"," as techs %}
-                                        {% for tech in techs %}
-                                        <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
-                                        {% endfor %}
-                                        {% endwith %}
+                                    {% with subs.technology_stack|split:"," as techs %}
+                                    {% for tech in techs %}
+                                    <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
+                                    {% endfor %}
+                                    {% endwith %}
                                     {% else %}
                                     <span class="text-danger"></span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
+                                    {% if subs.http_status > 0 %}
                                     <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{subs.id}}" onclick="fetch_http_headers({{subs.id}}, '{{subs.http_header_path}}', '{{subs.screenshot_path}}')">Details</button>
+                                    {% endif %}
                                 </td>
                                 <div class="modal fade" id="tabsModal{{subs.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
                                     <div class="modal-dialog modal-lg" role="document">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title" id="tabsModalLabel">More Details about <a href="{{subs.http_url}}" class="text-info">{{subs.http_url}}</a>
+                                                <h6 class="modal-title" id="tabsModalLabel">More Details about <a href="{{subs.http_url}}" target="_blank" class="text-info">{{subs.http_url}}</a>
                                                     <br /><br />
                                                     <span id='page-title' class="text-info">Page Title:</span> {{subs.page_title}}
-                                                </h5>
+                                                </h6>
                                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                     <span aria-hidden="true">&times;</span>
                                                 </button>
@@ -93,19 +95,30 @@ Scan history
                                                         <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{subs.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
                                                     </li>
                                                     <li class="nav-item">
-                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">Headers</a>
+                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">Response Headers</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#ip{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">IP Addresses</a>
                                                     </li>
                                                 </ul>
                                                 <div class="tab-content" id="myTabContent">
                                                     <div class="tab-pane fade show active" id="home{{subs.id}}" role="tabpanel" aria-labelledby="home-tab">
                                                         &nbsp;
                                                         <img id="screenshot{{subs.id}}" src="" alt="" class="modal-content">
-                                                        <!--<img src='/media/{{domain.screenshot_path}}' class="modal-content"/>-->
                                                     </div>
                                                     <div class="tab-pane fade" id="header{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
                                                         <p class="modal-content">
                                                             <pre id="txt-file-content">
                                                             </pre>
+                                                        </p>
+                                                    </div>
+                                                    <div class="tab-pane fade" id="ip{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
+                                                        <p class="modal-content">
+                                                            {% with subs.ip_address|split:"," as ips %}
+                                                                {% for ip in ips %}
+                                                                <a href="#" class="text-muted">{{ ip }}</a><br />
+                                                                {% endfor %}
+                                                            {% endwith %}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -131,6 +144,11 @@ Scan history
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script type="text/javascript">
+// collapse sidebar
+$( document ).ready(function() {
+    $("html, body").addClass("sidebar-noneoverflow");
+    $("#container").addClass("sidebar-closed");
+});
 function fetch_http_headers(id, http_header_path, screenshot_path){
     $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
     fetch('/media/'+http_header_path)
