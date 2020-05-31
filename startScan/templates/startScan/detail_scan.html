@@ -22,46 +22,36 @@ Scan history
     <div class="row layout-top-spacing">
         <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
             <div class="widget-content widget-content-area br-6">
-                <h5 class="text-info">Scan Status</h5>
-                {% if scan_history.scan_status == 0 %}
-                <span class="shadow-none badge badge-danger">Failed</span>
-                {% elif scan_history.scan_status == 1 %}
-                <h6>Scanning</h6>
-                <div class="progress br-30" style="margin-top:2%">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                {% elif scan_history.scan_status == 2 %}
-                <h6>Scanning</h6>
-                <div class="progress br-30" style="margin-top:2%">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                {% else %}
-                <h6>Scanning</h6>
-                <div class="progress br-30" style="margin-top:2%">
-                    <div class="progress-bar bg-info" role="progressbar" style="width: 30%" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                {% endif %}
+                {# header widget #}
             </div>
         </div>
         <div class="col-xl-12 col-lg-12 col-sm-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
                 <div class="table-responsive mb-4 mt-4">
-                    <table class="multi-table table table-hover" style="width:100%">
+                    <table class="multi-table table" style="width:100%">
                         <thead>
                             <tr>
                                 <th>Subdomain</th>
                                 <th>Ports</th>
-                                <th class="text-center">Subdomain Takeover</th>
+                                <th>Content Length</th>
+                                <th>Page Title</th>
+                                <th>Technology</th>
+                                <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for subs in subdomain.all %}
                             <tr>
-                                <td>{{subs.subdomain}}</td>
+                                <td><a href="{{subs.http_url}}" class="text-info" target="_blank">{{subs.subdomain}}</a>
+                                    {% if subs.http_status > 0 %}
+                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
+                                    {% else %}
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if subs.open_ports == '' %}
-                                    <span class="badge badge-pills outline-badge-danger">Dead Subdomain</span>
+                                    <span class="text-danger">-</span>
                                     {% endif %}
                                     {% with subs.open_ports|split:"," as ports %}
                                     {% for port in ports %}
@@ -69,130 +59,107 @@ Scan history
                                     {% endfor %}
                                     {% endwith %}
                                 </td>
+                                <td>{{subs.content_length}}</td>
+                                <td>{{subs.page_title}}</td>
                                 <td>
-                                    {% if subs.takeover_possible %}
-                                    <div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Possible"></div>
-                                    {% else %}
-                                    <div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Not Possible"></div>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="widget-content widget-content-area br-6 layout-top-spacing">
-                <h5 class="text-info">Detailed Subdomains</h5>
-                <div class="table-responsive mb-4 mt-4">
-                    <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th class="text-center">Subdomain URL</th>
-                                <th class="text-center">IP Address</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Page Title</th>
-                                <th class="text-center">Technology Stack</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for domain in alive.all %}
-                            <tr class="text-center">
-                                <td><a href="{{domain.url}}" target="_blank" class="text-info">{{domain.url}}</a></td>
-                                <td>
-                                    {% with domain.ip_address|split:"," as ips %}
-                                    {% for ip in ips %}
-                                    <a href="#" class="text-muted">{{ ip }}</a><br />
+                                    {% if subs.technology_stack %}
+                                    {% with subs.technology_stack|split:"," as techs %}
+                                    {% for tech in techs %}
+                                    <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
                                     {% endfor %}
                                     {% endwith %}
+                                    {% else %}
+                                    <span class="text-danger"></span>
+                                    {% endif %}
                                 </td>
-                                <td>{% if domain.http_status >= 200 and domain.http_status < 300 %}
-                                    <span class="badge badge-pills badge-success">
-                                        {% elif domain.http_status >= 300 and domain.http_status < 400 %}
-                                        {% else %}
-                                        <span class="badge badge-pills badge-danger">
-                                            {% endif %}
-                                            {{domain.http_status}}</span>
-                                        </td>
-                                        <td>{{domain.page_title|truncatechars:30}}</td>
-                                        <td>
-                                            {% with domain.technology_stack|split:"," as techs %}
-                                            {% for tech in techs %}
-                                            <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
-                                            {% endfor %}
-                                            {% endwith %}
-                                        </td>
-                                        <td>
-                                            <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{domain.id}}" onclick="fetch_http_headers({{domain.id}}, '{{domain.http_header_path}}', '{{domain.screenshot_path}}')">
-                                            Details</button>
-                                        </td>
-                                        <div class="modal fade" id="tabsModal{{domain.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog modal-lg" role="document">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="tabsModalLabel">More Details about <a href="{{domain.url}}" class="text-info">{{domain.url}}</a>
-                                                            <br /><br />
-                                                            <span id='page-title' class="text-info">Page Title:</span> {{domain.page_title}}
-                                                        </h5>
-                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                            <span aria-hidden="true">&times;</span>
-                                                        </button>
+                                <td class="text-center">
+                                    {% if subs.http_status > 0 %}
+                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{subs.id}}" onclick="fetch_http_headers({{subs.id}}, '{{subs.http_header_path}}', '{{subs.screenshot_path}}')">Details</button>
+                                    {% endif %}
+                                </td>
+                                <div class="modal fade" id="tabsModal{{subs.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h6 class="modal-title" id="tabsModalLabel">More Details about <a href="{{subs.http_url}}" target="_blank" class="text-info">{{subs.http_url}}</a>
+                                                    <br /><br />
+                                                    <span id='page-title' class="text-info">Page Title:</span> {{subs.page_title}}
+                                                </h6>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                                                    <li class="nav-item">
+                                                        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{subs.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">Response Headers</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#ip{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">IP Addresses</a>
+                                                    </li>
+                                                </ul>
+                                                <div class="tab-content" id="myTabContent">
+                                                    <div class="tab-pane fade show active" id="home{{subs.id}}" role="tabpanel" aria-labelledby="home-tab">
+                                                        &nbsp;
+                                                        <img id="screenshot{{subs.id}}" src="" alt="" class="modal-content">
                                                     </div>
-                                                    <div class="modal-body">
-                                                        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                                                            <li class="nav-item">
-                                                                <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{domain.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
-                                                            </li>
-                                                            <li class="nav-item">
-                                                                <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{domain.id}}" role="tab" aria-controls="header" aria-selected="false">Headers</a>
-                                                            </li>
-                                                        </ul>
-                                                        <div class="tab-content" id="myTabContent">
-                                                            <div class="tab-pane fade show active" id="home{{domain.id}}" role="tabpanel" aria-labelledby="home-tab">
-                                                                &nbsp;
-                                                                <img id="screenshot{{domain.id}}" src="" alt="" class="modal-content">
-                                                                <!--<img src='/media/{{domain.screenshot_path}}' class="modal-content"/>-->
-                                                            </div>
-                                                            <div class="tab-pane fade" id="header{{domain.id}}" role="tabpanel" aria-labelledby="header-tab">
-                                                                <p class="modal-content">
-                                                                    <pre id="txt-file-content">
-                                                                    </pre>
-                                                                </p>
-                                                            </div>
-                                                        </div>
+                                                    <div class="tab-pane fade" id="header{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
+                                                        <p class="modal-content">
+                                                            <pre id="txt-file-content">
+                                                            </pre>
+                                                        </p>
+                                                    </div>
+                                                    <div class="tab-pane fade" id="ip{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
+                                                        <p class="modal-content">
+                                                            {% with subs.ip_address|split:"," as ips %}
+                                                                {% for ip in ips %}
+                                                                <a href="#" class="text-muted">{{ ip }}</a><br />
+                                                                {% endfor %}
+                                                            {% endwith %}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                </div>
+                            </div>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    {% endblock main_content %}
+</div>
+</div>
+{% endblock main_content %}
 
 
-    {% block page_level_script %}
-    <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-    <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-    <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-    <script type="text/javascript">
-    function fetch_http_headers(id, http_header_path, screenshot_path){
-        $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
-        fetch('/media/'+http_header_path)
-        .then(response => response.text())
-        .then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
-    }
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script type="text/javascript">
+// collapse sidebar
+$( document ).ready(function() {
+    $("html, body").addClass("sidebar-noneoverflow");
+    $("#container").addClass("sidebar-closed");
+});
+function fetch_http_headers(id, http_header_path, screenshot_path){
+    $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
+    fetch('/media/'+http_header_path)
+    .then(response => response.text())
+    .then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
+}
 </script>
 <script>
 $(document).ready(function() {
     $('table.multi-table').DataTable({
+        "order": [[ 2, "desc" ]],
         "oLanguage": {
             "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
             "sInfo": "Showing page _PAGE_ of _PAGES_",
