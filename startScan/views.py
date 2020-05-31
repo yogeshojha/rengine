@@ -23,11 +23,14 @@ def scan_history(request):
 
 def detail_scan(request, id):
     subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
+    alive_count = ScannedHost.objects.filter(scan_history__id=id).exclude(http_status__exact=0).count()
     scan_activity = ScanActivity.objects.filter(scan_of__id=id)
     context = {'scan_history_active': 'true',
                 'subdomain':subdomain_details,
                 'scan_history':scan_history,
-                'scan_activity':scan_activity}
+                'scan_activity':scan_activity,
+                'alive_count':alive_count
+                }
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
@@ -176,7 +179,7 @@ def doScan(id, domain):
         requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
     update_last_activity()
     save_scan_activity(task, "Scan Completed", 2)
-    
+
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
     return JsonResponse({'is_done':task.is_done, result:task.result})
