@@ -20,6 +20,9 @@ class ScannedHost(models.Model):
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_url = models.CharField(max_length=1000)
+    screenshot_path = models.CharField(max_length=1000, null=True)
+    http_header_path = models.CharField(max_length=1000, null=True)
+    technology_stack = models.CharField(max_length=1500, null=True)
 
     def __str__(self):
         return str(self.scan_history.id)

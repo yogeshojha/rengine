@@ -34,8 +34,9 @@ Scan history
                             <tr>
                                 <th>Subdomain</th>
                                 <th>Ports</th>
-                                <th>Page Title</th>
                                 <th>Content Length</th>
+                                <th>Page Title</th>
+                                <th>Technology</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
@@ -58,19 +59,69 @@ Scan history
                                     {% endfor %}
                                     {% endwith %}
                                 </td>
-                                <td>{{subs.page_title}}</td>
                                 <td>{{subs.content_length}}</td>
-                                <td class="text-center">
-                                    <a href="#" class="btn btn-outline-primary">More</a>
+                                <td>{{subs.page_title}}</td>
+                                <td>
+                                    {% if subs.technology_stack %}
+                                        {% with subs.technology_stack|split:"," as techs %}
+                                        {% for tech in techs %}
+                                        <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
+                                        {% endfor %}
+                                        {% endwith %}
+                                    {% else %}
+                                    <span class="text-danger">-</span>
+                                    {% endif %}
                                 </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{subs.id}}" onclick="fetch_http_headers({{subs.id}}, '{{subs.http_header_path}}', '{{subs.screenshot_path}}')">Details</button>
+                                </td>
+                                <div class="modal fade" id="tabsModal{{subs.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="tabsModalLabel">More Details about <a href="{{subs.http_url}}" class="text-info">{{subs.http_url}}</a>
+                                                    <br /><br />
+                                                    <span id='page-title' class="text-info">Page Title:</span> {{subs.page_title}}
+                                                </h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                                                    <li class="nav-item">
+                                                        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{domain.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
+                                                    </li>
+                                                    <li class="nav-item">
+                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{domain.id}}" role="tab" aria-controls="header" aria-selected="false">Headers</a>
+                                                    </li>
+                                                </ul>
+                                                <div class="tab-content" id="myTabContent">
+                                                    <div class="tab-pane fade show active" id="home{{domain.id}}" role="tabpanel" aria-labelledby="home-tab">
+                                                        &nbsp;
+                                                        <img id="screenshot{{domain.id}}" src="" alt="" class="modal-content">
+                                                        <!--<img src='/media/{{domain.screenshot_path}}' class="modal-content"/>-->
+                                                    </div>
+                                                    <div class="tab-pane fade" id="header{{domain.id}}" role="tabpanel" aria-labelledby="header-tab">
+                                                        <p class="modal-content">
+                                                            <pre id="txt-file-content">
+                                                            </pre>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock main_content %}
 
@@ -90,7 +141,7 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 <script>
 $(document).ready(function() {
     $('table.multi-table').DataTable({
-        "order": [[ 3, "desc" ]],
+        "order": [[ 2, "desc" ]],
         "oLanguage": {
             "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
             "sInfo": "Showing page _PAGE_ of _PAGES_",
