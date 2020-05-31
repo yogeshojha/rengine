@@ -40,9 +40,9 @@ Scan history
                                     <div class="t-text">
                                         <b>{{activity.title}}</b>
                                         <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                            {% if activity.status == 0 %}Failed
-                                            {% elif activity.status == 1 %}Inprogress
-                                            {% elif activity.status == 2 %}Finised
+                                            {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                            {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                            {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
                                             {% endif %}
                                         </span>
                                         <p class="t-time">{{activity.time}}</p>
