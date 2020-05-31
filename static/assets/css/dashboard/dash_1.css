@@ -415,7 +415,7 @@
 }
 .widget-activity-four .mt-container {
     position: relative;
-    height: 272px;
+    height: 110px;
     overflow: auto;
     padding-right: 12px;
 }
@@ -436,7 +436,7 @@
     height: 8px;
     top: 5px;
     left: 5px;
-    transform: translateX(-50%); 
+    transform: translateX(-50%);
     border-color: #e0e6ed;
     background: #bfc9d4;
     z-index: 1;
@@ -536,7 +536,7 @@
     min-width: 80px;
     max-width: 80px;
     font-size: 13px;
-    font-weight: 600; 
+    font-weight: 600;
     color: #acb0c3;
     letter-spacing: 1px;
 }
@@ -790,7 +790,7 @@
     margin-left: 10px;
 }
 .widget-table-three .table > thead > tr > th:last-child .th-content {
-    text-align: right; 
+    text-align: right;
     margin-right: 10px;
 }
 .widget-table-three .table > thead > tr > th {

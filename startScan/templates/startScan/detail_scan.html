@@ -10,6 +10,7 @@ Scan history
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
+<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 <link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
@@ -20,11 +21,73 @@ Scan history
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
-            <div class="widget-content widget-content-area br-6">
-                {# header widget #}
+        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+
+            <div class="widget widget-activity-four">
+                <div class="widget-heading">
+                    <h5 class="">Recent Activities</h5>
+                </div>
+
+                <div class="widget-content">
+
+                    <div class="mt-container mx-auto">
+                        <div class="timeline-line">
+                            {% for activity in scan_activity %}
+                            <div class="item-timeline {% if activity.status == 0 %}timeline-success {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+                                <div class="t-dot" data-original-title="" title="">
+                                </div>
+                                <div class="t-text">
+                                    <b>{{activity.title}}</b>
+                                    <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                                        {% endif %}
+                                    </span>
+                                    <p class="t-time">{{activity.time}}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+            <div class="row widget-statistic">
+                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
+                    <div class="widget widget-one_hybrid">
+                        <div class="widget-heading">
+                            <div class="w-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            </div>
+                            <br>
+                            <h2 class="text-warning">{{subdomain.count}}</h2>
+                            <h6 class="">Subdomains Discovered</h6>
+                        </div>
+                        <div class="widget-content">
+                            Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
+                    <div class="widget widget-one_hybrid">
+                        <div class="widget-heading">
+                            <div class="w-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            </div>
+                            <br>
+                            <h2 class="text-warning">600</h2>
+                            <h6 class="">Endpoints</h6>
+                        </div>
+                        <div class="widget-content">
+                            &nbsp;
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-xl-12 col-lg-12 col-sm-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
@@ -45,7 +108,7 @@ Scan history
                             <tr>
                                 <td><a href="{{subs.http_url}}" class="text-info" target="_blank">{{subs.subdomain}}</a>
                                     {% if subs.http_status > 0 %}
-                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-muted{% endif %} float-right">{{subs.http_status}}</span>
+                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-danger{% endif %} float-right">{{subs.http_status}}</span>
                                     {% else %}
                                     {% endif %}
                                 </td>
@@ -115,9 +178,9 @@ Scan history
                                                     <div class="tab-pane fade" id="ip{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
                                                         <p class="modal-content">
                                                             {% with subs.ip_address|split:"," as ips %}
-                                                                {% for ip in ips %}
-                                                                <a href="#" class="text-muted">{{ ip }}</a><br />
-                                                                {% endfor %}
+                                                            {% for ip in ips %}
+                                                            <a href="#" class="text-muted">{{ ip }}</a><br />
+                                                            {% endfor %}
                                                             {% endwith %}
                                                         </p>
                                                     </div>
@@ -143,6 +206,7 @@ Scan history
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script type="text/javascript">
 // collapse sidebar
 $( document ).ready(function() {
