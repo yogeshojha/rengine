@@ -77,7 +77,7 @@ Scan history
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
                             </div>
                             <br>
-                            <h2 class="text-warning">600</h2>
+                            <h2 class="text-warning">{{endpoints.count}}</h2>
                             <h6 class="">Endpoints</h6>
                         </div>
                         <div class="widget-content">
@@ -87,7 +87,6 @@ Scan history
                 </div>
             </div>
         </div>
-
         <div class="col-xl-12 col-lg-12 col-sm-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
@@ -191,6 +190,41 @@ Scan history
                                 </div>
                             </div>
                         </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+        <div class="widget-content widget-content-area br-6 layout-top-spacing">
+            <h5 class="text-info">Endpoints</h5>
+            <div class="table-responsive mb-4 mt-4">
+                <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th class="">Endpoint</th>
+                            <th class="text-center">HTTP Status</th>
+                            <th class="text-center">Content Length</th>
+                            <th class="">Page Title</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for endpoint in  endpoints%}
+                            <tr>
+                                <td>
+                                    <a href="{{endpoint.http_url}}" target="_blank">{{endpoint.http_url|getpath|truncatechars:200}}</a>
+                                    <p style="display:none">
+                                        {{endpoint.http_url}}
+                                    </p>
+                                </td>
+                                <td class="text-center">
+                                    {% if endpoint.http_status > 0 %}
+                                        <span class="badge badge-pills {% if endpoint.http_status >= 200 and endpoint.http_status < 300 %}badge-success {% elif endpoint.http_status >= 300 and endpoint.http_status < 400 %} badge-warning {% elif endpoint.http_status >= 400 and endpoint.http_status < 500 %}badge-danger {% else %}badge-danger{% endif %}">{{endpoint.http_status}}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{endpoint.content_length}}</td>
+                                <td>{{endpoint.page_title}}</td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                 </table>
