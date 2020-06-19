@@ -24,20 +24,13 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 def detail_scan(request, id):
-    subdomain_details = ScannedHost.objects.filter(scan_history__id=id)
-    # alive_count = ScannedHost.objects.filter(scan_history__id=id).exclude(http_status__exact=0).count()
-    # scan_activity = ScanActivity.objects.filter(scan_of__id=id)
-    # endpoints = WayBackEndPoint.objects.filter(url_of__id=id)
-    # context = {'scan_history_active': 'true',
-    #             'subdomain':subdomain_details,
-    #             'scan_history':scan_history,
-    #             'scan_activity':scan_activity,
-    #             'alive_count':alive_count,
-    #             'endpoints':endpoints
-    #             }
-    context = {
-                'scan_history_active': 'true',
-    }
+    alive_count = ScannedHost.objects.filter(scan_history__id=id).exclude(http_status__exact=0).count()
+    scan_activity = ScanActivity.objects.filter(scan_of__id=id)
+    context = {'scan_history_active': 'true',
+                'scan_history':scan_history,
+                'scan_activity':scan_activity,
+                'alive_count':alive_count,
+                }
     return render(request, 'startScan/detail_scan.html', context)
 
 def start_scan_ui(request, id):
