@@ -12,8 +12,6 @@ from datetime import datetime
 import requests
 import json
 import os
-from rest_framework import viewsets
-from .serializers import ScannedHostSerializer
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -24,12 +22,15 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 def detail_scan(request, id):
+    subdomain_count = ScannedHost.objects.filter(scan_history__id=id).count()
     alive_count = ScannedHost.objects.filter(scan_history__id=id).exclude(http_status__exact=0).count()
     scan_activity = ScanActivity.objects.filter(scan_of__id=id)
     context = {'scan_history_active': 'true',
                 'scan_history':scan_history,
                 'scan_activity':scan_activity,
                 'alive_count':alive_count,
+                'scan_history_id': id,
+                'subdomain_count':subdomain_count,
                 }
     return render(request, 'startScan/detail_scan.html', context)
 
@@ -218,8 +219,3 @@ def update_last_activity():
     last_activity = ScanActivity.objects.latest('id')
     last_activity.status = 2
     last_activity.save()
-
-
-class ScannedHostViewSet(viewsets.ModelViewSet):
-    serializer_class = ScannedHostSerializer
-    queryset = ScannedHost.objects.all()
