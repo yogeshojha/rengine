@@ -102,23 +102,24 @@ Scan history
                 <th>Technology</th>
               </tr>
             </thead>
-        </table>
-      </div>
+          </table>
+        </div>
 
-    </div>
-    <div class="widget-content widget-content-area br-6 layout-top-spacing">
-      <h5 class="text-info">Endpoints</h5>
-      <div class="table-responsive mb-4 mt-4">
-        <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
-          <thead>
-            <tr>
-              <th class="">Endpoint</th>
-              <th class="text-center">HTTP Status</th>
-              <th class="text-center">Content Length</th>
-              <th class="">Page Title</th>
-            </tr>
-          </thead>
-        </table>
+      </div>
+      <div class="widget-content widget-content-area br-6 layout-top-spacing">
+        <h5 class="text-info">Endpoints</h5>
+        <div class="table-responsive mb-4 mt-4">
+          <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
+            <thead>
+              <tr>
+                <th class="">Endpoint</th>
+                <th class="text-center">HTTP Status</th>
+                <th class="text-center">Content Length</th>
+                <th class="">Page Title</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -156,11 +157,11 @@ $(document).ready(function() {
       "sLengthMenu": "Results :  _MENU_",
     },
     "stripeClasses": [],
-    "lengthMenu": [7, 10, 20, 50],
-    "pageLength": 10,
+    "lengthMenu": [30, 60, 90, 100],
+    "pageLength": 30,
     'serverSide': true,
     "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-     "order": [[ 3, "desc" ]],
+    "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'subdomain'},
       {'data': 'http_status'},
@@ -191,6 +192,27 @@ $(document).ready(function() {
         },
         "targets": 1
       },
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          return span_values(data, "info");
+        },
+        "targets": 2
+      },
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          if (data){
+            return span_values(data, "info");
+          }
+          else{
+            return "";
+          }
+        },
+        "targets": 5
+      },
     ],
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
@@ -198,5 +220,16 @@ $(document).ready(function() {
     }
   });
 });
+
+// span values function will seperate the values by comma and put badge around it
+function span_values(data, color)
+{
+  var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+  var data_with_span ="";
+  data.split(/\s*,\s*/).forEach(function(split_vals) {
+    data_with_span+=badge + split_vals + "</span>";
+  });
+  return data_with_span;
+}
 </script>
 {% endblock page_level_script %}.http_status
