@@ -109,7 +109,7 @@ Scan history
       <div class="widget-content widget-content-area br-6 layout-top-spacing">
         <h5 class="text-info">Endpoints</h5>
         <div class="table-responsive mb-4 mt-4">
-          <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
+          <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="endpoint_results">
             <thead>
               <tr>
                 <th class="">Endpoint</th>
@@ -212,6 +212,57 @@ $(document).ready(function() {
           }
         },
         "targets": 5
+      },
+    ],
+    drawCallback: function () {
+      $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+      $('.dataTables_wrapper table').removeClass('table-striped');
+    }
+  });
+});
+
+$(document).ready(function() {
+  $('#endpoint_results').DataTable({
+    "oLanguage": {
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearchPlaceholder": "Search...",
+      "sLengthMenu": "Results :  _MENU_",
+    },
+    "stripeClasses": [],
+    "lengthMenu": [30, 60, 90, 100],
+    "pageLength": 30,
+    'serverSide': true,
+    "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
+    "order": [[ 3, "desc" ]],
+    "columns": [
+      {'data': 'http_url'},
+      {'data': 'http_status'},
+      {'data': 'content_length'},
+      {'data': 'page_title'},
+    ],
+    "columnDefs": [
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          if (data >= 200 && data < 300) {
+            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+          }
+          else if (data >= 300 && data < 400) {
+            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+          }
+          else if (data == 0){
+            // datatable throws error when no data is returned
+            return "";
+          }
+          else{
+            return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+          }
+
+        },
+        "targets": 1
       },
     ],
     drawCallback: function () {
