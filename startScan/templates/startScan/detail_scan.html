@@ -146,7 +146,7 @@ $(document).ready(function() {
     "lengthMenu": [7, 10, 20, 50],
     "pageLength": 10,
     'serverSide': true,
-    "ajax": '/start_scan/api/scanHistory/2/scan_list/?format=datatables',
+    "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
     "columns": [
       {'data': 'subdomain'},
       {'data': 'open_ports'},
