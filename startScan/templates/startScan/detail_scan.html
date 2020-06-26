@@ -104,12 +104,11 @@ Scan history
                 <th>Content Length</th>
                 <th>Page Title</th>
                 <th>Technology</th>
-                <th>Action</th>
+                <th>Screenshot</th>
               </tr>
             </thead>
           </table>
         </div>
-
       </div>
       <div class="widget-content widget-content-area br-6 layout-top-spacing">
         <h5 class="text-info">Endpoints</h5>
@@ -138,6 +137,7 @@ Scan history
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+
 <script type="text/javascript">
 // collapse sidebar
 $( document ).ready(function() {
@@ -153,7 +153,7 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 </script>
 <script>
 $(document).ready(function() {
-  $('#subdomain_scan_results').DataTable({
+  var scan_history_table = $('#subdomain_scan_results').DataTable({
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
@@ -174,7 +174,7 @@ $(document).ready(function() {
       {'data': 'content_length'},
       {'data': 'page_title'},
       {'data': 'technology_stack'},
-      {'data': 'page_title'},
+      {'data': 'screenshot_path'},
     ],
     "columnDefs": [
       {
@@ -208,8 +208,6 @@ $(document).ready(function() {
       },
       {
         "render": function ( data, type, row ) {
-          // display badge based on http status
-          // green for http status 2XX, orange for 3XX and warning for everything else
           if (data){
             return span_values(data, "info");
           }
@@ -219,7 +217,19 @@ $(document).ready(function() {
         },
         "targets": 5
       },
+      {
+        "render": function ( data, type, row ) {
+          if (data){
+            return "<a href=\"/media/"+data+"\"><img src=\"/media/"+data+"\" class=\"img-fluid mb-4 mt-4\"></a>";
+          }
+          else{
+            return "";
+          }
+        },
+        "targets": 6
+      },
     ],
+
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.dataTables_wrapper table').removeClass('table-striped');
@@ -286,6 +296,7 @@ $(document).ready(function() {
     }
   });
 });
+
 
 // span values function will seperate the values by comma and put badge around it
 function span_values(data, color)
