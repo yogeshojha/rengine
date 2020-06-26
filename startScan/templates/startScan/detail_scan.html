@@ -107,21 +107,6 @@ Scan history
         </div>
 
       </div>
-      <div class="widget-content widget-content-area br-6 layout-top-spacing">
-        <h5 class="text-info">Endpoints</h5>
-        <div class="table-responsive mb-4 mt-4">
-          <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
-            <thead>
-              <tr>
-                <th class="">Endpoint</th>
-                <th class="text-center">HTTP Status</th>
-                <th class="text-center">Content Length</th>
-                <th class="">Page Title</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -133,6 +118,7 @@ Scan history
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script type="text/javascript">
 // collapse sidebar
 $( document ).ready(function() {
@@ -149,7 +135,6 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 <script>
 $(document).ready(function() {
   $('#subdomain_scan_results').DataTable({
-    "order": [[ 3, "desc" ]],
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
@@ -159,33 +144,17 @@ $(document).ready(function() {
     },
     "stripeClasses": [],
     "lengthMenu": [7, 10, 20, 50],
-    "pageLength": 20,
+    "pageLength": 10,
     'serverSide': true,
-    "ajax": '/api/scannedHost/{{scan_history_id}}/?format=datatables',
+    "ajax": '/start_scan/api/scanHistory/2/scan_list/?format=datatables',
     "columns": [
       {'data': 'subdomain'},
-      {'data': 'http_status'},
       {'data': 'open_ports'},
+      {'data': 'http_status'},
       {'data': 'content_length'},
       {'data': 'page_title'},
-      {'data': 'technology_stack'},
       {'data': 'http_url'},
-    ],
-    "columnDefs": [
-      {
-        "render": function ( data, type, row ) {
-          // display badge only when http status is valid > 0
-          if (data > 0) {
-            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-          }
-          else{
-            // datatable throws error when no data is returned
-            return "";
-          }
-
-        },
-        "targets": 1
-      },
+      {'data': 'technology_stack'},
     ],
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })

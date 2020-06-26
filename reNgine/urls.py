@@ -11,7 +11,4 @@ urlpatterns = [
     path('start_scan/', include('startScan.urls')),
     path('notification/', include('notification.urls')),
 
-    # REST-framework
-    path('api/scannedHost/', include('startScan.api.urls', 'scan_host_api')),
-
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
