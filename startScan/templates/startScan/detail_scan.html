@@ -77,7 +77,7 @@ Scan history
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
               </div>
               <br>
-              <h2 class="text-warning">{{endpoints.count}}</h2>
+              <h2 class="text-warning">{{endpoint_count}}</h2>
               <h6 class="">Endpoints</h6>
             </div>
             <div class="widget-content">
@@ -91,21 +91,34 @@ Scan history
       <div class="widget-content widget-content-area br-6">
         <h5 class="text-info">Subdomains Discovered</h5>
         <div class="table-responsive mb-4 mt-4">
-          <table class="multi-table table" id="subdomain_scan_results" style="width:100%">
+          <table id="subdomain_scan_results" class="multi-table table" style="width:100%">
             <thead>
               <tr>
                 <th>Subdomain</th>
-                <th>HTTP Status</th>
+                <th>Status</th>
                 <th>Ports</th>
                 <th>Content Length</th>
                 <th>Page Title</th>
                 <th>Technology</th>
-                <th class="text-center">Action</th>
               </tr>
             </thead>
-          </table>
-        </div>
+        </table>
+      </div>
 
+    </div>
+    <div class="widget-content widget-content-area br-6 layout-top-spacing">
+      <h5 class="text-info">Endpoints</h5>
+      <div class="table-responsive mb-4 mt-4">
+        <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
+          <thead>
+            <tr>
+              <th class="">Endpoint</th>
+              <th class="text-center">HTTP Status</th>
+              <th class="text-center">Content Length</th>
+              <th class="">Page Title</th>
+            </tr>
+          </thead>
+        </table>
       </div>
     </div>
   </div>
@@ -147,20 +160,43 @@ $(document).ready(function() {
     "pageLength": 10,
     'serverSide': true,
     "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+     "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'subdomain'},
-      {'data': 'open_ports'},
       {'data': 'http_status'},
+      {'data': 'open_ports'},
       {'data': 'content_length'},
       {'data': 'page_title'},
-      {'data': 'http_url'},
       {'data': 'technology_stack'},
+    ],
+    "columnDefs": [
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          if (data >= 200 && data < 300) {
+            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+          }
+          else if (data >= 300 && data < 400) {
+            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+          }
+          else if (data == 0){
+            // datatable throws error when no data is returned
+            return "";
+          }
+          else{
+            return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+          }
+
+        },
+        "targets": 1
+      },
     ],
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.dataTables_wrapper table').removeClass('table-striped');
     }
   });
-} );
+});
 </script>
 {% endblock page_level_script %}.http_status
