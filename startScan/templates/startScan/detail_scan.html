@@ -59,7 +59,11 @@ Scan history
           <div class="widget widget-one_hybrid">
             <div class="widget-heading">
               <div class="w-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
               </div>
               <br>
               <h2 class="text-warning">{{subdomain_count}}</h2>
@@ -100,6 +104,7 @@ Scan history
                 <th>Content Length</th>
                 <th>Page Title</th>
                 <th>Technology</th>
+                <th>Action</th>
               </tr>
             </thead>
           </table>
@@ -113,9 +118,9 @@ Scan history
             <thead>
               <tr>
                 <th class="">Endpoint</th>
-                <th class="text-center">HTTP Status</th>
-                <th class="text-center">Content Length</th>
-                <th class="">Page Title</th>
+                <th>HTTP Status</th>
+                <th>Content Length</th>
+                <th>Page Title</th>
               </tr>
             </thead>
           </table>
@@ -169,6 +174,7 @@ $(document).ready(function() {
       {'data': 'content_length'},
       {'data': 'page_title'},
       {'data': 'technology_stack'},
+      {'data': 'page_title'},
     ],
     "columnDefs": [
       {
@@ -235,7 +241,7 @@ $(document).ready(function() {
     "pageLength": 30,
     'serverSide': true,
     "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
-    "order": [[ 3, "desc" ]],
+    "order": [[ 2, "desc" ]],
     "columns": [
       {'data': 'http_url'},
       {'data': 'http_status'},
@@ -243,6 +249,15 @@ $(document).ready(function() {
       {'data': 'page_title'},
     ],
     "columnDefs": [
+      {
+        "render": function ( data, type, row ) {
+          // in the endpoint section, there is no point of displaying fully qualified url
+          // so display only the endpoint and make a hyperlink
+          url = getParsedURL(data);
+          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+        },
+        "targets": 0
+      },
       {
         "render": function ( data, type, row ) {
           // display badge based on http status
@@ -282,5 +297,12 @@ function span_values(data, color)
   });
   return data_with_span;
 }
+
+// seperate hostname and url
+// Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
+function getParsedURL(url) {
+  var parser = new URL(url);
+  return parser.pathname+parser.search;
+};
 </script>
 {% endblock page_level_script %}.http_status
