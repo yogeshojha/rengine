@@ -9,6 +9,7 @@
 ![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
 
 > A simple recon engine for pentest
+> Please note, this project is in alpha stage. Some of the modules may not work.
 
 ## Install
 
@@ -43,7 +44,17 @@ docker-compose up
 
 Contributions, issues and feature requests are welcome!
 
-Feel free to check [issues page](https://github.com/yogeshojha/rengine/issues). You can also take a look at the [contributing guide](Feel Free to contribute).
+Feel free to check [issues page](https://github.com/yogeshojha/rengine/issues).
+
+# Thanks
+
+reNgine is just a pipeline of recon. reNgine would not have been possible without the following people/organization.
+
+Amass: [OWASP](https://github.com/OWASP/)
+httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
+Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
+gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+
 
 ## Show your support
 
