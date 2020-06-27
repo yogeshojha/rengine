@@ -46,7 +46,7 @@ Contributions, issues and feature requests are welcome!
 
 Feel free to check [issues page](https://github.com/yogeshojha/rengine/issues).
 
-# Thanks
+## Thanks
 
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following people/organization.
 
