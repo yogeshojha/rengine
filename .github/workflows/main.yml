@@ -3,7 +3,7 @@ name: Build Docker Image for reNgine
 on: [push]
 
 env:
-  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/rengine
+  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/web
 
 jobs:
 
@@ -18,6 +18,9 @@ jobs:
         run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull images
+        run: |
+          docker pull ${{ env.WEB_IMAGE }} || true    
       - name: Build images
         run: |
           docker-compose -f docker-compose.yml build
