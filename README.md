@@ -2,15 +2,24 @@
 ![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yogeshojha/rengine/blob/master/LICENSE)
 [![Twitter: ojhayogesh11](https://img.shields.io/twitter/follow/ojhayogesh11.svg?style=social)](https://twitter.com/ojhayogesh11)
-
+[![python](https://img.shields.io/badge/python-3.7-blue.svg?logo=python&labelColor=yellow)](https://www.python.org/downloads/)
+![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
 > A simple recon engine for pentest
 
 ## Install
 
 ```sh
 git clone https://github.com/yogeshojha/rengine
+cd rengine
+docker-compose up --build
 ```
 
+## Make Migrations
+Once installation is done, Migrations is compulsory
+
+```sh
+docker exec -it rengine_web_1 python manage.py migrate
+```
 ## Usage
 
 ```sh
