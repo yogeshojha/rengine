@@ -10,4 +10,5 @@ urlpatterns = [
     path('scanEngine/', include('scanEngine.urls')),
     path('start_scan/', include('startScan.urls')),
     path('notification/', include('notification.urls')),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

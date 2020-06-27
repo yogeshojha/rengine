@@ -4,3 +4,5 @@ validators
 argparse
 dnspython
 requests
+djangorestframework
+djangorestframework-datatables

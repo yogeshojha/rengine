@@ -1,4 +1,142 @@
-{% extends "base/base.html" %}
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
 {% block title %}
 Dashboard
-{% endblock title%}
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+<div class="col-lg-12 layout-px-spacing">
+  <div class="row layout-top-spacing">
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="row widget-statistic">
+        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+              <br>
+              <h2 class="text-dark">{{domain_count|intcomma}}</h2>
+              <h6 class="">Total Targets</h6>
+            </div>
+            <div class="widget-content">
+              <!-- some contents -->
+              &nbsp;
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+              </div>
+              <br>
+              <h2 class="text-dark">{{subdomain_count|intcomma}}</h2>
+              <h6 class="">Subdomains Discovered</h6>
+            </div>
+            <div class="widget-content">
+              Total Alive Subdomains: <b class="text-info">{{alive_count|intcomma}}</b>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </div>
+              <br>
+              <h2 class="text-dark">{{endpoint_count|intcomma}}</h2>
+              <h6 class="">Endpoints Discovered</h6>
+            </div>
+            <div class="widget-content">
+              Total Alive endpoints: <b class="text-info">{{endpoint_alive_count|intcomma}}</b>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              </div>
+              <br>
+              <h2 class="text-dark">{{scan_count}}</h2>
+              <h6 class="">Total Scans</h6>
+            </div>
+            <div class="widget-content">
+              Currently Scanning <b class="text-info">{{on_going_scan_count}}</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row layout-top-spacing">
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="row widget-statistic">
+        <div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12 layout-spacing">
+          <div class="widget widget-table-one">
+            <div class="widget-heading">
+              <h5 class="">Recent Scans</h5>
+            </div>
+
+            <div class="widget-content">
+              {% for item in recent_scans %}
+              <div class="transactions-list">
+                <a href="{% url 'detail_scan' item.id %}">
+                  <div class="t-item">
+                    <div class="t-company-name">
+                      <div class="t-icon">
+                        <div class="icon">
+                          {% if item.scan_status == 1 %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                          {% elif item.scan_status == 2 %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                          {% else %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="t-name">
+                        <h4>{{item.domain_name}}</h4>
+                        <p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
+                      </div>
+
+                    </div>
+                    <div class="t-rate">
+                      {% if item.scan_status == 0 %}
+                      <span class="shadow-none badge badge-danger">Failed</span>
+                      {% elif item.scan_status == 1 %}
+                      <span class="shadow-none badge badge-primary">Scanning</span>
+                      {% elif item.scan_status == 2 %}
+                      <span class="shadow-none badge badge-success">Succesful</span>
+                      {% else %}
+                      <span class="shadow-none badge badge-danger">Unknown</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </a>
+              </div>
+              {% endfor %}
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+
+{% endblock page_level_script %}

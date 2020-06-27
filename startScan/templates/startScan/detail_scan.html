@@ -20,218 +20,113 @@ Scan history
 
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
-    <div class="row layout-top-spacing">
-        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+  <div class="row layout-top-spacing">
+    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 
-            <div class="widget widget-activity-four">
-                <div class="widget-heading">
-                    <h5 class="">Recent Activities</h5>
-                </div>
+      <div class="widget widget-activity-four">
+        <div class="widget-heading">
+          <h5 class="">Recent Activities</h5>
+        </div>
 
-                <div class="widget-content">
+        <div class="widget-content">
 
-                    <div class="mt-container mx-auto">
-                        <div class="timeline-line">
-                            {% for activity in scan_activity %}
-                            <div class="item-timeline {% if activity.status == 0 %}timeline-success {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
-                                <div class="t-dot" data-original-title="" title="">
-                                </div>
-                                <div class="t-text">
-                                    <b>{{activity.title}}</b>
-                                    <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
-                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-                                        {% endif %}
-                                    </span>
-                                    <p class="t-time">{{activity.time}}</p>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+          <div class="mt-container mx-auto">
+            <div class="timeline-line">
+              {% for activity in scan_activity %}
+              <div class="item-timeline {% if activity.status == 0 %}timeline-success {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+                <div class="t-dot" data-original-title="" title="">
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-            <div class="row widget-statistic">
-                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
-                    <div class="widget widget-one_hybrid">
-                        <div class="widget-heading">
-                            <div class="w-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                            </div>
-                            <br>
-                            <h2 class="text-warning">{{subdomain.count}}</h2>
-                            <h6 class="">Subdomains Discovered</h6>
-                        </div>
-                        <div class="widget-content">
-                            Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
-                        </div>
-                    </div>
+                <div class="t-text">
+                  <b>{{activity.title}}</b>
+                  <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+                    {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                    {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                    {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                    {% endif %}
+                  </span>
+                  <p class="t-time">{{activity.time}}</p>
                 </div>
-                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
-                    <div class="widget widget-one_hybrid">
-                        <div class="widget-heading">
-                            <div class="w-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                            </div>
-                            <br>
-                            <h2 class="text-warning">{{endpoints.count}}</h2>
-                            <h6 class="">Endpoints</h6>
-                        </div>
-                        <div class="widget-content">
-                            &nbsp;
-                        </div>
-                    </div>
-                </div>
+              </div>
+              {% endfor %}
             </div>
+          </div>
         </div>
-        <div class="col-xl-12 col-lg-12 col-sm-12">
-            <div class="widget-content widget-content-area br-6">
-                <h5 class="text-info">Subdomains Discovered</h5>
-                <div class="table-responsive mb-4 mt-4">
-                    <table class="multi-table table" style="width:100%">
-                        <thead>
-                            <tr>
-                                <th>Subdomain</th>
-                                <th>Ports</th>
-                                <th>Content Length</th>
-                                <th>Page Title</th>
-                                <th>Technology</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for subs in subdomain.all %}
-                            <tr>
-                                <td><a href="{{subs.http_url}}" class="text-info" target="_blank">{{subs.subdomain}}</a>
-                                    {% if subs.http_status > 0 %}
-                                    <span class="badge badge-pills {% if subs.http_status >= 200 and subs.http_status < 300 %}badge-success {% elif subs.http_status >= 300 and subs.http_status < 400 %} badge-warning {% elif subs.http_status >= 400 and subs.http_status < 500 %}badge-danger {% else %}badge-danger{% endif %} float-right">{{subs.http_status}}</span>
-                                    {% else %}
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if subs.open_ports == '' %}
-                                    <span class="text-danger">-</span>
-                                    {% endif %}
-                                    {% with subs.open_ports|split:"," as ports %}
-                                    {% for port in ports %}
-                                    <span class="badge badge-pills {% if port == '80' or port == '8080' or port == '443' %}outline-badge-success {% else %} outline-badge-warning{% endif %}" style="margin:1%">{{port}}</span>
-                                    {% endfor %}
-                                    {% endwith %}
-                                </td>
-                                <td>{{subs.content_length}}</td>
-                                <td>{{subs.page_title}}</td>
-                                <td>
-                                    {% if subs.technology_stack %}
-                                    {% with subs.technology_stack|split:"," as techs %}
-                                    {% for tech in techs %}
-                                    <span class="badge badge-pills outline-badge-success" style="margin-top:5%">{{tech}}</span>
-                                    {% endfor %}
-                                    {% endwith %}
-                                    {% else %}
-                                    <span class="text-danger"></span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if subs.http_status > 0 %}
-                                    <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#tabsModal{{subs.id}}" onclick="fetch_http_headers({{subs.id}}, '{{subs.http_header_path}}', '{{subs.screenshot_path}}')">Details</button>
-                                    {% endif %}
-                                </td>
-                                <div class="modal fade" id="tabsModal{{subs.id}}" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg" role="document">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h6 class="modal-title" id="tabsModalLabel">More Details about <a href="{{subs.http_url}}" target="_blank" class="text-info">{{subs.http_url}}</a>
-                                                    <br /><br />
-                                                    <span id='page-title' class="text-info">Page Title:</span> {{subs.page_title}}
-                                                </h6>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                                                    <li class="nav-item">
-                                                        <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home{{subs.id}}" role="tab" aria-controls="home" aria-selected="true">Screenshot</a>
-                                                    </li>
-                                                    <li class="nav-item">
-                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#header{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">Response Headers</a>
-                                                    </li>
-                                                    <li class="nav-item">
-                                                        <a class="nav-link" id="header-tab" data-toggle="tab" href="#ip{{subs.id}}" role="tab" aria-controls="header" aria-selected="false">IP Addresses</a>
-                                                    </li>
-                                                </ul>
-                                                <div class="tab-content" id="myTabContent">
-                                                    <div class="tab-pane fade show active" id="home{{subs.id}}" role="tabpanel" aria-labelledby="home-tab">
-                                                        &nbsp;
-                                                        <img id="screenshot{{subs.id}}" src="" alt="" class="modal-content">
-                                                    </div>
-                                                    <div class="tab-pane fade" id="header{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
-                                                        <p class="modal-content">
-                                                            <pre id="txt-file-content">
-                                                            </pre>
-                                                        </p>
-                                                    </div>
-                                                    <div class="tab-pane fade" id="ip{{subs.id}}" role="tabpanel" aria-labelledby="header-tab">
-                                                        <p class="modal-content">
-                                                            {% with subs.ip_address|split:"," as ips %}
-                                                            {% for ip in ips %}
-                                                            <a href="#" class="text-muted">{{ ip }}</a><br />
-                                                            {% endfor %}
-                                                            {% endwith %}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-        </div>
-        <div class="widget-content widget-content-area br-6 layout-top-spacing">
-            <h5 class="text-info">Endpoints</h5>
-            <div class="table-responsive mb-4 mt-4">
-                <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th class="">Endpoint</th>
-                            <th class="text-center">HTTP Status</th>
-                            <th class="text-center">Content Length</th>
-                            <th class="">Page Title</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for endpoint in  endpoints%}
-                            <tr>
-                                <td>
-                                    <a href="{{endpoint.http_url}}" target="_blank">{{endpoint.http_url|getpath|truncatechars:200}}</a>
-                                    <p style="display:none">
-                                        {{endpoint.http_url}}
-                                    </p>
-                                </td>
-                                <td class="text-center">
-                                    {% if endpoint.http_status > 0 %}
-                                        <span class="badge badge-pills {% if endpoint.http_status >= 200 and endpoint.http_status < 300 %}badge-success {% elif endpoint.http_status >= 300 and endpoint.http_status < 400 %} badge-warning {% elif endpoint.http_status >= 400 and endpoint.http_status < 500 %}badge-danger {% else %}badge-danger{% endif %}">{{endpoint.http_status}}</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{endpoint.content_length}}</td>
-                                <td>{{endpoint.page_title}}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      </div>
     </div>
-</div>
+    <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="row widget-statistic">
+        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </div>
+              <br>
+              <h2 class="text-warning">{{subdomain_count}}</h2>
+              <h6 class="">Subdomains Discovered</h6>
+            </div>
+            <div class="widget-content">
+              Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </div>
+              <br>
+              <h2 class="text-warning">{{endpoint_count}}</h2>
+              <h6 class="">Endpoints</h6>
+            </div>
+            <div class="widget-content">
+              Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-12 col-lg-12 col-sm-12">
+      <div class="widget-content widget-content-area br-6">
+        <h5 class="text-info">Subdomains Discovered</h5>
+        <div class="table-responsive mb-4 mt-4">
+          <table id="subdomain_scan_results" class="multi-table table" style="width:100%">
+            <thead>
+              <tr>
+                <th>Subdomain</th>
+                <th>Status</th>
+                <th>Ports</th>
+                <th>Content Length</th>
+                <th>Page Title</th>
+                <th>Technology</th>
+                <th>Screenshot</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+      <div class="widget-content widget-content-area br-6 layout-top-spacing">
+        <h5 class="text-info">Endpoints</h5>
+        <div class="table-responsive mb-4 mt-4">
+          <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="endpoint_results">
+            <thead>
+              <tr>
+                <th class="">Endpoint</th>
+                <th>HTTP Status</th>
+                <th>Content Length</th>
+                <th>Page Title</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock main_content %}
 
@@ -241,38 +136,184 @@ Scan history
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+
 <script type="text/javascript">
 // collapse sidebar
 $( document ).ready(function() {
-    $("html, body").addClass("sidebar-noneoverflow");
-    $("#container").addClass("sidebar-closed");
+  $("html, body").addClass("sidebar-noneoverflow");
+  $("#container").addClass("sidebar-closed");
 });
 function fetch_http_headers(id, http_header_path, screenshot_path){
-    $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
-    fetch('/media/'+http_header_path)
-    .then(response => response.text())
-    .then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
+  $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
+  fetch('/media/'+http_header_path)
+  .then(response => response.text())
+  .then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
 }
 </script>
 <script>
 $(document).ready(function() {
-    $('table.multi-table').DataTable({
-        "order": [[ 2, "desc" ]],
-        "oLanguage": {
-            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-            "sInfo": "Showing page _PAGE_ of _PAGES_",
-            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-            "sSearchPlaceholder": "Search...",
-            "sLengthMenu": "Results :  _MENU_",
+  var scan_history_table = $('#subdomain_scan_results').DataTable({
+    "oLanguage": {
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearchPlaceholder": "Search...",
+      "sLengthMenu": "Results :  _MENU_",
+    },
+    "stripeClasses": [],
+    "lengthMenu": [30, 60, 90, 100],
+    "pageLength": 30,
+    'serverSide': true,
+    "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+    "order": [[ 3, "desc" ]],
+    "columns": [
+      {'data': 'subdomain'},
+      {'data': 'http_status'},
+      {'data': 'open_ports'},
+      {'data': 'content_length', 'searchable': false},
+      {'data': 'page_title'},
+      {'data': 'technology_stack'},
+      {'data': 'screenshot_path', 'searchable': false},
+    ],
+    "columnDefs": [
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          if (data >= 200 && data < 300) {
+            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+          }
+          else if (data >= 300 && data < 400) {
+            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+          }
+          else if (data == 0){
+            // datatable throws error when no data is returned
+            return "";
+          }
+          else{
+            return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+          }
+
         },
-        "stripeClasses": [],
-        "lengthMenu": [7, 10, 20, 50],
-        "pageLength": 20,
-        drawCallback: function () {
-            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-            $('.dataTables_wrapper table').removeClass('table-striped');
-        }
-    });
-} );
+        "targets": 1
+      },
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          return span_values(data, "info");
+        },
+        "targets": 2
+      },
+      {
+        "render": function ( data, type, row ) {
+          if (data){
+            return span_values(data, "info");
+          }
+          else{
+            return "";
+          }
+        },
+        "targets": 5
+      },
+      {
+        "render": function ( data, type, row ) {
+          if (data){
+            return "<a href=\"/media/"+data+"\"><img src=\"/media/"+data+"\" class=\"img-fluid mb-4 mt-4\"></a>";
+          }
+          else{
+            return "";
+          }
+        },
+        "targets": 6
+      },
+    ],
+
+    drawCallback: function () {
+      $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+      $('.dataTables_wrapper table').removeClass('table-striped');
+    }
+  });
+});
+
+$(document).ready(function() {
+  $('#endpoint_results').DataTable({
+    "oLanguage": {
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearchPlaceholder": "Search...",
+      "sLengthMenu": "Results :  _MENU_",
+    },
+    "stripeClasses": [],
+    "lengthMenu": [30, 60, 90, 100],
+    "pageLength": 30,
+    'serverSide': true,
+    "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
+    "order": [[ 2, "desc" ]],
+    "columns": [
+      {'data': 'http_url'},
+      {'data': 'http_status'},
+      {'data': 'content_length'},
+      {'data': 'page_title'},
+    ],
+    "columnDefs": [
+      {
+        "render": function ( data, type, row ) {
+          // in the endpoint section, there is no point of displaying fully qualified url
+          // so display only the endpoint and make a hyperlink
+          url = getParsedURL(data);
+          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+        },
+        "targets": 0
+      },
+      {
+        "render": function ( data, type, row ) {
+          // display badge based on http status
+          // green for http status 2XX, orange for 3XX and warning for everything else
+          if (data >= 200 && data < 300) {
+            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+          }
+          else if (data >= 300 && data < 400) {
+            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+          }
+          else if (data == 0){
+            // datatable throws error when no data is returned
+            return "";
+          }
+          else{
+            return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+          }
+
+        },
+        "targets": 1
+      },
+    ],
+    drawCallback: function () {
+      $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+      $('.dataTables_wrapper table').removeClass('table-striped');
+    }
+  });
+});
+
+
+// span values function will seperate the values by comma and put badge around it
+function span_values(data, color)
+{
+  var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+  var data_with_span ="";
+  data.split(/\s*,\s*/).forEach(function(split_vals) {
+    data_with_span+=badge + split_vals + "</span>";
+  });
+  return data_with_span;
+}
+
+// seperate hostname and url
+// Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
+function getParsedURL(url) {
+  var parser = new URL(url);
+  return parser.pathname+parser.search;
+};
 </script>
 {% endblock page_level_script %}.http_status

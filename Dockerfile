@@ -1,13 +1,11 @@
-FROM ubuntu:20.04
+FROM python:3
+ENV PYTHONUNBUFFERED 1
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt update -y && apt install -y \
   build-essential \
   curl \
-  python3.8 \
-  python3-dev \
-  python3-pip \
   wget \
   libpq-dev \
   nmap
