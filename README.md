@@ -1,27 +1,17 @@
-<h1 align="center">Welcome to reNgine 👋</h1>
-<p>
-  <a href="https://twitter.com/ojhayogesh11" target="_blank">
-    <img alt="Twitter: ojhayogesh11" src="https://img.shields.io/twitter/follow/ojhayogesh11.svg?style=social" />
-  </a>
-</p>
+# Welcome to reNgine 👋
+![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yogeshojha/rengine/blob/master/LICENSE)
+[![Twitter: ojhayogesh11](https://img.shields.io/twitter/follow/ojhayogesh11.svg?style=social)](https://twitter.com/ojhayogesh11)
 
-> A simple recon engine
+> A simple recon engine for pentest
 
 ## Install
 
 ```sh
 git clone https://github.com/yogeshojha/rengine
-cd rengine
-docker-compose up --build
 ```
 
-Once Build is over, stop the docker by pressing ctrl + c and then run migrations
-
-```sh
-docker exec -it rengine_web_1 python manage.py migrate
-```
-
-Now, run the docker normally
+## Usage
 
 ```sh
 docker-compose up
@@ -31,12 +21,27 @@ docker-compose up
 
 👤 **Yogesh Ojha**
 
-* Website: http://yogeshojha.com
+* Website: https://yogeshojha.com
 * Twitter: [@ojhayogesh11](https://twitter.com/ojhayogesh11)
 * Github: [@yogeshojha](https://github.com/yogeshojha)
+* LinkedIn: [@yogeshojha](https://linkedin.com/in/yogeshojha)
+
+## 🤝 Contributing
+
+Contributions, issues and feature requests are welcome!
+
+Feel free to check [issues page](https://github.com/yogeshojha/rengine/issues). You can also take a look at the [contributing guide](Feel Free to contribute).
 
 ## Show your support
 
 Give a ⭐️ if this project helped you!
 
+
+## 📝 License
+
+Copyright © 2020 [Yogesh Ojha](https://github.com/yogeshojha).
+
+This project is [MIT](https://github.com/yogeshojha/rengine/blob/master/LICENSE) licensed.
+
 ***
+_This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
