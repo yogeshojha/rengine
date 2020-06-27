@@ -6,4 +6,4 @@ Currently in Alpha stage!
 
 ### How to run?
 
-`docker pull docker.pkg.github.com/yogeshojha/rengine/rengine`
+`docker pull docker.pkg.github.com/yogeshojha/rengine/rengine_web:latest`

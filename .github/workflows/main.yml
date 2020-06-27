@@ -3,7 +3,7 @@ name: Build Docker Image for reNgine
 on: [push]
 
 env:
-  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/web
+  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/rengine_web
 
 jobs:
 
@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v1
       - name: Set environment variables
         run: |
-          echo ::set-env name=WEB_IMAGE::${{ env.WEB_IMAGE }}  
+          echo ::set-env name=WEB_IMAGE::${{ env.WEB_IMAGE }}
       - name: Log in to GitHub Packages
         run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
         env:
