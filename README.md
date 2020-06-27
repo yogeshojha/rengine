@@ -2,6 +2,10 @@
 ![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yogeshojha/rengine/blob/master/LICENSE)
 [![python](https://img.shields.io/badge/python-3.7-blue.svg?logo=python&labelColor=blue)](https://www.python.org/downloads/)
+[![platform](https://img.shields.io/badge/platform-osx%2Flinux%2Fwindows-green.svg)](https://github.com/yogeshojha/rengine/)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=alert_status)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
 ![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
 
 > A simple recon engine for pentest
