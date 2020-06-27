@@ -12,7 +12,7 @@ def index(request):
     alive_count = ScannedHost.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = WayBackEndPoint.objects.filter(http_status__exact=200).count()
     on_going_scan_count =  ScanHistory.objects.filter(scan_status=1).count()
-
+    recent_scans = ScanHistory.objects.all().order_by('-last_scan_date')[:4]
     context = {"dashboard_data_active": "true",
             'domain_count': domain_count,
             'endpoint_count': endpoint_count,
@@ -20,6 +20,7 @@ def index(request):
             'subdomain_count': subdomain_count,
             'alive_count': alive_count,
             'endpoint_alive_count': endpoint_alive_count,
-            'on_going_scan_count': on_going_scan_count
+            'on_going_scan_count': on_going_scan_count,
+            'recent_scans': recent_scans
         }
     return render(request, 'dashboard/index.html', context)
