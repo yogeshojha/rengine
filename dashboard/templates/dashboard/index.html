@@ -91,7 +91,7 @@ Dashboard
             <div class="widget-content">
               {% for item in recent_scans %}
               <div class="transactions-list">
-                <a href="{% url 'detail_scan' item.i %}">
+                <a href="{% url 'detail_scan' item.id %}">
                   <div class="t-item">
                     <div class="t-company-name">
                       <div class="t-icon">
