@@ -14,13 +14,16 @@ jobs:
     steps:
       - name: Checkout master
         uses: actions/checkout@v1
+      - name: Set environment variables
+        run: |
+          echo ::set-env name=WEB_IMAGE::${{ env.WEB_IMAGE }}  
       - name: Log in to GitHub Packages
         run: echo ${GITHUB_TOKEN} | docker login -u ${GITHUB_ACTOR} --password-stdin docker.pkg.github.com
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Pull images
         run: |
-          docker pull ${{ env.WEB_IMAGE }} || true    
+          docker pull ${{ env.WEB_IMAGE }} || true
       - name: Build images
         run: |
           docker-compose -f docker-compose.yml build
