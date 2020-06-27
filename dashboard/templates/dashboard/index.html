@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load humanize %}
 {% load static %}
 
 {% block title %}
@@ -17,12 +18,12 @@ Dashboard
         <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
           <div class="widget widget-one_hybrid">
             <div class="widget-heading">
-              <div class="w-icon">
+              <div class="w-icon text-info">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
               </div>
               <br>
-              <h2 class="text-warning">{{domain_count}}</h2>
-              <h6 class="">Total Domains</h6>
+              <h2 class="text-dark">{{domain_count|intcomma}}</h2>
+              <h6 class="">Total Targets</h6>
             </div>
             <div class="widget-content">
               <!-- some contents -->
@@ -33,41 +34,41 @@ Dashboard
         <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
           <div class="widget widget-one_hybrid">
             <div class="widget-heading">
-              <div class="w-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
               </div>
               <br>
-              <h2 class="text-warning">{{subdomain_count}}</h2>
+              <h2 class="text-dark">{{subdomain_count|intcomma}}</h2>
               <h6 class="">Subdomains Discovered</h6>
             </div>
             <div class="widget-content">
-              Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+              Total Alive Subdomains: <b class="text-info">{{alive_count|intcomma}}</b>
             </div>
           </div>
         </div>
         <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
           <div class="widget widget-one_hybrid">
             <div class="widget-heading">
-              <div class="w-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-              </div>
-              <br>
-              <h2 class="text-warning">{{endpoint_count}}</h2>
-              <h6 class="">Endpoints Discovered</h6>
-            </div>
-            <div class="widget-content">
-              Total Alive endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
-            </div>
-          </div>
-        </div>
-        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
-          <div class="widget widget-one_hybrid">
-            <div class="widget-heading">
-              <div class="w-icon">
+              <div class="w-icon text-info">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
               </div>
               <br>
-              <h2 class="text-warning">{{scan_count}}</h2>
+              <h2 class="text-dark">{{endpoint_count|intcomma}}</h2>
+              <h6 class="">Endpoints Discovered</h6>
+            </div>
+            <div class="widget-content">
+              Total Alive endpoints: <b class="text-info">{{endpoint_alive_count|intcomma}}</b>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-lg-6 col-md-4 col-sm-6 col-12">
+          <div class="widget widget-one_hybrid">
+            <div class="widget-heading">
+              <div class="w-icon text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+              </div>
+              <br>
+              <h2 class="text-dark">{{scan_count}}</h2>
               <h6 class="">Total Scans</h6>
             </div>
             <div class="widget-content">
