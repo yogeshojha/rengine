@@ -4,12 +4,12 @@
 
         <ul class="navbar-item theme-brand flex-row  text-center">
             <li class="nav-item theme-logo">
-                <a href="index.html">
+                <a href="{% url 'dashboardIndex' %}">
                     <img src="{% static 'img/people.png' %}" class="navbar-logo" alt="logo">
                 </a>
             </li>
             <li class="nav-item theme-text">
-                <a href="index.html" class="nav-link"> reNgine </a>
+                <a href="{% url 'dashboardIndex' %}" class="nav-link"> reNgine </a>
             </li>
         </ul>
     </header>
