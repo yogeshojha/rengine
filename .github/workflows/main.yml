@@ -3,7 +3,7 @@ name: Build Docker Image for reNgine
 on: [push]
 
 env:
-  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/reNgine
+  WEB_IMAGE: docker.pkg.github.com/$GITHUB_REPOSITORY/rengine
 
 jobs:
 
