@@ -28,8 +28,14 @@
                     <div class="col-md-6 mb-4">
                         <label for="domainDescription">Hook URL</label>
                         {{ form.hook_url }}
+                        {% if form.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {{ form.errors.hook_url|striptags }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
+                {{ form.send_notif }}
                 <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">{{button_title}}</button>
             </form>
         </div>
