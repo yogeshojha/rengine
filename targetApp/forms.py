@@ -21,7 +21,7 @@ class RawTargetForm(forms.Form):
                         "id": "domainDescription",
                     }
                 ))
-                
+
 class UpdateTargetForm(forms.ModelForm):
     class Meta:
         model = Domain
@@ -29,11 +29,11 @@ class UpdateTargetForm(forms.ModelForm):
     domain_name = forms.CharField(
                     validators=[validate_domain],
                     required=True,
+                    disabled=True,
                     widget=forms.TextInput(
                         attrs={
                             "class": "form-control",
                             "id": "domainName",
-                            "placeholder":"example.com"
                         }
                     ))
     domain_description = forms.CharField(
