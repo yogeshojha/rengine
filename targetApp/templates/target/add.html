@@ -9,6 +9,10 @@ Add target for Recon
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
+{% block breadcrumb_title %}
+Add target for recon
+{% endblock breadcrumb_title %}
+
 {% block main_content %}
     {% include 'target/_items/domain_form.html' with button_title="Save" widget_title="Add Target" form_action="add" %}
 {% endblock main_content %}
