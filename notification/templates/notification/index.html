@@ -44,6 +44,7 @@ Push Notifications
                                 <th class="checkbox-column">Serial Number</th>
                                 <th>Title</th>
                                 <th>Url</th>
+                                <th class="text-center">Send Notification</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
@@ -59,6 +60,15 @@ Push Notifications
                                         <input type="checkbox" name="port_scan" {% if hook.send_notif %}checked{% endif %} onchange="change_notif_status({{hook.id}})">
                                         <span class="slider round"></span>
                                     </label>
+                                </td>
+                                <td class="text-center">
+                                    <a onclick="delete_hook({{ hook.id }}, '{{ hook.hook_name }}')" class="btnDelHool" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                                        </svg>
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}

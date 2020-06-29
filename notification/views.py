@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from .models import NotificationHooks
+from notification.models import NotificationHooks
 from django.http import HttpResponse
 from notification.forms import AddNotificationHooks
 from django.contrib import messages
@@ -21,6 +21,17 @@ def add_notification_hook(request):
         'form': add_hook_form
     }
     return render(request, 'notification/add.html', context)
+
+def delete_hook(request, id):
+    obj = get_object_or_404(NotificationHooks, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Notification Hook deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! Domain could not be deleted!')
+    return http.JsonResponse(responseData)
 
 def change_notif_status(request, id):
     if request.method == 'POST':
