@@ -3,7 +3,7 @@ from django import http
 from .models import Domain
 from startScan.models import ScanHistory
 from django.contrib import messages
-from .forms import RawDomainForm, UpdateDomainForm
+from .forms import RawTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
 
@@ -12,9 +12,9 @@ def index(request):
     return render(request, 'target/index.html')
 
 def add_target_form(request):
-    form = RawDomainForm()
+    form = RawTargetForm()
     if request.method == "POST":
-        form = RawDomainForm(request.POST)
+        form = RawTargetForm(request.POST)
         if form.is_valid():
             Domain.objects.create(**form.cleaned_data, insert_date=timezone.now())
             messages.add_message(request, messages.INFO, 'Target domain ' + form.cleaned_data['domain_name'] + ' added successfully')
@@ -40,9 +40,9 @@ def delete_domain(request, id):
 
 def update_target_form(request, id):
     domain = get_object_or_404(Domain, id=id)
-    form = UpdateDomainForm()
+    form = UpdateTargetForm()
     if request.method == "POST":
-        form = UpdateDomainForm(request.POST, instance=domain)
+        form = UpdateTargetForm(request.POST, instance=domain)
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.INFO, 'Domain edited successfully')

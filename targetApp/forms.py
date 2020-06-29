@@ -2,7 +2,7 @@ from django import forms
 from .models import Domain
 from .validators import validate_domain
 
-class RawDomainForm(forms.Form):
+class RawTargetForm(forms.Form):
     domain_name = forms.CharField(
                     validators=[validate_domain],
                     required=True,
@@ -21,7 +21,8 @@ class RawDomainForm(forms.Form):
                         "id": "domainDescription",
                     }
                 ))
-class UpdateDomainForm(forms.ModelForm):
+                
+class UpdateTargetForm(forms.ModelForm):
     class Meta:
         model = Domain
         fields = ['domain_name', 'domain_description']
