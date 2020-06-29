@@ -2,7 +2,7 @@ from django import forms
 from .models import Domain
 from .validators import validate_domain
 
-class RawTargetForm(forms.Form):
+class AddTargetForm(forms.Form):
     domain_name = forms.CharField(
                     validators=[validate_domain],
                     required=True,

@@ -3,7 +3,7 @@ from django import http
 from .models import Domain
 from startScan.models import ScanHistory
 from django.contrib import messages
-from .forms import RawTargetForm, UpdateTargetForm
+from .forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
 
@@ -12,9 +12,9 @@ def index(request):
     return render(request, 'target/index.html')
 
 def add_target_form(request):
-    form = RawTargetForm()
+    form = AddTargetForm()
     if request.method == "POST":
-        form = RawTargetForm(request.POST)
+        form = AddTargetForm(request.POST)
         if form.is_valid():
             Domain.objects.create(**form.cleaned_data, insert_date=timezone.now())
             messages.add_message(request, messages.INFO, 'Target domain ' + form.cleaned_data['domain_name'] + ' added successfully')
