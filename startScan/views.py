@@ -64,7 +64,7 @@ def start_scan_ui(request, id):
 
 def doScan(id, domain):
     task = ScanHistory.objects.get(pk=id)
-    save_scan_activity(task, "Scanning Started", 2)
+    create_scan_activity(task, "Scanning Started", 2)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
     results_dir = '/app/tools/scan_results/'
@@ -76,7 +76,7 @@ def doScan(id, domain):
         # do something here
         print("Oops!")
 
-    save_scan_activity(task, "Subdomain Scanning", 1)
+    create_scan_activity(task, "Subdomain Scanning", 1)
     # all subdomain scan happens here
     os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
 
@@ -90,7 +90,7 @@ def doScan(id, domain):
             scanned.save()
 
     update_last_activity()
-    save_scan_activity(task, "Port Scanning", 1)
+    create_scan_activity(task, "Port Scanning", 1)
 
     # after all subdomain has been discovered run naabu to discover the ports
     port_results_file = results_dir + current_scan_dir + '/ports.json'
@@ -117,7 +117,7 @@ def doScan(id, domain):
         print('Port File doesnt exist')
 
     update_last_activity()
-    save_scan_activity(task, "HTTP Crawler", 1)
+    create_scan_activity(task, "HTTP Crawler", 1)
 
     # once port scan is complete then run httpx, this has to run in background thread later
     httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
@@ -145,7 +145,7 @@ def doScan(id, domain):
     alive_file.close()
 
     update_last_activity()
-    save_scan_activity(task, "Visual Recon - Screenshot", 1)
+    create_scan_activity(task, "Visual Recon - Screenshot", 1)
 
     # after subdomain discovery run aquatone for visual identification
     with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
@@ -175,7 +175,7 @@ def doScan(id, domain):
 
     # get endpoints from wayback engine
     update_last_activity()
-    save_scan_activity(task, "Fetching endpoints", 1)
+    create_scan_activity(task, "Fetching endpoints", 1)
     wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
 
     wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau -providers wayback | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
@@ -204,13 +204,13 @@ def doScan(id, domain):
     for notif in notif_hook:
         requests.post(notif.hook_url, data=json.dumps(scan_status_msg), headers=headers)
     update_last_activity()
-    save_scan_activity(task, "Scan Completed", 2)
+    create_scan_activity(task, "Scan Completed", 2)
 
 def checkScanStatus(request, id):
     task = Crawl.objects.get(pk=id)
     return JsonResponse({'is_done':task.is_done, result:task.result})
 
-def save_scan_activity(task, message, status):
+def create_scan_activity(task, message, status):
     scan_activity = ScanActivity()
     scan_activity.scan_of = task
     scan_activity.title = message
@@ -222,4 +222,5 @@ def update_last_activity():
     #save the last activity as successful
     last_activity = ScanActivity.objects.latest('id')
     last_activity.status = 2
+    last_activity.time = dateformat.format(timezone.now(), 'M d H:i')
     last_activity.save()
