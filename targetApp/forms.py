@@ -1,6 +1,6 @@
 from django import forms
 from .models import Domain
-from .validators import validate_domain
+from reNgine.validators import validate_domain
 
 class AddTargetForm(forms.Form):
     domain_name = forms.CharField(
