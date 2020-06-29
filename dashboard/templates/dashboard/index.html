@@ -15,9 +15,9 @@ Dashboard
   <div class="row layout-top-spacing">
     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
       {% if not domain_count %}
-        <p class="text-warning">Currently there are no targets, Please
-          <strong><a href="{% url 'add_target_form' %}" class="text-info">add targets</a></strong>
-        </p>
+      <p class="text-warning">Currently there are no targets, Please
+        <strong><a href="{% url 'add_target_form' %}" class="text-info">add targets</a></strong>
+      </p>
       {% endif %}
 
       <div class="row widget-statistic">
@@ -99,10 +99,10 @@ Dashboard
 
         <div class="widget-content">
           {% if recent_scans.count == 0 %}
-            <p class="text-warning">
-              Oops! Looks like no scans have been recently initiated! You can initiate the scan
-              <a href="{% url 'list_target' %}" class='text-info'>from here.</a>
-            </p>
+          <p class="text-warning">
+            Oops! Looks like no scans have been recently initiated! You can initiate the scan
+            <a href="{% url 'list_target' %}" class='text-info'>from here.</a>
+          </p>
           {% endif %}
 
           {% for item in recent_scans %}
