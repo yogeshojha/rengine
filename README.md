@@ -1,4 +1,6 @@
 # Welcome to reNgine 👋
+### This is still under development! You may clone the repo and try running the reNgine, but many of the modules may not work.
+
 ![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yogeshojha/rengine/blob/master/LICENSE)
 [![python](https://img.shields.io/badge/python-3.7-blue.svg?logo=python&labelColor=blue)](https://www.python.org/downloads/)
@@ -9,7 +11,6 @@
 ![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
 
 > A simple recon engine for pentest
-> Please note, this project is in alpha stage. Some of the modules may not work.
 
 ## Install
 
