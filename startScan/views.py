@@ -17,8 +17,8 @@ def index(request):
     return render(request, 'startScan/index.html')
 
 def scan_history(request):
-    scan_history = ScanHistory.objects
-    context = {'scan_history_active': 'true', "scan_history":scan_history}
+    host = ScanHistory.objects
+    context = {'scan_history_active': 'true', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
 def detail_scan(request, id):
@@ -27,14 +27,16 @@ def detail_scan(request, id):
     scan_activity = ScanActivity.objects.filter(scan_of__id=id)
     endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
     endpoint_alive_count = WayBackEndPoint.objects.filter(url_of__id=id, http_status__exact=200).count()
+    host = get_object_or_404(ScanHistory, id=id)
     context = {'scan_history_active': 'true',
-                'scan_history':scan_history,
-                'scan_activity':scan_activity,
-                'alive_count':alive_count,
-                'scan_history_id':id,
-                'subdomain_count':subdomain_count,
-                'endpoint_count':endpoint_count,
-                'endpoint_alive_count': endpoint_alive_count,
+                'scan_history': scan_history,
+                'scan_activity': scan_activity,
+                'alive_count': alive_count,
+                'scan_history_id': id,
+                'subdomain_count': subdomain_count,
+                'endpoint_count': endpoint_count,
+                'endpoint_alive_count':  endpoint_alive_count,
+                'host': host,
                 }
     return render(request, 'startScan/detail_scan.html', context)
 

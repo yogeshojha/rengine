@@ -18,6 +18,11 @@ Scan history
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
+{% block breadcrumb_title %}
+Detailed Scan for {{host.domain_name}}
+{% endblock breadcrumb_title %}
+
+
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
   <div class="row layout-top-spacing">
