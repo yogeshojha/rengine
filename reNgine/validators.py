@@ -8,3 +8,10 @@ def validate_domain(value):
         _('%(value)s is not a valid domain Name'),
             params={'value': value},
         )
+
+def validate_url(value):
+    if not validators.url(value):
+        raise ValidationError(
+        _('%(value)s is not a valid URL Name'),
+            params={'value': value},
+        )
