@@ -17,6 +17,7 @@ Scan history
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
+<script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -240,16 +241,17 @@ $(document).ready(function() {
                 "render": function ( data, type, row ) {
                     if (data) {
                         // TODO: this could be done better
-                        var json_obj = data['http://127.0.0.1:8080/'];
+                        main_url = "http://127.0.0.1:8080/";
+                        var json_obj = data[main_url];
                         var html_treeview = `<ul class="file-tree">`;
                         for(var i = 0; i < json_obj.length; i++)
                         {
                             if(json_obj[i].status==200)
                             {
-                                path = json_obj[i].path;
+                                var path = json_obj[i].path;
                                 // id path has / the its a directory else consider as file
                                 if (path.substr(path.length - 1) == '/') {
-                                    html_treeview += `<li class="file-tree-folder">` + path + `</li>`;
+                                    html_treeview += `<li class="file-tree-empty-folder">` + path + `</li>`;
                                 }
                                 else {
                                     html_treeview += `<li>` + path + `</li>`;
@@ -354,11 +356,6 @@ function span_values(data, color)
     return data_with_span;
 }
 
-// seperate hostname and url
-// Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
-function getParsedURL(url) {
-    var parser = new URL(url);
-    return parser.pathname+parser.search;
-};
+
 </script>
 {% endblock page_level_script %}.http_status
