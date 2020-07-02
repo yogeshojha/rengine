@@ -44,7 +44,7 @@ class WayBackEndPoint(models.Model):
 class ScanActivity(models.Model):
     scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     title = models.CharField(max_length=1000)
-    time = models.CharField(max_length=100)
+    time = models.DateTimeField()
     status = models.IntegerField()
 
     def __str__(self):
