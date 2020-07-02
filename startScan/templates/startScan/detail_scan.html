@@ -16,6 +16,7 @@ Scan history
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -70,7 +71,7 @@ Detailed Scan for {{host.domain_name}}
                                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
                             </div>
-                            <br>
+                            &nbsp;
                             <h2 class="text-warning">{{subdomain_count}}</h2>
                             <h6 class="">Subdomains Discovered</h6>
                         </div>
@@ -110,6 +111,7 @@ Detailed Scan for {{host.domain_name}}
                                 <th>Page Title</th>
                                 <th>Technology</th>
                                 <th>Screenshot</th>
+                                <th>Directories</th>
                             </tr>
                         </thead>
                     </table>
@@ -233,15 +235,53 @@ $(document).ready(function() {
                 },
                 "targets": 6
             },
+            {
+                "render": function ( data, type, row ) {
+                    return `
+                    <ul class='file-tree'>
+                    <li class='file-tree-folder'>CSS
+                    <ul>
+                    <li>style.css</li>
+                    </ul>
+                    </li>
+                    <li class='file-tree-folder empty'>Images</li>
+                    <li class='file-tree-folder'>HTML
+                    <ul>
+                    <li class='file-tree-folder'>PAGES
+                    <ul>
+                    <li>file name </li>
+                    <li>file name </li>
+                    <li>file name </li>
+                    </ul>
+                    </li>
+                    <li>file name </li>
+                    <li>file name </li>
+                    </ul>
+                    </li>
+                    <li>index.html </li>
+                    <li>components.html </li>
+                    </ul>
+                    `;
+                },
+                "targets": 7
+            },
         ],
 
         drawCallback: function () {
             $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
             $('.dataTables_wrapper table').removeClass('table-striped');
+        },
+        // I dont know why this is so weird, the script for tree_view expand is not working, so I think, it should be loaded once items are rendered
+        initComplete: function( settings, json ) {
+            var script = document.createElement("script");
+            script.src = "/static/plugins/treeview/custom-jstree.js";
+            script.type = "text/javascript";
+            document.getElementsByTagName("head")[0].appendChild(script);
         }
     });
 });
-
+</script>
+<script type="text/javascript">
 $(document).ready(function() {
     $('#endpoint_results').DataTable({
         "oLanguage": {
