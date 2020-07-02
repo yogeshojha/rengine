@@ -1,7 +1,7 @@
 from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-
+from django.contrib.postgres.fields import JSONField
 
 class ScanHistory(models.Model):
     last_scan_date = models.DateTimeField()
@@ -25,6 +25,7 @@ class ScannedHost(models.Model):
     screenshot_path = models.CharField(max_length=1000, null=True)
     http_header_path = models.CharField(max_length=1000, null=True)
     technology_stack = models.CharField(max_length=1500, null=True)
+    directory_json = JSONField()
 
     def __str__(self):
         return str(self.scan_history.id)

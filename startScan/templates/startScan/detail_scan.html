@@ -182,6 +182,7 @@ $(document).ready(function() {
             {'data': 'page_title'},
             {'data': 'technology_stack'},
             {'data': 'screenshot_path', 'searchable': false},
+            {'data': 'directory_json'},
         ],
         "columnDefs": [
             {
@@ -237,31 +238,30 @@ $(document).ready(function() {
             },
             {
                 "render": function ( data, type, row ) {
-                    return `
-                    <ul class='file-tree'>
-                    <li class='file-tree-folder'>CSS
-                    <ul>
-                    <li>style.css</li>
-                    </ul>
-                    </li>
-                    <li class='file-tree-folder empty'>Images</li>
-                    <li class='file-tree-folder'>HTML
-                    <ul>
-                    <li class='file-tree-folder'>PAGES
-                    <ul>
-                    <li>file name </li>
-                    <li>file name </li>
-                    <li>file name </li>
-                    </ul>
-                    </li>
-                    <li>file name </li>
-                    <li>file name </li>
-                    </ul>
-                    </li>
-                    <li>index.html </li>
-                    <li>components.html </li>
-                    </ul>
-                    `;
+                    if (data) {
+                        // TODO: this could be done better
+                        var json_obj = data['http://127.0.0.1:8080/'];
+                        var html_treeview = `<ul class="file-tree">`;
+                        for(var i = 0; i < json_obj.length; i++)
+                        {
+                            if(json_obj[i].status==200)
+                            {
+                                path = json_obj[i].path;
+                                // id path has / the its a directory else consider as file
+                                if (path.substr(path.length - 1) == '/') {
+                                    html_treeview += `<li class="file-tree-folder">` + path + `</li>`;
+                                }
+                                else {
+                                    html_treeview += `<li>` + path + `</li>`;
+                                }
+                            }
+                        }
+                        html_treeview += `</ul>`;
+                        return html_treeview;
+                    }
+                    else{
+                        return '';
+                    }
                 },
                 "targets": 7
             },
