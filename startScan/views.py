@@ -9,10 +9,7 @@ from scanEngine.models import EngineType
 import threading
 from django.utils import timezone, dateformat
 from datetime import datetime
-import requests
-import json
-import os
-
+import os, traceback, json, requests
 def index(request):
     return render(request, 'startScan/index.html')
 
@@ -182,11 +179,14 @@ def doScan(id, domain):
         dirs_results = current_scan_dir + '/dirs.json'
         for subdomain in alive_subdomains:
             os.system('/app/tools/get_dirs.sh %s %s' %(subdomain.http_url, dirs_results))
-            with open(dirs_results, "r") as json_file:
-                json_string = json_file.read()
-            sub_domain = ScannedHost.objects.get(scan_history__id=id, subdomain=subdomain)
-            sub_domain.directory_json = json_string
-            sub_domain.save()
+            try:
+                with open(dirs_results, "r") as json_file:
+                    json_string = json_file.read()
+                    scanned_host = ScannedHost.objects.get(scan_history__id=id, http_url=subdomain.http_url)
+                    scanned_host.directory_json = json_string
+                    scanned_host.save()
+            except:
+                print("No File")
 
 
         # get endpoints from wayback engine
@@ -213,7 +213,8 @@ def doScan(id, domain):
 
         task.scan_status = 2
         task.save()
-    except:
+    except Exception as e:
+        print(traceback.format_exc())
         scan_failed(task)
 
     # notify on slack
