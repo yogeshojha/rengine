@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_tags %}
 {% block title %}
 Scan history
@@ -51,7 +52,7 @@ Detailed Scan for {{host.domain_name}}
                                         {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
                                         {% endif %}
                                     </span>
-                                    <p class="t-time">{{activity.time}}</p>
+                                    <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
                             </div>
                             {% endfor %}
@@ -241,7 +242,8 @@ $(document).ready(function() {
                 "render": function ( data, type, row ) {
                     if (data) {
                         // TODO: this could be done better
-                        main_url = "http://127.0.0.1:8080/";
+                        data = JSON.parse(data);
+                        main_url = Object.keys(data)[0];
                         var json_obj = data[main_url];
                         var html_treeview = `<ul class="file-tree">`;
                         for(var i = 0; i < json_obj.length; i++)
