@@ -253,10 +253,10 @@ $(document).ready(function() {
                                 var path = json_obj[i].path;
                                 // id path has / the its a directory else consider as file
                                 if (path.substr(path.length - 1) == '/') {
-                                    html_treeview += `<li class="file-tree-empty-folder">` + path + `</li>`;
+                                    html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + `</li>`;
                                 }
                                 else {
-                                    html_treeview += `<li>` + path + `</li>`;
+                                    html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + `</a></li>`;
                                 }
                             }
                         }
@@ -360,4 +360,4 @@ function span_values(data, color)
 
 
 </script>
-{% endblock page_level_script %}.http_status
+{% endblock page_level_script %}

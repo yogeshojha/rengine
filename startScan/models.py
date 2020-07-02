@@ -28,7 +28,7 @@ class ScannedHost(models.Model):
     directory_json = JSONField(null=True)
 
     def __str__(self):
-        return str(self.subdomain)
+        return str(self.subdomain+'---->>>>Scan ID'+self.scan_history.id)
 
 
 class WayBackEndPoint(models.Model):
