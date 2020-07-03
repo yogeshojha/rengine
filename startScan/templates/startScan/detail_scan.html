@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load humanize %}
 {% load custom_tags %}
 {% block title %}
 Scan history
@@ -16,6 +17,8 @@ Scan history
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
+<script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -49,7 +52,7 @@ Detailed Scan for {{host.domain_name}}
                                         {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
                                         {% endif %}
                                     </span>
-                                    <p class="t-time">{{activity.time}}</p>
+                                    <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
                             </div>
                             {% endfor %}
@@ -70,7 +73,7 @@ Detailed Scan for {{host.domain_name}}
                                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                                 </svg>
                             </div>
-                            <br>
+                            &nbsp;
                             <h2 class="text-warning">{{subdomain_count}}</h2>
                             <h6 class="">Subdomains Discovered</h6>
                         </div>
@@ -110,6 +113,7 @@ Detailed Scan for {{host.domain_name}}
                                 <th>Page Title</th>
                                 <th>Technology</th>
                                 <th>Screenshot</th>
+                                <th>Directories</th>
                             </tr>
                         </thead>
                     </table>
@@ -180,6 +184,7 @@ $(document).ready(function() {
             {'data': 'page_title'},
             {'data': 'technology_stack'},
             {'data': 'screenshot_path', 'searchable': false},
+            {'data': 'directory_json'},
         ],
         "columnDefs": [
             {
@@ -233,15 +238,54 @@ $(document).ready(function() {
                 },
                 "targets": 6
             },
+            {
+                "render": function ( data, type, row ) {
+                    if (data) {
+                        // TODO: this could be done better
+                        data = JSON.parse(data);
+                        main_url = Object.keys(data)[0];
+                        var json_obj = data[main_url];
+                        var html_treeview = `<ul class="file-tree">`;
+                        for(var i = 0; i < json_obj.length; i++)
+                        {
+                            if(json_obj[i].status==200)
+                            {
+                                var path = json_obj[i].path;
+                                // id path has / the its a directory else consider as file
+                                if (path.substr(path.length - 1) == '/') {
+                                    html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + `</li>`;
+                                }
+                                else {
+                                    html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + `</a></li>`;
+                                }
+                            }
+                        }
+                        html_treeview += `</ul>`;
+                        return html_treeview;
+                    }
+                    else{
+                        return '';
+                    }
+                },
+                "targets": 7
+            },
         ],
 
         drawCallback: function () {
             $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
             $('.dataTables_wrapper table').removeClass('table-striped');
+        },
+        // I dont know why this is so weird, the script for tree_view expand is not working, so I think, it should be loaded once items are rendered
+        initComplete: function( settings, json ) {
+            var script = document.createElement("script");
+            script.src = "/static/plugins/treeview/custom-jstree.js";
+            script.type = "text/javascript";
+            document.getElementsByTagName("head")[0].appendChild(script);
         }
     });
 });
-
+</script>
+<script type="text/javascript">
 $(document).ready(function() {
     $('#endpoint_results').DataTable({
         "oLanguage": {
@@ -314,11 +358,6 @@ function span_values(data, color)
     return data_with_span;
 }
 
-// seperate hostname and url
-// Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
-function getParsedURL(url) {
-    var parser = new URL(url);
-    return parser.pathname+parser.search;
-};
+
 </script>
-{% endblock page_level_script %}.http_status
+{% endblock page_level_script %}

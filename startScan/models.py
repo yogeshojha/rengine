@@ -1,7 +1,7 @@
 from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-
+from django.contrib.postgres.fields import JSONField
 
 class ScanHistory(models.Model):
     last_scan_date = models.DateTimeField()
@@ -25,9 +25,10 @@ class ScannedHost(models.Model):
     screenshot_path = models.CharField(max_length=1000, null=True)
     http_header_path = models.CharField(max_length=1000, null=True)
     technology_stack = models.CharField(max_length=1500, null=True)
+    directory_json = JSONField(null=True)
 
     def __str__(self):
-        return str(self.scan_history.id)
+        return str(self.subdomain+'---->>>>Scan ID'+str(self.scan_history.id))
 
 
 class WayBackEndPoint(models.Model):
@@ -43,7 +44,7 @@ class WayBackEndPoint(models.Model):
 class ScanActivity(models.Model):
     scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     title = models.CharField(max_length=1000)
-    time = models.CharField(max_length=100)
+    time = models.DateTimeField()
     status = models.IntegerField()
 
     def __str__(self):
