@@ -32,6 +32,8 @@
 ## Table of Contents
 
 * [About the Project](#about-reNgine)
+  * [Motivation behind reNgine](#motivation-behind-starting-rengine)
+  * [Screenshots](#screenshots)
   * [Built With](#built-with)
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
