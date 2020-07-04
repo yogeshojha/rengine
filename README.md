@@ -29,19 +29,19 @@
 
 ## ➤ Table of Contents
 
-* [➤ About the Project](#about-reNgine)
-  * [Motivation behind reNgine](#motivation-behind-starting-rengine)
-  * [Screenshots](#screenshots)
-  * [Built With](#built-with)
-* [➤ Getting Started](#getting-started)
-  * [Prerequisites](#prerequisites)
-  * [Installation](#installation)
-* [➤ Usage](#usage)
-* [➤ Roadmap](#roadmap)
-* [➤ Contributing](#contributing)
-* [➤ License](#license)
-* [➤ Acknowledgements](#acknowledgements)
-* [➤ Credits](#credits)
+* [➤ About the Project](#-about-reNgine)
+  * [Motivation behind reNgine](#-motivation-behind-starting-rengine)
+  * [Screenshots](#-screenshots)
+  * [Built With](#-built-with)
+* [➤ Getting Started](#-getting-started)
+  * [Prerequisites](#-prerequisites)
+  * [Installation](#-installation)
+* [➤ Usage](#-usage)
+* [➤ Roadmap](#-roadmap)
+* [➤ Contributing](#-contributing)
+* [➤ License](#-license)
+* [➤ Acknowledgements](#-acknowledgements)
+* [➤ Credits](#-credits)
 
 ## ➤ About reNgine
 
@@ -136,5 +136,5 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 
-## Credits
+## ➤ Credits
 Some of the icons and images used here are from Freepik and flaticons.
