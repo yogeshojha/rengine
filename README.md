@@ -1,15 +1,3 @@
-![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
-[![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/yogeshojha/rengine/blob/master/LICENSE)
-[![python](https://img.shields.io/badge/python-3.7-blue.svg?logo=python&labelColor=blue)](https://www.python.org/downloads/)
-[![platform](https://img.shields.io/badge/platform-osx%2Flinux%2Fwindows-green.svg)](https://github.com/yogeshojha/rengine/)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=alert_status)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
-![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
-
-
-<!-- PROJECT LOGO -->
 <br />
 <p align="center">
   <a href="https://github.com/yogeshojha/rengine">
@@ -17,8 +5,19 @@
   </a>
 
   <h3 align="center">reNgine</h3>
+</p>
 
-  <p align="center">
+![Version](https://img.shields.io/badge/version-alpha-blue.svg?cacheSeconds=2592000)
+[![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![python](https://img.shields.io/badge/python-3.7-blue.svg?logo=python&labelColor=blue)](https://www.python.org/downloads/)
+[![platform](https://img.shields.io/badge/platform-osx%2Flinux%2Fwindows-green.svg)](https://github.com/yogeshojha/rengine/)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=alert_status)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
+![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
+
+<p align="center">
     A simple recon Engine
     <br />
     <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
@@ -26,23 +25,22 @@
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Request Feature</a>
-  </p>
 </p>
 
 ## ➤ Table of Contents
 
-* [About the Project](#about-reNgine)
+* [➤ About the Project](#about-reNgine)
   * [Motivation behind reNgine](#motivation-behind-starting-rengine)
   * [Screenshots](#screenshots)
   * [Built With](#built-with)
-* [Getting Started](#getting-started)
+* [➤ Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
-* [Usage](#usage)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [License](#license)
-* [Acknowledgements](#acknowledgements)
+* [➤ Usage](#usage)
+* [➤ Roadmap](#roadmap)
+* [➤ Contributing](#contributing)
+* [➤ License](#license)
+* [➤ Acknowledgements](#acknowledgements)
 
 ## ➤ About reNgine
 
