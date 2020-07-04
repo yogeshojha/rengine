@@ -124,7 +124,7 @@ You can begin with resolving any [open issues](https://github.com/yogeshojha/ren
 
 ## ➤ License
 
-Distributed under the GNU GPL license License. See [LICENSE](LICENSE) for more information.
+Distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) for more information.
 
 ## ➤ Acknowledgements
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.
@@ -133,4 +133,4 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
 * gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
-* dirsearch [maurosoria](https://github.com/maurosoria/dirsearch)
+* dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
