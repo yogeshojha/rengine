@@ -41,6 +41,7 @@
 * [➤ Contributing](#contributing)
 * [➤ License](#license)
 * [➤ Acknowledgements](#acknowledgements)
+* [➤ Credits](#credits)
 
 ## ➤ About reNgine
 
