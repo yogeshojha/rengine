@@ -134,3 +134,6 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
 * gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
+
+## Credits
+Some of the icons and images used here are from Freepik and flaticons.
