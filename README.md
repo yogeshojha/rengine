@@ -21,7 +21,7 @@
   <p align="center">
     A simple recon Engine
     <br />
-    <a href="https://github.com/yogeshojha/rengine/CONTRIBUTING.md">Contribute</a>
+    <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
@@ -44,11 +44,11 @@
 
 ## About reNgine
 
-![](https://user-images.githubusercontent.com/17223002/86507414-a456a380-bdf5-11ea-9898-8ac7d4e1f37d.png)
+![](https://user-images.githubusercontent.com/17223002/86508683-b8070780-bdff-11ea-8e35-f988943b392a.png)
 
-There are many great recon tools out there, however, I didn't find one that suits my needs so I created this reNgine. I wanted a recon engine where I could perform end to end recon and visualize the result quickly.
+There are many great recon tools out there, however, I didn't find one that suits my need so I created this reNgine. I wanted a recon engine where I could perform end to end recon and visualize the result quickly.
 
-The results produced by the tools out there were great! however, I was frustrated with not having everything in one place.
+The results produced by the other tools were great! however, I was frustrated of not having everything in one place.
 
 ### Motivation behind starting reNgine
 Let's suppose, I am performing recon on redacted.com, and wanted to quickly glance through results like this, I want all subdomains that had **'admin'** on the **page title**, and if there are many of them, sort them by content-length and show me the screenshot.
@@ -57,11 +57,10 @@ Honestly, there were not any tools that could automate this entire pipeline. So 
 
 ### Screenshots
 This is what I built
-![](https://user-images.githubusercontent.com/17223002/86507414-a456a380-bdf5-11ea-9898-8ac7d4e1f37d.png)
 
-![](https://user-images.githubusercontent.com/17223002/86508594-d9b3bf00-bdfe-11ea-9b86-7fb05b067634.png)
+![](https://user-images.githubusercontent.com/17223002/86508684-b9d0cb00-bdff-11ea-996d-74ef776d2672.png)
 
-![](https://user-images.githubusercontent.com/17223002/86508601-e6d0ae00-bdfe-11ea-809c-d02ef588920b.png)
+![](https://user-images.githubusercontent.com/17223002/86508685-ba696180-bdff-11ea-9def-f45e5b059f0f.png)
 
 Of course, at this point in time, reNgine does not give the best result compared other tools. reNgine has its shortcomings. But, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
 
@@ -119,11 +118,11 @@ See [the contributing guide](CONTRIBUTING.md) to get started.
 ### First-time Open Source contributors
 Please note that reNgine is beginner-friendly. If you have never done any open-source yet, we encourage you to do so. **We will be happy and proud of your first PR ever.**
 
-You can begin with resolving any [open issues](https://github.com/yogeshojha/rengine/issues)
+You can begin with resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
 
 ## License
 
-Distributed under the MIT License. See [LICENSE](LICENSE.md) for more information.
+Distributed under the GNU GPL license License. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.
