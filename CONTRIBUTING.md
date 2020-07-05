@@ -1,6 +1,13 @@
-# Contributing
+# Contributing to reNgine
 
-Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
+[![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
+
+As an open-source project, reNgine welcomes any contributions. Your contributions could be as simple as fixing the indentations or fixing UI to as complex as bringing new modules and features.
+Your contributions are highly appreciated and we welcome any kind of contributions as long as you adhere to our guidelines and your PR aligns the idea behind creating the reNgine.
+
+If you are new to open source community, reNgine is beginner-friendly. Please create pull requests for any new features, bug fixes, improvements on documentation, or anything!
+
+Join our developer chat on [reNgine Slack channel](https://join.slack.com/t/reconengine/shared_invite/zt-figje4iu-~tgPstZXzqiBrDzl4Y1j5Q) if you would like to contribute to reNgine.
 
 - [Types of Contributions](#Types-of-Contributions)
 - [Contributor Setup](#Setting-Up-the-Code-for-Local-Development)
@@ -12,30 +19,31 @@ Contributions are welcome, and they are greatly appreciated! Every little bit he
 
 You can contribute in many ways:
 
-### Report Bugs
+## Bug reporting
 
-Report bugs at [https://github.com/yogeshojha/rengine/issues](https://github.com/yogeshojha/rengine/issues).
+We appreciate your effort to improve reNgine by submitting a bug report. But, Before doing so, please check the following things:
 
-If you are reporting a bug, please include:
+1. Please **do not** use the issue tracker for personal support requests, instead use [reNgine Slack channel](https://join.slack.com/t/reconengine/shared_invite/zt-figje4iu-~tgPstZXzqiBrDzl4Y1j5Q) for any personal support request.
+2. Check whether the bug **hasn't been already reported**. Duplicate reports take us time, that we could be used to fix other bugs or make improvements.
+3. If you get an error while using reNgine, please **describe what happened** and add a verbose error message. Reports like "I got an error when I started scanning some random website." are not worth anybody's time. Please be as descriptive as you can.
+4. Provide easy steps to reproduce. This will help us solve your issues easily and quickly.
+   Your contributions are again highly appreciated!
 
-- Your operating system name and version.
-- Any details about your local setup that might be helpful in troubleshooting.
-- If you can, provide detailed steps to reproduce the bug.
-- If you don't have steps to reproduce the bug, just note your observations in as much detail as you can. Questions to start a discussion about the issue are welcome.
+Please report [bugs here on GitHub Issues section][1].
 
-### Fix Bugs
+[1]: https://github.com/yogeshojha/rengine/issues/new
 
-Look through the GitHub issues for bugs. Anything tagged with "bug" is open to whoever wants to implement it.
+## Feature requests
 
-### Implement Features
+We welcome feature requests. But please take a moment to find out whether your idea fits with the original idea behind reEngine. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Please provide as much detail and context as possible.
 
-Look through the GitHub issues for features . Anything tagged with "enhancement" and "bug" is open to whoever wants to implement it.
+## Pull requests
 
-Please do not combine multiple feature enhancements into a single pull request.
+Pull requests with a bug fix, improvements, new features are welcome and very much appreciated.
 
-Note: this project is very conservative, so new features that aren't tagged with "please-help" might not get into core. We're trying to keep the code base small, extensible, and streamlined. Whenever possible, it's best to try and implement feature ideas as separate projects outside of the core codebase.
+**Please ask** first before embarking on any significant pull request (e.g. implementing features, refactoring code, porting to a different language), otherwise you risk spending a lot of time working on something that the project's developers might not want to merge into the project.
 
-### Submit Feedback
+## Submit Feedback
 
 The best way to send feedback is to file an issue at [https://github.com/yogeshojha/rengine/issues](https://github.com/yogeshojha/rengine/issues).
 
@@ -45,47 +53,28 @@ If you are proposing a feature:
 - Keep the scope as narrow as possible, to make it easier to implement.
 - Remember that this is a volunteer-driven project, and that contributions are welcome :)
 
-## Setting Up the Code for Local Development
+### First Time Contributors
 
-Here's how to set up `Rengine` for local development.
+If reNgine happens to be your first open-source project to contribute to, please follow the guidelines.
 
-1. Fork the `Rengine` repo on GitHub.
-2. Clone your fork locally:
-
-```bash
-git clone git@github.com:your_name_here/rengine.git
-```
-
-3. Assuming you have docker installed, this is how you set up your fork for local development:
-
-```bash
-cd engine
-docker-compose up --build -d
-
-# Build process may take some time 3. Run the migration
-docker exec -it rengine_web_1 python manage.py migrate
-
-docker-compose up -d
+1. Fork this project.
+2. `git clone https://github.com/yourusername/rengine.git`
+3. Configure the remote as below
 
 ```
-
-4. Create a branch for local development :
-
-```bash
-git checkout -b name-of-your-bugfix-or-feature
+cd rengine
+# Assign upstream
+git remote add upstream https://github.com/yogeshojha/rengine.git
 ```
 
-Now you can make your changes locally.
+4. If cloning was done a while ago, please get the latest changes from upstream
 
-5. Commit your changes and push your branch to GitHub:
-
-```bash
-git add .
-git commit -m "Your detailed description of your changes."
-git push origin name-of-your-bugfix-or-feature
+```
+git checkout master
+git pull upstream master
 ```
 
-8. Submit a pull request through the GitHub website.
+5. Commit your changes in the logical chunks
 
 ## Contributor Guidelines
 
@@ -138,7 +127,7 @@ How to prioritize pull requests, from most to least important:
 - Major edits to docs.
 - Features.
 
-Ensure that each pull request meets all requirements in [checklist](https://gist.github.com/audreyr/4feef90445b9680475f2).
+Ensure that each pull request meets all requirements.
 
 ### Process: Issues
 
@@ -197,3 +186,13 @@ Contributors may be given core commit privileges. Preference will be given to th
 2. A coding style that the other core committers find simple, minimal, and clean.
 3. Access to resources for cross-platform development and testing.
 4. Time to devote to the project regularly.
+
+## Code of Conduct
+
+Please note that this project is released with a [Contributor Code of
+Conduct](/CODE_OF_CONDUCT.md).
+By participating in this project you agree to abide by its terms.
+
+## Thank you!
+
+Thank you for contributing!
