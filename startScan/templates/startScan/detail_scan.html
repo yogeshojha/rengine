@@ -34,9 +34,7 @@ Detailed Scan for {{host.domain_name}}
                 <div class="widget-heading">
                     <h5 class="">Recent Activities</h5>
                 </div>
-
                 <div class="widget-content">
-
                     <div class="mt-container mx-auto">
                         <div class="timeline-line">
                             {% for activity in scan_activity %}
@@ -46,10 +44,10 @@ Detailed Scan for {{host.domain_name}}
                                 <div class="t-text">
                                     <b>{{activity.title}}</b>
                                     <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
-                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-                                        {% endif %}
+                                    {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                    {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                    {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                                    {% endif %}
                                     </span>
                                     <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
@@ -83,7 +81,10 @@ Detailed Scan for {{host.domain_name}}
             <div class="widget widget-one_hybrid">
                 <div class="widget-heading">
                     <div class="w-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
                     </div>
                     <br>
                     <h2 class="text-warning">{{endpoint_count}}</h2>
@@ -94,7 +95,9 @@ Detailed Scan for {{host.domain_name}}
                 </div>
             </div>
         </div>
-        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 mt-4">
+    </div>
+    <div class="row layout-top-spacing">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
                 <div class="table-responsive mb-4 mt-4">
@@ -114,6 +117,10 @@ Detailed Scan for {{host.domain_name}}
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="row layout-top-spacing">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6 layout-top-spacing">
                 <h5 class="text-info">Endpoints</h5>
                 <div class="table-responsive mb-4 mt-4">
@@ -156,22 +163,22 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 }
 </script>
 <script>
-    $(document).ready(function() {
-        var scan_history_table = $('#subdomain_scan_results').DataTable({
-            "oLanguage": {
-                "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-                "sInfo": "Showing page _PAGE_ of _PAGES_",
-                "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-                "sSearchPlaceholder": "Search...",
-                "sLengthMenu": "Results :  _MENU_",
-            },
-            "stripeClasses": [],
-            "lengthMenu": [30, 60, 90, 100],
-            "pageLength": 30,
-            'serverSide': true,
-            "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-            "order": [[ 3, "desc" ]],
-            "columns": [
+$(document).ready(function() {
+    var scan_history_table = $('#subdomain_scan_results').DataTable({
+        "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+        },
+        "stripeClasses": [],
+        "lengthMenu": [20, 40, 60, 100],
+        "pageLength": 20,
+        'serverSide': true,
+        "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+        "order": [[ 3, "desc" ]],
+        "columns": [
             {'data': 'subdomain'},
             {'data': 'http_status'},
             {'data': 'open_ports'},
@@ -180,8 +187,8 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
             {'data': 'technology_stack'},
             {'data': 'screenshot_path', 'searchable': false},
             {'data': 'directory_json'},
-            ],
-            "columnDefs": [
+        ],
+        "columnDefs": [
             {
                 "render": function ( data, type, row ) {
                     // display badge based on http status
@@ -264,12 +271,12 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
                 },
                 "targets": 7
             },
-            ],
+        ],
 
-            drawCallback: function () {
-                $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-                $('.dataTables_wrapper table').removeClass('table-striped');
-            },
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
+        },
         // I dont know why this is so weird, the script for tree_view expand is not working, so I think, it should be loaded once items are rendered
         initComplete: function( settings, json ) {
             var script = document.createElement("script");
@@ -281,28 +288,28 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 });
 </script>
 <script type="text/javascript">
-    $(document).ready(function() {
-        $('#endpoint_results').DataTable({
-            "oLanguage": {
-                "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-                "sInfo": "Showing page _PAGE_ of _PAGES_",
-                "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-                "sSearchPlaceholder": "Search...",
-                "sLengthMenu": "Results :  _MENU_",
-            },
-            "stripeClasses": [],
-            "lengthMenu": [30, 60, 90, 100],
-            "pageLength": 30,
-            'serverSide': true,
-            "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
-            "order": [[ 2, "desc" ]],
-            "columns": [
+$(document).ready(function() {
+    $('#endpoint_results').DataTable({
+        "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+        },
+        "stripeClasses": [],
+        "lengthMenu": [20, 40, 60, 100],
+        "pageLength": 20,
+        'serverSide': true,
+        "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
+        "order": [[ 2, "desc" ]],
+        "columns": [
             {'data': 'http_url'},
             {'data': 'http_status'},
             {'data': 'content_length'},
             {'data': 'page_title'},
-            ],
-            "columnDefs": [
+        ],
+        "columnDefs": [
             {
                 "render": function ( data, type, row ) {
                     // in the endpoint section, there is no point of displaying fully qualified url
@@ -333,13 +340,13 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
                 },
                 "targets": 1
             },
-            ],
-            drawCallback: function () {
-                $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-                $('.dataTables_wrapper table').removeClass('table-striped');
-            }
-        });
+        ],
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
+        }
     });
+});
 
 
 // span values function will seperate the values by comma and put badge around it
