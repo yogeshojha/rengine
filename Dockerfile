@@ -26,6 +26,7 @@ RUN rm o1.13.6.linux-amd64.tar.gz -f
 
 # Environment vars
 ENV PYTHONUNBUFFERED 1
+ENV DATABASE="postgres"
 ENV GOROOT="/usr/local/go"
 ENV GOPATH="/root/go"
 ENV PATH="${PATH}:${GOROOT}/bin"
@@ -39,8 +40,6 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau
 
-
-
 # Make directory for app
 RUN mkdir /app
 WORKDIR /app
@@ -50,3 +49,6 @@ COPY . /app/
 
 RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
+
+# run entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
