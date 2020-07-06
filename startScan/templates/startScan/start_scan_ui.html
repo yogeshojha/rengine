@@ -9,6 +9,13 @@ Start Scan
 {% block custom_js_css_link %}>
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/components/custom-list-group.css' %}" rel="stylesheet" type="text/css">
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -26,6 +33,27 @@ Start Scan for {{domain.domain_name}}
             </div>
         </div>
         <div class="widget-content widget-content-area">
+            {% if engines.count == 0 %}
+            <script type="text/javascript">
+            swal({
+                title: 'Oops looks like you haven\'t defined any scan engines yet.',
+                text: "Please, define some engine before running any scans.",
+                type: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Sure',
+                padding: '2em',
+                showLoaderOnConfirm: true,
+                cancelButtonText: 'Cancel'
+            }).then(function(result){
+                if (result.value) {
+                    location.href='/scanEngine/';
+                }
+                else {
+                    location.href='/target/list/';
+                }
+            });
+            </script>
+            {% else %}
             <form method="POST">
                 {% csrf_token %}
                 <div class="form-row">
@@ -132,16 +160,16 @@ Start Scan for {{domain.domain_name}}
                             </li>
                             {% endfor %}
                         </ul>
+                        <button class="btn btn-outline-primary submit-fn mt-2 float-right" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg> Start Scan</button>
                     </div>
-                </div>
-                <button class="btn btn-outline-primary submit-fn mt-2 float-right" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg> Start Scan</button>
-            </form>
+                </form>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
-
 {% endblock main_content %}
 
 
