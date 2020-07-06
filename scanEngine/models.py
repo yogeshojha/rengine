@@ -11,6 +11,7 @@ class EngineType(models.Model):
     dir_file_search = models.BooleanField()
     subdomain_takeover = models.BooleanField()
     port_scan = models.BooleanField()
+    fetch_url = models.BooleanField()
 
     def __str__(self):
         return self.scan_type_name

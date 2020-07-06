@@ -23,9 +23,9 @@ class AddEngineForm(forms.ModelForm):
     subdomain_takeover = forms.BooleanField(
                     required=False,
                     widget=forms.CheckboxInput(attrs={}))
-    param_discovery = forms.BooleanField(
-                    required=False,
-                    widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
+                    required=False,
+                    widget=forms.CheckboxInput(attrs={"checked":""}))
+    fetch_url = forms.BooleanField(
                     required=False,
                     widget=forms.CheckboxInput(attrs={"checked":""}))
