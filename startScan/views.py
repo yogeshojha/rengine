@@ -104,23 +104,26 @@ def doScan(host_id, domain):
             # after all subdomain has been discovered run naabu to discover the ports
             port_results_file = results_dir + current_scan_dir + '/ports.json'
 
-            naabu_command = 'cat {} | /app/tools/naabu -oJ -o {}'.format(subdomain_scan_results_file, port_results_file)
+            naabu_command = 'cat {} | naabu -json -o {}'.format(subdomain_scan_results_file, port_results_file)
             os.system(naabu_command)
 
             # writing port results
-            port_json_result = open(port_results_file, 'r')
-            lines = port_json_result.readlines()
-            for line in lines:
-                try:
-                    json_st = json.loads(line.strip())
-                except:
-                    json_st = "{'host':'','port':''}"
-                sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
-                if sub_domain.open_ports:
-                    sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
-                else:
-                    sub_domain.open_ports = str(json_st['port'])
-                sub_domain.save()
+            try:
+                port_json_result = open(port_results_file, 'r')
+                lines = port_json_result.readlines()
+                for line in lines:
+                    try:
+                        json_st = json.loads(line.strip())
+                    except:
+                        json_st = "{'host':'','port':''}"
+                    sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
+                    if sub_domain.open_ports:
+                        sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
+                    else:
+                        sub_domain.open_ports = str(json_st['port'])
+                    sub_domain.save()
+            except:
+                print('No Ports file')
 
         '''
         HTTP Crawlwer and screenshot will run by default
@@ -131,7 +134,7 @@ def doScan(host_id, domain):
         # once port scan is complete then run httpx, TODO this has to run in background thread later
         httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
 
-        httpx_command = 'cat {} | /app/tools/httpx -json -o {}'.format(subdomain_scan_results_file, httpx_results_file)
+        httpx_command = 'cat {} | httpx -json -o {}'.format(subdomain_scan_results_file, httpx_results_file)
         os.system(httpx_command)
 
 
@@ -213,7 +216,7 @@ def doScan(host_id, domain):
             create_scan_activity(task, "Fetching endpoints", 1)
             wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
 
-            wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau -providers wayback | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
+            wayback_command = 'echo ' + domain.domain_name + ' | gau -providers wayback | httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
             os.system(wayback_command)
 
             wayback_json_result = open(wayback_results_file, 'r')
