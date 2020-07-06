@@ -84,6 +84,18 @@ Start Scan for {{domain.domain_name}}
                                                 </tr>
                                                 <tr>
                                                     <td>
+                                                        <p style="margin-right:1%">Port Scan</p>
+                                                    </td>
+                                                    <td>
+                                                        {% if engine.port_scan %}
+                                                        {% include 'base/_items/green_tick.html' %}
+                                                        {% else %}
+                                                        {% include 'base/_items/red_cross.html' %}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
                                                         <p style="margin-right:1%">Subdomain Takeover</p>
                                                     </td>
                                                     <td>
@@ -108,10 +120,10 @@ Start Scan for {{domain.domain_name}}
                                                 </tr>
                                                 <tr>
                                                     <td>
-                                                        <p style="margin-right:1%">Port Scan</p>
+                                                        <p style="margin-right:1%">Fetch URl</p>
                                                     </td>
                                                     <td>
-                                                        {% if engine.port_scan %}
+                                                        {% if engine.fetch_url %}
                                                         {% include 'base/_items/green_tick.html' %}
                                                         {% else %}
                                                         {% include 'base/_items/red_cross.html' %}
