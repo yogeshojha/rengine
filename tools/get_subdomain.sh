@@ -15,9 +15,3 @@ rm -rf $2/subdomain*
 # cp /app/tools/scan_results/hackerone.com_2020_05_31_08_31_33/sorted_subdomain_collection.txt $2/sorted_subdomain_collection.txt
 # cp /app/tools/scan_results/hackerone.com_2020_05_31_08_31_33/ports.json $2/ports.json
 # cp /app/tools/scan_results/hackerone.com__2020_05_26_20_36_18/alive.txt $2/alive.txt
-
-
-
-# # check aliveness
-# for i in $(cat $2/sorted_subdomain_collection.txt); do echo "http://$i" && echo "https://$i"; done >> $2/with_protocol_domains.txt
-# cat $2/sorted_subdomain_collection.txt | /app/tools/httprobe | tee -a $2/alive.txt
