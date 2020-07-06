@@ -41,13 +41,12 @@ All Engines
                     <div class="widget-content widget-content-area">
                         <div class="toggle-list">
                             <div class="row">
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="1">Subdomain Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="2">Directory & Files Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="3">Subdomain Takeover</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="1">Subdomain Discovery</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="2">Directory & Files Discovery</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="3">Subdomain Takeover</a>
                             </div>
                             <div class="row">
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="4">Parameter Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="5">Port Scan</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="5">Port Scan</a>
                             </div>
                         </div>
                         <div class="table-responsive mb-4">
@@ -58,7 +57,6 @@ All Engines
                                         <th>Subdomain Discovery</th>
                                         <th>Directory & Files Discovery</th>
                                         <th>Subdomain Takeover</th>
-                                        <th>Parameter Discovery</th>
                                         <th>Port Scan</th>
                                         <th class="text-center">Action</th>
                                     </tr>
@@ -101,22 +99,6 @@ All Engines
                                         </td>
                                         <td>
                                             {% if engine_type.subdomain_takeover == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
-                                            {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
-                                            {%endif%}
-                                        </td>
-                                        <td>
-                                            {% if engine_type.param_discovery == True %}
                                             <div class="icon-container text-success">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
                                                     <polyline points="20 6 9 17 4 12"></polyline>
