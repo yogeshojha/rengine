@@ -42,11 +42,10 @@ All Engines
                         <div class="toggle-list">
                             <div class="row">
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="1">Subdomain Discovery</a>
-                                <a class="btn toggle-vis mb-2 ml-2" data-column="2">Directory & Files Discovery</a>
-                                <a class="btn toggle-vis mb-2 ml-2" data-column="3">Subdomain Takeover</a>
-                            </div>
-                            <div class="row">
-                                <a class="btn toggle-vis mb-2 ml-2" data-column="5">Port Scan</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="2">Port Scan</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="3">Directory & Files Discovery</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="4">Subdomain Takeover</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="5">Fetch URLs</a>
                             </div>
                         </div>
                         <div class="table-responsive mb-4">
@@ -68,37 +67,37 @@ All Engines
                                         <td>{{engine_type.scan_type_name}}</td>
                                         <td>
                                             {% if engine_type.subdomain_discovery == True %}
-                                            {% include 'scanEngine/_items/green_tick.html' %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            {% include 'scanEngine/_items/red_cross.html' %}
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
                                             {% if engine_type.port_scan == True %}
-                                            {% include 'scanEngine/_items/green_tick.html' %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            {% include 'scanEngine/_items/red_cross.html' %}
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
                                             {% if engine_type.dir_file_search == True %}
-                                            {% include 'scanEngine/_items/green_tick.html' %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            {% include 'scanEngine/_items/red_cross.html' %}
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
                                             {% if engine_type.subdomain_takeover == True %}
-                                            {% include 'scanEngine/_items/green_tick.html' %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            {% include 'scanEngine/_items/red_cross.html' %}
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
                                             {% if engine_type.fetch_url == True %}
-                                            {% include 'scanEngine/_items/green_tick.html' %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            {% include 'scanEngine/_items/red_cross.html' %}
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td class="text-center">
