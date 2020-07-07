@@ -12,6 +12,7 @@ class EngineType(models.Model):
     subdomain_takeover = models.BooleanField()
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
+    default_engine = models.BooleanField(default=False)
 
     def __str__(self):
         return self.scan_type_name

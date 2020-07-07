@@ -133,7 +133,12 @@ Start Scan for {{domain.domain_name}}
                                             </table>
                                         </span>
                                         <span class="ml-3 d-block">
-                                            <span class="badge badge-pills outline-badge-warning">Custom</span>
+                                            {% if engine.default_engine %}
+                                            <span class="badge badge-pills outline-badge-info">Default Engine</span>
+                                            {% else %}
+                                            <span class="badge badge-pills outline-badge-danger">Custom Engine</span>
+                                            {% endif %}
+
                                         </span>
                                     </label>
                                 </div>
