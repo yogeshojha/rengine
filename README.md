@@ -45,25 +45,25 @@
 
 ![](https://user-images.githubusercontent.com/17223002/86762294-2e0ba880-c064-11ea-91d1-267ebc8deffe.png)
 
-reNgine is a automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints and gather information. The beauty of reNgine is that, it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
+reNgine is an automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints, and gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
 
-reNgine can be very useful when you have a domain, you want to recon the domain, gather endpoints, directory and file search, performing visual reconnaissance and gather the results at one place.
+reNgine can be very useful when you have a domain, you want to recon the domain, gather endpoints, directory, and file search, performing visual reconnaissance, and gather the results in one place.
 
-Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your defined scan engine, gather all the results at one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200, and quickly want to have a look at the screenshot", reNgine makes it possible.
+Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your defined scan engine, gather all the results in one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200 and quickly want to have a look at the screenshot", reNgine makes it possible.
 
-Another use-case could be, "I want to list all subdomains that uses php and the http status is 200!"
+Another use-case could be, "I want to list all subdomains that use PHP and the HTTP status is 200!"
 
-On the endpoints part, reNgine is capable of gathering the URL endpoints using tool like `gau`, gathers url from many sources like commoncrawl, waybackengine etc.
+On the endpoints part, reNgine is capable of gathering the URL endpoints using tools like `gau`, gathers URL from many sources like common crawl, Wayback engine, etc.
 
-reNgine makes it possible for the use case like, "search the urls that has extension .php and http status is 200!"
+reNgine makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
 
-**Also, Suppose if you are looking for open redirection, you can quickly search for `=http` and look for http status 30X, this will give high accuracy of open redirection with minimal efforts.**
+**Also, Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
 
 ### What it is not
 
 reNgine is not a:
 * Vulnerability scanner!
-* Reconnaissance with high accuracy (No! reNgine infact uses other open source tools, to make this pipeline possible. The accuracy and capability of reNgine is also dependent on those tools)
+* Reconnaissance with high accuracy (No! reNgine, uses other open-source tools, to make this pipeline possible. The accuracy and capability of reNgine is also dependent on those tools)
 * Speed oriented recon framework with immediate results
 
 ### Screenshots
@@ -77,7 +77,7 @@ reNgine is not a:
 
 ![](https://user-images.githubusercontent.com/17223002/86753221-8c815880-c05d-11ea-816b-9c2dce11335a.png)
 
-Of course, at this point in time, reNgine does not give the best of the best result compared other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
+Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
 
 ## Getting Started
 
@@ -103,11 +103,11 @@ Assuming that you have followed the above steps and inside rengine directory
 ```sh
 docker-compose up --build
 ```
-Build process may take some time.
+The build process may take some time.
 
 ## Usage
 
-> :warning: reNgine does fingerprinting, port scanning and banner grabbing which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on targeted domain before using this tool.
+> :warning: reNgine does fingerprinting, port scanning, and banner grabbing which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
 
 If the installation is successful, then you can simply run reNgine by using the command
 ```sh
@@ -141,4 +141,4 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
 
-Also, Some of the icons and images used here in reNgine are from Freepik and flaticons.
+Also, Some of the icons and images used herein reNgine are from Freepik and flaticons.
