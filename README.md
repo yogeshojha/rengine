@@ -39,7 +39,7 @@
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
-* [Acknowledgements](#acknowledgements-and-credits)
+* [Acknowledgements & Credits](#acknowledgements-and-credits)
 
 ## About reNgine
 
