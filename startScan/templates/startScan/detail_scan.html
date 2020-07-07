@@ -22,7 +22,7 @@ Scan history
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Detailed Scan for {{host.domain_name}}
+Detailed Scan for {{history.domain_name}}
 {% endblock breadcrumb_title %}
 
 
@@ -96,7 +96,7 @@ Detailed Scan for {{host.domain_name}}
             </div>
         </div>
     </div>
-    <div class="row layout-top-spacing">
+    <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
@@ -119,6 +119,7 @@ Detailed Scan for {{host.domain_name}}
             </div>
         </div>
     </div>
+    {% if history.scan_type.fetch_url %}
     <div class="row mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6 layout-top-spacing">
@@ -138,6 +139,7 @@ Detailed Scan for {{host.domain_name}}
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock main_content %}
 
