@@ -8,4 +8,6 @@ urlpatterns = [
     path('detail/<int:id>', views.detail_scan, name='detail_scan'),
     path('start/<int:host_id>', views.start_scan_ui, name='start_scan'),
     path('api/', include('startScan.api.urls', 'scan_host_api')),
+    path('export/subdomains/<int:scan_id>', views.export_subdomains, name='export_subdomains'),
+    path('export/endpoints/<int:scan_id>', views.export_endpoints, name='export_endpoints'),
 ]
