@@ -16,6 +16,7 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yogeshojha_rengine&metric=alert_status)](https://sonarcloud.io/dashboard?id=yogeshojha_rengine)
 ![GitHub issues](https://img.shields.io/github/issues/yogeshojha/rengine)
+![reNgine CI test](https://github.com/yogeshojha/rengine/workflows/reNgine%20CI%20test/badge.svg)
 
 <p align="center">
     A automated recon framework for web applications
