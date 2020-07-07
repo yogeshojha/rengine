@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from notification.models import NotificationHooks
@@ -271,3 +271,23 @@ def update_last_activity():
     last_activity.status = 2
     last_activity.time = timezone.now()
     last_activity.save()
+
+def export_subdomains(request, scan_id):
+    subdomain_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for subdomain in subdomain_list:
+        response_body = response_body + subdomain.subdomain + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="subdomains_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
+
+def export_endpoints(request, scan_id):
+    endpoint_list = WayBackEndPoint.objects.filter(url_of__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for endpoint in endpoint_list:
+        response_body = response_body + endpoint.http_url + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="endpoints_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
