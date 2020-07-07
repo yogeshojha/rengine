@@ -50,5 +50,5 @@ docs/_build/
 # pyenv
 .python-version
 
-.DS_Store
+**/.DS_Store
 staticfiles/
