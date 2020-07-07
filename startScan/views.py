@@ -58,7 +58,8 @@ def start_scan_ui(request, host_id):
         messages.add_message(request, messages.INFO, 'Scan Started for ' + domain.domain_name)
         return HttpResponseRedirect(reverse('scan_history'))
     engine = EngineType.objects
-    context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}
+    custom_engine_count = EngineType.objects.filter(default_engine=False).count()
+    context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine, 'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_scan_ui.html', context)
 
 def doScan(host_id, domain):
