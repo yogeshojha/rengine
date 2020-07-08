@@ -33,7 +33,7 @@ ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
 
 # Download Go packages
-RUN go get -u github.com/tomnomnom/assetfinder
+RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
 
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
@@ -52,6 +52,7 @@ RUN python manage.py collectstatic --no-input --clear
 
 RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
+RUN chmod +x /app/tools/get_urls.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

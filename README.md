@@ -135,7 +135,7 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * Amass: [OWASP](https://github.com/OWASP/)
 * httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
-* gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+* gau, assetfinder, hakrawler: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
 

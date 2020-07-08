@@ -215,13 +215,17 @@ def doScan(host_id, domain):
         if(task.scan_type.fetch_url):
             update_last_activity()
             create_scan_activity(task, "Fetching endpoints", 1)
-            wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
+            wayback_results_file = results_dir + current_scan_dir + '/url_wayback.json'
 
-            wayback_command = 'echo ' + domain.domain_name + ' | gau -providers wayback | httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
-            os.system(wayback_command)
+            '''
+            It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
+            '''
+            os.system('/app/tools/get_urls.sh %s %s' %(domain.domain_name, current_scan_dir))
 
-            wayback_json_result = open(wayback_results_file, 'r')
-            lines = wayback_json_result.readlines()
+            url_results_file = results_dir + current_scan_dir + '/all_urls.json'
+
+            urls_json_result = open(url_results_file, 'r')
+            lines = urls_json_result.readlines()
             for line in lines:
                 json_st = json.loads(line.strip())
                 endpoint = WayBackEndPoint()
