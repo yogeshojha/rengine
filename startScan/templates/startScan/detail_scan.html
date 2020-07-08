@@ -102,6 +102,7 @@ Detailed Scan for {{history.domain_name}}
                 <h5 class="text-info">Subdomains Discovered</h5>
                 {% if subdomain_count %}
                 <a href="../export/subdomains/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Subdomains(txt format)</a>
+                <a href="../export/urls/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export URLs(txt format)</a>
                 {% endif %}
                 <div class="table-responsive mb-4 mt-4">
                     <table id="subdomain_scan_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">

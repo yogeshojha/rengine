@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # python3 /app/tools/Sublist3r/sublist3r.py -d $1 -t 10 -o $2/from_sublister.txt
 # /app/tools/amass enum --passive -d $1 -o $2/fromamass.txt
 # assetfinder --subs-only $1 > $2/fromassetfinder.txt

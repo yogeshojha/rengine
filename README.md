@@ -41,7 +41,7 @@
 
 ## About reNgine
 
-![](https://user-images.githubusercontent.com/17223002/86762294-2e0ba880-c064-11ea-91d1-267ebc8deffe.png)
+![](https://user-images.githubusercontent.com/17223002/86880620-92814300-c10a-11ea-9b27-627f43934221.png)
 
 reNgine is an automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints, and gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
 
@@ -76,6 +76,9 @@ reNgine is not a:
 ![](https://user-images.githubusercontent.com/17223002/86753221-8c815880-c05d-11ea-816b-9c2dce11335a.png)
 
 Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
+
+### Flow
+![](https://user-images.githubusercontent.com/17223002/86907633-fd467480-c132-11ea-82ac-35eb071a7453.png)
 
 ## Getting Started
 
@@ -135,7 +138,7 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * Amass: [OWASP](https://github.com/OWASP/)
 * httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
-* gau, assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+* gau, assetfinder, hakrawler: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
 

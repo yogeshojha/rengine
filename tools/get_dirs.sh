@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # $1 = subdomain
 # usage $2 = domain_name scan result path
 
