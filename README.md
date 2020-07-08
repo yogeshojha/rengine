@@ -77,6 +77,9 @@ reNgine is not a:
 
 Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
 
+### Flow
+![](https://user-images.githubusercontent.com/17223002/86907633-fd467480-c132-11ea-82ac-35eb071a7453.png)
+
 ## Getting Started
 
 To get a local copy up and running follow these simple example steps.
