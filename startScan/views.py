@@ -291,3 +291,14 @@ def export_endpoints(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="endpoints_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
     return response
+
+def export_urls(request, scan_id):
+    urls_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for url in urls_list:
+        if url.http_url:
+            response_body = response_body + url.http_url + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="urls_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
