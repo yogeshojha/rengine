@@ -41,7 +41,7 @@
 
 ## About reNgine
 
-![](https://user-images.githubusercontent.com/17223002/86762294-2e0ba880-c064-11ea-91d1-267ebc8deffe.png)
+![](https://user-images.githubusercontent.com/17223002/86880620-92814300-c10a-11ea-9b27-627f43934221.png)
 
 reNgine is an automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints, and gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
 
