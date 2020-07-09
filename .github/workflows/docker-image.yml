@@ -2,9 +2,9 @@ name: reNgine CI test
 
 on:
   push:
-    branches: [ master, stable ]
+    branches: [ master, stable, dev ]
   pull_request:
-    branches: [ master, stable ]
+    branches: [ master, stable, dev ]
 
 jobs:
   build:
