@@ -13,7 +13,8 @@ RUN apt update -y && apt install -y \
   build-essential \
   chromium \
   libpq-dev \
-  nmap
+  nmap \
+  git
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
