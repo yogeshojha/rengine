@@ -101,7 +101,7 @@ All Engines
                                             {%endif%}
                                         </td>
                                         <td class="text-center">
-                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.scan_type_name }}')" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.scan_type_name }}')" class="bs-tooltip btnDelDomain" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete {{engine_type.scan_type_name}} Engine">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -124,6 +124,7 @@ All Engines
 
 
 {% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>

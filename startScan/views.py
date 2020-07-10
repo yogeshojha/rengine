@@ -14,7 +14,7 @@ def index(request):
     return render(request, 'startScan/index.html')
 
 def scan_history(request):
-    host = ScanHistory.objects
+    host = ScanHistory.objects.all().order_by('-last_scan_date')
     context = {'scan_history_active': 'true', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
@@ -186,6 +186,35 @@ def doScan(host_id, domain):
             sub_domain.save()
 
         '''
+        Subdomain takeover is not provided by default, check for conditions
+        '''
+        if(task.scan_type.subdomain_takeover):
+            update_last_activity()
+            create_scan_activity(task, "Subdomain takeover", 1)
+            os.system('/app/tools/takeover.sh %s' %(current_scan_dir))
+
+            takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
+
+            try:
+                with open(takeover_results_file) as f:
+                    takeover_data = json.load(f)
+
+                for data in takeover_data:
+                    if data['vulnerable']:
+                        get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
+                        get_subdomain.takeover = vulnerable_service
+                        get_subdomain.save()
+                    # else:
+                    #     subdomain = data['subdomain']
+                    #     get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
+                    #     get_subdomain.takeover = "Debug"
+                    #     get_subdomain.save()
+
+            except Exception as e:
+                print(e)
+
+
+        '''
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):
@@ -306,3 +335,14 @@ def export_urls(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="urls_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
     return response
+
+def delete_scan(request, id):
+    obj = get_object_or_404(ScanHistory, id=id)
+    if request.method == "POST":
+        obj.delete()
+        messageData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Scan history successfully deleted!')
+    else:
+        messageData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! something went wrong!')
+    return JsonResponse(messageData)
