@@ -186,6 +186,16 @@ def doScan(host_id, domain):
             sub_domain.save()
 
         '''
+        Subdomain takeover is not provided by default, check for conditions
+        '''
+        if(task.scan_type.subdomain_takeover):
+            update_last_activity()
+            create_scan_activity(task, "Subdomain takeover", 1)
+            os.system('/app/tools/takeover.sh %s' %(current_scan_dir))
+
+
+
+        '''
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):

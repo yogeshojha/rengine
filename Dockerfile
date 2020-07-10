@@ -53,6 +53,7 @@ RUN python manage.py collectstatic --no-input --clear
 RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
+RUN chmod +x /app/tools/takeover.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
