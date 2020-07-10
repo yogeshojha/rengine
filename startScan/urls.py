@@ -11,4 +11,5 @@ urlpatterns = [
     path('export/subdomains/<int:scan_id>', views.export_subdomains, name='export_subdomains'),
     path('export/endpoints/<int:scan_id>', views.export_endpoints, name='export_endpoints'),
     path('export/urls/<int:scan_id>', views.export_urls, name='export_http_urls'),
+    path('delete/scan/<int:id>', views.delete_scan, name='delete_scan'),
 ]

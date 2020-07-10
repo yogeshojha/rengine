@@ -106,3 +106,15 @@ table.dataTable {
 .table-hover:not(.table-dark) tbody tr:hover .table-delete {
     color: #e7515a;
 }
+
+.table-view {
+    color: #888ea8;
+    margin-right: 6px;
+    vertical-align: middle;
+    fill: rgba(0, 23, 55, 0.08);
+    cursor: pointer;
+}
+
+.table-hover:not(.table-dark) tbody tr:hover .table-view {
+    color: #5c1ac3;
+}

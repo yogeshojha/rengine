@@ -65,6 +65,14 @@ Scan History
                                 </td>
                                 <td class="text-center">
                                     <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-outline-primary">View</a>
+                                    <a onclick="delete_scan({{ scan_history.id }})" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                                        </svg>
+                                    </a>
+
                                 </td>
                             </tr>
                             {% endfor %}
@@ -79,7 +87,8 @@ Scan History
 
 
 {% block page_level_script %}
-<script src="{% static 'startScan/js/custom_scan.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'startScan/js/custom_start_scan.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>

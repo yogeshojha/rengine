@@ -1,8 +1,8 @@
-function delete_domain(id, domain_name)
+function delete_scan(id, domain_name)
 {
-    const delAPI = "../delete/"+id;
+    const delAPI = "../delete/scan/"+id;
     swal.queue([{
-        title: 'Are you sure you want to delete '+ domain_name +'?',
+        title: 'Are you sure you want to delete this scan history?',
         text: "You won't be able to revert this!",
         type: 'warning',
         showCancelButton: true,
@@ -27,7 +27,7 @@ function delete_domain(id, domain_name)
             .catch(function() {
               swal.insertQueueStep({
                 type: 'error',
-                title: 'Oops! Unable to delete the domain!'
+                title: 'Oops! Unable to delete the scan history!'
               })
             })
         }
