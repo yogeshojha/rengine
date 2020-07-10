@@ -23,7 +23,7 @@ def add_target_form(request):
     return render(request, 'target/add.html', context)
 
 def list_target(request):
-    domains = Domain.objects
+    domains = Domain.objects.all().order_by('-insert_date')
     context = {'list_target_li': 'active', 'target_data_active': 'true', 'domains': domains}
     return render(request, 'target/list.html', context)
 
