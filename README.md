@@ -139,5 +139,6 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * gau, assetfinder, hakrawler: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
+* [Ganesh Pandey](https://github.com/GaneshPandey)
 
 Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.
