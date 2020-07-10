@@ -119,7 +119,7 @@ The web application can then be accessed from [http://localhost:8000](http://loc
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**. Your contributions could be as simple as fixing the indentations or fixing UI to as complex as bringing new modules and features.
 
-See [the contributing guide](.github/CONTRIBUTING.md) to get started.
+See [contributing guide](.github/CONTRIBUTING.md) to get started.
 
 ### First-time Open Source contributors
 Please note that reNgine is beginner-friendly. If you have never done any open-source yet, we encourage you to do so. **We will be happy and proud of your first PR ever.**
