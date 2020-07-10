@@ -16,7 +16,7 @@
 ![reNgine CI test](https://github.com/yogeshojha/rengine/workflows/reNgine%20CI%20test/badge.svg)
 
 <p align="center">
-    A automated recon framework for web applications
+    An automated recon framework for web applications
     <br />
     <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
     ·
@@ -92,11 +92,9 @@ cd rengine
 ### Prerequisites
 
 * Docker
-Install docker based on your OS from [here](https://www.docker.com/get-started)
+  * Install docker based on your OS from [here](https://www.docker.com/get-started)
 * docker-compose
-Installation instructions for docker-compose from [here](https://docs.docker.com/compose/install/)
-
-
+  * Installation instructions for docker-compose from [here](https://docs.docker.com/compose/install/)
 
 ### Installation
 
@@ -142,4 +140,4 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
 
-Also, Some of the icons and images used herein reNgine are from Freepik and flaticons.
+Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.
