@@ -306,3 +306,14 @@ def export_urls(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="urls_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
     return response
+
+def delete_scan(request, id):
+    obj = get_object_or_404(ScanHistory, id=id)
+    if request.method == "POST":
+        obj.delete()
+        messageData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Scan history successfully deleted!')
+    else:
+        messageData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! something went wrong!')
+    return JsonResponse(messageData)
