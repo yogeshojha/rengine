@@ -1,38 +1,30 @@
 ---
-name: Bug report
+name: "\U0001F41E Bug Report"
 about: Create a report to help us improve
-title: ''
+title: Bug - Title of Bug
 labels: ''
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+Found a bug? Please fill out the sections below. 👍
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+### Issue Summary
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+A summary of the issue.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+### Steps to Reproduce
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+1. When I am scanning the domains, this happens
+2. ...
+3. ...
 
-**Additional context**
-Add any other context about the problem here.
+Any other relevant information. For example, why do you consider this a bug and what did you expect to happen instead?
+
+* I have confirmed that this issue can be reproduced as described on a latest version/pull of reNgine: (yes / no)
+
+
+### Technical details
+
+Please list out any technical details such as operating environment.
