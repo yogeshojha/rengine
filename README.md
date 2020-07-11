@@ -19,6 +19,8 @@
     An automated recon framework for web applications
     <br />
     <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
+    .
+    <a href="https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md">What's new</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
