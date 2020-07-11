@@ -34,6 +34,11 @@
                         <a href="{% url 'list_target' %}"> List Targets </a>
                     </li>
                 </ul>
+                <ul class="submenu list-unstyled collapse show" id="app" data-parent="#accordionExample" style="">
+                    <li class="{{ import_target_li }}">
+                        <a href="{% url 'import_targets' %}"> Import Targets </a>
+                    </li>
+                </ul>
             </li>
 
             <li class="menu">
