@@ -12,7 +12,7 @@ Thanks to these individuals for making reNgine awesome by fixing bugs, resolving
 
 Also, Thanks to these individuals for making reNgine awesome by providing continuous suggestions and support!
 
-* [BhavKiran](https://bhavkaran.com)
-* cor3min3r
+* [bhavsec](https://twitter.com/bhavsec)
+* [Cor3min3r](https://linkedin.com/in/cor3min3r)
 * [Ganesh Pandey](https://github.com/GaneshPandey)
-* [SecArmy](https://secarmy.org)
+* [SecArmy](https://twitter.com/secarmyofficial)
