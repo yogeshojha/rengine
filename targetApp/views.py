@@ -36,7 +36,7 @@ def import_targets(request):
                 io_string = io.StringIO(txt_content)
                 for target in io_string:
                     if validators.domain(target):
-                        Domain.objects.update_or_create(domain_name=target, insert_date=timezone.now())
+                        Domain.objects.create(domain_name=target, insert_date=timezone.now())
                         target_count += 1
                 if target_count:
                     messages.add_message(request, messages.SUCCESS, str(target_count) + ' targets added successfully!')
@@ -52,9 +52,8 @@ def import_targets(request):
                 csv_content = csv_file.read().decode('UTF-8')
                 io_string = io.StringIO(csv_content)
                 for column in csv.reader(io_string, delimiter=','):
-                    print(column[0])
                     if validators.domain(column[0]):
-                        Domain.objects.update_or_create(domain_name=column[0], domain_description=column[1], insert_date=timezone.now())
+                        Domain.objects.create(domain_name=column[0], domain_description=column[1], insert_date=timezone.now())
                         target_count += 1
                 if target_count:
                     messages.add_message(request, messages.SUCCESS, str(target_count) + ' targets added successfully!')
