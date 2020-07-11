@@ -34,6 +34,7 @@ jobs:
     steps:
       - uses: docker/build-push-action@v1
         with:
+          path: ../../
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           repository: yogeshojha/rengine
