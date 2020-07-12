@@ -1,0 +1,41 @@
+[
+{
+    "model": "scanEngine.enginetype",
+    "pk": 1,
+    "fields": {
+        "scan_type_name": "Full Scan",
+        "subdomain_discovery": true,
+        "dir_file_search": true,
+        "subdomain_takeover": true,
+        "port_scan": true,
+        "fetch_url": true,
+        "default_engine": true
+    }
+},
+{
+    "model": "scanEngine.enginetype",
+    "pk": 2,
+    "fields": {
+        "scan_type_name": "Passive Only Scan",
+        "subdomain_discovery": true,
+        "dir_file_search": false,
+        "subdomain_takeover": true,
+        "port_scan": false,
+        "fetch_url": true,
+        "default_engine": true
+    }
+},
+{
+    "model": "scanEngine.enginetype",
+    "pk": 3,
+    "fields": {
+        "scan_type_name": "Subdomain Only Scan",
+        "subdomain_discovery": true,
+        "dir_file_search": false,
+        "subdomain_takeover": false,
+        "port_scan": false,
+        "fetch_url": false,
+        "default_engine": true
+    }
+}
+]

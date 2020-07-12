@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from notification.models import NotificationHooks
@@ -14,7 +14,7 @@ def index(request):
     return render(request, 'startScan/index.html')
 
 def scan_history(request):
-    host = ScanHistory.objects
+    host = ScanHistory.objects.all().order_by('-last_scan_date')
     context = {'scan_history_active': 'true', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
@@ -24,7 +24,7 @@ def detail_scan(request, id):
     scan_activity = ScanActivity.objects.filter(scan_of__id=id).order_by('time')
     endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
     endpoint_alive_count = WayBackEndPoint.objects.filter(url_of__id=id, http_status__exact=200).count()
-    host = get_object_or_404(ScanHistory, id=id)
+    history = get_object_or_404(ScanHistory, id=id)
     context = {'scan_history_active': 'true',
                 'scan_history': scan_history,
                 'scan_activity': scan_activity,
@@ -33,12 +33,12 @@ def detail_scan(request, id):
                 'subdomain_count': subdomain_count,
                 'endpoint_count': endpoint_count,
                 'endpoint_alive_count':  endpoint_alive_count,
-                'host': host,
+                'history': history,
                 }
     return render(request, 'startScan/detail_scan.html', context)
 
-def start_scan_ui(request, id):
-    domain = get_object_or_404(Domain, id=id)
+def start_scan_ui(request, host_id):
+    domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
         # get engine type
         engine_type = request.POST['scan_mode']
@@ -58,11 +58,13 @@ def start_scan_ui(request, id):
         messages.add_message(request, messages.INFO, 'Scan Started for ' + domain.domain_name)
         return HttpResponseRedirect(reverse('scan_history'))
     engine = EngineType.objects
-    context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine}
+    custom_engine_count = EngineType.objects.filter(default_engine=False).count()
+    context = {'scan_history_active': 'true', 'domain': domain, 'engines': engine, 'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_scan_ui.html', context)
 
-def doScan(id, domain):
-    task = ScanHistory.objects.get(pk=id)
+def doScan(host_id, domain):
+    task = ScanHistory.objects.get(pk=host_id)
+
     create_scan_activity(task, "Scanning Started", 2)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
@@ -76,53 +78,64 @@ def doScan(id, domain):
         scan_failed(task)
 
     try:
-        create_scan_activity(task, "Subdomain Scanning", 1)
-        # all subdomain scan happens here
-        os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
+        # TODO make subdomain only scan
+        '''
+        currently subdomain scan is by default, in next release this may be removed
+        So that recon can be done on single subdomain
+        rather than the entire subdomain
+        '''
+        if(task.scan_type.subdomain_discovery):
+            create_scan_activity(task, "Subdomain Scanning", 1)
+            # all subdomain scan happens here
+            os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
 
-        subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
+            subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 
-        with open(subdomain_scan_results_file) as subdomain_list:
-            for subdomain in subdomain_list:
-                scanned = ScannedHost()
-                scanned.subdomain = subdomain.rstrip('\n')
-                scanned.scan_history = task
-                scanned.save()
+            with open(subdomain_scan_results_file) as subdomain_list:
+                for subdomain in subdomain_list:
+                    scanned = ScannedHost()
+                    scanned.subdomain = subdomain.rstrip('\n')
+                    scanned.scan_history = task
+                    scanned.save()
 
-        update_last_activity()
-        create_scan_activity(task, "Port Scanning", 1)
+        if(task.scan_type.port_scan):
+            update_last_activity()
+            create_scan_activity(task, "Port Scanning", 1)
 
-        # after all subdomain has been discovered run naabu to discover the ports
-        port_results_file = results_dir + current_scan_dir + '/ports.json'
+            # after all subdomain has been discovered run naabu to discover the ports
+            port_results_file = results_dir + current_scan_dir + '/ports.json'
 
-        naabu_command = 'cat {} | /app/tools/naabu -oJ -o {}'.format(subdomain_scan_results_file, port_results_file)
-        os.system(naabu_command)
+            naabu_command = 'cat {} | naabu -json -o {}'.format(subdomain_scan_results_file, port_results_file)
+            os.system(naabu_command)
 
-        # writing port results
-        try:
-            port_json_result = open(port_results_file, 'r')
-            lines = port_json_result.readlines()
-            for line in lines:
-                try:
-                    json_st = json.loads(line.strip())
-                except:
-                    json_st = "{'host':'','port':''}"
-                sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
-                if sub_domain.open_ports:
-                    sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
-                else:
-                    sub_domain.open_ports = str(json_st['port'])
-                sub_domain.save()
-        except:
-            print('Port File doesnt exist')
+            # writing port results
+            try:
+                port_json_result = open(port_results_file, 'r')
+                lines = port_json_result.readlines()
+                for line in lines:
+                    try:
+                        json_st = json.loads(line.strip())
+                    except:
+                        json_st = "{'host':'','port':''}"
+                    sub_domain = ScannedHost.objects.get(scan_history=task, subdomain=json_st['host'])
+                    if sub_domain.open_ports:
+                        sub_domain.open_ports = sub_domain.open_ports + ',' + str(json_st['port'])
+                    else:
+                        sub_domain.open_ports = str(json_st['port'])
+                    sub_domain.save()
+            except:
+                print('No Ports file')
 
+        '''
+        HTTP Crawlwer and screenshot will run by default
+        '''
         update_last_activity()
         create_scan_activity(task, "HTTP Crawler", 1)
 
-        # once port scan is complete then run httpx, this has to run in background thread later
+        # once port scan is complete then run httpx, TODO this has to run in background thread later
         httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
 
-        httpx_command = 'cat {} | /app/tools/httpx -json -o {}'.format(subdomain_scan_results_file, httpx_results_file)
+        httpx_command = 'cat {} | httpx -json -o {}'.format(subdomain_scan_results_file, httpx_results_file)
         os.system(httpx_command)
 
 
@@ -158,7 +171,7 @@ def doScan(id, domain):
             data = json.load(json_file)
 
         for host in data['pages']:
-            sub_domain = ScannedHost.objects.get(scan_history__id=id, subdomain=data['pages'][host]['hostname'])
+            sub_domain = ScannedHost.objects.get(scan_history__id=host_id, subdomain=data['pages'][host]['hostname'])
             list_ip = data['pages'][host]['addrs']
             ip_string = ','.join(list_ip)
             sub_domain.ip_address = ip_string
@@ -172,45 +185,89 @@ def doScan(id, domain):
             sub_domain.technology_stack = tech_string
             sub_domain.save()
 
-        update_last_activity()
-        create_scan_activity(task, "Directory Search", 1)
-        # scan directories for all the alive subdomain with http status > 200
-        alive_subdomains = ScannedHost.objects.filter(scan_history__id=id).exclude(http_url='')
-        dirs_results = current_scan_dir + '/dirs.json'
-        for subdomain in alive_subdomains:
-            os.system('/app/tools/get_dirs.sh %s %s' %(subdomain.http_url, dirs_results))
+        '''
+        Subdomain takeover is not provided by default, check for conditions
+        '''
+        if(task.scan_type.subdomain_takeover):
+            update_last_activity()
+            create_scan_activity(task, "Subdomain takeover", 1)
+            os.system('/app/tools/takeover.sh %s' %(current_scan_dir))
+
+            takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
+
             try:
-                with open(dirs_results, "r") as json_file:
-                    json_string = json_file.read()
-                    scanned_host = ScannedHost.objects.get(scan_history__id=id, http_url=subdomain.http_url)
-                    scanned_host.directory_json = json_string
-                    scanned_host.save()
-            except:
-                print("No File")
+                with open(takeover_results_file) as f:
+                    takeover_data = json.load(f)
+
+                for data in takeover_data:
+                    if data['vulnerable']:
+                        get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
+                        get_subdomain.takeover = vulnerable_service
+                        get_subdomain.save()
+                    # else:
+                    #     subdomain = data['subdomain']
+                    #     get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
+                    #     get_subdomain.takeover = "Debug"
+                    #     get_subdomain.save()
+
+            except Exception as e:
+                print(e)
 
 
-        # get endpoints from wayback engine
-        update_last_activity()
-        create_scan_activity(task, "Fetching endpoints", 1)
-        wayback_results_file = results_dir + current_scan_dir + '/wayback.json'
+        '''
+        Directory search is not provided by default, check for conditions
+        '''
+        if(task.scan_type.dir_file_search):
+            update_last_activity()
+            create_scan_activity(task, "Directory Search", 1)
+            # scan directories for all the alive subdomain with http status > 200
+            alive_subdomains = ScannedHost.objects.filter(scan_history__id=host_id).exclude(http_url='')
+            dirs_results = current_scan_dir + '/dirs.json'
+            for subdomain in alive_subdomains:
+                os.system('/app/tools/get_dirs.sh %s %s' %(subdomain.http_url, dirs_results))
+                try:
+                    with open(dirs_results, "r") as json_file:
+                        json_string = json_file.read()
+                        scanned_host = ScannedHost.objects.get(scan_history__id=host_id, http_url=subdomain.http_url)
+                        scanned_host.directory_json = json_string
+                        scanned_host.save()
+                except:
+                    print("No File")
 
-        wayback_command = 'echo ' + domain.domain_name + ' | /app/tools/gau -providers wayback | /app/tools/httpx -status-code -content-length -title -json -o {}'.format(wayback_results_file)
-        os.system(wayback_command)
 
-        wayback_json_result = open(wayback_results_file, 'r')
-        lines = wayback_json_result.readlines()
-        for line in lines:
-            json_st = json.loads(line.strip())
-            endpoint = WayBackEndPoint()
-            endpoint.url_of = task
-            endpoint.http_url = json_st['url']
-            endpoint.content_length = json_st['content-length']
-            endpoint.http_status = json_st['status-code']
-            endpoint.page_title = json_st['title']
-            endpoint.save()
+        '''
+        Getting endpoint from GAU, is also not set by default, check for conditions.
+        One thing to change is that, currently in gau, providers is set to wayback,
+        later give them choice
+        '''
+        # TODO: give providers as choice for users between commoncrawl, alienvault or wayback
+        if(task.scan_type.fetch_url):
+            update_last_activity()
+            create_scan_activity(task, "Fetching endpoints", 1)
+            wayback_results_file = results_dir + current_scan_dir + '/url_wayback.json'
 
+            '''
+            It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
+            '''
+            os.system('/app/tools/get_urls.sh %s %s' %(domain.domain_name, current_scan_dir))
 
+            url_results_file = results_dir + current_scan_dir + '/all_urls.json'
 
+            urls_json_result = open(url_results_file, 'r')
+            lines = urls_json_result.readlines()
+            for line in lines:
+                json_st = json.loads(line.strip())
+                endpoint = WayBackEndPoint()
+                endpoint.url_of = task
+                endpoint.http_url = json_st['url']
+                endpoint.content_length = json_st['content-length']
+                endpoint.http_status = json_st['status-code']
+                endpoint.page_title = json_st['title']
+                endpoint.save()
+
+        '''
+        Once the scan is completed, save the status to successful
+        '''
         task.scan_status = 2
         task.save()
     except Exception as e:
@@ -247,3 +304,45 @@ def update_last_activity():
     last_activity.status = 2
     last_activity.time = timezone.now()
     last_activity.save()
+
+def export_subdomains(request, scan_id):
+    subdomain_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for subdomain in subdomain_list:
+        response_body = response_body + subdomain.subdomain + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="subdomains_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
+
+def export_endpoints(request, scan_id):
+    endpoint_list = WayBackEndPoint.objects.filter(url_of__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for endpoint in endpoint_list:
+        response_body = response_body + endpoint.http_url + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="endpoints_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
+
+def export_urls(request, scan_id):
+    urls_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    domain_results = ScanHistory.objects.get(id=scan_id)
+    response_body = ""
+    for url in urls_list:
+        if url.http_url:
+            response_body = response_body + url.http_url + "\n"
+    response = HttpResponse(response_body, content_type='text/plain')
+    response['Content-Disposition'] = 'attachment; filename="urls_'+domain_results.domain_name.domain_name+'_'+str(domain_results.last_scan_date.date())+'.txt"'
+    return response
+
+def delete_scan(request, id):
+    obj = get_object_or_404(ScanHistory, id=id)
+    if request.method == "POST":
+        obj.delete()
+        messageData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Scan history successfully deleted!')
+    else:
+        messageData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! something went wrong!')
+    return JsonResponse(messageData)

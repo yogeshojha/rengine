@@ -41,13 +41,11 @@ All Engines
                     <div class="widget-content widget-content-area">
                         <div class="toggle-list">
                             <div class="row">
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="1">Subdomain Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="2">Directory & Files Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="3">Subdomain Takeover</a>
-                            </div>
-                            <div class="row">
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="4">Parameter Discovery</a>
-                                <a class="btn toggle-vis mb-4 ml-2" data-column="5">Port Scan</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="1">Subdomain Discovery</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="2">Port Scan</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="3">Directory & Files Discovery</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="4">Subdomain Takeover</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="5">Fetch URLs</a>
                             </div>
                         </div>
                         <div class="table-responsive mb-4">
@@ -56,99 +54,54 @@ All Engines
                                     <tr>
                                         <th>Engine Name</th>
                                         <th>Subdomain Discovery</th>
+                                        <th>Port Scan</th>
                                         <th>Directory & Files Discovery</th>
                                         <th>Subdomain Takeover</th>
-                                        <th>Parameter Discovery</th>
-                                        <th>Port Scan</th>
+                                        <th>Fetch URLs</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for engine_type in engine_type.all %}
                                     <tr>
-                                        <td>{{engine_type.scan_type_name}}</td>
+                                        <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.scan_type_name}}</span></td>
                                         <td>
-                                            {% if engine_type.subdomain_discovery == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
+                                            {% if engine_type.subdomain_discovery %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
-                                            {% if engine_type.dir_file_search == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
+                                            {% if engine_type.port_scan %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
-                                            {% if engine_type.subdomain_takeover == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
+                                            {% if engine_type.dir_file_search %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
-                                            {% if engine_type.param_discovery == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
+                                            {% if engine_type.subdomain_takeover %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td>
-                                            {% if engine_type.port_scan == True %}
-                                            <div class="icon-container text-success">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check">
-                                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                                </svg>
-                                            </div>
+                                            {% if engine_type.fetch_url %}
+                                            {% include 'base/_items/green_tick.html' %}
                                             {% else %}
-                                            <div class="icon-container text-danger">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                                                </svg>
-                                            </div>
+                                            {% include 'base/_items/red_cross.html' %}
                                             {%endif%}
                                         </td>
                                         <td class="text-center">
-                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.scan_type_name }}')" class="btnDelDomain" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete">
+                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.scan_type_name }}')" class="bs-tooltip btnDelDomain" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete {{engine_type.scan_type_name}} Engine">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -171,6 +124,7 @@ All Engines
 
 
 {% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>

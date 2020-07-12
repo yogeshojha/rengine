@@ -1,0 +1,17 @@
+.git
+.gitignore
+.github
+.gitmodules
+.dockerignore
+.sonarcloud.properties
+db.sqlite3
+Dockerfile
+docker-compose.yml
+*.md
+_config.yml
+LICENSE
+downloads
+uploads
+logs
+venv
+secret

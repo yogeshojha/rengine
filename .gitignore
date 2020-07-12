@@ -23,8 +23,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -50,4 +48,5 @@ docs/_build/
 # pyenv
 .python-version
 
-.DS_Store
+**/.DS_Store
+staticfiles/

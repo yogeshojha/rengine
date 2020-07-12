@@ -22,22 +22,19 @@ Scan history
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Detailed Scan for {{host.domain_name}}
+Detailed Scan for {{history.domain_name}}
 {% endblock breadcrumb_title %}
 
 
 {% block main_content %}
-<div class="col-lg-12 layout-px-spacing">
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mt-2">
             <div class="widget widget-activity-four">
                 <div class="widget-heading">
                     <h5 class="">Recent Activities</h5>
                 </div>
-
                 <div class="widget-content">
-
                     <div class="mt-container mx-auto">
                         <div class="timeline-line">
                             {% for activity in scan_activity %}
@@ -47,10 +44,10 @@ Detailed Scan for {{host.domain_name}}
                                 <div class="t-text">
                                     <b>{{activity.title}}</b>
                                     <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
-                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-                                        {% endif %}
+                                    {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                    {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                    {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                                    {% endif %}
                                     </span>
                                     <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
@@ -61,54 +58,60 @@ Detailed Scan for {{host.domain_name}}
                 </div>
             </div>
         </div>
-        <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-            <div class="row widget-statistic">
-                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
-                    <div class="widget widget-one_hybrid">
-                        <div class="widget-heading">
-                            <div class="w-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                                </svg>
-                            </div>
-                            &nbsp;
-                            <h2 class="text-warning">{{subdomain_count}}</h2>
-                            <h6 class="">Subdomains Discovered</h6>
-                        </div>
-                        <div class="widget-content">
-                            Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
-                        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+            <div class="widget widget-one_hybrid">
+                <div class="widget-heading">
+                    <div class="w-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
                     </div>
+                    &nbsp;
+                    <h2 class="text-warning">{{subdomain_count}}</h2>
+                    <h6 class="">Subdomains Discovered</h6>
                 </div>
-                <div class="col-xl-6 col-lg-6 col-md-4 col-sm-6 col-12">
-                    <div class="widget widget-one_hybrid">
-                        <div class="widget-heading">
-                            <div class="w-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-                            </div>
-                            <br>
-                            <h2 class="text-warning">{{endpoint_count}}</h2>
-                            <h6 class="">Endpoints</h6>
-                        </div>
-                        <div class="widget-content">
-                            Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
-                        </div>
-                    </div>
+                <div class="widget-content">
+                    Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
                 </div>
             </div>
         </div>
-        <div class="col-xl-12 col-lg-12 col-sm-12">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+            <div class="widget widget-one_hybrid">
+                <div class="widget-heading">
+                    <div class="w-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                    </div>
+                    &nbsp;
+                    <h2 class="text-warning">{{endpoint_count}}</h2>
+                    <h6 class="">Endpoints</h6>
+                </div>
+                <div class="widget-content">
+                    Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row layout-top-spacing mb-4">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
+                {% if subdomain_count %}
+                <a href="../export/subdomains/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Subdomains(txt format)</a>
+                <a href="../export/urls/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export URLs(txt format)</a>
+                {% endif %}
                 <div class="table-responsive mb-4 mt-4">
-                    <table id="subdomain_scan_results" class="multi-table table" style="width:100%">
+                    <table id="subdomain_scan_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
                         <thead>
                             <tr>
                                 <th>Subdomain</th>
                                 <th>Status</th>
                                 <th>Ports</th>
+                                <th class="text-center">Takeover</th>
                                 <th>Content Length</th>
                                 <th>Page Title</th>
                                 <th>Technology</th>
@@ -119,13 +122,21 @@ Detailed Scan for {{host.domain_name}}
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+    {% if history.scan_type.fetch_url %}
+    <div class="row mb-4">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6 layout-top-spacing">
                 <h5 class="text-info">Endpoints</h5>
+                {% if endpoint_count %}
+                <a href="../export/endpoints/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Endpoints(txt format)</a>
+                {% endif %}
                 <div class="table-responsive mb-4 mt-4">
-                    <table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="endpoint_results">
+                    <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
                         <thead>
                             <tr>
-                                <th class="">Endpoint</th>
+                                <th>Endpoint</th>
                                 <th>HTTP Status</th>
                                 <th>Content Length</th>
                                 <th>Page Title</th>
@@ -136,6 +147,7 @@ Detailed Scan for {{host.domain_name}}
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock main_content %}
 
@@ -148,11 +160,14 @@ Detailed Scan for {{host.domain_name}}
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
-// collapse sidebar
-$( document ).ready(function() {
-    $("html, body").addClass("sidebar-noneoverflow");
-    $("#container").addClass("sidebar-closed");
-});
+// collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
+if ($(window).width() > 992) {
+    $( document ).ready(function() {
+        $("html, body").addClass("sidebar-noneoverflow");
+        $("#container").addClass("sidebar-closed");
+        $("header").addClass("expand-header");
+    });
+}
 function fetch_http_headers(id, http_header_path, screenshot_path){
     $('#screenshot'+id).attr('src', '/media/'+screenshot_path);
     fetch('/media/'+http_header_path)
@@ -171,15 +186,16 @@ $(document).ready(function() {
             "sLengthMenu": "Results :  _MENU_",
         },
         "stripeClasses": [],
-        "lengthMenu": [30, 60, 90, 100],
-        "pageLength": 30,
+        "lengthMenu": [20, 40, 60, 100],
+        "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-        "order": [[ 3, "desc" ]],
+        "order": [[ 4, "desc" ]],
         "columns": [
             {'data': 'subdomain'},
             {'data': 'http_status'},
             {'data': 'open_ports'},
+            {'data': 'takeover'},
             {'data': 'content_length', 'searchable': false},
             {'data': 'page_title'},
             {'data': 'technology_stack'},
@@ -202,7 +218,7 @@ $(document).ready(function() {
                         return "";
                     }
                     else{
-                        return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+                        return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
                     }
 
                 },
@@ -218,6 +234,18 @@ $(document).ready(function() {
             },
             {
                 "render": function ( data, type, row ) {
+                    // for takeover
+                    if (data){
+                        return `<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title=" Potentially vulnerable via `+data+`"></div>`;
+                    }
+                    else {
+                        return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Takeover Not Possible"></div>`;
+                    }
+                },
+                "targets": 3,
+            },
+            {
+                "render": function ( data, type, row ) {
                     if (data){
                         return span_values(data, "info");
                     }
@@ -225,7 +253,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 5
+                "targets": 6
             },
             {
                 "render": function ( data, type, row ) {
@@ -236,7 +264,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 6
+                "targets": 7
             },
             {
                 "render": function ( data, type, row ) {
@@ -253,7 +281,7 @@ $(document).ready(function() {
                                 var path = json_obj[i].path;
                                 // id path has / the its a directory else consider as file
                                 if (path.substr(path.length - 1) == '/') {
-                                    html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + `</li>`;
+                                    html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + `</a></li>`;
                                 }
                                 else {
                                     html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + `</a></li>`;
@@ -267,7 +295,7 @@ $(document).ready(function() {
                         return '';
                     }
                 },
-                "targets": 7
+                "targets": 8
             },
         ],
 
@@ -296,8 +324,8 @@ $(document).ready(function() {
             "sLengthMenu": "Results :  _MENU_",
         },
         "stripeClasses": [],
-        "lengthMenu": [30, 60, 90, 100],
-        "pageLength": 30,
+        "lengthMenu": [20, 40, 60, 100],
+        "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
         "order": [[ 2, "desc" ]],
