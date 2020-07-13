@@ -306,10 +306,9 @@ $(document).ready(function() {
             $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
             $('.dataTables_wrapper table').removeClass('table-striped');
         },
-        // I dont know why this is so weird, the script for tree_view expand is not working, so I think, it should be loaded once items are rendered
         initComplete: function( settings, json ) {
             var script = document.createElement("script");
-            script.src = "/static/plugins/treeview/custom-jstree.js";
+            script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
             script.type = "text/javascript";
             document.getElementsByTagName("head")[0].appendChild(script);
         }
