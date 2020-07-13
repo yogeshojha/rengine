@@ -18,6 +18,7 @@ Scan history
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -156,6 +157,7 @@ Detailed Scan for {{history.domain_name}}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
@@ -258,7 +260,8 @@ $(document).ready(function() {
             {
                 "render": function ( data, type, row ) {
                     if (data){
-                        return "<a href=\"/media/"+data+"\"><img src=\"/media/"+data+"\" class=\"img-fluid mb-4 mt-4\"></a>";
+                        //return lightbox
+                        return `<a href="/media/`+data+`" data-lightbox="screenshots"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
                     }
                     else{
                         return "";
@@ -303,10 +306,9 @@ $(document).ready(function() {
             $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
             $('.dataTables_wrapper table').removeClass('table-striped');
         },
-        // I dont know why this is so weird, the script for tree_view expand is not working, so I think, it should be loaded once items are rendered
         initComplete: function( settings, json ) {
             var script = document.createElement("script");
-            script.src = "/static/plugins/treeview/custom-jstree.js";
+            script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
             script.type = "text/javascript";
             document.getElementsByTagName("head")[0].appendChild(script);
         }
@@ -385,7 +387,5 @@ function span_values(data, color)
     });
     return data_with_span;
 }
-
-
 </script>
 {% endblock page_level_script %}
