@@ -15,8 +15,8 @@ class AddEngineForm(forms.ModelForm):
                         }
                     ))
     subdomain_discovery = forms.BooleanField(
-                    required=True,
-                    widget=forms.CheckboxInput(attrs={"checked":"", "disabled":""}))
+                    required=False,
+                    widget=forms.CheckboxInput(attrs={"checked": ""}))
     dir_file_search = forms.BooleanField(
                     required=False,
                     widget=forms.CheckboxInput(attrs={}))

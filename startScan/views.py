@@ -10,6 +10,7 @@ import threading
 from django.utils import timezone, dateformat
 from datetime import datetime
 import os, traceback, json, requests
+
 def index(request):
     return render(request, 'startScan/index.html')
 
@@ -97,6 +98,17 @@ def doScan(host_id, domain):
                     scanned.subdomain = subdomain.rstrip('\n')
                     scanned.scan_history = task
                     scanned.save()
+        else:
+            only_subdomain_file = open(results_dir + current_scan_dir + '/sorted_subdomain_collection.txt', "w")
+            only_subdomain_file.write(domain.domain_name+"\n")
+            only_subdomain_file.close()
+
+            scanned = ScannedHost()
+            scanned.subdomain = domain.domain_name
+            scanned.scan_history = task
+            scanned.save()
+
+            subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 
         if(task.scan_type.port_scan):
             update_last_activity()
@@ -249,7 +261,7 @@ def doScan(host_id, domain):
             '''
             It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
             '''
-            os.system('/app/tools/get_urls.sh %s %s' %(domain.domain_name, current_scan_dir))
+            os.system('/app/tools/get_urls.sh %s' %(current_scan_dir))
 
             url_results_file = results_dir + current_scan_dir + '/all_urls.json'
 
