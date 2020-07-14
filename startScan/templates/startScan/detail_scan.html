@@ -203,8 +203,25 @@ $(document).ready(function() {
             {'data': 'technology_stack'},
             {'data': 'screenshot_path', 'searchable': false},
             {'data': 'directory_json'},
+            {'data': 'http_url'},
         ],
         "columnDefs": [
+            {
+                "targets": [ 9 ],
+                "visible": false,
+                "searchable": false
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (row['http_url']) {
+                        return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`;
+                    }
+                    else{
+                        return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
+                    }
+                },
+                "targets": 0
+            },
             {
                 "render": function ( data, type, row ) {
                     // display badge based on http status
