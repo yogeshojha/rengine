@@ -1,5 +1,5 @@
 # Base image
-FROM python:3
+FROM python:3-alpine
 
 # Labels and Credits
 LABEL \
@@ -7,26 +7,25 @@ LABEL \
     author="Yogesh Ojha <yogesh.ojha11@gmail.com>" \
     description="reNgine is a automated pipeline of recon process, useful for information gathering during web application penetration testing."
 
-ARG DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-RUN apt update -y && apt install -y \
-  build-essential \
-  chromium \
-  libpq-dev \
-  nmap \
-  git
+RUN apk update \
+    && apk add --virtual build-deps gcc python3-dev musl-dev \
+    && apk add postgresql-dev \
+    && apk add chromium \
+    && apk add git \
+    && pip install psycopg2 \
+    && apk del build-deps
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
 # Download and install go 1.13
-RUN wget https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz
-RUN tar -zxvf go1.13.6.linux-amd64.tar.gz -C /usr/local
-RUN rm o1.13.6.linux-amd64.tar.gz -f
+COPY --from=golang:1.13-alpine /usr/local/go/ /usr/local/go/
 
 # Environment vars
-ENV PYTHONUNBUFFERED 1
 ENV DATABASE="postgres"
 ENV GOROOT="/usr/local/go"
 ENV GOPATH="/root/go"
