@@ -9,6 +9,15 @@ Add Engine Type
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.12/ace.js" charset="utf-8"></script>
+<style media="screen">
+.editor {
+	width:auto;
+	height:300px;
+	font-size:12px;
+	border:1px solid #CCC;
+}
+</style>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -16,10 +25,149 @@ Add new engine
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-{% include 'scanEngine/_items/add_engine_form.html'%}
+<div class="col-lg-12 layout-spacing">
+    <div class="statbox widget box box-shadow">
+        <div class="widget-header">
+            <div class="row">
+                <div class="col-12">
+                    <h4 class="text-info">Add Scan Engine Name</h4>
+                    {{ form.errors }}
+                    {{ form.non_field_errors }}
+                </div>
+            </div>
+        </div>
+        <div class="widget-content widget-content-area">
+            <form class="simple-example" method="POST">
+                {% csrf_token %}
+                <div class="form-row layout-spacing">
+                    <div class="col-12">
+                        <label for="domainName" class="text-info">Engine name</label>
+                        {{ form.scan_type_name }}
+                    </div>
+                </div>
+                <div class="form-row layout-spacing">
+                    <table>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Subdomain Discovery</h6>
+                                <span class="preview">(Selected by Default)</span>
+                            </td>
+                            <td>
+                                <input type="hidden" name="subdomain_discovery" value="on">
+                                <label class="switch s-icons s-outline s-outline-info">
+                                    {{form.subdomain_discovery}}
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Port Scan</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                    {{form.port_scan}}
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Subdomain Takeover</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                    {{form.subdomain_takeover}}
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Directory and Files Search</h6>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                    {{form.dir_file_search}}
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <h6 style="margin-right:1%">Fetch All URLs</h6>
+                                <span class="preview">(Open Threat Exchange, Wayback Machine <br>Common Crawl)</span>
+                            </td>
+                            <td>
+                                <label class="switch s-icons s-outline s-outline-info">
+                                    {{form.fetch_url}}
+                                    <span class="slider round"></span>
+                                </label>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <h4>Configurations</h4>
+                <p>
+                    reNgine supports YAML based configurations for customizing the scan. The default settings are given below, you may choose to proceed with the default settings or configure it according to your choice.
+                    <br>
+                    <span class="text-warning">Note: Invalid YAML configuration may crash your scan.</span>
+                </p>
+<div id="editor" class="editor ace_editor ace-crimson-editor"># This is the default scan settings for reNgine
+# You may choose to edit this settings, but be careful about the configurations.
+subdomain_discovery:
+    # available options are Sublist3r, amass, assetfinder, subfinder
+    # the more tools you use, the better results you get
+    # but will take a long time to scan
+    uses_tool: [ amass, assetfinder, subfinder, sublist3r ]
+    threads: 10
+
+port_scan:
+    # currently reNgine only supports naabu, nmap and other port scanning tools
+    # will be made available in future release
+    # scan_ports available options are top-100, top-1000, full or custom like
+    # [80, 443]
+    scan_ports: [ top-100 ]
+    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]
+    exclude_ports: null
+
+visual_identification:
+    # currently runs aquatone
+    # available options for ports are small, medium, large, xlarge
+    ports: [ xlarge ]
+    threads: 10
+
+subdomain_takeover:
+    # only subjack is supported at this time
+    threads: 1
+
+dir_file_search:
+    # currently supported dirsearch
+    # list the file extensions to look for, extensions: [php, asp, txt]
+    # recommended [*]
+    extensions: [ * ]
+    recursive: false
+    recursive_level: 0
+    threads: 10
+
+fetch_url:
+    uses_tool: [ gau, hakrawler ]
+    # supported gau providers: common, wayback, otx, *
+    gau_providers: [ * ]
+</div>
+                <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Add Engine</button>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock main_content %}
 
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script>
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");
+    editor.session.setMode("ace/mode/yaml");
+</script>
 {% endblock page_level_script %}
