@@ -113,9 +113,12 @@ Add new engine
                 <h4>Configurations</h4>
                 <p>
                     reNgine supports YAML based configurations for customizing the scan. The default settings are given below, you may choose to proceed with the default settings or configure it according to your choice.
-                    <br>
-                    <span class="text-warning">Note: Invalid YAML configuration may crash your scan. Use with caution.</span>
                 </p>
+				<p class="mt-2 text-danger">
+					Note: Invalid YAML configuration may crash scans.
+					<br>
+					<span class="text-uppercase">Please, do not modify the configuration if you are not sure what you are doing.</span>
+				</p>
 				<div class="col-12">
 					{{form.yaml_configuration}}
 				</div>
