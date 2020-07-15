@@ -7,3 +7,4 @@ requests
 djangorestframework
 djangorestframework-datatables
 django-ace
+pyyaml

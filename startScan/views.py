@@ -10,6 +10,7 @@ import threading
 from django.utils import timezone, dateformat
 from datetime import datetime
 import os, traceback, json, requests
+import yaml
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -79,16 +80,27 @@ def doScan(host_id, domain):
         scan_failed(task)
 
     try:
-        # TODO make subdomain only scan
-        '''
-        currently subdomain scan is by default, in next release this may be removed
-        So that recon can be done on single subdomain
-        rather than the entire subdomain
-        '''
+        yaml_configuration = yaml.load(task.scan_type.yaml_configuration, Loader=yaml.FullLoader)
         if(task.scan_type.subdomain_discovery):
             create_scan_activity(task, "Subdomain Scanning", 1)
+
+            tools = ""
+            # check for all the tools and add them into string
+            # if tool selected is all then make string, no need for loop
+            if yaml_configuration['subdomain_discovery']['uses_tool'] == 'all':
+                tools = 'amass assetfinder sublist3r subfinder'
+            else:
+                for tool in yaml_configuration['subdomain_discovery']['uses_tool']:
+                    tools = tools + ' ' + tool
+
+            # check for thread, by default should be 10
+            if yaml_configuration['subdomain_discovery']['threads'] > 0:
+                threads = yaml_configuration['subdomain_discovery']['threads']
+            else:
+                threads = 10
+
             # all subdomain scan happens here
-            os.system('/app/tools/get_subdomain.sh %s %s' %(domain.domain_name, current_scan_dir))
+            os.system('/app/tools/get_subdomain.sh %s %s %s %s' %(threads, domain.domain_name, current_scan_dir, tools))
 
             subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 

@@ -1,7 +1,6 @@
 subdomain_discovery:
     # available options are Sublist3r, amass, assetfinder, subfinder
-    # the more tools you use, the better results you get
-    # but will take a long time to scan
+    # using many tools may improve the results but may take longer time to scan
     uses_tool: [ subfinder, sublist3r ]
     threads: 10
 
