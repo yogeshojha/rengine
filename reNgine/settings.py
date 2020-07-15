@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'scanEngine.apps.ScanengineConfig',
     'startScan.apps.StartscanConfig',
     'notification.apps.NotificationConfig',
+    'django_ace',
 ]
 
 MIDDLEWARE = [

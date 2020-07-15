@@ -6,3 +6,5 @@ dnspython
 requests
 djangorestframework
 djangorestframework-datatables
+django-ace
+django-yamlfield
