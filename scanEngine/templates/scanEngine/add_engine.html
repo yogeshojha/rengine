@@ -13,7 +13,7 @@ Add Engine Type
 <style media="screen">
 .ace_editor {
 	width:100%;
-	height:650px;
+	height:450px;
 	font-size:12px;
 	border:1px solid #CCC;
 }
@@ -126,7 +126,53 @@ Add new engine
 </div>
 {% endblock main_content %}
 
-
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+$('.menu-item-has-children').attr('id','menu')
+<script type="text/javascript">
+$(document).ready(function() {
+	$('.ace_editor').attr('id','editor');
+	var editor = ace.edit("editor");
+	editor.setValue(`subdomain_discovery:
+	    # available options are Sublist3r, amass, assetfinder, subfinder
+	    # the more tools you use, the better results you get
+	    # but will take a long time to scan
+	    uses_tool: [ amass, assetfinder, subfinder, sublist3r ]
+	    threads: 10
+
+	port_scan:
+	    # currently reNgine only supports naabu, nmap and other port scanning tools
+	    # will be made available in future release
+	    # scan_ports available options are top-100, top-1000, full or custom like
+	    # [80, 443]
+	    scan_ports: [ top-100 ]
+	    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]
+	    exclude_ports: null
+
+	visual_identification:
+	    # currently runs aquatone
+	    # available options for ports are small, medium, large, xlarge
+	    ports: [ xlarge ]
+	    threads: 10
+
+	subdomain_takeover:
+	    # only subjack is supported at this time
+	    threads: 1
+
+	dir_file_search:
+	    # currently supported dirsearch
+	    # list the file extensions to look for, extensions: [php, asp, txt]
+	    # recommended [ * ]
+	    extensions: [ * ]
+	    recursive: false
+	    recursive_level: 0
+	    threads: 10
+
+	fetch_url:
+	    uses_tool: [ gau, hakrawler ]
+	    # supported gau providers: common, wayback, otx, *
+	    gau_providers: [ * ]`);
+	editor.clearSelection();
+});
+</script>
 {% endblock page_level_script %}

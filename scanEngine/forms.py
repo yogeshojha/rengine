@@ -34,9 +34,7 @@ class AddEngineForm(forms.ModelForm):
         mode="yaml",
         theme="monokai",
         width="100%",
-        height="650px",
-        minlines=45,
-        maxlines='Infinity',
+        height="450px",
         tabsize=4,
         fontsize=13,
         toolbar=True,))
