@@ -27,13 +27,13 @@ subdomain_takeover:
 dir_file_search:
     # currently supported dirsearch
     # list the file extensions to look for, extensions: [php, asp, txt]
-    # recommended [*]
-    extensions: [ * ]
+    # recommended [ all ]
+    extensions: [ all ]
     recursive: false
     recursive_level: 0
     threads: 10
 
 fetch_url:
     uses_tool: [ gau, hakrawler ]
-    # supported gau providers: common, wayback, otx, *
-    gau_providers: [ * ]
+    # supported gau providers: common, wayback, otx, all
+    gau_providers: [ all ]

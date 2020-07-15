@@ -22,10 +22,10 @@
       \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
       dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
       \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
-      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ [ all ]\r\n\t    extensions: [ all ]\r\n\t    recursive: false\r\n\t    recursive_level:\
       \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
-      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
-      \ [ * ]"
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, all\r\n\t    gau_providers:\
+      \ [ all ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
@@ -51,10 +51,10 @@
       \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
       dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
       \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
-      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ [ all ]\r\n\t    extensions: [ all ]\r\n\t    recursive: false\r\n\t    recursive_level:\
       \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
-      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
-      \ [ * ]"
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, all\r\n\t    gau_providers:\
+      \ [ all ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3
@@ -80,8 +80,8 @@
       \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
       dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
       \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
-      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ [ all ]\r\n\t    extensions: [ all ]\r\n\t    recursive: false\r\n\t    recursive_level:\
       \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
-      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
-      \ [ * ]"
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, all\r\n\t    gau_providers:\
+      \ [ all ]"
     default_engine: true
