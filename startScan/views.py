@@ -261,7 +261,7 @@ def doScan(host_id, domain):
             '''
             It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
             '''
-            os.system('/app/tools/get_urls.sh %s' %(current_scan_dir))
+            os.system('/app/tools/get_urls.sh %s %s' %(domain.domain_name, current_scan_dir))
 
             url_results_file = results_dir + current_scan_dir + '/all_urls.json'
 
