@@ -10,6 +10,7 @@ import threading
 from django.utils import timezone, dateformat
 from datetime import datetime
 import os, traceback, json, requests
+
 def index(request):
     return render(request, 'startScan/index.html')
 
@@ -97,6 +98,17 @@ def doScan(host_id, domain):
                     scanned.subdomain = subdomain.rstrip('\n')
                     scanned.scan_history = task
                     scanned.save()
+        else:
+            only_subdomain_file = open(results_dir + current_scan_dir + '/sorted_subdomain_collection.txt', "w")
+            only_subdomain_file.write(domain.domain_name+"\n")
+            only_subdomain_file.close()
+
+            scanned = ScannedHost()
+            scanned.subdomain = domain.domain_name
+            scanned.scan_history = task
+            scanned.save()
+
+            subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 
         if(task.scan_type.port_scan):
             update_last_activity()

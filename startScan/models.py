@@ -34,7 +34,7 @@ class ScannedHost(models.Model):
 
 class WayBackEndPoint(models.Model):
     url_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    http_url = models.CharField(max_length=1000)
+    http_url = models.CharField(max_length=5000)
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)

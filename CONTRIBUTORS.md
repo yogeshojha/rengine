@@ -16,4 +16,5 @@ Also, Thanks to these individuals for making reNgine awesome by providing contin
 * [bhavsec](https://twitter.com/bhavsec)
 * [Cor3min3r](https://linkedin.com/in/cor3min3r)
 * [Ganesh Pandey](https://github.com/GaneshPandey)
+* [Prial Islam](https://github.com/prial261)
 * [SecArmy](https://twitter.com/secarmyofficial)
