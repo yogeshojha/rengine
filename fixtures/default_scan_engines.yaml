@@ -1,0 +1,87 @@
+- model: scanEngine.enginetype
+  pk: 1
+  fields:
+    scan_type_name: Full Scan
+    subdomain_discovery: true
+    dir_file_search: true
+    subdomain_takeover: true
+    port_scan: true
+    fetch_url: true
+    yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
+      \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
+      \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
+      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
+      \ port scanning tools\r\n\t    # will be made available in future release\r\n\
+      \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
+      \n\t    # [80, 443]\r\n\t    scan_ports: [ top-100 ]\r\n\t    # if you want\
+      \ to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\t    exclude_ports:\
+      \ null\r\n\r\n\tvisual_identification:\r\n\t    # currently runs aquatone\r\n\
+      \t    # available options for ports are small, medium, large, xlarge\r\n\t \
+      \   ports: [ xlarge ]\r\n\t    threads: 10\r\n\r\n\tsubdomain_takeover:\r\n\t\
+      \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
+      dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
+      \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
+      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
+      \ [ * ]"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 2
+  fields:
+    scan_type_name: Passive Only Scan
+    subdomain_discovery: true
+    dir_file_search: false
+    subdomain_takeover: true
+    port_scan: false
+    fetch_url: true
+    yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
+      \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
+      \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
+      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
+      \ port scanning tools\r\n\t    # will be made available in future release\r\n\
+      \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
+      \n\t    # [80, 443]\r\n\t    scan_ports: [ top-100 ]\r\n\t    # if you want\
+      \ to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\t    exclude_ports:\
+      \ null\r\n\r\n\tvisual_identification:\r\n\t    # currently runs aquatone\r\n\
+      \t    # available options for ports are small, medium, large, xlarge\r\n\t \
+      \   ports: [ xlarge ]\r\n\t    threads: 10\r\n\r\n\tsubdomain_takeover:\r\n\t\
+      \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
+      dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
+      \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
+      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
+      \ [ * ]"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 3
+  fields:
+    scan_type_name: Subdomain Only Scan
+    subdomain_discovery: true
+    dir_file_search: false
+    subdomain_takeover: false
+    port_scan: false
+    fetch_url: false
+    yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
+      \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
+      \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
+      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
+      \ port scanning tools\r\n\t    # will be made available in future release\r\n\
+      \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
+      \n\t    # [80, 443]\r\n\t    scan_ports: [ top-100 ]\r\n\t    # if you want\
+      \ to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\t    exclude_ports:\
+      \ null\r\n\r\n\tvisual_identification:\r\n\t    # currently runs aquatone\r\n\
+      \t    # available options for ports are small, medium, large, xlarge\r\n\t \
+      \   ports: [ xlarge ]\r\n\t    threads: 10\r\n\r\n\tsubdomain_takeover:\r\n\t\
+      \    # only subjack is supported at this time\r\n\t    threads: 1\r\n\r\n\t\
+      dir_file_search:\r\n\t    # currently supported dirsearch\r\n\t    # list the\
+      \ file extensions to look for, extensions: [php, asp, txt]\r\n\t    # recommended\
+      \ [ * ]\r\n\t    extensions: [ * ]\r\n\t    recursive: false\r\n\t    recursive_level:\
+      \ 0\r\n\t    threads: 10\r\n\r\n\tfetch_url:\r\n\t    uses_tool: [ gau, hakrawler\
+      \ ]\r\n\t    # supported gau providers: common, wayback, otx, *\r\n\t    gau_providers:\
+      \ [ * ]"
+    default_engine: true
