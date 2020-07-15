@@ -10,7 +10,7 @@
     yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
       \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
-      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      \ [ subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
       port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
       \ port scanning tools\r\n\t    # will be made available in future release\r\n\
       \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
@@ -39,7 +39,7 @@
     yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
       \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
-      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      \ [ subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
       port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
       \ port scanning tools\r\n\t    # will be made available in future release\r\n\
       \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
@@ -68,7 +68,7 @@
     yaml_configuration: "subdomain_discovery:\r\n\t    # available options are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n\t    # the more tools you use, the better\
       \ results you get\r\n\t    # but will take a long time to scan\r\n\t    uses_tool:\
-      \ [ amass, assetfinder, subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
+      \ [ subfinder, sublist3r ]\r\n\t    threads: 10\r\n\r\n\t\
       port_scan:\r\n\t    # currently reNgine only supports naabu, nmap and other\
       \ port scanning tools\r\n\t    # will be made available in future release\r\n\
       \t    # scan_ports available options are top-100, top-1000, full or custom like\r\
