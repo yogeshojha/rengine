@@ -1,38 +1,39 @@
 subdomain_discovery:
     # available options are Sublist3r, amass, assetfinder, subfinder
     # using many tools may improve the results but may take longer time to scan
-    uses_tool: [ subfinder, sublist3r ]
-    threads: 10
+    uses_tool: all
+    thread: 10
 
 port_scan:
     # currently reNgine only supports naabu, nmap and other port scanning tools
     # will be made available in future release
     # scan_ports available options are top-100, top-1000, full or custom like
     # [80, 443]
-    scan_ports: [ top-100 ]
+    ports: [ top-100 ]
     # if you want to exclude certain ports, usage: exclude_ports: [80, 443]
     exclude_ports: null
+    thread: 10
 
 visual_identification:
     # currently runs aquatone
     # available options for ports are small, medium, large, xlarge
-    ports: [ xlarge ]
-    threads: 10
+    port: xlarge
+    thread: 10
 
 subdomain_takeover:
     # only subjack is supported at this time
-    threads: 1
+    thread: 1
 
 dir_file_search:
     # currently supported dirsearch
     # list the file extensions to look for, extensions: [php, asp, txt]
     # recommended [ all ]
-    extensions: [ all ]
+    extensions: [ php,asp,aspx,jsp,py,txt,conf,config,bak,backup,swp,old,db,sql,json,yaml ]
     recursive: false
     recursive_level: 0
-    threads: 10
+    thread: 10
 
 fetch_url:
+    # supported tools are gau and hakrawler
+    # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
-    # supported gau providers: common, wayback, otx, all
-    gau_providers: [ all ]

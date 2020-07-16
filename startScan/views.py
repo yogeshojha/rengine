@@ -86,14 +86,14 @@ def doScan(host_id, domain):
 
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
-            if yaml_configuration['subdomain_discovery']['uses_tool'] == 'all':
+            if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
                 tools = 'amass assetfinder sublist3r subfinder'
             else:
                 tools = ' '.join(str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
 
             # check for thread, by default should be 10
-            if yaml_configuration['subdomain_discovery']['threads'] > 0:
-                threads = yaml_configuration['subdomain_discovery']['threads']
+            if yaml_configuration['subdomain_discovery']['thread'] > 0:
+                threads = yaml_configuration['subdomain_discovery']['thread']
             else:
                 threads = 10
 
@@ -129,7 +129,7 @@ def doScan(host_id, domain):
 
             # check the yaml_configuration and choose the ports to be scanned
 
-            scan_ports = ','.join(str(port) for port in yaml_configuration['port_scan']['scan_ports'])
+            scan_ports = ','.join(str(port) for port in yaml_configuration['port_scan']['ports'])
 
             if scan_ports:
                 naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(subdomain_scan_results_file, port_results_file, scan_ports)
@@ -141,6 +141,11 @@ def doScan(host_id, domain):
             if yaml_configuration['port_scan']['exclude_ports']:
                 exclude_ports = ','.join(str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
                 naabu_command = naabu_command + ' -exclude-ports {}'.format(exclude_ports)
+
+            if yaml_configuration['subdomain_discovery']['thread'] > 0:
+                naabu_command = naabu_command + ' -t {}'.format(yaml_configuration['subdomain_discovery']['thread'])
+            else:
+                naabu_command = naabu_command + ' -t 10'
 
             # run naabu
             os.system(naabu_command)
@@ -199,8 +204,19 @@ def doScan(host_id, domain):
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-        output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots/'
-        aquatone_command = 'cat {} | /app/tools/aquatone --threads 5 -ports xlarge -out {}'.format(with_protocol_path, output_aquatone_path)
+        output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
+
+        scan_port = yaml_configuration['visual_identification']['port']
+        # check if scan port is valid otherwise proceed with default xlarge port
+        if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+            scan_port = 'xlarge'
+
+        if yaml_configuration['visual_identification']['thread'] > 0:
+            threads = yaml_configuration['visual_identification']['thread']
+        else:
+            threads = 10
+
+        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(with_protocol_path, threads, scan_port ,output_aquatone_path)
         os.system(aquatone_command)
 
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
@@ -228,7 +244,15 @@ def doScan(host_id, domain):
         if(task.scan_type.subdomain_takeover):
             update_last_activity()
             create_scan_activity(task, "Subdomain takeover", 1)
-            os.system('/app/tools/takeover.sh %s' %(current_scan_dir))
+
+            if yaml_configuration['subdomain_takeover']['thread'] > 0:
+                threads = yaml_configuration['subdomain_takeover']['thread']
+            else:
+                threads = 10
+
+            subjack_command = '/app/tools/takeover.sh {} {}'.format(current_scan_dir, threads)
+
+            os.system(subjack_command)
 
             takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
 
@@ -260,8 +284,25 @@ def doScan(host_id, domain):
             # scan directories for all the alive subdomain with http status > 200
             alive_subdomains = ScannedHost.objects.filter(scan_history__id=host_id).exclude(http_url='')
             dirs_results = current_scan_dir + '/dirs.json'
+
+            # check the yaml settings
+            extensions = ','.join(str(port) for port in yaml_configuration['dir_file_search']['extensions'])
+
+            # find the threads from yaml
+            if yaml_configuration['dir_file_search']['thread'] > 0:
+                threads = yaml_configuration['dir_file_search']['thread']
+            else:
+                threads = 10
+
             for subdomain in alive_subdomains:
-                os.system('/app/tools/get_dirs.sh %s %s' %(subdomain.http_url, dirs_results))
+                dirsearch_command = 'python /app/tools/dirsearch/dirsearch.py -e {} -u {} -w /app/tools/dirsearch/db/dicc.txt --json-report={}'.format(extensions, subdomain.http_url, dirs_results)
+                dirsearch_command = dirsearch_command + ' -t {}'.format(threads)
+
+                # check if recursive strategy is set to on
+                if yaml_configuration['dir_file_search']['recursive']:
+                    dirsearch_command = dirsearch_command + ' -r -R {}'.format(yaml_configuration['dir_file_search']['recursive_level'])
+
+                os.system(dirsearch_command)
                 try:
                     with open(dirs_results, "r") as json_file:
                         json_string = json_file.read()
@@ -286,7 +327,13 @@ def doScan(host_id, domain):
             '''
             It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
             '''
-            os.system('/app/tools/get_urls.sh %s %s' %(domain.domain_name, current_scan_dir))
+            # check yaml settings
+            if 'all' in yaml_configuration['fetch_url']['uses_tool']:
+                tools = 'gau hakrawler'
+            else:
+                tools = ' '.join(str(tool) for tool in yaml_configuration['fetch_url']['uses_tool'])
+
+            os.system('/app/tools/get_urls.sh %s %s %s' %(domain.domain_name, current_scan_dir, tools))
 
             url_results_file = results_dir + current_scan_dir + '/all_urls.json'
 
