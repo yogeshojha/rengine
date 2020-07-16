@@ -84,14 +84,12 @@ def doScan(host_id, domain):
         if(task.scan_type.subdomain_discovery):
             create_scan_activity(task, "Subdomain Scanning", 1)
 
-            tools = ""
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if yaml_configuration['subdomain_discovery']['uses_tool'] == 'all':
                 tools = 'amass assetfinder sublist3r subfinder'
             else:
-                for tool in yaml_configuration['subdomain_discovery']['uses_tool']:
-                    tools = tools + ' ' + tool
+                tools = ' '.join(str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
 
             # check for thread, by default should be 10
             if yaml_configuration['subdomain_discovery']['threads'] > 0:
@@ -129,7 +127,22 @@ def doScan(host_id, domain):
             # after all subdomain has been discovered run naabu to discover the ports
             port_results_file = results_dir + current_scan_dir + '/ports.json'
 
-            naabu_command = 'cat {} | naabu -json -o {}'.format(subdomain_scan_results_file, port_results_file)
+            # check the yaml_configuration and choose the ports to be scanned
+
+            scan_ports = ','.join(str(port) for port in yaml_configuration['port_scan']['scan_ports'])
+
+            if scan_ports:
+                naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(subdomain_scan_results_file, port_results_file, scan_ports)
+            else:
+                naabu_command = 'cat {} | naabu -json -o {}'.format(subdomain_scan_results_file, port_results_file)
+
+            # check for exclude ports
+
+            if yaml_configuration['port_scan']['exclude_ports']:
+                exclude_ports = ','.join(str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
+                naabu_command = naabu_command + ' -exclude-ports {}'.format(exclude_ports)
+
+            # run naabu
             os.system(naabu_command)
 
             # writing port results

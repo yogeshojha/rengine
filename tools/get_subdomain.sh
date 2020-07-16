@@ -1,7 +1,5 @@
 #!/bin/sh
 
-echo "Working in threads $1"
-
 for i in "$@" ; do
     if [[ $i == "sublist3r" ]] ; then
         python3 /app/tools/Sublist3r/sublist3r.py -d $2 -t $1 -o $3/from_sublister.txt
