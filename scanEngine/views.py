@@ -35,3 +35,17 @@ def delete_engine(request, id):
         responseData = {'status': 'false'}
         messages.add_message(request, messages.INFO, 'Oops! Engine could not be deleted!')
     return http.JsonResponse(responseData)
+
+def update_engine(request, id):
+    engine = get_object_or_404(EngineType, id=id)
+    form = AddEngineForm()
+    if request.method == "POST":
+        form = UpdateTargetForm(request.POST, instance=engine)
+        if form.is_valid():
+            form.save()
+            messages.add_message(request, messages.INFO, 'Engine edited successfully')
+            return http.HttpResponseRedirect(reverse('scan_engine_index'))
+    else:
+        form.set_value(engine)
+    context = {'scan_engine_nav_active': 'true','form': form}
+    return render(request, 'target/update.html', context)

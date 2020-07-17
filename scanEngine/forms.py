@@ -6,7 +6,7 @@ class AddEngineForm(forms.ModelForm):
     class Meta:
         model = EngineType
         fields = '__all__'
-    scan_type_name = forms.CharField(
+    engine_name = forms.CharField(
         required=True,
         widget=forms.TextInput(
             attrs={

@@ -1,7 +1,7 @@
 - model: scanEngine.enginetype
   pk: 1
   fields:
-    scan_type_name: Full Scan
+    engine_name: Full Scan
     subdomain_discovery: true
     dir_file_search: true
     subdomain_takeover: true
@@ -29,7 +29,7 @@
 - model: scanEngine.enginetype
   pk: 2
   fields:
-    scan_type_name: Passive Only Scan
+    engine_name: Passive Only Scan
     subdomain_discovery: true
     dir_file_search: false
     subdomain_takeover: true
@@ -57,7 +57,7 @@
 - model: scanEngine.enginetype
   pk: 3
   fields:
-    scan_type_name: Subdomain Only Scan
+    engine_name: Subdomain Only Scan
     subdomain_discovery: true
     dir_file_search: false
     subdomain_takeover: false

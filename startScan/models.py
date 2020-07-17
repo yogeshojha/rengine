@@ -11,7 +11,7 @@ class ScanHistory(models.Model):
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
-        return self.domain_name.domain_name + self.scan_type.scan_type_name + str(self.id)
+        return self.domain_name.domain_name
 
 class ScannedHost(models.Model):
     subdomain = models.CharField(max_length=1000)
@@ -29,7 +29,7 @@ class ScannedHost(models.Model):
     takeover = models.CharField(max_length=100, null=True)
 
     def __str__(self):
-        return str(self.subdomain+'---->>>>Scan ID'+str(self.scan_history.id))
+        return str(self.subdomain)
 
 
 class WayBackEndPoint(models.Model):
