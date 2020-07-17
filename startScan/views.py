@@ -6,11 +6,9 @@ from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-import threading
 from django.utils import timezone, dateformat
 from datetime import datetime
-import os, traceback, json, requests
-import yaml
+import os, traceback, json, requests, yaml, threading
 
 def index(request):
     return render(request, 'startScan/index.html')
@@ -118,7 +116,7 @@ def doScan(host_id, domain):
             scanned.scan_history = task
             scanned.save()
 
-            subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
+        subdomain_scan_results_file = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
 
         if(task.scan_type.port_scan):
             update_last_activity()
@@ -295,13 +293,14 @@ def doScan(host_id, domain):
                 threads = 10
 
             for subdomain in alive_subdomains:
-                dirsearch_command = 'python /app/tools/dirsearch/dirsearch.py -e {} -u {} -w /app/tools/dirsearch/db/dicc.txt --json-report={}'.format(extensions, subdomain.http_url, dirs_results)
-                dirsearch_command = dirsearch_command + ' -t {}'.format(threads)
+                dirsearch_command = '/app/tools/get_dirs.sh {} {}'.format(subdomain.http_url, dirs_results)
+                dirsearch_command = dirsearch_command + ' {} {}'.format(threads, extensions)
 
                 # check if recursive strategy is set to on
                 if yaml_configuration['dir_file_search']['recursive']:
-                    dirsearch_command = dirsearch_command + ' -r -R {}'.format(yaml_configuration['dir_file_search']['recursive_level'])
+                    dirsearch_command = dirsearch_command + ' {}'.format(yaml_configuration['dir_file_search']['recursive_level'])
 
+                # os.system(dirsearch_command)
                 os.system(dirsearch_command)
                 try:
                     with open(dirs_results, "r") as json_file:
