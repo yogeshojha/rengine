@@ -84,3 +84,23 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
+
+class AddWordlistForm(forms.Form):
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+        attrs={
+            'class': 'form-control',
+            'id': 'name',
+            'placeholder':'my awesome wordlist',
+            }
+        ))
+    short_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+        attrs={
+            'class': 'form-control',
+            'id': 'short_name',
+            'placeholder': 'my-wordlist',
+            }
+        ))

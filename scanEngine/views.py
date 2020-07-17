@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
-from scanEngine.models import EngineType
-from scanEngine.forms import AddEngineForm, UpdateEngineForm
+from scanEngine.models import EngineType, Wordlist
+from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
@@ -49,3 +49,20 @@ def update_engine(request, id):
         form.set_value(engine)
     context = {'scan_engine_nav_active': 'true','form': form}
     return render(request, 'scanEngine/update_engine.html', context)
+
+def wordlist_list(request):
+    wordlists = Wordlist.objects.all().order_by('id')
+    context = {'wordlist_nav_active': 'true', 'wordlists': wordlists}
+    return render(request, 'scanEngine/wordlist/index.html', context)
+
+def add_wordlist(request):
+    context = {'wordlist_nav_active': 'true'}
+    form = AddWordlistForm()
+    if request.method == "POST":
+        form = AddWordlistForm(request.POST)
+        if form.is_valid():
+            Wordlist.objects.create(**form.cleaned_data)
+            messages.add_message(request, messages.INFO, 'Wordlist ' + form.cleaned_data['name'] + ' added successfully')
+            return http.HttpResponseRedirect(reverse('wordlist_list'))
+    context['form'] = form
+    return render(request, 'scanEngine/wordlist/add.html', context)

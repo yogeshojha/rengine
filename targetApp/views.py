@@ -26,7 +26,7 @@ def add_target_form(request):
 def import_targets(request):
     context = {}
     context['import_target_li'] = 'active'
-
+    context['target_data_active'] = 'true'
     if request.method == 'POST':
         if 'txtFile' in request.FILES:
             txt_file = request.FILES['txtFile']

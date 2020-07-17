@@ -12,3 +12,12 @@ class EngineType(models.Model):
 
     def __str__(self):
         return self.engine_name
+
+class Wordlist(models.Model):
+    name = models.CharField(max_length=200)
+    short_name = models.CharField(max_length=50)
+    path = models.CharField(max_length=200)
+    count = models.IntegerField()
+
+    def __str__(self):
+        return self.name
