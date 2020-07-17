@@ -11,7 +11,7 @@ for i in "$@" ; do
         assetfinder --subs-only $2 > $3/fromassetfinder.txt
     fi
     if [[ $i == "subfinder" ]] ; then
-        subfinder -d $3 -t $1 > $3/fromsubfinder.txt
+        subfinder -d $2 -t $1 > $3/fromsubfinder.txt
     fi
 done
 
