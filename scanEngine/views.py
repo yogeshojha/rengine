@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType
-from scanEngine.forms import AddEngineForm
+from scanEngine.forms import AddEngineForm, UpdateEngineForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
@@ -38,9 +38,9 @@ def delete_engine(request, id):
 
 def update_engine(request, id):
     engine = get_object_or_404(EngineType, id=id)
-    form = AddEngineForm()
+    form = UpdateEngineForm()
     if request.method == "POST":
-        form = UpdateTargetForm(request.POST, instance=engine)
+        form = UpdateEngineForm(request.POST, instance=engine)
         if form.is_valid():
             form.save()
             messages.add_message(request, messages.INFO, 'Engine edited successfully')
@@ -48,4 +48,4 @@ def update_engine(request, id):
     else:
         form.set_value(engine)
     context = {'scan_engine_nav_active': 'true','form': form}
-    return render(request, 'target/update.html', context)
+    return render(request, 'scanEngine/update_engine.html', context)
