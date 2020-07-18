@@ -13,9 +13,8 @@ def index(request):
     return render(request, 'target/index.html')
 
 def add_target_form(request):
-    form = AddTargetForm()
+    form = AddTargetForm(request.POST or None)
     if request.method == "POST":
-        form = AddTargetForm(request.POST)
         if form.is_valid():
             Domain.objects.create(**form.cleaned_data, insert_date=timezone.now())
             messages.add_message(request, messages.INFO, 'Target domain ' + form.cleaned_data['domain_name'] + ' added successfully')

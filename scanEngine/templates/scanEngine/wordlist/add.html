@@ -27,7 +27,13 @@ var inputValue = document.getElementById("name").value;
 
 input.addEventListener("input", function() {
 inputValue = document.getElementById("name").value;
-    shortName.value = inputValue.replace(/\s+/g, '_').toLowerCase();;
+    shortName.value = inputValue.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();;
+});
+
+// custom file input
+$(".custom-file-input").on("change", function() {
+  var fileName = $(this).val().split("\\").pop();
+  $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
 });
 </script>
 {% endblock page_level_script %}

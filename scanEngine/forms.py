@@ -93,14 +93,21 @@ class AddWordlistForm(forms.Form):
             'class': 'form-control',
             'id': 'name',
             'placeholder':'my awesome wordlist',
-            }
-        ))
+        }))
     short_name = forms.CharField(
-        required=False,
+        required=True,
         widget=forms.TextInput(
         attrs={
             'class': 'form-control',
             'id': 'short_name',
-            'placeholder': 'my-wordlist',
-            }
-        ))
+            'placeholder': 'my_awesome_wordlist',
+        }))
+    upload_file = forms.FileField(
+        required=True,
+        widget=forms.FileInput(
+        attrs={
+            'class': 'custom-file-input',
+            'id': 'txtFile',
+            'multiple': '',
+            'accept': '.txt',
+        }))
