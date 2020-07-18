@@ -2,6 +2,8 @@ from django import forms
 from scanEngine.models import EngineType
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
+
+
 class AddEngineForm(forms.ModelForm):
     class Meta:
         model = EngineType
@@ -12,9 +14,7 @@ class AddEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "scan_engine_name",
-                "placeholder":"Custom Engine"
-            }
-        ))
+                "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
@@ -26,10 +26,10 @@ class AddEngineForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked":""}))
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked":""}))
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -38,6 +38,7 @@ class AddEngineForm(forms.ModelForm):
         tabsize=4,
         fontsize=13,
         toolbar=True,))
+
 
 class UpdateEngineForm(forms.ModelForm):
     class Meta:
@@ -49,9 +50,7 @@ class UpdateEngineForm(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "scan_engine_name",
-                "placeholder":"Custom Engine"
-            }
-        ))
+                "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
@@ -63,10 +62,10 @@ class UpdateEngineForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked":""}))
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked":""}))
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -85,30 +84,26 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
 
+
 class AddWordlistForm(forms.Form):
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
-        attrs={
-            'class': 'form-control',
-            'id': 'name',
-            'placeholder':'my awesome wordlist',
-        }))
+            attrs={'class': 'form-control',
+                   'id': 'name',
+                   'placeholder': 'my awesome wordlist', }))
     short_name = forms.CharField(
         required=True,
         validators=[validate_short_name],
         widget=forms.TextInput(
-        attrs={
-            'class': 'form-control',
-            'id': 'short_name',
-            'placeholder': 'my_awesome_wordlist',
-        }))
+            attrs={
+                'class': 'form-control',
+                'id': 'short_name',
+                'placeholder': 'my_awesome_wordlist', }))
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
-        attrs={
-            'class': 'custom-file-input',
-            'id': 'txtFile',
-            'multiple': '',
-            'accept': '.txt',
-        }))
+            attrs={'class': 'custom-file-input',
+                   'id': 'txtFile',
+                   'multiple': '',
+                   'accept': '.txt', }))

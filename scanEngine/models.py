@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class EngineType(models.Model):
     engine_name = models.CharField(max_length=200)
     subdomain_discovery = models.BooleanField()
@@ -12,6 +13,7 @@ class EngineType(models.Model):
 
     def __str__(self):
         return self.engine_name
+
 
 class Wordlist(models.Model):
     name = models.CharField(max_length=200)

@@ -2,6 +2,7 @@ from django import forms
 from notification.models import NotificationHooks
 from reNgine.validators import validate_url
 
+
 class AddNotificationHooks(forms.ModelForm):
     class Meta:
         model = NotificationHooks
@@ -16,7 +17,7 @@ class AddNotificationHooks(forms.ModelForm):
                 'placeholder': '#awesome-channel'
             }
         ))
-        
+
     hook_url = forms.CharField(
         validators=[validate_url],
         required=False,
@@ -24,7 +25,8 @@ class AddNotificationHooks(forms.ModelForm):
             attrs={
                 'class': 'form-control',
                 'id': 'hookUrl',
-                'placeholder': 'https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
+                'placeholder': 'https://hooks.slack.com/services/T00000000/' +
+                               'B00000000/XXXXXXXXXXXXXXXXXXXXXXXX'
             }
         ))
 

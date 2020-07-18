@@ -3,6 +3,7 @@ from targetApp.models import Domain
 from scanEngine.models import EngineType
 from django.contrib.postgres.fields import JSONField
 
+
 class ScanHistory(models.Model):
     last_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
@@ -12,6 +13,7 @@ class ScanHistory(models.Model):
     def __str__(self):
         # debug purpose remove scan type and id in prod
         return self.domain_name.domain_name
+
 
 class ScannedHost(models.Model):
     subdomain = models.CharField(max_length=1000)
@@ -41,6 +43,7 @@ class WayBackEndPoint(models.Model):
 
     def __str__(self):
         return self.page_title
+
 
 class ScanActivity(models.Model):
     scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
