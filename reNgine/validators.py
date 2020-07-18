@@ -7,7 +7,7 @@ import re
 def validate_domain(value):
     if not validators.domain(value):
         raise ValidationError(_('%(value)s is not a valid domain Name'
-                              ), params={'value': value})
+                                ), params={'value': value})
 
 
 def validate_url(value):
@@ -17,8 +17,8 @@ def validate_url(value):
 
 
 def validate_short_name(value):
-    regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
+    regex = re.compile(r'[@!#$%^&*()<>?/\|}{~:]')
     if regex.search(value):
         raise ValidationError(_('%(value)s is not a valid short name,'
-                              + ' can only contain - and _'),
+                                + ' can only contain - and _'),
                               params={'value': value})

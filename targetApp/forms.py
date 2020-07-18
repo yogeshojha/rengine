@@ -2,6 +2,7 @@ from django import forms
 from .models import Domain
 from reNgine.validators import validate_domain
 
+
 class AddTargetForm(forms.Form):
     domain_name = forms.CharField(
         validators=[validate_domain],
@@ -10,7 +11,7 @@ class AddTargetForm(forms.Form):
             attrs={
                 "class": "form-control",
                 "id": "domainName",
-                "placeholder":"example.com"
+                "placeholder": "example.com"
             }
         ))
     domain_description = forms.CharField(
@@ -21,6 +22,7 @@ class AddTargetForm(forms.Form):
                 "id": "domainDescription",
             }
         ))
+
 
 class UpdateTargetForm(forms.ModelForm):
     class Meta:
@@ -44,6 +46,7 @@ class UpdateTargetForm(forms.ModelForm):
                 "id": "domainDescription",
             }
         ))
+
     def set_value(self, domain_value, domain_description_value):
         self.initial['domain_name'] = domain_value
         self.initial['domain_description'] = domain_description_value
