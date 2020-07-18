@@ -293,7 +293,14 @@ def doScan(host_id, domain):
                 threads = 10
 
             for subdomain in alive_subdomains:
-                dirsearch_command = '/app/tools/get_dirs.sh {} {}'.format(subdomain.http_url, dirs_results)
+                # /app/tools/dirsearch/db/dicc.txt
+                if ('wordlist' not in yaml_configuration['dir_file_search']
+                or not yaml_configuration['dir_file_search']['wordlist']
+                or 'default' in yaml_configuration['dir_file_search']['wordlist']):
+                    wordlist_location = '/app/tools/dirsearch/db/dicc.txt'
+                else:
+                    wordlist_location = '/app/tools/'+yaml_configuration['dir_file_search']['wordlist']+'.txt'
+                dirsearch_command = '/app/tools/get_dirs.sh {} {} {}'.format(wordlist_location, subdomain.http_url, dirs_results)
                 dirsearch_command = dirsearch_command + ' {} {}'.format(threads, extensions)
 
                 # check if recursive strategy is set to on

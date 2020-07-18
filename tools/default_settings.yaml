@@ -32,6 +32,7 @@ dir_file_search:
     recursive: false
     recursive_level: 0
     thread: 10
+    wordlist: default
 
 fetch_url:
     # supported tools are gau and hakrawler
