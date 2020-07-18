@@ -4,7 +4,7 @@ from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
-import io
+import io, re
 
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
@@ -69,6 +69,6 @@ def add_wordlist(request):
                 wordlist_file.write(wordlist_content)
                 Wordlist.objects.create(name=form.cleaned_data['name'], short_name=form.cleaned_data['short_name'], count=wordlist_content.count('\n'))
                 messages.add_message(request, messages.INFO, 'Wordlist ' + form.cleaned_data['name'] + ' added successfully')
-            return http.HttpResponseRedirect(reverse('wordlist_list'))
+                return http.HttpResponseRedirect(reverse('wordlist_list'))
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)

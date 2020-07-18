@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-Add Wordlists
+Add New Wordlist
 {% endblock title %}
 
 
@@ -10,11 +10,11 @@ Add Wordlists
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Add Wordlists
+Add New Wordlist
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-    {% include 'scanEngine/wordlist/_items/add_form.html' with button_title="Upload Wordlist" widget_title="Add Wordlist" form_action="add" %}
+    {% include 'scanEngine/wordlist/_items/add_form.html' with button_title="Upload Wordlist" widget_title="Add new wordlist" form_action="add" %}
 {% endblock main_content %}
 
 
@@ -23,12 +23,17 @@ Add Wordlists
 <script type="text/javascript">
 var input = document.getElementById("name");
 var shortName = document.getElementById("short_name");
-var inputValue = document.getElementById("name").value;
 
 input.addEventListener("input", function() {
 inputValue = document.getElementById("name").value;
     shortName.value = inputValue.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();;
 });
+
+shortName.addEventListener("input", function() {
+inputValue = document.getElementById("short_name").value;
+    shortName.value = inputValue.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();;
+});
+
 
 // custom file input
 $(".custom-file-input").on("change", function() {

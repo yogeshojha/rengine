@@ -14,15 +14,15 @@
                     <div class="col-md-6 mb-4">
                         <label for="name">Wordlist Name</label>
                         {{ form.name }}
-                        {% if form.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {{ form.errors.name|striptags }}
-                            </div>
-                        {% endif %}
                     </div>
                     <div class="col-md-6 mb-4">
                         <label for="short_name">Short Name</label>
                         {{ form.short_name }}
+                        {% if form.errors.short_name %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {{ form.errors.short_name|striptags }}
+                            </div>
+                        {% endif %}
                         <p class="text-warning mt-2">Please keep the short names without spaces, like my-wordlist or my_wordlist. The short names will be later used to reference wordlist in the YAML settings.</p>
                     </div>
                     <div>

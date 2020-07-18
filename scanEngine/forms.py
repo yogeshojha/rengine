@@ -1,7 +1,7 @@
 from django import forms
 from scanEngine.models import EngineType
 from django_ace import AceWidget
-
+from reNgine.validators import validate_short_name
 class AddEngineForm(forms.ModelForm):
     class Meta:
         model = EngineType
@@ -96,6 +96,7 @@ class AddWordlistForm(forms.Form):
         }))
     short_name = forms.CharField(
         required=True,
+        validators=[validate_short_name],
         widget=forms.TextInput(
         attrs={
             'class': 'form-control',
