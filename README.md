@@ -1,7 +1,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/yogeshojha/rengine">
-    <img src="static/img/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/yogeshojha/rengine/master/static/img/logo.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">reNgine</h3>
@@ -45,19 +45,19 @@
 
 ![](https://user-images.githubusercontent.com/17223002/86880620-92814300-c10a-11ea-9b27-627f43934221.png)
 
-reNgine is an automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints, and gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
+reNgine is an automated reconnaissance framework meant for information gathering during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the domains, endpoints, or gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which is highly customizable.
 
-reNgine can be very useful when you have a domain, you want to recon the domain, gather endpoints, directory, and file search, performing visual reconnaissance, and gather the results in one place.
+reNgine can be very useful when you want to perform the reconnaissance, gather endpoints, directory and file search, grab screenshots, and gather all the results in one place.
 
-Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your defined scan engine, gather all the results in one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200 and quickly want to have a look at the screenshot", reNgine makes it possible.
+Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your scan engines, gather all the results in one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200, and I quickly want to have a look at the screenshot".
 
-Another use-case could be, "I want to list all subdomains that use PHP and the HTTP status is 200!"
+Another use-case could be, "I want to list all subdomains that use PHP, and the HTTP status is 200!"
 
-On the endpoints part, reNgine is capable of gathering the URL endpoints using tools like `gau`, gathers URL from many sources like common crawl, Wayback engine, etc.
+On the endpoints part, reNgine is capable of gathering the URL endpoints using tools like `gau`, `hakrawler` which gathers URL from many sources like common crawl, Wayback engine, etc.
 
-reNgine makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
+reNgine also makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
 
-**Also, Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
+**Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
 
 ### What it is not
 
@@ -84,7 +84,7 @@ Of course, at this point, reNgine does not give the best of the best result comp
 
 ## Getting Started
 
-To get a local copy up and running follow these simple example steps.
+To get a local copy up and running, follow these simple example steps.
 
 ```sh
 git clone https://github.com/yogeshojha/rengine.git
@@ -108,9 +108,9 @@ The build process may take some time.
 
 ## Usage
 
-> :warning: reNgine does fingerprinting, port scanning, and banner grabbing which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
+> :warning: reNgine does fingerprinting, port scanning, and banner grabbing, which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
 
-If the installation is successful, then you can simply run reNgine by using the command
+If the installation is successful, then you can run reNgine by using the command
 ```sh
 docker-compose up -d
 ```
@@ -130,7 +130,7 @@ You can begin with resolving any [open issues](https://github.com/yogeshojha/ren
 
 ## License
 
-Distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) for more information.
+It is distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements and Credits
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.

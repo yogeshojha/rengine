@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [[ $# -eq 4 ]]
+if [[ $# -eq 5 ]]
 then
-python3 /app/tools/dirsearch/dirsearch.py -w $1 -u $2 --json-report=$3 -t $4 -e $5 --suff $6
+python3 /app/tools/dirsearch/dirsearch.py -u $1 -w $2 --json-report=$3 -e $4 -t $5 -e $4
 else
-python3 /app/tools/dirsearch/dirsearch.py -w $1 -u $2 --json-report=$3 -t $4 -e $5 --suff $6 -r -R $7
+python3 /app/tools/dirsearch/dirsearch.py -u $1 -w $2 --json-report=$3 -e $4 -t $5 -r -R $6 -e $4
 fi

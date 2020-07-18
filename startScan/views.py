@@ -299,15 +299,15 @@ def doScan(host_id, domain):
                  'default' in yaml_configuration['dir_file_search']['wordlist']):
                     wordlist_location = '/app/tools/dirsearch/db/dicc.txt'
                 else:
-                    wordlist_location = '/app/tools/'+yaml_configuration['dir_file_search']['wordlist']+'.txt'
-                dirsearch_command = '/app/tools/get_dirs.sh {} {} {}'.format(wordlist_location, subdomain.http_url, dirs_results)
-                dirsearch_command = dirsearch_command + ' {} {}'.format(threads, extensions)
+                    wordlist_location = '/app/tools/wordlist/'+yaml_configuration['dir_file_search']['wordlist']+'.txt'
+
+                dirsearch_command = '/app/tools/get_dirs.sh {} {} {}'.format(subdomain.http_url, wordlist_location, dirs_results)
+                dirsearch_command = dirsearch_command + ' {} {}'.format(extensions, threads)
 
                 # check if recursive strategy is set to on
                 if yaml_configuration['dir_file_search']['recursive']:
                     dirsearch_command = dirsearch_command + ' {}'.format(yaml_configuration['dir_file_search']['recursive_level'])
 
-                # os.system(dirsearch_command)
                 os.system(dirsearch_command)
                 try:
                     with open(dirs_results, "r") as json_file:

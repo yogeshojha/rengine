@@ -72,3 +72,14 @@ def add_wordlist(request):
                 return http.HttpResponseRedirect(reverse('wordlist_list'))
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
+
+def delete_wordlist(request, id):
+    obj = get_object_or_404(Wordlist, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(request, messages.INFO, 'Wordlist successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(request, messages.INFO, 'Oops! Wordlist could not be deleted!')
+    return http.JsonResponse(responseData)
