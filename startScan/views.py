@@ -294,9 +294,9 @@ def doScan(host_id, domain):
 
             for subdomain in alive_subdomains:
                 # /app/tools/dirsearch/db/dicc.txt
-                if ('wordlist' not in yaml_configuration['dir_file_search']
-                or not yaml_configuration['dir_file_search']['wordlist']
-                or 'default' in yaml_configuration['dir_file_search']['wordlist']):
+                if ('wordlist' not in yaml_configuration['dir_file_search'] or
+                 not yaml_configuration['dir_file_search']['wordlist'] or
+                 'default' in yaml_configuration['dir_file_search']['wordlist']):
                     wordlist_location = '/app/tools/dirsearch/db/dicc.txt'
                 else:
                     wordlist_location = '/app/tools/'+yaml_configuration['dir_file_search']['wordlist']+'.txt'
