@@ -53,19 +53,19 @@ class UpdateEngineForm(forms.ModelForm):
                 "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput())
     dir_file_search = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput())
     subdomain_takeover = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput())
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput())
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput())
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
