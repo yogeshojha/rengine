@@ -1,7 +1,7 @@
 <br />
 <p align="center">
   <a href="https://github.com/yogeshojha/rengine">
-    <img src="static/img/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/bugdisclose/rengine/master/static/img/logo-rengine.jpg" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">reNgine</h3>
