@@ -8,7 +8,6 @@ from django.contrib.auth.signals import user_logged_out
 from django.contrib import messages
 
 
-@ login_required
 def index(request):
     domain_count = Domain.objects.all().count()
     endpoint_count = WayBackEndPoint.objects.all().count()
