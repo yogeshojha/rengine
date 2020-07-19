@@ -2,8 +2,13 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost
 from targetApp.models import Domain
+from django.contrib.auth.decorators import login_required
+from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_out
+from django.contrib import messages
 
 
+@ login_required
 def index(request):
     domain_count = Domain.objects.all().count()
     endpoint_count = WayBackEndPoint.objects.all().count()
@@ -27,3 +32,12 @@ def index(request):
         'on_going_scan_count': on_going_scan_count,
         'recent_scans': recent_scans, }
     return render(request, 'dashboard/index.html', context)
+
+
+@receiver(user_logged_out)
+def on_user_logged_out(sender, request, **kwargs):
+    messages.add_message(
+                        request,
+                        messages.INFO,
+                        'You have been successfully logged out. Thank you ' +
+                        'for using reNgine.')
