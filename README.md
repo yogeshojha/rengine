@@ -1,10 +1,8 @@
 <br />
 <p align="center">
   <a href="https://github.com/yogeshojha/rengine">
-    <img src="https://raw.githubusercontent.com/bugdisclose/rengine/master/static/img/logo-rengine.jpg" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/bugdisclose/rengine/master/static/img/logo-rengine.jpg" alt="Logo" width="150" height="150">
   </a>
-
-  <h3 align="center">reNgine</h3>
 </p>
 
 ![Version](https://img.shields.io/badge/version-1.0-blue.svg?cacheSeconds=2592000)
