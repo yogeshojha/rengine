@@ -8,3 +8,4 @@ djangorestframework
 djangorestframework-datatables
 django-ace
 pyyaml
+django-login-required-middleware
