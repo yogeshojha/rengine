@@ -4,5 +4,12 @@ from . import views
 
 
 urlpatterns = [
-    path('', views.index, name='dashboardIndex')
+    path(
+        '',
+        views.index,
+        name='dashboardIndex'),
+    path(
+        'profile/',
+        views.profile,
+        name='profile'),
 ]
