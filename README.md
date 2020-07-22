@@ -7,7 +7,7 @@
   <h3 align="center">reNgine</h3>
 </p>
 
-![Version](https://img.shields.io/badge/version-1.0-blue.svg?cacheSeconds=2592000)
+![Version](https://img.shields.io/badge/version-0.3-blue.svg?cacheSeconds=2592000)
 [![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![python](https://img.shields.io/badge/python-3.8-blue.svg?logo=python&labelColor=yellow)](https://www.python.org/downloads/)
@@ -36,6 +36,7 @@
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
+  * [Register Account](#register-account)
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
@@ -105,6 +106,17 @@ Assuming that you have followed the above steps and inside rengine directory
 docker-compose up --build
 ```
 The build process may take some time.
+
+Once the setup is done, you need to setup the password.
+
+### Register Account
+
+Once the application is up and running, you need an account for reNgine. This can be easily created using `createsuperuser` from Django.
+Open a new terminal tab, and run the following command:
+
+`docker exec -it rengine_web_1 python manage.py createsuperuser`
+
+You may now enter your username and password. Remember to keep a secure password.
 
 ## Usage
 
