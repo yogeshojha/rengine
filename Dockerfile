@@ -36,7 +36,7 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau
-    
+
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
@@ -55,6 +55,9 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
+
+# make environment variables
+RUN echo "DEBUG=0" >> .env
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
