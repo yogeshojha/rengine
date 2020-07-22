@@ -4,6 +4,7 @@
 """Partially backported python ABC classes"""
 
 
+
 import sys
 import types
 
@@ -14,7 +15,6 @@ if sys.version_info > (2, 6):
 # Instance of old-style class
 class _C:
     pass
-
 
 _InstanceType = type(_C())
 
@@ -64,11 +64,9 @@ class ABCMeta(type):
     def __new__(mcls, name, bases, namespace):
         cls = super(ABCMeta, mcls).__new__(mcls, name, bases, namespace)
         # Compute set of abstract method names
-        abstracts = set(
-            name
-            for name, value in list(namespace.items())
-            if getattr(value, "__isabstractmethod__", False)
-        )
+        abstracts = set(name
+                     for name, value in list(namespace.items())
+                     if getattr(value, "__isabstractmethod__", False))
         for base in bases:
             for name in getattr(base, "__abstractmethods__", set()):
                 value = getattr(cls, name, None)
@@ -108,7 +106,7 @@ class ABCMeta(type):
     def __instancecheck__(cls, instance):
         """Override for isinstance(instance, cls)."""
         # Inline the cache checking when it's simple.
-        subclass = getattr(instance, "__class__", None)
+        subclass = getattr(instance, '__class__', None)
         if subclass in cls._abc_cache:
             return True
         subtype = type(instance)
@@ -116,14 +114,14 @@ class ABCMeta(type):
         if subtype is _InstanceType:
             subtype = subclass
         if subtype is subclass or subclass is None:
-            if (
-                cls._abc_negative_cache_version == ABCMeta._abc_invalidation_counter
-                and subtype in cls._abc_negative_cache
-            ):
+            if (cls._abc_negative_cache_version ==
+                ABCMeta._abc_invalidation_counter and
+                subtype in cls._abc_negative_cache):
                 return False
             # Fall back to the subclass check.
             return cls.__subclasscheck__(subtype)
-        return cls.__subclasscheck__(subclass) or cls.__subclasscheck__(subtype)
+        return (cls.__subclasscheck__(subclass) or
+                cls.__subclasscheck__(subtype))
 
     def __subclasscheck__(cls, subclass):
         """Override for issubclass(subclass, cls)."""
@@ -147,7 +145,7 @@ class ABCMeta(type):
                 cls._abc_negative_cache.add(subclass)
             return ok
         # Check if it's a direct subclass
-        if cls in getattr(subclass, "__mro__", ()):
+        if cls in getattr(subclass, '__mro__', ()):
             cls._abc_cache.add(subclass)
             return True
         # Check if it's a subclass of a registered class (recursive)
@@ -212,7 +210,6 @@ class Iterable(metaclass=ABCMeta):
                 return True
         return NotImplemented
 
-
 Iterable.register(str)
 
 
@@ -262,11 +259,11 @@ class Set(Sized, Iterable, Container):
 
     @classmethod
     def _from_iterable(cls, it):
-        """Construct an instance of the class from any iterable input.
+        '''Construct an instance of the class from any iterable input.
 
         Must override this method if the class constructor signature
         does not accept an iterable for an input.
-        """
+        '''
         return cls(it)
 
     def __and__(self, other):
@@ -291,7 +288,8 @@ class Set(Sized, Iterable, Container):
             if not isinstance(other, Iterable):
                 return NotImplemented
             other = self._from_iterable(other)
-        return self._from_iterable(value for value in self if value not in other)
+        return self._from_iterable(value for value in self
+                                   if value not in other)
 
     def __xor__(self, other):
         if not isinstance(other, Set):
@@ -335,11 +333,11 @@ class Set(Sized, Iterable, Container):
             h = 590923713
         return h
 
-
 Set.register(frozenset)
 
 
 class MutableSet(Set):
+
     @abstractmethod
     def add(self, value):
         """Add an element."""
@@ -380,7 +378,7 @@ class MutableSet(Set):
         return self
 
     def __iand__(self, it):
-        for value in self - it:
+        for value in (self - it):
             self.discard(value)
         return self
 
@@ -399,15 +397,15 @@ class MutableSet(Set):
             self.discard(value)
         return self
 
-
 MutableSet.register(set)
 
 
 class OrderedSet(MutableSet):
+
     def __init__(self, iterable=None):
         self.end = end = []
-        end += [None, end, end]  # sentinel node for doubly linked list
-        self.map = {}  # key --> [key, prev, next]
+        end += [None, end, end]         # sentinel node for doubly linked list
+        self.map = {}                   # key --> [key, prev, next]
         if iterable is not None:
             self |= iterable
 
@@ -448,15 +446,15 @@ class OrderedSet(MutableSet):
 
     def pop(self, last=True):
         if not self:
-            raise KeyError("set is empty")
+            raise KeyError('set is empty')
         key = next(reversed(self)) if last else next(iter(self))
         self.discard(key)
         return key
 
     def __repr__(self):
         if not self:
-            return "%s()" % (self.__class__.__name__,)
-        return "%s(%r)" % (self.__class__.__name__, list(self))
+            return '%s()' % (self.__class__.__name__,)
+        return '%s(%r)' % (self.__class__.__name__, list(self))
 
     def __eq__(self, other):
         if isinstance(other, OrderedSet):
@@ -464,9 +462,8 @@ class OrderedSet(MutableSet):
         return set(self) == set(other)
 
     def __del__(self):
-        self.clear()  # remove circular references
+        self.clear()                    # remove circular references
 
-
-if __name__ == "__main__":
-    print((OrderedSet("abracadaba")))
-    print((OrderedSet("simsalabim")))
+if __name__ == '__main__':
+    print((OrderedSet('abracadaba')))
+    print((OrderedSet('simsalabim')))

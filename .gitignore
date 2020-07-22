@@ -50,3 +50,5 @@ docs/_build/
 
 **/.DS_Store
 staticfiles/
+
+secret

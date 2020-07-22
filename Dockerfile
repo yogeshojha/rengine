@@ -18,9 +18,6 @@ RUN apk update \
     && pip install psycopg2 \
     && apk del build-deps
 
-# Copy requirements
-COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
 
 # Download and install go 1.13
 COPY --from=golang:1.13-alpine /usr/local/go/ /usr/local/go/
@@ -40,6 +37,10 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau
 
+# Copy requirements
+COPY ./requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt
+
 # Make directory for app
 RUN mkdir /app
 WORKDIR /app
@@ -54,6 +55,9 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
+
+# make environment variables
+RUN echo "DEBUG=0" >> .env
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

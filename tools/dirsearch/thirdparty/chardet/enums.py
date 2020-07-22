@@ -9,7 +9,6 @@ class InputState(object):
     """
     This enum represents the different states a universal detector can be in.
     """
-
     PURE_ASCII = 0
     ESC_ASCII = 1
     HIGH_BYTE = 2
@@ -20,7 +19,6 @@ class LanguageFilter(object):
     This enum represents the different language filters we can apply to a
     ``UniversalDetector``.
     """
-
     CHINESE_SIMPLIFIED = 0x01
     CHINESE_TRADITIONAL = 0x02
     JAPANESE = 0x04
@@ -35,7 +33,6 @@ class ProbingState(object):
     """
     This enum represents the different states a prober can be in.
     """
-
     DETECTING = 0
     FOUND_IT = 1
     NOT_ME = 2
@@ -45,7 +42,6 @@ class MachineState(object):
     """
     This enum represents the different states a state machine can be in.
     """
-
     START = 0
     ERROR = 1
     ITS_ME = 2
@@ -55,7 +51,6 @@ class SequenceLikelihood(object):
     """
     This enum represents the likelihood of a character following the previous one.
     """
-
     NEGATIVE = 0
     UNLIKELY = 1
     LIKELY = 2
@@ -74,7 +69,6 @@ class CharacterCategory(object):
 
     Anything less than CONTROL is considered a letter.
     """
-
     UNDEFINED = 255
     LINE_BREAK = 254
     SYMBOL = 253

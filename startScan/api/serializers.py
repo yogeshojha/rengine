@@ -10,6 +10,7 @@ class ScanHistorySerializer(serializers.ModelSerializer):
         fields = '__all__'
         # lookup_field = 'scan_history'
 
+
 class EndpointSerializer(serializers.ModelSerializer):
 
     class Meta:
