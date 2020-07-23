@@ -19,3 +19,4 @@ Also, Thanks to these individuals for making reNgine awesome by providing contin
 * [Ganesh Pandey](https://github.com/GaneshPandey)
 * [Prial Islam](https://github.com/prial261)
 * [SecArmy](https://twitter.com/secarmyofficial)
+* pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
