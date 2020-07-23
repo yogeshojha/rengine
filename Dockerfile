@@ -37,6 +37,9 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau \
     github.com/projectdiscovery/nuclei/v2/cmd/nuclei
+    
+RUN git clone https://github.com/projectdiscovery/nuclei-templates /app/tools/
+RUN cd /app/tools/nuclei-templates && mkdir all && cp $(find . -type f -name '*.yaml') all/
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
