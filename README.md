@@ -158,7 +158,7 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
 * assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
-* gau: [Corben Leo] (https://github.com/lc)
+* gau: [Corben Leo](https://github.com/lc)
 * hakrawler : [Luke Stephens](https://github.com/hakluke/hakrawler)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * subjack [haccer](https://github.com/haccer/subjack)
