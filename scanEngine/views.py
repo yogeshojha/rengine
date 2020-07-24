@@ -124,6 +124,7 @@ def add_wordlist_zip(request):
             if zip_file.content_type == 'application/x-zip-compressed':
                 with zipfile.ZipFile('/app/tools/wordlist/temp/temp.zip', 'r') as zip_ref:
                     zip_ref.extractall('/app/tools/wordlist/temp')
+                os.remove("/app/tools/wordlist/temp/temp.zip")
                 for wordlist_file in glob.glob("/app/tools/wordlist/temp/*.txt"):
                     wordlist_content = open(wordlist_file, 'r').read()
                     wordlist_path = '/app/tools/wordlist/'
