@@ -32,4 +32,8 @@ urlpatterns = [
         'wordlist/delete/<int:id>',
         views.delete_wordlist,
         name='delete_wordlist'),
+        path(
+        'wordlist/addZip/',
+        views.add_wordlist_zip,
+        name='add_wordlist_zip'),
 ]

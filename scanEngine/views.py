@@ -1,11 +1,14 @@
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType, Wordlist
-from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
+from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm, AddWordlistZipForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
 import io
 import re
+import zipfile
+import glob
+
 
 
 def index(request):
@@ -105,6 +108,37 @@ def add_wordlist(request):
                 return http.HttpResponseRedirect(reverse('wordlist_list'))
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
+
+
+def add_wordlist_zip(request):
+    context = {'wordlist_nav_active': 'true'}
+    form = AddWordlistZipForm(request.POST or None, request.FILES or None)
+    if request.method == "POST":
+        if form.is_valid() and 'upload_file' in request.FILES:
+            zip_file = request.FILES['upload_file']
+            if zip_file.content_type == 'application/zip':
+                with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
+                    zip_ref.extractall('/app/tools/wordlist/temp')
+                for wordlist_file in glob.glob("/app/tools/wordlist/temp/*.txt"):
+                    wordlist_content = open(wordlist_file, 'w').read().decode('UTF-8')
+                    wordlist_path = '/app/tools/wordlist/'
+                    wordlist_file_write = open(
+                                        wordlist_path +
+                                        wordlist_file ,
+                                        'w')
+                    wordlist_file_write.write(wordlist_content)
+                    Wordlist.objects.create(
+                                            name=wordlist_file,
+                                            short_name=wordlist_file,
+                                            count=wordlist_content.count('\n'))
+                    messages.add_message(
+                                        request,
+                                        messages.INFO,
+                                        'Wordlist ' + wordlist_file +
+                                        ' added successfully')
+                    return http.HttpResponseRedirect(reverse('wordlist_list'))
+        context['form'] = form
+        return render(request, 'scanEngine/wordlist/add.html', context)
 
 
 def delete_wordlist(request, id):
