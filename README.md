@@ -114,6 +114,14 @@ docker-compose up --build
 ```
 The build process may take some time.
 
+Alternatively, you also can run the project with pre-built Docker images (with 2FA enabled, you have to [create a new personal access token](https://github.com/settings/tokens/new) with `read:packages` scope):
+
+```sh
+docker login docker.pkg.github.com
+docker-compose pull
+docker-compose up
+```
+
 Once the setup is done, you need to setup the password.
 
 ### Register Account
