@@ -9,13 +9,15 @@
     fetch_url: true
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    # currently reNgine\
-      \ only supports naabu, nmap and other port scanning tools\r\n    # will be made\
-      \ available in future release\r\n    # scan_ports available options are top-100,\
-      \ top-1000, full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\
-      \n    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\
-      \n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
+      \ results but also may take longer time to scan\r\n    uses_tool: [ amass-passive,\
+      \ subfinder, sublist3r ]\r\n    thread: 10\r\n    # Your wordlist shortname\
+      \ for amass active enumeration, ignore if you are using passive enumeration\r\
+      \n    wordlist: default\r\n\r\nport_scan:\r\n    # currently reNgine only supports\
+      \ naabu, nmap and other port scanning tools\r\n    # will be made available\
+      \ in future release\r\n    # scan_ports available options are top-100, top-1000,\
+      \ full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    #\
+      \ if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\
+      \    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
       \    # currently runs aquatone\r\n    # available options for ports are small,\
       \ medium, large, xlarge\r\n    port: xlarge\r\n    thread: 2\r\n\r\nsubdomain_takeover:\r\
       \n    # only subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
@@ -26,7 +28,7 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: true
+    default_engine: false
 - model: scanEngine.enginetype
   pk: 2
   fields:
@@ -38,13 +40,15 @@
     fetch_url: true
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    # currently reNgine\
-      \ only supports naabu, nmap and other port scanning tools\r\n    # will be made\
-      \ available in future release\r\n    # scan_ports available options are top-100,\
-      \ top-1000, full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\
-      \n    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\
-      \n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
+      \ results but also may take longer time to scan\r\n    uses_tool: [ amass-passive,\
+      \ subfinder, sublist3r ]\r\n    thread: 10\r\n    # Your wordlist shortname\
+      \ for amass active enumeration, ignore if you are using passive enumeration\r\
+      \n    wordlist: default\r\n\r\nport_scan:\r\n    # currently reNgine only supports\
+      \ naabu, nmap and other port scanning tools\r\n    # will be made available\
+      \ in future release\r\n    # scan_ports available options are top-100, top-1000,\
+      \ full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    #\
+      \ if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\
+      \    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
       \    # currently runs aquatone\r\n    # available options for ports are small,\
       \ medium, large, xlarge\r\n    port: xlarge\r\n    thread: 2\r\n\r\nsubdomain_takeover:\r\
       \n    # only subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
@@ -55,7 +59,7 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: true
+    default_engine: false
 - model: scanEngine.enginetype
   pk: 3
   fields:
@@ -67,13 +71,15 @@
     fetch_url: false
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are Sublist3r,\
       \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    # currently reNgine\
-      \ only supports naabu, nmap and other port scanning tools\r\n    # will be made\
-      \ available in future release\r\n    # scan_ports available options are top-100,\
-      \ top-1000, full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\
-      \n    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\
-      \n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
+      \ results but also may take longer time to scan\r\n    uses_tool: [ amass-passive,\
+      \ subfinder, sublist3r ]\r\n    thread: 10\r\n    # Your wordlist shortname\
+      \ for amass active enumeration, ignore if you are using passive enumeration\r\
+      \n    wordlist: default\r\n\r\nport_scan:\r\n    # currently reNgine only supports\
+      \ naabu, nmap and other port scanning tools\r\n    # will be made available\
+      \ in future release\r\n    # scan_ports available options are top-100, top-1000,\
+      \ full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    #\
+      \ if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\
+      \    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
       \    # currently runs aquatone\r\n    # available options for ports are small,\
       \ medium, large, xlarge\r\n    port: xlarge\r\n    thread: 2\r\n\r\nsubdomain_takeover:\r\
       \n    # only subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
@@ -84,4 +90,4 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: true
+    default_engine: false

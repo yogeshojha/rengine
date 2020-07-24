@@ -5,6 +5,7 @@ subdomain_discovery:
     # amass-active or amass-passive
     uses_tool: [ amass-passive, subfinder, sublist3r ]
     thread: 10
+    # Your wordlist shortname for amass active enumeration
     wordlist: default
 
 port_scan:
