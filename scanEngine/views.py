@@ -116,8 +116,13 @@ def add_wordlist_zip(request):
     if request.method == "POST":
         if form.is_valid() and 'upload_file' in request.FILES:
             zip_file = request.FILES['upload_file']
-            if zip_file.content_type == 'application/zip':
-                with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
+            print("Debuging....")
+            print(zip_file)
+            with open('/app/tools/wordlist/temp/temp.zip', 'wb+') as destination:
+                for chunk in zip_file.chunks():
+                    destination.write(chunk)
+            if zip_file.content_type == 'application/x-zip-compressed':
+                with zipfile.ZipFile('/app/tools/wordlist/temp/temp.zip', 'r') as zip_ref:
                     zip_ref.extractall('/app/tools/wordlist/temp')
                 for wordlist_file in glob.glob("/app/tools/wordlist/temp/*.txt"):
                     wordlist_content = open(wordlist_file, 'w').read().decode('UTF-8')
