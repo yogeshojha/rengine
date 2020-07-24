@@ -41,11 +41,11 @@
                 <form class="simple-example" method="POST" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="form-row">
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-4" style="display: none">
                         <label for="name">Wordlist Zip</label>
                         {{ form.name }}
                     </div>
-                    <div class="col-md-6 mb-4">
+                    <div class="col-md-6 mb-4" style="display: none">
                         <label for="short_name">Short Name</label>
                         {{ form.short_name }}
                         {% if form.errors.short_name %}
@@ -57,7 +57,7 @@
                     </div>
                     <div>
                         <p>Select the wordlist file</p>
-                        <p class="text-warning">Your wordlist must be in the *.zip file format and must be seperated by new line.</p>
+                        <p class="text-warning">You can also upload a *.zip file</p>
                     </div>
                     <div class="custom-file mb-4">
                         {{ form.upload_file }}
