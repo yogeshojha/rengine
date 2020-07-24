@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# $1 threads, $2 domain, $3 output directory, $4 amass active recon wordlist
+
 for i in "$@" ; do
     if [[ $i == "sublist3r" ]] ; then
         python3 /app/tools/Sublist3r/sublist3r.py -d $2 -t $1 -o $3/from_sublister.txt

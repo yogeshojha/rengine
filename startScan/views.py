@@ -111,7 +111,7 @@ def doScan(host_id, domain):
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
-                tools = 'amass assetfinder sublist3r subfinder'
+                tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
