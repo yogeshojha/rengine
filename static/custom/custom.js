@@ -20,8 +20,3 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
-
-function basicFilter(){
-    console.log('basic')
-}
