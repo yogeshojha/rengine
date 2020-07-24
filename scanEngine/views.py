@@ -125,7 +125,7 @@ def add_wordlist_zip(request):
                 with zipfile.ZipFile('/app/tools/wordlist/temp/temp.zip', 'r') as zip_ref:
                     zip_ref.extractall('/app/tools/wordlist/temp')
                 for wordlist_file in glob.glob("/app/tools/wordlist/temp/*.txt"):
-                    wordlist_content = open(wordlist_file, 'w').read().decode('UTF-8')
+                    wordlist_content = open(wordlist_file, 'r').read().decode('UTF-8')
                     wordlist_path = '/app/tools/wordlist/'
                     wordlist_file_write = open(
                                         wordlist_path +
