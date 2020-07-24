@@ -109,20 +109,6 @@ class AddWordlistForm(forms.Form):
                    'accept': '.txt', }))
 
 class AddWordlistZipForm(forms.Form):
-    name = forms.CharField(
-        required=True,
-        widget=forms.TextInput(
-            attrs={'class': 'form-control',
-                   'id': 'name',
-                   'placeholder': 'my awesome wordlist', }))
-    short_name = forms.CharField(
-        required=True,
-        validators=[validate_short_name],
-        widget=forms.TextInput(
-            attrs={
-                'class': 'form-control',
-                'id': 'short_name',
-                'placeholder': 'my_awesome_wordlist', }))
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
