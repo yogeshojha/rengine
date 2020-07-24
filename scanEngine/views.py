@@ -138,7 +138,7 @@ def add_wordlist_zip(request):
                                         ' added successfully')
                     return http.HttpResponseRedirect(reverse('wordlist_list'))
         context['form'] = form
-    return render(request, 'scanEngine/wordlist/add_zip.html', context)
+    return render(request, 'scanEngine/wordlist/add.html', context)
 
 
 def delete_wordlist(request, id):

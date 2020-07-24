@@ -37,21 +37,5 @@
                 <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">{{button_title}}</button>
             </form>
         </div>
-          <div class="widget-content widget-content-area">
-                <form class="simple-example" method="POST" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="form-row">
-                    <div>
-                        <p>Select the wordlist file</p>
-                        <p class="text-warning">You can also upload a *.zip file</p>
-                    </div>
-                    <div class="custom-file mb-4">
-                        {{ form.upload_file }}
-                        <label class="custom-file-label" for="txtFile">Choose *.zip file</label>
-                    </div>
-                </div>
-                <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">{{button_title}}</button>
-            </form>
-        </div>
     </div>
 </div>
