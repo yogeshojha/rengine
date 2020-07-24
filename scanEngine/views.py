@@ -128,7 +128,6 @@ def add_wordlist_zip(request):
                     wordlist_content = open(wordlist_file, 'r').read()
                     wordlist_path = '/app/tools/wordlist/'
                     wordlist_file_write = open(
-                                        wordlist_path +
                                         wordlist_file ,
                                         'w')
                     wordlist_file_write.write(wordlist_content)
