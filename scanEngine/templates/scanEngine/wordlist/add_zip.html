@@ -24,15 +24,7 @@ Add New Wordlist
 var input = document.getElementById("name");
 var shortName = document.getElementById("short_name");
 
-input.addEventListener("input", function() {
-inputValue = document.getElementById("name").value;
-    shortName.value = inputValue.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();;
-});
 
-shortName.addEventListener("input", function() {
-inputValue = document.getElementById("short_name").value;
-    shortName.value = inputValue.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase();;
-});
 
 
 // custom file input
