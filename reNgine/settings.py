@@ -1,20 +1,21 @@
 import os
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+from reNgine.init import first_run
+
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#       RENGINE CONFIGURATIONS
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+RENGINE_HOME = '/app'
+SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'c+(pmsjkz^p&v$jlwry3q=o&)apy&9ip_u7x3go3ucdi8!#=qx'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = 1
 
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     'scanEngine.apps.ScanengineConfig',
     'startScan.apps.StartscanConfig',
     'notification.apps.NotificationConfig',
+    'django_ace',
 ]
 
 MIDDLEWARE = [
@@ -41,6 +43,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'login_required.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -77,13 +80,10 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'rest_framework_datatables.filters.DatatablesFilterBackend',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
     'PAGE_SIZE': 50,
 }
-
-
-# Database
-# https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -96,22 +96,25 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.' +
+                'UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.' +
+                'MinimumLengthValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.' +
+                'CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.' +
+                'NumericPasswordValidator',
     },
 ]
 
@@ -138,3 +141,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
+
+LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
+    'login',
+]
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboardIndex'
+LOGOUT_REDIRECT_URL = 'login'

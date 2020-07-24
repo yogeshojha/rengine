@@ -12,8 +12,7 @@ then
 fi
 
 python manage.py migrate
-
 # Load default engine types
-python manage.py loaddata fixtures/default_scan_engines.json --app scanEngine.EngineType
+python manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
 
 exec "$@"

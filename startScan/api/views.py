@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
 
+
 class ScanHistoryViewSet(viewsets.ModelViewSet):
     queryset = ScannedHost.objects.all()
     serializer_class = ScanHistorySerializer
@@ -13,10 +14,12 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
-            self.queryset = ScannedHost.objects.filter(scan_history__id=scan_id)
+            self.queryset = ScannedHost.objects.filter(
+                scan_history__id=scan_id)
             return self.queryset
         else:
             return self.queryset
+
 
 class EndPointViewSet(viewsets.ModelViewSet):
     queryset = WayBackEndPoint.objects.all()

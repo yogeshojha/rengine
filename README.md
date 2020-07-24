@@ -8,7 +8,7 @@
   
 </p>
 
-![Version](https://img.shields.io/badge/version-1.0-blue.svg?cacheSeconds=2592000)
+![Version](https://img.shields.io/badge/version-0.3-blue.svg?cacheSeconds=2592000)
 [![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![python](https://img.shields.io/badge/python-3.8-blue.svg?logo=python&labelColor=yellow)](https://www.python.org/downloads/)
@@ -37,6 +37,7 @@
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
+  * [Register Account](#register-account)
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
@@ -46,19 +47,26 @@
 
 ![](https://user-images.githubusercontent.com/17223002/86880620-92814300-c10a-11ea-9b27-627f43934221.png)
 
-reNgine is an automated reconnaissance framework meant for gathering information during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the websites, endpoints, and gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which can be customized.
+reNgine is an automated reconnaissance framework meant for information gathering during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the domains, endpoints, or gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which is highly customizable.
 
-reNgine can be very useful when you have a domain, you want to recon the domain, gather endpoints, directory, and file search, performing visual reconnaissance, and gather the results in one place.
+reNgine can be very useful when you want to perform the reconnaissance, gather endpoints, directory and file search, grab screenshots, and gather all the results in one place.
 
-Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your defined scan engine, gather all the results in one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200 and quickly want to have a look at the screenshot", reNgine makes it possible.
+Suppose, if you have a domain hackerone.com, reNgine can perform the scan based on your scan engines, gather all the results in one place. reNgine makes it possible for use cases like, "I want to search the subdomain which has page title "Dashboard" and has page status as 200, and I quickly want to have a look at the screenshot".
 
-Another use-case could be, "I want to list all subdomains that use PHP and the HTTP status is 200!"
+Another use-case could be, "I want to list all subdomains that use PHP, and the HTTP status is 200!"
 
-On the endpoints part, reNgine is capable of gathering the URL endpoints using tools like `gau`, gathers URL from many sources like common crawl, Wayback engine, etc.
+On the endpoints part, reNgine is capable of gathering the URL endpoints using tools like `gau`, `hakrawler` which gathers URL from many sources like common crawl, Wayback engine, etc.
 
-reNgine makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
+reNgine also makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
 
-**Also, Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
+**Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
+
+
+## Demo
+
+Click below to watch the demo
+
+[![Watch the Demo](https://img.youtube.com/vi/u8_Z2-3-o2M/maxresdefault.jpg)](https://www.youtube.com/watch?v=u8_Z2-3-o2M)
 
 ### What it is not
 
@@ -85,7 +93,7 @@ Of course, at this point, reNgine does not give the best of the best result comp
 
 ## Getting Started
 
-To get a local copy up and running follow these simple example steps.
+To get a local copy up and running, follow these simple example steps.
 
 ```sh
 git clone https://github.com/yogeshojha/rengine.git
@@ -107,11 +115,22 @@ docker-compose up --build
 ```
 The build process may take some time.
 
+Once the setup is done, you need to setup the password.
+
+### Register Account
+
+Once the application is up and running, you need an account for reNgine. This can be easily created using `createsuperuser` from Django.
+Open a new terminal tab, and run the following command:
+
+`docker exec -it rengine_web_1 python manage.py createsuperuser`
+
+You may now enter your username and password. Remember to keep a secure password.
+
 ## Usage
 
-> :warning: reNgine does fingerprinting, port scanning, and banner grabbing which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
+> :warning: reNgine does fingerprinting, port scanning, and banner grabbing, which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
 
-If the installation is successful, then you can simply run reNgine by using the command
+If the installation is successful, then you can run reNgine by using the command
 ```sh
 docker-compose up -d
 ```
@@ -131,7 +150,7 @@ You can begin with resolving any [open issues](https://github.com/yogeshojha/ren
 
 ## License
 
-Distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) for more information.
+It is distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements and Credits
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.
@@ -139,9 +158,10 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * Amass: [OWASP](https://github.com/OWASP/)
 * httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
-* gau, assetfinder, hakrawler: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+* assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+* gau: [Corben Leo](https://github.com/lc)
+* hakrawler : [Luke Stephens](https://github.com/hakluke/hakrawler)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
-* pulsar: [FooBallZ](https://github.com/FooBallZ/pulsar)
 * subjack [haccer](https://github.com/haccer/subjack)
 
 Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.

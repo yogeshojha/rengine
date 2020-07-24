@@ -3,13 +3,16 @@ from urllib.parse import urlparse
 
 register = template.Library()
 
+
 @register.filter(name='split')
 def split(value, key):
     return value.split(key)
 
+
 @register.filter(name='count')
 def count(value):
     return len(value.split(','))
+
 
 @register.filter(name='getpath')
 def getpath(value):

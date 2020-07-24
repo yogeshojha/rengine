@@ -1,7 +1,8 @@
 #!/bin/sh
 
-# $1 = subdomain
-# usage $2 = domain_name scan result path
-
-rm -rf $2
-python3 /app/tools/dirsearch/dirsearch.py /app/tools/dirsearch/db/dicc.txt -u $1 --json-report=$2 -e *
+if [[ $# -eq 5 ]]
+then
+python3 /app/tools/dirsearch/dirsearch.py -u $1 -w $2 --json-report=$3 -e $4 -t $5 -e $4
+else
+python3 /app/tools/dirsearch/dirsearch.py -u $1 -w $2 --json-report=$3 -e $4 -t $5 -r -R $6 -e $4
+fi

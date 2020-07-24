@@ -39,7 +39,6 @@ class CaseInsensitiveDict(collections.MutableMapping):
     behavior is undefined.
 
     """
-
     def __init__(self, data=None, **kwargs):
         self._store = dict()
         if data is None:
@@ -65,7 +64,11 @@ class CaseInsensitiveDict(collections.MutableMapping):
 
     def lower_items(self):
         """Like iteritems(), but with all lowercase keys."""
-        return ((lowerkey, keyval[1]) for (lowerkey, keyval) in self._store.items())
+        return (
+            (lowerkey, keyval[1])
+            for (lowerkey, keyval)
+            in self._store.items()
+        )
 
     def __eq__(self, other):
         if isinstance(other, collections.Mapping):
@@ -82,7 +85,6 @@ class CaseInsensitiveDict(collections.MutableMapping):
     def __repr__(self):
         return str(dict(self.items()))
 
-
 class LookupDict(dict):
     """Dictionary lookup object."""
 
@@ -91,7 +93,7 @@ class LookupDict(dict):
         super(LookupDict, self).__init__()
 
     def __repr__(self):
-        return "<lookup '%s'>" % (self.name)
+        return '<lookup \'%s\'>' % (self.name)
 
     def __getitem__(self, key):
         # We allow fall-through here, so values default to None

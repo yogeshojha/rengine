@@ -31,7 +31,7 @@ All Engines
                     <div class="widget-header">
                         <div class="row" style="margin-top:2%">
                             <div class="col-6">
-                                <h4 class="text-primary">Scan Engines</h4>
+                                <h4>Scan Engines</h4>
                             </div>
                             <div class="col-6">
                                 <a href="{% url 'add_engine' %}" class="btn btn-outline-primary mb-2 float-right">Add New Engine</a>
@@ -64,7 +64,7 @@ All Engines
                                 <tbody>
                                     {% for engine_type in engine_type.all %}
                                     <tr>
-                                        <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.scan_type_name}}</span></td>
+                                        <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.engine_name}}</span></td>
                                         <td>
                                             {% if engine_type.subdomain_discovery %}
                                             {% include 'base/_items/green_tick.html' %}
@@ -101,7 +101,12 @@ All Engines
                                             {%endif%}
                                         </td>
                                         <td class="text-center">
-                                            <a onclick="delete_engine({{ engine_type.id }}, '{{ engine_type.scan_type_name }}')" class="bs-tooltip btnDelDomain" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete {{engine_type.scan_type_name}} Engine">
+                                            <a href="{% url 'update_engine' engine_type.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Edit Engine">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
+                                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                                </svg>
+                                            </a>
+                                            <a onclick="delete_api({{ engine_type.id }}, '{{ engine_type.engine_name }}', 'engine')" class="bs-tooltip btnDelDomain" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete {{engine_type.engine_name}} Engine">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                                     <circle cx="12" cy="12" r="10"></circle>
                                                     <line x1="15" y1="9" x2="9" y2="15"></line>

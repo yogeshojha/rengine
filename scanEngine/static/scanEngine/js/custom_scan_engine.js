@@ -20,11 +20,16 @@ $(document).ready(function() {
 } );
 
 
-function delete_engine(id, engine_name)
+function delete_api(id, name, item)
 {
-    const delAPI = "delete/"+id;
+    if (item == "engine") {
+        var delAPI = "delete/"+id;
+    }
+    else if (item == "wordlist"){
+        var delAPI = 'delete/'+id;
+    }
     swal.queue([{
-        title: 'Are you sure you want to delete '+ engine_name +'?',
+        title: 'Are you sure you want to delete '+ name +'?',
         text: "You won't be able to revert this!",
         type: 'warning',
         showCancelButton: true,
@@ -49,7 +54,7 @@ function delete_engine(id, engine_name)
             .catch(function() {
               swal.insertQueueStep({
                 type: 'error',
-                title: 'Oops! Unable to delete the domain!'
+                title: 'Oops! Unable to delete'
               })
             })
         }
