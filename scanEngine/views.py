@@ -141,7 +141,7 @@ def add_wordlist_zip(request):
                                         messages.INFO,
                                         'Wordlist ' + wordlist_file +
                                         ' added successfully')
-                    return http.HttpResponseRedirect(reverse('wordlist_list'))
+                return http.HttpResponseRedirect(reverse('wordlist_list'))
         context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
 
