@@ -128,22 +128,25 @@ def add_wordlist_zip(request):
                 os.remove("/app/tools/wordlist/temp/temp.zip")
                 for wordlist_file in glob.glob("/app/tools/wordlist/temp/*.txt"):
                     print(wordlist_file)
-                    wordlist_content = open(wordlist_file, 'r').read()
-                    wordlist_path = '/app/tools/wordlist/'
-                    wordlist_file_write = open(
-                                        wordlist_path +
-                                        wordlist_file.split("/")[-1] ,
-                                        'w')
-                    wordlist_file_write.write(wordlist_content)
-                    Wordlist.objects.create(
-                                            name=wordlist_file.split("/")[-1],
-                                            short_name=wordlist_file.split("/")[-1],
-                                            count=wordlist_content.count('\n'))
-                    messages.add_message(
-                                        request,
-                                        messages.INFO,
-                                        'Wordlist ' + wordlist_file +
-                                        ' added successfully')
+                    try:
+                        wordlist_content = open(wordlist_file, 'r').read()
+                        wordlist_path = '/app/tools/wordlist/'
+                        wordlist_file_write = open(
+                                            wordlist_path +
+                                            wordlist_file.split("/")[-1] ,
+                                            'w')
+                        wordlist_file_write.write(wordlist_content)
+                        Wordlist.objects.create(
+                                                name=wordlist_file.split("/")[-1],
+                                                short_name=wordlist_file.split("/")[-1],
+                                                count=wordlist_content.count('\n'))
+                    except:
+                        pass
+                messages.add_message(
+                                            request,
+                                            messages.INFO,
+                                            'Wordlist ' + wordlist_file +
+                                            ' added successfully')
                 return http.HttpResponseRedirect(reverse('wordlist_list'))
         context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
