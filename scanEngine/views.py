@@ -145,8 +145,11 @@ def add_wordlist_zip(request):
                 messages.add_message(
                                             request,
                                             messages.INFO,
-                                            'Wordlist ' + wordlist_file +
-                                            ' added successfully')
+                                            'Wordlists files added')
+                dir_name = '/app/tools/wordlist/temp/'
+                files = os.listdir(dir_name)
+                    for file in files:
+                        os.remove(os.path.join(dir_name, file))
                 return http.HttpResponseRedirect(reverse('wordlist_list'))
         context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
