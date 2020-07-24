@@ -35,11 +35,7 @@ RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler gith
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
-    github.com/lc/gau \
-    github.com/projectdiscovery/nuclei/v2/cmd/nuclei
-    
-RUN git clone https://github.com/projectdiscovery/nuclei-templates /app/tools/
-RUN cd /app/tools/nuclei-templates && mkdir all && cp $(find . -type f -name '*.yaml') all/
+    github.com/lc/gau
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
@@ -59,9 +55,10 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
+RUN chmod +x /app/tools/get_default_wordlist.sh
 
-# make environment variables
-RUN echo "DEBUG=0" >> .env
+# Download deepmagic.com-prefixes-top50000.txt
+RUN /app/tools/get_default_wordlist.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

@@ -1,9 +1,11 @@
 subdomain_discovery:
-    # available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder
+    # Available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder
     # Usage of many tools may improve the results but also may take longer time to scan
-    uses_tool: [ subfinder, sublist3r ]
+    # If you choose to run amass, by default it does passive scan, you can choose both
+    # amass-active or amass-passive
+    uses_tool: [ amass-passive, subfinder, sublist3r ]
     thread: 10
-    # By default it will run passive scan, moreover you can choose to have both scans.
+    wordlist: default
 
 port_scan:
     # currently reNgine only supports naabu, nmap and other port scanning tools
