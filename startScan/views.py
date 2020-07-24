@@ -111,7 +111,7 @@ def doScan(host_id, domain):
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
-                tools = 'amass assetfinder sublist3r subfinder'
+                tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
@@ -122,9 +122,30 @@ def doScan(host_id, domain):
             else:
                 threads = 10
 
-            # all subdomain scan happens here
-            os.system('/app/tools/get_subdomain.sh %s %s %s %s' %
-                      (threads, domain.domain_name, current_scan_dir, tools))
+            if 'amass-active' in tools:
+                if ('wordlist' not in yaml_configuration['subdomain_discovery'] or
+                    not yaml_configuration['subdomain_discovery']['wordlist'] or
+                        'default' in yaml_configuration['subdomain_discovery']['wordlist']):
+                    wordlist_location = '/app/tools/wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
+
+                else:
+                    wordlist_location = '/app/tools/wordlist/' + \
+                        yaml_configuration['dir_file_search']['wordlist'] + '.txt'
+
+                # all subdomain scan happens here
+                os.system('/app/tools/get_subdomain.sh %s %s %s %s %s' %
+                          (
+                              threads,
+                              domain.domain_name,
+                              current_scan_dir,
+                              wordlist_location, tools))
+            else:
+                os.system('/app/tools/get_subdomain.sh %s %s %s %s' %
+                          (
+                              threads,
+                              domain.domain_name,
+                              current_scan_dir,
+                              tools))
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'

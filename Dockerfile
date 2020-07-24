@@ -56,8 +56,5 @@ RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
 
-# make environment variables
-RUN echo "DEBUG=0" >> .env
-
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
