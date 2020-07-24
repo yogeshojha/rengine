@@ -55,10 +55,6 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
-RUN chmod +x /app/tools/get_default_wordlist.sh
-
-# Download deepmagic.com-prefixes-top50000.txt
-RUN /app/tools/get_default_wordlist.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
