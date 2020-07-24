@@ -29,7 +29,7 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: false
+    default_engine: true
 - model: scanEngine.enginetype
   pk: 2
   fields:
@@ -61,7 +61,7 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: false
+    default_engine: true
 - model: scanEngine.enginetype
   pk: 3
   fields:
@@ -93,4 +93,4 @@
       \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
       \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
       \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
-    default_engine: false
+    default_engine: true
