@@ -41,6 +41,10 @@ urlpatterns = [
         views.add_configuration,
         name='add_configuration'),
     path(
+        'configuration/update/<int:id>',
+        views.update_configuration,
+        name='update_configuration'),
+    path(
         'configuration/delete/<int:id>',
         views.delete_configuration,
         name='delete_configuration'),

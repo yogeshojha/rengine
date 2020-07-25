@@ -109,7 +109,7 @@ class AddWordlistForm(forms.Form):
                    'accept': '.txt', }))
 
 
-class AddConfigurationForm(forms.ModelForm):
+class ConfigurationForm(forms.ModelForm):
     class Meta:
         model = Configuration
         fields = '__all__'
@@ -135,3 +135,8 @@ class AddConfigurationForm(forms.ModelForm):
             tabsize=4,
             fontsize=13,
             toolbar=True,))
+
+    def set_value(self, configuration):
+        self.initial['name'] = configuration.name
+        self.initial['short_name'] = configuration.short_name
+        self.initial['content'] = configuration.content
