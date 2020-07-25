@@ -1,0 +1,35 @@
+name: Build and publish Docker image
+
+on:
+  push:
+    branches: [ master, dev, stable ]
+    schedule:
+      # run CI every day even if no PRs/merges occur
+      - cron:  '0 12 * * *'
+
+env:
+  IMAGE_NAME: rengine
+
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the git repo
+        uses: actions/checkout@v2
+
+      - name: Set Docker image name
+        run: echo "::set-env name=IMAGE_ID::$(echo -n '${{ github.repository }}/${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')"
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          registry: docker.pkg.github.com
+          repository: ${{ env.IMAGE_ID }}
+          push: true
+          tag_with_ref: true
+          tag_with_sha: true
+          add_git_labels: true
+
