@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
     db:
@@ -9,8 +9,6 @@ services:
             - POSTGRES_USER=postgres
             - POSTGRES_PASSWORD=postgres
             - POSTGRES_PORT=5432
-        ports:
-            - "5432:5432"
         volumes:
             - postgres_data:/var/lib/postgresql/data/
         networks:
@@ -21,15 +19,45 @@ services:
         build: .
         command: python3 manage.py runserver 0.0.0.0:8000
         volumes:
-          - .:/app
-        ports:
-          - "8000:8000"
+            - .:/app
         depends_on:
             - db
+        networks:
+            rengine_network:
+                aliases:
+                    - rengine
+    proxy:
+        restart: always
+        image: nginx:alpine
+        ports:
+            - 80:80/tcp
+            - 443:443/tcp
+        depends_on:
+            - web
+            - db
+        secrets:
+            - source: proxy.ca
+              target: /etc/nginx/certs/rengine_chain.pem
+            - source: proxy.cert
+              target: /etc/nginx/certs/rengine.pem
+            - source: proxy.key
+              target: /etc/nginx/certs/rengine_rsa.key
+        volumes:
+            - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
         networks:
             - rengine_network
 
 networks:
     rengine_network:
+
 volumes:
-  postgres_data:
+    postgres_data:
+
+secrets:
+    proxy.ca:
+        file: ./secrets/certs/rengine_chain.pem
+    proxy.key:
+        file: ./secrets/certs/rengine_rsa.key
+    proxy.cert:
+        file: ./secrets/certs/rengine.pem
+
