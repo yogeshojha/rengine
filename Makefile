@@ -18,7 +18,7 @@ certs:		    ## Generate certificates.
 setup:		    ## Generate certificates.
 	@make certs
 
-up:            ## Build and start all services.
+up:             ## Build and start all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} up -d --build ${SERVICES}
 
 build:			## Build all services.
@@ -39,10 +39,10 @@ rm:				## Remove all services containers.
 logs:			## Tail all logs with -n 1000.
 	@${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${SERVICES}
 
-images:			## Show all images of all services.
+images:			## Show all Docker images.
 	@${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) images ${SERVICES}
 
-prune:			## Remove containers and delete volume data
+prune:			## Remove containers and delete volume data.
 	@make stop && make rm && docker volume prune -f
 
 help:       	## Show this help.
