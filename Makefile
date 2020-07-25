@@ -12,10 +12,10 @@ SERVICES          := db web proxy
 
 .PHONY: setup certs up build down stop restart rm logs
 
-certs:		    ## Generate SSL Certs.
+certs:		    ## Generate certificates.
 	@${COMPOSE_PREFIX_CMD} docker-compose -f docker-compose.setup.yml run --rm certs
 
-setup:		    ## Generate Elasticsearch SSL Certs and Keystore.
+setup:		    ## Generate certificates.
 	@make certs
 
 up:            ## Build and start all services.
