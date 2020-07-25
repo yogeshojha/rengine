@@ -18,6 +18,11 @@ for i in "$@" ; do
     if [[ $i == "subfinder" ]] ; then
         subfinder -d $2 -t $1 > $3/fromsubfinder.txt
     fi
+    
+    ##  Give GIT-HUB API key before using it 
+    if [[ $i == "github-subdomains" ]] ; then
+        python3 /app/tools/github-subdomains.py -d $2 -t GIT_API > $3/fromgit.txt
+    fi
 done
 
 cat $3/*.txt > $3/subdomain_collection.txt
