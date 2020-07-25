@@ -2,10 +2,7 @@ name: Build and publish Docker image
 
 on:
   push:
-    branches: [ master, dev, stable ]
-    schedule:
-      # run CI every day even if no PRs/merges occur
-      - cron:  '0 12 * * *'
+    branches: [ master ]
 
 env:
   IMAGE_NAME: rengine
