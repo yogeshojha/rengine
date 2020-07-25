@@ -1,5 +1,5 @@
 from django import forms
-from scanEngine.models import EngineType
+from scanEngine.models import EngineType, Configuration
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
 
@@ -107,3 +107,31 @@ class AddWordlistForm(forms.Form):
                    'id': 'txtFile',
                    'multiple': '',
                    'accept': '.txt', }))
+
+
+class AddConfigurationForm(forms.ModelForm):
+    class Meta:
+        model = Configuration
+        fields = '__all__'
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={'class': 'form-control',
+                   'id': 'name',
+                   'placeholder': 'Configuration Name', }))
+    short_name = forms.CharField(
+        required=True,
+        validators=[validate_short_name],
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'id': 'short_name',
+                'placeholder': 'my_awesome_configuration', }))
+    content = forms.CharField(widget=AceWidget(
+            mode="text",
+            theme="monokai",
+            width="100%",
+            height="450px",
+            tabsize=4,
+            fontsize=13,
+            toolbar=True,))

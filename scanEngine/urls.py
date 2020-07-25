@@ -32,4 +32,16 @@ urlpatterns = [
         'wordlist/delete/<int:id>',
         views.delete_wordlist,
         name='delete_wordlist'),
+    path(
+        'configuration/',
+        views.configuration_list,
+        name='configuration_list'),
+    path(
+        'configuration/add/',
+        views.add_configuration,
+        name='add_configuration'),
+    # path(
+    #     'configuration/delete/<int:id>',
+    #     views.delete_configuration,
+    #     name='delete_configuration'),
 ]

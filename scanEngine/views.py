@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
-from scanEngine.models import EngineType, Wordlist
+from scanEngine.models import EngineType, Wordlist, Configuration
 from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
+from scanEngine.forms import AddConfigurationForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
@@ -123,3 +124,26 @@ def delete_wordlist(request, id):
                             messages.INFO,
                             'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
+
+
+def configuration_list(request):
+    configurations = Configuration.objects.all().order_by('id')
+    context = {
+            'configuration_nav_active':
+            'true', 'configurations': configurations}
+    return render(request, 'scanEngine/configuration/index.html', context)
+
+
+def add_configuration(request):
+    context = {'configuration_nav_active': 'true'}
+    form = AddConfigurationForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                                request,
+                                messages.INFO,
+                                'Configuration added successfully')
+            return http.HttpResponseRedirect(reverse('configuration_list'))
+    context['form'] = form
+    return render(request, 'scanEngine/configuration/add.html', context)
