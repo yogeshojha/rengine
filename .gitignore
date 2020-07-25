@@ -52,3 +52,4 @@ docs/_build/
 staticfiles/
 
 secret
+/secrets
