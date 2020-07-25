@@ -147,3 +147,21 @@ def add_configuration(request):
             return http.HttpResponseRedirect(reverse('configuration_list'))
     context['form'] = form
     return render(request, 'scanEngine/configuration/add.html', context)
+
+
+def delete_configuration(request, id):
+    obj = get_object_or_404(Configuration, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(
+                            request,
+                            messages.INFO,
+                            'Configuration successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(
+                            request,
+                            messages.INFO,
+                            'Oops! Configuration could not be deleted!')
+    return http.JsonResponse(responseData)

@@ -40,8 +40,8 @@ urlpatterns = [
         'configuration/add/',
         views.add_configuration,
         name='add_configuration'),
-    # path(
-    #     'configuration/delete/<int:id>',
-    #     views.delete_configuration,
-    #     name='delete_configuration'),
+    path(
+        'configuration/delete/<int:id>',
+        views.delete_configuration,
+        name='delete_configuration'),
 ]
