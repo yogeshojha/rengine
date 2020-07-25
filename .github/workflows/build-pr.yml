@@ -2,7 +2,7 @@ name: Build Docker image for pull request
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ master, stable, dev ]
 
 env:
   IMAGE_NAME: rengine
