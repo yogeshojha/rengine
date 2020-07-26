@@ -113,7 +113,11 @@ def add_wordlist(request):
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
-        os.remove(settings.TOOL_LOCATION + 'wordlist/' + obj.short_name + '.txt')
+        os.remove(
+            settings.TOOL_LOCATION +
+            'wordlist/' +
+            obj.short_name +
+            '.txt')
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
