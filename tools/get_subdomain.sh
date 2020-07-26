@@ -10,7 +10,7 @@ for i in "$@" ; do
         /app/tools/amass enum --passive -d $2 -o $3/fromamass.txt
     fi
     if [[ $i == "amass-active" ]] ; then
-        /app/tools/amass enum -active -o $3/fromamass-active.txt -d $2 -brute -w $4
+        /app/tools/amass enum -active -o $3/fromamass-active.txt -d $2 -brute -w $4 -config $5
     fi
     if [[ $i == "assetfinder" ]] ; then
         assetfinder --subs-only $2 > $3/fromassetfinder.txt

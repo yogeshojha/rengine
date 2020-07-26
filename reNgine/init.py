@@ -6,7 +6,13 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-# Based on https://github.com/MobSF/Mobile-Security-Framework-MobSF/blob/master/MobSF/init.py
+
+'''
+Based on
+https://github.com/MobSF/Mobile-Security-Framework-MobSF/blob/master/MobSF/init.py
+'''
+
+
 def first_run(secret_file, base_dir):
     if 'RENGINE_SECRET_KEY' in os.environ:
         secret_key = os.environ['RENGINE_SECRET_KEY']

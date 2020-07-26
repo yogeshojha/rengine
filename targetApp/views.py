@@ -1,3 +1,7 @@
+import validators
+import csv
+import io
+import os
 from django.shortcuts import render, get_object_or_404
 from django import http
 from .models import Domain
@@ -6,9 +10,7 @@ from django.contrib import messages
 from targetApp.forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
-import validators
-import csv
-import io
+from django.conf import settings
 
 
 def index(request):
@@ -102,9 +104,14 @@ def list_target(request):
     return render(request, 'target/list.html', context)
 
 
-def delete_domain(request, id):
+def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
+        os.system(
+            'rm -rf ' +
+            settings.TOOL_LOCATION +
+            'scan_results/' +
+            obj.domain_name + '*')
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(

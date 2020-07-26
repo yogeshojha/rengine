@@ -17,8 +17,17 @@ class EngineType(models.Model):
 
 class Wordlist(models.Model):
     name = models.CharField(max_length=200)
-    short_name = models.CharField(max_length=50)
+    short_name = models.CharField(max_length=50, unique=True)
     count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.name
+
+
+class Configuration(models.Model):
+    name = models.CharField(max_length=200)
+    short_name = models.CharField(max_length=50, unique=True)
+    content = models.TextField()
 
     def __str__(self):
         return self.name

@@ -22,12 +22,7 @@ $(document).ready(function() {
 
 function delete_api(id, name, item)
 {
-    if (item == "engine") {
-        var delAPI = "delete/"+id;
-    }
-    else if (item == "wordlist"){
-        var delAPI = 'delete/'+id;
-    }
+    var delAPI = 'delete/'+id;
     swal.queue([{
         title: 'Are you sure you want to delete '+ name +'?',
         text: "You won't be able to revert this!",

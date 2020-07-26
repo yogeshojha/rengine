@@ -26,6 +26,6 @@ urlpatterns = [
         name='list_target'),
     path(
         'delete/<int:id>',
-        views.delete_domain,
-        name='delete_domain_url'),
+        views.delete_target,
+        name='delete_target_url'),
 ]

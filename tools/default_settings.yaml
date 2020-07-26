@@ -7,6 +7,8 @@ subdomain_discovery:
     thread: 10
     # Your wordlist shortname for amass active enumeration
     wordlist: default
+    # Get the shortname for the config file from configurations module
+    amass_config: config_short_name
 
 port_scan:
     # currently reNgine only supports naabu, nmap and other port scanning tools

@@ -5,8 +5,9 @@ from django.urls import reverse
 from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from notification.models import NotificationHooks
 from targetApp.models import Domain
-from scanEngine.models import EngineType
+from scanEngine.models import EngineType, Configuration
 from django.utils import timezone, dateformat
+from django.conf import settings
 from datetime import datetime
 import os
 import traceback
@@ -91,7 +92,7 @@ def doScan(host_id, domain):
     create_scan_activity(task, "Scanning Started", 2)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    results_dir = '/app/tools/scan_results/'
+    results_dir = settings.TOOL_LOCATION + 'scan_results/'
     os.chdir(results_dir)
     try:
         current_scan_dir = domain.domain_name + '_' + \
@@ -123,29 +124,59 @@ def doScan(host_id, domain):
                 threads = 10
 
             if 'amass-active' in tools:
-                if ('wordlist' not in yaml_configuration['subdomain_discovery'] or
-                    not yaml_configuration['subdomain_discovery']['wordlist'] or
-                        'default' in yaml_configuration['subdomain_discovery']['wordlist']):
-                    wordlist_location = '/app/tools/wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
-
+                if ('wordlist' not in yaml_configuration['subdomain_discovery']
+                    or not yaml_configuration['subdomain_discovery']['wordlist']
+                        or 'default' in yaml_configuration['subdomain_discovery']['wordlist']):
+                    wordlist_location = settings.TOOL_LOCATION + \
+                        'wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
                 else:
-                    wordlist_location = '/app/tools/wordlist/' + \
-                        yaml_configuration['dir_file_search']['wordlist'] + '.txt'
+                    wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
+                        yaml_configuration['subdomain_discovery']['wordlist'] + '.txt'
+                    if not os.path.exists(wordlist_location):
+                        wordlist_location = settings.TOOL_LOCATION + \
+                            'wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
+                # check if default amass config is to be used
+                if ('amass_config' not in yaml_configuration['subdomain_discovery']
+                    or not yaml_configuration['subdomain_discovery']['amass_config']
+                        or 'default' in yaml_configuration['subdomain_discovery']['wordlist']):
+                    amass_config = settings.AMASS_CONFIG
+                else:
+                    '''
+                    amass config setting exixts but we need to check if it
+                    exists in database
+                    '''
+                    short_name = yaml_configuration['subdomain_discovery']['amass_config']
+                    config = get_object_or_404(
+                        Configuration, short_name=short_name)
+                    if config:
+                        '''
+                        if config exists in db then write the config to
+                        scan location, and send path to script location
+                        '''
+                        with open(current_scan_dir + '/config.ini', 'w') as config_file:
+                            config_file.write(config.content)
+                        amass_config = current_scan_dir + '/config.ini'
+                    else:
+                        '''
+                        if config does not exist in db then
+                        use default for failsafe
+                        '''
+                        amass_config = settings.AMASS_CONFIG
 
                 # all subdomain scan happens here
-                os.system('/app/tools/get_subdomain.sh %s %s %s %s %s' %
-                          (
-                              threads,
-                              domain.domain_name,
-                              current_scan_dir,
-                              wordlist_location, tools))
+                os.system(
+                    settings.TOOL_LOCATION +
+                    'get_subdomain.sh %s %s %s %s %s %s' %
+                    (threads,
+                     domain.domain_name,
+                     current_scan_dir,
+                     wordlist_location,
+                     amass_config,
+                     tools))
             else:
-                os.system('/app/tools/get_subdomain.sh %s %s %s %s' %
-                          (
-                              threads,
-                              domain.domain_name,
-                              current_scan_dir,
-                              tools))
+                os.system(
+                    settings.TOOL_LOCATION + 'get_subdomain.sh %s %s %s %s' %
+                    (threads, domain.domain_name, current_scan_dir, tools))
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
@@ -203,7 +234,8 @@ def doScan(host_id, domain):
 
             if yaml_configuration['subdomain_discovery']['thread'] > 0:
                 naabu_command = naabu_command + \
-                    ' -t {}'.format(yaml_configuration['subdomain_discovery']['thread'])
+                    ' -t {}'.format(
+                        yaml_configuration['subdomain_discovery']['thread'])
             else:
                 naabu_command = naabu_command + ' -t 10'
 
@@ -320,8 +352,8 @@ def doScan(host_id, domain):
             else:
                 threads = 10
 
-            subjack_command = '/app/tools/takeover.sh {} {}'.format(
-                current_scan_dir, threads)
+            subjack_command = settings.TOOL_LOCATION + \
+                'takeover.sh {} {}'.format(current_scan_dir, threads)
 
             os.system(subjack_command)
 
@@ -373,12 +405,12 @@ def doScan(host_id, domain):
                 if ('wordlist' not in yaml_configuration['dir_file_search'] or
                     not yaml_configuration['dir_file_search']['wordlist'] or
                         'default' in yaml_configuration['dir_file_search']['wordlist']):
-                    wordlist_location = '/app/tools/dirsearch/db/dicc.txt'
+                    wordlist_location = settings.TOOL_LOCATION + 'dirsearch/db/dicc.txt'
                 else:
-                    wordlist_location = '/app/tools/wordlist/' + \
+                    wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
                         yaml_configuration['dir_file_search']['wordlist'] + '.txt'
 
-                dirsearch_command = '/app/tools/get_dirs.sh {} {} {}'.format(
+                dirsearch_command = settings.TOOL_LOCATION + 'get_dirs.sh {} {} {}'.format(
                     subdomain.http_url, wordlist_location, dirs_results)
                 dirsearch_command = dirsearch_command + \
                     ' {} {}'.format(extensions, threads)
@@ -386,7 +418,8 @@ def doScan(host_id, domain):
                 # check if recursive strategy is set to on
                 if yaml_configuration['dir_file_search']['recursive']:
                     dirsearch_command = dirsearch_command + \
-                        ' {}'.format(yaml_configuration['dir_file_search']['recursive_level'])
+                        ' {}'.format(
+                            yaml_configuration['dir_file_search']['recursive_level'])
 
                 os.system(dirsearch_command)
                 try:
@@ -422,7 +455,7 @@ def doScan(host_id, domain):
                     str(tool) for tool in yaml_configuration['fetch_url']['uses_tool'])
 
             os.system(
-                '/app/tools/get_urls.sh %s %s %s' %
+                settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
                 (domain.domain_name, current_scan_dir, tools))
 
             url_results_file = results_dir + current_scan_dir + '/all_urls.json'
@@ -496,7 +529,8 @@ def export_subdomains(request, scan_id):
         response_body = response_body + subdomain.subdomain + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="subdomains_' + \
-        domain_results.domain_name.domain_name + '_' + str(domain_results.last_scan_date.date()) + '.txt"'
+        domain_results.domain_name.domain_name + '_' + \
+        str(domain_results.last_scan_date.date()) + '.txt"'
     return response
 
 
@@ -508,7 +542,8 @@ def export_endpoints(request, scan_id):
         response_body = response_body + endpoint.http_url + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="endpoints_' + \
-        domain_results.domain_name.domain_name + '_' + str(domain_results.last_scan_date.date()) + '.txt"'
+        domain_results.domain_name.domain_name + '_' + \
+        str(domain_results.last_scan_date.date()) + '.txt"'
     return response
 
 
@@ -521,13 +556,18 @@ def export_urls(request, scan_id):
             response_body = response_body + url.http_url + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="urls_' + \
-        domain_results.domain_name.domain_name + '_' + str(domain_results.last_scan_date.date()) + '.txt"'
+        domain_results.domain_name.domain_name + '_' + \
+        str(domain_results.last_scan_date.date()) + '.txt"'
     return response
 
 
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
+        delete_dir = obj.domain_name.domain_name + '_' + \
+            str(datetime.strftime(obj.last_scan_date, '%Y_%m_%d_%H_%M_%S'))
+        delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
+        os.system('rm -rf ' + delete_path)
         obj.delete()
         messageData = {'status': 'true'}
         messages.add_message(
