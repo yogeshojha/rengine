@@ -111,6 +111,8 @@ cd rengine
 
 ### Installation
 
+##### Installation instructions has been changed, please read the documentation carefully.
+
 There are currently two ways of setting up the reNgine. using Makefile is the easiest and is recommended.
 
 ![Screenshot 2020-07-26 at 6 03 04 PM](https://user-images.githubusercontent.com/17223002/88479056-420f3f80-cf6a-11ea-89cf-851f3f2269f4.png)
@@ -129,7 +131,7 @@ CITY=Atlanta
 ```
 Edit the file using your favourite editor, `nano .env`
 
-Then use the make cert command to generate the certificate (inside the secrets/certs folder). Assuming that you are inside the reNgine directorym, generate the certificates using the following command
+Then use the make cert command to generate the certificate (inside the secrets/certs folder). Assuming that you are inside the reNgine directory, generate the certificates using the following command
 
 #### Generate Certificates
 ```

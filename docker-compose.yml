@@ -17,9 +17,11 @@ services:
         restart: always
         image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
         build: .
-        command: python3 manage.py runserver 0.0.0.0:8000
+        command: gunicorn reNgine.wsgi:application --bind 0.0.0.0:8000
         volumes:
             - .:/app
+            - static_volume:/app/staticfiles
+            - media_volume:/app/tools/scan_results
         depends_on:
             - db
         networks:
@@ -44,6 +46,8 @@ services:
               target: /etc/nginx/certs/rengine_rsa.key
         volumes:
             - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
+            - static_volume:/app/staticfiles
+            - media_volume:/app/tools/scan_results
         networks:
             - rengine_network
 
@@ -52,6 +56,8 @@ networks:
 
 volumes:
     postgres_data:
+    static_volume:
+    media_volume:
 
 secrets:
     proxy.ca:
@@ -60,4 +66,3 @@ secrets:
         file: ./secrets/certs/rengine_rsa.key
     proxy.cert:
         file: ./secrets/certs/rengine.pem
-

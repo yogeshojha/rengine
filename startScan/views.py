@@ -284,7 +284,6 @@ def doScan(host_id, domain):
         aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(
             with_protocol_path, threads, scan_port, output_aquatone_path)
         os.system(aquatone_command)
-
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
         with open(aqua_json_path, 'r') as json_file:
             data = json.load(json_file)
