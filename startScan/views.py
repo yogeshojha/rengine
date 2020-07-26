@@ -132,6 +132,9 @@ def doScan(host_id, domain):
                 else:
                     wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
                         yaml_configuration['subdomain_discovery']['wordlist'] + '.txt'
+                    if not os.path.exists(wordlist_location):
+                        wordlist_location = settings.TOOL_LOCATION + \
+                            'wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
                 # check if default amass config is to be used
                 if ('amass_config' not in yaml_configuration['subdomain_discovery']
                     or not yaml_configuration['subdomain_discovery']['amass_config']
@@ -150,8 +153,6 @@ def doScan(host_id, domain):
                         if config exists in db then write the config to
                         scan location, and send path to script location
                         '''
-                        print(config.content)
-                        print(current_scan_dir)
                         with open(current_scan_dir + '/config.ini', 'w') as config_file:
                             config_file.write(config.content)
                         amass_config = current_scan_dir + '/config.ini'
@@ -563,6 +564,10 @@ def export_urls(request, scan_id):
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
+        delete_dir = obj.domain_name.domain_name + '_' + \
+            str(datetime.strftime(obj.last_scan_date, '%Y_%m_%d_%H_%M_%S'))
+        delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
+        os.system('rm -rf ' + delete_path)
         obj.delete()
         messageData = {'status': 'true'}
         messages.add_message(
