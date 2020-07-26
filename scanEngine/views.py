@@ -1,3 +1,6 @@
+import io
+import re
+import os
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType, Wordlist, Configuration
 from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
@@ -5,8 +8,7 @@ from scanEngine.forms import ConfigurationForm
 from django.contrib import messages
 from django import http
 from django.urls import reverse
-import io
-import re
+from django.conf import settings
 
 
 def index(request):
@@ -111,6 +113,7 @@ def add_wordlist(request):
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
+        os.remove(settings.TOOL_LOCATION + 'wordlist/' + obj.short_name + '.txt')
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
