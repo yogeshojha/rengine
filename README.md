@@ -36,6 +36,8 @@
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
+  * [Generate SSL Certificate](#generate-certificates)
+  * [Building reNgine](#build-rengine)
   * [Register Account](#register-account)
 * [Usage](#usage)
 * [Contributing](#contributing)
@@ -105,44 +107,60 @@ cd rengine
   * Install docker based on your OS from [here](https://www.docker.com/get-started)
 * docker-compose
   * Installation instructions for docker-compose from [here](https://docs.docker.com/compose/install/)
+* make
 
 ### Installation
 
-Assuming that you have followed the above steps and inside rengine directory
-```sh
-docker-compose up --build
+There are currently two ways of setting up the reNgine. using Makefile is the easiest and is recommended.
+
+![Screenshot 2020-07-26 at 6 03 04 PM](https://user-images.githubusercontent.com/17223002/88479056-420f3f80-cf6a-11ea-89cf-851f3f2269f4.png)
+
+If you are setting up inside VPS with https, Makefile makes process so much simpler.
+
+The dotenv file should be updated when setting up reNgine, for example:
 ```
+AUTHORITY_NAME=reNgine
+AUTHORITY_PASSWORD=nSrmNkwT
+COMPANY=reNgine
+DOMAIN_NAME=recon.example.com
+COUNTRY_CODE=US
+STATE=Georgia
+CITY=Atlanta
+```
+Edit the file using your favourite editor, `nano .env`
+
+Then use the make cert command to generate the certificate (inside the secrets/certs folder). Assuming that you are inside the reNgine directorym, generate the certificates using the following command
+
+#### Generate Certificates
+```
+make certs
+```
+Once certificates are generated, it's time to build reNgine
+
+#### Build reNgine
+```
+make build
+```
+
 The build process may take some time.
 
-Alternatively, you also can run the project with pre-built Docker images (with 2FA enabled, you have to [create a new personal access token](https://github.com/settings/tokens/new) with `read:packages` scope):
-
-```sh
-docker login docker.pkg.github.com
-docker-compose pull
-docker-compose up
-```
-
-Once the setup is done, you need to setup the password.
-
-### Register Account
-
-Once the application is up and running, you need an account for reNgine. This can be easily created using `createsuperuser` from Django.
-Open a new terminal tab, and run the following command:
-
-`docker exec -it rengine_web_1 python manage.py createsuperuser`
-
-You may now enter your username and password. Remember to keep a secure password.
-
-## Usage
+#### Usage
 
 > :warning: reNgine does fingerprinting, port scanning, and banner grabbing, which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
 
-If the installation is successful, then you can run reNgine by using the command
+If build process is successful, you can run reNgine by using the command
+
 ```sh
-docker-compose up -d
+make up
 ```
 
-The web application can then be accessed from [http://localhost:8000](http://localhost:8000)
+The web application can then be accessed from [https://127.0.0.1](http://127.0.0.1), or on your VPS, https://your_ip
+
+#### Register Account
+
+Once the application is up and running, you need an account for reNgine.
+`make username`
+You may now enter your username and password. Remember to keep a secure password.
 
 ## Contributing
 
