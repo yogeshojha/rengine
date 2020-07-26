@@ -24,12 +24,15 @@ up:             ## Build and start all services.
 build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
+username:		## Generate Username (Use only after make up).
+	${COMPOSE_PREFIX_CMD} docker exec -it rengine_web_1 python manage.py createsuperuser
+
 down:			## Down all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} down
 
 stop:			## Stop all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} stop ${SERVICES}
-	
+
 restart:		## Restart all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} restart ${SERVICES}
 
@@ -48,4 +51,3 @@ prune:			## Remove containers and delete volume data.
 help:       	## Show this help.
 	@echo "Make application docker images and manage containers using docker-compose files."
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
-
