@@ -165,10 +165,6 @@ Once the application is up and running, you need an account for reNgine.
 `make username`
 You may now enter your username and password. Remember to keep a secure password.
 
-## VPS HTTPS Installation
-
-If you are considering to install on VPS with https, here is an awesome blog written by @J0_mart [https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/](https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/)
-
 ## Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**. Your contributions could be as simple as fixing the indentations or fixing UI to as complex as bringing new modules and features.
