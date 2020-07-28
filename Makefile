@@ -25,7 +25,7 @@ build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
 username:		## Generate Username (Use only after make up).
-	${COMPOSE_PREFIX_CMD} docker exec -it rengine_web_1 python manage.py createsuperuser
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python manage.py createsuperuser
 
 down:			## Down all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} down
