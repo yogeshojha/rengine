@@ -1,6 +1,6 @@
-from startScan.api.serializers import ScanHistorySerializer, EndpointSerializer
+from startScan.api.serializers import ScanHistorySerializer, EndpointSerializer, VulnerabilityScannerSerializer
 from rest_framework import viewsets
-from startScan.models import ScannedHost, ScanHistory, WayBackEndPoint
+from startScan.models import ScannedHost, ScanHistory, WayBackEndPoint, ScanVulnerability
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
@@ -30,6 +30,19 @@ class EndPointViewSet(viewsets.ModelViewSet):
         url_of = req.query_params.get('url_of')
         if url_of:
             self.queryset = WayBackEndPoint.objects.filter(url_of__id=url_of)
+            return self.queryset
+        else:
+            return self.queryset
+
+class VulnerabilityScannerViewSet(viewsets.ModelViewSet):
+    queryset = ScanVulnerability.objects.all()
+    serializer_class = VulnerabilityScannerSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            self.queryset = ScanVulnerability.objects.filter(scan_id__id=scan_id)
             return self.queryset
         else:
             return self.queryset

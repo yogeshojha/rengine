@@ -63,6 +63,18 @@
                 </label>
             </td>
         </tr>
+        <tr>
+            <td>
+                <h6 style="margin-right:1%">Vulnerability scanners</h6>
+                <span class="preview">(with nuclei)</span>
+            </td>
+            <td>
+                <label class="switch s-icons s-outline s-outline-info">
+                    {{form.vulnerability_scanner}}
+                    <span class="slider round"></span>
+                </label>
+            </td>
+        </tr>
     </table>
 </div>
 <h4>Configurations</h4>
@@ -73,6 +85,8 @@
     Note: Invalid YAML configuration may crash scans.
     <br>
     <span class="text-uppercase">Please, do not modify the configuration if you are not sure what you are doing.</span>
+    <br>
+    <span class="text-danger">If default YAML configuration doesn't automatically load, download default configuration and paste here <a href="https://raw.githubusercontent.com/yogeshojha/rengine/master/tools/default_settings.yaml" class="text-info" target="_blank">https://raw.githubusercontent.com/yogeshojha/rengine/master/tools/default_settings.yaml</a> </span>
 </p>
 <div class="col-12">
     {{form.yaml_configuration}}

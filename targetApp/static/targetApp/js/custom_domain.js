@@ -1,4 +1,4 @@
-function delete_domain(id, domain_name)
+function delete_target(id, domain_name)
 {
     const delAPI = "../delete/"+id;
     swal.queue([{

@@ -1,0 +1,16 @@
+id: dir-listing
+
+info:
+  name: Directory listing enabled
+  author: _harleo
+  severity: informative
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/"
+    matchers:
+      - type: word
+        words:
+          - "Index of /"
+          - "[To Parent Directory]"

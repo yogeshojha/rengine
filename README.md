@@ -37,6 +37,7 @@
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
   * [Register Account](#register-account)
+  * [VPS HTTPS Installation](#vps-https-installation)
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
@@ -114,6 +115,14 @@ docker-compose up --build
 ```
 The build process may take some time.
 
+Alternatively, you also can run the project with pre-built Docker images (with 2FA enabled, you have to [create a new personal access token](https://github.com/settings/tokens/new) with `read:packages` scope):
+
+```sh
+docker login docker.pkg.github.com
+docker-compose pull
+docker-compose up
+```
+
 Once the setup is done, you need to setup the password.
 
 ### Register Account
@@ -135,6 +144,10 @@ docker-compose up -d
 ```
 
 The web application can then be accessed from [http://localhost:8000](http://localhost:8000)
+
+## VPS HTTPS Installation
+
+If you are considering to install on VPS with https, here is an awesome blog written by @J0_mart [https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/](https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/)
 
 ## Contributing
 

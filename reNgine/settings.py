@@ -149,3 +149,13 @@ LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboardIndex'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Tool Location
+TOOL_LOCATION = '/app/tools/'
+
+'''
+Default amass configuration
+Feel free to change the default config file
+Alternatively, you can also add configuration from configuration module from UI
+'''
+AMASS_CONFIG = TOOL_LOCATION + 'config/amass-config.ini'

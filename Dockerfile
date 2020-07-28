@@ -12,9 +12,7 @@ ENV PYTHONUNBUFFERED 1
 
 RUN apk update \
     && apk add --virtual build-deps gcc python3-dev musl-dev \
-    && apk add postgresql-dev \
-    && apk add chromium \
-    && apk add git \
+    && apk add postgresql-dev chromium git netcat-openbsd \
     && pip install psycopg2 \
     && apk del build-deps
 
@@ -35,7 +33,11 @@ RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler gith
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
-    github.com/lc/gau
+    github.com/lc/gau \
+    github.com/projectdiscovery/nuclei/v2/cmd/nuclei
+
+
+RUN nuclei -update-directory tools/ -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
@@ -55,9 +57,6 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
-
-# make environment variables
-RUN echo "DEBUG=0" >> .env
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
