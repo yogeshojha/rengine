@@ -14,7 +14,8 @@ RUN apk update \
     && apk add --virtual build-deps gcc python3-dev musl-dev \
     && apk add postgresql-dev chromium git netcat-openbsd \
     && pip install psycopg2 \
-    && apk del build-deps
+    && apk del build-deps \
+    && apk add curl
 
 
 # Download and install go 1.13
