@@ -18,6 +18,9 @@ for i in "$@" ; do
     if [[ $i == "subfinder" ]] ; then
         subfinder -d $2 -t $1 > $3/fromsubfinder.txt
     fi
+    if [[ $i == "rapiddns" ]] ; then
+        curl -s "https://rapiddns.io/subdomain/$2?full=1#result" | grep "<td><a" | cut -d '"' -f 2 | grep http | cut -d '/' -f3 | sed 's/#results//g' | sort -u > $3/fromrapiddns.txt
+    fi
 done
 
 cat $3/*.txt > $3/subdomain_collection.txt
