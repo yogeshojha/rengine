@@ -28,9 +28,11 @@
       \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
       \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    #supported\
+      \ supported domains are all or base\r\n    # usage -> domains_to_scan: [ all ]\r\
+      \n    domains_to_scan: [ all ]\r\n\ # supported tools are gau, hakrawler and paramspider\r\
+      \n # usage -> uses_tool: [ gau, hakrawler, paramspider]\r\
+      \n    uses_tool: [ gau, hakrawler, paramspider ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
@@ -62,9 +64,11 @@
       \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
       \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    #supported\
+      \ supported domains are all or base\r\n    # usage -> domains_to_scan:  [ all ]\r\
+      \n    domains_to_scan: [ all ]\r\n\ # supported tools are gau, hakrawler and paramspider\r\
+      \n # usage -> uses_tool: [ gau, hakrawler, paramspider]\r\
+      \n    uses_tool: [ gau, hakrawler, paramspider ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3
@@ -96,7 +100,9 @@
       \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
       \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    #supported\
+      \ supported domains are all or base\r\n    # usage -> domains_to_scan: [ all ]\r\
+      \n    domains_to_scan: [ all ]\r\n\ # supported tools are gau, hakrawler and paramspider\r\
+      \n # usage -> uses_tool: [ gau, hakrawler, paramspider]\r\
+      \n    uses_tool: [ gau, hakrawler, paramspider ]"
     default_engine: true
