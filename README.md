@@ -207,5 +207,6 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * hakrawler : [Luke Stephens](https://github.com/hakluke/hakrawler)
 * dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
 * subjack [haccer](https://github.com/haccer/subjack)
+* paramspider : [devanshbatham](https://github.com/devanshbatham/ParamSpider)
 
 Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.

@@ -99,9 +99,12 @@ dir_file_search:
     wordlist: default
 
 fetch_url:
-    # supported tools are gau and hakrawler
-    # usage -> uses_tool: [ gau, hakrawler]
-    uses_tool: [ gau, hakrawler ]
+    # supported domains are all or base
+    # usage -> domains_to_scan: [ all ]
+    domains_to_scan: [ all ]
+    # supported tools are gau, hakrawler and paramspider
+    # usage -> uses_tool: [ gau, hakrawler, paramspider]
+    uses_tool: [ gau, hakrawler, paramspider ]
 `);
 	editor.clearSelection();
 });
