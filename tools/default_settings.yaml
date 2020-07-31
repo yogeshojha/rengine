@@ -1,14 +1,17 @@
 subdomain_discovery:
-    # Available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder
+    # Available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder, github-subdomains
     # Usage of many tools may improve the results but also may take longer time to scan
     # If you choose to run amass, by default it does passive scan, you can choose both
     # amass-active or amass-passive
-    uses_tool: [ amass-passive, subfinder, sublist3r ]
+    uses_tool: [ amass-passive, subfinder, sublist3r, github-subdomains ]
     thread: 10
     # Your wordlist shortname for amass active enumeration
     wordlist: default
     # Get the shortname for the config file from configurations module
     amass_config: config_short_name
+    # Get token for github-subdomains
+    # You can add one or more tokens separated by a comma
+    github_subdomains_token: config_short_name
 
 port_scan:
     # currently reNgine only supports naabu, nmap and other port scanning tools

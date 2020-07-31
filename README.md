@@ -199,14 +199,15 @@ It is distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) f
 ## Acknowledgements and Credits
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.
 
-* Amass: [OWASP](https://github.com/OWASP/)
-* httpx, subfinder, naabu: [ProjectDiscovery](https://github.com/projectdiscovery/)
-* Sublist3r: [Ahmed Aboul-Ela](https://github.com/aboul3la/)
-* assetfinder: [Tom Hudson](https://github.com/tomnomnom/assetfinder)
-* gau: [Corben Leo](https://github.com/lc)
+* Amass : [OWASP](https://github.com/OWASP/)
+* httpx, subfinder, naabu : [ProjectDiscovery](https://github.com/projectdiscovery/)
+* Sublist3r : [Ahmed Aboul-Ela](https://github.com/aboul3la/)
+* assetfinder : [Tom Hudson](https://github.com/tomnomnom/assetfinder)
+* gau : [Corben Leo](https://github.com/lc)
 * hakrawler : [Luke Stephens](https://github.com/hakluke/hakrawler)
-* dirsearch: [maurosoria](https://github.com/maurosoria/dirsearch)
-* subjack [haccer](https://github.com/haccer/subjack)
+* dirsearch : [maurosoria](https://github.com/maurosoria/dirsearch)
+* subjack : [haccer](https://github.com/haccer/subjack)
 * paramspider : [devanshbatham](https://github.com/devanshbatham/ParamSpider)
+* github-subdomains.py : [gwen001](https://github.com/gwen001/github-search/blob/master/github-subdomains.py)
 
 Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.
