@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, WayBackEndPoint, ScanVulnerability
+from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, ScanVulnerability
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -311,9 +311,11 @@ def doScan(host_id, domain):
                 endpoint.type = json_st['type']
                 endpoint.severity = json_st['severity']
                 endpoint.matched = json_st['matched']
+                if 'matcher_name' in json_st:
+                    endpoint.matcher = json_st['matcher_name']
+                else:
+                    endpoint.matcher = ''
                 endpoint.save()
-
-
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
@@ -333,7 +335,7 @@ def doScan(host_id, domain):
         aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(
             with_protocol_path, threads, scan_port, output_aquatone_path)
         os.system(aquatone_command)
-
+        os.system('chmod -R 607 /app/tools/scan_results/*')
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
         with open(aqua_json_path, 'r') as json_file:
             data = json.load(json_file)

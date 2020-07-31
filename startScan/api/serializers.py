@@ -17,6 +17,7 @@ class EndpointSerializer(serializers.ModelSerializer):
         model = WayBackEndPoint
         fields = '__all__'
 
+
 class VulnerabilityScannerSerializer(serializers.ModelSerializer):
 
     class Meta:

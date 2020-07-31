@@ -34,6 +34,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
         else:
             return self.queryset
 
+
 class VulnerabilityScannerViewSet(viewsets.ModelViewSet):
     queryset = ScanVulnerability.objects.all()
     serializer_class = VulnerabilityScannerSerializer

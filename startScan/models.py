@@ -60,6 +60,9 @@ class ScanVulnerability(models.Model):
     type = models.CharField(max_length=1000)
     severity = models.CharField(max_length=100)
     matched = models.CharField(max_length=1000)
+    matcher = models.CharField(max_length=1000,default='--')
+
+    
 
     def __str__(self):
         return self.severity
