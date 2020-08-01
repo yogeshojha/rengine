@@ -159,6 +159,7 @@ Detailed Scan for {{history.domain_name}}
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
@@ -262,6 +263,17 @@ $(document).ready(function() {
                     }
                 },
                 "targets": 3,
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (data){
+                        return htmlEncode(data);
+                    }
+                    else{
+                        return "";
+                    }
+                },
+                "targets": 5
             },
             {
                 "render": function ( data, type, row ) {
@@ -384,6 +396,17 @@ $(document).ready(function() {
 
                 },
                 "targets": 1
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (data){
+                        return htmlEncode(data);
+                    }
+                    else{
+                        return "";
+                    }
+                },
+                "targets": 3
             },
         ],
         drawCallback: function () {

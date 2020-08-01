@@ -20,3 +20,10 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// Source: https://portswigger.net/web-security/cross-site-scripting/preventing#encode-data-on-output
+function htmlEncode(str){
+  return String(str).replace(/[^\w. ]/gi, function(c){
+     return '&#'+c.charCodeAt(0)+';';
+  });
+}
