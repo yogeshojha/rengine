@@ -28,9 +28,35 @@ services:
           - "8000:8000"
         depends_on:
             - db
+            - redis
         networks:
             - rengine_network
-
+    redis:
+        image: redis:alpine
+        networks:
+            - rengine_network
+    celery:
+        build: .
+        command: celery -A reNgine worker -l info
+        volumes:
+            - .:/usr/src/app/
+        environment:
+            - DEBUG=1
+        depends_on:
+            - redis
+        networks:
+            - rengine_network
+    celery-beat:
+        build: .
+        command: celery -A reNgine beat -l info
+        volumes:
+            - .:/usr/src/app/
+        environment:
+            - DEBUG=1
+        depends_on:
+            - redis
+        networks:
+            - rengine_network
 networks:
     rengine_network:
 volumes:

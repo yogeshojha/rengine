@@ -10,3 +10,5 @@ django-ace
 pyyaml
 django-login-required-middleware
 gunicorn==20.0.4
+celery
+redis

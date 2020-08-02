@@ -161,3 +161,10 @@ Feel free to change the default config file
 Alternatively, you can also add configuration from configuration module from UI
 '''
 AMASS_CONFIG = TOOL_LOCATION + 'config/amass-config.ini'
+
+
+'''
+CELERY settings
+'''
+CELERY_BROKER_URL = 'redis://redis:6379'
+CELERY_RESULT_BACKEND = 'redis://redis:6379'
