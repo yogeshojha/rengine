@@ -11,7 +11,6 @@ from django.conf import settings
 from datetime import datetime
 from reNgine.tasks import doScan
 import os
-import json
 import requests
 
 

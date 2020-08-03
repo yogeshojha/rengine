@@ -6,7 +6,7 @@
 COMPOSE_PREFIX_CMD := COMPOSE_DOCKER_CLI_BUILD=1
 
 COMPOSE_ALL_FILES := -f docker-compose.yml
-SERVICES          := db web proxy
+SERVICES          := db web proxy redis celery celery-beat
 
 # --------------------------
 
