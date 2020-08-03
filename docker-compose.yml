@@ -59,6 +59,7 @@ services:
         command: celery -A reNgine worker -l info
         volumes:
             - .:/usr/src/app/
+            - media_volume:/app/tools/scan_results
         environment:
             - DEBUG=1
         depends_on:
@@ -70,6 +71,7 @@ services:
         command: celery -A reNgine beat -l info
         volumes:
             - .:/usr/src/app/
+            - media_volume:/app/tools/scan_results
         environment:
             - DEBUG=1
         depends_on:
