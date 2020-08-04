@@ -161,6 +161,7 @@
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
@@ -271,9 +272,22 @@
                     }
                 },
                 "targets": 3,
-            }, {
-                "render": function(data, type, row) {
-                    if (data) {
+
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (data){
+                        return htmlEncode(data);
+                    }
+                    else{
+                        return "";
+                    }
+                },
+                "targets": 5
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (data){
                         return span_values(data, "info");
                     } else {
                         return "";
@@ -388,14 +402,23 @@
 
                 },
                 "targets": 1
-            }, ],
-            drawCallback: function() {
-                $('.t-dot').tooltip({
-                    template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
-                })
-                $('.dataTables_wrapper table').removeClass('table-striped');
-            }
-        });
+            },
+            {
+                "render": function ( data, type, row ) {
+                    if (data){
+                        return htmlEncode(data);
+                    }
+                    else{
+                        return "";
+                    }
+                },
+                "targets": 3
+            },
+        ],
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
+        }
     });
 
 

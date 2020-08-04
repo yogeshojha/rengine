@@ -39,6 +39,7 @@
   * [Generate SSL Certificate](#generate-certificates)
   * [Building reNgine](#build-rengine)
   * [Register Account](#register-account)
+  * [Update reNgine](#how-to-update)
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
@@ -179,6 +180,25 @@ make username
 ```
 
 You may now enter your username and password. Remember to keep a secure password.
+
+#### How to update
+
+We may add new features and fixes regularly. To get the latest version of reNgine up and running, you need to follow the following steps:
+
+* Get the latest changes
+Assuming that you are inside reNgine directory:
+
+```shell
+git pull
+```
+
+* Build the latest changes
+
+```shell
+make build
+```
+
+That is all, you can then run `make up` to run the latest version of reNgine.
 
 ## Contributing
 
