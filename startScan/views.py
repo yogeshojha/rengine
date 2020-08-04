@@ -112,7 +112,7 @@ def doScan(host_id, domain):
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
-                tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
+                tools = 'amass-active amass-passive assetfinder sublist3r subfinder github-subdomains'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
@@ -122,6 +122,12 @@ def doScan(host_id, domain):
                 threads = yaml_configuration['subdomain_discovery']['thread']
             else:
                 threads = 10
+
+            if 'github-subdomains' in tools:
+                github_subdomains_token = yaml_configuration['subdomain_discovery']['github_subdomains_token']
+            else:
+                # To prevent the application from crashing if you don't enter the amass loop
+                github_subdomains_token = 'null'
 
             if 'amass-active' in tools:
                 if ('wordlist' not in yaml_configuration['subdomain_discovery']
@@ -166,17 +172,18 @@ def doScan(host_id, domain):
                 # all subdomain scan happens here
                 os.system(
                     settings.TOOL_LOCATION +
-                    'get_subdomain.sh %s %s %s %s %s %s' %
+                    'get_subdomain.sh %s %s %s %s %s %s %s' %
                     (threads,
                      domain.domain_name,
                      current_scan_dir,
+                     github_subdomains_token,
                      wordlist_location,
                      amass_config,
                      tools))
             else:
                 os.system(
-                    settings.TOOL_LOCATION + 'get_subdomain.sh %s %s %s %s' %
-                    (threads, domain.domain_name, current_scan_dir, tools))
+                    settings.TOOL_LOCATION + 'get_subdomain.sh %s %s %s %s %s' %
+                    (threads, domain.domain_name, current_scan_dir, github_subdomains_token, tools))
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
@@ -468,14 +475,25 @@ def doScan(host_id, domain):
             '''
             # check yaml settings
             if 'all' in yaml_configuration['fetch_url']['uses_tool']:
-                tools = 'gau hakrawler'
+                tools = 'gau hakrawler paramspider'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration['fetch_url']['uses_tool'])
 
+            if 'all' in yaml_configuration['fetch_url']['domains_to_scan']:
+                # need to relaunche httpx to have domains in plaintext format
+                httpx_results_file_plain = results_dir + current_scan_dir + '/httpx.txt'
+
+                httpx_command = 'cat {} | httpx -o {}'.format(
+                    subdomain_scan_results_file, httpx_results_file_plain)
+                os.system(httpx_command)
+                subdomains_fetch_url = httpx_results_file_plain
+            else:
+                subdomains_fetch_url = domain.domain_name
+
             os.system(
                 settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
-                (domain.domain_name, current_scan_dir, tools))
+                (subdomains_fetch_url, current_scan_dir, tools))
 
             url_results_file = results_dir + current_scan_dir + '/all_urls.json'
 

@@ -32,7 +32,6 @@ services:
         restart: always
         image: nginx:alpine
         ports:
-            - 80:80/tcp
             - 8000:443/tcp
         depends_on:
             - web
