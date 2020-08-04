@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
+from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, ScanVulnerability
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -304,6 +304,25 @@ def doScan(host_id, domain):
 
         update_last_activity()
         create_scan_activity(task, "Visual Recon - Screenshot", 1)
+        if(task.scan_type.vulnerability_scanner):
+            nuclei_results_file = results_dir + current_scan_dir + '/nuclei.json'
+            nuclei_command = 'cat {} | httpx | nuclei -json -t /app/tools/nuclei-templates -o {}'.format(subdomain_scan_results_file,nuclei_results_file)
+            os.system(nuclei_command)
+            nuclei_urls_json_result = open(nuclei_results_file, 'r')
+            lines = nuclei_urls_json_result.readlines()
+            for line in lines:
+                json_st = json.loads(line.strip())
+                endpoint = ScanVulnerability()
+                endpoint.scan_id = task
+                endpoint.template = json_st['template']
+                endpoint.type = json_st['type']
+                endpoint.severity = json_st['severity']
+                endpoint.matched = json_st['matched']
+                if 'matcher_name' in json_st:
+                    endpoint.matcher = json_st['matcher_name']
+                else:
+                    endpoint.matcher = ''
+                endpoint.save()
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'

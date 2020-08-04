@@ -1,6 +1,8 @@
 #!/bin/sh
 
+
 # $1 threads, $2 domain, $3 output directory, $4 github_subdomains_token, $5 amass active recon wordlist, $6 amass_config
+
 
 for i in "$@" ; do
     if [[ $i == "sublist3r" ]] ; then

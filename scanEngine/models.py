@@ -8,6 +8,7 @@ class EngineType(models.Model):
     subdomain_takeover = models.BooleanField()
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
+    vulnerability_scanner = models.BooleanField(default=True)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 

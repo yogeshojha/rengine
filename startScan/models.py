@@ -53,3 +53,16 @@ class ScanActivity(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+class ScanVulnerability(models.Model):
+    scan_id = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    template = models.CharField(max_length=1000)
+    type = models.CharField(max_length=1000)
+    severity = models.CharField(max_length=100)
+    matched = models.CharField(max_length=1000)
+    matcher = models.CharField(max_length=1000,default='--')
+
+    
+
+    def __str__(self):
+        return self.severity

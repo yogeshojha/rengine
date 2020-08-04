@@ -30,6 +30,9 @@ class AddEngineForm(forms.ModelForm):
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
+    vulnerability_scanner = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -66,6 +69,9 @@ class UpdateEngineForm(forms.ModelForm):
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
+    vulnerability_scanner = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput())
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -82,6 +88,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['subdomain_takeover'] = engine.subdomain_takeover
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
+        self.initial['vulnerability_scanner'] = engine.vulnerability_scanner
         self.initial['yaml_configuration'] = engine.yaml_configuration
 
 

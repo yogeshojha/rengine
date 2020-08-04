@@ -18,7 +18,7 @@ RUN apk update \
 
 
 # Download and install go 1.13
-COPY --from=golang:1.13-alpine /usr/local/go/ /usr/local/go/
+COPY --from=golang:1.14-alpine /usr/local/go/ /usr/local/go/
 
 # Environment vars
 ENV DATABASE="postgres"
@@ -33,14 +33,20 @@ RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler gith
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
-    github.com/lc/gau
+    github.com/lc/gau \
+	github.com/projectdiscovery/nuclei/v2/cmd/nuclei@master
+	
+	
+# Ajout de template nuclei
+RUN git clone https://github.com/projectdiscovery/nuclei-templates /app/tools/nuclei-templates
+RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
 # Make directory for app
-RUN mkdir /app
+RUN mkdir -p /app
 WORKDIR /app
 
 # Copy source code

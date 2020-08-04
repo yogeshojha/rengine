@@ -1,7 +1,6 @@
 <div class="form-row layout-spacing">
     <div class="col-12">
-        <label for="domainName" class="text-info">Engine name</label>
-        {{ form.engine_name }}
+        <label for="domainName" class="text-info">Engine name</label> {{ form.engine_name }}
     </div>
 </div>
 <div class="form-row layout-spacing">
@@ -59,6 +58,18 @@
             <td>
                 <label class="switch s-icons s-outline s-outline-info">
                     {{form.fetch_url}}
+                    <span class="slider round"></span>
+                </label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <h6 style="margin-right:1%">Vulnerability scanners</h6>
+                <span class="preview">(with nuclei)</span>
+            </td>
+            <td>
+                <label class="switch s-icons s-outline s-outline-info">
+                    {{form.vulnerability_scanner}}
                     <span class="slider round"></span>
                 </label>
             </td>
