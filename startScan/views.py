@@ -311,18 +311,20 @@ def doScan(host_id, domain):
             nuclei_urls_json_result = open(nuclei_results_file, 'r')
             lines = nuclei_urls_json_result.readlines()
             for line in lines:
-                json_st = json.loads(line.strip())
-                endpoint = ScanVulnerability()
-                endpoint.scan_id = task
-                endpoint.template = json_st['template']
-                endpoint.type = json_st['type']
-                endpoint.severity = json_st['severity']
-                endpoint.matched = json_st['matched']
-                if 'matcher_name' in json_st:
-                    endpoint.matcher = json_st['matcher_name']
-                else:
-                    endpoint.matcher = ''
-                endpoint.save()
+                try:
+                    json_st = json.loads(line.strip())
+                    endpoint = ScanVulnerability()
+                    endpoint.scan_id = task
+                    endpoint.template = json_st['template']
+                    endpoint.type = json_st['type']
+                    endpoint.severity = json_st['severity']
+                    endpoint.matched = json_st['matched']
+                    if 'matcher_name' in json_st:
+                        endpoint.matcher = json_st['matcher_name']
+                    else:
+                        endpoint.matcher = ''
+                    endpoint.save()
+                except ValueError as e:
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
