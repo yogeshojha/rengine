@@ -325,7 +325,7 @@ def doScan(host_id, domain):
                         endpoint.matcher = ''
                     endpoint.save()
                 except ValueError as e:
-
+                    print(e)
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
         output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'

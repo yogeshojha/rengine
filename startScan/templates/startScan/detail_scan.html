@@ -273,21 +273,18 @@
                 },
                 "targets": 3,
 
-            },
-            {
-                "render": function ( data, type, row ) {
-                    if (data){
+            }, {
+                "render": function(data, type, row) {
+                    if (data) {
                         return htmlEncode(data);
-                    }
-                    else{
+                    } else {
                         return "";
                     }
                 },
                 "targets": 5
-            },
-            {
-                "render": function ( data, type, row ) {
-                    if (data){
+            }, {
+                "render": function(data, type, row) {
+                    if (data) {
                         return span_values(data, "info");
                     } else {
                         return "";
@@ -345,10 +342,6 @@
                 document.getElementsByTagName("head")[0].appendChild(script);
             }
         });
-    });
-</script>
-<script type="text/javascript">
-    $(document).ready(function() {
         $('#endpoint_results').DataTable({
             "oLanguage": {
                 "oPaginate": {
@@ -402,38 +395,25 @@
 
                 },
                 "targets": 1
-            },
-            {
-                "render": function ( data, type, row ) {
-                    if (data){
+            }, {
+                "render": function(data, type, row) {
+                    if (data) {
                         return htmlEncode(data);
-                    }
-                    else{
+                    } else {
                         return "";
                     }
                 },
                 "targets": 3
-            },
-        ],
-        drawCallback: function () {
-            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-            $('.dataTables_wrapper table').removeClass('table-striped');
-        }
-    });
-
-
-    // span values function will seperate the values by comma and put badge around it
-    function span_values(data, color) {
-        var badge = "<span class='badge badge-pill badge-" + color + " m-1'>";
-        var data_with_span = "";
-        data.split(/\s*,\s*/).forEach(function(split_vals) {
-            data_with_span += badge + split_vals + "</span>";
+            }, ],
+            drawCallback: function() {
+                $('.t-dot').tooltip({
+                    template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+                })
+                $('.dataTables_wrapper table').removeClass('table-striped');
+            }
         });
-        return data_with_span;
-    }
-</script>
-<script type="text/javascript">
-    $(document).ready(function() {
+
+
         $('#vulnerability_scanner_results').DataTable({
             "oLanguage": {
                 "oPaginate": {
@@ -498,5 +478,22 @@
             }
         });
     });
+
+
+    // test span values function will seperate the values by comma and put badge around it
+    function span_values(data, color) {
+        var badge = "<span class='badge badge-pill badge-" + color + " m-1'>";
+        var data_with_span = "";
+        data.split(/\s*,\s*/).forEach(function(split_vals) {
+            data_with_span += badge + split_vals + "</span>";
+        });
+        return data_with_span;
+    }
+
+    function htmlEncode(str) {
+        return String(str).replace(/[^\w. ]/gi, function(c) {
+            return '&#' + c.charCodeAt(0) + ';';
+        });
+    }
 </script>
 {% endblock page_level_script %}

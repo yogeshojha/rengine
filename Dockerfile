@@ -34,7 +34,7 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau \
-	github.com/projectdiscovery/nuclei/v2/cmd/nuclei@master
+	github.com/projectdiscovery/nuclei/v2/cmd/nuclei
 	
 	
 # Ajout de template nuclei
