@@ -38,6 +38,8 @@ services:
     celery:
         build: .
         command: celery -A reNgine worker -l info
+        volumes:
+            - ./celery_storage:/celery_storage
         environment:
             - DEBUG=1
         depends_on:
@@ -47,6 +49,8 @@ services:
     celery-beat:
         build: .
         command: celery -A reNgine beat -l info
+        volumes:
+            - ./celery_storage:/celery_storage
         environment:
             - DEBUG=1
         depends_on:
