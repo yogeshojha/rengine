@@ -40,4 +40,8 @@ urlpatterns = [
         'delete/scan/<int:id>',
         views.delete_scan,
         name='delete_scan'),
+    path(
+        'stop/scan/<str:id>',
+        views.stop_scan,
+        name='stop_scan'),
 ]

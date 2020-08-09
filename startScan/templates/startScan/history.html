@@ -42,6 +42,7 @@ Scan History
                                 <th>Scan Type</th>
                                 <th>Last Scanned On</th>
                                 <th class="text-center">Status</th>
+                                <th class="text-center">Result</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
@@ -59,12 +60,21 @@ Scan History
                                     <span class="shadow-none badge badge-primary">Scanning</span>
                                     {% elif scan_history.scan_status == 2 %}
                                     <span class="shadow-none badge badge-success">Succesful</span>
+                                    {% elif scan_history.scan_status == 3 %}
+                                    <span class="shadow-none badge badge-danger">Aborted</span>
                                     {% else %}
                                     <span class="shadow-none badge badge-danger">Unknown</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
                                     <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-outline-primary">View</a>
+                                </td>
+                                <td class="text-center">
+                                    {% if scan_history.scan_status == 1 %}
+                                    <a onclick="stop_scan('{{ scan_history.celery_id }}')" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Stop Scan">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    </a>
+                                    {% endif %}
                                     <a onclick="delete_scan({{ scan_history.id }})" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scan {{ scan_history.domain_name }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                             <circle cx="12" cy="12" r="10"></circle>

@@ -34,6 +34,42 @@ function delete_scan(id, domain_name)
     }])
 }
 
+function stop_scan(celery_id){
+
+    const stopAPI = "../stop/scan/"+celery_id;
+    swal.queue([{
+        title: 'Are you sure you want to stop this scan?',
+        text: "You won't be able to revert this!",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Stop',
+        padding: '2em',
+        showLoaderOnConfirm: true,
+        preConfirm: function() {
+          return fetch(stopAPI, {
+	            method: 'POST',
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function(data) {
+                // TODO Look for better way
+               return location.reload();
+            })
+            .catch(function() {
+              swal.insertQueueStep({
+                type: 'error',
+                title: 'Oops! Unable to stop the scan'
+              })
+            })
+        }
+    }])
+}
+
 function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie !== '') {

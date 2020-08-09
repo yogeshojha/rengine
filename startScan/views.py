@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.conf import settings
 from datetime import datetime
 from reNgine.tasks import doScan
+from reNgine.celery import app
 import os
 import requests
 
@@ -137,6 +138,27 @@ def delete_scan(request, id):
             request,
             messages.INFO,
             'Scan history successfully deleted!')
+    else:
+        messageData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Oops! something went wrong!')
+    return JsonResponse(messageData)
+
+
+def stop_scan(request, id):
+    obj = get_object_or_404(ScanHistory, celery_id=id)
+    if request.method == "POST":
+        # stop the celery task
+        app.control.revoke(id)
+        obj.scan_status = 3
+        obj.save()
+        messageData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scan successfully stopped!')
     else:
         messageData = {'status': 'false'}
         messages.add_message(
