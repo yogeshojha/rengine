@@ -18,7 +18,6 @@ task for background scan
 
 @app.task
 def doScan(host_id, domain_id):
-    print(doScan.request.id)
     task = ScanHistory.objects.get(pk=host_id)
     domain = Domain.objects.get(pk=domain_id)
 

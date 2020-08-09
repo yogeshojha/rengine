@@ -64,7 +64,9 @@ def start_scan_ui(request, host_id):
         domain.last_scan_date = timezone.now()
         domain.save()
         # start the celery task
-        doScan.delay(task.id, domain.id)
+        celery_task = doScan.delay(task.id, domain.id)
+        task.celery_id = celery_task.id
+        task.save()
         messages.add_message(
             request,
             messages.INFO,
