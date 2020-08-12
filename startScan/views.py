@@ -151,7 +151,7 @@ def stop_scan(request, id):
     obj = get_object_or_404(ScanHistory, celery_id=id)
     if request.method == "POST":
         # stop the celery task
-        app.control.revoke(id)
+        app.control.revoke(id, terminate=True)
         obj.scan_status = 3
         obj.save()
         messageData = {'status': 'true'}
