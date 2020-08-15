@@ -68,7 +68,7 @@ services:
             - rengine_network
     celery-beat:
         build: .
-        command: celery -A proj beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+        command: celery -A reNgine beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
         volumes:
             - .:/usr/src/app/
             - media_volume:/app/tools/scan_results

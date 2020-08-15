@@ -48,7 +48,7 @@ services:
             - rengine_network
     celery-beat:
         build: .
-        command: celery -A reNgine beat -l info
+        command: celery -A reNgine beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
         volumes:
             - ./celery_storage:/celery_storage
         environment:

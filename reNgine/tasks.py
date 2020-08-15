@@ -447,3 +447,10 @@ def update_last_activity():
     last_activity.status = 2
     last_activity.time = timezone.now()
     last_activity.save()
+
+
+@app.task(bind=True)
+def test_task(self):
+    print('*'*40)
+    print('test task run')
+    print('*'*40)
