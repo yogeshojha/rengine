@@ -12,6 +12,7 @@ Schedule Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link href="{% static 'assets/css/components/tabs/custom-tabs.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/bootstrap-select/bootstrap-select.min.css' %}">
+<link href="{% static 'plugins/flatpickr/flatpickr.css' %}" rel="stylesheet" type="text/css">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -33,11 +34,15 @@ Schedule Scan for {{domain.domain_name}}
                 {% csrf_token %}
                 <div class="form-row">
                     <div class="col-md-12 mb-4">
-                        <h6>Choose the scheduler</h6>
+                        <h6 class="mb-4">Choose the scheduler</h6>
+                        <select class="selectpicker" data-width='100%' onchange="schedulerChanged(this)">
+                            <option value="periodic">Periodic Scan</option>
+                            <option value="clocked">Clocked Scan</option>
+                        </select>
                         <div class="widget-content widget-content-area animated-underline-content">
                             <ul class="nav nav-tabs  mb-3" id="animateLine" role="tablist">
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="animated-underline-home-tab" data-toggle="tab" href="#animated-underline-periodic" role="tab" aria-controls="animated-underline-home" aria-selected="true">
+                                    <a class="nav-link active" id="periodic-tab" data-toggle="tab" href="#periodic-div" role="tab" aria-controls="periodic-tab" aria-selected="true">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-refresh-cw">
                                             <polyline points="23 4 23 10 17 10"></polyline>
                                             <polyline points="1 20 1 14 7 14"></polyline>
@@ -46,7 +51,7 @@ Schedule Scan for {{domain.domain_name}}
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" id="animated-underline-profile-tab" data-toggle="tab" href="#animated-underline-clocked" role="tab" aria-controls="animated-underline-profile" aria-selected="false">
+                                    <a class="nav-link" id="clocked-tab" data-toggle="tab" href="#clocked-div" role="tab" aria-controls="clocked-tab" aria-selected="false">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch">
                                             <circle cx="12" cy="12" r="7"></circle>
                                             <polyline points="12 9 12 12 13.5 13.5"></polyline>
@@ -57,7 +62,7 @@ Schedule Scan for {{domain.domain_name}}
                             </ul>
 
                             <div class="tab-content" id="animateLineContent-4">
-                                <div class="tab-pane fade show active" id="animated-underline-periodic" role="tabpanel" aria-labelledby="animated-underline-home-tab">
+                                <div class="tab-pane fade show active" id="periodic-div" role="tabpanel" aria-labelledby="periodic-tab-tab">
                                     <div class="mb-4">
                                         <p>Run scan every</p>
                                         <div class="row">
@@ -66,7 +71,6 @@ Schedule Scan for {{domain.domain_name}}
                                             </div>
                                             <div class='col-8'>
                                                 <select class="selectpicker" data-width='100%'>
-                                                    <option>Seconds</option>
                                                     <option>Minutes</option>
                                                     <option>Hours</option>
                                                     <option>Days</option>
@@ -77,9 +81,14 @@ Schedule Scan for {{domain.domain_name}}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="tab-pane fade" id="animated-underline-clocked" role="tabpanel" aria-labelledby="animated-underline-profile-tab">
+                                <div class="tab-pane fade" id="clocked-div" role="tabpanel" aria-labelledby="clocked-tab-tab">
                                     <div class="mb-4">
-                                        {# form #}
+                                        <p>Run scan exactly at</p>
+                                        <div class="row">
+                                            <div class="form-group mb-0">
+                                                <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -193,8 +202,8 @@ Schedule Scan for {{domain.domain_name}}
                             </li>
                             {% endfor %}
                         </ul>
-                        <div style=" position: fixed; bottom: 40px; right: 40px; z-index:1000;">
-                            <button class="btn btn-primary submit-fn mt-2 float-right" style="z-index:1000;" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                        <div>
+                            <button class="btn btn-primary submit-fn mt-2 float-right" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg> Schedule Scan</button>
                         </div>
@@ -210,4 +219,34 @@ Schedule Scan for {{domain.domain_name}}
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 <script src="{% static 'plugins/bootstrap-select/bootstrap-select.min.js' %}"></script>
+<script src="{% static 'plugins/flatpickr/flatpickr.js' %}"></script>
+<script type="text/javascript">
+var dateTimepicker = flatpickr(document.getElementById('clockedTime'), {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i",
+});
+function schedulerChanged(selectObject){
+    selectedValue = selectObject.value;
+    if (selectedValue == 'periodic') {
+        var periodicTab = document.getElementById("periodic-tab");
+        periodicTab.classList.add("active");
+        periodicTab.classList.remove("disabled");
+        periodicTab.click();
+        var clockedTab = document.getElementById("clocked-tab");
+        clockedTab.classList.add("disabled");
+        clockedTab.classList.remove("active");
+
+    }
+    else if (selectedValue == 'clocked') {
+        var periodicTab = document.getElementById("periodic-tab");
+        periodicTab.classList.add("disabled");
+        periodicTab.classList.remove("active");
+        var clockedTab = document.getElementById("clocked-tab");
+        clockedTab.click();
+        clockedTab.classList.add("active");
+        clockedTab.classList.remove("disabled");
+
+    }
+}
+</script>
 {% endblock page_level_script %}
