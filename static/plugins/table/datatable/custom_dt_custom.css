@@ -75,6 +75,7 @@ table.dataTable {
 .table-scan {
     color: #888ea8;
     margin-right: 6px;
+    margin-bottom: 6px;
     vertical-align: middle;
     fill: rgba(0, 23, 55, 0.08);
     cursor: pointer;
@@ -87,6 +88,7 @@ table.dataTable {
 .table-edit {
     color: #888ea8;
     margin-right: 6px;
+    margin-bottom: 6px;
     vertical-align: middle;
     fill: rgba(0, 23, 55, 0.08);
     cursor: pointer;
@@ -95,9 +97,25 @@ table.dataTable {
 .table-hover:not(.table-dark) tbody tr:hover .table-edit {
     color: #e2a03f;
 }
+
+
+.table-schedule {
+    color: #888ea8;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    vertical-align: middle;
+    fill: rgba(0, 23, 55, 0.08);
+    cursor: pointer;
+}
+
+.table-hover:not(.table-dark) tbody tr:hover .table-schedule {
+    color: #8dbf42;
+}
+
 .table-delete {
     color: #888ea8;
     margin-right: 6px;
+    margin-bottom: 6px;
     vertical-align: middle;
     fill: rgba(0, 23, 55, 0.08);
     cursor: pointer;
@@ -110,6 +128,7 @@ table.dataTable {
 .table-view {
     color: #888ea8;
     margin-right: 6px;
+    margin-bottom: 6px;
     vertical-align: middle;
     fill: rgba(0, 23, 55, 0.08);
     cursor: pointer;

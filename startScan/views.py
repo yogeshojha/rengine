@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
+from django_celery_beat.models import PeriodicTask
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -159,6 +160,33 @@ def stop_scan(request, id):
             request,
             messages.INFO,
             'Scan successfully stopped!')
+    else:
+        messageData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Oops! something went wrong!')
+    return JsonResponse(messageData)
+
+
+def schedule_scan_view(request):
+    scheduled_tasks = PeriodicTask.objects.all()
+    context = {
+                'scheduled_scan_active': 'true',
+                'scheduled_tasks': scheduled_tasks,
+            }
+    return render(request, 'startScan/schedule_scan_list.html', context)
+
+
+def delete_scheduled_task(request, id):
+    task_object = get_object_or_404(PeriodicTask, id=id)
+    if request.method == "POST":
+        task_object.delete()
+        messageData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scheduled Scan successfully deleted!')
     else:
         messageData = {'status': 'false'}
         messages.add_message(

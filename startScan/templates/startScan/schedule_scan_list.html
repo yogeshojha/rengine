@@ -1,11 +1,13 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load custom_tags %}
 
 {% block title %}
-List all targets
+Scheduled Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
@@ -18,7 +20,7 @@ List all targets
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-List all Target for Recon
+Scheduled Scan
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -26,9 +28,12 @@ List all Target for Recon
     <div class="col-lg-12">
         <div class="statbox widget box box-shadow">
             <div class="widget-header">
-                <div class="row">
-                    <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-                        <h4>All Targets</h4>
+                <div class="row" style="margin-top: 2%">
+                    <div class="col-6">
+                        <h4>Scheduled Scans</h4>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'add_notification_hook' %}" class="btn btn-outline-primary mb-2 float-right">Schedule New Scan</a>
                     </div>
                 </div>
             </div>
@@ -38,40 +43,39 @@ List all Target for Recon
                         <thead>
                             <tr>
                                 <th class="checkbox-column">Serial Number</th>
-                                <th>Domain Name</th>
-                                <th>Description</th>
-                                <th>Added on</th>
-                                <th class="text-center">Last Scanned</th>
+                                <th>Name</th>
+                                <th>Frequency</th>
+                                <th>Last Run</th>
+                                <th class="text-center">Run Count</th>
+                                <th class="text-center">One Off Task</th>
+                                <th class="text-center">Enabled</th>
                                 <th class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for domain in domains.all %}
+                            {% for task in scheduled_tasks %}
                             <tr>
-                                <td class="checkbox-column"> {{ domain.id }} </td>
-                                <td>{{ domain.domain_name }}</td>
-                                <td>{{ domain.domain_description }}</td>
-                                <td>{{ domain.insert_date }}</td>
-                                {% if domain.last_scan_date %}
-                                    <td class="text-center">{{domain.last_scan_date}}</td>
-                                {% else %}
-                                    <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
-                                {% endif %}
+                                <td class="checkbox-column"> {{ task.id }} </td>
+                                <td>{{ task.name }}</td>
+                                <td>{{ task.interval }}</td>
+                                <td>{{ task.last_run_at|none_or_never }}</td>
+                                <td class="text-center">{{ task.total_run_count }}</td>
                                 <td class="text-center">
-                                    <a href="{% url 'start_scan' domain.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                                        </svg>
-                                    </a>
-                                    <a href="#" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Schedule Scan">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
-                                    </a>
-                                    <a href="{% url 'update_target_form' domain.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Update target">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
-                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                        </svg>
-                                    </a>
-                                    <a onclick="delete_target({{ domain.id }}, '{{ domain.domain_name }}')" class="bs-tooltip btnDelDomain" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete target">
+                                    {% if task.one_off %}
+                                    {% include 'base/_items/green_tick.html' %}
+                                    {% else %}
+                                    {% include 'base/_items/red_cross.html' %}
+                                    {%endif%}
+                                </td>
+                                <td class="text-center">
+                                    <label class="switch s-icons s-outline s-outline-info">
+                                        <input type="hidden" name="task_id" value="task.id" />
+                                        <input type="checkbox" name="task_enabled" {% if task.enabled %}checked{% endif %} onchange="change_scheduled_task_status({{task.id}})">
+                                        <span class="slider round"></span>
+                                    </label>
+                                </td>
+                                <td class="text-center">
+                                    <a onclick="deleteScheduledScan({{ task.id }}, '{{ task.name }}')" class="bs-tooltip btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -93,7 +97,6 @@ List all Target for Recon
 
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>

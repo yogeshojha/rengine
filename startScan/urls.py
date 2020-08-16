@@ -12,6 +12,10 @@ urlpatterns = [
         views.scan_history,
         name="scan_history"),
     path(
+        'scheduled/',
+        views.schedule_scan_view,
+        name="scheduled_scan"),
+    path(
         'detail/<int:id>',
         views.detail_scan,
         name='detail_scan'),
@@ -44,4 +48,8 @@ urlpatterns = [
         'stop/scan/<str:id>',
         views.stop_scan,
         name='stop_scan'),
+    path(
+        'delete/scheduled_task/<int:id>',
+        views.delete_scheduled_task,
+        name='delete_scheduled_task'),
 ]
