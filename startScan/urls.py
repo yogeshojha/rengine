@@ -24,6 +24,10 @@ urlpatterns = [
         views.start_scan_ui,
         name='start_scan'),
     path(
+        'schedule/<int:host_id>',
+        views.schedule_scan,
+        name='schedule_scan'),
+    path(
         'api/',
         include(
             'startScan.api.urls',

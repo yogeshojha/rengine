@@ -74,6 +74,29 @@ def start_scan_ui(request, host_id):
     return render(request, 'startScan/start_scan_ui.html', context)
 
 
+def schedule_scan(request, host_id):
+    domain = get_object_or_404(Domain, id=host_id)
+    if request.method == "POST":
+        # get engine type
+        engine_type = request.POST['scan_mode']
+        # other misc pull
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scan Scheduled for ' +
+            domain.domain_name)
+        return HttpResponseRedirect(reverse('scan_history'))
+    engine = EngineType.objects
+    custom_engine_count = EngineType.objects.filter(
+        default_engine=False).count()
+    context = {
+        'scan_history_active': 'true',
+        'domain': domain,
+        'engines': engine,
+        'custom_engine_count': custom_engine_count}
+    return render(request, 'startScan/schedule_scan_ui.html', context)
+
+
 def export_subdomains(request, scan_id):
     subdomain_list = ScannedHost.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
