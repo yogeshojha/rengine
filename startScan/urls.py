@@ -52,4 +52,8 @@ urlpatterns = [
         'delete/scheduled_task/<int:id>',
         views.delete_scheduled_task,
         name='delete_scheduled_task'),
+    path(
+        'toggle/scheduled_task/<int:id>',
+        views.change_scheduled_task_status,
+        name='change_scheduled_task_status'),
 ]

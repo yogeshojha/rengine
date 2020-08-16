@@ -63,3 +63,16 @@ function deleteScheduledScan(id, task_name)
         }
     }])
 }
+
+function change_scheduled_task_status(id)
+{
+    const taskStatusApi = "../toggle/scheduled_task/"+id;
+
+    return fetch(taskStatusApi, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+        }
+    })
+}

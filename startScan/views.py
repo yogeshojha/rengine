@@ -194,3 +194,11 @@ def delete_scheduled_task(request, id):
             messages.INFO,
             'Oops! something went wrong!')
     return JsonResponse(messageData)
+
+
+def change_scheduled_task_status(request, id):
+    if request.method == 'POST':
+        task = PeriodicTask.objects.get(id=id)
+        task.enabled = not task.enabled
+        task.save()
+    return HttpResponse('')
