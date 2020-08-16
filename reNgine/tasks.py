@@ -1,15 +1,17 @@
-import os
-import traceback
-import yaml
-import json
 from celery import shared_task
 from reNgine.celery import app
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
 from targetApp.models import Domain
 from notification.models import NotificationHooks
+from scanEngine.models import EngineType
 from django.conf import settings
 from django.utils import timezone, dateformat
+from django.shortcuts import get_object_or_404
 from datetime import datetime
+import os
+import traceback
+import yaml
+import json
 
 '''
 task for background scan
@@ -17,11 +19,26 @@ task for background scan
 
 
 @app.task
-def doScan(host_id, domain_id):
-    task = ScanHistory.objects.get(pk=host_id)
+def doScan(domain_id, engine_id):
+
+    engine_object = EngineType.objects.get(id=engine_id)
     domain = Domain.objects.get(pk=domain_id)
 
-    create_scan_activity(task, "Scanning Started", 2)
+    current_scan_time = timezone.now()
+
+    task = ScanHistory()
+    task.scan_status = 1
+    task.domain_name = domain
+    task.scan_type = engine_object
+    task.last_scan_date = current_scan_time
+    task.celery_id = doScan.request.id
+    task.save()
+
+    # save last scan for domain model
+    domain.last_scan_date = current_scan_time
+    domain.save()
+
+    activity_id = create_scan_activity(task, "Scanning Started", 2)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
     results_dir = settings.TOOL_LOCATION + 'scan_results/'
@@ -39,7 +56,7 @@ def doScan(host_id, domain_id):
             task.scan_type.yaml_configuration,
             Loader=yaml.FullLoader)
         if(task.scan_type.subdomain_discovery):
-            create_scan_activity(task, "Subdomain Scanning", 1)
+            activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
 
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
@@ -137,8 +154,8 @@ def doScan(host_id, domain_id):
             current_scan_dir + '/sorted_subdomain_collection.txt'
 
         if(task.scan_type.port_scan):
-            update_last_activity()
-            create_scan_activity(task, "Port Scanning", 1)
+            update_last_activity(activity_id)
+            activity_id = create_scan_activity(task, "Port Scanning", 1)
 
             # after all subdomain has been discovered run naabu to discover the
             # ports
@@ -197,8 +214,8 @@ def doScan(host_id, domain_id):
         '''
         HTTP Crawlwer and screenshot will run by default
         '''
-        update_last_activity()
-        create_scan_activity(task, "HTTP Crawler", 1)
+        update_last_activity(activity_id)
+        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
 
         # once port scan is complete then run httpx, TODO this has to run in
         # background thread later
@@ -227,8 +244,8 @@ def doScan(host_id, domain_id):
             sub_domain.save()
         alive_file.close()
 
-        update_last_activity()
-        create_scan_activity(task, "Visual Recon - Screenshot", 1)
+        update_last_activity(activity_id)
+        activity_id = create_scan_activity(task, "Visual Recon - Screenshot", 1)
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
@@ -255,7 +272,7 @@ def doScan(host_id, domain_id):
 
         for host in data['pages']:
             sub_domain = ScannedHost.objects.get(
-                scan_history__id=host_id,
+                scan_history__id=task.id,
                 subdomain=data['pages'][host]['hostname'])
             list_ip = data['pages'][host]['addrs']
             ip_string = ','.join(list_ip)
@@ -276,8 +293,8 @@ def doScan(host_id, domain_id):
         Subdomain takeover is not provided by default, check for conditions
         '''
         if(task.scan_type.subdomain_takeover):
-            update_last_activity()
-            create_scan_activity(task, "Subdomain takeover", 1)
+            update_last_activity(activity_id)
+            activity_id = create_scan_activity(task, "Subdomain takeover", 1)
 
             if yaml_configuration['subdomain_takeover']['thread'] > 0:
                 threads = yaml_configuration['subdomain_takeover']['thread']
@@ -314,12 +331,12 @@ def doScan(host_id, domain_id):
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):
-            update_last_activity()
-            create_scan_activity(task, "Directory Search", 1)
+            update_last_activity(activity_id)
+            activity_id = create_scan_activity(task, "Directory Search", 1)
             # scan directories for all the alive subdomain with http status >
             # 200
             alive_subdomains = ScannedHost.objects.filter(
-                scan_history__id=host_id).exclude(http_url='')
+                scan_history__id=task.id).exclude(http_url='')
             dirs_results = current_scan_dir + '/dirs.json'
 
             # check the yaml settings
@@ -358,7 +375,7 @@ def doScan(host_id, domain_id):
                     with open(dirs_results, "r") as json_file:
                         json_string = json_file.read()
                         scanned_host = ScannedHost.objects.get(
-                            scan_history__id=host_id, http_url=subdomain.http_url)
+                            scan_history__id=task.id, http_url=subdomain.http_url)
                         scanned_host.directory_json = json_string
                         scanned_host.save()
                 except BaseException:
@@ -372,8 +389,8 @@ def doScan(host_id, domain_id):
         # TODO: give providers as choice for users between commoncrawl,
         # alienvault or wayback
         if(task.scan_type.fetch_url):
-            update_last_activity()
-            create_scan_activity(task, "Fetching endpoints", 1)
+            update_last_activity(activity_id)
+            activity_id = create_scan_activity(task, "Fetching endpoints", 1)
             wayback_results_file = results_dir + current_scan_dir + '/url_wayback.json'
 
             '''
@@ -422,8 +439,8 @@ def doScan(host_id, domain_id):
             notif.hook_url,
             data=json.dumps(scan_status_msg),
             headers=headers)
-    update_last_activity()
-    create_scan_activity(task, "Scan Completed", 2)
+    update_last_activity(activity_id)
+    activity_id = create_scan_activity(task, "Scan Completed", 2)
     return {"status": True}
 
 
@@ -439,11 +456,12 @@ def create_scan_activity(task, message, status):
     scan_activity.time = timezone.now()
     scan_activity.status = status
     scan_activity.save()
+    return scan_activity.id
 
 
-def update_last_activity():
+def update_last_activity(id):
     # save the last activity as successful
-    last_activity = ScanActivity.objects.latest('id')
+    last_activity = ScanActivity.objects.get(id=id)
     last_activity.status = 2
     last_activity.time = timezone.now()
     last_activity.save()

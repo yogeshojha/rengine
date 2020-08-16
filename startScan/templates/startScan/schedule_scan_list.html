@@ -33,7 +33,7 @@ Scheduled Scan
                         <h4>Scheduled Scans</h4>
                     </div>
                     <div class="col-6">
-                        <a href="{% url 'add_notification_hook' %}" class="btn btn-outline-primary mb-2 float-right">Schedule New Scan</a>
+                        <a href="{% url 'list_target' %}" class="btn btn-outline-primary mb-2 float-right">Schedule New Scan</a>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@ Scheduled Scan
                                     {% include 'base/_items/green_tick.html' %}
                                     {% else %}
                                     {% include 'base/_items/red_cross.html' %}
-                                    {%endif%}
+                                    {% endif %}
                                 </td>
                                 <td class="text-center">
                                     <label class="switch s-icons s-outline s-outline-info">

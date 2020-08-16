@@ -55,20 +55,8 @@ def start_scan_ui(request, host_id):
     if request.method == "POST":
         # get engine type
         engine_type = request.POST['scan_mode']
-        engine_object = get_object_or_404(EngineType, id=engine_type)
-        task = ScanHistory()
-        task.scan_status = 1
-        task.domain_name = domain
-        task.scan_type = engine_object
-        task.last_scan_date = timezone.now()
-        task.save()
-        # save last scan for domain model
-        domain.last_scan_date = timezone.now()
-        domain.save()
         # start the celery task
-        celery_task = doScan.delay(task.id, domain.id)
-        task.celery_id = celery_task.id
-        task.save()
+        celery_task = doScan.delay(host_id, engine_type)
         messages.add_message(
             request,
             messages.INFO,
@@ -152,7 +140,7 @@ def stop_scan(request, id):
     obj = get_object_or_404(ScanHistory, celery_id=id)
     if request.method == "POST":
         # stop the celery task
-        app.control.revoke(id, terminate=True)
+        app.control.revoke(id, terminate=True, signal='SIGKILL')
         obj.scan_status = 3
         obj.save()
         messageData = {'status': 'true'}
