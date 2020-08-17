@@ -37,6 +37,7 @@ services:
         depends_on:
             - web
             - db
+            - redis
         secrets:
             - source: proxy.ca
               target: /etc/nginx/certs/rengine_chain.pem
@@ -58,10 +59,12 @@ services:
         build: .
         command: celery -A reNgine worker -l info
         volumes:
-            - .:/usr/src/app/
-            - media_volume:/app/tools/scan_results
+            - ./celery_storage:/celery_storage
         environment:
             - DEBUG=1
+        volumes:
+            - static_volume:/app/staticfiles
+            - media_volume:/app/tools/scan_results
         depends_on:
             - redis
         networks:
@@ -69,9 +72,6 @@ services:
     celery-beat:
         build: .
         command: celery -A reNgine beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-        volumes:
-            - .:/usr/src/app/
-            - media_volume:/app/tools/scan_results
         environment:
             - DEBUG=1
         depends_on:
