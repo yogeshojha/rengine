@@ -13,8 +13,8 @@ urlpatterns = [
         name="scan_history"),
     path(
         'scheduled/',
-        views.schedule_scan_view,
-        name="scheduled_scan"),
+        views.scheduled_scan_view,
+        name="scheduled_scan_view"),
     path(
         'detail/<int:id>',
         views.detail_scan,
