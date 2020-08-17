@@ -40,27 +40,6 @@ Schedule Scan for {{domain.domain_name}}
                             <option value="clocked">Clocked Scan</option>
                         </select>
                         <div class="widget-content widget-content-area animated-underline-content">
-                            <ul class="nav nav-tabs  mb-3" id="animateLine" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" id="periodic-tab" data-toggle="tab" href="#periodic-div" role="tab" aria-controls="periodic-tab" aria-selected="true">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-refresh-cw">
-                                            <polyline points="23 4 23 10 17 10"></polyline>
-                                            <polyline points="1 20 1 14 7 14"></polyline>
-                                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                                        </svg> Periodic Scan
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="clocked-tab" data-toggle="tab" href="#clocked-div" role="tab" aria-controls="clocked-tab" aria-selected="false">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch">
-                                            <circle cx="12" cy="12" r="7"></circle>
-                                            <polyline points="12 9 12 12 13.5 13.5"></polyline>
-                                            <path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path>
-                                        </svg> Clocked Scan
-                                    </a>
-                                </li>
-                            </ul>
-
                             <div class="tab-content" id="animateLineContent-4">
                                 <div class="tab-pane fade show active" id="periodic-div" role="tabpanel" aria-labelledby="periodic-tab-tab">
                                     <div class="mb-4">
@@ -85,8 +64,10 @@ Schedule Scan for {{domain.domain_name}}
                                     <div class="mb-4">
                                         <p>Run scan exactly at</p>
                                         <div class="row">
-                                            <div class="form-group mb-0">
-                                                <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time">
+                                            <div class="col-12">
+                                                <div class="form-group mb-0">
+                                                    <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -228,24 +209,20 @@ var dateTimepicker = flatpickr(document.getElementById('clockedTime'), {
 function schedulerChanged(selectObject){
     selectedValue = selectObject.value;
     if (selectedValue == 'periodic') {
-        var periodicTab = document.getElementById("periodic-tab");
-        periodicTab.classList.add("active");
-        periodicTab.classList.remove("disabled");
-        periodicTab.click();
-        var clockedTab = document.getElementById("clocked-tab");
-        clockedTab.classList.add("disabled");
-        clockedTab.classList.remove("active");
-
+        var clockedDiv = document.getElementById("clocked-div");
+        clockedDiv.classList.remove("show");
+        clockedDiv.classList.remove("active");
+        var periodicDiv = document.getElementById("periodic-div");
+        periodicDiv.classList.add("show");
+        periodicDiv.classList.add("active");
     }
     else if (selectedValue == 'clocked') {
-        var periodicTab = document.getElementById("periodic-tab");
-        periodicTab.classList.add("disabled");
-        periodicTab.classList.remove("active");
-        var clockedTab = document.getElementById("clocked-tab");
-        clockedTab.click();
-        clockedTab.classList.add("active");
-        clockedTab.classList.remove("disabled");
-
+        var periodicDiv = document.getElementById("periodic-div");
+        periodicDiv.classList.remove("show");
+        periodicDiv.classList.remove("active");
+        var clockedDiv = document.getElementById("clocked-div");
+        clockedDiv.classList.add("show");
+        clockedDiv.classList.add("active");
     }
 }
 </script>
