@@ -35,7 +35,7 @@ Schedule Scan for {{domain.domain_name}}
                 <div class="form-row">
                     <div class="col-md-12 mb-4">
                         <h6 class="mb-4">Choose the scheduler</h6>
-                        <select class="selectpicker" data-width='100%' onchange="schedulerChanged(this)">
+                        <select class="selectpicker" data-width='100%' onchange="schedulerChanged(this)" name="scheduled_mode">
                             <option value="periodic">Periodic Scan</option>
                             <option value="clocked">Clocked Scan</option>
                         </select>
@@ -46,15 +46,15 @@ Schedule Scan for {{domain.domain_name}}
                                         <p>Run scan every</p>
                                         <div class="row">
                                             <div class='col-4'>
-                                                <input id="t-text" type="number" name="frequency" placeholder="10" class="form-control" required="">
+                                                <input id="t-text" type="number" name="frequency" placeholder="10" class="form-control">
                                             </div>
                                             <div class='col-8'>
-                                                <select class="selectpicker" data-width='100%'>
-                                                    <option>Minutes</option>
-                                                    <option>Hours</option>
-                                                    <option>Days</option>
-                                                    <option>Weeks</option>
-                                                    <option>Months</option>
+                                                <select class="selectpicker" data-width='100%' name="frequency_type">
+                                                    <option value="minutes">Minutes</option>
+                                                    <option value="hours">Hours</option>
+                                                    <option value="days">Days</option>
+                                                    <option value="weeks">Weeks</option>
+                                                    <option value="months">Months</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -66,7 +66,7 @@ Schedule Scan for {{domain.domain_name}}
                                         <div class="row">
                                             <div class="col-12">
                                                 <div class="form-group mb-0">
-                                                    <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time">
+                                                    <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time" name="scheduled_time">
                                                 </div>
                                             </div>
                                         </div>

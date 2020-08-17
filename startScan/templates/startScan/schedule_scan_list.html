@@ -43,7 +43,7 @@ Scheduled Scan
                         <thead>
                             <tr>
                                 <th class="checkbox-column">Serial Number</th>
-                                <th>Name</th>
+                                <th>Description</th>
                                 <th>Frequency</th>
                                 <th>Last Run</th>
                                 <th class="text-center">Run Count</th>
@@ -56,7 +56,9 @@ Scheduled Scan
                             {% for task in scheduled_tasks %}
                             <tr>
                                 <td class="checkbox-column"> {{ task.id }} </td>
-                                <td>{{ task.name }}</td>
+                                {% with task_name=task.name|split:":" %}
+                                <td>{{ task_name.0|title }}</td>
+                                {% endwith %}
                                 <td>{{ task.interval }}</td>
                                 <td>{{ task.last_run_at|none_or_never }}</td>
                                 <td class="text-center">{{ task.total_run_count }}</td>
