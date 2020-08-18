@@ -9,7 +9,9 @@ djangorestframework-datatables
 django-ace
 pyyaml
 django-login-required-middleware
+
 django_heroku
 dj_database_url
 gunicorn 
 whitenoise
+

@@ -36,8 +36,10 @@
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
+  * [Generate SSL Certificate](#generate-certificates)
+  * [Building reNgine](#build-rengine)
   * [Register Account](#register-account)
-  * [VPS HTTPS Installation](#vps-https-installation)
+  * [Update reNgine](#how-to-update)
 * [Usage](#usage)
 * [Contributing](#contributing)
 * [License](#license)
@@ -89,13 +91,14 @@ reNgine is not a:
 Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
 
 ### Flow
+
 ![](https://user-images.githubusercontent.com/17223002/86907633-fd467480-c132-11ea-82ac-35eb071a7453.png)
 
 ## Getting Started
 
 To get a local copy up and running, follow these simple example steps.
 
-```sh
+```shell
 git clone https://github.com/yogeshojha/rengine.git
 cd rengine
 ```
@@ -106,48 +109,96 @@ cd rengine
   * Install docker based on your OS from [here](https://www.docker.com/get-started)
 * docker-compose
   * Installation instructions for docker-compose from [here](https://docs.docker.com/compose/install/)
+* make
 
 ### Installation
 
-Assuming that you have followed the above steps and inside rengine directory
-```sh
-docker-compose up --build
+##### Installation instructions has been changed, please read the documentation carefully.
+
+There are currently two ways of setting up the reNgine. Using Makefile is the easiest and is recommended:
+
+![makefile](https://user-images.githubusercontent.com/8843222/88650319-e7402a00-d0c8-11ea-9ed8-4b1193862efe.png)
+
+If you are setting up inside VPS with https, Makefile makes process so much simpler.
+
+The [dotenv](.env) file should be updated when setting up reNgine, for example:
+
+```env
+AUTHORITY_NAME=reNgine
+AUTHORITY_PASSWORD=nSrmNkwT
+COMPANY=reNgine
+DOMAIN_NAME=recon.example.com
+COUNTRY_CODE=US
+STATE=Georgia
+CITY=Atlanta
 ```
+
+Edit the file using your favourite editor (e.g. `nano .env` or `vim .env`).
+
+Then use the `make cert` command to generate the certificate (inside the [secrets/certs](secrets/certs) folder). Assuming that you are inside the reNgine directory, generate the certificates using the following command.
+
+#### Generate Certificates
+
+```shell
+make certs
+```
+
+Once certificates are generated, you can run reNgine with https.
+
+#### Build reNgine
+
+```shell
+make build
+```
+
 The build process may take some time.
 
 Alternatively, you also can run the project with pre-built Docker images (with 2FA enabled, you have to [create a new personal access token](https://github.com/settings/tokens/new) with `read:packages` scope):
 
-```sh
-docker login docker.pkg.github.com
-docker-compose pull
-docker-compose up
+```shell
+make pull
 ```
 
-Once the setup is done, you need to setup the password.
-
-### Register Account
-
-Once the application is up and running, you need an account for reNgine. This can be easily created using `createsuperuser` from Django.
-Open a new terminal tab, and run the following command:
-
-`docker exec -it rengine_web_1 python manage.py createsuperuser`
-
-You may now enter your username and password. Remember to keep a secure password.
-
-## Usage
+#### Usage
 
 > :warning: reNgine does fingerprinting, port scanning, and banner grabbing, which might be illegal in some countries. Please make sure you are authorized to perform reconnaissance on the targeted domain before using this tool.
 
-If the installation is successful, then you can run reNgine by using the command
-```sh
-docker-compose up -d
+If build process is successful, you can run reNgine by using the command
+
+```shell
+make up
 ```
 
-The web application can then be accessed from [http://localhost:8000](http://localhost:8000)
+The web application can then be accessed from [https://127.0.0.1](https://127.0.0.1), or on your VPS, `https://your_ip`
 
-## VPS HTTPS Installation
+#### Registering Account
 
-If you are considering to install on VPS with https, here is an awesome blog written by @J0_mart [https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/](https://www.jomar.fr/posts/2020/07/en-install-rengine-with-nginx-and-ssl-auto-renew/)
+Once the application is up and running, you need an account for reNgine:
+
+```shell
+make username
+```
+
+You may now enter your username and password. Remember to keep a secure password.
+
+#### How to update
+
+We may add new features and fixes regularly. To get the latest version of reNgine up and running, you need to follow the following steps:
+
+* Get the latest changes
+Assuming that you are inside reNgine directory:
+
+```shell
+git pull
+```
+
+* Build the latest changes
+
+```shell
+make build
+```
+
+That is all, you can then run `make up` to run the latest version of reNgine.
 
 ## Contributing
 
@@ -156,6 +207,7 @@ Contributions are what make the open-source community such an amazing place to l
 See [contributing guide](.github/CONTRIBUTING.md) to get started.
 
 ### First-time Open Source contributors
+
 Please note that reNgine is beginner-friendly. If you have never done any open-source yet, we encourage you to do so. **We will be happy and proud of your first PR ever.**
 
 You can begin with resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
