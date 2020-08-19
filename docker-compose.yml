@@ -15,7 +15,7 @@ services:
             - rengine_network
     web:
         restart: always
-        image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+        image: rengine-custom:latest
         build: .
         command: gunicorn reNgine.wsgi:application --bind 0.0.0.0:8000
         volumes:
