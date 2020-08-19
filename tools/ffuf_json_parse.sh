@@ -1,0 +1,2 @@
+cat $1 | gron | grep -E (length|redirectlocation|status|\"FUZZ\"|json.config.url|.input.FUZZ) | sed 's/input.FUZZ/path/g' | sed 's/redirectlocation/redirect/g' | sed 's/length/content-length/g' | grep -vE "(json.config.inputproviders\[0\]|json.config.matchers.)" | gron -u | jq '{(.config.url): .results}' > bak-$1
+rm $1 && mv bak-$1 $1

@@ -28,7 +28,7 @@ ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
 
 # Download Go packages
-RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler github.com/haccer/subjack
+RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler github.com/haccer/subjack github.com/ffuf/ffuf
 
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
