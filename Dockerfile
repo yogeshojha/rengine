@@ -53,6 +53,8 @@ RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
+RUN chmod +x /app/tools/ffuf_json_parse.sh
+RUN chmod +x /app/tools/get_ffufdirs.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
