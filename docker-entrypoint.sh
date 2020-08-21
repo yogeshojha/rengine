@@ -1,5 +1,6 @@
 #!/bin/sh
-
+redis-server &
+#cd /app && celery --app=startScan worker --loglevel=info &
 if [ "$DATABASE" = "postgres" ]
 then
     echo "Waiting for postgres..."

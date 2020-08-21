@@ -35,8 +35,11 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau \
 	github.com/projectdiscovery/nuclei/v2/cmd/nuclei
-	
-	
+
+# install redis for celery
+RUN apk add redis supervisor
+RUN echo 'daemonize yes' >> /etc/redis.conf
+
 # Ajout de template nuclei
 RUN git clone https://github.com/projectdiscovery/nuclei-templates /app/tools/nuclei-templates
 RUN nuclei -update-templates

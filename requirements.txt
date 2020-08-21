@@ -16,3 +16,6 @@ idna==2.9
 urllib3==1.25.8
 colored
 tldextract
+celery
+redis
+django-celery
