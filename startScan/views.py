@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
-from django_celery_beat.models import PeriodicTask, IntervalSchedule
+from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSchedule
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -72,61 +72,6 @@ def start_scan_ui(request, host_id):
         'engines': engine,
         'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_scan_ui.html', context)
-
-
-def schedule_scan(request, host_id):
-    domain = get_object_or_404(Domain, id=host_id)
-    if request.method == "POST":
-        # get engine type
-        engine_type = int(request.POST['scan_mode'])
-        engine_object = get_object_or_404(EngineType, id=engine_type)
-        if request.POST['scheduled_mode'] == 'periodic':
-            # periodic task
-            frequency_value = int(request.POST['frequency'])
-            frequency_type = request.POST['frequency_type']
-            if frequency_type == 'minutes':
-                period = IntervalSchedule.MINUTES
-            elif frequency_type == 'hours':
-                period = IntervalSchedule.HOURS
-            elif frequency_type == 'days':
-                period = IntervalSchedule.DAYS
-            elif frequency_type == 'weeks':
-                period = IntervalSchedule.DAYS
-                frequency_value *= 7
-            elif frequency_type == 'months':
-                period = IntervalSchedule.DAYS
-                frequency_value *= 30
-
-            task_name = engine_object.engine_name + ' for ' + \
-                domain.domain_name + \
-                ':' + \
-                str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
-
-            schedule, created = IntervalSchedule.objects.get_or_create(
-                                            every=frequency_value,
-                                            period=period,)
-            PeriodicTask.objects.create(interval=schedule,
-                                        name=task_name,
-                                        task='reNgine.tasks.doScan',
-                                        args=[host_id, engine_type])
-        elif request.POST['scheduled_mode'] == 'clocked':
-            # clocked task
-            pass
-        messages.add_message(
-            request,
-            messages.INFO,
-            'Scan Scheduled for ' +
-            domain.domain_name)
-        return HttpResponseRedirect(reverse('scheduled_scan_view'))
-    engine = EngineType.objects
-    custom_engine_count = EngineType.objects.filter(
-        default_engine=False).count()
-    context = {
-        'scan_history_active': 'true',
-        'domain': domain,
-        'engines': engine,
-        'custom_engine_count': custom_engine_count}
-    return render(request, 'startScan/schedule_scan_ui.html', context)
 
 
 def export_subdomains(request, scan_id):
@@ -210,6 +155,67 @@ def stop_scan(request, id):
             messages.INFO,
             'Oops! something went wrong!')
     return JsonResponse(messageData)
+
+
+def schedule_scan(request, host_id):
+    domain = get_object_or_404(Domain, id=host_id)
+    if request.method == "POST":
+        # get engine type
+        engine_type = int(request.POST['scan_mode'])
+        engine_object = get_object_or_404(EngineType, id=engine_type)
+        task_name = engine_object.engine_name + ' for ' + \
+            domain.domain_name + \
+            ':' + \
+            str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+        if request.POST['scheduled_mode'] == 'periodic':
+            # periodic task
+            frequency_value = int(request.POST['frequency'])
+            frequency_type = request.POST['frequency_type']
+            if frequency_type == 'minutes':
+                period = IntervalSchedule.MINUTES
+            elif frequency_type == 'hours':
+                period = IntervalSchedule.HOURS
+            elif frequency_type == 'days':
+                period = IntervalSchedule.DAYS
+            elif frequency_type == 'weeks':
+                period = IntervalSchedule.DAYS
+                frequency_value *= 7
+            elif frequency_type == 'months':
+                period = IntervalSchedule.DAYS
+                frequency_value *= 30
+
+            schedule, created = IntervalSchedule.objects.get_or_create(
+                                            every=frequency_value,
+                                            period=period,)
+            PeriodicTask.objects.create(interval=schedule,
+                                        name=task_name,
+                                        task='reNgine.tasks.doScan',
+                                        args=[host_id, engine_type])
+        elif request.POST['scheduled_mode'] == 'clocked':
+            # clocked task
+            schedule_time = request.POST['scheduled_time']
+            clock, created = ClockedSchedule.objects.get_or_create(
+                                            clocked_time=schedule_time,)
+            PeriodicTask.objects.create(clocked=clock,
+                                        one_off=True,
+                                        name=task_name,
+                                        task='reNgine.tasks.doScan',
+                                        args=[host_id, engine_type])
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scan Scheduled for ' +
+            domain.domain_name)
+        return HttpResponseRedirect(reverse('scheduled_scan_view'))
+    engine = EngineType.objects
+    custom_engine_count = EngineType.objects.filter(
+        default_engine=False).count()
+    context = {
+        'scan_history_active': 'true',
+        'domain': domain,
+        'engines': engine,
+        'custom_engine_count': custom_engine_count}
+    return render(request, 'startScan/schedule_scan_ui.html', context)
 
 
 def scheduled_scan_view(request):

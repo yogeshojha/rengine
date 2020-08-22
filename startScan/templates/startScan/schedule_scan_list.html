@@ -77,7 +77,7 @@ Scheduled Scan
                                     </label>
                                 </td>
                                 <td class="text-center">
-                                    <a onclick="deleteScheduledScan({{ task.id }}, '{{ task.name }}')" class="bs-tooltip btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
+                                    <a onclick="deleteScheduledScan({{ task.id }}, '{% with task_name=task.name|split:":" %}{{ task_name.0 }}{% endwith %}')" class="bs-tooltip btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                                             <circle cx="12" cy="12" r="10"></circle>
                                             <line x1="15" y1="9" x2="9" y2="15"></line>
