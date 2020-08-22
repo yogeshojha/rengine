@@ -59,7 +59,13 @@ Scheduled Scan
                                 {% with task_name=task.name|split:":" %}
                                 <td>{{ task_name.0|title }}</td>
                                 {% endwith %}
-                                <td>{{ task.interval }}</td>
+                                <td>
+                                    {% if task.interval %}
+                                    Will run  {{ task.interval }}
+                                    {% elif task.clocked %}
+                                    Will run exactly at {{ task.clocked.clocked_time}}
+                                    {% endif %}
+                                </td>
                                 <td>{{ task.last_run_at|none_or_never }}</td>
                                 <td class="text-center">{{ task.total_run_count }}</td>
                                 <td class="text-center">
