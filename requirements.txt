@@ -18,4 +18,3 @@ colored
 tldextract
 celery
 redis
-django-celery

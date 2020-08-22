@@ -10,6 +10,8 @@ from django.utils import timezone, dateformat
 from django.conf import settings
 from datetime import datetime
 from reNgine.task import doScan
+from celery.result import AsyncResult
+from celery.task.control import revoke
 import os
 import traceback
 import json
@@ -39,6 +41,21 @@ def detail_scan(request, id):
     endpoint_alive_count = WayBackEndPoint.objects.filter(
         url_of__id=id, http_status__exact=200).count()
     history = get_object_or_404(ScanHistory, id=id)
+    #idTaskHistory = ScanHistory.objects.get(id=id)
+    if request.method == "POST":
+        idTaskStop = request.GET['task_scan_id']
+        if(history.scan_task_id != '-1' and idTaskStop==history.scan_task_id):
+            stopTask(history.scan_task_id)
+            scan_failed(history)
+            history = get_object_or_404(ScanHistory, id=id)
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Scan task stoped')
+    if(history.scan_task_id == '-1'):
+        status = 'Unable to get task status'
+    else:
+        status = taskStatus(history.scan_task_id)
     context = {'scan_history_active': 'true',
                'scan_history': scan_history,
                'scan_activity': scan_activity,
@@ -48,7 +65,9 @@ def detail_scan(request, id):
                'endpoint_count': endpoint_count,
                'endpoint_alive_count': endpoint_alive_count,
                'history': history,
+               'status':status,
                }
+
     return render(request, 'startScan/detail_scan.html', context)
 
 
@@ -139,11 +158,14 @@ def export_urls(request, scan_id):
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
+        if(obj.scan_task_id != '-1'):
+            stopTask(obj.scan_task_id)
         delete_dir = obj.domain_name.domain_name + '_' + \
             str(datetime.strftime(obj.last_scan_date, '%Y_%m_%d_%H_%M_%S'))
         delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
         os.system('rm -rf ' + delete_path)
         obj.delete()
+
         messageData = {'status': 'true'}
         messages.add_message(
             request,
@@ -156,3 +178,16 @@ def delete_scan(request, id):
             messages.INFO,
             'Oops! something went wrong!')
     return JsonResponse(messageData)
+
+
+def taskStatus(idTask):
+    res = AsyncResult(idTask)
+    return res.state
+
+def stopTask(idTask):
+    revoke(idTask, terminate=True)
+
+
+def scan_failed(task):
+    task.scan_status = 0
+    task.save()

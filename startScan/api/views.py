@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
+
 class ScanHistoryViewSet(viewsets.ModelViewSet):
     queryset = ScannedHost.objects.all()
     serializer_class = ScanHistorySerializer
@@ -47,3 +48,5 @@ class VulnerabilityScannerViewSet(viewsets.ModelViewSet):
             return self.queryset
         else:
             return self.queryset
+
+

@@ -15,6 +15,7 @@ def doScan(host_id, domain):
     from django.conf import settings
     from datetime import datetime
     from reNgine.task import doScan
+    from os import path
     import os
     import traceback
     import json
@@ -240,27 +241,28 @@ def doScan(host_id, domain):
         create_scan_activity(task, "Visual Recon - Screenshot", 1)
         if(task.scan_type.vulnerability_scanner):
             nuclei_results_file = results_dir + current_scan_dir + '/nuclei.json'
-            nuclei_command = 'cat {} | httpx | nuclei -json -t /app/tools/nuclei-templates -o {}'.format(
+            nuclei_command = 'cat {} | httpx | nuclei -json -t /root/nuclei-templates -o {}'.format(
                 subdomain_scan_results_file, nuclei_results_file)
             os.system(nuclei_command)
-            nuclei_urls_json_result = open(nuclei_results_file, 'r')
-            lines = nuclei_urls_json_result.readlines()
-            for line in lines:
-                try:
-                    json_st = json.loads(line.strip())
-                    endpoint = ScanVulnerability()
-                    endpoint.scan_id = task
-                    endpoint.template = json_st['template']
-                    endpoint.type = json_st['type']
-                    endpoint.severity = json_st['severity']
-                    endpoint.matched = json_st['matched']
-                    if 'matcher_name' in json_st:
-                        endpoint.matcher = json_st['matcher_name']
-                    else:
-                        endpoint.matcher = ''
-                    endpoint.save()
-                except ValueError as e:
-                    print(e)
+            if(path.isfile(nuclei_results_file)):
+                nuclei_urls_json_result = open(nuclei_results_file, 'r')
+                lines = nuclei_urls_json_result.readlines()
+                for line in lines:
+                    try:
+                        json_st = json.loads(line.strip())
+                        endpoint = ScanVulnerability()
+                        endpoint.scan_id = task
+                        endpoint.template = json_st['template']
+                        endpoint.type = json_st['type']
+                        endpoint.severity = json_st['severity']
+                        endpoint.matched = json_st['matched']
+                        if 'matcher_name' in json_st:
+                            endpoint.matcher = json_st['matcher_name']
+                        else:
+                            endpoint.matcher = ''
+                        endpoint.save()
+                    except ValueError as e:
+                        print(e)
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
         output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'

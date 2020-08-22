@@ -15,7 +15,7 @@
 {% endblock custom_js_css_link %} {% block breadcrumb_title %} Detailed Scan for {{history.domain_name}} {% endblock breadcrumb_title %} {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mt-2">
+        <div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 mt-2">
             <div class="widget widget-activity-four">
                 <div class="widget-heading">
                     <h5>Recent Activities</h5>
@@ -44,6 +44,29 @@
                 </div>
             </div>
         </div>
+        <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 col-12 mt-2">
+        <div class="widget widget-activity-four">
+            <div class="widget-heading">
+                <h5>Task status</h5>
+            </div>
+            <div class="widget-content">
+                <div class="mt-container mx-auto">
+                    <div class="timeline-line">
+                                {% if status == 'PENDING' or status == 'STARTED' %}<span class="badge badge-info">{{status}}</span><br><br><button type="button" class="btn btn-danger" onclick="stopTask('{{history.scan_task_id}}')">Stop Task</button>
+                                {% elif status == 'SUCCESS' %}<span class="badge badge-success">{{status}}</span>
+                                {% elif status == 'RETRY' %}<span class="badge badge-warning">{{status}}</span>
+                                {% elif status == 'FAILURE' or status == 'REVOKED' %}<span class="badge badge-danger">{{status}}</span>
+                                {% else %} failed to get task status;
+                                {% endif %}
+
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-one_hybrid">
                 <div class="widget-heading">
@@ -153,7 +176,7 @@
             </div>
         </div>
     </div>
-
+{% csrf_token %}
 </div>
 {% endblock main_content %} {% block page_level_script %}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
@@ -165,6 +188,19 @@
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
+
+  function stopTask(id){
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '?task_scan_id='+id;
+    const hiddenField = document.createElement('input');
+    hiddenField.type = 'hidden';
+    hiddenField.name = 'csrfmiddlewaretoken';
+    hiddenField.value = document.getElementsByName('csrfmiddlewaretoken')[0].value
+    form.appendChild(hiddenField);
+    document.body.appendChild(form);
+    form.submit()
+  }
     // collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
     if ($(window).width() > 992) {
         $(document).ready(function() {

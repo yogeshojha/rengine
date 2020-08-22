@@ -1,6 +1,6 @@
 #!/bin/sh
 redis-server &
-cd /app && export C_FORCE_ROOT=1 && celery --app=startScan worker --loglevel=info &
+cd /app && export C_FORCE_ROOT=1 && celery --app=reNgine worker --loglevel=info &
 if [ "$DATABASE" = "postgres" ]
 then
     echo "Waiting for postgres..."
