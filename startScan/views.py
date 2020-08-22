@@ -185,8 +185,8 @@ def schedule_scan(request, host_id):
                 frequency_value *= 30
 
             schedule, created = IntervalSchedule.objects.get_or_create(
-                                            every=frequency_value,
-                                            period=period,)
+                every=frequency_value,
+                period=period,)
             PeriodicTask.objects.create(interval=schedule,
                                         name=task_name,
                                         task='reNgine.tasks.doScan',
@@ -195,7 +195,7 @@ def schedule_scan(request, host_id):
             # clocked task
             schedule_time = request.POST['scheduled_time']
             clock, created = ClockedSchedule.objects.get_or_create(
-                                            clocked_time=schedule_time,)
+                clocked_time=schedule_time,)
             PeriodicTask.objects.create(clocked=clock,
                                         one_off=True,
                                         name=task_name,
@@ -221,9 +221,9 @@ def schedule_scan(request, host_id):
 def scheduled_scan_view(request):
     scheduled_tasks = PeriodicTask.objects.all().exclude(name='celery.backend_cleanup')
     context = {
-                'scheduled_scan_active': 'true',
-                'scheduled_tasks': scheduled_tasks,
-            }
+        'scheduled_scan_active': 'true',
+        'scheduled_tasks': scheduled_tasks,
+    }
     return render(request, 'startScan/schedule_scan_list.html', context)
 
 
