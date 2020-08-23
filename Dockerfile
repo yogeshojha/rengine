@@ -29,12 +29,21 @@ ENV PATH="${PATH}:${GOPATH}/bin"
 
 # Download Go packages
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler github.com/haccer/subjack
+RUN rm -Rf /app/tools/ParamSpider
 RUN git clone https://github.com/devanshbatham/ParamSpider /app/tools/ParamSpider
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau \
-	github.com/projectdiscovery/nuclei/v2/cmd/nuclei
+	  github.com/projectdiscovery/nuclei/v2/cmd/nuclei \
+    github.com/tomnomnom/gf
+
+
+# install template gf
+RUN git clone https://github.com/1ndianl33t/Gf-Patterns /app/tools/Gf-Patterns
+RUN mkdir /root/.gf
+RUN mv /app/tools/Gf-Patterns/*.json /root/.gf/
+RUN rm -Rf /appt/Gf-Patterns
 
 # install redis for celery
 RUN apk add redis supervisor

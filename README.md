@@ -220,7 +220,7 @@ It is distributed under the GNU GPL v3 license License. See [LICENSE](LICENSE) f
 reNgine is just a pipeline of recon. reNgine would not have been possible without the following individuals/organizations.
 
 * Amass : [OWASP](https://github.com/OWASP/)
-* httpx, subfinder, naabu : [ProjectDiscovery](https://github.com/projectdiscovery/)
+* httpx, subfinder, naabu, nuclei, nuclei-templates : [ProjectDiscovery](https://github.com/projectdiscovery/)
 * Sublist3r : [Ahmed Aboul-Ela](https://github.com/aboul3la/)
 * assetfinder : [Tom Hudson](https://github.com/tomnomnom/assetfinder)
 * gau : [Corben Leo](https://github.com/lc)
@@ -229,5 +229,8 @@ reNgine is just a pipeline of recon. reNgine would not have been possible withou
 * subjack : [haccer](https://github.com/haccer/subjack)
 * paramspider : [devanshbatham](https://github.com/devanshbatham/ParamSpider)
 * github-subdomains.py : [gwen001](https://github.com/gwen001/github-search/blob/master/github-subdomains.py)
+* gf [tomnomnom](https://github.com/tomnomnom/gf)
+* gf-template [1ndianl33t](https://github.com/1ndianl33t/Gf-Patterns)
+
 
 Also, some of the icons and images used herein reNgine are from Freepik and Flaticon.
