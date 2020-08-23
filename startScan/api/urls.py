@@ -12,6 +12,7 @@ router.register(r'listEndpoints', EndPointViewSet)
 
 router.register(r'listVulnerability', VulnerabilityScannerViewSet)
 
+
 urlpatterns = [
     url('^', include(router.urls)),
 

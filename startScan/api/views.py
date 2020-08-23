@@ -48,5 +48,3 @@ class VulnerabilityScannerViewSet(viewsets.ModelViewSet):
             return self.queryset
         else:
             return self.queryset
-
-

@@ -1,6 +1,7 @@
 from django import template
 from urllib.parse import urlparse
 
+
 register = template.Library()
 
 
@@ -21,3 +22,12 @@ def getpath(value):
         return parsed_url.path + '?' + parsed_url.query
     else:
         return parsed_url.path
+
+@register.filter(name='getitem')
+def getitem(dictionary, key):
+    return dictionary.get(key)
+
+
+@register.simple_tag
+def setvar(val=None):
+  return val

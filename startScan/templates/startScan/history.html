@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load custom_tags %}
 
 {% block title %}
 Scan history
@@ -39,6 +40,7 @@ Scan History
                             <tr>
                                 <th>Serial</th>
                                 <th>Domain Name</th>
+                                <th>Vuln scan</th>
                                 <th>Scan Type</th>
                                 <th>Last Scanned On</th>
                                 <th class="text-center">Status</th>
@@ -50,6 +52,28 @@ Scan History
                             <tr>
                                 <td class="checkbox-column"> {{ scan_history.id }} </td>
                                 <td>{{ scan_history.domain_name }}</td>
+                                <td>{% if scan_history.id in vuln  %}
+                                      {% setvar 0 as info %}
+                                      {% setvar 0 as low %}
+                                      {% setvar 0 as medium %}
+                                      {% setvar 0 as high %}
+                                      {% setvar 0 as critical %}
+                                      {% for i in vuln|getitem:scan_history.id %}
+                                        {% if i.severityLowercase == 'informative' %}
+                                            <span class='shadow-none badge-pills badge badge-success'>{{i.count}}</span>
+                                        {% elif i.severityLowercase == 'low' %}
+                                        <span class='shadow-none badge-pills badge badge-info' style='color: #17a2b8;border:2px dashed #17a2b8;'>{{i.count}}</span>
+                                        {% elif i.severityLowercase == 'medium' %}
+                                        <span class='shadow-none badge-pills badge badge-warning'style='color: #e2a03f;border:2px dashed #e2a03f;'>{{i.count}}</span>
+                                        {% elif i.severityLowercase == 'high' %}
+                                        <span class='shadow-none badge-pills badge badge-danger' style="color: #e7515a;border:2px dashed #e7515a;">{{i.count}}</span>
+                                        {% elif i.severityLowercase == 'critical' %}
+                                        <span class='shadow-none badge-pills badge badge-dark' style="color: #3b3f5c; border:2px dashed #3b3f5c;">{{i.count}}</span>
+                                        {% endif %}
+                                      {% endfor %}
+
+                                <!--  <span class='badge badge-pills badge-success'>0</span><span class='badge badge-pills badge-warning'>0</span><span class='badge badge-pills badge-danger'>0</span></td>-->
+                                  {% endif %}
                                 <td>{{ scan_history.scan_type }}</td>
                                 <td>{{ scan_history.last_scan_date }}</td>
                                 <td class="text-center">
@@ -111,7 +135,7 @@ c1 = $('#style-2').DataTable({
         "sLengthMenu": "Results :  _MENU_",
     },
     "lengthMenu": [5, 10, 20, 50],
-    "pageLength": 5
+    "pageLength": 50
 });
 multiCheck(c1);
 </script>

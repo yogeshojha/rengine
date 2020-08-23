@@ -31,37 +31,37 @@ services:
     proxy:
         restart: always
         image: nginx:alpine
-        ports:
-            - 8000:443/tcp
         depends_on:
             - web
             - db
-        secrets:
-            - source: proxy.ca
-              target: /etc/nginx/certs/rengine_chain.pem
-            - source: proxy.cert
-              target: /etc/nginx/certs/rengine.pem
-            - source: proxy.key
-              target: /etc/nginx/certs/rengine_rsa.key
         volumes:
-            - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
+            - ./config/nginx/rengine.conf:/etc/nginx/conf.d/default.conf:ro
             - static_volume:/app/staticfiles
             - media_volume:/app/tools/scan_results
         networks:
             - rengine_network
+            - traefik-proxy
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.recon.entrypoints=http"
+            - "traefik.http.routers.recon.rule=Host(`recon.wleberre.fr`)"
+            - "traefik.http.middlewares.recon-https-redirect.redirectscheme.scheme=https"
+            - "traefik.http.routers.recon.middlewares=secured@file"
+            - "traefik.http.routers.recon-secure.entrypoints=https"
+            - "traefik.http.routers.recon-secure.rule=Host(`recon.wleberre.fr`)"
+            - "traefik.http.routers.recon-secure.tls=true"
+            - "traefik.http.routers.recon-secure.tls.certresolver=http"
+            - "traefik.http.routers.recon-secure.service=recon"
+            - "traefik.http.services.recon.loadbalancer.server.port=80"
+            - "traefik.docker.network=traefik-proxy"
 
 networks:
     rengine_network:
+    traefik-proxy:
+        external:
+            name: traefik-proxy
 
 volumes:
     postgres_data:
     static_volume:
     media_volume:
-
-secrets:
-    proxy.ca:
-        file: ./secrets/certs/rengine_chain.pem
-    proxy.key:
-        file: ./secrets/certs/rengine_rsa.key
-    proxy.cert:
-        file: ./secrets/certs/rengine.pem

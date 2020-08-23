@@ -52,7 +52,7 @@
             <div class="widget-content">
                 <div class="mt-container mx-auto">
                     <div class="timeline-line">
-                                {% if status == 'PENDING' or status == 'STARTED' %}<span class="badge badge-info">{{status}}</span><br><br><button type="button" class="btn btn-danger" onclick="stopTask('{{history.scan_task_id}}')">Stop Task</button>
+                                {% if status == 'SENT' or status == 'STARTED' %}<span class="badge badge-info">{{status}}</span><br><br><button type="button" class="btn btn-danger" onclick="stopTask('{{history.scan_task_id}}')">Stop Task</button>
                                 {% elif status == 'SUCCESS' %}<span class="badge badge-success">{{status}}</span>
                                 {% elif status == 'RETRY' %}<span class="badge badge-warning">{{status}}</span>
                                 {% elif status == 'FAILURE' or status == 'REVOKED' %}<span class="badge badge-danger">{{status}}</span>
@@ -489,7 +489,7 @@
                 "render": function(data, type, row) {
                     // display badge based on http status
                     // green for http status 2XX, orange for 3XX and warning for everything else
-                    if (data == "informative" || data == "info") {
+                    if (data == "informative" || data == "info" || data == "low") {
                         return "<span class='badge badge-pills badge-success'>" + data + "</span>";
                     } else if (data == "medium") {
                         return "<span class='badge badge-pills badge-warning'>" + data + "</span>";
@@ -498,7 +498,7 @@
                         return "<span class='badge badge-pills badge-danger'>" + data + "</span>";;
                     } else if (data == "critical") {
                         // datatable throws error when no data is returned
-                        return "<span class='badge badge-pills badge-danger'>" + data + "</span>";;
+                        return "<span class='badge badge-pills badge-danger'>" + data + "</span>";
                     } else {
                         return "<span class='badge badge-pills badge-dark'>" + data + "</span>";
                     }

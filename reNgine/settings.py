@@ -17,7 +17,7 @@ CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'
 CELERY_RESULT_SERIALIZER = 'pickle'
-
+CELERY_STATE_DB = "/app/worker.db"
 
 
 
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'startScan.apps.StartscanConfig',
     'notification.apps.NotificationConfig',
     'django_ace',
+    #'celery_persistent_revokes.apps.CeleryPersistentRevokesConfig',
 ]
 
 MIDDLEWARE = [

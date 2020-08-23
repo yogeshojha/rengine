@@ -1,7 +1,10 @@
 from celery import shared_task, Celery
-from django.utils import timezone, dateformat
 
-@shared_task(serializer='pickle')
+from django.utils import timezone, dateformat
+from reNgine.celery import app
+
+
+@app.task(serializer='pickle')
 def doScan(host_id, domain):
     from django.shortcuts import render, get_object_or_404
     from django.contrib import messages

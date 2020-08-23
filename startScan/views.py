@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
+from django.db.models import Count
+from django.db.models.functions import Lower
 from .models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, ScanVulnerability
 from notification.models import NotificationHooks
 from targetApp.models import Domain
@@ -26,7 +28,11 @@ def index(request):
 
 def scan_history(request):
     host = ScanHistory.objects.all().order_by('-last_scan_date')
-    context = {'scan_history_active': 'true', "scan_history": host}
+    vuln = {}
+    for histo in host.all():
+        vuln[histo.id] = ScanVulnerability.objects.filter(scan_id__id=histo.id).values(severityLowercase=Lower('severity')).annotate(count=Count('severity')).order_by(Lower('severity').desc())
+
+    context = {'scan_history_active': 'true', "scan_history": host,"vuln":vuln}
     return render(request, 'startScan/history.html', context)
 
 
@@ -52,7 +58,7 @@ def detail_scan(request, id):
                 request,
                 messages.INFO,
                 'Scan task stoped')
-    if(history.scan_task_id == '-1'):
+    if(history.scan_task_id == '-1') or not checkIfExist(history.scan_task_id):
         status = 'Unable to get task status'
     else:
         status = taskStatus(history.scan_task_id)
@@ -75,7 +81,7 @@ def start_scan_ui(request, host_id):
     domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
         # get engine type
-        
+
         engine_type = request.POST['scan_mode']
         engine_object = get_object_or_404(EngineType, id=engine_type)
         task = ScanHistory()
@@ -185,9 +191,19 @@ def taskStatus(idTask):
     return res.state
 
 def stopTask(idTask):
-    revoke(idTask, terminate=True)
+    #revoke(idTask, terminate=True)
+    revoke(idTask, terminate=True, signal='SIGQUIT')
+    #revoke(idTask)
 
 
 def scan_failed(task):
     task.scan_status = 0
     task.save()
+
+
+def checkIfExist(idTask):
+    a = AsyncResult(idTask).state
+    if( a != 'PENDING'):
+        return a
+    else:
+        return False

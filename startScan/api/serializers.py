@@ -23,3 +23,4 @@ class VulnerabilityScannerSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScanVulnerability
         fields = '__all__'
+
