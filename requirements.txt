@@ -1,5 +1,5 @@
 Django==3.0.7
-psycopg2==2.8.5
+psycopg2==2.8.6
 validators
 argparse
 dnspython
