@@ -17,7 +17,7 @@ RUN apk update \
     && apk del build-deps
 
 
-# Download and install go 1.13
+# Download and install go 1.14
 COPY --from=golang:1.14-alpine /usr/local/go/ /usr/local/go/
 
 # Environment vars
@@ -35,9 +35,8 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/naabu/cmd/naabu \
     github.com/projectdiscovery/subfinder/cmd/subfinder \
     github.com/lc/gau \
-	  github.com/projectdiscovery/nuclei/v2/cmd/nuclei \
     github.com/tomnomnom/gf
-
+RUN go get -u -v github.com/projectdiscovery/nuclei/cmd/nuclei
 
 # install template gf
 RUN git clone https://github.com/1ndianl33t/Gf-Patterns /app/tools/Gf-Patterns
@@ -50,7 +49,6 @@ RUN apk add redis supervisor
 RUN echo 'daemonize yes' >> /etc/redis.conf
 
 # Ajout de template nuclei
-RUN git clone https://github.com/projectdiscovery/nuclei-templates /app/tools/nuclei-templates
 RUN nuclei -update-templates
 
 # Copy requirements
