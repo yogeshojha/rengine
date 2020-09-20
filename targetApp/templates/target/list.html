@@ -33,7 +33,7 @@ List all Target for Recon
                 </div>
             </div>
             <div class="widget-content widget-content-area">
-                <form method="POST" id="frm-example">
+                <form method="GET" id="multiple_targets_form">
                     <div class="table-responsive mb-4">
                         <table id="style-2" class="table style-2  table-hover">
                             <thead>
@@ -85,8 +85,8 @@ List all Target for Recon
                             </tbody>
                         </table>
                     </div>
-                    <input type="submit" class="btn btn-outline-warning mb-2 float-right">
                 </form>
+                <a class="btn btn-outline-info mb-2 float-right" href="#" onclick="scanMultipleTargets()">Scan Multiple Targets</a>
             </div>
         </div>
     </div>
@@ -104,11 +104,11 @@ List all Target for Recon
 // var e;
 table = $('#style-2').DataTable({
     headerCallback:function(e, a, t, n, s) {
-        e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto targets_checkbox">\n<input type="checkbox" class="new-control-input chk-parent select-customers-info" id="head_checkbox">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+        e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent" id="head_checkbox">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
     },
     columnDefs:[ {
         targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-            return'<label class="new-control new-checkbox checkbox-outline-info m-auto targets_checkbox">\n<input type="checkbox" name="targets_checkbox" class="new-control-input child-chk select-customers-info" value="' + e + '">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+            return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox" class="new-control-input child-chk targets_checkbox" value="' + e + '">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
         }
     }],
     "oLanguage": {
@@ -126,13 +126,9 @@ multiCheck(table);
 $('#frm-example').on('submit', function(e){
    var form = this;
 
-   // Iterate over all checkboxes in the table
    table.$('input[type="checkbox"]').each(function(){
-      // If checkbox doesn't exist in DOM
       if(!$.contains(document, this)){
-         // If checkbox is checked
          if(this.checked){
-            // Create a hidden element
             $(form).append(
                $('<input>')
                   .attr('type', 'hidden')
@@ -142,11 +138,34 @@ $('#frm-example').on('submit', function(e){
          }
       }
    });
-   $('#example-console').text($(form).serialize());
-     console.log("Form submission", $(form).serialize());
-
-     // Prevent actual form submission
      e.preventDefault();
 });
+
+
+function scanMultipleTargets()
+{
+    // logic can be improved
+    // this function will check if atleast one checkbox for multiple targets are
+    // checked or not
+    item = document.getElementsByClassName("targets_checkbox");
+    checkedCount = 0;
+    for (var i = 0; i < item.length; i++) {
+        if (item[i].checked) {
+            checkedCount++;
+        }
+    }
+    if (!checkedCount) {
+        swal({
+            title: '',
+            text: "Oops! No targets has been selected!",
+            type: 'error',
+            padding: '2em'
+        })
+    }
+    else {
+        // atleast one target is selected
+        document.getElementById("multiple_targets_form").submit();
+    }
+}
 </script>
 {% endblock page_level_script %}
