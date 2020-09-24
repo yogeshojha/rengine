@@ -82,10 +82,10 @@ def start_multiple_scan(request):
             # if scan mode is available, then start the scan
             # get engine type
             engine_type = request.POST['scan_mode']
-            for key, value in request.POST.items():
-                print(key, value)
-            # start the celery task
-            # celery_task = doScan.delay(host_id, engine_type)
+            list_of_domains = request.POST['list_of_domain_id']
+            for domain in list_of_domains.split(","):
+                # start the celery task
+                celery_task = doScan.delay(domain, engine_type)
             messages.add_message(
                 request,
                 messages.INFO,
