@@ -74,6 +74,47 @@ def start_scan_ui(request, host_id):
     return render(request, 'startScan/start_scan_ui.html', context)
 
 
+def start_multiple_scan(request):
+    # domain = get_object_or_404(Domain, id=host_id)
+    domain_text = ""
+    if request.method == "POST":
+        if request.POST.get('scan_mode', 0):
+            # if scan mode is available, then start the scan
+            # get engine type
+            engine_type = request.POST['scan_mode']
+            for key, value in request.POST.items():
+                print(key, value)
+            # start the celery task
+            # celery_task = doScan.delay(host_id, engine_type)
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Scan Started for multiple targets')
+            return HttpResponseRedirect(reverse('scan_history'))
+        else:
+            # this else condition will have post request from the scan page
+            # containing all the targets id
+            list_of_domain_name = []
+            list_of_domain_id = []
+            for key, value in request.POST.items():
+                if key != "style-2_length" and key != "csrfmiddlewaretoken":
+                    domain = get_object_or_404(Domain, id=value)
+                    list_of_domain_name.append(domain.domain_name)
+                    list_of_domain_id.append(value)
+            domain_text = ", ".join(list_of_domain_name)
+            domain_ids = ",".join(list_of_domain_id)
+    engine = EngineType.objects
+    custom_engine_count = EngineType.objects.filter(
+        default_engine=False).count()
+    context = {
+        'scan_history_active': 'true',
+        'engines': engine,
+        'domain_list': domain_text,
+        'domain_ids': domain_ids,
+        'custom_engine_count': custom_engine_count}
+    return render(request, 'startScan/start_multiple_scan_ui.html', context)
+
+
 def export_subdomains(request, scan_id):
     subdomain_list = ScannedHost.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)

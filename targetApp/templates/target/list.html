@@ -33,7 +33,8 @@ List all Target for Recon
                 </div>
             </div>
             <div class="widget-content widget-content-area">
-                <form method="GET" id="multiple_targets_form">
+                <form method="POST" id="multiple_targets_form" action="../../start_scan/start/multiple/">
+                    {% csrf_token %}
                     <div class="table-responsive mb-4">
                         <table id="style-2" class="table style-2  table-hover">
                             <thead>
@@ -108,7 +109,7 @@ table = $('#style-2').DataTable({
     },
     columnDefs:[ {
         targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-            return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox" class="new-control-input child-chk targets_checkbox" value="' + e + '">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+            return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox['+ e + ']" class="new-control-input child-chk targets_checkbox" value="' + e + '">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
         }
     }],
     "oLanguage": {

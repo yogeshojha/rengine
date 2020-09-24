@@ -60,4 +60,8 @@ urlpatterns = [
         'toggle/scheduled_task/<int:id>',
         views.change_scheduled_task_status,
         name='change_scheduled_task_status'),
+    path(
+        'start/multiple/',
+        views.start_multiple_scan,
+        name='start_multiple_scan')
 ]
