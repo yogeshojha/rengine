@@ -137,7 +137,9 @@ Dashboard
 
                                 </div>
                                 <div class="t-rate">
-                                    {% if item.scan_status == 0 %}
+                                    {% if item.scan_status == -1 %}
+                                    <span class="shadow-none badge badge-info">Pending</span>
+                                    {% elif item.scan_status == 0 %}
                                     <span class="shadow-none badge badge-danger">Failed</span>
                                     {% elif item.scan_status == 1 %}
                                     <span class="shadow-none badge badge-info">Scanning</span>

@@ -37,7 +37,6 @@ Scan History
                     <table id="style-2" class="table style-2  table-hover">
                         <thead>
                             <tr>
-                                <th>Serial</th>
                                 <th>Domain Name</th>
                                 <th>Scan Type</th>
                                 <th>Last Scanned On</th>
@@ -49,17 +48,18 @@ Scan History
                         <tbody>
                             {% for scan_history in scan_history.all %}
                             <tr>
-                                <td class="checkbox-column"> {{ scan_history.id }} </td>
                                 <td>{{ scan_history.domain_name }}</td>
                                 <td>{{ scan_history.scan_type }}</td>
                                 <td>{{ scan_history.last_scan_date }}</td>
                                 <td class="text-center">
-                                    {% if scan_history.scan_status == 0 %}
+                                    {% if scan_history.scan_status == -1 %}
+                                    <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Pending</span>
+                                    {% elif scan_history.scan_status == 0 %}
                                     <span class="shadow-none badge badge-danger">Failed</span>
                                     {% elif scan_history.scan_status == 1 %}
-                                    <span class="shadow-none badge badge-primary">Scanning</span>
+                                    <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
                                     {% elif scan_history.scan_status == 2 %}
-                                    <span class="shadow-none badge badge-success">Succesful</span>
+                                    <span class="shadow-none badge badge-success p-2">Succesful</span>
                                     {% elif scan_history.scan_status == 3 %}
                                     <span class="shadow-none badge badge-danger">Aborted</span>
                                     {% else %}
@@ -105,14 +105,6 @@ Scan History
 <script>
 // var e;
 c1 = $('#style-2').DataTable({
-    headerCallback:function(e, a, t, n, s) {
-        e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-    },
-    columnDefs:[ {
-        targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-            return'<label class="new-control new-checkbox checkbox-outline-info  m-auto">\n<input type="checkbox" class="new-control-input child-chk select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-        }
-    }],
     "oLanguage": {
         "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
         "sInfo": "Showing page _PAGE_ of _PAGES_",
