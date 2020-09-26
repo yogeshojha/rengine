@@ -55,8 +55,26 @@ def start_scan_ui(request, host_id):
     if request.method == "POST":
         # get engine type
         engine_type = request.POST['scan_mode']
+        '''
+        create pending task and then celery task will execute when threads
+        are free
+        '''
+        # get current time
+        current_scan_time = timezone.now()
+        # fetch engine and domain object
+        engine_object = EngineType.objects.get(pk=engine_type)
+        domain = Domain.objects.get(pk=host_id)
+        task = ScanHistory()
+        task.scan_status = -1
+        task.domain_name = domain
+        task.scan_type = engine_object
+        task.last_scan_date = current_scan_time
+        task.save()
+        # save last scan date for domain model
+        domain.last_scan_date = current_scan_time
+        domain.save()
         # start the celery task
-        celery_task = doScan.apply_async(args=(host_id, engine_type))
+        celery_task = doScan.apply_async(args=(host_id, task.id))
         messages.add_message(
             request,
             messages.INFO,

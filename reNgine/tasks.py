@@ -19,28 +19,13 @@ task for background scan
 
 
 @app.task
-def doScan(domain_id, engine_id):
-
-    engine_object = EngineType.objects.get(id=engine_id)
+def doScan(domain_id, task_id):
     domain = Domain.objects.get(pk=domain_id)
-
-    current_scan_time = timezone.now()
-
-    task = ScanHistory()
+    task = ScanHistory.objects.get(pk=task_id)
+    # once the celery task starts, change the task status to Started
     task.scan_status = 1
-    task.domain_name = domain
-    task.scan_type = engine_object
-    task.last_scan_date = current_scan_time
-    task.celery_id = doScan.request.id
     task.save()
-
-    # save last scan for domain model
-    domain.last_scan_date = current_scan_time
-    domain.save()
-
     activity_id = create_scan_activity(task, "Scanning Started", 2)
-
-    notif_hook = NotificationHooks.objects.filter(send_notif=True)
     results_dir = settings.TOOL_LOCATION + 'scan_results/'
     os.chdir(results_dir)
     try:
@@ -430,6 +415,7 @@ def doScan(domain_id, engine_id):
         print(traceback.format_exc())
         scan_failed(task)
 
+    notif_hook = NotificationHooks.objects.filter(send_notif=True)
     # notify on slack
     scan_status_msg = {
         'text': "reEngine finished scanning " + domain.domain_name}
