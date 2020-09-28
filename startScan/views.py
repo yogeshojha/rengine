@@ -80,9 +80,10 @@ def start_multiple_scan(request):
             # get engine type
             engine_type = request.POST['scan_mode']
             list_of_domains = request.POST['list_of_domain_id']
-            for domain in list_of_domains.split(","):
+            for domain_id in list_of_domains.split(","):
                 # start the celery task
-                celery_task = doScan.apply_async(args=(domain, engine_type))
+                task_id = create_scan_object(domain_id, engine_type)
+                celery_task = doScan.apply_async(args=(domain_id, task_id))
             messages.add_message(
                 request,
                 messages.INFO,
@@ -225,10 +226,11 @@ def schedule_scan(request, host_id):
             schedule, created = IntervalSchedule.objects.get_or_create(
                 every=frequency_value,
                 period=period,)
+            task_id = create_scan_object(host_id, engine_type)
             PeriodicTask.objects.create(interval=schedule,
                                         name=task_name,
                                         task='reNgine.tasks.doScan',
-                                        args=[host_id, engine_type])
+                                        args=[host_id, task_id])
         elif request.POST['scheduled_mode'] == 'clocked':
             # clocked task
             schedule_time = request.POST['scheduled_time']
