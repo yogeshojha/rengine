@@ -138,11 +138,11 @@ Dashboard
                                 </div>
                                 <div class="t-rate">
                                     {% if item.scan_status == -1 %}
-                                    <span class="shadow-none badge badge-info">Pending</span>
+                                    <span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Pending</span>
                                     {% elif item.scan_status == 0 %}
                                     <span class="shadow-none badge badge-danger">Failed</span>
                                     {% elif item.scan_status == 1 %}
-                                    <span class="shadow-none badge badge-info">Scanning</span>
+                                    <span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
                                     {% elif item.scan_status == 2 %}
                                     <span class="shadow-none badge badge-success">Succesful</span>
                                     {% elif item.scan_status == 3 %}
