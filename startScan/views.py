@@ -16,10 +16,6 @@ import os
 import requests
 
 
-def index(request):
-    return render(request, 'startScan/index.html')
-
-
 def scan_history(request):
     host = ScanHistory.objects.all().order_by('-last_scan_date')
     context = {'scan_history_active': 'true', "scan_history": host}
@@ -55,33 +51,16 @@ def start_scan_ui(request, host_id):
     if request.method == "POST":
         # get engine type
         engine_type = request.POST['scan_mode']
-        '''
-        create pending task and then celery task will execute when threads
-        are free
-        '''
-        # get current time
-        current_scan_time = timezone.now()
-        # fetch engine and domain object
-        engine_object = EngineType.objects.get(pk=engine_type)
-        domain = Domain.objects.get(pk=host_id)
-        task = ScanHistory()
-        task.scan_status = -1
-        task.domain_name = domain
-        task.scan_type = engine_object
-        task.last_scan_date = current_scan_time
-        task.save()
-        # save last scan date for domain model
-        domain.last_scan_date = current_scan_time
-        domain.save()
+        task_id = create_scan_object(host_id, engine_type)
         # start the celery task
-        celery_task = doScan.apply_async(args=(host_id, task.id))
+        celery_task = doScan.apply_async(args=(host_id, task_id))
         messages.add_message(
             request,
             messages.INFO,
             'Scan Started for ' +
             domain.domain_name)
         return HttpResponseRedirect(reverse('scan_history'))
-    engine = EngineType.objects
+    engine = EngineType.objects.order_by('id')
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
@@ -310,3 +289,25 @@ def change_scheduled_task_status(request, id):
         task.enabled = not task.enabled
         task.save()
     return HttpResponse('')
+
+
+def create_scan_object(host_id, engine_type):
+    '''
+    create task with pending status so that celery task will execute when
+    threads are free
+    '''
+    # get current time
+    current_scan_time = timezone.now()
+    # fetch engine and domain object
+    engine_object = EngineType.objects.get(pk=engine_type)
+    domain = Domain.objects.get(pk=host_id)
+    task = ScanHistory()
+    task.scan_status = -1
+    task.domain_name = domain
+    task.scan_type = engine_object
+    task.last_scan_date = current_scan_time
+    task.save()
+    # save last scan date for domain model
+    domain.last_scan_date = current_scan_time
+    domain.save()
+    return task.id
