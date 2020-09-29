@@ -53,7 +53,7 @@ def import_targets(request):
                 for target in io_string:
                     if validators.domain(target):
                         Domain.objects.create(
-                            domain_name=target, insert_date=timezone.now())
+                            domain_name=target.rstrip("\n"), insert_date=timezone.now())
                         target_count += 1
                 if target_count:
                     messages.add_message(request, messages.SUCCESS, str(
