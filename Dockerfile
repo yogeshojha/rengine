@@ -17,8 +17,8 @@ RUN apk update \
     && apk del build-deps
 
 
-# Download and install go 1.13
-COPY --from=golang:1.13-alpine /usr/local/go/ /usr/local/go/
+# Download and install go 1.14
+COPY --from=golang:1.14-alpine /usr/local/go/ /usr/local/go/
 
 # Environment vars
 ENV DATABASE="postgres"
@@ -30,10 +30,11 @@ ENV PATH="${PATH}:${GOPATH}/bin"
 # Download Go packages
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler github.com/haccer/subjack
 
-RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
-    github.com/projectdiscovery/naabu/cmd/naabu \
-    github.com/projectdiscovery/subfinder/cmd/subfinder \
+RUN GO111MODULE=auto go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
+    github.com/projectdiscovery/subfinder/v2/cmd/subfinder \
     github.com/lc/gau
+
+RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/naabu/cmd/naabu
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
