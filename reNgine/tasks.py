@@ -20,11 +20,21 @@ task for background scan
 
 @app.task
 def doScan(domain_id, task_id):
+    # get current time
+    current_scan_time = timezone.now()
+
     domain = Domain.objects.get(pk=domain_id)
     task = ScanHistory.objects.get(pk=task_id)
+
+    # save the last scan date for domain model
+    domain.last_scan_date = current_scan_time
+    domain.save()
+
     # once the celery task starts, change the task status to Started
     task.scan_status = 1
+    task.last_scan_date = current_scan_time
     task.save()
+
     activity_id = create_scan_activity(task, "Scanning Started", 2)
     results_dir = settings.TOOL_LOCATION + 'scan_results/'
     os.chdir(results_dir)
