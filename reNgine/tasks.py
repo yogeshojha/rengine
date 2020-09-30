@@ -19,12 +19,12 @@ task for background scan
 
 
 @app.task
-def doScan(domain_id, task_id):
+def doScan(domain_id, scan_history_id):
     # get current time
     current_scan_time = timezone.now()
 
     domain = Domain.objects.get(pk=domain_id)
-    task = ScanHistory.objects.get(pk=task_id)
+    task = ScanHistory.objects.get(pk=scan_history_id)
 
     # save the last scan date for domain model
     domain.last_scan_date = current_scan_time

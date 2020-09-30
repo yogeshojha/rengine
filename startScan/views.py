@@ -51,9 +51,12 @@ def start_scan_ui(request, host_id):
     if request.method == "POST":
         # get engine type
         engine_type = request.POST['scan_mode']
-        task_id = create_scan_object(host_id, engine_type)
+        scan_history_id = create_scan_object(host_id, engine_type)
         # start the celery task
-        celery_task = doScan.apply_async(args=(host_id, task_id))
+        celery_task = doScan.apply_async(args=(host_id, scan_history_id))
+        ScanHistory.objects.filter(
+            id=scan_history_id).update(
+            celery_id=celery_task.id)
         messages.add_message(
             request,
             messages.INFO,
@@ -197,7 +200,7 @@ def stop_scan(request, id):
 
 
 def schedule_scan(request, host_id):
-    domain = get_object_or_404(Domain, id=host_id)
+    domain = Domain.objects.get(id=host_id)
     if request.method == "POST":
         # get engine type
         engine_type = int(request.POST['scan_mode'])
