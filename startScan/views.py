@@ -85,8 +85,12 @@ def start_multiple_scan(request):
             list_of_domains = request.POST['list_of_domain_id']
             for domain_id in list_of_domains.split(","):
                 # start the celery task
-                task_id = create_scan_object(domain_id, engine_type)
-                celery_task = doScan.apply_async(args=(domain_id, task_id))
+                scan_history_id = create_scan_object(domain_id, engine_type)
+                celery_task = doScan.apply_async(
+                    args=(domain_id, scan_history_id))
+                ScanHistory.objects.filter(
+                    id=scan_history_id).update(
+                    celery_id=celery_task.id)
             messages.add_message(
                 request,
                 messages.INFO,
