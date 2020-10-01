@@ -21,7 +21,9 @@ def index(request):
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
     on_going_scan_count = \
         ScanHistory.objects.filter(scan_status=1).count()
-    recent_scans = ScanHistory.objects.all().order_by('-last_scan_date')[:4]
+    recent_scans = ScanHistory.objects.all().order_by(
+        '-last_scan_date').exclude(scan_status=-1)[:4]
+    upcoming_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -31,7 +33,8 @@ def index(request):
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
         'on_going_scan_count': on_going_scan_count,
-        'recent_scans': recent_scans, }
+        'recent_scans': recent_scans,
+        'upcoming_scans': upcoming_scans, }
     return render(request, 'dashboard/index.html', context)
 
 
@@ -42,8 +45,8 @@ def profile(request):
             user = form.save()
             update_session_auth_hash(request, user)
             messages.success(
-                            request,
-                            'Your password was successfully changed!')
+                request,
+                'Your password was successfully changed!')
             return redirect('profile')
         else:
             messages.error(request, 'Please correct the error below.')
@@ -57,17 +60,17 @@ def profile(request):
 @receiver(user_logged_out)
 def on_user_logged_out(sender, request, **kwargs):
     messages.add_message(
-                        request,
-                        messages.INFO,
-                        'You have been successfully logged out. Thank you ' +
-                        'for using reNgine.')
+        request,
+        messages.INFO,
+        'You have been successfully logged out. Thank you ' +
+        'for using reNgine.')
 
 
 @receiver(user_logged_in)
 def on_user_logged_in(sender, request, **kwargs):
     messages.add_message(
-                        request,
-                        messages.INFO,
-                        'Hi @' +
-                        request.user.username +
-                        ' welcome back!')
+        request,
+        messages.INFO,
+        'Hi @' +
+        request.user.username +
+        ' welcome back!')
