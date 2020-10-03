@@ -169,3 +169,5 @@ CELERY settings
 '''
 CELERY_BROKER_URL = 'redis://redis:6379'
 CELERY_RESULT_BACKEND = 'redis://redis:6379'
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = 'UTC'
