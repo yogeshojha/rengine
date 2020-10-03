@@ -53,7 +53,8 @@ def start_scan_ui(request, host_id):
         engine_type = request.POST['scan_mode']
         scan_history_id = create_scan_object(host_id, engine_type)
         # start the celery task
-        celery_task = doScan.apply_async(args=(host_id, scan_history_id))
+        celery_task = doScan.apply_async(
+            args=(host_id, scan_history_id, 0, None))
         ScanHistory.objects.filter(
             id=scan_history_id).update(
             celery_id=celery_task.id)
@@ -87,7 +88,7 @@ def start_multiple_scan(request):
                 # start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_type)
                 celery_task = doScan.apply_async(
-                    args=(domain_id, scan_history_id))
+                    args=(domain_id, scan_history_id, 0, None))
                 ScanHistory.objects.filter(
                     id=scan_history_id).update(
                     celery_id=celery_task.id)
@@ -233,11 +234,10 @@ def schedule_scan(request, host_id):
             schedule, created = IntervalSchedule.objects.get_or_create(
                 every=frequency_value,
                 period=period,)
-            task_id = create_scan_object(host_id, engine_type)
             PeriodicTask.objects.create(interval=schedule,
                                         name=task_name,
                                         task='reNgine.tasks.doScan',
-                                        args=[host_id, task_id])
+                                        args=[host_id, 0, 1, engine_type])
         elif request.POST['scheduled_mode'] == 'clocked':
             # clocked task
             schedule_time = request.POST['scheduled_time']
@@ -247,7 +247,7 @@ def schedule_scan(request, host_id):
                                         one_off=True,
                                         name=task_name,
                                         task='reNgine.tasks.doScan',
-                                        args=[host_id, engine_type])
+                                        args=[host_id, 0, 1, engine_type])
         messages.add_message(
             request,
             messages.INFO,

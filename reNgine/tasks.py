@@ -13,18 +13,32 @@ import traceback
 import yaml
 import json
 
+
 '''
 task for background scan
 '''
 
 
 @app.task
-def doScan(domain_id, scan_history_id):
+def doScan(domain_id, scan_history_id, scan_type, engine_type):
     # get current time
     current_scan_time = timezone.now()
-
-    domain = Domain.objects.get(pk=domain_id)
-    task = ScanHistory.objects.get(pk=scan_history_id)
+    '''
+    scan_type = 0 -> immediate scan, need not create scan object
+    scan_type = 1 -> scheduled scan
+    '''
+    if scan_type == 1:
+        engine_object = EngineType.objects.get(pk=engine_type)
+        domain = Domain.objects.get(pk=domain_id)
+        task = ScanHistory()
+        task.domain_name = domain
+        task.scan_status = -1
+        task.scan_type = engine_object
+        task.last_scan_date = current_scan_time
+        task.save()
+    elif scan_type == 0:
+        domain = Domain.objects.get(pk=domain_id)
+        task = ScanHistory.objects.get(pk=scan_history_id)
 
     # save the last scan date for domain model
     domain.last_scan_date = current_scan_time
@@ -240,7 +254,8 @@ def doScan(domain_id, scan_history_id):
         alive_file.close()
 
         update_last_activity(activity_id)
-        activity_id = create_scan_activity(task, "Visual Recon - Screenshot", 1)
+        activity_id = create_scan_activity(
+            task, "Visual Recon - Screenshot", 1)
 
         # after subdomain discovery run aquatone for visual identification
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
@@ -465,6 +480,6 @@ def update_last_activity(id):
 
 @app.task(bind=True)
 def test_task(self):
-    print('*'*40)
+    print('*' * 40)
     print('test task run')
-    print('*'*40)
+    print('*' * 40)
