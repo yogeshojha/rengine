@@ -305,8 +305,8 @@ $(document).ready(function() {
             {
                 "render": function ( data, type, row ) {
                     if (data){
-                        //return lightbox
-                        return `<a href="/media/`+data+`" data-lightbox="screenshots"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
+                        //return lightbox with caption as http link
+                        return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['subdomain']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
                     }
                     else{
                         return "";
