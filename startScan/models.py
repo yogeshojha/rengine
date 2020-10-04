@@ -41,6 +41,7 @@ class WayBackEndPoint(models.Model):
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
+    content_type = models.CharField(max_length=100, null=True)
 
     def __str__(self):
         return self.page_title

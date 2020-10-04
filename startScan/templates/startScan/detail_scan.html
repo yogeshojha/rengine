@@ -140,6 +140,7 @@ Detailed Scan for {{history.domain_name}}
                             <tr>
                                 <th>Endpoint</th>
                                 <th>HTTP Status</th>
+                                <th>Content Type</th>
                                 <th>Content Length</th>
                                 <th>Page Title</th>
                             </tr>
@@ -374,10 +375,11 @@ $(document).ready(function() {
         "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
-        "order": [[ 2, "desc" ]],
+        "order": [[ 3, "desc" ]],
         "columns": [
             {'data': 'http_url'},
             {'data': 'http_status'},
+            {'data': 'content_type'},
             {'data': 'content_length'},
             {'data': 'page_title'},
         ],
@@ -389,7 +391,7 @@ $(document).ready(function() {
                     url = getParsedURL(data);
                     return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
                 },
-                "targets": 0
+                "targets": 0,
             },
             {
                 "render": function ( data, type, row ) {
@@ -410,7 +412,7 @@ $(document).ready(function() {
                     }
 
                 },
-                "targets": 1
+                "targets": 1,
             },
             {
                 "render": function ( data, type, row ) {
@@ -421,7 +423,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 3
+                "targets": 4,
             },
         ],
         drawCallback: function () {
