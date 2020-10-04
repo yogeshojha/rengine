@@ -110,6 +110,7 @@ Detailed Scan for {{history.domain_name}}
                         <thead>
                             <tr>
                                 <th>Subdomain</th>
+                                <th>IP Address</th>
                                 <th>Status</th>
                                 <th>Ports</th>
                                 <th class="text-center">Takeover</th>
@@ -193,9 +194,10 @@ $(document).ready(function() {
         "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-        "order": [[ 4, "desc" ]],
+        "order": [[ 5, "desc" ]],
         "columns": [
             {'data': 'subdomain'},
+            {'data': 'ip_address'},
             {'data': 'http_status'},
             {'data': 'open_ports'},
             {'data': 'takeover'},
@@ -208,7 +210,7 @@ $(document).ready(function() {
         ],
         "columnDefs": [
             {
-                "targets": [ 9 ],
+                "targets": [ 10 ],
                 "visible": false,
                 "searchable": false
             },
@@ -222,6 +224,19 @@ $(document).ready(function() {
                     }
                 },
                 "targets": 0
+            },
+            {
+                "render": function ( data, type, row ) {
+                    // display badge based on http status
+                    // green for http status 2XX, orange for 3XX and warning for everything else
+                    if (data) {
+                        return span_values(data, "info");
+                    }
+                    else {
+                        return '';
+                    }
+                },
+                "targets": 1,
             },
             {
                 "render": function ( data, type, row ) {
@@ -242,7 +257,7 @@ $(document).ready(function() {
                     }
 
                 },
-                "targets": 1
+                "targets": 2,
             },
             {
                 "render": function ( data, type, row ) {
@@ -250,7 +265,7 @@ $(document).ready(function() {
                     // green for http status 2XX, orange for 3XX and warning for everything else
                     return span_values(data, "info");
                 },
-                "targets": 2
+                "targets": 3,
             },
             {
                 "render": function ( data, type, row ) {
@@ -262,7 +277,7 @@ $(document).ready(function() {
                         return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Takeover Not Possible"></div>`;
                     }
                 },
-                "targets": 3,
+                "targets": 4,
             },
             {
                 "render": function ( data, type, row ) {
@@ -273,7 +288,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 5
+                "targets": 6,
             },
             {
                 "render": function ( data, type, row ) {
@@ -284,7 +299,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 6
+                "targets": 7,
             },
             {
                 "render": function ( data, type, row ) {
@@ -296,7 +311,7 @@ $(document).ready(function() {
                         return "";
                     }
                 },
-                "targets": 7
+                "targets": 8,
             },
             {
                 "render": function ( data, type, row ) {
@@ -327,7 +342,7 @@ $(document).ready(function() {
                         return '';
                     }
                 },
-                "targets": 8
+                "targets": 9,
             },
         ],
 

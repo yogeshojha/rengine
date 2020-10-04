@@ -250,6 +250,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             sub_domain.http_status = json_st['status-code']
             sub_domain.page_title = json_st['title']
             sub_domain.content_length = json_st['content-length']
+            sub_domain.ip_address = json_st['ip']
             alive_file.write(json_st['url'] + '\n')
             sub_domain.save()
         alive_file.close()
@@ -285,9 +286,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             sub_domain = ScannedHost.objects.get(
                 scan_history__id=task.id,
                 subdomain=data['pages'][host]['hostname'])
-            list_ip = data['pages'][host]['addrs']
-            ip_string = ','.join(list_ip)
-            sub_domain.ip_address = ip_string
+            # list_ip = data['pages'][host]['addrs']
+            # ip_string = ','.join(list_ip)
+            # sub_domain.ip_address = ip_string
             sub_domain.screenshot_path = current_scan_dir + \
                 '/aquascreenshots/' + data['pages'][host]['screenshotPath']
             sub_domain.http_header_path = current_scan_dir + \
