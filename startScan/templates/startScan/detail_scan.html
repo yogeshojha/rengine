@@ -45,10 +45,10 @@ Detailed Scan for {{history.domain_name}}
                                 <div class="t-text">
                                     <b>{{activity.title}}</b>
                                     <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                    {% if activity.status == 0 %}&nbsp;Failed&nbsp;
-                                    {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-                                    {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-                                    {% endif %}
+                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                                        {% endif %}
                                     </span>
                                     <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
@@ -220,11 +220,12 @@ $(document).ready(function() {
             {
                 "render": function ( data, type, row ) {
                     if (row['http_url']) {
-                        return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>` + row['cname'];
+                        if (row['cname']) {
+                            return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>CNAME❯` + row['cname'];
+                        }
+                        return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
                     }
-                    else{
-                        return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
-                    }
+                    return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
                 },
                 "targets": 0
             },
@@ -236,9 +237,7 @@ $(document).ready(function() {
                         if (row['is_ip_cdn']) {
                             return `<span class='badge badge-pills badge-warning bs-tooltip' title="CDN IP Address">` + data + `</span>`
                         }
-                        else {
-                            return `<span class='badge badge-pills badge-info'>` + data + `</span>`
-                        }
+                        return `<span class='badge badge-pills badge-info'>` + data + `</span>`
                     }
                     else {
                         return '';
@@ -260,10 +259,7 @@ $(document).ready(function() {
                         // datatable throws error when no data is returned
                         return "";
                     }
-                    else{
-                        return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-                    }
-
+                    return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
                 },
                 "targets": 2,
             },
@@ -281,9 +277,7 @@ $(document).ready(function() {
                     if (data){
                         return `<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" data-original-title=" Potentially vulnerable via `+data+`"></div>`;
                     }
-                    else {
-                        return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" data-original-title="Takeover Not Possible"></div>`;
-                    }
+                    return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" data-original-title="Takeover Not Possible"></div>`;
                 },
                 "targets": 4,
             },
@@ -292,9 +286,7 @@ $(document).ready(function() {
                     if (data){
                         return htmlEncode(data);
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
                 "targets": 6,
             },
@@ -303,9 +295,7 @@ $(document).ready(function() {
                     if (data){
                         return span_values(data, "info");
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
                 "targets": 7,
             },
@@ -315,9 +305,7 @@ $(document).ready(function() {
                         //return lightbox with caption as http link
                         return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['subdomain']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
                 "targets": 8,
             },
@@ -346,9 +334,7 @@ $(document).ready(function() {
                         html_treeview += `</ul>`;
                         return html_treeview;
                     }
-                    else{
-                        return '';
-                    }
+                    return '';
                 },
                 "targets": 9,
             },
@@ -415,9 +401,7 @@ $(document).ready(function() {
                         // datatable throws error when no data is returned
                         return "";
                     }
-                    else{
-                        return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
-                    }
+                    return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
 
                 },
                 "targets": 1,
@@ -427,9 +411,7 @@ $(document).ready(function() {
                     if (data){
                         return htmlEncode(data);
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
                 "targets": 4,
             },
