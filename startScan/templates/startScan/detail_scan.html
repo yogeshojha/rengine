@@ -213,9 +213,14 @@ $(document).ready(function() {
         ],
         "columnDefs": [
             {
-                "targets": [ 10, 11, 12],
+                "targets": [ 10, 11],
                 "visible": false,
-                "searchable": false
+                "searchable": false,
+            },
+            {
+                "targets": [ 12 ],
+                "visible": false,
+                "searchable": true,
             },
             {
                 "render": function ( data, type, row ) {
