@@ -254,7 +254,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             if 'cdn' in json_st:
                 sub_domain.is_ip_cdn = json_st['cdn']
             if 'cnames' in json_st:
-                sub_domain.cname = json_st['cnames']
+                cname_list = ','.join(json_st['cnames'])
+                sub_domain.cname = cname_list
             sub_domain.save()
             alive_file.write(json_st['url'] + '\n')
         alive_file.close()
