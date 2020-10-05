@@ -12,6 +12,7 @@ import os
 import traceback
 import yaml
 import json
+import validators
 
 
 '''
@@ -142,10 +143,16 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             with open(subdomain_scan_results_file) as subdomain_list:
                 for subdomain in subdomain_list:
-                    scanned = ScannedHost()
-                    scanned.subdomain = subdomain.rstrip('\n')
-                    scanned.scan_history = task
-                    scanned.save()
+                    '''
+                    subfinder sometimes produces weird super long subdomain
+                    output which is likely to crash the scan, so validate
+                    subdomains before saving
+                    '''
+                    if validators.domain(subdomain.rstrip('\n')):
+                        scanned = ScannedHost()
+                        scanned.subdomain = subdomain.rstrip('\n')
+                        scanned.scan_history = task
+                        scanned.save()
         else:
             only_subdomain_file = open(
                 results_dir +
