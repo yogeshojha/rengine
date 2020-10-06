@@ -218,10 +218,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 for line in lines:
                     try:
                         json_st = json.loads(line.strip())
-                    except BaseException as except
-                    print('-'*30)ion:
-                        print(except
-                        print('-'*30)ion)
+                    except Exception as exception:
+                        print('-'*30)
+                        print(exception)
+                        print('-'*30)
                         json_st = "{'host':'','port':''}"
                     sub_domain = ScannedHost.objects.get(
                         scan_history=task, subdomain=json_st['host'])
@@ -231,10 +231,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     else:
                         sub_domain.open_ports = str(json_st['port'])
                     sub_domain.save()
-            except BaseException as except
-            print('-'*30)ion:
-                print(except
-                print('-'*30)ion)
+            except BaseException as exception:
+                print('-'*30)
+                print(exception)
+                print('-'*30)
                 update_last_activity(activity_id, 0)
 
         '''

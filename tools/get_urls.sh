@@ -6,7 +6,7 @@ for i in "$@" ; do
         echo $1 | gau -providers wayback | httpx -status-code -content-length -title -json -o $2/urls_wayback.json
     fi
     if [[ $i == "hakrawler" ]] ; then
-        echo $1 | hakrawler -plain | httpx -status-code -content-length -title -json -o $2/urls_hakrawler.json
+        hakrawler -plain -url $1 | httpx -status-code -content-length -title -json -o $2/urls_hakrawler.json
     fi
 done
 
