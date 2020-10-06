@@ -58,7 +58,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         current_scan_dir = domain.domain_name + '_' + \
             str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
-    except BaseException:
+    except Exception as exception:
+        print('-'*30)
+        print(exception)
+        print('-'*30)
         # do something here
         scan_failed(task)
 
@@ -171,7 +174,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             current_scan_dir + '/sorted_subdomain_collection.txt'
 
         if(task.scan_type.port_scan):
-            update_last_activity(activity_id)
+            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Port Scanning", 1)
 
             # after all subdomain has been discovered run naabu to discover the
@@ -215,7 +218,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 for line in lines:
                     try:
                         json_st = json.loads(line.strip())
-                    except BaseException:
+                    except BaseException as except
+                    print('-'*30)ion:
+                        print(except
+                        print('-'*30)ion)
                         json_st = "{'host':'','port':''}"
                     sub_domain = ScannedHost.objects.get(
                         scan_history=task, subdomain=json_st['host'])
@@ -225,13 +231,16 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     else:
                         sub_domain.open_ports = str(json_st['port'])
                     sub_domain.save()
-            except BaseException:
-                print('No Ports file')
+            except BaseException as except
+            print('-'*30)ion:
+                print(except
+                print('-'*30)ion)
+                update_last_activity(activity_id, 0)
 
         '''
         HTTP Crawlwer and screenshot will run by default
         '''
-        update_last_activity(activity_id)
+        update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
 
         # once port scan is complete then run httpx, TODO this has to run in
@@ -267,7 +276,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             alive_file.write(json_st['url'] + '\n')
         alive_file.close()
 
-        update_last_activity(activity_id)
+        update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(
             task, "Visual Recon - Screenshot", 1)
 
@@ -291,33 +300,40 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         os.system(aquatone_command)
         os.system('chmod -R 607 /app/tools/scan_results/*')
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
-        with open(aqua_json_path, 'r') as json_file:
-            data = json.load(json_file)
 
-        for host in data['pages']:
-            sub_domain = ScannedHost.objects.get(
-                scan_history__id=task.id,
-                subdomain=data['pages'][host]['hostname'])
-            # list_ip = data['pages'][host]['addrs']
-            # ip_string = ','.join(list_ip)
-            # sub_domain.ip_address = ip_string
-            sub_domain.screenshot_path = current_scan_dir + \
-                '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-            sub_domain.http_header_path = current_scan_dir + \
-                '/aquascreenshots/' + data['pages'][host]['headersPath']
-            tech_list = []
-            if data['pages'][host]['tags'] is not None:
-                for tag in data['pages'][host]['tags']:
-                    tech_list.append(tag['text'])
-            tech_string = ','.join(tech_list)
-            sub_domain.technology_stack = tech_string
-            sub_domain.save()
+        try:
+            with open(aqua_json_path, 'r') as json_file:
+                data = json.load(json_file)
+
+            for host in data['pages']:
+                sub_domain = ScannedHost.objects.get(
+                    scan_history__id=task.id,
+                    subdomain=data['pages'][host]['hostname'])
+                # list_ip = data['pages'][host]['addrs']
+                # ip_string = ','.join(list_ip)
+                # sub_domain.ip_address = ip_string
+                sub_domain.screenshot_path = current_scan_dir + \
+                    '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                sub_domain.http_header_path = current_scan_dir + \
+                    '/aquascreenshots/' + data['pages'][host]['headersPath']
+                tech_list = []
+                if data['pages'][host]['tags'] is not None:
+                    for tag in data['pages'][host]['tags']:
+                        tech_list.append(tag['text'])
+                tech_string = ','.join(tech_list)
+                sub_domain.technology_stack = tech_string
+                sub_domain.save()
+        except Exception as exception:
+            print('-'*30)
+            print(exception)
+            print('-'*30)
+            update_last_activity(activity_id, 0)
 
         '''
         Subdomain takeover is not provided by default, check for conditions
         '''
         if(task.scan_type.subdomain_takeover):
-            update_last_activity(activity_id)
+            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Subdomain takeover", 1)
 
             if yaml_configuration['subdomain_takeover']['thread'] > 0:
@@ -348,14 +364,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     #     get_subdomain.takeover = "Debug"
                     #     get_subdomain.save()
 
-            except Exception as e:
-                print(e)
+            except Exception as exception:
+                print('-'*30)
+                print(exception)
+                print('-'*30)
+                update_last_activity(activity_id, 0)
 
         '''
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):
-            update_last_activity(activity_id)
+            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Directory Search", 1)
             # scan directories for all the alive subdomain with http status >
             # 200
@@ -402,8 +421,11 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             scan_history__id=task.id, http_url=subdomain.http_url)
                         scanned_host.directory_json = json_string
                         scanned_host.save()
-                except BaseException:
-                    print("No File")
+                except Exception as exception:
+                    print('-'*30)
+                    print(exception)
+                    print('-'*30)
+                    update_last_activity(activity_id, 0)
 
         '''
         Getting endpoint from GAU, is also not set by default, check for conditions.
@@ -413,7 +435,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         # TODO: give providers as choice for users between commoncrawl,
         # alienvault or wayback
         if(task.scan_type.fetch_url):
-            update_last_activity(activity_id)
+            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
             wayback_results_file = results_dir + current_scan_dir + '/url_wayback.json'
 
@@ -443,7 +465,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 endpoint.content_length = json_st['content-length']
                 endpoint.http_status = json_st['status-code']
                 endpoint.page_title = json_st['title']
-                endpoint.content_type = json_st['content-type']
+                if 'content-type' in json_st:
+                    endpoint.content_type = json_st['content-type']
                 endpoint.save()
 
         '''
@@ -451,8 +474,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         '''
         task.scan_status = 2
         task.save()
-    except Exception as e:
-        print(traceback.format_exc())
+    except Exception as exception:
+        print('-'*30)
+        print(exception)
+        print('-'*30)
         scan_failed(task)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
@@ -465,7 +490,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             notif.hook_url,
             data=json.dumps(scan_status_msg),
             headers=headers)
-    update_last_activity(activity_id)
+    update_last_activity(activity_id, 2)
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     return {"status": True}
 
@@ -485,12 +510,11 @@ def create_scan_activity(task, message, status):
     return scan_activity.id
 
 
-def update_last_activity(id):
-    # save the last activity as successful
-    last_activity = ScanActivity.objects.get(id=id)
-    last_activity.status = 2
-    last_activity.time = timezone.now()
-    last_activity.save()
+def update_last_activity(id, activity_status):
+    ScanActivity.objects.filter(
+        id=id).update(
+        status=activity_status,
+        time=timezone.now())
 
 
 @app.task(bind=True)
