@@ -32,6 +32,8 @@ def detail_scan(request, id):
     endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
     endpoint_alive_count = WayBackEndPoint.objects.filter(
         url_of__id=id, http_status__exact=200).count()
+    subdomain_takeover = ScannedHost.objects.filter(
+        scan_history__id=id, takeover__isnull=False).count()
     history = get_object_or_404(ScanHistory, id=id)
     context = {'scan_history_active': 'true',
                'scan_history': scan_history,
@@ -42,6 +44,7 @@ def detail_scan(request, id):
                'endpoint_count': endpoint_count,
                'endpoint_alive_count': endpoint_alive_count,
                'history': history,
+               'subdomain_takeover': subdomain_takeover,
                }
     return render(request, 'startScan/detail_scan.html', context)
 

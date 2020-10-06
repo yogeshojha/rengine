@@ -30,7 +30,7 @@ Detailed Scan for {{history.domain_name}}
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mt-2">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-activity-four">
                 <div class="widget-heading">
                     <h5>Recent Activities</h5>
@@ -93,6 +93,25 @@ Detailed Scan for {{history.domain_name}}
                 </div>
                 <div class="widget-content">
                     Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+            <div class="widget widget-one_hybrid">
+                <div class="widget-heading">
+                    <div class="w-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                    </div>
+                    &nbsp;
+                    <h2 class="text-danger">{{subdomain_takeover}}</h2>
+                    <h6 class="">Subdomain Takeover</h6>
+                </div>
+                <div class="widget-content">
+                    &nbsp;
                 </div>
             </div>
         </div>
