@@ -290,7 +290,7 @@ $(document).ready(function() {
                 "render": function ( data, type, row ) {
                     if (data){
                         //return lightbox
-                        return `<a href="/media/`+data+`" data-lightbox="screenshots"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
+                        return `<a href="/media/`+data+`" data-lightbox="screenshots"><img src="/media/`+data+`" onerror="removeImageElement(this)" class="img-fluid rounded mb-4 mt-4"></a>`;
                     }
                     else{
                         return "";
@@ -426,6 +426,11 @@ function span_values(data, color)
         data_with_span+=badge + split_vals + "</span>";
     });
     return data_with_span;
+}
+//to remove the image element if there is no screenshot captured
+function removeImageElement(element)
+{
+  relement.remove();
 }
 </script>
 {% endblock page_level_script %}
