@@ -260,20 +260,26 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         lines = httpx_json_result.readlines()
         for line in lines:
             json_st = json.loads(line.strip())
-            sub_domain = ScannedHost.objects.get(
-                scan_history=task, subdomain=json_st['url'].split("//")[-1])
-            sub_domain.http_url = json_st['url']
-            sub_domain.http_status = json_st['status-code']
-            sub_domain.page_title = json_st['title']
-            sub_domain.content_length = json_st['content-length']
-            sub_domain.ip_address = json_st['ip']
-            if 'cdn' in json_st:
-                sub_domain.is_ip_cdn = json_st['cdn']
-            if 'cnames' in json_st:
-                cname_list = ','.join(json_st['cnames'])
-                sub_domain.cname = cname_list
-            sub_domain.save()
-            alive_file.write(json_st['url'] + '\n')
+            try:
+                sub_domain = ScannedHost.objects.get(
+                    scan_history=task, subdomain=json_st['url'].split("//")[-1])
+                sub_domain.http_url = json_st['url']
+                sub_domain.http_status = json_st['status-code']
+                sub_domain.page_title = json_st['title']
+                sub_domain.content_length = json_st['content-length']
+                sub_domain.ip_address = json_st['ip']
+                if 'cdn' in json_st:
+                    sub_domain.is_ip_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    sub_domain.cname = cname_list
+                sub_domain.save()
+                alive_file.write(json_st['url'] + '\n')
+            except Exception as e:
+                print('*'*50)
+                print(e)
+                print('*'*50)
+
         alive_file.close()
 
         update_last_activity(activity_id, 2)
