@@ -71,6 +71,15 @@ Click below to watch the demo
 
 [![Watch the Demo](https://img.youtube.com/vi/u8_Z2-3-o2M/maxresdefault.jpg)](https://www.youtube.com/watch?v=u8_Z2-3-o2M)
 
+### Key Features
+- Subdomain Discovery, Ports Discovery, Endpoints Discovery, Directory Bruteforce, Visual Reconnaissance (Screenshot the targets)
+- IP Discovery, CNAME discovery, Subdomain Takeover Scan
+- Highly configurable scan engines
+- Run multiple scans in parallel
+- Run Clocked Scans (Run reconnaissance exactly at X Hours and Y minutes)
+- Run Periodic Scans (Runs reconnaissance every X minutes/hours/days/week)
+
+
 ### What it is not
 
 reNgine is not a:
