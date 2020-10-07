@@ -7,7 +7,7 @@
   <h3 align="center">reNgine</h3>
 </p>
 
-![Version](https://img.shields.io/badge/version-0.3-blue.svg?cacheSeconds=2592000)
+![Version](https://img.shields.io/badge/version-0.4-blue.svg?cacheSeconds=2592000)
 [![first-timers](https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=flat-square)](https://www.firsttimersonly.com/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![python](https://img.shields.io/badge/python-3.8-blue.svg?logo=python&labelColor=yellow)](https://www.python.org/downloads/)
@@ -18,9 +18,9 @@
 <p align="center">
     An automated recon framework for web applications
     <br />
-    <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
-    .
     <a href="https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md">What's new</a>
+    ·
+    <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
@@ -31,6 +31,7 @@
 
 * [About reNgine](#about-reNgine)
   * [What is reNgine](#about-reNgine)
+  * [Features](#features)
   * [What it is not](#what-it-is-not)
   * [Screenshots](#screenshots)
 * [Getting Started](#getting-started)
@@ -47,7 +48,7 @@
 
 ## About reNgine
 
-![](https://user-images.githubusercontent.com/17223002/86880620-92814300-c10a-11ea-9b27-627f43934221.png)
+![](https://user-images.githubusercontent.com/17223002/95360370-e6a5ea00-08e8-11eb-848a-4639a80dbf69.png)
 
 reNgine is an automated reconnaissance framework meant for information gathering during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the domains, endpoints, or gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which is highly customizable.
 
@@ -61,7 +62,7 @@ On the endpoints part, reNgine is capable of gathering the URL endpoints using t
 
 reNgine also makes it possible for the use case like, "search the URLs that have extension .php and HTTP status is 200!"
 
-**Suppose if you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
+**Assume that, you are looking for open redirection, you can quickly search for `=http` and look for HTTP status 30X, this will give high accuracy of open redirection with minimal efforts.**
 
 
 ## Demo
@@ -80,13 +81,13 @@ reNgine is not a:
 ### Screenshots
 #### Scan results
 
-![](https://user-images.githubusercontent.com/17223002/86752434-f9482300-c05c-11ea-954b-b0f538c1ecef.png)
+![](https://user-images.githubusercontent.com/17223002/95360568-2cfb4900-08e9-11eb-9bf4-84087b2b48d3.png)
 
-![](https://user-images.githubusercontent.com/17223002/86508685-ba696180-bdff-11ea-9def-f45e5b059f0f.png)
+![](https://user-images.githubusercontent.com/17223002/95360459-06d5a900-08e9-11eb-887a-85d626127d88.png)
 
 #### Gathered Endpoints
 
-![](https://user-images.githubusercontent.com/17223002/86753221-8c815880-c05d-11ea-816b-9c2dce11335a.png)
+![](https://user-images.githubusercontent.com/17223002/95360993-c62a5f80-08e9-11eb-8890-124a99c98dca.png)
 
 Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
 

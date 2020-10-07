@@ -1,5 +1,15 @@
 # Changelog
 
+### V0.4 Release 2020-10-08
+
+#### Features
+- Background tasks migrated to Celery and redis
+- Periodic and clocked scan added
+- Ability to Stop and delete the scan
+- CNAME and IP address added on detail scan
+- Content type added on Endpoints section
+- Ability to initiate multiple scans at a time
+
 ### V0.3 Release 2020-07-21
 
 #### Features
