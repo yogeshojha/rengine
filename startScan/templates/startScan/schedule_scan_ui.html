@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-Start Scan
+Schedule Scan
 {% endblock title %}
 
 
@@ -10,10 +10,13 @@ Start Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/components/custom-list-group.css' %}" rel="stylesheet" type="text/css">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
+<link href="{% static 'assets/css/components/tabs/custom-tabs.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/bootstrap-select/bootstrap-select.min.css' %}">
+<link href="{% static 'plugins/flatpickr/flatpickr.css' %}" rel="stylesheet" type="text/css">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Start Scan for {{domain.domain_name}}
+Schedule Scan for {{domain.domain_name}}
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -22,13 +25,57 @@ Start Scan for {{domain.domain_name}}
         <div class="widget-header">
             <div class="row">
                 <div class="col-12">
-                    <h4 class="text-info">Start scan for <span class="text-danger">{{domain.domain_name}}</span></h4>
+                    <h4 class="text-info">Schedule scan for <span class="text-danger">{{domain.domain_name}}</span></h4>
                 </div>
             </div>
         </div>
         <div class="widget-content widget-content-area">
             <form method="POST">
                 {% csrf_token %}
+                <div class="form-row">
+                    <div class="col-md-12 mb-4">
+                        <h6 class="mb-4">Choose the scheduler</h6>
+                        <select class="selectpicker" data-width='100%' onchange="schedulerChanged(this)" name="scheduled_mode">
+                            <option value="periodic">Periodic Scan</option>
+                            <option value="clocked">Clocked Scan</option>
+                        </select>
+                        <div class="widget-content widget-content-area animated-underline-content">
+                            <div class="tab-content" id="animateLineContent-4">
+                                <div class="tab-pane fade show active" id="periodic-div" role="tabpanel" aria-labelledby="periodic-tab-tab">
+                                    <div class="mb-4">
+                                        <p>Run scan every</p>
+                                        <div class="row">
+                                            <div class='col-4'>
+                                                <input id="t-text" type="number" name="frequency" placeholder="10" class="form-control">
+                                            </div>
+                                            <div class='col-8'>
+                                                <select class="selectpicker" data-width='100%' name="frequency_type">
+                                                    <option value="minutes">Minutes</option>
+                                                    <option value="hours">Hours</option>
+                                                    <option value="days">Days</option>
+                                                    <option value="weeks">Weeks</option>
+                                                    <option value="months">Months</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="clocked-div" role="tabpanel" aria-labelledby="clocked-tab-tab">
+                                    <div class="mb-4">
+                                        <p>Run scan exactly at</p>
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="form-group mb-0">
+                                                    <input id="clockedTime" value="{% now "Y-m-d H:i" %}" class="form-control flatpickr flatpickr-input active" type="text" placeholder="Select Date and time" name="scheduled_time">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="col-md-12 mb-4">
                         <h6>Select the scan type</h6>
@@ -136,10 +183,10 @@ Start Scan for {{domain.domain_name}}
                             </li>
                             {% endfor %}
                         </ul>
-                        <div style=" position: fixed; bottom: 40px; right: 40px; z-index:1000;">
-                        <button class="btn btn-primary submit-fn mt-2 float-right" style="z-index:1000; " type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                        </svg> Start Scan</button>
+                        <div>
+                            <button class="btn btn-primary submit-fn mt-2 float-right" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg> Schedule Scan</button>
                         </div>
                     </div>
                 </form>
@@ -152,4 +199,31 @@ Start Scan for {{domain.domain_name}}
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/bootstrap-select/bootstrap-select.min.js' %}"></script>
+<script src="{% static 'plugins/flatpickr/flatpickr.js' %}"></script>
+<script type="text/javascript">
+var dateTimepicker = flatpickr(document.getElementById('clockedTime'), {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i",
+});
+function schedulerChanged(selectObject){
+    selectedValue = selectObject.value;
+    if (selectedValue == 'periodic') {
+        var clockedDiv = document.getElementById("clocked-div");
+        clockedDiv.classList.remove("show");
+        clockedDiv.classList.remove("active");
+        var periodicDiv = document.getElementById("periodic-div");
+        periodicDiv.classList.add("show");
+        periodicDiv.classList.add("active");
+    }
+    else if (selectedValue == 'clocked') {
+        var periodicDiv = document.getElementById("periodic-div");
+        periodicDiv.classList.remove("show");
+        periodicDiv.classList.remove("active");
+        var clockedDiv = document.getElementById("clocked-div");
+        clockedDiv.classList.add("show");
+        clockedDiv.classList.add("active");
+    }
+}
+</script>
 {% endblock page_level_script %}

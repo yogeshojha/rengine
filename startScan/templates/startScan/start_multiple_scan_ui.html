@@ -13,7 +13,7 @@ Start Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Start Scan for {{domain.domain_name}}
+Start Multiple Scans
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -22,7 +22,7 @@ Start Scan for {{domain.domain_name}}
         <div class="widget-header">
             <div class="row">
                 <div class="col-12">
-                    <h4 class="text-info">Start scan for <span class="text-danger">{{domain.domain_name}}</span></h4>
+                    <h4 class="text-info">Start Scan for <span class="text-danger">{{ domain_list }}</span></h4>
                 </div>
             </div>
         </div>
@@ -111,7 +111,7 @@ Start Scan for {{domain.domain_name}}
                                                 </tr>
                                                 <tr>
                                                     <td>
-                                                        <p style="margin-right:1%">Fetch Endpoints(URLs)</p>
+                                                        <p style="margin-right:1%">Fetch URl</p>
                                                     </td>
                                                     <td>
                                                         {% if engine.fetch_url %}
@@ -137,11 +137,12 @@ Start Scan for {{domain.domain_name}}
                             {% endfor %}
                         </ul>
                         <div style=" position: fixed; bottom: 40px; right: 40px; z-index:1000;">
-                        <button class="btn btn-primary submit-fn mt-2 float-right" style="z-index:1000; " type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                        </svg> Start Scan</button>
+                            <button class="btn btn-primary submit-fn mt-2 float-right" style="z-index:1000; " type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg> Start Scan</button>
                         </div>
                     </div>
+                    <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
                 </form>
             </div>
         </div>

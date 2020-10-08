@@ -21,3 +21,8 @@ def getpath(value):
         return parsed_url.path + '?' + parsed_url.query
     else:
         return parsed_url.path
+
+
+@register.filter(name='none_or_never')
+def none_or_never(value):
+    return 'Never' if value is None else value

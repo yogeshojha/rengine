@@ -10,7 +10,7 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ amass-passive, subfinder, sublist3r ]\r\n    thread: 10\r\
+      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
       \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
       \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
       \ default\r\n    # Get the shortname for the config file from configurations\
@@ -44,7 +44,7 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ amass-passive, subfinder, sublist3r ]\r\n    thread: 10\r\
+      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
       \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
       \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
       \ default\r\n    # Get the shortname for the config file from configurations\
@@ -78,7 +78,7 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ amass-passive, subfinder, sublist3r ]\r\n    thread: 10\r\
+      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
       \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
       \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
       \ default\r\n    # Get the shortname for the config file from configurations\

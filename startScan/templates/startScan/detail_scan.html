@@ -30,7 +30,7 @@ Detailed Scan for {{history.domain_name}}
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
     <div class="row layout-top-spacing">
-        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 mt-2">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-activity-four">
                 <div class="widget-heading">
                     <h5>Recent Activities</h5>
@@ -45,10 +45,10 @@ Detailed Scan for {{history.domain_name}}
                                 <div class="t-text">
                                     <b>{{activity.title}}</b>
                                     <span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-                                    {% if activity.status == 0 %}&nbsp;Failed&nbsp;
-                                    {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-                                    {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-                                    {% endif %}
+                                        {% if activity.status == 0 %}&nbsp;Failed&nbsp;
+                                        {% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+                                        {% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+                                        {% endif %}
                                     </span>
                                     <p class="t-time">{{activity.time|naturaltime}}</p>
                                 </div>
@@ -96,6 +96,25 @@ Detailed Scan for {{history.domain_name}}
                 </div>
             </div>
         </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+            <div class="widget widget-one_hybrid">
+                <div class="widget-heading">
+                    <div class="w-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        </svg>
+                    </div>
+                    &nbsp;
+                    <h2 class="text-danger">{{subdomain_takeover}}</h2>
+                    <h6 class="">Subdomain Takeover</h6>
+                </div>
+                <div class="widget-content">
+                    &nbsp;
+                </div>
+            </div>
+        </div>
     </div>
     <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -110,6 +129,7 @@ Detailed Scan for {{history.domain_name}}
                         <thead>
                             <tr>
                                 <th>Subdomain</th>
+                                <th>IP Address</th>
                                 <th>Status</th>
                                 <th>Ports</th>
                                 <th class="text-center">Takeover</th>
@@ -139,6 +159,7 @@ Detailed Scan for {{history.domain_name}}
                             <tr>
                                 <th>Endpoint</th>
                                 <th>HTTP Status</th>
+                                <th>Content Type</th>
                                 <th>Content Length</th>
                                 <th>Page Title</th>
                             </tr>
@@ -193,9 +214,10 @@ $(document).ready(function() {
         "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-        "order": [[ 4, "desc" ]],
+        "order": [[ 5, "desc" ]],
         "columns": [
             {'data': 'subdomain'},
+            {'data': 'ip_address'},
             {'data': 'http_status'},
             {'data': 'open_ports'},
             {'data': 'takeover'},
@@ -205,23 +227,47 @@ $(document).ready(function() {
             {'data': 'screenshot_path', 'searchable': false},
             {'data': 'directory_json'},
             {'data': 'http_url'},
+            {'data': 'is_ip_cdn'},
+            {'data': 'cname'},
         ],
         "columnDefs": [
             {
-                "targets": [ 9 ],
+                "targets": [ 10, 11],
                 "visible": false,
-                "searchable": false
+                "searchable": false,
+            },
+            {
+                "targets": [ 12 ],
+                "visible": false,
+                "searchable": true,
             },
             {
                 "render": function ( data, type, row ) {
                     if (row['http_url']) {
-                        return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`;
+                        if (row['cname']) {
+                            return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<span class="text-warning"> ❯ </span>')+`</span>`;
+                        }
+                        return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
                     }
-                    else{
-                        return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
-                    }
+                    return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
                 },
                 "targets": 0
+            },
+            {
+                "render": function ( data, type, row ) {
+                    // display badge based on http status
+                    // green for http status 2XX, orange for 3XX and warning for everything else
+                    if (data) {
+                        if (row['is_ip_cdn']) {
+                            return `<span class='badge badge-pills badge-warning bs-tooltip' title="CDN IP Address">` + data + `</span>`
+                        }
+                        return `<span class='badge badge-pills badge-info'>` + data + `</span>`
+                    }
+                    else {
+                        return '';
+                    }
+                },
+                "targets": 1,
             },
             {
                 "render": function ( data, type, row ) {
@@ -237,12 +283,9 @@ $(document).ready(function() {
                         // datatable throws error when no data is returned
                         return "";
                     }
-                    else{
-                        return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-                    }
-
+                    return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
                 },
-                "targets": 1
+                "targets": 2,
             },
             {
                 "render": function ( data, type, row ) {
@@ -250,53 +293,45 @@ $(document).ready(function() {
                     // green for http status 2XX, orange for 3XX and warning for everything else
                     return span_values(data, "info");
                 },
-                "targets": 2
+                "targets": 3,
             },
             {
                 "render": function ( data, type, row ) {
                     // for takeover
                     if (data){
-                        return `<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title=" Potentially vulnerable via `+data+`"></div>`;
+                        return `<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" data-original-title=" Potentially vulnerable via `+data+`"></div>`;
                     }
-                    else {
-                        return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Takeover Not Possible"></div>`;
-                    }
+                    return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" data-original-title="Takeover Not Possible"></div>`;
                 },
-                "targets": 3,
+                "targets": 4,
             },
             {
                 "render": function ( data, type, row ) {
                     if (data){
                         return htmlEncode(data);
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
-                "targets": 5
+                "targets": 6,
             },
             {
                 "render": function ( data, type, row ) {
                     if (data){
                         return span_values(data, "info");
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
-                "targets": 6
+                "targets": 7,
             },
             {
                 "render": function ( data, type, row ) {
                     if (data){
-                        //return lightbox
-                        return `<a href="/media/`+data+`" data-lightbox="screenshots"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
+                        //return lightbox with caption as http link
+                        return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['subdomain']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4"></a>`;
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
-                "targets": 7
+                "targets": 8,
             },
             {
                 "render": function ( data, type, row ) {
@@ -323,16 +358,15 @@ $(document).ready(function() {
                         html_treeview += `</ul>`;
                         return html_treeview;
                     }
-                    else{
-                        return '';
-                    }
+                    return '';
                 },
-                "targets": 8
+                "targets": 9,
             },
         ],
-
         drawCallback: function () {
             $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
+            $('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
             $('.dataTables_wrapper table').removeClass('table-striped');
         },
         initComplete: function( settings, json ) {
@@ -359,10 +393,11 @@ $(document).ready(function() {
         "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
-        "order": [[ 2, "desc" ]],
+        "order": [[ 3, "desc" ]],
         "columns": [
             {'data': 'http_url'},
             {'data': 'http_status'},
+            {'data': 'content_type'},
             {'data': 'content_length'},
             {'data': 'page_title'},
         ],
@@ -374,7 +409,7 @@ $(document).ready(function() {
                     url = getParsedURL(data);
                     return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
                 },
-                "targets": 0
+                "targets": 0,
             },
             {
                 "render": function ( data, type, row ) {
@@ -390,23 +425,19 @@ $(document).ready(function() {
                         // datatable throws error when no data is returned
                         return "";
                     }
-                    else{
-                        return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
-                    }
+                    return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
 
                 },
-                "targets": 1
+                "targets": 1,
             },
             {
                 "render": function ( data, type, row ) {
                     if (data){
                         return htmlEncode(data);
                     }
-                    else{
-                        return "";
-                    }
+                    return "";
                 },
-                "targets": 3
+                "targets": 4,
             },
         ],
         drawCallback: function () {

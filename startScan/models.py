@@ -9,6 +9,7 @@ class ScanHistory(models.Model):
     scan_status = models.IntegerField()
     domain_name = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
+    celery_id = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
@@ -17,6 +18,7 @@ class ScanHistory(models.Model):
 
 class ScannedHost(models.Model):
     subdomain = models.CharField(max_length=1000)
+    cname = models.CharField(max_length=500, blank=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     open_ports = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
@@ -24,6 +26,7 @@ class ScannedHost(models.Model):
     page_title = models.CharField(max_length=1000)
     http_url = models.CharField(max_length=1000)
     ip_address = models.CharField(max_length=1000)
+    is_ip_cdn = models.BooleanField(null=True, default=False)
     screenshot_path = models.CharField(max_length=1000, null=True)
     http_header_path = models.CharField(max_length=1000, null=True)
     technology_stack = models.CharField(max_length=1500, null=True)
@@ -40,6 +43,7 @@ class WayBackEndPoint(models.Model):
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
+    content_type = models.CharField(max_length=100, null=True)
 
     def __str__(self):
         return self.page_title

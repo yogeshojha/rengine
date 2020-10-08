@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+    db:
+        restart: always
+        image: "postgres:12.3-alpine"
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_PORT=5432
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data/
+        networks:
+            - rengine_network
+    web:
+        restart: always
+        image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+        build: .
+        command: python3 manage.py runserver 0.0.0.0:8000
+        environment:
+            - DEBUG=1
+        volumes:
+          - .:/app
+        ports:
+          - "8000:8000"
+        depends_on:
+            - db
+            - redis
+        networks:
+            - rengine_network
+    redis:
+        image: redis:alpine
+        networks:
+            - rengine_network
+    celery:
+        build: .
+        command: celery -A reNgine worker -l INFO
+        environment:
+            - DEBUG=1
+        depends_on:
+            - redis
+        networks:
+            - rengine_network
+    celery-beat:
+        build: .
+        command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+        environment:
+            - DEBUG=1
+        depends_on:
+            - redis
+        networks:
+            - rengine_network
+networks:
+    rengine_network:
+volumes:
+  postgres_data:

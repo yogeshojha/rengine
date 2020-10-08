@@ -1,6 +1,6 @@
 import os
-
 from reNgine.init import first_run
+from celery.schedules import crontab
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'startScan.apps.StartscanConfig',
     'notification.apps.NotificationConfig',
     'django_ace',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -124,7 +125,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Asia/Kolkata'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -161,3 +162,12 @@ Feel free to change the default config file
 Alternatively, you can also add configuration from configuration module from UI
 '''
 AMASS_CONFIG = TOOL_LOCATION + 'config/amass-config.ini'
+
+
+'''
+CELERY settings
+'''
+CELERY_BROKER_URL = 'redis://redis:6379'
+CELERY_RESULT_BACKEND = 'redis://redis:6379'
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = 'UTC'

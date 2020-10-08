@@ -24,6 +24,7 @@ services:
             - media_volume:/app/tools/scan_results
         depends_on:
             - db
+            - redis
         networks:
             rengine_network:
                 aliases:
@@ -37,6 +38,7 @@ services:
         depends_on:
             - web
             - db
+            - redis
         secrets:
             - source: proxy.ca
               target: /etc/nginx/certs/rengine_chain.pem
@@ -48,6 +50,33 @@ services:
             - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
             - static_volume:/app/staticfiles
             - media_volume:/app/tools/scan_results
+        networks:
+            - rengine_network
+    redis:
+        image: redis:alpine
+        networks:
+            - rengine_network
+    celery:
+        build: .
+        command: celery -A reNgine worker -l INFO
+        volumes:
+            - ./celery_storage:/celery_storage
+        environment:
+            - DEBUG=1
+        volumes:
+            - static_volume:/app/staticfiles
+            - media_volume:/app/tools/scan_results
+        depends_on:
+            - redis
+        networks:
+            - rengine_network
+    celery-beat:
+        build: .
+        command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+        environment:
+            - DEBUG=1
+        depends_on:
+            - redis
         networks:
             - rengine_network
 
