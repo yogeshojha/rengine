@@ -430,7 +430,7 @@ function span_values(data, color)
 //to remove the image element if there is no screenshot captured
 function removeImageElement(element)
 {
-    element.remove();
+    element.parentNode.remove();
 }
 </script>
 {% endblock page_level_script %}
