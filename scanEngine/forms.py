@@ -30,6 +30,9 @@ class AddEngineForm(forms.ModelForm):
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
+    vulnerability_scan = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -64,6 +67,9 @@ class UpdateEngineForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput())
     fetch_url = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput())
+    vulnerability_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
     yaml_configuration = forms.CharField(widget=AceWidget(

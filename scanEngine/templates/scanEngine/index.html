@@ -46,6 +46,7 @@ All Engines
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="3">Directory & Files Discovery</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="4">Subdomain Takeover</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="5">Fetch URLs</a>
+                                <a class="btn toggle-vis mb-2 ml-2" data-column="6">Vulnerability Scan</a>
                             </div>
                         </div>
                         <div class="table-responsive mb-4">
@@ -58,6 +59,7 @@ All Engines
                                         <th>Directory & Files Discovery</th>
                                         <th>Subdomain Takeover</th>
                                         <th>Fetch URLs</th>
+                                        <th>Vulnerability Scan</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -95,6 +97,13 @@ All Engines
                                         </td>
                                         <td>
                                             {% if engine_type.fetch_url %}
+                                            {% include 'base/_items/green_tick.html' %}
+                                            {% else %}
+                                            {% include 'base/_items/red_cross.html' %}
+                                            {%endif%}
+                                        </td>
+                                        <td>
+                                            {% if engine_type.vulnerability_scan %}
                                             {% include 'base/_items/green_tick.html' %}
                                             {% else %}
                                             {% include 'base/_items/red_cross.html' %}

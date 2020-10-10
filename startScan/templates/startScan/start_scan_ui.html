@@ -121,6 +121,18 @@ Start Scan for {{domain.domain_name}}
                                                         {% endif %}
                                                     </td>
                                                 </tr>
+                                                <tr>
+                                                    <td>
+                                                        <p style="margin-right:1%">Vulnerability Scan</p>
+                                                    </td>
+                                                    <td>
+                                                        {% if engine.vulnerability_scan %}
+                                                        {% include 'base/_items/green_tick.html' %}
+                                                        {% else %}
+                                                        {% include 'base/_items/red_cross.html' %}
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
                                             </table>
                                         </span>
                                         <span class="ml-3 d-block">

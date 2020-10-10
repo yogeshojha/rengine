@@ -9,6 +9,7 @@ class EngineType(models.Model):
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
     yaml_configuration = models.TextField()
+    vulnerability_scan = models.BooleanField(null=True, default=False)
     default_engine = models.BooleanField(null=True, default=False)
 
     def __str__(self):
