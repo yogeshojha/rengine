@@ -11,14 +11,15 @@ Scan history
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 <link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -138,6 +139,25 @@ Detailed Scan for {{history.domain_name}}
                                 <th>Technology</th>
                                 <th>Screenshot</th>
                                 <th>Directories</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row layout-top-spacing mb-4">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+            <div class="widget-content widget-content-area br-6">
+                <h5 class="text-danger">Vulnerability Scanner</h5>
+                <div class="table-responsive mb-4 mt-4">
+                    <table id="vulnerability_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Severity</th>
+                                <th>Vulnerable URL</th>
+                                <th>Description</th>
                             </tr>
                         </thead>
                     </table>
@@ -438,6 +458,62 @@ $(document).ready(function() {
                     return "";
                 },
                 "targets": 4,
+            },
+        ],
+        drawCallback: function () {
+            $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+            $('.dataTables_wrapper table').removeClass('table-striped');
+        }
+    });
+    $('#vulnerability_results').DataTable({
+        "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+        },
+        "stripeClasses": [],
+        "lengthMenu": [20, 40, 60, 100],
+        "pageLength": 20,
+        'serverSide': true,
+        "ajax": '/start_scan/api/listVulnerability/?url_of={{scan_history_id}}&format=datatables',
+        "columns": [
+            {'data': 'name'},
+            {'data': 'severity'},
+            {'data': 'url'},
+            {'data': 'description'},
+        ],
+        "columnDefs": [
+            {
+                "render": function ( data, type, row ) {
+                    switch (data) {
+                        case 0:
+                            return "<span class='badge badge-primary'>Info</span>";
+                            break;
+                        case 1:
+                            return "<span class='badge badge-low'>Low</span>";
+                            break;
+                        case 2:
+                            return "<span class='badge badge-warning'>Medium</span>";
+                            break;
+                        case 3:
+                            return "<span class='badge badge-danger'>High</span>";
+                            break;
+                        case 4:
+                            return "<span class='badge badge-critical'>Critical</span>";
+                            break;
+                        default:
+                            return "";
+                    }
+                },
+                "targets": 1,
+            },
+            {
+                "render": function ( data, type, row ) {
+                    return "<a href='"+data+"' target='_blank' class='text-danger'>"+data+"</a>";
+                },
+                "targets": 2,
             },
         ],
         drawCallback: function () {

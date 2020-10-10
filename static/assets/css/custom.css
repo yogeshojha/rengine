@@ -3,3 +3,13 @@
     align-items: center;
     flex-wrap: wrap;
 }
+
+.badge-low {
+  color: #fff;
+  background-color: #FFD600;
+}
+
+.badge-critical {
+  color: #fff;
+  background-color: #AA2C00;
+}

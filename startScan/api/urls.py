@@ -10,7 +10,7 @@ router.register(r'scanHistory', ScanHistoryViewSet)
 
 router.register(r'listEndpoints', EndPointViewSet)
 
-router.register(r'vulnerability', VulnerabilityViewSet)
+router.register(r'listVulnerability', VulnerabilityViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
