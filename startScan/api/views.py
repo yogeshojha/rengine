@@ -43,7 +43,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         req = self.request
         vulnerability_of = req.query_params.get('vulnerability_of')
         if vulnerability_of:
-            self.queryset = WayBackEndPoint.objects.filter(
+            self.queryset = VulnerabilityScan.objects.filter(
                 vulnerability_of__id=vulnerability_of)
             return self.queryset
         else:

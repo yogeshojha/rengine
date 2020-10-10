@@ -32,6 +32,7 @@ RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler gith
 
 RUN GO111MODULE=auto go get -u -v github.com/projectdiscovery/httpx/cmd/httpx \
     github.com/projectdiscovery/subfinder/v2/cmd/subfinder \
+    github.com/projectdiscovery/nuclei/v2/cmd/nuclei \
     github.com/lc/gau
 
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/naabu/cmd/naabu

@@ -1,6 +1,6 @@
 from celery import shared_task
 from reNgine.celery import app
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
+from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType
@@ -59,9 +59,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
     except Exception as exception:
-        print('-'*30)
+        print('-' * 30)
         print(exception)
-        print('-'*30)
+        print('-' * 30)
         # do something here
         scan_failed(task)
 
@@ -219,9 +219,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     try:
                         json_st = json.loads(line.strip())
                     except Exception as exception:
-                        print('-'*30)
+                        print('-' * 30)
                         print(exception)
-                        print('-'*30)
+                        print('-' * 30)
                         json_st = "{'host':'','port':''}"
                     sub_domain = ScannedHost.objects.get(
                         scan_history=task, subdomain=json_st['host'])
@@ -232,9 +232,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         sub_domain.open_ports = str(json_st['port'])
                     sub_domain.save()
             except BaseException as exception:
-                print('-'*30)
+                print('-' * 30)
                 print(exception)
-                print('-'*30)
+                print('-' * 30)
                 update_last_activity(activity_id, 0)
 
         '''
@@ -276,9 +276,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as e:
-                print('*'*50)
+                print('*' * 50)
                 print(e)
-                print('*'*50)
+                print('*' * 50)
 
         alive_file.close()
 
@@ -330,9 +330,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 sub_domain.technology_stack = tech_string
                 sub_domain.save()
         except Exception as exception:
-            print('-'*30)
+            print('-' * 30)
             print(exception)
-            print('-'*30)
+            print('-' * 30)
             update_last_activity(activity_id, 0)
 
         '''
@@ -371,9 +371,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     #     get_subdomain.save()
 
             except Exception as exception:
-                print('-'*30)
+                print('-' * 30)
                 print(exception)
-                print('-'*30)
+                print('-' * 30)
                 update_last_activity(activity_id, 0)
 
         '''
@@ -428,9 +428,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         scanned_host.directory_json = json_string
                         scanned_host.save()
                 except Exception as exception:
-                    print('-'*30)
+                    print('-' * 30)
                     print(exception)
-                    print('-'*30)
+                    print('-' * 30)
                     update_last_activity(activity_id, 0)
 
         '''
@@ -476,14 +476,53 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 endpoint.save()
 
         '''
+        Run Nuclei Scan
+        '''
+        if(task.scan_type.vulnerability_scan):
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
+            vulnerability_result_path = results_dir + \
+                current_scan_dir + '/vulnerability.json'
+            alive_url_path = results_dir + current_scan_dir + '/alive.txt'
+            nuclei_command = 'nuclei -t /root/nuclei-templates -json -pbar -o ' + \
+                vulnerability_result_path + ' -l ' + alive_url_path
+
+            os.system(nuclei_command)
+
+            urls_json_result = open(vulnerability_result_path, 'r')
+            lines = urls_json_result.readlines()
+            for line in lines:
+                json_st = json.loads(line.strip())
+                vulnerability = VulnerabilityScan()
+                vulnerability.vulnerability_of = task
+                vulnerability.name = json_st['name']
+                vulnerability.url = json_st['matched']
+                if json_st['severity'] == 'info':
+                    severity = 0
+                elif json_st['severity'] == 'low':
+                    severity = 1
+                elif json_st['severity'] == 'medium':
+                    severity = 2
+                elif json_st['severity'] == 'high':
+                    severity = 3
+                else:
+                    severity = 4
+                vulnerability.severity = severity
+                vulnerability.template_used = json_st['template']
+                if 'description' in json_st:
+                    vulnerability.description = json_st['description']
+                if 'matcher_name' in json_st:
+                    vulnerability.matcher_name = json_st['matcher_name']
+                vulnerability.save()
+        '''
         Once the scan is completed, save the status to successful
         '''
         task.scan_status = 2
         task.save()
     except Exception as exception:
-        print('-'*30)
+        print('-' * 30)
         print(exception)
-        print('-'*30)
+        print('-' * 30)
         scan_failed(task)
 
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
