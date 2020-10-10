@@ -59,7 +59,7 @@ class ScanActivity(models.Model):
         return str(self.title)
 
 
-class VulnerabilityScanner(models.Model):
+class VulnerabilityScan(models.Model):
     vulnerability_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     url = models.CharField(max_length=1000)
     title = models.CharField(max_length=400)
