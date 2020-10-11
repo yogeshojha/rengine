@@ -89,6 +89,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
+        self.initial['vulnerability_scan'] = engine.vulnerability_scan
 
 
 class AddWordlistForm(forms.Form):
