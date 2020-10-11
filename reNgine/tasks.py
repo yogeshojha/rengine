@@ -485,42 +485,47 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             vulnerability_result_path = results_dir + \
                 current_scan_dir + '/vulnerability.json'
 
-            all_subdomains = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
+            all_subdomains = results_dir + current_scan_dir + \
+                '/sorted_subdomain_collection.txt'
 
-            nuclei_command = 'cat {} | httpx -silent | nuclei -json -o {} '.format(all_subdomains, vulnerability_result_path)
+            nuclei_command = 'cat {} | httpx -silent | nuclei -json -o {} '.format(
+                all_subdomains, vulnerability_result_path)
 
             # check yaml settings for templates
             if 'all' in yaml_configuration['vulnerability_scan']['template']:
                 template = '/root/nuclei-templates'
             else:
-                template = '/root/nuclei-templates/{' + yaml_configuration['vulnerability_scan']['template']+'}'
+                template = yaml_configuration['vulnerability_scan']['template'].replace(
+                    ',', ' -t ')
 
             # Update nuclei command with templates
-            nuclei_command = nuclei_command + template.replace(" ", "")
+            nuclei_command = nuclei_command + ' -t ' + template
 
-            # check yaml settings for  concurrency
-            if yaml_configuration['vulnerability_scan']['concurrent'] > 0:
-                concurrent = yaml_configuration['vulnerability_scan']['concurrent']
-            else:
-                concurrent = 10
-
-            # Update nuclei command with concurrent
-            nuclei_command = nuclei_command + ' -c ' + str(concurrent)
+            # # check yaml settings for  concurrency
+            # if yaml_configuration['vulnerability_scan']['concurrent'] > 0:
+            #     concurrent = yaml_configuration['vulnerability_scan']['concurrent']
+            # else:
+            #     concurrent = 10
+            #
+            # # Update nuclei command with concurrent
+            # nuclei_command = nuclei_command + ' -c ' + str(concurrent)
 
             # yaml settings for severity
             if 'severity' in yaml_configuration['vulnerability_scan']:
                 if yaml_configuration['vulnerability_scan']['severity'] != 'all':
-                    severity = yaml_configuration['vulnerability_scan']['severity'].replace(" ", "")
+                    severity = yaml_configuration['vulnerability_scan']['severity'].replace(
+                        " ", "")
                     # Update nuclei command based on severity
                     nuclei_command = nuclei_command + ' -severity ' + severity
 
             # update nuclei templates before running scan
             os.system('nuclei -update-templates')
-            # run nuclei
-            print(nuclei_command)
-            os.system(nuclei_command)
 
             try:
+                # run nuclei
+                print(nuclei_command)
+                os.system(nuclei_command)
+
                 urls_json_result = open(vulnerability_result_path, 'r')
                 lines = urls_json_result.readlines()
                 for line in lines:
@@ -546,7 +551,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     if 'matcher_name' in json_st:
                         vulnerability.matcher_name = json_st['matcher_name']
                     vulnerability.save()
-            except Exception as e:
+            except Exception as exception:
                 print('-' * 30)
                 print(exception)
                 print('-' * 30)
