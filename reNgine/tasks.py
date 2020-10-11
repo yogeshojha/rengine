@@ -484,36 +484,42 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             vulnerability_result_path = results_dir + \
                 current_scan_dir + '/vulnerability.json'
             alive_url_path = results_dir + current_scan_dir + '/alive.txt'
-            nuclei_command = 'nuclei -t /root/nuclei-templates -json -pbar -o ' + \
+            nuclei_command = 'nuclei -t /root/nuclei-templates -json -o ' + \
                 vulnerability_result_path + ' -l ' + alive_url_path
 
             os.system(nuclei_command)
 
-            urls_json_result = open(vulnerability_result_path, 'r')
-            lines = urls_json_result.readlines()
-            for line in lines:
-                json_st = json.loads(line.strip())
-                vulnerability = VulnerabilityScan()
-                vulnerability.vulnerability_of = task
-                vulnerability.name = json_st['name']
-                vulnerability.url = json_st['matched']
-                if json_st['severity'] == 'info':
-                    severity = 0
-                elif json_st['severity'] == 'low':
-                    severity = 1
-                elif json_st['severity'] == 'medium':
-                    severity = 2
-                elif json_st['severity'] == 'high':
-                    severity = 3
-                else:
-                    severity = 4
-                vulnerability.severity = severity
-                vulnerability.template_used = json_st['template']
-                if 'description' in json_st:
-                    vulnerability.description = json_st['description']
-                if 'matcher_name' in json_st:
-                    vulnerability.matcher_name = json_st['matcher_name']
-                vulnerability.save()
+            try:
+                urls_json_result = open(vulnerability_result_path, 'r')
+                lines = urls_json_result.readlines()
+                for line in lines:
+                    json_st = json.loads(line.strip())
+                    vulnerability = VulnerabilityScan()
+                    vulnerability.vulnerability_of = task
+                    vulnerability.name = json_st['name']
+                    vulnerability.url = json_st['matched']
+                    if json_st['severity'] == 'info':
+                        severity = 0
+                    elif json_st['severity'] == 'low':
+                        severity = 1
+                    elif json_st['severity'] == 'medium':
+                        severity = 2
+                    elif json_st['severity'] == 'high':
+                        severity = 3
+                    else:
+                        severity = 4
+                    vulnerability.severity = severity
+                    vulnerability.template_used = json_st['template']
+                    if 'description' in json_st:
+                        vulnerability.description = json_st['description']
+                    if 'matcher_name' in json_st:
+                        vulnerability.matcher_name = json_st['matcher_name']
+                    vulnerability.save()
+            except Exception as e:
+                print('-' * 30)
+                print(exception)
+                print('-' * 30)
+                update_last_activity(activity_id, 0)
         '''
         Once the scan is completed, save the status to successful
         '''

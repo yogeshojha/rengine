@@ -102,6 +102,23 @@ fetch_url:
     # supported tools are gau and hakrawler
     # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
+
+vulnerability_scan:
+    # reNgine uses nuclei as a vulnerability scanner.
+    # concurrent: Number of concurrent requests (default 10)
+    concurrent: 10
+    # Template are input file/files to check across hosts
+    # Please refer nuclei documentation for templates
+    # currently supported options are one or more combination of nuclei-templates
+    # Usage: template: cves, default-credentials, dns, files, fuzzing
+    # Refer to nuclei-templates repo for available options
+    # or you can also use all templates using: template: all
+    # Find more about nuclei templates here: https://github.com/projectdiscovery/nuclei-templates
+    template: all
+    # If you wish to use templates based on severity, you can specify them
+    # Usage: severity: critical, low
+    # Available options are all, critical, high, low, info
+    severity: all
 `);
 	editor.clearSelection();
 });
