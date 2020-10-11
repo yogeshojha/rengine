@@ -481,12 +481,43 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         if(task.scan_type.vulnerability_scan):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
+
             vulnerability_result_path = results_dir + \
                 current_scan_dir + '/vulnerability.json'
-            alive_url_path = results_dir + current_scan_dir + '/alive.txt'
-            nuclei_command = 'nuclei -t /root/nuclei-templates -json -o ' + \
-                vulnerability_result_path + ' -l ' + alive_url_path
 
+            all_subdomains = results_dir + current_scan_dir + '/sorted_subdomain_collection.txt'
+
+            nuclei_command = 'cat {} | httpx -silent | nuclei -json -o {} '.format(all_subdomains, vulnerability_result_path)
+
+            # check yaml settings for templates
+            if 'all' in yaml_configuration['vulnerability_scan']['template']:
+                template = '/root/nuclei-templates'
+            else:
+                template = '/root/nuclei-templates/{' + yaml_configuration['vulnerability_scan']['template']+'}'
+
+            # Update nuclei command with templates
+            nuclei_command = nuclei_command + template.replace(" ", "")
+
+            # check yaml settings for  concurrency
+            if yaml_configuration['vulnerability_scan']['concurrent'] > 0:
+                concurrent = yaml_configuration['vulnerability_scan']['concurrent']
+            else:
+                concurrent = 10
+
+            # Update nuclei command with concurrent
+            nuclei_command = nuclei_command + ' -c ' + str(concurrent)
+
+            # yaml settings for severity
+            if 'severity' in yaml_configuration['vulnerability_scan']:
+                if yaml_configuration['vulnerability_scan']['severity'] != 'all':
+                    severity = yaml_configuration['vulnerability_scan']['severity'].replace(" ", "")
+                    # Update nuclei command based on severity
+                    nuclei_command = nuclei_command + ' -severity ' + severity
+
+            # update nuclei templates before running scan
+            os.system('nuclei -update-templates')
+            # run nuclei
+            print(nuclei_command)
             os.system(nuclei_command)
 
             try:
