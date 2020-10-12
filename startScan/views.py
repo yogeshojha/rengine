@@ -45,6 +45,7 @@ def detail_scan(request, id):
         vulnerability_of__id=id, severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(
         vulnerability_of__id=id, severity=4).count()
+    total_vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
     context = {'scan_history_active': 'true',
                'scan_history': scan_history,
                'scan_activity': scan_activity,
@@ -60,6 +61,7 @@ def detail_scan(request, id):
                'medium_count': medium_count,
                'high_count': high_count,
                'critical_count': critical_count,
+               'total_vulnerability_count': total_vulnerability_count,
                }
     return render(request, 'startScan/detail_scan.html', context)
 

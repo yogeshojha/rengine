@@ -64,7 +64,7 @@ Detailed Scan for {{history.domain_name}}
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-one_hybrid">
                 <div class="widget-heading">
-                    <div class="w-icon">
+                    <div class="w-icon text-info">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="2" y1="12" x2="22" y2="12"></line>
@@ -83,7 +83,7 @@ Detailed Scan for {{history.domain_name}}
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-one_hybrid">
                 <div class="widget-heading">
-                    <div class="w-icon">
+                    <div class="w-icon text-info">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
                             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
@@ -101,19 +101,17 @@ Detailed Scan for {{history.domain_name}}
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
             <div class="widget widget-one_hybrid">
                 <div class="widget-heading">
-                    <div class="w-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    <div class="w-icon text-danger">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+                            <circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
                         </svg>
                     </div>
                     &nbsp;
-                    <h2 class="text-danger">{{subdomain_takeover}}</h2>
-                    <h6 class="">Subdomain Takeover</h6>
+                    <h2 class="text-danger">{{total_vulnerability_count}}</h2>
+                    <h6 class="">Vulnerabilities Discovered</h6>
                 </div>
                 <div class="widget-content">
-                    &nbsp;
+                    <span class="text-danger">{{critical_count}} Critical and {{high_count}} High</span>
                 </div>
             </div>
         </div>
