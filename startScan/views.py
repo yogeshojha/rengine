@@ -35,11 +35,16 @@ def detail_scan(request, id):
     subdomain_takeover = ScannedHost.objects.filter(
         scan_history__id=id, takeover__isnull=False).count()
     history = get_object_or_404(ScanHistory, id=id)
-    info_count = VulnerabilityScan.objects.filter(vulnerability_of__id=id, severity=0).count()
-    low_count = VulnerabilityScan.objects.filter(vulnerability_of__id=id, severity=1).count()
-    medium_count = VulnerabilityScan.objects.filter(vulnerability_of__id=id, severity=2).count()
-    high_count = VulnerabilityScan.objects.filter(vulnerability_of__id=id, severity=3).count()
-    critical_count = VulnerabilityScan.objects.filter(vulnerability_of__id=id, severity=4).count()
+    info_count = VulnerabilityScan.objects.filter(
+        vulnerability_of__id=id, severity=0).count()
+    low_count = VulnerabilityScan.objects.filter(
+        vulnerability_of__id=id, severity=1).count()
+    medium_count = VulnerabilityScan.objects.filter(
+        vulnerability_of__id=id, severity=2).count()
+    high_count = VulnerabilityScan.objects.filter(
+        vulnerability_of__id=id, severity=3).count()
+    critical_count = VulnerabilityScan.objects.filter(
+        vulnerability_of__id=id, severity=4).count()
     context = {'scan_history_active': 'true',
                'scan_history': scan_history,
                'scan_activity': scan_activity,
