@@ -19,6 +19,7 @@ Scan history
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
+<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
 <script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
@@ -117,6 +118,22 @@ Detailed Scan for {{history.domain_name}}
             </div>
         </div>
     </div>
+    <div class="row  layout-top-spacing mb-4">
+        <div class="col-xl-12">
+            <div class="statbox widget box box-shadow">
+                <div class="widget-header">
+                    <div class="row">
+                        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+                            <h5>Vulnerability Scan Summary</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="widget-content widget-content-area">
+                    <div id="vulnerability-chart" class=""></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
@@ -149,7 +166,7 @@ Detailed Scan for {{history.domain_name}}
     <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
-                <h5 class="text-danger">Vulnerability Scanner</h5>
+                <h5 class="text-danger">Vulnerability Scan Results</h5>
                 <div class="table-responsive mb-4 mt-4">
                     <table id="vulnerability_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
                         <thead>
@@ -202,6 +219,7 @@ Detailed Scan for {{history.domain_name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script type="text/javascript">
 // collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
@@ -495,22 +513,22 @@ $(document).ready(function() {
                 "render": function ( data, type, row ) {
                     switch (data) {
                         case 0:
-                            return "<span class='badge badge-primary'>Info</span>";
-                            break;
+                        return "<span class='badge badge-primary'>Info</span>";
+                        break;
                         case 1:
-                            return "<span class='badge badge-low'>Low</span>";
-                            break;
+                        return "<span class='badge badge-low'>Low</span>";
+                        break;
                         case 2:
-                            return "<span class='badge badge-warning'>Medium</span>";
-                            break;
+                        return "<span class='badge badge-warning'>Medium</span>";
+                        break;
                         case 3:
-                            return "<span class='badge badge-danger'>High</span>";
-                            break;
+                        return "<span class='badge badge-danger'>High</span>";
+                        break;
                         case 4:
-                            return "<span class='badge badge-critical'>Critical</span>";
-                            break;
+                        return "<span class='badge badge-critical'>Critical</span>";
+                        break;
                         default:
-                            return "";
+                        return "";
                     }
                 },
                 "targets": 1,
@@ -546,5 +564,41 @@ function span_values(data, color)
     });
     return data_with_span;
 }
+
+
+// apex charts for vulnerability summary
+var donutChart = {
+    chart: {
+        height: 400,
+        type: 'donut',
+        toolbar: {
+          show: false,
+        }
+    },
+    colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+    labels: ['Critical Vulnerabilities', 'High Severity Vulnerabilities', 'Medium Severity Vulnerabilities', 'Low Severity Vulnerabilities', 'Informational'],
+    // critical, high, medium, low, informational
+    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+    responsive: [{
+        breakpoint: 480,
+        options: {
+            chart: {
+                width: 300
+            },
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }]
+}
+
+var donut = new ApexCharts(
+    document.querySelector("#vulnerability-chart"),
+    donutChart
+);
+
+donut.render();
+
+
 </script>
 {% endblock page_level_script %}
