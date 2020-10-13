@@ -459,7 +459,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
                 (domain.domain_name, current_scan_dir, tools))
 
-            url_results_file = results_dir + current_scan_dir + '/all_urls.json'
+            url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
 
             urls_json_result = open(url_results_file, 'r')
             lines = urls_json_result.readlines()
@@ -488,7 +488,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             all_subdomains = results_dir + current_scan_dir + \
                 '/sorted_subdomain_collection.txt'
 
-            nuclei_command = 'cat {} | httpx -silent | nuclei -json -o {} '.format(
+            nuclei_command = 'cat {} | httpx -silent | nuclei -v -json -o {} '.format(
                 all_subdomains, vulnerability_result_path)
 
             # check yaml settings for templates
@@ -520,12 +520,18 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # update nuclei templates before running scan
             os.system('nuclei -update-templates')
+            # run nuclei
+            os.system(nuclei_command)
 
-            try:
-                # run nuclei
+            # if endpoints exists, then run nuclei on them as well
+            if(task.scan_type.fetch_url):
+                nuclei_command = nuclei_command.replace('sorted_subdomain_collection', 'all_urls')
+                nuclei_command = nuclei_command.replace('vulnerability.json', 'vulnerability_2.json')
                 print(nuclei_command)
                 os.system(nuclei_command)
+                os.system('cat {}/vulnerability* > {}/vulnerability.json'.format(results_dir+current_scan_dir, results_dir+current_scan_dir))
 
+            try:
                 urls_json_result = open(vulnerability_result_path, 'r')
                 lines = urls_json_result.readlines()
                 for line in lines:
