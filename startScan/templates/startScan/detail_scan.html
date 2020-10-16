@@ -58,6 +58,7 @@ Detailed Scan for {{history.domain_name}}
                             {% endfor %}
                         </div>
                     </div>
+                    <br>
                 </div>
             </div>
         </div>
@@ -77,6 +78,8 @@ Detailed Scan for {{history.domain_name}}
                 </div>
                 <div class="widget-content">
                     Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+                    <br>
+                    <a href="#subdomainDiscovered" class="text-info">View all subdomains</a>
                 </div>
             </div>
         </div>
@@ -95,6 +98,8 @@ Detailed Scan for {{history.domain_name}}
                 </div>
                 <div class="widget-content">
                     Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
+                    <br>
+                    <a href="#endpointDiscovered" class="text-info">View all Endpoints</a>
                 </div>
             </div>
         </div>
@@ -113,6 +118,8 @@ Detailed Scan for {{history.domain_name}}
                 </div>
                 <div class="widget-content">
                     <span class="text-danger">{{critical_count}} Critical and {{high_count}} High</span>
+                    <br>
+                    <a href="#vulnerabilityDiscovered" class="text-info">View all Vulnerabilities</a>
                 </div>
             </div>
         </div>
@@ -130,6 +137,8 @@ Detailed Scan for {{history.domain_name}}
                     <h6 class="">Subdomain Takeover</h6>
                 </div>
                 <div class="widget-content">
+                    &nbsp;
+                    <br>
                     &nbsp;
                 </div>
             </div>
@@ -152,7 +161,7 @@ Detailed Scan for {{history.domain_name}}
     </div>
     {% endif %}
     {% endif %}
-    <div class="row layout-top-spacing mb-4">
+    <div class="row layout-top-spacing mb-4" id="subdomainDiscovered">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-info">Subdomains Discovered</h5>
@@ -182,7 +191,7 @@ Detailed Scan for {{history.domain_name}}
         </div>
     </div>
     {% if history.scan_type.vulnerability_scan %}
-    <div class="row layout-top-spacing mb-4">
+    <div class="row layout-top-spacing mb-4" id="vulnerabilityDiscovered">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
                 <h5 class="text-danger">Vulnerability Scan Results</h5>
@@ -204,7 +213,7 @@ Detailed Scan for {{history.domain_name}}
     {% endif %}
     {% if history.scan_type.fetch_url %}
     <div class="row mb-4">
-        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12" id="endpointDiscovered">
             <div class="widget-content widget-content-area br-6 layout-top-spacing">
                 <h5 class="text-info">Endpoints</h5>
                 {% if endpoint_count %}
