@@ -443,37 +443,43 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         if(task.scan_type.fetch_url):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
-            wayback_results_file = results_dir + current_scan_dir + '/url_wayback.json'
-
             '''
             It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
             '''
-            # check yaml settings
             if 'all' in yaml_configuration['fetch_url']['uses_tool']:
                 tools = 'gau hakrawler'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration['fetch_url']['uses_tool'])
 
-            os.system(
-                settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
-                (domain.domain_name, current_scan_dir, tools))
+            subdomain_scan_results_file = results_dir + \
+                current_scan_dir + '/sorted_subdomain_collection.txt'
 
-            url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
+            with open(subdomain_scan_results_file) as subdomain_list:
+                for subdomain in subdomain_list:
+                    if validators.domain(subdomain.rstrip('\n')):
+                        print('-'*20)
+                        print('Fetching URL for ' + subdomain.rstrip('\n'))
+                        print('-'*20)
+                        os.system(
+                            settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
+                            (subdomain.rstrip('\n'), current_scan_dir, tools))
 
-            urls_json_result = open(url_results_file, 'r')
-            lines = urls_json_result.readlines()
-            for line in lines:
-                json_st = json.loads(line.strip())
-                endpoint = WayBackEndPoint()
-                endpoint.url_of = task
-                endpoint.http_url = json_st['url']
-                endpoint.content_length = json_st['content-length']
-                endpoint.http_status = json_st['status-code']
-                endpoint.page_title = json_st['title']
-                if 'content-type' in json_st:
-                    endpoint.content_type = json_st['content-type']
-                endpoint.save()
+                        url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
+
+                        urls_json_result = open(url_results_file, 'r')
+                        lines = urls_json_result.readlines()
+                        for line in lines:
+                            json_st = json.loads(line.strip())
+                            endpoint = WayBackEndPoint()
+                            endpoint.url_of = task
+                            endpoint.http_url = json_st['url']
+                            endpoint.content_length = json_st['content-length']
+                            endpoint.http_status = json_st['status-code']
+                            endpoint.page_title = json_st['title']
+                            if 'content-type' in json_st:
+                                endpoint.content_type = json_st['content-type']
+                            endpoint.save()
 
         '''
         Run Nuclei Scan

@@ -91,10 +91,7 @@ $(document).ready(function() {
         "columnDefs": [
             {
                 "render": function ( data, type, row ) {
-                    // in the endpoint section, there is no point of displaying fully qualified url
-                    // so display only the endpoint and make a hyperlink
-                    url = getParsedURL(data);
-                    return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+                    return "<a href='"+data+"' target='_blank' class='text-info'>"+data+"</a>";
                 },
                 "targets": 0,
             },
