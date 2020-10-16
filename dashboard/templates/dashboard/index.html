@@ -97,8 +97,8 @@ Dashboard
         </div>
     </div>
     <div class="row layout-top-spacing">
-
-        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+        {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
             <div class="widget widget-chart-two">
                 <div class="widget-heading">
                     <h5 class="">Vulnerability Scan Summary</h5>
@@ -109,6 +109,7 @@ Dashboard
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
     <div class="row layout-top-spacing">
 
@@ -260,7 +261,7 @@ var options = {
     plotOptions: {
         pie: {
             donut: {
-                size: '65%',
+                size: '70%',
                 background: 'transparent',
                 labels: {
                     show: true,
@@ -300,7 +301,7 @@ var options = {
         show: true,
         width: 25,
     },
-    series: [10,20,40,40,50],
+    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
     labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
     responsive: [{
         breakpoint: 1599,

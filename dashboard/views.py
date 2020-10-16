@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost
+from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan
 from targetApp.models import Domain
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
@@ -24,6 +24,11 @@ def index(request):
     recent_scans = ScanHistory.objects.all().order_by(
         '-last_scan_date').exclude(scan_status=-1)[:4]
     upcoming_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
+    info_count = VulnerabilityScan.objects.filter(severity=0).count()
+    low_count = VulnerabilityScan.objects.filter(severity=1).count()
+    medium_count = VulnerabilityScan.objects.filter(severity=2).count()
+    high_count = VulnerabilityScan.objects.filter(severity=3).count()
+    critical_count = VulnerabilityScan.objects.filter(severity=4).count()
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -34,7 +39,13 @@ def index(request):
         'endpoint_alive_count': endpoint_alive_count,
         'on_going_scan_count': on_going_scan_count,
         'recent_scans': recent_scans,
-        'upcoming_scans': upcoming_scans, }
+        'upcoming_scans': upcoming_scans,
+        'info_count': info_count,
+        'low_count': low_count,
+        'medium_count': medium_count,
+        'high_count': high_count,
+        'critical_count': critical_count,
+        }
     return render(request, 'dashboard/index.html', context)
 
 
