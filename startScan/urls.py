@@ -16,6 +16,14 @@ urlpatterns = [
         views.detail_scan,
         name='detail_scan'),
     path(
+        'detail/vuln/<int:id>',
+        views.detail_vuln_scan,
+        name='detail_vuln_scan'),
+    path(
+        'detail/endpoint/<int:id>',
+        views.detail_endpoint_scan,
+        name='detail_endpoint_scan'),
+    path(
         'start/<int:host_id>',
         views.start_scan_ui,
         name='start_scan'),

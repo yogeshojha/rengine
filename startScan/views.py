@@ -67,6 +67,18 @@ def detail_scan(request, id):
     return render(request, 'startScan/detail_scan.html', context)
 
 
+def detail_vuln_scan(request, id):
+    history = get_object_or_404(ScanHistory, id=id)
+    context = {'scan_history_id': id, 'history': history}
+    return render(request, 'startScan/detail_vuln_scan.html', context)
+
+
+def detail_endpoint_scan(request, id):
+    history = get_object_or_404(ScanHistory, id=id)
+    context = {'scan_history_id': id, 'history': history}
+    return render(request, 'startScan/detail_endpoint_scan.html', context)
+
+
 def start_scan_ui(request, host_id):
     domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
