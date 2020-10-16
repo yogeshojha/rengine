@@ -137,24 +137,18 @@ Detailed Scan for {{history.domain_name}}
         {% endif %}
     </div>
     {% if history.scan_type.vulnerability_scan %}
-    {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-    <div class="row  layout-top-spacing mb-4">
-        <div class="col-xl-12">
-            <div class="statbox widget box box-shadow">
-                <div class="widget-header">
-                    <div class="row">
-                        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-                            <h5>Vulnerability Scan Summary</h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="widget-content widget-content-area">
-                    <div id="vulnerability-chart" class=""></div>
-                </div>
+    {# {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %} #}
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-top-spacing">
+        <div class="widget widget-chart-two">
+            <div class="widget-heading">
+                <h5 class="">Vulnerability Scan Summary</h5>
+            </div>
+            <div class="widget-content">
+                <div id="chart-2" class=""></div>
             </div>
         </div>
     </div>
-    {% endif %}
+    {# {% endif %} #}
     {% endif %}
     <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -240,10 +234,10 @@ Detailed Scan for {{history.domain_name}}
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script type="text/javascript">
 // collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
@@ -591,37 +585,111 @@ function span_values(data, color)
 
 
 // apex charts for vulnerability summary
-var donutChart = {
+var options = {
     chart: {
-        height: 200,
         type: 'donut',
-        toolbar: {
-          show: false,
+        width: 380
+    },
+    colors: ['#5c1ac3', '#e2a03f', '#e7515a', '#e2a03f'],
+    dataLabels: {
+        enabled: false
+    },
+    legend: {
+        position: 'bottom',
+        horizontalAlign: 'center',
+        fontSize: '14px',
+        markers: {
+            width: 10,
+            height: 10,
+        },
+        itemMargin: {
+            horizontal: 0,
+            vertical: 8
         }
     },
-    colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-    labels: ['Critical Vulnerabilities', 'High Severity Vulnerabilities', 'Medium Severity Vulnerabilities', 'Low Severity Vulnerabilities', 'Informational'],
-    // critical, high, medium, low, informational
-    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+    plotOptions: {
+        pie: {
+            donut: {
+                size: '65%',
+                background: 'transparent',
+                labels: {
+                    show: true,
+                    name: {
+                        show: true,
+                        fontSize: '29px',
+                        fontFamily: 'Nunito, sans-serif',
+                        color: undefined,
+                        offsetY: -10
+                    },
+                    value: {
+                        show: true,
+                        fontSize: '26px',
+                        fontFamily: 'Nunito, sans-serif',
+                        color: '20',
+                        offsetY: 16,
+                        formatter: function (val) {
+                            return val
+                        }
+                    },
+                    total: {
+                        show: true,
+                        showAlways: true,
+                        label: 'Total',
+                        color: '#888ea8',
+                        formatter: function (w) {
+                            return w.globals.seriesTotals.reduce( function(a, b) {
+                                return a + b
+                            }, 0)
+                        }
+                    }
+                }
+            }
+        }
+    },
+    stroke: {
+        show: true,
+        width: 25,
+    },
+    series: [985, 737, 270],
+    labels: ['Apparel', 'Electronic', 'Others'],
     responsive: [{
-        breakpoint: 480,
+        breakpoint: 1599,
         options: {
             chart: {
-                width: 300
+                width: '350px',
+                height: '400px'
             },
             legend: {
                 position: 'bottom'
             }
-        }
+        },
+
+        breakpoint: 1439,
+        options: {
+            chart: {
+                width: '250px',
+                height: '390px'
+            },
+            legend: {
+                position: 'bottom'
+            },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                    }
+                }
+            }
+        },
     }]
 }
 
-var donut = new ApexCharts(
-    document.querySelector("#vulnerability-chart"),
-    donutChart
+var chart = new ApexCharts(
+    document.querySelector("#chart-2"),
+    options
 );
 
-donut.render();
+chart.render();
 
 
 </script>
