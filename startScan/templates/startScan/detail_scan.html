@@ -137,18 +137,20 @@ Detailed Scan for {{history.domain_name}}
         {% endif %}
     </div>
     {% if history.scan_type.vulnerability_scan %}
-    {# {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %} #}
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-top-spacing">
-        <div class="widget widget-chart-two">
-            <div class="widget-heading">
-                <h5 class="">Vulnerability Scan Summary</h5>
-            </div>
-            <div class="widget-content">
-                <div id="chart-2" class=""></div>
+    {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+    <div class="row  layout-top-spacing mb-4">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+            <div class="widget widget-chart-two">
+                <div class="widget-heading">
+                    <h5 class="">Vulnerability Scan Summary</h5>
+                </div>
+                <div class="widget-content">
+                    <div id="vulnerability-chart" class=""></div>
+                </div>
             </div>
         </div>
     </div>
-    {# {% endif %} #}
+    {% endif %}
     {% endif %}
     <div class="row layout-top-spacing mb-4">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
@@ -590,7 +592,7 @@ var options = {
         type: 'donut',
         width: 380
     },
-    colors: ['#5c1ac3', '#e2a03f', '#e7515a', '#e2a03f'],
+    colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
     dataLabels: {
         enabled: false
     },
@@ -650,8 +652,8 @@ var options = {
         show: true,
         width: 25,
     },
-    series: [985, 737, 270],
-    labels: ['Apparel', 'Electronic', 'Others'],
+    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
     responsive: [{
         breakpoint: 1599,
         options: {
@@ -685,7 +687,7 @@ var options = {
 }
 
 var chart = new ApexCharts(
-    document.querySelector("#chart-2"),
+    document.querySelector("#vulnerability-chart"),
     options
 );
 
