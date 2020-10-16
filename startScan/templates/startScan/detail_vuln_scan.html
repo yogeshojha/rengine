@@ -8,19 +8,13 @@ Scan history - Vulnerabilities
 
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
-<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -58,8 +52,6 @@ Detailed Scan for {{history.domain_name}} - Vulnerabilities
 
 {% block page_level_script %}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
