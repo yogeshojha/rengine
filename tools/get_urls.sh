@@ -14,7 +14,7 @@ done
 
 cat $2/httpx* > $2/final_httpx_urls.json
 
-cat $2/url* > $2/all_urls.txt
+cat $2/url* >> $2/all_urls.txt
 
-rm -rf $2/urls*
+rm -rf $2/url*
 rm -rf $2/httpx*
