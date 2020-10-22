@@ -492,7 +492,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 current_scan_dir + '/vulnerability.json'
 
             nuclei_scan_urls = results_dir + current_scan_dir + \
-                '/alive_subdomains.txt'
+                '/alive.txt'
 
             '''
             if endpoints are scanned, append the alive subdomains url
