@@ -455,31 +455,50 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
 
-            with open(subdomain_scan_results_file) as subdomain_list:
-                for subdomain in subdomain_list:
-                    if validators.domain(subdomain.rstrip('\n')):
-                        print('-'*20)
-                        print('Fetching URL for ' + subdomain.rstrip('\n'))
-                        print('-'*20)
-                        os.system(
-                            settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
-                            (subdomain.rstrip('\n'), current_scan_dir, tools))
+            if 'aggressive' in yaml_configuration['fetch_url']['intensity']:
+                with open(subdomain_scan_results_file) as subdomain_list:
+                    for subdomain in subdomain_list:
+                        if validators.domain(subdomain.rstrip('\n')):
+                            print('-'*20)
+                            print('Fetching URL for ' + subdomain.rstrip('\n'))
+                            print('-'*20)
+                            os.system(
+                                settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
+                                (subdomain.rstrip('\n'), current_scan_dir, tools))
 
-                        url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
+                            url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
 
-                        urls_json_result = open(url_results_file, 'r')
-                        lines = urls_json_result.readlines()
-                        for line in lines:
-                            json_st = json.loads(line.strip())
-                            endpoint = WayBackEndPoint()
-                            endpoint.url_of = task
-                            endpoint.http_url = json_st['url']
-                            endpoint.content_length = json_st['content-length']
-                            endpoint.http_status = json_st['status-code']
-                            endpoint.page_title = json_st['title']
-                            if 'content-type' in json_st:
-                                endpoint.content_type = json_st['content-type']
-                            endpoint.save()
+                            urls_json_result = open(url_results_file, 'r')
+                            lines = urls_json_result.readlines()
+                            for line in lines:
+                                json_st = json.loads(line.strip())
+                                endpoint = WayBackEndPoint()
+                                endpoint.url_of = task
+                                endpoint.http_url = json_st['url']
+                                endpoint.content_length = json_st['content-length']
+                                endpoint.http_status = json_st['status-code']
+                                endpoint.page_title = json_st['title']
+                                if 'content-type' in json_st:
+                                    endpoint.content_type = json_st['content-type']
+                                endpoint.save()
+            else:
+                os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' % (domain.domain_name, current_scan_dir, tools))
+
+                url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
+
+                urls_json_result = open(url_results_file, 'r')
+                lines = urls_json_result.readlines()
+                for line in lines:
+                    json_st = json.loads(line.strip())
+                    endpoint = WayBackEndPoint()
+                    endpoint.url_of = task
+                    endpoint.http_url = json_st['url']
+                    endpoint.content_length = json_st['content-length']
+                    endpoint.http_status = json_st['status-code']
+                    endpoint.page_title = json_st['title']
+                    if 'content-type' in json_st:
+                        endpoint.content_type = json_st['content-type']
+                    endpoint.save()
 
         '''
         Run Nuclei Scan
@@ -495,14 +514,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 '/alive.txt'
 
             '''
-            if endpoints are scanned, append the alive subdomains url
+            TODO: if endpoints are scanned, append the alive subdomains url
             to the final list of all the urls and run the nuclei against that
             URL collection
             '''
-            if task.scan_type.fetch_url:
-                all_urls = results_dir + current_scan_dir + '/all_urls.txt'
-                os.system('cat {} >> {}'.format(nuclei_scan_urls, all_urls))
-                nuclei_scan_urls = all_urls
+            # if task.scan_type.fetch_url:
+            #     all_urls = results_dir + current_scan_dir + '/all_urls.txt'
+            #     os.system('cat {} >> {}'.format(nuclei_scan_urls, all_urls))
+            #     nuclei_scan_urls = all_urls
 
             nuclei_command = 'nuclei -v -json -l {} -o {}'.format(
                 nuclei_scan_urls, vulnerability_result_path)

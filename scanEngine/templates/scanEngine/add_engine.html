@@ -102,6 +102,11 @@ fetch_url:
     # supported tools are gau and hakrawler
     # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
+    # intensity will define how the URLs will be fetched
+    # Available Options: normal, aggressive
+    # normal: will fetch urls only for the main domain, subdomains urls will not be fetched
+    # aggressive: will fetch urls for all the subdomains
+    intensity: aggressive
 
 vulnerability_scan:
     # reNgine uses nuclei as a vulnerability scanner.

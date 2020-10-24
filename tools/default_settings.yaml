@@ -1,11 +1,9 @@
 subdomain_discovery:
-    # Available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder
+    # available tools are Sublist3r, amass, assetfinder, subfinder
     # Usage of many tools may improve the results but also may take longer time to scan
-    # If you choose to run amass, by default it does passive scan, you can choose both
-    # amass-active or amass-passive
-    uses_tool: [ amass-passive, subfinder, sublist3r ]
+    uses_tool: [ subfinder, sublist3r ]
     thread: 10
-    # Your wordlist shortname for amass active enumeration
+    # Your wordlist shortname for amass active enumeration, ignore if you are using passive enumeration
     wordlist: default
     # Get the shortname for the config file from configurations module
     amass_config: config_short_name
@@ -46,3 +44,25 @@ fetch_url:
     # supported tools are gau and hakrawler
     # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
+    # intensity will define how the URLs will be fetched
+    # Available Options: normal, aggressive
+    # normal: will fetch urls only for the main domain, subdomains urls will not be fetched
+    # aggressive: will fetch urls for all the subdomains
+    intensity: aggressive
+
+vulnerability_scan:
+    # reNgine uses nuclei as a vulnerability scanner.
+    # concurrent: Number of concurrent requests (default 10)
+    concurrent: 10
+    # Template are input file/files to check across hosts
+    # Please refer nuclei documentation for templates
+    # currently supported options are one or more combination of nuclei-templates
+    # Usage: template: cves, default-credentials, dns, files, fuzzing
+    # Refer to nuclei-templates repo for available options
+    # or you can also use all templates using: template: all
+    # Find more about nuclei templates here: https://github.com/projectdiscovery/nuclei-templates
+    template: all
+    # If you wish to use templates based on severity, you can specify them
+    # Usage: severity: critical, low
+    # Available options are all, critical, high, low, info
+    severity: all
