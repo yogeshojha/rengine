@@ -20,6 +20,10 @@ urlpatterns = [
         views.detail_vuln_scan,
         name='detail_vuln_scan'),
     path(
+        'detail/vuln',
+        views.detail_vuln_scan,
+        name='detail_vuln_scan'),
+    path(
         'detail/endpoint/<int:id>',
         views.detail_endpoint_scan,
         name='detail_endpoint_scan'),

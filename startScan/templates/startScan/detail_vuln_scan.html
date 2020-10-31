@@ -19,13 +19,16 @@ Scan history - Vulnerabilities
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
+{% if scan_history_id %}
 Detailed Scan for {{history.domain_name}} - Vulnerabilities
+{% else %}
+All Vulnerabilities
+{% endif %}
 {% endblock breadcrumb_title %}
 
 
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-    {% if history.scan_type.vulnerability_scan %}
     <div class="row layout-top-spacing mb-4" id="vulnerabilityDiscovered">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
             <div class="widget-content widget-content-area br-6">
@@ -45,7 +48,6 @@ Detailed Scan for {{history.domain_name}} - Vulnerabilities
             </div>
         </div>
     </div>
-    {% endif %}
 </div>
 {% endblock main_content %}
 
@@ -82,7 +84,11 @@ $(document).ready(function() {
         "lengthMenu": [20, 40, 60, 100],
         "pageLength": 20,
         'serverSide': true,
+        {% if scan_history_id %}
         "ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
+        {% else %}
+        "ajax": '/start_scan/api/listVulnerability/?vulnerability_of=&format=datatables',
+        {% endif %}
         "columns": [
             {'data': 'name'},
             {'data': 'severity'},
@@ -139,17 +145,5 @@ $(document).ready(function() {
         }
     });
 });
-
-
-// span values function will seperate the values by comma and put badge around it
-function span_values(data, color)
-{
-    var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-    var data_with_span ="";
-    data.split(/\s*,\s*/).forEach(function(split_vals) {
-        data_with_span+=badge + split_vals + "</span>";
-    });
-    return data_with_span;
-}
 </script>
 {% endblock page_level_script %}

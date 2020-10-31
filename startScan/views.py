@@ -67,9 +67,12 @@ def detail_scan(request, id):
     return render(request, 'startScan/detail_scan.html', context)
 
 
-def detail_vuln_scan(request, id):
-    history = get_object_or_404(ScanHistory, id=id)
-    context = {'scan_history_id': id, 'history': history}
+def detail_vuln_scan(request, id=None):
+    if id:
+        history = get_object_or_404(ScanHistory, id=id)
+        context = {'scan_history_id': id, 'history': history}
+    else:
+        context = {'scan_history_id': id, }
     return render(request, 'startScan/detail_vuln_scan.html', context)
 
 
