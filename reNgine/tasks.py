@@ -523,7 +523,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             #     os.system('cat {} >> {}'.format(nuclei_scan_urls, all_urls))
             #     nuclei_scan_urls = all_urls
 
-            nuclei_command = 'nuclei -v -json -l {} -o {}'.format(
+            nuclei_command = 'nuclei -json -l {} -o {}'.format(
                 nuclei_scan_urls, vulnerability_result_path)
 
             # check yaml settings for templates
