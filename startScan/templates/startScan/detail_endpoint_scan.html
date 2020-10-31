@@ -76,7 +76,7 @@ $(document).ready(function() {
             "sLengthMenu": "Results :  _MENU_",
         },
         "stripeClasses": [],
-        "lengthMenu": [20, 40, 60, 100],
+        "lengthMenu": [20, 50, 100, 500, 1000],
         "pageLength": 20,
         'serverSide': true,
         "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
@@ -130,17 +130,5 @@ $(document).ready(function() {
         }
     });
 });
-
-
-// span values function will seperate the values by comma and put badge around it
-function span_values(data, color)
-{
-    var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-    var data_with_span ="";
-    data.split(/\s*,\s*/).forEach(function(split_vals) {
-        data_with_span+=badge + split_vals + "</span>";
-    });
-    return data_with_span;
-}
 </script>
 {% endblock page_level_script %}
