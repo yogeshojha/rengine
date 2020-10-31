@@ -84,6 +84,7 @@ $(document).ready(function() {
         "lengthMenu": [20, 50, 100, 500, 1000],
         "pageLength": 20,
         'serverSide': true,
+        'order': [1, 'desc'],
         {% if scan_history_id %}
         "ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
         {% else %}
@@ -134,7 +135,16 @@ $(document).ready(function() {
             },
             {
                 "render": function ( data, type, row ) {
-                    return data + row['matcher_name'];
+                  // Could be better
+                  if (data) {
+                    return data;
+                  }
+                  else if (row['matcher_name']) {
+                    return row['matcher_name'].charAt(0).toUpperCase() + row['matcher_name'].slice(1);
+                  }
+                  else {
+                    return "";
+                  }
                 },
                 "targets": 3,
             },
