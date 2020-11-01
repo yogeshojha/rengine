@@ -22,11 +22,15 @@ urlpatterns = [
     path(
         'detail/vuln',
         views.detail_vuln_scan,
-        name='detail_vuln_scan'),
+        name='all_vulns'),
     path(
         'detail/endpoint/<int:id>',
         views.detail_endpoint_scan,
         name='detail_endpoint_scan'),
+    path(
+        'detail/endpoint',
+        views.detail_endpoint_scan,
+        name='all_endpoints'),
     path(
         'start/<int:host_id>',
         views.start_scan_ui,

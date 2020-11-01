@@ -40,7 +40,8 @@ Dashboard
                             <h6 class="">Total Targets</h6>
                         </div>
                         <div class="widget-content">
-                            &nbsp;
+                            <br>
+                            <a href="../target/list/" class="text-info">View all targets</a>
                         </div>
                     </div>
                 </div>
@@ -57,6 +58,8 @@ Dashboard
                         </div>
                         <div class="widget-content">
                             Total Alive Subdomains: <b class="text-info">{{alive_count|intcomma}}</b>
+                            <br>
+                            <a href="#" class="text-info">View all Subdomains</a>
                         </div>
                     </div>
                 </div>
@@ -73,6 +76,8 @@ Dashboard
                         </div>
                         <div class="widget-content">
                             Total Alive endpoints: <b class="text-info">{{endpoint_alive_count|intcomma}}</b>
+                            <br>
+                            <a href="{% url 'all_endpoints' %}" class="text-info">View all endpoints</a>
                         </div>
                     </div>
                 </div>
@@ -89,6 +94,8 @@ Dashboard
                         </div>
                         <div class="widget-content">
                             Currently Scanning <b class="text-info">{{on_going_scan_count}}</b>
+                            <br>
+                            <a href="#" class="text-info">View all scan history</a>
                         </div>
                     </div>
                 </div>
@@ -106,7 +113,7 @@ Dashboard
                       <h5 class="">Vulnerability Scan Summary</h5>
                     </div>
                     <div class="col-6">
-                      <span class="float-right"><a href="../start_scan/detail/vuln" class="text-info">View all vulnerabilities</a></span>
+                      <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
                     </div>
                   </div>
                 </div>
