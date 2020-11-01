@@ -59,7 +59,7 @@ Dashboard
                         <div class="widget-content">
                             Total Alive Subdomains: <b class="text-info">{{alive_count|intcomma}}</b>
                             <br>
-                            <a href="#" class="text-info">View all Subdomains</a>
+                            <a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@ Dashboard
                         <div class="widget-content">
                             Currently Scanning <b class="text-info">{{on_going_scan_count}}</b>
                             <br>
-                            <a href="#" class="text-info">View all scan history</a>
+                            <a href="{% url 'scan_history' %}" class="text-info">View all scan history</a>
                         </div>
                     </div>
                 </div>
