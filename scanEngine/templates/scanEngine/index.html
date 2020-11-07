@@ -44,7 +44,6 @@ All Engines
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="1">Subdomain Discovery</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="2">Port Scan</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="3">Directory & Files Discovery</a>
-                                <a class="btn toggle-vis mb-2 ml-2" data-column="4">Subdomain Takeover</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="5">Fetch URLs</a>
                                 <a class="btn toggle-vis mb-2 ml-2" data-column="6">Vulnerability Scan</a>
                             </div>
@@ -57,7 +56,6 @@ All Engines
                                         <th>Subdomain Discovery</th>
                                         <th>Port Scan</th>
                                         <th>Directory & Files Discovery</th>
-                                        <th>Subdomain Takeover</th>
                                         <th>Fetch URLs</th>
                                         <th>Vulnerability Scan</th>
                                         <th class="text-center">Action</th>
@@ -83,13 +81,6 @@ All Engines
                                         </td>
                                         <td>
                                             {% if engine_type.dir_file_search %}
-                                            {% include 'base/_items/green_tick.html' %}
-                                            {% else %}
-                                            {% include 'base/_items/red_cross.html' %}
-                                            {%endif%}
-                                        </td>
-                                        <td>
-                                            {% if engine_type.subdomain_takeover %}
                                             {% include 'base/_items/green_tick.html' %}
                                             {% else %}
                                             {% include 'base/_items/red_cross.html' %}

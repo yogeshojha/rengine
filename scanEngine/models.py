@@ -5,7 +5,6 @@ class EngineType(models.Model):
     engine_name = models.CharField(max_length=200)
     subdomain_discovery = models.BooleanField()
     dir_file_search = models.BooleanField()
-    subdomain_takeover = models.BooleanField()
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
     yaml_configuration = models.TextField()

@@ -21,9 +21,6 @@ class AddEngineForm(forms.ModelForm):
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={}))
-    subdomain_takeover = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
@@ -60,9 +57,6 @@ class UpdateEngineForm(forms.ModelForm):
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
-    subdomain_takeover = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput())
     port_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
@@ -85,7 +79,6 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['engine_name'] = engine.engine_name
         self.initial['subdomain_discovery'] = engine.subdomain_discovery
         self.initial['dir_file_search'] = engine.dir_file_search
-        self.initial['subdomain_takeover'] = engine.subdomain_takeover
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration

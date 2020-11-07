@@ -336,47 +336,6 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             update_last_activity(activity_id, 0)
 
         '''
-        Subdomain takeover is not provided by default, check for conditions
-        '''
-        if(task.scan_type.subdomain_takeover):
-            update_last_activity(activity_id, 2)
-            activity_id = create_scan_activity(task, "Subdomain takeover", 1)
-
-            if yaml_configuration['subdomain_takeover']['thread'] > 0:
-                threads = yaml_configuration['subdomain_takeover']['thread']
-            else:
-                threads = 10
-
-            subjack_command = settings.TOOL_LOCATION + \
-                'takeover.sh {} {}'.format(current_scan_dir, threads)
-
-            os.system(subjack_command)
-
-            takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
-
-            try:
-                with open(takeover_results_file) as f:
-                    takeover_data = json.load(f)
-
-                for data in takeover_data:
-                    if data['vulnerable']:
-                        get_subdomain = ScannedHost.objects.get(
-                            scan_history=task, subdomain=subdomain)
-                        get_subdomain.takeover = vulnerable_service
-                        get_subdomain.save()
-                    # else:
-                    #     subdomain = data['subdomain']
-                    #     get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
-                    #     get_subdomain.takeover = "Debug"
-                    #     get_subdomain.save()
-
-            except Exception as exception:
-                print('-' * 30)
-                print(exception)
-                print('-' * 30)
-                update_last_activity(activity_id, 0)
-
-        '''
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):

@@ -183,7 +183,6 @@ All Subdomains
                 <th>IP Address</th>
                 <th>Status</th>
                 <th>Ports</th>
-                <th class="text-center">Takeover</th>
                 <th>Content Length</th>
                 <th>Page Title</th>
                 <th>Technology</th>
@@ -245,7 +244,6 @@ $(document).ready(function() {
       {'data': 'ip_address'},
       {'data': 'http_status'},
       {'data': 'open_ports'},
-      {'data': 'takeover'},
       {'data': 'content_length', 'searchable': false},
       {'data': 'page_title'},
       {'data': 'technology_stack'},
@@ -257,12 +255,12 @@ $(document).ready(function() {
     ],
     "columnDefs": [
       {
-        "targets": [ 10, 11],
+        "targets": [ 9, 10],
         "visible": false,
         "searchable": false,
       },
       {
-        "targets": [ 12 ],
+        "targets": [ 11 ],
         "visible": false,
         "searchable": true,
       },
@@ -322,22 +320,12 @@ $(document).ready(function() {
       },
       {
         "render": function ( data, type, row ) {
-          // for takeover
-          if (data){
-            return `<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" data-original-title=" Potentially vulnerable via `+data+`"></div>`;
-          }
-          return `<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" data-original-title="Takeover Not Possible"></div>`;
-        },
-        "targets": 4,
-      },
-      {
-        "render": function ( data, type, row ) {
           if (data){
             return htmlEncode(data);
           }
           return "";
         },
-        "targets": 6,
+        "targets": 5,
       },
       {
         "render": function ( data, type, row ) {
@@ -346,7 +334,7 @@ $(document).ready(function() {
           }
           return "";
         },
-        "targets": 7,
+        "targets": 6,
       },
       {
         "render": function ( data, type, row ) {
@@ -356,7 +344,7 @@ $(document).ready(function() {
           }
           return "";
         },
-        "targets": 8,
+        "targets": 7,
       },
       {
         "render": function ( data, type, row ) {
@@ -385,7 +373,7 @@ $(document).ready(function() {
           }
           return '';
         },
-        "targets": 9,
+        "targets": 8,
       },
     ],
     drawCallback: function () {
