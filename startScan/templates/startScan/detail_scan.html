@@ -238,7 +238,7 @@ $(document).ready(function() {
     "pageLength": 20,
     'serverSide': true,
     "ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-    "order": [[ 5, "desc" ]],
+    "order": [[ 4, "desc" ]],
     "columns": [
       {'data': 'subdomain'},
       {'data': 'ip_address'},
@@ -483,7 +483,6 @@ var options = {
         position: 'bottom'
       }
     },
-
     breakpoint: 1439,
     options: {
       chart: {
