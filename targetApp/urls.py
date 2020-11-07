@@ -28,4 +28,8 @@ urlpatterns = [
         'delete/<int:id>',
         views.delete_target,
         name='delete_target_url'),
+    path(
+        'delete/multiple',
+        views.delete_targets,
+        name='delete_multiple_targets'),
 ]

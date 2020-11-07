@@ -2,8 +2,9 @@ import validators
 import csv
 import io
 import os
-from django.shortcuts import render, get_object_or_404
+
 from django import http
+from django.shortcuts import render, get_object_or_404
 from .models import Domain
 from startScan.models import ScanHistory
 from django.contrib import messages
@@ -125,6 +126,16 @@ def delete_target(request, id):
             messages.INFO,
             'Oops! Domain could not be deleted!')
     return http.JsonResponse(responseData)
+
+
+def delete_targets(request):
+    context = {}
+    if request.method == "POST":
+        list_of_domains = []
+        for key, value in request.POST.items():
+            if key != "style-2_length" and key != "csrfmiddlewaretoken":
+                Domain.objects.filter(id=value).delete()
+    return http.HttpResponseRedirect(reverse('list_target'))
 
 
 def update_target_form(request, id):
