@@ -135,6 +135,10 @@ def delete_targets(request):
         for key, value in request.POST.items():
             if key != "style-2_length" and key != "csrfmiddlewaretoken":
                 Domain.objects.filter(id=value).delete()
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Targets deleted!')
     return http.HttpResponseRedirect(reverse('list_target'))
 
 

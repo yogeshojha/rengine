@@ -1,5 +1,4 @@
-function delete_target(id, domain_name)
-{
+function delete_target(id, domain_name) {
     const delAPI = "../delete/"+id;
     swal.queue([{
         title: 'Are you sure you want to delete '+ domain_name +'?',
@@ -34,19 +33,20 @@ function delete_target(id, domain_name)
     }])
 }
 
-function scanMultipleTargets()
-{
-  // logic can be improved
-  // this function will check if atleast one checkbox for multiple targets are
-  // checked or not
+function checkedCount () {
+  // this function will count the number of boxes checked
   item = document.getElementsByClassName("targets_checkbox");
-  checkedCount = 0;
+  count = 0;
   for (var i = 0; i < item.length; i++) {
     if (item[i].checked) {
-      checkedCount++;
+      count++;
     }
   }
-  if (!checkedCount) {
+  return count;
+}
+
+function scanMultipleTargets() {
+  if (!checkedCount()) {
     swal({
       title: '',
       text: "Oops! No targets has been selected!",
@@ -62,18 +62,8 @@ function scanMultipleTargets()
   }
 }
 
-function deleteMultipleTargets()
-{
-  // this function will check if atleast one checkbox for multiple targets are
-  // checked or not and then delete them
-  item = document.getElementsByClassName("targets_checkbox");
-  checkedCount = 0;
-  for (var i = 0; i < item.length; i++) {
-    if (item[i].checked) {
-      checkedCount++;
-    }
-  }
-  if (!checkedCount) {
+function deleteMultipleTargets() {
+  if (!checkedCount()) {
     swal({
       title: '',
       text: "Oops! No targets has been selected!",
@@ -84,7 +74,7 @@ function deleteMultipleTargets()
   else {
     // atleast one target is selected
     swal.queue([{
-        title: 'Are you sure you want to delete '+ checkedCount +' targets?',
+        title: 'Are you sure you want to delete '+ checkedCount() +' targets?',
         text: "This action is irreversible.\nThis will also delete all the scan history and vulnerabilities related to the targets.",
         type: 'warning',
         showCancelButton: true,
@@ -97,5 +87,26 @@ function deleteMultipleTargets()
           deleteForm.submit();
         }
     }])
+  }
+}
+
+function toggleMultipleTargetButton() {
+  if (checkedCount() > 0) {
+    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'visible';
+  }
+  else
+  {
+    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'hidden';
+  }
+}
+
+function mainCheckBoxSelected() {
+  var input = document.querySelector('#head_checkbox');
+  if (input.checked) {
+    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'visible';
+  }
+  else
+ {
+    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'hidden';
   }
 }

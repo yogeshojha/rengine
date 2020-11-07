@@ -33,8 +33,10 @@ List all Target for Recon
         </div>
       </div>
       <div class="widget-content widget-content-area">
-        <a class="btn btn-outline-danger mb-2 float-right" href="#" onclick="deleteMultipleTargets()">Delete Multiple Targets</a>
-        <a class="btn btn-outline-info mb-2 float-right" href="#" onclick="scanMultipleTargets()">Scan Multiple Targets</a>
+        <div class="multiple_targets_button" style="visibility: hidden;">
+          <a class="btn btn-outline-danger mb-2 float-right" href="#" onclick="deleteMultipleTargets()">Delete Multiple Targets</a>
+          <a class="btn btn-outline-info mb-2 float-right" href="#" onclick="scanMultipleTargets()">Scan Multiple Targets</a>
+        </div>
         <form method="POST" id="multiple_targets_form" action="../../start_scan/start/multiple/">
           {% csrf_token %}
           <div class="table-responsive mb-4">
@@ -103,10 +105,9 @@ List all Target for Recon
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script>
-// var e;
 table = $('#style-2').DataTable({
   headerCallback:function(e, a, t, n, s) {
-    e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent" id="head_checkbox">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+    e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
   },
   columnDefs:[ {
     targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
