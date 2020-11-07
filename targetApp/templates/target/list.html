@@ -111,7 +111,7 @@ table = $('#style-2').DataTable({
   },
   columnDefs:[ {
     targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-      return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox['+ e + ']" class="new-control-input child-chk targets_checkbox" value="' + e + '">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+      return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox['+ e + ']" class="new-control-input child-chk targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
     }
   }],
   "oLanguage": {
