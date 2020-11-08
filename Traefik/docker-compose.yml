@@ -19,19 +19,6 @@ services:
       - ./config/acme.json:/acme.json
       - ./config/config.yml:/config.yml:ro
       - ./log:/log
-    #labels:
-      #- "traefik.enable=true"
-      #- "traefik.http.routers.traefik.entrypoints=http"
-      #- "traefik.http.routers.traefik.rule=Host(`traefik.domain.tld`)"
-      #- "traefik.http.middlewares.traefik-auth.basicauth.users=XXX:XXX"
-      #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
-      #- "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
-      #- "traefik.http.routers.traefik-secure.entrypoints=https"
-      #- "traefik.http.routers.traefik-secure.rule=Host(`traefik.domain.tld`)"
-      #- "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
-      #- "traefik.http.routers.traefik-secure.tls=true"
-      #- "traefik.http.routers.traefik-secure.tls.certresolver=http"
-      #- "traefik.http.routers.traefik-secure.service=api@internal"
 
 networks:
   traefik-proxy:
