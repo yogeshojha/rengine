@@ -8,6 +8,7 @@ echo "What's your email ? ex: contact@domain.tld"
 read email
 
 sed -i 's/domain.tld/'$domain'/' ./docker-compose.yml
+sed -i 's/contact@domain.tld/'$email'/' ./Traefik/config/traefik.yml
 
 chmod 600 ./Traefik/config/acme.json
 
