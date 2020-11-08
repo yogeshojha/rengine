@@ -1,0 +1,33 @@
+api:
+  dashboard: false
+  debug: true
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+  file:
+    filename: /config.yml
+
+log:
+  level: "ERROR"
+  filePath: "log/error.log"
+  format: "json"
+
+accessLog:
+  filePath: "log/access.log"
+  format: "json"
+
+certificatesResolvers:
+  http:
+    acme:
+      email: contact@domain.tld
+      storage: acme.json
+      httpChallenge:
+        entryPoint: http
