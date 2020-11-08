@@ -20,6 +20,11 @@ class EndpointSerializer(serializers.ModelSerializer):
 
 class VulnerabilitySerializer(serializers.ModelSerializer):
 
+    discovered_date = serializers.SerializerMethodField()
+
+    def get_discovered_date(self, VulnerabilityScan):
+        return VulnerabilityScan.discovered_date.strftime("%b %d, %Y %H:%M")
+
     class Meta:
         model = VulnerabilityScan
         fields = '__all__'
