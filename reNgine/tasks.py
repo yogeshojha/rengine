@@ -4,6 +4,7 @@ import traceback
 import yaml
 import json
 import validators
+import requests
 
 
 from celery import shared_task
@@ -421,9 +422,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 with open(subdomain_scan_results_file) as subdomain_list:
                     for subdomain in subdomain_list:
                         if validators.domain(subdomain.rstrip('\n')):
-                            print('-'*20)
+                            print('-' * 20)
                             print('Fetching URL for ' + subdomain.rstrip('\n'))
-                            print('-'*20)
+                            print('-' * 20)
                             os.system(
                                 settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
                                 (subdomain.rstrip('\n'), current_scan_dir, tools))
@@ -444,7 +445,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                     endpoint.content_type = json_st['content-type']
                                 endpoint.save()
             else:
-                os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' % (domain.domain_name, current_scan_dir, tools))
+                os.system(
+                    settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
+                    (domain.domain_name, current_scan_dir, tools))
 
                 url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
 
@@ -549,6 +552,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             vulnerability.matcher_name = json_st['matcher_name']
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.save()
+                        send_notification(
+                            "ALERT! {} vulnerability with {} severity identified in {} \n Please check rengine scan summary for more information.".format(
+                                json_st['name'], json_st['severity'], domain.domain_name))
             except Exception as exception:
                 print('-' * 30)
                 print(exception)
@@ -565,19 +571,23 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         print('-' * 30)
         scan_failed(task)
 
+    send_notification("reEngine finished scanning " + domain.domain_name)
+    update_last_activity(activity_id, 2)
+    activity_id = create_scan_activity(task, "Scan Completed", 2)
+    return {"status": True}
+
+
+def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
     # notify on slack
     scan_status_msg = {
-        'text': "reEngine finished scanning " + domain.domain_name}
+        'text': message}
     headers = {'content-type': 'application/json'}
     for notif in notif_hook:
         requests.post(
             notif.hook_url,
             data=json.dumps(scan_status_msg),
             headers=headers)
-    update_last_activity(activity_id, 2)
-    activity_id = create_scan_activity(task, "Scan Completed", 2)
-    return {"status": True}
 
 
 def scan_failed(task):
