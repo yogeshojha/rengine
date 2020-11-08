@@ -553,8 +553,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.save()
                         send_notification(
-                            "ALERT! {} vulnerability with {} severity identified in {} \n Please check rengine scan summary for more information.".format(
-                                json_st['name'], json_st['severity'], domain.domain_name))
+                            "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
+                                json_st['name'], json_st['severity'], domain.domain_name, json_st['matched']))
             except Exception as exception:
                 print('-' * 30)
                 print(exception)
