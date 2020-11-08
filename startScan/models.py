@@ -61,6 +61,7 @@ class ScanActivity(models.Model):
 
 class VulnerabilityScan(models.Model):
     vulnerability_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    discovered_date = models.DateTimeField(null=True)
     url = models.CharField(max_length=1000)
     name = models.CharField(max_length=400)
     severity = models.IntegerField()

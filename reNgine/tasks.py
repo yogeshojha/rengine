@@ -1,3 +1,11 @@
+from datetime import datetime
+import os
+import traceback
+import yaml
+import json
+import validators
+
+
 from celery import shared_task
 from reNgine.celery import app
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
@@ -7,12 +15,6 @@ from scanEngine.models import EngineType
 from django.conf import settings
 from django.utils import timezone, dateformat
 from django.shortcuts import get_object_or_404
-from datetime import datetime
-import os
-import traceback
-import yaml
-import json
-import validators
 
 
 '''
@@ -520,31 +522,33 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             os.system(nuclei_command)
 
             try:
-                urls_json_result = open(vulnerability_result_path, 'r')
-                lines = urls_json_result.readlines()
-                for line in lines:
-                    json_st = json.loads(line.strip())
-                    vulnerability = VulnerabilityScan()
-                    vulnerability.vulnerability_of = task
-                    vulnerability.name = json_st['name']
-                    vulnerability.url = json_st['matched']
-                    if json_st['severity'] == 'info':
-                        severity = 0
-                    elif json_st['severity'] == 'low':
-                        severity = 1
-                    elif json_st['severity'] == 'medium':
-                        severity = 2
-                    elif json_st['severity'] == 'high':
-                        severity = 3
-                    else:
-                        severity = 4
-                    vulnerability.severity = severity
-                    vulnerability.template_used = json_st['template']
-                    if 'description' in json_st:
-                        vulnerability.description = json_st['description']
-                    if 'matcher_name' in json_st:
-                        vulnerability.matcher_name = json_st['matcher_name']
-                    vulnerability.save()
+                if os.path.isfile(vulnerability_result_path):
+                    urls_json_result = open(vulnerability_result_path, 'r')
+                    lines = urls_json_result.readlines()
+                    for line in lines:
+                        json_st = json.loads(line.strip())
+                        vulnerability = VulnerabilityScan()
+                        vulnerability.vulnerability_of = task
+                        vulnerability.name = json_st['name']
+                        vulnerability.url = json_st['matched']
+                        if json_st['severity'] == 'info':
+                            severity = 0
+                        elif json_st['severity'] == 'low':
+                            severity = 1
+                        elif json_st['severity'] == 'medium':
+                            severity = 2
+                        elif json_st['severity'] == 'high':
+                            severity = 3
+                        else:
+                            severity = 4
+                        vulnerability.severity = severity
+                        vulnerability.template_used = json_st['template']
+                        if 'description' in json_st:
+                            vulnerability.description = json_st['description']
+                        if 'matcher_name' in json_st:
+                            vulnerability.matcher_name = json_st['matcher_name']
+                        vulnerability.discovered_date = timezone.now()
+                        vulnerability.save()
             except Exception as exception:
                 print('-' * 30)
                 print(exception)

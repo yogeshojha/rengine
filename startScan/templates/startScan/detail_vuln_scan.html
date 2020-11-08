@@ -41,6 +41,7 @@ All Vulnerabilities
                 <th>Severity</th>
                 <th>Vulnerable URL</th>
                 <th>Description</th>
+                <th>Last Seen</th>
               </tr>
             </thead>
           </table>
@@ -95,11 +96,12 @@ $(document).ready(function() {
       {'data': 'severity'},
       {'data': 'url'},
       {'data': 'description'},
+      {'data': 'discovered_date'},
       {'data': 'matcher_name'},
     ],
     "columnDefs": [
       {
-        "targets": [ 4 ],
+        "targets": [ 5 ],
         "visible": false,
         "searchable": false,
       },
@@ -136,7 +138,10 @@ $(document).ready(function() {
       {
         "render": function ( data, type, row ) {
           // Could be better
-          if (data) {
+          if (data && row['matcher_name']) {
+            return data + "\n" + row['matcher_name'];
+          }
+          else if (data) {
             return data;
           }
           else if (row['matcher_name']) {
@@ -147,6 +152,12 @@ $(document).ready(function() {
           }
         },
         "targets": 3,
+      },
+      {
+        "render": function ( data, type, row ) {
+          return data;
+        },
+        "targets": 4,
       },
     ],
     drawCallback: function () {
