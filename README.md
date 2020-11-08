@@ -37,7 +37,6 @@
 * [Getting Started](#getting-started)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
-  * [Generate SSL Certificate](#generate-certificates)
   * [Building reNgine](#build-rengine)
   * [Register Account](#register-account)
   * [Update reNgine](#how-to-update)
@@ -131,29 +130,12 @@ There are currently two ways of setting up the reNgine. Using Makefile is the ea
 
 If you are setting up inside VPS with https, Makefile makes process so much simpler.
 
-The [dotenv](.env) file should be updated when setting up reNgine, for example:
-
-```env
-AUTHORITY_NAME=reNgine
-AUTHORITY_PASSWORD=nSrmNkwT
-COMPANY=reNgine
-DOMAIN_NAME=recon.example.com
-COUNTRY_CODE=US
-STATE=Georgia
-CITY=Atlanta
-```
-
-Edit the file using your favourite editor (e.g. `nano .env` or `vim .env`).
-
-Then use the `make cert` command to generate the certificate (inside the [secrets/certs](secrets/certs) folder). Assuming that you are inside the reNgine directory, generate the certificates using the following command.
-
-#### Generate Certificates
+#### Installation of prerequisites
 
 ```shell
-make certs
+make install
 ```
-
-Once certificates are generated, you can run reNgine with https.
+_This command will ask you for a domain name, this is the one you want to use for Rengine, make sure you have a DNS entry pointing to your server. The email must also be valid to avoid errors when generating certificates._
 
 #### Build reNgine
 
