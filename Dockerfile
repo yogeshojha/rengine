@@ -50,7 +50,6 @@ COPY . /app/
 # Collect Static
 RUN python manage.py collectstatic --no-input --clear
 
-RUN chmod +x /app/tools/get_subdomain.sh
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
