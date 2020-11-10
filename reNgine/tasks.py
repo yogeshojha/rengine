@@ -5,6 +5,7 @@ import yaml
 import json
 import validators
 import requests
+import logging
 
 
 from celery import shared_task
@@ -98,11 +99,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
 
-            # check for thread, by default should be 10
-            if yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD] > 0 and THREAD in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-                threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD]
-            else:
-                threads = 10
+            logging.info(tools)
+
+            # check for thread, by default 10
+            threads = 10
+            if THREAD in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                _threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD]
+                if _threads > 0:
+                    threads = _threads
 
             if 'amass' in tools:
                 amass_config_path = None
@@ -119,6 +123,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             config_file.write(config.content)
                         amass_config_path = current_scan_dir + '/config.ini'
                     except Exception as e:
+                        logging.error(CONFIG_FILE_NOT_FOUND)
                         pass
 
                 if 'amass-passive' in tools:
@@ -129,8 +134,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
 
                     # Run Amass Passive
-                    # print(amass_command)
-                    # os.system(amass_command)
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
                 if 'amass-active' in tools:
                     amass_command = AMASS_COMMAND + \
@@ -151,15 +156,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
 
                     # Run Amass Active
-                    # print(amass_command)
-                    # os.system(amass_command)
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
             if 'assetfinder' in tools:
                 assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
                     domain.domain_name, current_scan_dir)
 
                 # Run Assetfinder
-                print(assetfinder_command)
+                logging.info(assetfinder_command)
                 os.system(assetfinder_command)
 
             if 'sublist3r' in tools:
@@ -167,7 +172,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     domain.domain_name, threads, current_scan_dir)
 
                 # Run sublist3r
-                print(sublist3r_command)
+                logging.info(sublist3r_command)
                 os.system(sublist3r_command)
 
             if 'subfinder' in tools:
@@ -193,7 +198,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         ' -config {}'.format(subfinder_config_path)
 
                 # Run Subfinder
-                print(subfinder_command)
+                logging.info(subfinder_command)
                 os.system(subfinder_command)
 
             '''
@@ -312,9 +317,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         sub_domain.open_ports = str(json_st['port'])
                     sub_domain.save()
             except BaseException as exception:
-                print('-' * 30)
-                print(exception)
-                print('-' * 30)
+                logging.error(exception)
                 update_last_activity(activity_id, 0)
 
         '''
@@ -356,10 +359,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     sub_domain.cname = cname_list
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
-            except Exception as e:
-                print('*' * 50)
-                print(e)
-                print('*' * 50)
+            except Exception as exception:
+                logging.error(exception)
 
         alive_file.close()
 
@@ -411,9 +412,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 sub_domain.technology_stack = tech_string
                 sub_domain.save()
         except Exception as exception:
-            print('-' * 30)
-            print(exception)
-            print('-' * 30)
+            logging.error(exception)
             update_last_activity(activity_id, 0)
 
         '''
@@ -468,9 +467,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         scanned_host.directory_json = json_string
                         scanned_host.save()
                 except Exception as exception:
-                    print('-' * 30)
-                    print(exception)
-                    print('-' * 30)
+                    logging.error(exception)
                     update_last_activity(activity_id, 0)
 
         '''
@@ -643,9 +640,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         task.scan_status = 2
         task.save()
     except Exception as exception:
-        print('-' * 30)
-        print(exception)
-        print('-' * 30)
+        logging.error(exception)
         scan_failed(task)
 
     send_notification("reEngine finished scanning " + domain.domain_name)
