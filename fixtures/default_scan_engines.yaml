@@ -10,27 +10,23 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
-      \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
-      \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
-      \ default\r\n    # Get the shortname for the config file from configurations\
-      \ module\r\n    amass_config: amass_configuration\r\n\r\nport_scan:\r\n    #\
-      \ currently reNgine only supports naabu, nmap and other port scanning tools\r\
-      \n    # will be made available in future release\r\n    # scan_ports available\
-      \ options are top-100, top-1000, full or custom like\r\n    # [80, 443]\r\n\
-      \    ports: [ top-100 ]\r\n    # if you want to exclude certain ports, usage:\
-      \ exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\
-      \nvisual_identification:\r\n    # currently runs aquatone\r\n    # available\
-      \ options for ports are small, medium, large, xlarge\r\n    port: xlarge\r\n\
-      \    thread: 1\r\n\r\nsubdomain_takeover:\r\n    # only subjack is supported\
-      \ at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
-      \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \n    uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder ]\r\n  \
+      \  thread: 10\r\n\r\nport_scan:\r\n    # currently reNgine only supports naabu,\
+      \ nmap and other port scanning tools\r\n    # will be made available in future\
+      \ release\r\n    # scan_ports available options are top-100, top-1000, full\
+      \ or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    # if you\
+      \ want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n    exclude_ports:\
+      \ null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n    # currently runs\
+      \ aquatone\r\n    # available options for ports are small, medium, large, xlarge\r\
+      \n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\n    # only\
+      \ subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
+      \n    # currently supported dirsearch\r\n    # list the file extensions to look\
+      \ for, extensions: [php, asp, txt]\r\n    # recommended [ all ]\r\n    extensions:\
+      \ [ php,asp,aspx,txt,conf,db,sql,json ]\r\n    recursive: false\r\n    recursive_level:\
+      \ 1\r\n    thread: 100\r\n    # use the shortname for wordlist here\r\n    #\
+      \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
+      \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
+      \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
@@ -44,27 +40,23 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
-      \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
-      \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
-      \ default\r\n    # Get the shortname for the config file from configurations\
-      \ module\r\n    amass_config: amass_configuration\r\n\r\nport_scan:\r\n    #\
-      \ currently reNgine only supports naabu, nmap and other port scanning tools\r\
-      \n    # will be made available in future release\r\n    # scan_ports available\
-      \ options are top-100, top-1000, full or custom like\r\n    # [80, 443]\r\n\
-      \    ports: [ top-100 ]\r\n    # if you want to exclude certain ports, usage:\
-      \ exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\
-      \nvisual_identification:\r\n    # currently runs aquatone\r\n    # available\
-      \ options for ports are small, medium, large, xlarge\r\n    port: xlarge\r\n\
-      \    thread: 1\r\n\r\nsubdomain_takeover:\r\n    # only subjack is supported\
-      \ at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
-      \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \n    uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder ]\r\n  \
+      \  thread: 10\r\n\r\nport_scan:\r\n    # currently reNgine only supports naabu,\
+      \ nmap and other port scanning tools\r\n    # will be made available in future\
+      \ release\r\n    # scan_ports available options are top-100, top-1000, full\
+      \ or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    # if you\
+      \ want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n    exclude_ports:\
+      \ null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n    # currently runs\
+      \ aquatone\r\n    # available options for ports are small, medium, large, xlarge\r\
+      \n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\n    # only\
+      \ subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
+      \n    # currently supported dirsearch\r\n    # list the file extensions to look\
+      \ for, extensions: [php, asp, txt]\r\n    # recommended [ all ]\r\n    extensions:\
+      \ [ php,asp,aspx,txt,conf,db,sql,json ]\r\n    recursive: false\r\n    recursive_level:\
+      \ 1\r\n    thread: 100\r\n    # use the shortname for wordlist here\r\n    #\
+      \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
+      \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
+      \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3
@@ -78,25 +70,24 @@
     yaml_configuration: "subdomain_discovery:\r\n    # available tools are amass-passive,\
       \ amass-active, assetfinder, subfinder, sublist3r or just use all\r\n    # Usage\
       \ of many tools may improve the results but also may take longer time to scan\r\
-      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\
-      \n    # Your wordlist shortname for amass active enumeration, \r\n    # You\
-      \ may ignore wordlist if you are using passive enumeration\r\n    wordlist:\
-      \ default\r\n    # Get the shortname for the config file from configurations\
-      \ module\r\n    amass_config: amass_configuration\r\n\r\nport_scan:\r\n    #\
-      \ currently reNgine only supports naabu, nmap and other port scanning tools\r\
-      \n    # will be made available in future release\r\n    # scan_ports available\
-      \ options are top-100, top-1000, full or custom like\r\n    # [80, 443]\r\n\
-      \    ports: [ top-100 ]\r\n    # if you want to exclude certain ports, usage:\
-      \ exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\
-      \nvisual_identification:\r\n    # currently runs aquatone\r\n    # available\
-      \ options for ports are small, medium, large, xlarge\r\n    port: xlarge\r\n\
-      \    thread: 1\r\n\r\nsubdomain_takeover:\r\n    # only subjack is supported\
-      \ at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
-      \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]"
+      \n    uses_tool: [ subfinder, sublist3r ]\r\n    thread: 10\r\n    # Your wordlist\
+      \ shortname for amass active enumeration, \r\n    # You may ignore wordlist\
+      \ if you are using passive enumeration\r\n    wordlist: default\r\n    # Get\
+      \ the shortname for the config file from configurations module\r\n    amass_config:\
+      \ amass_configuration\r\n\r\nport_scan:\r\n    # currently reNgine only supports\
+      \ naabu, nmap and other port scanning tools\r\n    # will be made available\
+      \ in future release\r\n    # scan_ports available options are top-100, top-1000,\
+      \ full or custom like\r\n    # [80, 443]\r\n    ports: [ top-100 ]\r\n    #\
+      \ if you want to exclude certain ports, usage: exclude_ports: [80, 443]\r\n\
+      \    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
+      \    # currently runs aquatone\r\n    # available options for ports are small,\
+      \ medium, large, xlarge\r\n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\
+      \n    # only subjack is supported at this time\r\n    thread: 1\r\n\r\ndir_file_search:\r\
+      \n    # currently supported dirsearch\r\n    # list the file extensions to look\
+      \ for, extensions: [php, asp, txt]\r\n    # recommended [ all ]\r\n    extensions:\
+      \ [ php,asp,aspx,txt,conf,db,sql,json ]\r\n    recursive: false\r\n    recursive_level:\
+      \ 1\r\n    thread: 100\r\n    # use the shortname for wordlist here\r\n    #\
+      \ default uses dirsearch default dicc.txt wordlist\r\n    wordlist: default\r\
+      \n\r\nfetch_url:\r\n    # supported tools are gau and hakrawler\r\n    # usage\
+      \ -> uses_tool: [ gau, hakrawler]\r\n    uses_tool: [ gau, hakrawler ]"
     default_engine: true
