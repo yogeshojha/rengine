@@ -12,6 +12,8 @@ AMASS_COMMAND = '/app/tools/amass enum'
 AMASS_CONFIG = 'amass_config'
 AMASS_WORDLIST = 'amass_wordlist'
 
+SUBFINDER_CONFIG = 'subfinder_config'
+
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 THREAD = 'thread'
 USES_TOOLS = 'uses_tool'

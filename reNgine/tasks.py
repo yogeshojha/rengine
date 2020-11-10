@@ -123,18 +123,18 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
                 if 'amass-passive' in tools:
                     amass_command = AMASS_COMMAND + \
-                        ' -passive -d {} -o {}/fromamass.txt'.format(domain.domain_name, current_scan_dir)
+                        ' -passive -d {} -o {}/from_amass.txt'.format(domain.domain_name, current_scan_dir)
                     if amass_config_path:
                         amass_command = amass_command + \
                             ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
 
-                    # Execute Amass Passive
-                    print(amass_command)
+                    # Run Amass Passive
+                    # print(amass_command)
                     # os.system(amass_command)
 
                 if 'amass-active' in tools:
                     amass_command = AMASS_COMMAND + \
-                        ' -active -d {} -o {}/fromamass_active.txt'.format(domain.domain_name, current_scan_dir)
+                        ' -active -d {} -o {}/from_amass_active.txt'.format(domain.domain_name, current_scan_dir)
 
                     if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                         wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
@@ -150,8 +150,76 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         amass_command = amass_command + \
                             ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
 
-                    print(amass_command)
-                    os.system(amass_command)
+                    # Run Amass Active
+                    # print(amass_command)
+                    # os.system(amass_command)
+
+            if 'assetfinder' in tools:
+                assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
+                    domain.domain_name, current_scan_dir)
+
+                # Run Assetfinder
+                print(assetfinder_command)
+                os.system(assetfinder_command)
+
+            if 'sublist3r' in tools:
+                sublist3r_command = 'python3 /app/tools/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
+                    domain.domain_name, threads, current_scan_dir)
+
+                # Run sublist3r
+                print(sublist3r_command)
+                os.system(sublist3r_command)
+
+            if 'subfinder' in tools:
+                subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
+                    domain.domain_name, threads, current_scan_dir)
+
+                # Check for Subfinder config files
+                if SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                    short_name = yaml_configuration[SUBDOMAIN_DISCOVERY][SUBFINDER_CONFIG]
+                    try:
+                        config = get_object_or_404(
+                            Configuration, short_name=short_name)
+                        '''
+                        if config exists in db then write the config to
+                        scan location, and append in amass_command
+                        '''
+                        with open(current_scan_dir + '/subfinder-config.yaml', 'w') as config_file:
+                            config_file.write(config.content)
+                        subfinder_config_path = current_scan_dir + '/subfinder-config.yaml'
+                    except Exception as e:
+                        pass
+                    subfinder_command = subfinder_command + \
+                        ' -config {}'.format(subfinder_config_path)
+
+                # Run Subfinder
+                print(subfinder_command)
+                os.system(subfinder_command)
+
+            '''
+            All tools have gathered the list of subdomains with filename
+            initials as from_*
+            We will gather all the results in one single file, sort them and
+            remove the older results from_*
+            '''
+
+            os.system('cat {}/*.txt > {}/subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+
+            '''
+            Remove all the from_* files
+            '''
+
+            os.system('rm -rf {}/from*'.format(current_scan_dir))
+
+            '''
+            Sort all Subdomains
+            '''
+
+            os.system('sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+
+            '''
+            The final results will be stored in sorted_subdomain_collection.
+            '''
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
