@@ -99,7 +99,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
 
             # check for thread, by default should be 10
-            if yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD] > 0:
+            if yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD] > 0 and THREAD in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                 threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD]
             else:
                 threads = 10
@@ -125,14 +125,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     amass_command = AMASS_COMMAND + \
                         ' -passive -d {} -o {}/fromamass.txt'.format(domain.domain_name, current_scan_dir)
                     if amass_config_path:
-                        amass_command = amass_command + ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+                        amass_command = amass_command + \
+                            ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+
+                    # Execute Amass Passive
                     print(amass_command)
-                    os.system(amass_command)
+                    # os.system(amass_command)
+
                 if 'amass-active' in tools:
-                    '''
-                    Check Amass Wordlist for Bruteforce in yaml setting
-                    if exists, then use amass active -w flag
-                    '''
+                    amass_command = AMASS_COMMAND + \
+                        ' -active -d {} -o {}/fromamass_active.txt'.format(domain.domain_name, current_scan_dir)
+
                     if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                         wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
                         if wordlist == 'default':
@@ -141,6 +144,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             wordlist_path = settings.TOOL_LOCATION + 'wordlist/' + wordlist + '.txt'
                             if not os.path.exists(wordlist_path):
                                 wordlist_path = settings.TOOL_LOCATION + AMASS_WORDLIST
+                        amass_command = amass_command + \
+                            ' -brute -w {}'.format(wordlist_path)
+                    if amass_config_path:
+                        amass_command = amass_command + \
+                            ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+
+                    print(amass_command)
+                    os.system(amass_command)
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
