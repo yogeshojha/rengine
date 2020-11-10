@@ -17,6 +17,21 @@ from django.conf import settings
 from django.utils import timezone, dateformat
 from django.shortcuts import get_object_or_404
 
+from celery import shared_task
+from datetime import datetime
+
+from django.conf import settings
+from django.utils import timezone, dateformat
+from django.shortcuts import get_object_or_404
+
+
+from reNgine.celery import app
+from reNgine.definitions import *
+
+from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
+from targetApp.models import Domain
+from notification.models import NotificationHooks
+from scanEngine.models import EngineType, Configuration, Wordlist
 
 '''
 task for background scan
@@ -77,72 +92,55 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
-            if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
+            if 'all' in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
                 tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
             else:
                 tools = ' '.join(
-                    str(tool) for tool in yaml_configuration['subdomain_discovery']['uses_tool'])
+                    str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
 
             # check for thread, by default should be 10
-            if yaml_configuration['subdomain_discovery']['thread'] > 0:
-                threads = yaml_configuration['subdomain_discovery']['thread']
+            if yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD] > 0:
+                threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD]
             else:
                 threads = 10
 
-            if 'amass-active' in tools:
-                if ('wordlist' not in yaml_configuration['subdomain_discovery']
-                    or not yaml_configuration['subdomain_discovery']['wordlist']
-                        or 'default' in yaml_configuration['subdomain_discovery']['wordlist']):
-                    wordlist_location = settings.TOOL_LOCATION + \
-                        'wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
-                else:
-                    wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
-                        yaml_configuration['subdomain_discovery']['wordlist'] + '.txt'
-                    if not os.path.exists(wordlist_location):
-                        wordlist_location = settings.TOOL_LOCATION + \
-                            'wordlist/default_wordlist/deepmagic.com-prefixes-top50000.txt'
-                # check if default amass config is to be used
-                if ('amass_config' not in yaml_configuration['subdomain_discovery']
-                    or not yaml_configuration['subdomain_discovery']['amass_config']
-                        or 'default' in yaml_configuration['subdomain_discovery']['wordlist']):
-                    amass_config = settings.AMASS_CONFIG
-                else:
-                    '''
-                    amass config setting exixts but we need to check if it
-                    exists in database
-                    '''
-                    short_name = yaml_configuration['subdomain_discovery']['amass_config']
-                    config = get_object_or_404(
-                        Configuration, short_name=short_name)
-                    if config:
+            if 'amass' in tools:
+                amass_config_path = None
+                if AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                    short_name = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_CONFIG]
+                    try:
+                        config = get_object_or_404(
+                            Configuration, short_name=short_name)
                         '''
                         if config exists in db then write the config to
-                        scan location, and send path to script location
+                        scan location, and append in amass_command
                         '''
                         with open(current_scan_dir + '/config.ini', 'w') as config_file:
                             config_file.write(config.content)
-                        amass_config = current_scan_dir + '/config.ini'
-                    else:
-                        '''
-                        if config does not exist in db then
-                        use default for failsafe
-                        '''
-                        amass_config = settings.AMASS_CONFIG
+                        amass_config_path = current_scan_dir + '/config.ini'
+                    except Exception as e:
+                        pass
 
-                # all subdomain scan happens here
-                os.system(
-                    settings.TOOL_LOCATION +
-                    'get_subdomain.sh %s %s %s %s %s %s' %
-                    (threads,
-                     domain.domain_name,
-                     current_scan_dir,
-                     wordlist_location,
-                     amass_config,
-                     tools))
-            else:
-                os.system(
-                    settings.TOOL_LOCATION + 'get_subdomain.sh %s %s %s %s' %
-                    (threads, domain.domain_name, current_scan_dir, tools))
+                if 'amass-passive' in tools:
+                    amass_command = AMASS_COMMAND + \
+                        ' -passive -d {} -o {}/fromamass.txt'.format(domain.domain_name, current_scan_dir)
+                    if amass_config_path:
+                        amass_command = amass_command + ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+                    print(amass_command)
+                    os.system(amass_command)
+                if 'amass-active' in tools:
+                    '''
+                    Check Amass Wordlist for Bruteforce in yaml setting
+                    if exists, then use amass active -w flag
+                    '''
+                    if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                        wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
+                        if wordlist == 'default':
+                            wordlist_path = settings.TOOL_LOCATION + AMASS_DEFAULT_WORDLIST_PATH
+                        else:
+                            wordlist_path = settings.TOOL_LOCATION + 'wordlist/' + wordlist + '.txt'
+                            if not os.path.exists(wordlist_path):
+                                wordlist_path = settings.TOOL_LOCATION + AMASS_WORDLIST
 
             subdomain_scan_results_file = results_dir + \
                 current_scan_dir + '/sorted_subdomain_collection.txt'
