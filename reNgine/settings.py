@@ -157,14 +157,6 @@ LOGOUT_REDIRECT_URL = 'login'
 TOOL_LOCATION = '/app/tools/'
 
 '''
-Default amass configuration
-Feel free to change the default config file
-Alternatively, you can also add configuration from configuration module from UI
-'''
-AMASS_CONFIG = TOOL_LOCATION + 'config/amass-config.ini'
-
-
-'''
 CELERY settings
 '''
 CELERY_BROKER_URL = 'redis://redis:6379'
