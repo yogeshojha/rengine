@@ -71,7 +71,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             Loader=yaml.FullLoader)
         if(task.scan_type.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-
+            ## Exclude subdomains
+            excluded_domains = ''.join(str(domain) for domain in yaml_configuration['subdomain_discovery']['excluded_domain'])
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration['subdomain_discovery']['uses_tool']:
@@ -151,6 +152,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     output which is likely to crash the scan, so validate
                     subdomains before saving
                     '''
+                    if(subdomain.rstrip('\n') in excluded_domains):
+                        continue
                     if validators.domain(subdomain.rstrip('\n')):
                         scanned = ScannedHost()
                         scanned.subdomain = subdomain.rstrip('\n')
