@@ -268,10 +268,11 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check the yaml_configuration and choose the ports to be scanned
 
+            scan_ports = 'top-100'  # default port scan
             if PORTS in yaml_configuration[PORT_SCAN]:
                 scan_ports = ','.join(str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
-            else
 
+            # TODO: New version of naabu has -p instead of -ports
             if scan_ports:
                 naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(
                     subdomain_scan_results_file, port_results_file, scan_ports)
@@ -280,19 +281,19 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     subdomain_scan_results_file, port_results_file)
 
             # check for exclude ports
-
-            if yaml_configuration['port_scan']['exclude_ports']:
+            if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
                 exclude_ports = ','.join(
                     str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
                 naabu_command = naabu_command + \
                     ' -exclude-ports {}'.format(exclude_ports)
 
-            if yaml_configuration['subdomain_discovery']['thread'] > 0:
-                naabu_command = naabu_command + \
-                    ' -t {}'.format(
-                        yaml_configuration['subdomain_discovery']['thread'])
-            else:
-                naabu_command = naabu_command + ' -t 10'
+            # TODO thread is removed in later versio of naabu, replace with rate :(
+            # if THREAD in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][THREAD] > 0:
+            #     naabu_command = naabu_command + \
+            #         ' -t {}'.format(
+            #             yaml_configuration['subdomain_discovery']['thread'])
+            # else:
+            #     naabu_command = naabu_command + ' -t 10'
 
             # run naabu
             os.system(naabu_command)
@@ -305,9 +306,6 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     try:
                         json_st = json.loads(line.strip())
                     except Exception as exception:
-                        print('-' * 30)
-                        print(exception)
-                        print('-' * 30)
                         json_st = "{'host':'','port':''}"
                     sub_domain = ScannedHost.objects.get(
                         scan_history=task, subdomain=json_st['host'])
@@ -373,14 +371,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
         output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
 
-        scan_port = yaml_configuration['visual_identification']['port']
+        if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
+            scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+        else:
+            scan_port = 'xlarge'
         # check if scan port is valid otherwise proceed with default xlarge
         # port
         if scan_port not in ['small', 'medium', 'large', 'xlarge']:
             scan_port = 'xlarge'
 
-        if yaml_configuration['visual_identification']['thread'] > 0:
-            threads = yaml_configuration['visual_identification']['thread']
+        if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
+            threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
         else:
             threads = 10
 
@@ -429,24 +430,26 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             dirs_results = current_scan_dir + '/dirs.json'
 
             # check the yaml settings
-            extensions = ','.join(
-                str(port) for port in yaml_configuration['dir_file_search']['extensions'])
+            if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
+                extensions = ','.join(str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+            else:
+                extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
-            # find the threads from yaml
-            if yaml_configuration['dir_file_search']['thread'] > 0:
-                threads = yaml_configuration['dir_file_search']['thread']
+            # Threads
+            if THREAD in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][THREAD] > 0:
+                threads = yaml_configuration[DIR_FILE_SEARCH][THREAD]
             else:
                 threads = 10
 
             for subdomain in alive_subdomains:
                 # /app/tools/dirsearch/db/dicc.txt
-                if ('wordlist' not in yaml_configuration['dir_file_search'] or
-                    not yaml_configuration['dir_file_search']['wordlist'] or
-                        'default' in yaml_configuration['dir_file_search']['wordlist']):
+                if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
+                    not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
+                        'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
                     wordlist_location = settings.TOOL_LOCATION + 'dirsearch/db/dicc.txt'
                 else:
                     wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
-                        yaml_configuration['dir_file_search']['wordlist'] + '.txt'
+                        yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
                 dirsearch_command = settings.TOOL_LOCATION + 'get_dirs.sh {} {} {}'.format(
                     subdomain.http_url, wordlist_location, dirs_results)
@@ -454,12 +457,13 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     ' {} {}'.format(extensions, threads)
 
                 # check if recursive strategy is set to on
-                if yaml_configuration['dir_file_search']['recursive']:
+                if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
                     dirsearch_command = dirsearch_command + \
                         ' {}'.format(
-                            yaml_configuration['dir_file_search']['recursive_level'])
+                            yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
 
                 os.system(dirsearch_command)
+
                 try:
                     with open(dirs_results, "r") as json_file:
                         json_string = json_file.read()
@@ -484,14 +488,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             '''
             It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
             '''
-            if 'all' in yaml_configuration['fetch_url']['uses_tool']:
+            # check yaml settings
+            if 'all' in yaml_configuration[FETCH_URL][USES_TOOLS]:
                 tools = 'gau hakrawler'
             else:
                 tools = ' '.join(
-                    str(tool) for tool in yaml_configuration['fetch_url']['uses_tool'])
+                    str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
 
-            subdomain_scan_results_file = results_dir + \
-                current_scan_dir + '/sorted_subdomain_collection.txt'
+            os.system(settings.TOOL_LOCATION + 'get_urls.sh {} {} {}'.format(domain.domain_name, current_scan_dir, tools))
 
             if 'aggressive' in yaml_configuration['fetch_url']['intensity']:
                 with open(subdomain_scan_results_file) as subdomain_list:
