@@ -6,44 +6,14 @@
     dir_file_search: true
     port_scan: true
     fetch_url: true
-    yaml_configuration: "subdomain_discovery:\r\n    # available tools are sublist3r,\
-      \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r, assetfinder, amass ]\r\n    thread: 10\r\n    # Your wordlist shortname\
-      \ for amass active enumeration, ignore if you are using passive enumeration\r\
-      \n    wordlist: default\r\n    # Get the shortname for the config file from\
-      \ configurations module\r\n    amass_config: config_short_name\r\n\r\nport_scan:\r\
-      \n    # currently reNgine only supports naabu, nmap and other port scanning\
-      \ tools\r\n    # will be made available in future release\r\n    # scan_ports\
-      \ available options are top-100, top-1000, full or custom like\r\n    # [80,\
-      \ 443]\r\n    ports: [ top-100 ]\r\n    # if you want to exclude certain ports,\
-      \ usage: exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread:\
-      \ 10\r\n\r\nvisual_identification:\r\n    # currently runs aquatone\r\n    #\
-      \ available options for ports are small, medium, large, xlarge\r\n    port:\
-      \ xlarge\r\n    thread: 2\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
+    yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
+      \ sublist3r, assetfinder ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    ports:\
+      \ [ top-100 ]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\
+      \n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\n    thread:\
+      \ 1\r\n\r\ndir_file_search:\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]\r\n    # intensity will define how the URLs\
-      \ will be fetched\r\n    # Available Options: normal, aggressive\r\n    # normal:\
-      \ will fetch urls only for the main domain, subdomains urls will not be fetched\r\
-      \n    # aggressive: will fetch urls for all the subdomains\r\n    intensity:\
-      \ aggressive\r\n\r\nvulnerability_scan:\r\n    # reNgine uses nuclei as a vulnerability\
-      \ scanner.\r\n    # concurrent: Number of concurrent requests (default 10)\r\
-      \n    concurrent: 10\r\n    # Template are input file/files to check across\
-      \ hosts\r\n    # Please refer nuclei documentation for templates\r\n    # currently\
-      \ supported options are one or more combination of nuclei-templates\r\n    #\
-      \ Usage: template: cves, default-credentials, dns, files, fuzzing\r\n    # Refer\
-      \ to nuclei-templates repo for available options\r\n    # or you can also use\
-      \ all templates using: template: all\r\n    # Find more about nuclei templates\
-      \ here: https://github.com/projectdiscovery/nuclei-templates\r\n    template:\
-      \ all\r\n    # If you wish to use templates based on severity, you can specify\
-      \ them\r\n    # Usage: severity: critical,low,medium\r\n    # Available options\
-      \ are all, critical, high, low, medium, info\r\n    severity: all"
-    vulnerability_scan: true
+      \    wordlist: default\r\n\r\nfetch_url:\r\n    uses_tool: [ gau, hakrawler\
+      \ ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
@@ -53,44 +23,14 @@
     dir_file_search: false
     port_scan: false
     fetch_url: true
-    yaml_configuration: "subdomain_discovery:\r\n    # available tools are sublist3r,\
-      \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r, assetfinder ]\r\n    thread: 10\r\n    # Your wordlist shortname\
-      \ for amass active enumeration, ignore if you are using passive enumeration\r\
-      \n    wordlist: default\r\n    # Get the shortname for the config file from\
-      \ configurations module\r\n    amass_config: config_short_name\r\n\r\nport_scan:\r\
-      \n    # currently reNgine only supports naabu, nmap and other port scanning\
-      \ tools\r\n    # will be made available in future release\r\n    # scan_ports\
-      \ available options are top-100, top-1000, full or custom like\r\n    # [80,\
-      \ 443]\r\n    ports: [ top-100 ]\r\n    # if you want to exclude certain ports,\
-      \ usage: exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread:\
-      \ 10\r\n\r\nvisual_identification:\r\n    # currently runs aquatone\r\n    #\
-      \ available options for ports are small, medium, large, xlarge\r\n    port:\
-      \ xlarge\r\n    thread: 2\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
+    yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
+      \ sublist3r, assetfinder ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    ports:\
+      \ [ top-100 ]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\
+      \n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\n    thread:\
+      \ 1\r\n\r\ndir_file_search:\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]\r\n    # intensity will define how the URLs\
-      \ will be fetched\r\n    # Available Options: normal, aggressive\r\n    # normal:\
-      \ will fetch urls only for the main domain, subdomains urls will not be fetched\r\
-      \n    # aggressive: will fetch urls for all the subdomains\r\n    intensity:\
-      \ aggressive\r\n\r\nvulnerability_scan:\r\n    # reNgine uses nuclei as a vulnerability\
-      \ scanner.\r\n    # concurrent: Number of concurrent requests (default 10)\r\
-      \n    concurrent: 10\r\n    # Template are input file/files to check across\
-      \ hosts\r\n    # Please refer nuclei documentation for templates\r\n    # currently\
-      \ supported options are one or more combination of nuclei-templates\r\n    #\
-      \ Usage: template: cves, default-credentials, dns, files, fuzzing\r\n    # Refer\
-      \ to nuclei-templates repo for available options\r\n    # or you can also use\
-      \ all templates using: template: all\r\n    # Find more about nuclei templates\
-      \ here: https://github.com/projectdiscovery/nuclei-templates\r\n    template:\
-      \ all\r\n    # If you wish to use templates based on severity, you can specify\
-      \ them\r\n    # Usage: severity: critical,low,medium\r\n    # Available options\
-      \ are all, critical, high, low, medium, info\r\n    severity: all"
-    vulnerability_scan: false
+      \    wordlist: default\r\n\r\nfetch_url:\r\n    uses_tool: [ gau, hakrawler\
+      \ ]"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3
@@ -100,42 +40,12 @@
     dir_file_search: false
     port_scan: false
     fetch_url: false
-    yaml_configuration: "subdomain_discovery:\r\n    # available tools are sublist3r,\
-      \ amass, assetfinder, subfinder\r\n    # Usage of many tools may improve the\
-      \ results but also may take longer time to scan\r\n    uses_tool: [ subfinder,\
-      \ sublist3r, assetfinder, amass ]\r\n    thread: 10\r\n    # Your wordlist shortname\
-      \ for amass active enumeration, ignore if you are using passive enumeration\r\
-      \n    wordlist: default\r\n    # Get the shortname for the config file from\
-      \ configurations module\r\n    amass_config: config_short_name\r\n\r\nport_scan:\r\
-      \n    # currently reNgine only supports naabu, nmap and other port scanning\
-      \ tools\r\n    # will be made available in future release\r\n    # scan_ports\
-      \ available options are top-100, top-1000, full or custom like\r\n    # [80,\
-      \ 443]\r\n    ports: [ top-100 ]\r\n    # if you want to exclude certain ports,\
-      \ usage: exclude_ports: [80, 443]\r\n    exclude_ports: null\r\n    thread:\
-      \ 10\r\n\r\nvisual_identification:\r\n    # currently runs aquatone\r\n    #\
-      \ available options for ports are small, medium, large, xlarge\r\n    port:\
-      \ xlarge\r\n    thread: 2\r\n\r\ndir_file_search:\r\n    # currently supported\
-      \ dirsearch\r\n    # list the file extensions to look for, extensions: [php,\
-      \ asp, txt]\r\n    # recommended [ all ]\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
+    yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
+      \ sublist3r, assetfinder ]\r\n    thread: 10\r\n\r\nport_scan:\r\n    ports:\
+      \ [ top-100 ]\r\n    exclude_ports: null\r\n    thread: 10\r\n\r\nvisual_identification:\r\
+      \n    port: xlarge\r\n    thread: 1\r\n\r\nsubdomain_takeover:\r\n    thread:\
+      \ 1\r\n\r\ndir_file_search:\r\n    extensions: [ php,asp,aspx,txt,conf,db,sql,json\
       \ ]\r\n    recursive: false\r\n    recursive_level: 1\r\n    thread: 100\r\n\
-      \    # use the shortname for wordlist here\r\n    # default uses dirsearch default\
-      \ dicc.txt wordlist\r\n    wordlist: default\r\n\r\nfetch_url:\r\n    # supported\
-      \ tools are gau and hakrawler\r\n    # usage -> uses_tool: [ gau, hakrawler]\r\
-      \n    uses_tool: [ gau, hakrawler ]\r\n    # intensity will define how the URLs\
-      \ will be fetched\r\n    # Available Options: normal, aggressive\r\n    # normal:\
-      \ will fetch urls only for the main domain, subdomains urls will not be fetched\r\
-      \n    # aggressive: will fetch urls for all the subdomains\r\n    intensity:\
-      \ aggressive\r\n\r\nvulnerability_scan:\r\n    # reNgine uses nuclei as a vulnerability\
-      \ scanner.\r\n    # concurrent: Number of concurrent requests (default 10)\r\
-      \n    concurrent: 10\r\n    # Template are input file/files to check across\
-      \ hosts\r\n    # Please refer nuclei documentation for templates\r\n    # currently\
-      \ supported options are one or more combination of nuclei-templates\r\n    #\
-      \ Usage: template: cves, default-credentials, dns, files, fuzzing\r\n    # Refer\
-      \ to nuclei-templates repo for available options\r\n    # or you can also use\
-      \ all templates using: template: all\r\n    # Find more about nuclei templates\
-      \ here: https://github.com/projectdiscovery/nuclei-templates\r\n    template:\
-      \ all\r\n    # If you wish to use templates based on severity, you can specify\
-      \ them\r\n    # Usage: severity: critical,low,medium\r\n    # Available options\
-      \ are all, critical, high, low, medium, info\r\n    severity: all"
-    vulnerability_scan: false
+      \    wordlist: default\r\n\r\nfetch_url:\r\n    uses_tool: [ gau, hakrawler\
+      \ ]"
     default_engine: true

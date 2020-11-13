@@ -57,43 +57,29 @@ $(document).ready(function() {
 	$('.ace_editor').attr('id','editor');
 	var editor = ace.edit("editor");
 	editor.setValue(`subdomain_discovery:
-    # available tools are amass-passive, amass-active, assetfinder, subfinder, sublist3r or just use all
-    # Usage of many tools may improve the results but also may take longer time to scan
-    uses_tool: [ subfinder, sublist3r ]
     uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder ]
     thread: 10
 
 port_scan:
-    # currently reNgine only supports naabu, nmap and other port scanning tools
-    # will be made available in future release
-    # scan_ports available options are top-100, top-1000, full or custom like
-    # [80, 443]
     ports: [ top-100 ]
-    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]
     exclude_ports: null
     thread: 10
 
 visual_identification:
-    # currently runs aquatone
-    # available options for ports are small, medium, large, xlarge
     port: xlarge
     thread: 2
 
+subdomain_takeover:
+    thread: 1
+
 dir_file_search:
-    # currently supported dirsearch
-    # list the file extensions to look for, extensions: [php, asp, txt]
-    # recommended [ all ]
     extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
     recursive: false
     recursive_level: 1
     thread: 100
-    # use the shortname for wordlist here
-    # default uses dirsearch default dicc.txt wordlist
     wordlist: default
 
 fetch_url:
-    # supported tools are gau and hakrawler
-    # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
     # intensity will define how the URLs will be fetched
     # Available Options: normal, aggressive
