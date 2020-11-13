@@ -256,8 +256,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check the yaml_configuration and choose the ports to be scanned
 
-            scan_ports = ','.join(
-                str(port) for port in yaml_configuration['port_scan']['ports'])
+            if PORTS in yaml_configuration[PORT_SCAN]:
+                scan_ports = ','.join(str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
+            else
 
             if scan_ports:
                 naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(

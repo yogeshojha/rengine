@@ -1,48 +1,27 @@
 subdomain_discovery:
-    # Available tools are Sublist3r, amass-active amass-passive, assetfinder, subfinder
-    # Usage of many tools may improve the results but also may take longer time to scan
-    # If you choose to run amass, by default it does passive scan, you can choose both
-    # amass-active or amass-passive
     uses_tool: [ amass-passive, subfinder, sublist3r ]
     thread: 10
-    # Your wordlist shortname for amass active enumeration
-    wordlist: default
-    # Get the shortname for the config file from configurations module
+    amass_wordlist: default
+    subfinder_config: config_short_name
     amass_config: config_short_name
 
 port_scan:
-    # currently reNgine only supports naabu, nmap and other port scanning tools
-    # will be made available in future release
-    # scan_ports available options are top-100, top-1000, full or custom like
-    # [80, 443]
     ports: [ top-100 ]
-    # if you want to exclude certain ports, usage: exclude_ports: [80, 443]
     exclude_ports: null
     thread: 10
 
 visual_identification:
-    # currently runs aquatone
-    # available options for ports are small, medium, large, xlarge
     port: xlarge
     thread: 2
 
-subdomain_takeover:
-    # only subjack is supported at this time
-    thread: 1
-
 dir_file_search:
-    # currently supported dirsearch
-    # list the file extensions to look for, extensions: [php, asp, txt]
-    # recommended [ all ]
     extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
     recursive: false
     recursive_level: 1
     thread: 100
-    # use the shortname for wordlist here
-    # default uses dirsearch default dicc.txt wordlist
     wordlist: default
 
 fetch_url:
-    # supported tools are gau and hakrawler
-    # usage -> uses_tool: [ gau, hakrawler]
     uses_tool: [ gau, hakrawler ]
+
+# To learn more about YAML config visit the official documentation at https://rengine.wiki/pentester/scan_engine/
