@@ -62,15 +62,11 @@ $(document).ready(function() {
 
 port_scan:
     ports: [ top-100 ]
-    exclude_ports: null
     thread: 10
 
 visual_identification:
     port: xlarge
     thread: 2
-
-subdomain_takeover:
-    thread: 1
 
 dir_file_search:
     extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
@@ -81,27 +77,11 @@ dir_file_search:
 
 fetch_url:
     uses_tool: [ gau, hakrawler ]
-    # intensity will define how the URLs will be fetched
-    # Available Options: normal, aggressive
-    # normal: will fetch urls only for the main domain, subdomains urls will not be fetched
-    # aggressive: will fetch urls for all the subdomains
-    intensity: aggressive
+    intensity: normal
 
 vulnerability_scan:
-    # reNgine uses nuclei as a vulnerability scanner.
-    # concurrent: Number of concurrent requests (default 10)
     concurrent: 10
-    # Template are input file/files to check across hosts
-    # Please refer nuclei documentation for templates
-    # currently supported options are one or more combination of nuclei-templates
-    # Usage: template: cves, default-credentials, dns, files, fuzzing
-    # Refer to nuclei-templates repo for available options
-    # or you can also use all templates using: template: all
-    # Find more about nuclei templates here: https://github.com/projectdiscovery/nuclei-templates
     template: all
-    # If you wish to use templates based on severity, you can specify them
-    # Usage: severity: critical, low, medium
-    # Available options are all, critical, high, low, medium, info
     severity: all
 `);
 	editor.clearSelection();
