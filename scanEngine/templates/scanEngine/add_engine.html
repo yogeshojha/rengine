@@ -76,13 +76,13 @@ dir_file_search:
     wordlist: default
 
 fetch_url:
-    uses_tool: [ gau, hakrawler ]
+    uses_tool: [ all ]
     intensity: normal
 
 vulnerability_scan:
     concurrent: 10
-    template: all
-    severity: all
+    template: [ all ]
+    severity: [ all ]
 `);
 	editor.clearSelection();
 });

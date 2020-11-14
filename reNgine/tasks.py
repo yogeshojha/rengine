@@ -208,7 +208,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             remove the older results from_*
             '''
 
-            os.system('cat {}/*.txt > {}/subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+            os.system(
+                'cat {}/*.txt > {}/subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
 
             '''
             Remove all the from_* files
@@ -220,7 +221,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             Sort all Subdomains
             '''
 
-            os.system('sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+            os.system(
+                'sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(
+                    current_scan_dir, current_scan_dir))
 
             '''
             The final results will be stored in sorted_subdomain_collection.
@@ -270,7 +273,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             scan_ports = 'top-100'  # default port scan
             if PORTS in yaml_configuration[PORT_SCAN]:
-                scan_ports = ','.join(str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
+                scan_ports = ','.join(
+                    str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
 
             # TODO: New version of naabu has -p instead of -ports
             if scan_ports:
@@ -431,7 +435,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check the yaml settings
             if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-                extensions = ','.join(str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+                extensions = ','.join(
+                    str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
             else:
                 extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
@@ -495,7 +500,12 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
 
-            os.system(settings.TOOL_LOCATION + 'get_urls.sh {} {} {}'.format(domain.domain_name, current_scan_dir, tools))
+            os.system(
+                settings.TOOL_LOCATION +
+                'get_urls.sh {} {} {}'.format(
+                    domain.domain_name,
+                    current_scan_dir,
+                    tools))
 
             if 'aggressive' in yaml_configuration['fetch_url']['intensity']:
                 with open(subdomain_scan_results_file) as subdomain_list:
@@ -574,8 +584,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             if 'all' in yaml_configuration['vulnerability_scan']['template']:
                 template = '/root/nuclei-templates'
             else:
-                template = yaml_configuration['vulnerability_scan']['template'].replace(
-                    ',', ' -t ')
+                if isinstance(
+                        yaml_configuration['vulnerability_scan']['template'],
+                        list):
+                    _template = ','.join(
+                        [str(element) for element in yaml_configuration['vulnerability_scan']['template']])
+                    template = _template.replace(',', ' -t ')
+                else:
+                    template = yaml_configuration['vulnerability_scan']['template'].replace(
+                        ',', ' -t ')
 
             # Update nuclei command with templates
             nuclei_command = nuclei_command + ' -t ' + template
@@ -591,11 +608,20 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # yaml settings for severity
             if 'severity' in yaml_configuration['vulnerability_scan']:
-                if yaml_configuration['vulnerability_scan']['severity'] != 'all':
-                    severity = yaml_configuration['vulnerability_scan']['severity'].replace(
-                        " ", "")
-                    # Update nuclei command based on severity
-                    nuclei_command = nuclei_command + ' -severity ' + severity
+                if 'all' not in yaml_configuration['vulnerability_scan']['severity']:
+                    if isinstance(
+                            yaml_configuration['vulnerability_scan']['severity'],
+                            list):
+                        _severity = ','.join(
+                            [str(element) for element in yaml_configuration['vulnerability_scan']['severity']])
+                        severity = _severity.replace(" ", "")
+                        # Update nuclei command based on severity
+                        nuclei_command = nuclei_command + ' -severity ' + severity
+                    else:
+                        severity = yaml_configuration['vulnerability_scan']['severity'].replace(
+                            " ", "")
+                        # Update nuclei command based on severity
+                        nuclei_command = nuclei_command + ' -severity ' + severity
 
             # update nuclei templates before running scan
             os.system('nuclei -update-templates')
