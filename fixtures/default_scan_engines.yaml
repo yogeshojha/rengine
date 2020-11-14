@@ -17,7 +17,8 @@
     vulnerability_scan: true
     default_engine: true
 - model: scanEngine.enginetype
-  pk: 2  fields:
+  pk: 2
+  fields:
     engine_name: Passive Only Scan
     subdomain_discovery: true
     dir_file_search: false
