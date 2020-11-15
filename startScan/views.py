@@ -33,8 +33,6 @@ def detail_scan(request, id=None):
         endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
         endpoint_alive_count = WayBackEndPoint.objects.filter(
             url_of__id=id, http_status__exact=200).count()
-        subdomain_takeover_count = ScannedHost.objects.filter(
-            scan_history__id=id, takeover__isnull=False).count()
         history = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=0).count()
@@ -57,7 +55,6 @@ def detail_scan(request, id=None):
                    'endpoint_count': endpoint_count,
                    'endpoint_alive_count': endpoint_alive_count,
                    'history': history,
-                   'subdomain_takeover_count': subdomain_takeover_count,
                    'info_count': info_count,
                    'low_count': low_count,
                    'medium_count': medium_count,
