@@ -6,6 +6,7 @@ import json
 import validators
 import requests
 import logging
+import tldextract
 
 
 from celery import shared_task
@@ -637,6 +638,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         json_st = json.loads(line.strip())
                         vulnerability = VulnerabilityScan()
                         vulnerability.vulnerability_of = task
+                        # Get Domain name from URL for Foreign Key Host
+                        url = json_st['matched']
+                        extracted = tldextract.extract(url)
+                        subdomain = '.'.join(extracted[:4])
+                        if subdomain[0] == '.':
+                            subdomain = subdomain[1:]
+                        _subdomain = ScannedHost.objects.get(subdomain=subdomain, scan_history=task)
+                        vulnerability.host = _subdomain
                         vulnerability.name = json_st['name']
                         vulnerability.url = json_st['matched']
                         if json_st['severity'] == 'info':
