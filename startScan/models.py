@@ -72,3 +72,6 @@ class VulnerabilityScan(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_severity(self):
+        return self.severity

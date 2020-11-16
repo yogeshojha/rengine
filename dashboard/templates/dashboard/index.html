@@ -11,6 +11,7 @@ Dashboard
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
 <link href="{% static 'assets/css/elements/avatar.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -111,7 +112,7 @@ Dashboard
         <div class="widget-heading">
           <div class="row">
             <div class="col-6">
-              <h5 class="">Vulnerability Scan Summary</h5>
+              <h6 class="">Vulnerability Scan Summary</h6>
             </div>
             <div class="col-6">
               <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
@@ -126,7 +127,7 @@ Dashboard
     <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-table-one">
         <div class="widget-heading">
-          <h5 class="text-danger">Top 3 Most Vulnerable Targets</h5>
+          <h6 class="text-danger">Most Vulnerable Targets</h6>
         </div>
         <div class="widget-content">
           {% for item in most_vulnerable_target %}
@@ -145,44 +146,53 @@ Dashboard
                   </div>
                   <div class="t-name">
                     <h4>{{item.domain_name}}</h4>
-                    <p class="meta-date text-danger">{{item.scanhistory_set.all|length}}</p>
+                    <p class="meta-date text-danger"></p>
                   </div>
                 </div>
                 <div class="t-rate">
                   <div class="avatar avatar-md text-danger">
-                    <span class="avatar-danger-title rounded-circle">111</span>
+                    <span class="avatar-danger-title rounded-circle">{{item.num_vul}}</span>
                   </div>
+                  <small class="text-muted">Vulnerabilities</small>
                 </div>
               </div>
             </a>
           </div>
           {% endfor %}
-
+          <small class="text-muted float-right">*Informational Vulnerabilities were not taken into consideration</small>
         </div>
       </div>
     </div>
     <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-table-one">
         <div class="widget-heading">
-          <h5 class="text-danger">Most Common Vulnerability</h5>
+          <h6 class="text-danger">Most Common Vulnerabilities</h6>
         </div>
         <div class="widget-content">
           {% for item in most_common_vulnerability %}
           <div class="transactions-list">
-              <div class="t-item">
-                <div class="t-company-name">
-                  <div class="t-name">
-                    <h4>{{item.name}}</h4>
-                    <p class="meta-date">Occured <span class="text-danger">{{item.count}}</span> times</p>
-                  </div>
-                </div>
-                <div class="t-rate">
-
+            <div class="t-item">
+              <div class="t-company-name">
+                <div class="t-name">
+                  <h4>{{item.name}}</h4>
+                  <p class="meta-date text-info">Occured {{item.count}} times</p>
                 </div>
               </div>
+              <div class="t-rate">
+                {% if item.severity == 1 %}
+                <span class='badge badge-low'>Low</span>
+                {% elif item.severity == 2 %}
+                <span class='badge badge-warning'>Medium</span>
+                {% elif item.severity == 3 %}
+                <span class='badge badge-danger'>High</span>
+                {% elif item.severity == 4 %}
+                <span class='badge badge-critical'>Critical</span>
+                {% endif %}
+              </div>
+            </div>
           </div>
           {% endfor %}
-
+          <small class="text-muted float-right">*Informational Vulnerabilities were not taken into consideration</small>
         </div>
       </div>
     </div>
@@ -193,7 +203,7 @@ Dashboard
     <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-table-one">
         <div class="widget-heading">
-          <h5 class="">Recent Scans</h5>
+          <h6 class="">Recent Scans</h6>
         </div>
 
         <div class="widget-content">
@@ -255,7 +265,7 @@ Dashboard
     <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-table-one">
         <div class="widget-heading">
-          <h5 class="">Upcoming Scans</h5>
+          <h6 class="">Upcoming Scans</h6>
         </div>
 
         <div class="widget-content">
