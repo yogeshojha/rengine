@@ -1,8 +1,6 @@
 from django.db import models
 from django.utils import timezone
 
-# Create your models here.
-
 
 class Domain(models.Model):
     domain_name = models.CharField(max_length=300)

@@ -1,13 +1,15 @@
+from targetApp.models import Domain
+from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan
+
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan
-from targetApp.models import Domain
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out, user_logged_in
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
+from django.db.models import Count
 
 
 def index(request):
@@ -29,6 +31,14 @@ def index(request):
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
     high_count = VulnerabilityScan.objects.filter(severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(severity=4).count()
+    most_vulnerable_target = Domain.objects.exclude(
+        scanhistory__scannedhost__vulnerabilityscan__severity=0).annotate(
+        num_vul=Count(
+            'scanhistory__scannedhost__vulnerabilityscan__name',
+            distinct=True)).order_by('-num_vul')[
+                :5]
+    most_common_vulnerability = VulnerabilityScan.objects.values("name").exclude(
+        severity=0).annotate(count=Count('name')).order_by("-count")[:5]
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -45,7 +55,9 @@ def index(request):
         'medium_count': medium_count,
         'high_count': high_count,
         'critical_count': critical_count,
-        }
+        'most_vulnerable_target': most_vulnerable_target,
+        'most_common_vulnerability': most_common_vulnerability,
+    }
     return render(request, 'dashboard/index.html', context)
 
 
