@@ -9,7 +9,7 @@ from django.contrib.auth.signals import user_logged_out, user_logged_in
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from django.db.models import Count, Value, CharField
+from django.db.models import Count, Value, CharField, Q
 
 
 def index(request):
@@ -23,25 +23,25 @@ def index(request):
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
     on_going_scan_count = \
         ScanHistory.objects.filter(scan_status=1).count()
-    recent_scans = ScanHistory.objects.all().order_by(
-        '-last_scan_date').exclude(scan_status=-1)[:4]
-    upcoming_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
+    recent_completed_scans = ScanHistory.objects.all().order_by(
+        '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:4]
+    currently_scanning = ScanHistory.objects.filter(scan_status=1)[:4]
+    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
     info_count = VulnerabilityScan.objects.filter(severity=0).count()
     low_count = VulnerabilityScan.objects.filter(severity=1).count()
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
     high_count = VulnerabilityScan.objects.filter(severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(severity=4).count()
-    total_vul_count = info_count + low_count + medium_count + high_count + critical_count
+    total_vul_count = info_count + low_count + \
+        medium_count + high_count + critical_count
     # most_vulnerable_target = Domain.objects.exclude(
     #     scanhistory__scannedhost__vulnerabilityscan__severity=0).annotate(
     #     num_vul=Count(
     #         'scanhistory__scannedhost__vulnerabilityscan__name',
     #         distinct=True)).order_by('-num_vul')[
     #             :5]
-    most_vulnerable_target = Domain.objects.annotate(
-        num_vul=Count(
-            'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[
-                :7]
+    most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
+        'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     context = {
@@ -53,8 +53,9 @@ def index(request):
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
         'on_going_scan_count': on_going_scan_count,
-        'recent_scans': recent_scans,
-        'upcoming_scans': upcoming_scans,
+        'recent_completed_scans': recent_completed_scans,
+        'pending_scans': pending_scans,
+        'currently_scanning': currently_scanning,
         'info_count': info_count,
         'low_count': low_count,
         'medium_count': medium_count,

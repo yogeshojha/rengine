@@ -197,11 +197,10 @@ Dashboard
 		{% endif %}
 	</div>
 	<div class="row layout-top-spacing">
-
-		<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+		<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
 			<div class="widget widget-table-one">
 				<div class="widget-heading">
-					<h6 class="">Recent Scans</h6>
+					<h6 class="">Recently completed Scans</h6>
 				</div>
 
 				<div class="widget-content">
@@ -215,7 +214,7 @@ Dashboard
 					</div>
 					{% endif %}
 
-					{% for item in recent_scans %}
+					{% for item in recent_completed_scans %}
 					<div class="transactions-list">
 						<a href="{% url 'detail_scan' item.id %}">
 							<div class="t-item">
@@ -260,20 +259,58 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+		<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
+			<div class="widget widget-table-one">
+				<div class="widget-heading">
+					<h6 class="">Currently Scanning</h6>
+				</div>
+
+				<div class="widget-content">
+					{% for item in currently_scanning %}
+					<div class="transactions-list">
+						<a href="{% url 'detail_scan' item.id %}">
+							<div class="t-item">
+								<div class="t-company-name">
+									<div class="t-icon">
+										<div class="icon">
+											{% if item.scan_status == 1 %}
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+											{% elif item.scan_status == 2 %}
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+											{% else %}
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+											{% endif %}
+										</div>
+									</div>
+									<div class="t-name">
+										<h4>{{item.domain_name}}</h4>
+										<p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
+									</div>
+
+								</div>
+								<div class="t-rate">
+									<span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+								</div>
+							</div>
+						</a>
+					</div>
+					{% empty %}
+					<div class="alert alert-light-info mb-4" role="alert">
+						No targets are currently being scanned.
+					</div>
+					{% endfor %}
+
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
 			<div class="widget widget-table-one">
 				<div class="widget-heading">
 					<h6 class="">Upcoming Scans</h6>
 				</div>
 
 				<div class="widget-content">
-					{% if upcoming_scans.count == 0 %}
-					<div class="alert alert-light-info mb-4" role="alert">
-						No scans are currently scheduled.
-					</div>
-					{% endif %}
-
-					{% for item in upcoming_scans %}
+					{% for item in pending_scans %}
 					<div class="transactions-list">
 						<a href="{% url 'detail_scan' item.id %}">
 							<div class="t-item">
@@ -307,8 +344,11 @@ Dashboard
 							</div>
 						</a>
 					</div>
+					{% empty %}
+					<div class="alert alert-light-info mb-4" role="alert">
+						No scans are currently scheduled.
+					</div>
 					{% endfor %}
-
 				</div>
 			</div>
 		</div>
