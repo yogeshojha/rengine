@@ -128,6 +128,27 @@ All Subdomains
         </div>
       </div>
     </div>
+    {% else %}
+    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+      <div class="widget widget-one_hybrid">
+        <div class="widget-heading">
+          <div class="w-icon text-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+              <circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </div>
+          &nbsp;
+          <h2 class="text-danger">0</h2>
+          <h6 class="">Vulnerabilities Discovered</h6>
+        </div>
+        <div class="widget-content">
+          <small class="text-info">Vulnerability scan hasn't been performed.</small>
+          <br>
+          <small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
+          <br>
+        </div>
+      </div>
+    </div>
     {% endif %}
   </div>
   {% endif %}
