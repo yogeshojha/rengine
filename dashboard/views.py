@@ -21,8 +21,6 @@ def index(request):
         ScannedHost.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
-    on_going_scan_count = \
-        ScanHistory.objects.filter(scan_status=1).count()
     recent_completed_scans = ScanHistory.objects.all().order_by(
         '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:4]
     currently_scanning = ScanHistory.objects.filter(scan_status=1)[:4]
@@ -52,7 +50,6 @@ def index(request):
         'subdomain_count': subdomain_count,
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
-        'on_going_scan_count': on_going_scan_count,
         'recent_completed_scans': recent_completed_scans,
         'pending_scans': pending_scans,
         'currently_scanning': currently_scanning,

@@ -95,7 +95,7 @@ Dashboard
 							<h6 class="">Total Scans</h6>
 						</div>
 						<div class="widget-content">
-							Currently Scanning <b class="text-info">{{on_going_scan_count}}</b>
+							Currently Scanning <b class="text-info">{{currently_scanning.count}}</b>
 							<br>
 							<a href="{% url 'scan_history' %}" class="text-info">View all scan history</a>
 						</div>
@@ -135,7 +135,7 @@ Dashboard
 									</thead>
 									<tbody>
 										{% for item in most_vulnerable_target %}
-										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities">
+										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
 											<td>{{item.domain_name}}</td>
 											<td class="text-center">
 												<div class="progress br-30">
@@ -161,7 +161,7 @@ Dashboard
 											<th>Severity</th>
 										</thead>
 										{% for item in most_common_vulnerability %}
-										<tr>
+										<tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
 											<td>{{item.name}}</td>
 											<td class="text-center">
 												{{item.count}}
@@ -204,16 +204,6 @@ Dashboard
 				</div>
 
 				<div class="widget-content">
-					{% if recent_scans.count == 0 %}
-					<div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-						<strong>
-							Uh oh!</strong> Looks like no scans have been recently initiated! You can initiate the scan
-							<a href="{% url 'list_target' %}" class='text-info'>from here.</a>
-						</strong>
-					</div>
-					{% endif %}
-
 					{% for item in recent_completed_scans %}
 					<div class="transactions-list">
 						<a href="{% url 'detail_scan' item.id %}">
@@ -254,8 +244,15 @@ Dashboard
 							</div>
 						</a>
 					</div>
+					{% empty %}
+					<div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+						<strong>
+							Uh oh!</strong> Looks like no scans have been recently initiated! You can initiate the scan
+							<a href="{% url 'list_target' %}" class='text-info'>from here.</a>
+						</strong>
+					</div>
 					{% endfor %}
-
 				</div>
 			</div>
 		</div>
