@@ -41,9 +41,9 @@ def index(request):
     most_vulnerable_target = Domain.objects.annotate(
         num_vul=Count(
             'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[
-                :5]
+                :7]
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
-        severity=0).annotate(count=Count('name')).order_by("-count")[:5]
+        severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,

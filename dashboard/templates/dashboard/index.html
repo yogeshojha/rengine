@@ -150,44 +150,29 @@ Dashboard
 							<h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
 							<div class="table-responsive">
 								<table class="table table-hover table-light">
-									<thead>
-										<tr>
-											<th class="text-center">#</th>
-											<th>First Name</th>
-											<th>Last Name</th>
-											<th>Email</th>
-											<th></th>
-										</tr>
-									</thead>
 									<tbody>
+										{% for item in most_common_vulnerability %}
 										<tr>
-											<td class="text-center">1</td>
-											<td>John</td>
-											<td>Doe</td>
-											<td>johndoe@yahoo.com</td>
-											<td class=" text-center"><svg> ... </svg></td>
+											<td>{{item.name}}</td>
+											<td>
+												<div class="t-rate">
+													{% if item.severity == 0 %}
+													<span class='badge badge-info'>Info</span>
+													{% elif item.severity == 1 %}
+													<span class='badge badge-low'>Low</span>
+													{% elif item.severity == 2 %}
+													<span class='badge badge-warning'>Medium</span>
+													{% elif item.severity == 3 %}
+													<span class='badge badge-danger'>High</span>
+													{% elif item.severity == 4 %}
+													<span class='badge badge-critical'>Critical</span>
+													{% endif %}
+												</div>
+											</td>
 										</tr>
-										<tr>
-											<td class="text-center">2</td>
-											<td>Andy</td>
-											<td>King</td>
-											<td>andyking@gmail.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
-										<tr>
-											<td class="text-center">3</td>
-											<td>Lisa</td>
-											<td>Doe</td>
-											<td>lisadoe@live.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
-										<tr>
-											<td class="text-center">4</td>
-											<td>Vincent</td>
-											<td>Carpenter</td>
-											<td>vinnyc@outlook.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
+										{% empty %}
+										Not enough data
+										{% endfor %}
 									</tbody>
 								</table>
 							</div>
