@@ -129,6 +129,10 @@ Dashboard
 							<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
 							<div class="table-responsive">
 								<table class="table table-hover table-light">
+									<thead>
+										<th>Target</th>
+										<th>&nbsp;</th>
+									</thead>
 									<tbody>
 										{% for item in most_vulnerable_target %}
 										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities">
@@ -151,9 +155,17 @@ Dashboard
 							<div class="table-responsive">
 								<table class="table table-hover table-light">
 									<tbody>
+										<thead>
+											<th>Vulnerability Name</th>
+											<th class="text-center">Count</th>
+											<th>Severity</th>
+										</thead>
 										{% for item in most_common_vulnerability %}
 										<tr>
 											<td>{{item.name}}</td>
+											<td class="text-center">
+												{{item.count}}
+											</td>
 											<td>
 												<div class="t-rate">
 													{% if item.severity == 0 %}
@@ -175,6 +187,7 @@ Dashboard
 										{% endfor %}
 									</tbody>
 								</table>
+								<small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
 							</div>
 						</div>
 					</div>
