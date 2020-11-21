@@ -1,7 +1,7 @@
 {% extends 'base/base.html' %}
 {% load humanize %}
 {% load static %}
-
+{% load mathfilters %}
 {% block title %}
 Dashboard
 {% endblock title %}
@@ -129,44 +129,19 @@ Dashboard
 							<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
 							<div class="table-responsive">
 								<table class="table table-hover table-light">
-									<thead>
-										<tr>
-											<th class="text-center">#</th>
-											<th>First Name</th>
-											<th>Last Name</th>
-											<th>Email</th>
-											<th></th>
-										</tr>
-									</thead>
 									<tbody>
-										<tr>
-											<td class="text-center">1</td>
-											<td>John</td>
-											<td>Doe</td>
-											<td>johndoe@yahoo.com</td>
-											<td class=" text-center"><svg> ... </svg></td>
+										{% for item in most_vulnerable_target %}
+										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities">
+											<td>{{item.domain_name}}</td>
+											<td class="text-center">
+												<div class="progress br-30">
+													<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+												</div>
+											</td>
 										</tr>
-										<tr>
-											<td class="text-center">2</td>
-											<td>Andy</td>
-											<td>King</td>
-											<td>andyking@gmail.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
-										<tr>
-											<td class="text-center">3</td>
-											<td>Lisa</td>
-											<td>Doe</td>
-											<td>lisadoe@live.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
-										<tr>
-											<td class="text-center">4</td>
-											<td>Vincent</td>
-											<td>Carpenter</td>
-											<td>vinnyc@outlook.com</td>
-											<td class="text-center"><svg> ... </svg></td>
-										</tr>
+										{% empty %}
+										Not enough data.
+										{% endfor %}
 									</tbody>
 								</table>
 							</div>
