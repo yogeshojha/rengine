@@ -339,6 +339,14 @@ def change_scheduled_task_status(request, id):
     return HttpResponse('')
 
 
+def change_vuln_status(request, id):
+    if request.method == 'POST':
+        vuln = VulnerabilityScan.objects.get(id=id)
+        vuln.open_status = not vuln.open_status
+        vuln.save()
+    return HttpResponse('')
+
+
 def create_scan_object(host_id, engine_type):
     '''
     create task with pending status so that celery task will execute when

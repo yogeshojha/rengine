@@ -69,6 +69,7 @@ class VulnerabilityScan(models.Model):
     extracted_results = models.CharField(max_length=1000, null=True, blank=True)
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
+    open_status = models.BooleanField(null=True, blank=True, default=True)
 
     def __str__(self):
         return self.name

@@ -76,3 +76,16 @@ function change_scheduled_task_status(id)
         }
     })
 }
+
+function change_vuln_status(id)
+{
+    const vulnStatusApi = "../toggle/vuln_status/"+id;
+
+    return fetch(vulnStatusApi, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+        }
+    })
+}

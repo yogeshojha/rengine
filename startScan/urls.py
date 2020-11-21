@@ -77,6 +77,10 @@ urlpatterns = [
         views.change_scheduled_task_status,
         name='change_scheduled_task_status'),
     path(
+        'toggle/vuln_status/<int:id>',
+        views.change_vuln_status,
+        name='change_vuln_status'),
+    path(
         'start/multiple/',
         views.start_multiple_scan,
         name='start_multiple_scan')
