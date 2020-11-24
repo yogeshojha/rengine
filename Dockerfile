@@ -48,7 +48,9 @@ WORKDIR /app
 # Copy source code
 COPY . /app/
 
-RUN chmod +x /app/tools/get_subdomain.sh
+# Collect Static
+RUN python manage.py collectstatic --no-input --clear
+
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
