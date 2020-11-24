@@ -27,6 +27,9 @@ EXTENSIONS = 'extensions'
 RECURSIVE = 'recursive'
 RECURSIVE_LEVEL = 'recursive_level'
 WORDLIST = 'wordlist'
+HTTP_TIMEOUT = 'http_timeout'
+SCREENSHOT_TIMEOUT = 'screenshot_timeout'
+SCAN_TIMEOUT = 'scan_timeout'
 
 ###############################################################################
 # Wordlist DEFINITIONS

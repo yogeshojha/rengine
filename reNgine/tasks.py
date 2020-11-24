@@ -390,8 +390,25 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         else:
             threads = 10
 
-        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(
-            with_protocol_path, threads, scan_port, output_aquatone_path)
+        if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+            http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+        else:
+            http_timeout = 3000  # Default Timeout for HTTP
+
+        if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+            screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+        else:
+            screenshot_timeout = 30000  # Default Timeout for Screenshot
+
+        if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+            scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+        else:
+            scan_timeout = 100  # Default Timeout for Scan
+
+        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+            with_protocol_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+
+        logging.info(aquatone_command)
         os.system(aquatone_command)
         os.system('chmod -R 607 /app/tools/scan_results/*')
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
@@ -645,7 +662,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         subdomain = '.'.join(extracted[:4])
                         if subdomain[0] == '.':
                             subdomain = subdomain[1:]
-                        _subdomain = ScannedHost.objects.get(subdomain=subdomain, scan_history=task)
+                        _subdomain = ScannedHost.objects.get(
+                            subdomain=subdomain, scan_history=task)
                         vulnerability.host = _subdomain
                         vulnerability.name = json_st['name']
                         vulnerability.url = json_st['matched']
