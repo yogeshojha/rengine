@@ -247,8 +247,7 @@ Dashboard
 					{% empty %}
 					<div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-						<strong>
-							Uh oh!</strong> Looks like no scans have been recently initiated! You can initiate the scan
+							Please wait for the scans to be completed, if any, or You may also initiate the scan
 							<a href="{% url 'list_target' %}" class='text-info'>from here.</a>
 						</strong>
 					</div>
@@ -292,8 +291,12 @@ Dashboard
 						</a>
 					</div>
 					{% empty %}
-					<div class="alert alert-light-info mb-4" role="alert">
-						No targets are currently being scanned.
+					<div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+						<strong>
+							Uh oh!</strong> Looks like no scans have been recently initiated! You can initiate the scan
+							<a href="{% url 'list_target' %}" class='text-info'>from here.</a>
+						</strong>
 					</div>
 					{% endfor %}
 

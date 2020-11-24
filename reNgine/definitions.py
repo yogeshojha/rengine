@@ -39,3 +39,12 @@ AMASS_DEFAULT_WORDLIST_PATH = 'wordlist/default_wordlist/deepmagic.com-prefixes-
 ###############################################################################
 
 CONFIG_FILE_NOT_FOUND = 'Config file not found'
+
+###############################################################################
+# Preferences DEFINITIONS
+###############################################################################
+
+SMALL = '100px'
+MEDIM = '200px'
+LARGE = '400px'
+XLARGE = '500px'

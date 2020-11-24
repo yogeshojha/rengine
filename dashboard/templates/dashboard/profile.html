@@ -16,68 +16,102 @@ Profile
 
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 layout-spacing">
-    <div id="general-info" class="section general-info">
-        <div class="info">
-            <h6 class="">My Profile</h6>
-            <div class="row">
-                <div class="col-12 mt-md-0 mt-4">
-                    <div class="form">
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <div class="form-group">
-                                    <label for="username">Username</label>
-                                    <input type="text" class="form-control mb-4" id="username" placeholder="username" value="@{{user.get_username}}" disabled>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <h6 class="">Change Password</h6>
-                <div class="col-12">
-                    <div class="form">
-                        <form method="POST">
-                            {% csrf_token %}
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    <div class="form-group">
-                                        <label for="username">Old Password</label>
-                                        <input type="password" name="old_password" autocomplete="current-password" autofocus="" required="" id="id_old_password" class="form-control mb-4 {% if form.errors.old_password %}is-invalid{% endif %}">
-                                        {% if form.errors.old_password %}
-                                        {% for error in form.errors.old_password %}
-                                        <p class="text-danger">{{error}}</p>
-                                        {% endfor %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="form-group">
-                                        <label for="username">New Password</label>
-                                        <input type="password" name="new_password1" autocomplete="new-password" required="" id="id_new_password1" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="form-group">
-                                        <label for="username">Confirm Password</label>
-                                        <input type="password" name="new_password2" autocomplete="new-password" required="" id="id_new_password2" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
-                                    </div>
-                                </div>
-                            </div>
-                            {% if form.errors.new_password2 %}
-                            {% for error in form.errors.new_password2 %}
-                            <p class="text-danger">{{error}}</p>
-                            {% endfor %}
-                            {% endif %}
-                            <input type="submit" class="btn btn-primary float-right" value="Change Password">
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	<div id="general-info" class="section general-info">
+		<div class="info">
+			<h6 class="">My Profile</h6>
+			<div class="row">
+				<div class="col-12 mt-md-0 mt-4">
+					<div class="form">
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group">
+									<label for="username">Username</label>
+									<input type="text" class="form-control mb-4" id="username" placeholder="username" value="@{{user.get_username}}" disabled>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<h6 class="">Change Password</h6>
+			<div class="col-12">
+				<div class="form">
+					<form method="POST">
+						{% csrf_token %}
+						<div class="row">
+							<div class="col-sm-12">
+								<div class="form-group">
+									<label for="username">Old Password</label>
+									<input type="password" name="old_password" autocomplete="current-password" autofocus="" required="" id="id_old_password" class="form-control mb-4 {% if form.errors.old_password %}is-invalid{% endif %}">
+									{% if form.errors.old_password %}
+									{% for error in form.errors.old_password %}
+									<p class="text-danger">{{error}}</p>
+									{% endfor %}
+									{% endif %}
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="form-group">
+									<label for="username">New Password</label>
+									<input type="password" name="new_password1" autocomplete="new-password" required="" id="id_new_password1" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
+								</div>
+							</div>
+							<div class="col-sm-6">
+								<div class="form-group">
+									<label for="username">Confirm Password</label>
+									<input type="password" name="new_password2" autocomplete="new-password" required="" id="id_new_password2" class="form-control mb-4 {% if form.errors.new_password2 %}is-invalid{% endif %}">
+								</div>
+							</div>
+						</div>
+						{% if form.errors.new_password2 %}
+						{% for error in form.errors.new_password2 %}
+						<p class="text-danger">{{error}}</p>
+						{% endfor %}
+						{% endif %}
+						<input type="submit" class="btn btn-primary float-right" value="Change Password">
+					</form>
+				</div>
+			</div>
+			<h6 class="">Preferences</h6>
+			<div class="row">
+				<div class="col-12 mt-md-0 mt-4">
+					<div class="form">
+						<div class="row">
+							<div class="col-sm-4">
+								<div class="form-group">
+									<label for="screenshot_size_dropdown">Screenshot Size</label>
+									<select class="form-control  basic" id="screenshot_size_dropdown" name="screenshot_size">
+										<option value='200px'>Small</option>
+										<option value='300px'>Medium</option>
+										<option value='400px'>Large</option>
+										<option value='500px'>XLarge</option>
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
 </div>
 {% endblock main_content %}
 
 
 {% block page_level_script %}
+<script type="text/javascript">
+var select = document.querySelector("#screenshot_size_dropdown");
+var selectOption = select.options[select.selectedIndex];
+var lastSelected = localStorage.getItem('screenshotSize');
 
+if(lastSelected) {
+    select.value = lastSelected;
+}
+
+select.onchange = function () {
+   lastSelected = select.options[select.selectedIndex].value;
+   localStorage.setItem('screenshotSize', lastSelected);
+}
+</script>
 {% endblock page_level_script %}

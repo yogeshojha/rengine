@@ -378,11 +378,11 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
         if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
             scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+            # check if scan port is valid otherwise proceed with default xlarge
+            # port
+            if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+                scan_port = 'xlarge'
         else:
-            scan_port = 'xlarge'
-        # check if scan port is valid otherwise proceed with default xlarge
-        # port
-        if scan_port not in ['small', 'medium', 'large', 'xlarge']:
             scan_port = 'xlarge'
 
         if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
@@ -397,27 +397,28 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
 
         try:
-            with open(aqua_json_path, 'r') as json_file:
-                data = json.load(json_file)
+            if os.path.isfile(vulnerability_result_path):
+                with open(aqua_json_path, 'r') as json_file:
+                    data = json.load(json_file)
 
-            for host in data['pages']:
-                sub_domain = ScannedHost.objects.get(
-                    scan_history__id=task.id,
-                    subdomain=data['pages'][host]['hostname'])
-                # list_ip = data['pages'][host]['addrs']
-                # ip_string = ','.join(list_ip)
-                # sub_domain.ip_address = ip_string
-                sub_domain.screenshot_path = current_scan_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                sub_domain.http_header_path = current_scan_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['headersPath']
-                tech_list = []
-                if data['pages'][host]['tags'] is not None:
-                    for tag in data['pages'][host]['tags']:
-                        tech_list.append(tag['text'])
-                tech_string = ','.join(tech_list)
-                sub_domain.technology_stack = tech_string
-                sub_domain.save()
+                for host in data['pages']:
+                    sub_domain = ScannedHost.objects.get(
+                        scan_history__id=task.id,
+                        subdomain=data['pages'][host]['hostname'])
+                    # list_ip = data['pages'][host]['addrs']
+                    # ip_string = ','.join(list_ip)
+                    # sub_domain.ip_address = ip_string
+                    sub_domain.screenshot_path = current_scan_dir + \
+                        '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                    sub_domain.http_header_path = current_scan_dir + \
+                        '/aquascreenshots/' + data['pages'][host]['headersPath']
+                    tech_list = []
+                    if data['pages'][host]['tags'] is not None:
+                        for tag in data['pages'][host]['tags']:
+                            tech_list.append(tag['text'])
+                    tech_string = ','.join(tech_list)
+                    sub_domain.technology_stack = tech_string
+                    sub_domain.save()
         except Exception as exception:
             logging.error(exception)
             update_last_activity(activity_id, 0)
@@ -665,6 +666,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         if 'matcher_name' in json_st:
                             vulnerability.matcher_name = json_st['matcher_name']
                         vulnerability.discovered_date = timezone.now()
+                        vulnerability.open_status = True
                         vulnerability.save()
                         send_notification(
                             "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
