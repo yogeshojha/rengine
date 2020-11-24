@@ -13,3 +13,8 @@
   color: #fff;
   background-color: #AA2C00;
 }
+
+.table-secondary.text-strike {
+  text-decoration: line-through;
+  text-decoration-color: #6c757d;
+}

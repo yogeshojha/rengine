@@ -198,7 +198,7 @@ $(document).ready(function() {
 		},
 		'createdRow': function( row, data, dataIndex ) {
 			if (!data['open_status']){
-				$(row).addClass('table-secondary');
+				$(row).addClass('table-secondary text-strike');
 			}
 		},
 	});
@@ -207,10 +207,12 @@ $(document).ready(function() {
 function vuln_status_change(checkbox, id)
 {
 	if (checkbox.checked) {
-		checkbox.parentNode.parentNode.className = "table-secondary";
+		document.getElementById
+		checkbox.parentNode.parentNode.className = "table-secondary text-strike";
 	}
 	else {
 		checkbox.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.classList.remove("text-strike");
 	}
 	change_vuln_status(id);
 }
