@@ -397,7 +397,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         aqua_json_path = output_aquatone_path + '/aquatone_session.json'
 
         try:
-            if os.path.isfile(vulnerability_result_path):
+            if os.path.isfile(aqua_json_path):
                 with open(aqua_json_path, 'r') as json_file:
                     data = json.load(json_file)
 
