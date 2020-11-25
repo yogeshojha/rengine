@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 import traceback
 import yaml
@@ -7,17 +6,6 @@ import validators
 import requests
 import logging
 import tldextract
-
-
-from celery import shared_task
-from reNgine.celery import app
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
-from targetApp.models import Domain
-from notification.models import NotificationHooks
-from scanEngine.models import EngineType
-from django.conf import settings
-from django.utils import timezone, dateformat
-from django.shortcuts import get_object_or_404
 
 from celery import shared_task
 from datetime import datetime
@@ -464,6 +452,143 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         sub_domain.open_ports = str(json_st['port'])
                     sub_domain.save()
             except BaseException as exception:
+                logging.error(exception)
+                update_last_activity(activity_id, 0)
+
+        '''
+        HTTP Crawlwer and screenshot will run by default
+        '''
+        update_last_activity(activity_id, 2)
+        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
+
+        # once port scan is complete then run httpx, TODO this has to run in
+        # background thread later
+        httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
+
+        httpx_command = 'cat {} | httpx -cdn -json -o {}'.format(
+            subdomain_scan_results_file, httpx_results_file)
+        os.system(httpx_command)
+
+        # alive subdomains from httpx
+        alive_file_location = results_dir + current_scan_dir + '/alive.txt'
+        alive_file = open(alive_file_location, 'w')
+
+        # writing httpx results
+        httpx_json_result = open(httpx_results_file, 'r')
+        lines = httpx_json_result.readlines()
+        for line in lines:
+            json_st = json.loads(line.strip())
+            try:
+                sub_domain = ScannedHost.objects.get(
+                    scan_history=task, subdomain=json_st['url'].split("//")[-1])
+                sub_domain.http_url = json_st['url']
+                sub_domain.http_status = json_st['status-code']
+                sub_domain.page_title = json_st['title']
+                sub_domain.content_length = json_st['content-length']
+                if 'ip' in json_st:
+                    sub_domain.ip_address = json_st['ip']
+                if 'cdn' in json_st:
+                    sub_domain.is_ip_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    sub_domain.cname = cname_list
+                sub_domain.save()
+                alive_file.write(json_st['url'] + '\n')
+            except Exception as exception:
+                logging.error(exception)
+
+        alive_file.close()
+
+        update_last_activity(activity_id, 2)
+        activity_id = create_scan_activity(
+            task, "Visual Recon - Screenshot", 1)
+
+        # after subdomain discovery run aquatone for visual identification
+        with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
+        output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
+
+        if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
+            scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+        else:
+            scan_port = 'xlarge'
+        # check if scan port is valid otherwise proceed with default xlarge
+        # port
+        if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+            scan_port = 'xlarge'
+
+        if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
+            threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+        else:
+            threads = 10
+
+        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(
+            with_protocol_path, threads, scan_port, output_aquatone_path)
+        os.system(aquatone_command)
+        os.system('chmod -R 607 /app/tools/scan_results/*')
+        aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+
+        try:
+            with open(aqua_json_path, 'r') as json_file:
+                data = json.load(json_file)
+
+            for host in data['pages']:
+                sub_domain = ScannedHost.objects.get(
+                    scan_history__id=task.id,
+                    subdomain=data['pages'][host]['hostname'])
+                # list_ip = data['pages'][host]['addrs']
+                # ip_string = ','.join(list_ip)
+                # sub_domain.ip_address = ip_string
+                sub_domain.screenshot_path = current_scan_dir + \
+                    '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                sub_domain.http_header_path = current_scan_dir + \
+                    '/aquascreenshots/' + data['pages'][host]['headersPath']
+                tech_list = []
+                if data['pages'][host]['tags'] is not None:
+                    for tag in data['pages'][host]['tags']:
+                        tech_list.append(tag['text'])
+                tech_string = ','.join(tech_list)
+                sub_domain.technology_stack = tech_string
+                sub_domain.save()
+        except Exception as exception:
+            logging.error(exception)
+            update_last_activity(activity_id, 0)
+
+        '''
+        Subdomain takeover is not provided by default, check for conditions
+        '''
+        if(task.scan_type.subdomain_takeover):
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(task, "Subdomain takeover", 1)
+
+            if yaml_configuration['subdomain_takeover']['thread'] > 0:
+                threads = yaml_configuration['subdomain_takeover']['thread']
+            else:
+                threads = 10
+
+            subjack_command = settings.TOOL_LOCATION + \
+                'takeover.sh {} {}'.format(current_scan_dir, threads)
+
+            os.system(subjack_command)
+
+            takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
+
+            try:
+                with open(takeover_results_file) as f:
+                    takeover_data = json.load(f)
+
+                for data in takeover_data:
+                    if data['vulnerable']:
+                        get_subdomain = ScannedHost.objects.get(
+                            scan_history=task, subdomain=subdomain)
+                        get_subdomain.takeover = vulnerable_service
+                        get_subdomain.save()
+                    # else:
+                    #     subdomain = data['subdomain']
+                    #     get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
+                    #     get_subdomain.takeover = "Debug"
+                    #     get_subdomain.save()
+
+            except Exception as exception:
                 logging.error(exception)
                 update_last_activity(activity_id, 0)
 
