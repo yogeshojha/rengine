@@ -8,6 +8,7 @@ Scan history - Vulnerabilities
 
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
@@ -37,7 +38,7 @@ All Vulnerabilities
 					<table id="vulnerability_results" class="table table-hover">
 						<thead>
 							<tr>
-								<th class="checkbox-column text-center">Status</th>
+								<th class="checkbox-column">Status</th>
 								<th>Title</th>
 								<th>Severity</th>
 								<th>Vulnerable URL</th>
@@ -116,10 +117,16 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
-						return `<input type="checkbox" class="new-control-input text-center" onchange="vuln_status_change(this, `+data+`);">`;
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
 					}
 					else{
-						return `<input type="checkbox" class="new-control-input text-center" checked onchange="vuln_status_change(this, `+data+`);">`;
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
 					}
 				},
 				"targets": 0,
@@ -182,7 +189,6 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data){
-
 						return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
 					}
 					else{
@@ -207,12 +213,11 @@ $(document).ready(function() {
 function vuln_status_change(checkbox, id)
 {
 	if (checkbox.checked) {
-		document.getElementById
-		checkbox.parentNode.parentNode.className = "table-secondary text-strike";
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 	}
 	else {
-		checkbox.parentNode.parentNode.classList.remove("table-secondary");
-		checkbox.parentNode.parentNode.classList.remove("text-strike");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
 	}
 	change_vuln_status(id);
 }

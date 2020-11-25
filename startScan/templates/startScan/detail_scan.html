@@ -180,6 +180,7 @@ All Subdomains
 					<table id="subdomain_scan_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
 						<thead>
 							<tr>
+								<th class="checkbox-column">Status</th>
 								<th>Subdomain</th>
 								<th>IP Address</th>
 								<th>Status</th>
@@ -239,8 +240,9 @@ $(document).ready(function() {
 		"pageLength": 20,
 		'serverSide': true,
 		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-		"order": [[ 4, "desc" ]],
+		"order": [[ 5, "desc" ]],
 		"columns": [
+			{'data': 'id'},
 			{'data': 'subdomain'},
 			{'data': 'ip_address'},
 			{'data': 'http_status'},
@@ -256,12 +258,17 @@ $(document).ready(function() {
 		],
 		"columnDefs": [
 			{
-				"targets": [ 9, 10],
+				targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
+					return'<label class="new-control new-checkbox checkbox-outline-info  m-auto">\n<input type="checkbox" class="new-control-input child-chk select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+				}
+			},
+			{
+				"targets": [ 10, 11],
 				"visible": false,
 				"searchable": false,
 			},
 			{
-				"targets": [ 11 ],
+				"targets": [ 12 ],
 				"visible": false,
 				"searchable": true,
 			},
@@ -275,7 +282,7 @@ $(document).ready(function() {
 					}
 					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
 				},
-				"targets": 0
+				"targets": 1
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -291,7 +298,7 @@ $(document).ready(function() {
 						return '';
 					}
 				},
-				"targets": 1,
+				"targets": 2,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -309,7 +316,7 @@ $(document).ready(function() {
 					}
 					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
-				"targets": 2,
+				"targets": 3,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -317,7 +324,7 @@ $(document).ready(function() {
 					// green for http status 2XX, orange for 3XX and warning for everything else
 					return span_values(data, "info");
 				},
-				"targets": 3,
+				"targets": 4,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -326,7 +333,7 @@ $(document).ready(function() {
 					}
 					return "";
 				},
-				"targets": 5,
+				"targets": 6,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -335,7 +342,7 @@ $(document).ready(function() {
 					}
 					return "";
 				},
-				"targets": 6,
+				"targets": 7,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -345,7 +352,7 @@ $(document).ready(function() {
 					}
 					return "";
 				},
-				"targets": 7,
+				"targets": 8,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -374,7 +381,7 @@ $(document).ready(function() {
 					}
 					return '';
 				},
-				"targets": 8,
+				"targets": 9,
 			},
 		],
 		drawCallback: function () {
@@ -527,10 +534,10 @@ var chart = new ApexCharts(
 chart.render();
 
 //to remove the image element if there is no screenshot captured
- function removeImageElement(element)
- {
-     element.parentElement.remove();
- }
+function removeImageElement(element)
+{
+	element.parentElement.remove();
+}
 
 </script>
 {% endblock page_level_script %}
