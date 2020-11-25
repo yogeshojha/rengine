@@ -255,22 +255,35 @@ $(document).ready(function() {
 			{'data': 'http_url'},
 			{'data': 'is_ip_cdn'},
 			{'data': 'cname'},
+			{'data': 'checked'},
 		],
 		"columnDefs": [
-			{
-				targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-					return'<label class="new-control new-checkbox checkbox-outline-info  m-auto">\n<input type="checkbox" class="new-control-input child-chk select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-				}
-			},
 			{
 				"targets": [ 10, 11],
 				"visible": false,
 				"searchable": false,
 			},
 			{
-				"targets": [ 12 ],
+				"targets": [ 12, 13 ],
 				"visible": false,
 				"searchable": true,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -410,7 +423,12 @@ $(document).ready(function() {
 			script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
 			script.type = "text/javascript";
 			document.getElementsByTagName("head")[0].appendChild(script);
-		}
+		},
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
 	});
 });
 </script>
@@ -537,6 +555,18 @@ chart.render();
 function removeImageElement(element)
 {
 	element.parentElement.remove();
+}
+
+function subdomain_status_change(checkbox, id)
+{
+	if (checkbox.checked) {
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+	}
+	else {
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+	}
+	change_subdomain_status(id);
 }
 
 </script>

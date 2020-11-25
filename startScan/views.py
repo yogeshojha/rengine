@@ -347,6 +347,14 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
+def change_subdomain_status(request, id):
+    if request.method == 'POST':
+        subdomain = ScannedHost.objects.get(id=id)
+        subdomain.checked = not subdomain.checked
+        subdomain.save()
+    return HttpResponse('')
+
+
 def create_scan_object(host_id, engine_type):
     '''
     create task with pending status so that celery task will execute when
