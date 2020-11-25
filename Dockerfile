@@ -41,6 +41,9 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/sub
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
+COPY ./tools/OneForAll/requirements.txt /tmp/requirements_oneforall.txt
+RUN pip3 install -r /tmp/requirements_oneforall.txt
+
 # Make directory for app
 RUN mkdir /app
 WORKDIR /app

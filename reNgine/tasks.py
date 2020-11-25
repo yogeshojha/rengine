@@ -99,7 +99,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
-                tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
+                tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
@@ -206,6 +206,24 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 logging.info(subfinder_command)
                 os.system(subfinder_command)
 
+            if 'oneforall' in tools:
+                oneforall_command = 'python3 /app/tools/OneForAll/oneforall.py --target {} run'.format(
+                    domain.domain_name, current_scan_dir)
+
+                # Run OneForAll
+                logging.info(oneforall_command)
+                os.system(oneforall_command)
+
+                extract_subdomain = "cut -d',' -f6 /app/tools/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
+                    domain.domain_name, current_scan_dir)
+
+                os.system(extract_subdomain)
+
+                # remove the results from oneforall directory
+
+                os.system(
+                    'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
+
             '''
             All tools have gathered the list of subdomains with filename
             initials as from_*
@@ -268,70 +286,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         subdomain_scan_results_file = results_dir + \
             current_scan_dir + '/sorted_subdomain_collection.txt'
 
-        if(task.scan_type.port_scan):
-            update_last_activity(activity_id, 2)
-            activity_id = create_scan_activity(task, "Port Scanning", 1)
-
-            # after all subdomain has been discovered run naabu to discover the
-            # ports
-            port_results_file = results_dir + current_scan_dir + '/ports.json'
-
-            # check the yaml_configuration and choose the ports to be scanned
-
-            scan_ports = 'top-100'  # default port scan
-            if PORTS in yaml_configuration[PORT_SCAN]:
-                scan_ports = ','.join(
-                    str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
-
-            # TODO: New version of naabu has -p instead of -ports
-            if scan_ports:
-                naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(
-                    subdomain_scan_results_file, port_results_file, scan_ports)
-            else:
-                naabu_command = 'cat {} | naabu -json -o {}'.format(
-                    subdomain_scan_results_file, port_results_file)
-
-            # check for exclude ports
-            if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
-                exclude_ports = ','.join(
-                    str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
-                naabu_command = naabu_command + \
-                    ' -exclude-ports {}'.format(exclude_ports)
-
-            # TODO thread is removed in later versio of naabu, replace with rate :(
-            # if THREAD in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][THREAD] > 0:
-            #     naabu_command = naabu_command + \
-            #         ' -t {}'.format(
-            #             yaml_configuration['subdomain_discovery']['thread'])
-            # else:
-            #     naabu_command = naabu_command + ' -t 10'
-
-            # run naabu
-            os.system(naabu_command)
-
-            # writing port results
-            try:
-                port_json_result = open(port_results_file, 'r')
-                lines = port_json_result.readlines()
-                for line in lines:
-                    try:
-                        json_st = json.loads(line.strip())
-                    except Exception as exception:
-                        json_st = "{'host':'','port':''}"
-                    sub_domain = ScannedHost.objects.get(
-                        scan_history=task, subdomain=json_st['host'])
-                    if sub_domain.open_ports:
-                        sub_domain.open_ports = sub_domain.open_ports + \
-                            ',' + str(json_st['port'])
-                    else:
-                        sub_domain.open_ports = str(json_st['port'])
-                    sub_domain.save()
-            except BaseException as exception:
-                logging.error(exception)
-                update_last_activity(activity_id, 0)
-
         '''
-        HTTP Crawlwer and screenshot will run by default
+        HTTP Crawlwer will run by default
         '''
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
@@ -370,6 +326,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
+                logging.error(json_st['url'])
+                logging.error(subdomain)
                 logging.error(exception)
 
         alive_file.close()
@@ -444,6 +402,68 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         sub_domain.technology_stack = tech_string
                         sub_domain.save()
             except Exception as exception:
+                logging.error(exception)
+                update_last_activity(activity_id, 0)
+
+        if(task.scan_type.port_scan):
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(task, "Port Scanning", 1)
+
+            # after all subdomain has been discovered run naabu to discover the
+            # ports
+            port_results_file = results_dir + current_scan_dir + '/ports.json'
+
+            # check the yaml_configuration and choose the ports to be scanned
+
+            scan_ports = 'top-100'  # default port scan
+            if PORTS in yaml_configuration[PORT_SCAN]:
+                scan_ports = ','.join(
+                    str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
+
+            # TODO: New version of naabu has -p instead of -ports
+            if scan_ports:
+                naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(
+                    subdomain_scan_results_file, port_results_file, scan_ports)
+            else:
+                naabu_command = 'cat {} | naabu -json -o {}'.format(
+                    subdomain_scan_results_file, port_results_file)
+
+            # check for exclude ports
+            if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
+                exclude_ports = ','.join(
+                    str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
+                naabu_command = naabu_command + \
+                    ' -exclude-ports {}'.format(exclude_ports)
+
+            # TODO thread is removed in later versio of naabu, replace with rate :(
+            # if THREAD in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][THREAD] > 0:
+            #     naabu_command = naabu_command + \
+            #         ' -t {}'.format(
+            #             yaml_configuration['subdomain_discovery']['thread'])
+            # else:
+            #     naabu_command = naabu_command + ' -t 10'
+
+            # run naabu
+            os.system(naabu_command)
+
+            # writing port results
+            try:
+                port_json_result = open(port_results_file, 'r')
+                lines = port_json_result.readlines()
+                for line in lines:
+                    try:
+                        json_st = json.loads(line.strip())
+                    except Exception as exception:
+                        json_st = "{'host':'','port':''}"
+                    sub_domain = ScannedHost.objects.get(
+                        scan_history=task, subdomain=json_st['host'])
+                    if sub_domain.open_ports:
+                        sub_domain.open_ports = sub_domain.open_ports + \
+                            ',' + str(json_st['port'])
+                    else:
+                        sub_domain.open_ports = str(json_st['port'])
+                    sub_domain.save()
+            except BaseException as exception:
                 logging.error(exception)
                 update_last_activity(activity_id, 0)
 
