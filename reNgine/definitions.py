@@ -30,6 +30,7 @@ WORDLIST = 'wordlist'
 HTTP_TIMEOUT = 'http_timeout'
 SCREENSHOT_TIMEOUT = 'screenshot_timeout'
 SCAN_TIMEOUT = 'scan_timeout'
+EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 
 ###############################################################################
 # Wordlist DEFINITIONS
