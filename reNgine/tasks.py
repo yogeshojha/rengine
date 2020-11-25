@@ -368,77 +368,78 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
         alive_file.close()
 
-        update_last_activity(activity_id, 2)
-        activity_id = create_scan_activity(
-            task, "Visual Recon - Screenshot", 1)
+        if VISUAL_IDENTIFICATION in yaml_configuration:
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(
+                task, "Visual Recon - Screenshot", 1)
 
-        # after subdomain discovery run aquatone for visual identification
-        with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-        output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
+            # after subdomain discovery run aquatone for visual identification
+            with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
+            output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
 
-        if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-            scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
-            # check if scan port is valid otherwise proceed with default xlarge
-            # port
-            if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+            if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+                # check if scan port is valid otherwise proceed with default xlarge
+                # port
+                if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+                    scan_port = 'xlarge'
+            else:
                 scan_port = 'xlarge'
-        else:
-            scan_port = 'xlarge'
 
-        if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-            threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
-        else:
-            threads = 10
+            if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
+                threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+            else:
+                threads = 10
 
-        if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-            http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
-        else:
-            http_timeout = 3000  # Default Timeout for HTTP
+            if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+            else:
+                http_timeout = 3000  # Default Timeout for HTTP
 
-        if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-            screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
-        else:
-            screenshot_timeout = 30000  # Default Timeout for Screenshot
+            if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+            else:
+                screenshot_timeout = 30000  # Default Timeout for Screenshot
 
-        if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-            scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
-        else:
-            scan_timeout = 100  # Default Timeout for Scan
+            if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+            else:
+                scan_timeout = 100  # Default Timeout for Scan
 
-        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
-            with_protocol_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+            aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+                with_protocol_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
 
-        logging.info(aquatone_command)
-        os.system(aquatone_command)
-        os.system('chmod -R 607 /app/tools/scan_results/*')
-        aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+            logging.info(aquatone_command)
+            os.system(aquatone_command)
+            os.system('chmod -R 607 /app/tools/scan_results/*')
+            aqua_json_path = output_aquatone_path + '/aquatone_session.json'
 
-        try:
-            if os.path.isfile(aqua_json_path):
-                with open(aqua_json_path, 'r') as json_file:
-                    data = json.load(json_file)
+            try:
+                if os.path.isfile(aqua_json_path):
+                    with open(aqua_json_path, 'r') as json_file:
+                        data = json.load(json_file)
 
-                for host in data['pages']:
-                    sub_domain = ScannedHost.objects.get(
-                        scan_history__id=task.id,
-                        subdomain=data['pages'][host]['hostname'])
-                    # list_ip = data['pages'][host]['addrs']
-                    # ip_string = ','.join(list_ip)
-                    # sub_domain.ip_address = ip_string
-                    sub_domain.screenshot_path = current_scan_dir + \
-                        '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                    sub_domain.http_header_path = current_scan_dir + \
-                        '/aquascreenshots/' + data['pages'][host]['headersPath']
-                    tech_list = []
-                    if data['pages'][host]['tags'] is not None:
-                        for tag in data['pages'][host]['tags']:
-                            tech_list.append(tag['text'])
-                    tech_string = ','.join(tech_list)
-                    sub_domain.technology_stack = tech_string
-                    sub_domain.save()
-        except Exception as exception:
-            logging.error(exception)
-            update_last_activity(activity_id, 0)
+                    for host in data['pages']:
+                        sub_domain = ScannedHost.objects.get(
+                            scan_history__id=task.id,
+                            subdomain=data['pages'][host]['hostname'])
+                        # list_ip = data['pages'][host]['addrs']
+                        # ip_string = ','.join(list_ip)
+                        # sub_domain.ip_address = ip_string
+                        sub_domain.screenshot_path = current_scan_dir + \
+                            '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                        sub_domain.http_header_path = current_scan_dir + \
+                            '/aquascreenshots/' + data['pages'][host]['headersPath']
+                        tech_list = []
+                        if data['pages'][host]['tags'] is not None:
+                            for tag in data['pages'][host]['tags']:
+                                tech_list.append(tag['text'])
+                        tech_string = ','.join(tech_list)
+                        sub_domain.technology_stack = tech_string
+                        sub_domain.save()
+            except Exception as exception:
+                logging.error(exception)
+                update_last_activity(activity_id, 0)
 
         '''
         Directory search is not provided by default, check for conditions
