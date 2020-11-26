@@ -45,8 +45,12 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         vulnerability_of = req.query_params.get('vulnerability_of')
         url_query = req.query_params.get('query_param')
         if url_query:
-            self.queryset = VulnerabilityScan.objects.filter(
-                Q(vulnerability_of__domain_name__domain_name=url_query) | Q(name=url_query) | Q(id=url_query))
+            if url_query.isnumeric():
+                self.queryset = VulnerabilityScan.objects.filter(
+                    Q(vulnerability_of__domain_name__domain_name=url_query) | Q(name=url_query) | Q(id=url_query))
+            else:
+                self.queryset = VulnerabilityScan.objects.filter(
+                    Q(vulnerability_of__domain_name__domain_name=url_query) | Q(name=url_query))
         elif vulnerability_of:
             self.queryset = VulnerabilityScan.objects.filter(
                 vulnerability_of__id=vulnerability_of)
