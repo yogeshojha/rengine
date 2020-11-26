@@ -226,16 +226,19 @@ def delete_scan(request, id):
 
 
 def stop_scan(request, id):
-    scan_history = get_object_or_404(ScanHistory, celery_id=id)
     if request.method == "POST":
+        scan_history = get_object_or_404(ScanHistory, celery_id=id)
         # stop the celery task
         app.control.revoke(id, terminate=True, signal='SIGKILL')
         scan_history.scan_status = 3
         scan_history.save()
-        last_activity = ScanActivity.objects.filter(scan_of=scan_history).order_by('-pk')[0]
-        last_activity.status = 0
-        last_activity.time = timezone.now()
-        last_activity.save()
+        try:
+            last_activity = ScanActivity.objects.filter(scan_of=scan_history).order_by('-pk')[0]
+            last_activity.status = 0
+            last_activity.time = timezone.now()
+            last_activity.save()
+        except Exception as e:
+            print(e)
         create_scan_activity(scan_history, "Scan aborted", 0)
         messageData = {'status': 'true'}
         messages.add_message(
