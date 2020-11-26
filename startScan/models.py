@@ -1,7 +1,7 @@
 from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 
 
 class ScanHistory(models.Model):
