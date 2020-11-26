@@ -487,7 +487,16 @@
     background-color: #e2a03f;
     border-color: rgb(222, 199, 165);
 }
+.widget-activity-four .timeline-line .item-timeline.timeline-low .t-dot:before {
+    background-color: #FFD600;
+    border-color: rgb(255, 213, 0);
 
+}
+.widget-activity-four .timeline-line .item-timeline.timeline-critical .t-dot:before {
+    background-color: #AA2C00;
+    border-color: rgb(170, 45, 0);
+
+}
 .widget-activity-four .timeline-line .item-timeline:last-child .t-dot:after { display: none; }
 .widget-activity-four .timeline-line .item-timeline .t-meta-time {
     margin: 0;

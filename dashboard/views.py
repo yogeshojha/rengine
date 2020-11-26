@@ -30,6 +30,7 @@ def index(request):
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
     high_count = VulnerabilityScan.objects.filter(severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(severity=4).count()
+    vulnerability_feed = VulnerabilityScan.objects.all().order_by('discovered_date')[:20]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count
     # most_vulnerable_target = Domain.objects.exclude(
@@ -61,6 +62,7 @@ def index(request):
         'most_vulnerable_target': most_vulnerable_target,
         'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
+        'vulnerability_feed': vulnerability_feed,
     }
     return render(request, 'dashboard/index.html', context)
 
