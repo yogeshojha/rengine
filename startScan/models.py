@@ -32,6 +32,7 @@ class ScannedHost(models.Model):
     technology_stack = models.CharField(max_length=1500, null=True)
     directory_json = JSONField(null=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
+    discovered_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return str(self.subdomain)

@@ -1,5 +1,5 @@
 from targetApp.models import Domain
-from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan
+from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
 
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
@@ -30,7 +30,8 @@ def index(request):
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
     high_count = VulnerabilityScan.objects.filter(severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(severity=4).count()
-    vulnerability_feed = VulnerabilityScan.objects.all().order_by('discovered_date')[:20]
+    vulnerability_feed = VulnerabilityScan.objects.all().order_by('-discovered_date')[:20]
+    activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count
     # most_vulnerable_target = Domain.objects.exclude(
@@ -63,6 +64,7 @@ def index(request):
         'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
         'vulnerability_feed': vulnerability_feed,
+        'activity_feed': activity_feed,
     }
     return render(request, 'dashboard/index.html', context)
 

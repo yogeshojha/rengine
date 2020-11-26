@@ -1,4 +1,3 @@
-from datetime import datetime
 import os
 import traceback
 import yaml
@@ -316,6 +315,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 sub_domain.http_status = json_st['status-code']
                 sub_domain.page_title = json_st['title']
                 sub_domain.content_length = json_st['content-length']
+                sub_domain.discovered_date = timezone.now()
                 if 'ip' in json_st:
                     sub_domain.ip_address = json_st['ip']
                 if 'cdn' in json_st:
