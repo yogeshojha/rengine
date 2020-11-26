@@ -46,12 +46,12 @@ All Subdomains
 					<div class="mt-container mx-auto">
 						<div class="timeline-line">
 							{% for activity in scan_activity %}
-							<div class="item-timeline {% if activity.status == 0 %}timeline-success {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+							<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
 								<div class="t-dot" data-original-title="" title="">
 								</div>
 								<div class="t-text">
 									<b>{{activity.title}}</b>
-									<span class="badge {% if activity.status == 0 %}badge-success {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+									<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
 										{% if activity.status == 0 %}&nbsp;Failed&nbsp;
 										{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
 										{% elif activity.status == 2 %}&nbsp;Completed&nbsp;

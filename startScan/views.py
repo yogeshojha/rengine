@@ -1,19 +1,22 @@
+import os
+import requests
+
+from datetime import datetime
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSchedule
+from django.utils import timezone
+from django.conf import settings
+
+from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
-from django.utils import timezone
-from django.conf import settings
-from datetime import datetime
-from reNgine.tasks import doScan
+from reNgine.tasks import doScan, create_scan_activity
 from reNgine.celery import app
-import os
-import requests
 
 
 def scan_history(request):
@@ -223,12 +226,17 @@ def delete_scan(request, id):
 
 
 def stop_scan(request, id):
-    obj = get_object_or_404(ScanHistory, celery_id=id)
+    scan_history = get_object_or_404(ScanHistory, celery_id=id)
     if request.method == "POST":
         # stop the celery task
         app.control.revoke(id, terminate=True, signal='SIGKILL')
-        obj.scan_status = 3
-        obj.save()
+        scan_history.scan_status = 3
+        scan_history.save()
+        last_activity = ScanActivity.objects.filter(scan_of=scan_history).order_by('-pk')[0]
+        last_activity.status = 0
+        last_activity.time = timezone.now()
+        last_activity.save()
+        create_scan_activity(scan_history, "Scan aborted", 0)
         messageData = {'status': 'true'}
         messages.add_message(
             request,

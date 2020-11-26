@@ -198,7 +198,7 @@ Dashboard
 	</div>
 	<div class="row layout-top-spacing">
 		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-activity-four">
+			<div class="widget widget-activity-feed">
 				<div class="widget-heading">
 					<h6 class="">Activity Feed</h6>
 				</div>
@@ -207,7 +207,9 @@ Dashboard
 						<div class="timeline-line">
 							{% for item in activity_feed %}
 							<div class="item-timeline
-							{% if item.status == 1 %}
+							{% if item.status == 0 %}
+							timeline-danger
+							{% elif item.status == 1 %}
 							timeline-primary
 							{% elif item.status == 2 %}
 							timeline-success
@@ -216,7 +218,7 @@ Dashboard
 								<div class="t-dot" data-original-title="" title="">
 								</div>
 								<div class="t-text">
-									<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
+									<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
 									<p class="t-time">{{item.time|naturaltime}}</p>
 								</div>
 							</div>
@@ -232,7 +234,7 @@ Dashboard
 			</div>
 		</div>
 		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-activity-four">
+			<div class="widget widget-activity-feed">
 				<div class="widget-heading">
 					<h6 class="">Vulnerability Feed</h6>
 				</div>
