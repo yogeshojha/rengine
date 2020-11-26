@@ -56,34 +56,53 @@ Add new engine
 $(document).ready(function() {
 	$('.ace_editor').attr('id','editor');
 	var editor = ace.edit("editor");
-	editor.setValue(`subdomain_discovery:
-    uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder ]
-    thread: 10
-
-port_scan:
-    ports: [ top-100 ]
-    thread: 10
-
-visual_identification:
-    port: xlarge
-    thread: 2
-
-dir_file_search:
-    extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
-    recursive: false
-    recursive_level: 1
-    thread: 100
-    wordlist: default
-
+	editor.setValue(`dir_file_search:
+  extensions:
+    - php
+    - asp
+    - aspx
+    - txt
+    - conf
+    - db
+    - sql
+    - json
+  recursive: false
+  recursive_level: 1
+  thread: 100
+  wordlist: default
 fetch_url:
-    uses_tool: [ all ]
-    intensity: normal
-
+  intensity: normal
+  uses_tool:
+    - gau
+    - hakrawler
+port_scan:
+  ports:
+    - top-100
+  thread: 10
+subdomain_discovery:
+  thread: 10
+  uses_tool:
+    - amass-passive
+    - subfinder
+    - sublist3r
+    - assetfinder
+    - oneforall
+visual_identification:
+  http_timeout: 3000
+  port: xlarge
+  scan_timeout: 100
+  screenshot_timeout: 30000
+  thread: 2
 vulnerability_scan:
-    concurrent: 10
-    template: [ all ]
-    severity: [ all ]
-`);
+  concurrent: 10
+  severity:
+    - critical
+    - high
+    - medium
+    - low
+    - info
+  template:
+    - all`);
 	editor.clearSelection();
 });
 </script>
