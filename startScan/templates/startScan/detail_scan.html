@@ -243,7 +243,7 @@ $(document).ready(function() {
 		"order": [[ 5, "desc" ]],
 		"columns": [
 			{'data': 'id'},
-			{'data': 'subdomain'},
+			{'data': 'subdomain', 'width': '90%'},
 			{'data': 'ip_address'},
 			{'data': 'http_status'},
 			{'data': 'open_ports'},
@@ -289,7 +289,7 @@ $(document).ready(function() {
 				"render": function ( data, type, row ) {
 					if (row['http_url']) {
 						if (row['cname']) {
-							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<span class="text-warning"> ❯ </span>')+`</span>`;
+							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
 						}
 						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
 					}

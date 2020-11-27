@@ -72,17 +72,17 @@ Scan History
 								<td>
 									{% if scan_history.scan_status == -1 %}
 									<div class="progress">
-										<div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
+										<div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
 										</div>
 									</div>
 									{% elif scan_history.scan_status == 0 %}
 									<div class="progress">
-										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										<div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
 										</div>
 									</div>
 									{% elif scan_history.scan_status == 1 %}
 									<div class="progress">
-										<div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:3  100 %}%" aria-valuemin="0" aria-valuemax="4">
+										<div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
 										</div>
 									</div>
 									{% elif scan_history.scan_status == 2 %}
@@ -92,7 +92,7 @@ Scan History
 									</div>
 									{% elif scan_history.scan_status == 3 %}
 									<div class="progress">
-										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
 										</div>
 									</div>
 									{% else %}
