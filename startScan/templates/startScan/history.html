@@ -38,10 +38,11 @@ Scan History
 						<thead>
 							<tr>
 								<th>Serial</th>
-								<th>Domain Name</th>
+								<th>Target Name</th>
 								<th>Scan Type</th>
 								<th>Last Scanned On</th>
 								<th class="text-center">Status</th>
+								<th class="text-center">Progress</th>
 								<th class="text-center">Result</th>
 								<th class="text-center">Action</th>
 							</tr>
@@ -66,6 +67,39 @@ Scan History
 									<span class="shadow-none badge badge-danger">Aborted</span>
 									{% else %}
 									<span class="shadow-none badge badge-danger">Unknown</span>
+									{% endif %}
+								</td>
+								<td>
+									{% if scan_history.scan_status == -1 %}
+									<div class="progress">
+										<div class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
+										</div>
+									</div>
+									{% elif scan_history.scan_status == 0 %}
+									<div class="progress">
+										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										</div>
+									</div>
+									{% elif scan_history.scan_status == 1 %}
+									<div class="progress">
+										<div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:3  100 %}%" aria-valuemin="0" aria-valuemax="4">
+										</div>
+									</div>
+									{% elif scan_history.scan_status == 2 %}
+									<div class="progress">
+										<div class="progress-bar bg-success progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										</div>
+									</div>
+									{% elif scan_history.scan_status == 3 %}
+									<div class="progress">
+										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										</div>
+									</div>
+									{% else %}
+									<div class="progress">
+										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+										</div>
+									</div>
 									{% endif %}
 								</td>
 								<td class="text-center">
