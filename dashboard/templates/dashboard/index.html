@@ -28,7 +28,7 @@ Dashboard
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
-					<h2 class="w-value">{{domain_count|intcomma}} <span>Total Targets</span></h2>
+					<h2 class="w-value">{{domain_count|intcomma}} <span>Targets</span></h2>
 					<a href="../target/list/" class="text-info">View all targets</a>
 				</div>
 				<div class="widget-content">
@@ -44,12 +44,28 @@ Dashboard
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
-					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Total Subdomains Discovered</span></h2>
+					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains Discovered</span></h2>
 					<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
 				</div>
 				<div class="widget-content">
 					<div class="w-chart">
 						<div id="subdomains_chart"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-referral">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+					</div>
+					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities Discovered</span></h2>
+					<a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="vuln_chart"></div>
 					</div>
 				</div>
 			</div>
@@ -681,6 +697,49 @@ var subdomains_chart_options = {
 }
 
 var chart = new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options);
+chart.render();
+
+var vuln_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 80,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Vulnerabilities Discovered',
+		data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
+	}],
+	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	yaxis: {
+		min: 0
+	},
+	colors: ['#e7515a'],
+	tooltip: {
+		x: {
+			show: false,
+		}
+	},
+	fill: {
+		type:"gradient",
+		gradient: {
+			type: "vertical",
+			shadeIntensity: 1,
+			inverseColors: !1,
+			opacityFrom: .40,
+			opacityTo: .05,
+			stops: [45, 100]
+		}
+	},
+}
+
+var chart = new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options);
 chart.render();
 
 </script>

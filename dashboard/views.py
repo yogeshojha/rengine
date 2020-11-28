@@ -51,6 +51,7 @@ def index(request):
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)
+
     count_targets_by_date = Domain.objects.filter(
         insert_date__gte=last_week).annotate(
         date=TruncDay('insert_date')).values("date").annotate(
@@ -59,6 +60,11 @@ def index(request):
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
+    count_vulns_by_date = VulnerabilityScan.objects.filter(
+        discovered_date__gte=last_week).annotate(
+        date=TruncDay('discovered_date')).values("date").annotate(
+            count=Count('id')).order_by("-date")
+
     last_7_dates = [(timezone.now() - timedelta(days=i)).date() for i in range(0, 7)]
 
     targets_in_last_week = []
@@ -78,6 +84,15 @@ def index(request):
         else:
             subdomains_in_last_week.append(0)
     subdomains_in_last_week.reverse()
+
+    vulns_in_last_week = []
+    for date in last_7_dates:
+        _vuln = count_vulns_by_date.filter(date=date)
+        if _vuln:
+            vulns_in_last_week.append(_vuln[0]['count'])
+        else:
+            vulns_in_last_week.append(0)
+    vulns_in_last_week.reverse()
 
     context = {
         'dashboard_data_active': 'true',
@@ -102,6 +117,7 @@ def index(request):
         'activity_feed': activity_feed,
         'targets_in_last_week': targets_in_last_week,
         'subdomains_in_last_week': subdomains_in_last_week,
+        'vulns_in_last_week': vulns_in_last_week,
     }
     return render(request, 'dashboard/index.html', context)
 
