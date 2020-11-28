@@ -47,7 +47,7 @@ Dashboard
 					</div>
 					<h6 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h6>
 					<span>Alive Subdomains: <span><b class="text-warning">{{alive_count|intcomma}}</b><br>
-					<a href="{% url 'all_subdomains' %}" class="text-warning">View all Subdomains</a>
+					<a href="{% url 'all_subdomains' %}" class="text-warning">View all subdomains</a>
 				</div>
 				<div class="widget-content">
 					<div class="w-chart">
@@ -582,14 +582,14 @@ var target_chart_option = {
 		name: 'Target added',
 		data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
 	}],
-	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
 	yaxis: {
 		min: 0
 	},
 	colors: ['#1b55e2'],
 	tooltip: {
 		x: {
-			show: false,
+			show: true,
 		}
 	},
 	fill: {
@@ -625,14 +625,14 @@ var subdomains_chart_options = {
 		name: 'Subdomains Discovered',
 		data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
 	}],
-	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
 	yaxis: {
 		min: 0
 	},
 	colors: ['#FF8F00'],
 	tooltip: {
 		x: {
-			show: false,
+			show: true,
 		}
 	},
 	fill: {
@@ -668,14 +668,14 @@ var vuln_chart_options = {
 		name: 'Vulnerabilities Discovered',
 		data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
 	}],
-	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
 	yaxis: {
 		min: 0
 	},
 	colors: ['#e7515a'],
 	tooltip: {
 		x: {
-			show: false,
+			show: true,
 		}
 	},
 	fill: {
@@ -711,14 +711,14 @@ var scan_chart_options = {
 		name: 'Scans Initiated',
 		data: [{{scans_in_last_week.0}},{{scans_in_last_week.1}},{{scans_in_last_week.2}},{{scans_in_last_week.3}},{{scans_in_last_week.4}},{{scans_in_last_week.5}},{{scans_in_last_week.6}}]
 	}],
-	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
 	yaxis: {
 		min: 0
 	},
 	colors: ['#8dbf42'],
 	tooltip: {
 		x: {
-			show: false,
+			show: true,
 		}
 	},
 	fill: {
@@ -754,14 +754,14 @@ var endpoint_chart_options = {
 		name: 'Endpoints Discovered',
 		data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
 	}],
-	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
 	yaxis: {
 		min: 0
 	},
 	colors: ['#5c1ac3'],
 	tooltip: {
 		x: {
-			show: false,
+			show: true,
 		}
 	},
 	fill: {

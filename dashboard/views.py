@@ -141,6 +141,7 @@ def index(request):
         'vulns_in_last_week': vulns_in_last_week,
         'scans_in_last_week': scans_in_last_week,
         'endpoints_in_last_week': endpoints_in_last_week,
+        'last_7_dates': last_7_dates,
     }
     return render(request, 'dashboard/index.html', context)
 
