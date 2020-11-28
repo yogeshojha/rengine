@@ -21,9 +21,9 @@ Dashboard
 
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
-	<div class="row layout-top-spacing">
-		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12">
-			<div class="widget-chart widget-chart_hybrid widget-followers">
+	<div class="row">
+		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -33,7 +33,23 @@ Dashboard
 				</div>
 				<div class="widget-content">
 					<div class="w-chart">
-						<div id="hybrid_followers"></div>
+						<div id="targets_chart"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+					</div>
+					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Total Subdomains Discovered</span></h2>
+					<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="subdomains_chart"></div>
 					</div>
 				</div>
 			</div>
@@ -581,7 +597,7 @@ var chart = new ApexCharts(
 
 chart.render();
 
-var d_1options3 = {
+var target_chart_option = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
@@ -621,8 +637,51 @@ var d_1options3 = {
 	},
 }
 
-var d_1C_5 = new ApexCharts(document.querySelector("#hybrid_followers"), d_1options3);
-d_1C_5.render();
+var chart = new ApexCharts(document.querySelector("#targets_chart"), target_chart_option);
+chart.render();
+
+var subdomains_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 80,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Subdomains Discovered',
+		data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
+	}],
+	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	yaxis: {
+		min: 0
+	},
+	colors: ['#1b55e2'],
+	tooltip: {
+		x: {
+			show: false,
+		}
+	},
+	fill: {
+		type:"gradient",
+		gradient: {
+			type: "vertical",
+			shadeIntensity: 1,
+			inverseColors: !1,
+			opacityFrom: .40,
+			opacityTo: .05,
+			stops: [45, 100]
+		}
+	},
+}
+
+var chart = new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options);
+chart.render();
 
 </script>
 {% endblock page_level_script %}

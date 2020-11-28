@@ -28,10 +28,10 @@
   margin-bottom: 0;
   color: #506690;
 }
-.widget-chart_hybrid.widget-followers {
+.widget-chart_hybrid.widget-dash-chart {
   background: #c2d5ff;
 }
-.widget-chart_hybrid.widget-followers .widget-heading .w-icon {
+.widget-chart_hybrid.widget-dash-chart .widget-heading .w-icon {
   color: #1b55e2;
   border: 1px solid #1b55e2;
 }

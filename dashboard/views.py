@@ -55,8 +55,13 @@ def index(request):
         insert_date__gte=last_week).annotate(
         date=TruncDay('insert_date')).values("date").annotate(
             created_count=Count('id')).order_by("-date")
-    targets_in_last_week = []
+    count_subdomains_by_date = ScannedHost.objects.filter(
+        discovered_date__gte=last_week).annotate(
+        date=TruncDay('discovered_date')).values("date").annotate(
+            count=Count('id')).order_by("-date")
     last_7_dates = [(timezone.now() - timedelta(days=i)).date() for i in range(0, 7)]
+
+    targets_in_last_week = []
     for date in last_7_dates:
         _target = count_targets_by_date.filter(date=date)
         if _target:
@@ -64,6 +69,16 @@ def index(request):
         else:
             targets_in_last_week.append(0)
     targets_in_last_week.reverse()
+
+    subdomains_in_last_week = []
+    for date in last_7_dates:
+        _subdomain = count_subdomains_by_date.filter(date=date)
+        if _subdomain:
+            subdomains_in_last_week.append(_subdomain[0]['count'])
+        else:
+            subdomains_in_last_week.append(0)
+    subdomains_in_last_week.reverse()
+
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -86,6 +101,7 @@ def index(request):
         'vulnerability_feed': vulnerability_feed,
         'activity_feed': activity_feed,
         'targets_in_last_week': targets_in_last_week,
+        'subdomains_in_last_week': subdomains_in_last_week,
     }
     return render(request, 'dashboard/index.html', context)
 
