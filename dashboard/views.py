@@ -30,11 +30,11 @@ def index(request):
     currently_scanning = ScanHistory.objects.order_by(
         '-last_scan_date').filter(scan_status=1)[:4]
     pending_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
-    info_count = VulnerabilityScan.objects.filter(severity=0).count()
-    low_count = VulnerabilityScan.objects.filter(severity=1).count()
-    medium_count = VulnerabilityScan.objects.filter(severity=2).count()
-    high_count = VulnerabilityScan.objects.filter(severity=3).count()
-    critical_count = VulnerabilityScan.objects.filter(severity=4).count()
+    info_count = VulnerabilityScan.objects.filter(severity='info').count()
+    low_count = VulnerabilityScan.objects.filter(severity='low').count()
+    medium_count = VulnerabilityScan.objects.filter(severity='medium').count()
+    high_count = VulnerabilityScan.objects.filter(severity='high').count()
+    critical_count = VulnerabilityScan.objects.filter(severity='critical').count()
     vulnerability_feed = VulnerabilityScan.objects.all().order_by(
         '-discovered_date')[:20]
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
@@ -49,7 +49,7 @@ def index(request):
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
         'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
-        severity=0).annotate(count=Count('name')).order_by("-count")[:7]
+        severity='info').annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)
 
     count_targets_by_date = Domain.objects.filter(

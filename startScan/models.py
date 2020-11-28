@@ -67,7 +67,7 @@ class VulnerabilityScan(models.Model):
     discovered_date = models.DateTimeField(null=True)
     url = models.CharField(max_length=1000)
     name = models.CharField(max_length=400)
-    severity = models.IntegerField()
+    severity = models.CharField(max_length=100)
     description = models.CharField(max_length=1000, null=True, blank=True)
     extracted_results = models.CharField(max_length=1000, null=True, blank=True)
     template_used = models.CharField(max_length=100)

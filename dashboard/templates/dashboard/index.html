@@ -171,15 +171,15 @@ Dashboard
 											</td>
 											<td>
 												<div class="t-rate">
-													{% if item.severity == 0 %}
+													{% if item.severity == 'info' %}
 													<span class='badge badge-info'>Info</span>
-													{% elif item.severity == 1 %}
+													{% elif item.severity == 'low' %}
 													<span class='badge badge-low'>Low</span>
-													{% elif item.severity == 2 %}
+													{% elif item.severity == 'medium' %}
 													<span class='badge badge-warning'>Medium</span>
-													{% elif item.severity == 3 %}
+													{% elif item.severity == 'high' %}
 													<span class='badge badge-danger'>High</span>
-													{% elif item.severity == 4 %}
+													{% elif item.severity == 'critical' %}
 													<span class='badge badge-critical'>Critical</span>
 													{% endif %}
 												</div>
@@ -247,15 +247,15 @@ Dashboard
 
 						{% for item in vulnerability_feed %}
 						<div class="item-timeline
-						{% if item.severity == 0 %}
+						{% if item.severity == 'info' %}
 						timeline-primary
-						{% elif item.severity == 1 %}
+						{% elif item.severity == 'low' %}
 						timeline-low
-						{% elif item.severity == 2 %}
+						{% elif item.severity == 'medim' %}
 						timeline-warning
-						{% elif item.severity == 3 %}
+						{% elif item.severity == 'high' %}
 						timeline-danger
-						{% elif item.severity == 4 %}
+						{% elif item.severity == 'critical' %}
 						timeline-critical
 						{% endif %}
 						">

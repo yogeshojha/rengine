@@ -63,6 +63,7 @@ All Vulnerabilities
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 
 <script type="text/javascript">
 // collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
@@ -76,7 +77,21 @@ if ($(window).width() > 992) {
 </script>
 <script type="text/javascript">
 $(document).ready(function() {
-	$('#vulnerability_results').DataTable({
+	$('#vulnerability_results thead tr').clone(true).appendTo( '#vulnerability_results thead' );
+	$('#vulnerability_results thead tr:eq(1) th').each( function (i) {
+		var title = $(this).text();
+		$(this).html( '<input type="text" class="form-control" placeholder="Search '+title+'" />' );
+
+		$( 'input', this ).on( 'keyup change', function () {
+			if ( table.column(i).search() !== this.value ) {
+				table
+				.column(i)
+				.search( this.value )
+				.draw();
+			}
+		} );
+	} );
+	var table = $('#vulnerability_results').DataTable({
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
@@ -88,7 +103,9 @@ $(document).ready(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		'order': [2, 'desc'],
+		'orderCellsTop': true,
+		'fixedHeader': true,
+		'order': [5, 'desc'],
 		{% if scan_history_id %}
 		"ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
 		{% else %}
@@ -134,19 +151,19 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					switch (data) {
-						case 0:
+						case 'info':
 						return "<span class='badge badge-info'>Info</span>";
 						break;
-						case 1:
+						case 'low':
 						return "<span class='badge badge-low'>Low</span>";
 						break;
-						case 2:
+						case 'medium':
 						return "<span class='badge badge-warning'>Medium</span>";
 						break;
-						case 3:
+						case 'high':
 						return "<span class='badge badge-danger'>High</span>";
 						break;
-						case 4:
+						case 'critical':
 						return "<span class='badge badge-critical'>Critical</span>";
 						break;
 						default:

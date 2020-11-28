@@ -696,17 +696,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         vulnerability.host = _subdomain
                         vulnerability.name = json_st['name']
                         vulnerability.url = json_st['matched']
-                        if json_st['severity'] == 'info':
-                            severity = 0
-                        elif json_st['severity'] == 'low':
-                            severity = 1
-                        elif json_st['severity'] == 'medium':
-                            severity = 2
-                        elif json_st['severity'] == 'high':
-                            severity = 3
-                        else:
-                            severity = 4
-                        vulnerability.severity = severity
+                        vulnerability.severity = json_st['severity']
                         vulnerability.template_used = json_st['template']
                         if 'description' in json_st:
                             vulnerability.description = json_st['description']
