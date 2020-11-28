@@ -565,6 +565,8 @@ var chart = new ApexCharts(
 
 chart.render();
 
+var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
+
 var target_chart_option = {
 	chart: {
 		id: 'sparkline1',
@@ -582,7 +584,7 @@ var target_chart_option = {
 		name: 'Target added',
 		data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
 	}],
-	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
+	labels: label_dates,
 	yaxis: {
 		min: 0
 	},
@@ -625,7 +627,7 @@ var subdomains_chart_options = {
 		name: 'Subdomains Discovered',
 		data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
 	}],
-	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
+	labels: label_dates,
 	yaxis: {
 		min: 0
 	},
@@ -668,7 +670,7 @@ var vuln_chart_options = {
 		name: 'Vulnerabilities Discovered',
 		data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
 	}],
-	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
+	labels: label_dates,
 	yaxis: {
 		min: 0
 	},
@@ -711,7 +713,7 @@ var scan_chart_options = {
 		name: 'Scans Initiated',
 		data: [{{scans_in_last_week.0}},{{scans_in_last_week.1}},{{scans_in_last_week.2}},{{scans_in_last_week.3}},{{scans_in_last_week.4}},{{scans_in_last_week.5}},{{scans_in_last_week.6}}]
 	}],
-	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
+	labels: label_dates,
 	yaxis: {
 		min: 0
 	},
@@ -754,7 +756,7 @@ var endpoint_chart_options = {
 		name: 'Endpoints Discovered',
 		data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
 	}],
-	labels: ['{{last_7_dates.1}}', '{{last_7_dates.2}}', '{{last_7_dates.3}}', '{{last_7_dates.4}}', '{{last_7_dates.5}}', '{{last_7_dates.6}}', '{{last_7_dates.7}}'],
+	labels: label_dates,
 	yaxis: {
 		min: 0
 	},
