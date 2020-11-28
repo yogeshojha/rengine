@@ -576,6 +576,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                 endpoint.content_length = json_st['content-length']
                                 endpoint.http_status = json_st['status-code']
                                 endpoint.page_title = json_st['title']
+                                endpoint.discovered_date = timezone.now()
                                 if 'content-type' in json_st:
                                     endpoint.content_type = json_st['content-type']
                                 endpoint.save()
@@ -596,6 +597,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     endpoint.content_length = json_st['content-length']
                     endpoint.http_status = json_st['status-code']
                     endpoint.page_title = json_st['title']
+                    endpoint.discovered_date = timezone.now()
                     if 'content-type' in json_st:
                         endpoint.content_type = json_st['content-type']
                     endpoint.save()

@@ -68,44 +68,52 @@ def index(request):
         last_scan_date__gte=last_week).annotate(
         date=TruncDay('last_scan_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
+    count_endpoints_by_date = WayBackEndPoint.objects.filter(
+        discovered_date__gte=last_week).annotate(
+        date=TruncDay('discovered_date')).values("date").annotate(
+            count=Count('id')).order_by("-date")
 
-    last_7_dates = [(timezone.now() - timedelta(days=i)).date() for i in range(0, 7)]
+    last_7_dates = [(timezone.now() - timedelta(days=i)).date()
+                    for i in range(0, 7)]
 
     targets_in_last_week = []
+    subdomains_in_last_week = []
+    vulns_in_last_week = []
+    scans_in_last_week = []
+    endpoints_in_last_week = []
+
     for date in last_7_dates:
         _target = count_targets_by_date.filter(date=date)
+        _subdomain = count_subdomains_by_date.filter(date=date)
+        _vuln = count_vulns_by_date.filter(date=date)
+        _scan = count_scans_by_date.filter(date=date)
+        _endpoint = count_endpoints_by_date.filter(date=date)
         if _target:
             targets_in_last_week.append(_target[0]['created_count'])
         else:
             targets_in_last_week.append(0)
-    targets_in_last_week.reverse()
-
-    subdomains_in_last_week = []
-    for date in last_7_dates:
-        _subdomain = count_subdomains_by_date.filter(date=date)
         if _subdomain:
             subdomains_in_last_week.append(_subdomain[0]['count'])
         else:
             subdomains_in_last_week.append(0)
-    subdomains_in_last_week.reverse()
-
-    vulns_in_last_week = []
-    for date in last_7_dates:
-        _vuln = count_vulns_by_date.filter(date=date)
         if _vuln:
             vulns_in_last_week.append(_vuln[0]['count'])
         else:
             vulns_in_last_week.append(0)
-    vulns_in_last_week.reverse()
-
-    scans_in_last_week = []
-    for date in last_7_dates:
-        _scan = count_scans_by_date.filter(date=date)
         if _scan:
             scans_in_last_week.append(_scan[0]['count'])
         else:
             scans_in_last_week.append(0)
+        if _endpoint:
+            endpoints_in_last_week.append(_endpoint[0]['count'])
+        else:
+            endpoints_in_last_week.append(0)
+
+    targets_in_last_week.reverse()
+    subdomains_in_last_week.reverse()
+    vulns_in_last_week.reverse()
     scans_in_last_week.reverse()
+    endpoints_in_last_week.reverse()
 
     context = {
         'dashboard_data_active': 'true',
@@ -132,6 +140,7 @@ def index(request):
         'subdomains_in_last_week': subdomains_in_last_week,
         'vulns_in_last_week': vulns_in_last_week,
         'scans_in_last_week': scans_in_last_week,
+        'endpoints_in_last_week': endpoints_in_last_week,
     }
     return render(request, 'dashboard/index.html', context)
 

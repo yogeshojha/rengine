@@ -22,7 +22,7 @@ Dashboard
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
 	<div class="row">
-		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-dash-chart test">
 				<div class="widget-heading">
 					<div class="w-icon">
@@ -39,15 +39,15 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-warning">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
 					</div>
 					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h2>
-					<span>Total Alive Subdomains: <span><b class="text-info">{{alive_count|intcomma}}</b><br>
-					<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
+					<span>Total Alive Subdomains: <span><b class="text-warning">{{alive_count|intcomma}}</b><br>
+					<a href="{% url 'all_subdomains' %}" class="text-warning">View all Subdomains</a>
 				</div>
 				<div class="widget-content">
 					<div class="w-chart">
@@ -56,14 +56,14 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col-xl-3 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-referral">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
 					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities</span></h2>
-					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High, <b>{{medium_count}}</b> Medium Severity</span><br>
+					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High, <b>{{medium_count}}</b> Medium</span><br>
 					<a href="{% url 'all_vulns' %}" class="text-danger">View all vulnerabilities</a>
 				</div>
 				<div class="widget-content">
@@ -73,7 +73,24 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col-xl-3 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-referral">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+					</div>
+					<h2 class="w-value">{{endpoint_count|intcomma}} <span>Endpoints</span></h2>
+					<span>Total Alive endpoints:</span> <b class="text-info">{{endpoint_alive_count|intcomma}}</b><br>
+					<a href="{% url 'all_endpoints' %}" class="text-info">View all endpoints</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="endpoint_chart"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-engagement">
 				<div class="widget-heading">
 					<div class="w-icon">
@@ -279,7 +296,7 @@ Dashboard
 	</div>
 </div>
 </div>
-<div class="row layout-top-spacing">
+<div class="row">
 	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
 		<div class="widget widget-table-one">
 			<div class="widget-heading">
@@ -718,6 +735,49 @@ var scan_chart_options = {
 }
 
 var chart = new ApexCharts(document.querySelector("#scan_chart"), scan_chart_options);
+chart.render();
+
+var endpoint_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 80,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Endpoints Discovered',
+		data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
+	}],
+	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	yaxis: {
+		min: 0
+	},
+	colors: ['#8dbf42'],
+	tooltip: {
+		x: {
+			show: false,
+		}
+	},
+	fill: {
+		type:"gradient",
+		gradient: {
+			type: "vertical",
+			shadeIntensity: 1,
+			inverseColors: !1,
+			opacityFrom: .40,
+			opacityTo: .05,
+			stops: [45, 100]
+		}
+	},
+}
+
+var chart = new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options);
 chart.render();
 
 </script>
