@@ -40,12 +40,12 @@ Dashboard
 			</div>
 		</div>
 		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
+			<div class="widget-chart widget-chart_hybrid widget-warning">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
 					</div>
-					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains Discovered</span></h2>
+					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h2>
 					<span>Total Alive Subdomains: <span><b class="text-info">{{alive_count|intcomma}}</b><br>
 					<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
 				</div>
@@ -62,7 +62,7 @@ Dashboard
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
-					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities Discovered</span></h2>
+					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities</span></h2>
 					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High, <b>{{medium_count}}</b> Medium Severity</span><br>
 					<a href="{% url 'all_vulns' %}" class="text-danger">View all vulnerabilities</a>
 				</div>
@@ -612,7 +612,7 @@ var subdomains_chart_options = {
 	yaxis: {
 		min: 0
 	},
-	colors: ['#1b55e2'],
+	colors: ['#FF8F00'],
 	tooltip: {
 		x: {
 			show: false,
