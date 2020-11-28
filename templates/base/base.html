@@ -90,6 +90,7 @@
     $(document).ready(function() {
         App.init();
     });
+    $('.mt-container').each(function(){ const ps = new PerfectScrollbar($(this)[0]); });
     </script>
     <script src="{% static 'assets/js/custom.js' %}"></script>
     {% block page_level_script %}
