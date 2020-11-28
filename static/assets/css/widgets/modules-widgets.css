@@ -77,3 +77,6 @@
   color: #8dbf42;
   border: 1px solid #8dbf42;
 }
+.widget-chart .widget-content{
+  padding: 0 0 20px 0;
+}

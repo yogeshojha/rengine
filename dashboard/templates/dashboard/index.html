@@ -23,7 +23,7 @@ Dashboard
 <div class="col-lg-12 layout-px-spacing">
 	<div class="row">
 		<div class="col layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-dash-chart test">
+			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -567,11 +567,23 @@ chart.render();
 
 var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
 
+var fill_options = {
+	type:"gradient",
+	gradient: {
+		type: "vertical",
+		shadeIntensity: 1,
+		inverseColors: !1,
+		opacityFrom: .40,
+		opacityTo: .05,
+		stops: [45, 100]
+	}
+}
+
 var target_chart_option = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 80,
+		height: 70,
 		sparkline: {
 			enabled: true
 		},
@@ -594,17 +606,7 @@ var target_chart_option = {
 			show: true,
 		}
 	},
-	fill: {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .40,
-			opacityTo: .05,
-			stops: [45, 100]
-		}
-	},
+	fill: fill_options,
 }
 
 var chart = new ApexCharts(document.querySelector("#targets_chart"), target_chart_option);
@@ -614,7 +616,7 @@ var subdomains_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 80,
+		height: 70,
 		sparkline: {
 			enabled: true
 		},
@@ -637,17 +639,7 @@ var subdomains_chart_options = {
 			show: true,
 		}
 	},
-	fill: {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .40,
-			opacityTo: .05,
-			stops: [45, 100]
-		}
-	},
+	fill: fill_options,
 }
 
 var chart = new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options);
@@ -657,7 +649,7 @@ var vuln_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 80,
+		height: 70,
 		sparkline: {
 			enabled: true
 		},
@@ -680,17 +672,7 @@ var vuln_chart_options = {
 			show: true,
 		}
 	},
-	fill: {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .40,
-			opacityTo: .05,
-			stops: [45, 100]
-		}
-	},
+	fill: fill_options,
 }
 
 var chart = new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options);
@@ -700,7 +682,7 @@ var scan_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 80,
+		height: 70,
 		sparkline: {
 			enabled: true
 		},
@@ -723,17 +705,7 @@ var scan_chart_options = {
 			show: true,
 		}
 	},
-	fill: {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .40,
-			opacityTo: .05,
-			stops: [45, 100]
-		}
-	},
+	fill: fill_options,
 }
 
 var chart = new ApexCharts(document.querySelector("#scan_chart"), scan_chart_options);
@@ -743,7 +715,7 @@ var endpoint_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 80,
+		height: 70,
 		sparkline: {
 			enabled: true
 		},
@@ -766,17 +738,7 @@ var endpoint_chart_options = {
 			show: true,
 		}
 	},
-	fill: {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .40,
-			opacityTo: .05,
-			stops: [45, 100]
-		}
-	},
+	fill: fill_options,
 }
 
 var chart = new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options);
