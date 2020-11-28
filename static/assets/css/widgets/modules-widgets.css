@@ -37,6 +37,9 @@
 .widget-chart_hybrid.widget-warning {
   background: #ffefe1;
 }
+.widget-chart_hybrid.widget-purple {
+  background: #e1e2ff;
+}
 .widget-chart_hybrid.widget-referral .widget-heading .w-icon {
   color: #e7515a;
   border: 1px solid #e7515a;
@@ -44,6 +47,14 @@
 .widget-chart_hybrid.widget-dash-chart .widget-heading .w-icon {
   color: #1b55e2;
   border: 1px solid #1b55e2;
+}
+.widget-chart_hybrid.widget-warning .widget-heading .w-icon {
+  color: #F57C00;
+  border: 1px solid #F57C00;
+}
+.widget-chart_hybrid.widget-purple .widget-heading .w-icon {
+  color: #7E57C2;
+  border: 1px solid #7E57C2;
 }
 .widget-chart_hybrid.widget-referral {
   background: #ffe1e2;

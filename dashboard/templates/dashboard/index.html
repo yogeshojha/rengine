@@ -22,13 +22,13 @@ Dashboard
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
 	<div class="row">
-		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-dash-chart test">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
-					<h2 class="w-value">{{domain_count|intcomma}} <span>Targets</span></h2>
+					<h6 class="w-value">{{domain_count|intcomma}} <span>Targets</span></h6>
 					<br>
 					<a href="../target/list/" class="text-info">View all targets</a>
 				</div>
@@ -39,14 +39,14 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-warning">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
 					</div>
-					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h2>
-					<span>Total Alive Subdomains: <span><b class="text-warning">{{alive_count|intcomma}}</b><br>
+					<h6 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h6>
+					<span>Alive Subdomains: <span><b class="text-warning">{{alive_count|intcomma}}</b><br>
 					<a href="{% url 'all_subdomains' %}" class="text-warning">View all Subdomains</a>
 				</div>
 				<div class="widget-content">
@@ -56,14 +56,31 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-3 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-purple">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+					</div>
+					<h6 class="w-value">{{endpoint_count|intcomma}} <span>Endpoints</span></h6>
+					<span>Alive endpoints:</span> <b class="text-secondary">{{endpoint_alive_count|intcomma}}</b><br>
+					<a href="{% url 'all_endpoints' %}" class="text-secondary">View all endpoints</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="endpoint_chart"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="col layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-referral">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
-					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities</span></h2>
-					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High, <b>{{medium_count}}</b> Medium</span><br>
+					<h6 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities</span></h6>
+					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</span><br>
 					<a href="{% url 'all_vulns' %}" class="text-danger">View all vulnerabilities</a>
 				</div>
 				<div class="widget-content">
@@ -73,30 +90,13 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-3 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-referral">
-				<div class="widget-heading">
-					<div class="w-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-					</div>
-					<h2 class="w-value">{{endpoint_count|intcomma}} <span>Endpoints</span></h2>
-					<span>Total Alive endpoints:</span> <b class="text-info">{{endpoint_alive_count|intcomma}}</b><br>
-					<a href="{% url 'all_endpoints' %}" class="text-info">View all endpoints</a>
-				</div>
-				<div class="widget-content">
-					<div class="w-chart">
-						<div id="endpoint_chart"></div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="col-xl-2 col-lg-2 col-md-3 col-sm-6 col-12 layout-top-spacing">
+		<div class="col layout-top-spacing">
 			<div class="widget-chart widget-chart_hybrid widget-engagement">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
 					</div>
-					<h2 class="w-value">{{scan_count|intcomma}} <span>Scans Performed</span></h2>
+					<h6 class="w-value">{{scan_count|intcomma}} <span>Scans Performed</span></h6>
 					Currently Scanning <b class="text-success">{{currently_scanning.count}}</b><br>
 					<a href="{% url 'scan_history' %}" class="text-success">View all scan history</a>
 				</div>
@@ -758,7 +758,7 @@ var endpoint_chart_options = {
 	yaxis: {
 		min: 0
 	},
-	colors: ['#8dbf42'],
+	colors: ['#5c1ac3'],
 	tooltip: {
 		x: {
 			show: false,
