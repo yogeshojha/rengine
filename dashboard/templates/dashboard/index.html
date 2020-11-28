@@ -23,12 +23,13 @@ Dashboard
 <div class="col-lg-12 layout-px-spacing">
 	<div class="row">
 		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
+			<div class="widget-chart widget-chart_hybrid widget-dash-chart test">
 				<div class="widget-heading">
 					<div class="w-icon">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
 					<h2 class="w-value">{{domain_count|intcomma}} <span>Targets</span></h2>
+					<br>
 					<a href="../target/list/" class="text-info">View all targets</a>
 				</div>
 				<div class="widget-content">
@@ -42,9 +43,10 @@ Dashboard
 			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
 				<div class="widget-heading">
 					<div class="w-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
 					</div>
 					<h2 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains Discovered</span></h2>
+					<span>Total Alive Subdomains: <span><b class="text-info">{{alive_count|intcomma}}</b><br>
 					<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
 				</div>
 				<div class="widget-content">
@@ -61,7 +63,8 @@ Dashboard
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
 					</div>
 					<h2 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities Discovered</span></h2>
-					<a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a>
+					<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High, <b>{{medium_count}}</b> Medium Severity</span><br>
+					<a href="{% url 'all_vulns' %}" class="text-danger">View all vulnerabilities</a>
 				</div>
 				<div class="widget-content">
 					<div class="w-chart">
@@ -70,89 +73,21 @@ Dashboard
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="row layout-top-spacing">
-		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-			{% if not domain_count %}
-			<div class="alert alert-arrow-left alert-icon-left alert-light-danger mb-4" role="alert">
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-				<strong>Oops!</strong> Currently you do not have any targets defined, Please
-				<strong><a href="{% url 'add_target_form' %}" class="text-info">add targets </a></strong> or you can also <strong><a href="{% url 'import_targets' %}" class="text-info">import targets.</a></strong>
-			</div>
-			{% endif %}
-
-			<div class="row widget-statistic">
-				<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-					<div class="widget widget-one_hybrid">
-						<div class="widget-heading">
-							<div class="w-icon text-info">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-							</div>
-							<br>
-							<h2 class="text-dark">{{domain_count|intcomma}}</h2>
-							<h6 class="">Total Targets</h6>
-						</div>
-						<div class="widget-content">
-							<br>
-							<a href="../target/list/" class="text-info">View all targets</a>
-						</div>
+		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12 layout-top-spacing">
+			<div class="widget-chart widget-chart_hybrid widget-engagement">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+					</div>
+					<h2 class="w-value">{{scan_count|intcomma}} <span>Scans Performed</span></h2>
+					Currently Scanning <b class="text-success">{{currently_scanning.count}}</b><br>
+					<a href="{% url 'scan_history' %}" class="text-success">View all scan history</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="scan_chart"></div>
 					</div>
 				</div>
-
-				<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-					<div class="widget widget-one_hybrid">
-						<div class="widget-heading">
-							<div class="w-icon text-info">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
-							</div>
-							<br>
-							<h2 class="text-dark">{{subdomain_count|intcomma}}</h2>
-							<h6 class="">Subdomains Discovered</h6>
-						</div>
-						<div class="widget-content">
-							Total Alive Subdomains: <b class="text-info">{{alive_count|intcomma}}</b>
-							<br>
-							<a href="{% url 'all_subdomains' %}" class="text-info">View all Subdomains</a>
-						</div>
-					</div>
-				</div>
-
-				<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-					<div class="widget widget-one_hybrid">
-						<div class="widget-heading">
-							<div class="w-icon text-info">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-							</div>
-							<br>
-							<h2 class="text-dark">{{endpoint_count|intcomma}}</h2>
-							<h6 class="">Endpoints Discovered</h6>
-						</div>
-						<div class="widget-content">
-							Total Alive endpoints: <b class="text-info">{{endpoint_alive_count|intcomma}}</b>
-							<br>
-							<a href="{% url 'all_endpoints' %}" class="text-info">View all endpoints</a>
-						</div>
-					</div>
-				</div>
-
-				<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-					<div class="widget widget-one_hybrid">
-						<div class="widget-heading">
-							<div class="w-icon text-info">
-								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-							</div>
-							<br>
-							<h2 class="text-dark">{{scan_count}}</h2>
-							<h6 class="">Total Scans</h6>
-						</div>
-						<div class="widget-content">
-							Currently Scanning <b class="text-info">{{currently_scanning.count}}</b>
-							<br>
-							<a href="{% url 'scan_history' %}" class="text-info">View all scan history</a>
-						</div>
-					</div>
-				</div>
-
 			</div>
 		</div>
 	</div>
@@ -247,7 +182,7 @@ Dashboard
 		</div>
 		{% endif %}
 	</div>
-	<div class="row layout-top-spacing">
+	<div class="row">
 		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 			<div class="widget widget-activity-feed">
 				<div class="widget-heading">
@@ -740,6 +675,49 @@ var vuln_chart_options = {
 }
 
 var chart = new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options);
+chart.render();
+
+var scan_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 80,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Scans Initiated',
+		data: [{{scans_in_last_week.0}},{{scans_in_last_week.1}},{{scans_in_last_week.2}},{{scans_in_last_week.3}},{{scans_in_last_week.4}},{{scans_in_last_week.5}},{{scans_in_last_week.6}}]
+	}],
+	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	yaxis: {
+		min: 0
+	},
+	colors: ['#8dbf42'],
+	tooltip: {
+		x: {
+			show: false,
+		}
+	},
+	fill: {
+		type:"gradient",
+		gradient: {
+			type: "vertical",
+			shadeIntensity: 1,
+			inverseColors: !1,
+			opacityFrom: .40,
+			opacityTo: .05,
+			stops: [45, 100]
+		}
+	},
+}
+
+var chart = new ApexCharts(document.querySelector("#scan_chart"), scan_chart_options);
 chart.render();
 
 </script>

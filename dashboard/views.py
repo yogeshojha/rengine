@@ -64,6 +64,10 @@ def index(request):
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
+    count_scans_by_date = ScanHistory.objects.filter(
+        last_scan_date__gte=last_week).annotate(
+        date=TruncDay('last_scan_date')).values("date").annotate(
+            count=Count('id')).order_by("-date")
 
     last_7_dates = [(timezone.now() - timedelta(days=i)).date() for i in range(0, 7)]
 
@@ -94,6 +98,15 @@ def index(request):
             vulns_in_last_week.append(0)
     vulns_in_last_week.reverse()
 
+    scans_in_last_week = []
+    for date in last_7_dates:
+        _scan = count_scans_by_date.filter(date=date)
+        if _scan:
+            scans_in_last_week.append(_scan[0]['count'])
+        else:
+            scans_in_last_week.append(0)
+    scans_in_last_week.reverse()
+
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -118,6 +131,7 @@ def index(request):
         'targets_in_last_week': targets_in_last_week,
         'subdomains_in_last_week': subdomains_in_last_week,
         'vulns_in_last_week': vulns_in_last_week,
+        'scans_in_last_week': scans_in_last_week,
     }
     return render(request, 'dashboard/index.html', context)
 
