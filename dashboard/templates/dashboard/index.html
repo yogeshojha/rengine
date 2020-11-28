@@ -7,6 +7,7 @@ Dashboard
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
@@ -20,6 +21,24 @@ Dashboard
 
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
+	<div class="row layout-top-spacing">
+		<div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 col-12">
+			<div class="widget-chart widget-chart_hybrid widget-followers">
+				<div class="widget-heading">
+					<div class="w-icon">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+					</div>
+					<h2 class="w-value">{{domain_count|intcomma}} <span>Total Targets</span></h2>
+					<a href="../target/list/" class="text-info">View all targets</a>
+				</div>
+				<div class="widget-content">
+					<div class="w-chart">
+						<div id="hybrid_followers"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="row layout-top-spacing">
 		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 			{% if not domain_count %}
@@ -215,83 +234,83 @@ Dashboard
 							timeline-success
 							{% endif %}
 							">
-								<div class="t-dot" data-original-title="" title="">
-								</div>
-								<div class="t-text">
-									<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
-									<p class="t-time">{{item.time|naturaltime}}</p>
-								</div>
-							</div>
-							{% empty %}
-							Feed will be automatically generated while the scan is running.
-							{% endfor %}
-						</div>
-					</div>
-					<div class="tm-action-btn">
-						<br>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-activity-feed">
-				<div class="widget-heading">
-					<h6 class="">Vulnerability Feed</h6>
-				</div>
-				<div class="widget-content">
-					<div class="mt-container mx-auto">
-						<div class="timeline-line">
-
-							{% for item in vulnerability_feed %}
-							<div class="item-timeline
-							{% if item.severity == 0 %}
-							timeline-primary
-							{% elif item.severity == 1 %}
-							timeline-low
-							{% elif item.severity == 2 %}
-							timeline-warning
-							{% elif item.severity == 3 %}
-							timeline-danger
-							{% elif item.severity == 4 %}
-							timeline-critical
-							{% endif %}
-							">
 							<div class="t-dot" data-original-title="" title="">
 							</div>
 							<div class="t-text">
-								<p>
-									<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
-										<br>
-										{{item.host}}
-									</a>
-								</p>
-								{% if item.severity == 0 %}
-								<span class='badge badge-info'>Info</span>
-								{% elif item.severity == 1 %}
-								<span class='badge badge-low'>Low</span>
-								{% elif item.severity == 2 %}
-								<span class='badge badge-warning'>Medium</span>
-								{% elif item.severity == 3 %}
-								<span class='badge badge-danger'>High</span>
-								{% elif item.severity == 4 %}
-								<span class='badge badge-critical'>critical</span>
-								{% endif %}
-								<p class="t-time">{{item.discovered_date|naturaltime}}</p>
+								<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
+								<p class="t-time">{{item.time|naturaltime}}</p>
 							</div>
 						</div>
 						{% empty %}
 						Feed will be automatically generated while the scan is running.
 						{% endfor %}
-
 					</div>
 				</div>
-
 				<div class="tm-action-btn">
-					<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+					<br>
 				</div>
 			</div>
 		</div>
 	</div>
+	<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+		<div class="widget widget-activity-feed">
+			<div class="widget-heading">
+				<h6 class="">Vulnerability Feed</h6>
+			</div>
+			<div class="widget-content">
+				<div class="mt-container mx-auto">
+					<div class="timeline-line">
+
+						{% for item in vulnerability_feed %}
+						<div class="item-timeline
+						{% if item.severity == 0 %}
+						timeline-primary
+						{% elif item.severity == 1 %}
+						timeline-low
+						{% elif item.severity == 2 %}
+						timeline-warning
+						{% elif item.severity == 3 %}
+						timeline-danger
+						{% elif item.severity == 4 %}
+						timeline-critical
+						{% endif %}
+						">
+						<div class="t-dot" data-original-title="" title="">
+						</div>
+						<div class="t-text">
+							<p>
+								<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
+									<br>
+									{{item.host}}
+								</a>
+							</p>
+							{% if item.severity == 0 %}
+							<span class='badge badge-info'>Info</span>
+							{% elif item.severity == 1 %}
+							<span class='badge badge-low'>Low</span>
+							{% elif item.severity == 2 %}
+							<span class='badge badge-warning'>Medium</span>
+							{% elif item.severity == 3 %}
+							<span class='badge badge-danger'>High</span>
+							{% elif item.severity == 4 %}
+							<span class='badge badge-critical'>critical</span>
+							{% endif %}
+							<p class="t-time">{{item.discovered_date|naturaltime}}</p>
+						</div>
+					</div>
+					{% empty %}
+					Feed will be automatically generated while the scan is running.
+					{% endfor %}
+
+				</div>
+			</div>
+
+			<div class="tm-action-btn">
+				<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+			</div>
+		</div>
+	</div>
+</div>
 </div>
 <div class="row layout-top-spacing">
 	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
@@ -561,5 +580,49 @@ var chart = new ApexCharts(
 );
 
 chart.render();
+
+var d_1options3 = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 80,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Target added',
+		data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
+	}],
+	labels: ['1', '2', '3', '4', '5', '6', '7'],
+	yaxis: {
+		min: 0
+	},
+	colors: ['#1b55e2'],
+	tooltip: {
+		x: {
+			show: false,
+		}
+	},
+	fill: {
+		type:"gradient",
+		gradient: {
+			type: "vertical",
+			shadeIntensity: 1,
+			inverseColors: !1,
+			opacityFrom: .40,
+			opacityTo: .05,
+			stops: [45, 100]
+		}
+	},
+}
+
+var d_1C_5 = new ApexCharts(document.querySelector("#hybrid_followers"), d_1options3);
+d_1C_5.render();
+
 </script>
 {% endblock page_level_script %}

@@ -1,8 +1,12 @@
+from datetime import timedelta
+
 from targetApp.models import Domain
 from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
 
+from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from django.db.models.functions import TruncDay
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out, user_logged_in
@@ -23,14 +27,16 @@ def index(request):
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
     recent_completed_scans = ScanHistory.objects.all().order_by(
         '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:4]
-    currently_scanning = ScanHistory.objects.order_by('-last_scan_date').filter(scan_status=1)[:4]
+    currently_scanning = ScanHistory.objects.order_by(
+        '-last_scan_date').filter(scan_status=1)[:4]
     pending_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
     info_count = VulnerabilityScan.objects.filter(severity=0).count()
     low_count = VulnerabilityScan.objects.filter(severity=1).count()
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
     high_count = VulnerabilityScan.objects.filter(severity=3).count()
     critical_count = VulnerabilityScan.objects.filter(severity=4).count()
-    vulnerability_feed = VulnerabilityScan.objects.all().order_by('-discovered_date')[:20]
+    vulnerability_feed = VulnerabilityScan.objects.all().order_by(
+        '-discovered_date')[:20]
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count
@@ -44,6 +50,20 @@ def index(request):
         'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
+    last_week = timezone.now() - timedelta(days=7)
+    count_targets_by_date = Domain.objects.filter(
+        insert_date__gte=last_week).annotate(
+        date=TruncDay('insert_date')).values("date").annotate(
+            created_count=Count('id')).order_by("-date")
+    targets_in_last_week = []
+    last_7_dates = [(timezone.now() - timedelta(days=i)).date() for i in range(0, 7)]
+    for date in last_7_dates:
+        _target = count_targets_by_date.filter(date=date)
+        if _target:
+            targets_in_last_week.append(_target[0]['created_count'])
+        else:
+            targets_in_last_week.append(0)
+    targets_in_last_week.reverse()
     context = {
         'dashboard_data_active': 'true',
         'domain_count': domain_count,
@@ -65,6 +85,7 @@ def index(request):
         'total_vul_count': total_vul_count,
         'vulnerability_feed': vulnerability_feed,
         'activity_feed': activity_feed,
+        'targets_in_last_week': targets_in_last_week,
     }
     return render(request, 'dashboard/index.html', context)
 
