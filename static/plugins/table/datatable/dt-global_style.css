@@ -123,7 +123,19 @@ div.dataTables_wrapper div.dataTables_filter svg {
   padding: 8px 30px 8px 14px; }
 
 div.dataTables_wrapper div.dataTables_filter input {
-  width: 150px; }
+  width: 100%;
+  float: left;
+  transition: all .2s ease-in-out;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus {
+  width: 300%;
+  transform: scale(1);
+}
+
+div.dataTables_wrapper div.dataTables_length {
+  float: right;
+}
 
 .dataTables_wrapper .dataTables_length select.form-control {
   padding: 8px 17px 8px 14px;

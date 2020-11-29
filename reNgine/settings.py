@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'notification.apps.NotificationConfig',
     'django_ace',
     'django_celery_beat',
+    'mathfilters',
 ]
 
 MIDDLEWARE = [

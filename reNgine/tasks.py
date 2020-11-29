@@ -5,6 +5,18 @@ import json
 import validators
 import requests
 import logging
+import tldextract
+
+
+from celery import shared_task
+from reNgine.celery import app
+from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
+from targetApp.models import Domain
+from notification.models import NotificationHooks
+from scanEngine.models import EngineType
+from django.conf import settings
+from django.utils import timezone, dateformat
+from django.shortcuts import get_object_or_404
 
 from celery import shared_task
 from datetime import datetime
@@ -76,13 +88,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         yaml_configuration = yaml.load(
             task.scan_type.yaml_configuration,
             Loader=yaml.FullLoader)
+        excluded_subdomains = ''
+        # Excluded subdomains
+        if EXCLUDED_SUBDOMAINS in yaml_configuration:
+            excluded_subdomains = yaml_configuration[EXCLUDED_SUBDOMAINS]
+
         if(task.scan_type.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-
             # check for all the tools and add them into string
             # if tool selected is all then make string, no need for loop
             if 'all' in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
-                tools = 'amass-active amass-passive assetfinder sublist3r subfinder'
+                tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
             else:
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
@@ -189,6 +205,24 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 logging.info(subfinder_command)
                 os.system(subfinder_command)
 
+            if 'oneforall' in tools:
+                oneforall_command = 'python3 /app/tools/OneForAll/oneforall.py --target {} run'.format(
+                    domain.domain_name, current_scan_dir)
+
+                # Run OneForAll
+                logging.info(oneforall_command)
+                os.system(oneforall_command)
+
+                extract_subdomain = "cut -d',' -f6 /app/tools/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
+                    domain.domain_name, current_scan_dir)
+
+                os.system(extract_subdomain)
+
+                # remove the results from oneforall directory
+
+                os.system(
+                    'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
+
             '''
             All tools have gathered the list of subdomains with filename
             initials as from_*
@@ -196,7 +230,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             remove the older results from_*
             '''
 
-            os.system('cat {}/*.txt > {}/subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+            os.system(
+                'cat {}/*.txt > {}/subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
 
             '''
             Remove all the from_* files
@@ -208,7 +243,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             Sort all Subdomains
             '''
 
-            os.system('sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(current_scan_dir, current_scan_dir))
+            os.system(
+                'sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(
+                    current_scan_dir, current_scan_dir))
 
             '''
             The final results will be stored in sorted_subdomain_collection.
@@ -219,6 +256,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             with open(subdomain_scan_results_file) as subdomain_list:
                 for subdomain in subdomain_list:
+                    if(subdomain.rstrip('\n') in excluded_subdomains):
+                        continue
                     '''
                     subfinder sometimes produces weird super long subdomain
                     output which is likely to crash the scan, so validate
@@ -246,6 +285,126 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         subdomain_scan_results_file = results_dir + \
             current_scan_dir + '/sorted_subdomain_collection.txt'
 
+        '''
+        HTTP Crawlwer will run by default
+        '''
+        update_last_activity(activity_id, 2)
+        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
+
+        # once port scan is complete then run httpx, TODO this has to run in
+        # background thread later
+        httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
+
+        httpx_command = 'cat {} | httpx -cdn -json -o {}'.format(
+            subdomain_scan_results_file, httpx_results_file)
+        os.system(httpx_command)
+
+        # alive subdomains from httpx
+        alive_file_location = results_dir + current_scan_dir + '/alive.txt'
+        alive_file = open(alive_file_location, 'w')
+
+        # writing httpx results
+        httpx_json_result = open(httpx_results_file, 'r')
+        lines = httpx_json_result.readlines()
+        for line in lines:
+            json_st = json.loads(line.strip())
+            try:
+                sub_domain = ScannedHost.objects.get(
+                    scan_history=task, subdomain=json_st['url'].split("//")[-1])
+                sub_domain.http_url = json_st['url']
+                sub_domain.http_status = json_st['status-code']
+                sub_domain.page_title = json_st['title']
+                sub_domain.content_length = json_st['content-length']
+                sub_domain.discovered_date = timezone.now()
+                if 'ip' in json_st:
+                    sub_domain.ip_address = json_st['ip']
+                if 'cdn' in json_st:
+                    sub_domain.is_ip_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    sub_domain.cname = cname_list
+                sub_domain.save()
+                alive_file.write(json_st['url'] + '\n')
+            except Exception as exception:
+                logging.error(json_st['url'])
+                logging.error(subdomain)
+                logging.error(exception)
+
+        alive_file.close()
+
+        if VISUAL_IDENTIFICATION in yaml_configuration:
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(
+                task, "Visual Recon - Screenshot", 1)
+
+            # after subdomain discovery run aquatone for visual identification
+            with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
+            output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
+
+            if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+                # check if scan port is valid otherwise proceed with default xlarge
+                # port
+                if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+                    scan_port = 'xlarge'
+            else:
+                scan_port = 'xlarge'
+
+            if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
+                threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+            else:
+                threads = 10
+
+            if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+            else:
+                http_timeout = 3000  # Default Timeout for HTTP
+
+            if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+            else:
+                screenshot_timeout = 30000  # Default Timeout for Screenshot
+
+            if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
+                scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+            else:
+                scan_timeout = 100  # Default Timeout for Scan
+
+            aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+                with_protocol_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+
+            logging.info(aquatone_command)
+            os.system(aquatone_command)
+            os.system('chmod -R 607 /app/tools/scan_results/*')
+            aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+
+            try:
+                if os.path.isfile(aqua_json_path):
+                    with open(aqua_json_path, 'r') as json_file:
+                        data = json.load(json_file)
+
+                    for host in data['pages']:
+                        sub_domain = ScannedHost.objects.get(
+                            scan_history__id=task.id,
+                            subdomain=data['pages'][host]['hostname'])
+                        # list_ip = data['pages'][host]['addrs']
+                        # ip_string = ','.join(list_ip)
+                        # sub_domain.ip_address = ip_string
+                        sub_domain.screenshot_path = current_scan_dir + \
+                            '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                        sub_domain.http_header_path = current_scan_dir + \
+                            '/aquascreenshots/' + data['pages'][host]['headersPath']
+                        tech_list = []
+                        if data['pages'][host]['tags'] is not None:
+                            for tag in data['pages'][host]['tags']:
+                                tech_list.append(tag['text'])
+                        tech_string = ','.join(tech_list)
+                        sub_domain.technology_stack = tech_string
+                        sub_domain.save()
+            except Exception as exception:
+                logging.error(exception)
+                update_last_activity(activity_id, 0)
+
         if(task.scan_type.port_scan):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Port Scanning", 1)
@@ -258,7 +417,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             scan_ports = 'top-100'  # default port scan
             if PORTS in yaml_configuration[PORT_SCAN]:
-                scan_ports = ','.join(str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
+                scan_ports = ','.join(
+                    str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
 
             # TODO: New version of naabu has -p instead of -ports
             if scan_ports:
@@ -308,143 +468,6 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 update_last_activity(activity_id, 0)
 
         '''
-        HTTP Crawlwer and screenshot will run by default
-        '''
-        update_last_activity(activity_id, 2)
-        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
-
-        # once port scan is complete then run httpx, TODO this has to run in
-        # background thread later
-        httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
-
-        httpx_command = 'cat {} | httpx -cdn -json -o {}'.format(
-            subdomain_scan_results_file, httpx_results_file)
-        os.system(httpx_command)
-
-        # alive subdomains from httpx
-        alive_file_location = results_dir + current_scan_dir + '/alive.txt'
-        alive_file = open(alive_file_location, 'w')
-
-        # writing httpx results
-        httpx_json_result = open(httpx_results_file, 'r')
-        lines = httpx_json_result.readlines()
-        for line in lines:
-            json_st = json.loads(line.strip())
-            try:
-                sub_domain = ScannedHost.objects.get(
-                    scan_history=task, subdomain=json_st['url'].split("//")[-1])
-                sub_domain.http_url = json_st['url']
-                sub_domain.http_status = json_st['status-code']
-                sub_domain.page_title = json_st['title']
-                sub_domain.content_length = json_st['content-length']
-                if 'ip' in json_st:
-                    sub_domain.ip_address = json_st['ip']
-                if 'cdn' in json_st:
-                    sub_domain.is_ip_cdn = json_st['cdn']
-                if 'cnames' in json_st:
-                    cname_list = ','.join(json_st['cnames'])
-                    sub_domain.cname = cname_list
-                sub_domain.save()
-                alive_file.write(json_st['url'] + '\n')
-            except Exception as exception:
-                logging.error(exception)
-
-        alive_file.close()
-
-        update_last_activity(activity_id, 2)
-        activity_id = create_scan_activity(
-            task, "Visual Recon - Screenshot", 1)
-
-        # after subdomain discovery run aquatone for visual identification
-        with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-        output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
-
-        if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-            scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
-        else:
-            scan_port = 'xlarge'
-        # check if scan port is valid otherwise proceed with default xlarge
-        # port
-        if scan_port not in ['small', 'medium', 'large', 'xlarge']:
-            scan_port = 'xlarge'
-
-        if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-            threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
-        else:
-            threads = 10
-
-        aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {}'.format(
-            with_protocol_path, threads, scan_port, output_aquatone_path)
-        os.system(aquatone_command)
-        os.system('chmod -R 607 /app/tools/scan_results/*')
-        aqua_json_path = output_aquatone_path + '/aquatone_session.json'
-
-        try:
-            with open(aqua_json_path, 'r') as json_file:
-                data = json.load(json_file)
-
-            for host in data['pages']:
-                sub_domain = ScannedHost.objects.get(
-                    scan_history__id=task.id,
-                    subdomain=data['pages'][host]['hostname'])
-                # list_ip = data['pages'][host]['addrs']
-                # ip_string = ','.join(list_ip)
-                # sub_domain.ip_address = ip_string
-                sub_domain.screenshot_path = current_scan_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                sub_domain.http_header_path = current_scan_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['headersPath']
-                tech_list = []
-                if data['pages'][host]['tags'] is not None:
-                    for tag in data['pages'][host]['tags']:
-                        tech_list.append(tag['text'])
-                tech_string = ','.join(tech_list)
-                sub_domain.technology_stack = tech_string
-                sub_domain.save()
-        except Exception as exception:
-            logging.error(exception)
-            update_last_activity(activity_id, 0)
-
-        '''
-        Subdomain takeover is not provided by default, check for conditions
-        '''
-        if(task.scan_type.subdomain_takeover):
-            update_last_activity(activity_id, 2)
-            activity_id = create_scan_activity(task, "Subdomain takeover", 1)
-
-            if yaml_configuration['subdomain_takeover']['thread'] > 0:
-                threads = yaml_configuration['subdomain_takeover']['thread']
-            else:
-                threads = 10
-
-            subjack_command = settings.TOOL_LOCATION + \
-                'takeover.sh {} {}'.format(current_scan_dir, threads)
-
-            os.system(subjack_command)
-
-            takeover_results_file = results_dir + current_scan_dir + '/takeover_result.json'
-
-            try:
-                with open(takeover_results_file) as f:
-                    takeover_data = json.load(f)
-
-                for data in takeover_data:
-                    if data['vulnerable']:
-                        get_subdomain = ScannedHost.objects.get(
-                            scan_history=task, subdomain=subdomain)
-                        get_subdomain.takeover = vulnerable_service
-                        get_subdomain.save()
-                    # else:
-                    #     subdomain = data['subdomain']
-                    #     get_subdomain = ScannedHost.objects.get(scan_history=task, subdomain=subdomain)
-                    #     get_subdomain.takeover = "Debug"
-                    #     get_subdomain.save()
-
-            except Exception as exception:
-                logging.error(exception)
-                update_last_activity(activity_id, 0)
-
-        '''
         Directory search is not provided by default, check for conditions
         '''
         if(task.scan_type.dir_file_search):
@@ -458,7 +481,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check the yaml settings
             if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-                extensions = ','.join(str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+                extensions = ','.join(
+                    str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
             else:
                 extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
@@ -522,7 +546,12 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 tools = ' '.join(
                     str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
 
-            os.system(settings.TOOL_LOCATION + 'get_urls.sh {} {} {}'.format(domain.domain_name, current_scan_dir, tools))
+            os.system(
+                settings.TOOL_LOCATION +
+                'get_urls.sh {} {} {}'.format(
+                    domain.domain_name,
+                    current_scan_dir,
+                    tools))
 
             if 'aggressive' in yaml_configuration['fetch_url']['intensity']:
                 with open(subdomain_scan_results_file) as subdomain_list:
@@ -547,6 +576,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                 endpoint.content_length = json_st['content-length']
                                 endpoint.http_status = json_st['status-code']
                                 endpoint.page_title = json_st['title']
+                                endpoint.discovered_date = timezone.now()
                                 if 'content-type' in json_st:
                                     endpoint.content_type = json_st['content-type']
                                 endpoint.save()
@@ -567,6 +597,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     endpoint.content_length = json_st['content-length']
                     endpoint.http_status = json_st['status-code']
                     endpoint.page_title = json_st['title']
+                    endpoint.discovered_date = timezone.now()
                     if 'content-type' in json_st:
                         endpoint.content_type = json_st['content-type']
                     endpoint.save()
@@ -601,8 +632,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             if 'all' in yaml_configuration['vulnerability_scan']['template']:
                 template = '/root/nuclei-templates'
             else:
-                template = yaml_configuration['vulnerability_scan']['template'].replace(
-                    ',', ' -t ')
+                if isinstance(
+                        yaml_configuration['vulnerability_scan']['template'],
+                        list):
+                    _template = ','.join(
+                        [str(element) for element in yaml_configuration['vulnerability_scan']['template']])
+                    template = _template.replace(',', ' -t ')
+                else:
+                    template = yaml_configuration['vulnerability_scan']['template'].replace(
+                        ',', ' -t ')
 
             # Update nuclei command with templates
             nuclei_command = nuclei_command + ' -t ' + template
@@ -618,11 +656,20 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # yaml settings for severity
             if 'severity' in yaml_configuration['vulnerability_scan']:
-                if yaml_configuration['vulnerability_scan']['severity'] != 'all':
-                    severity = yaml_configuration['vulnerability_scan']['severity'].replace(
-                        " ", "")
-                    # Update nuclei command based on severity
-                    nuclei_command = nuclei_command + ' -severity ' + severity
+                if 'all' not in yaml_configuration['vulnerability_scan']['severity']:
+                    if isinstance(
+                            yaml_configuration['vulnerability_scan']['severity'],
+                            list):
+                        _severity = ','.join(
+                            [str(element) for element in yaml_configuration['vulnerability_scan']['severity']])
+                        severity = _severity.replace(" ", "")
+                        # Update nuclei command based on severity
+                        nuclei_command = nuclei_command + ' -severity ' + severity
+                    else:
+                        severity = yaml_configuration['vulnerability_scan']['severity'].replace(
+                            " ", "")
+                        # Update nuclei command based on severity
+                        nuclei_command = nuclei_command + ' -severity ' + severity
 
             # update nuclei templates before running scan
             os.system('nuclei -update-templates')
@@ -638,6 +685,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         json_st = json.loads(line.strip())
                         vulnerability = VulnerabilityScan()
                         vulnerability.vulnerability_of = task
+                        # Get Domain name from URL for Foreign Key Host
+                        url = json_st['matched']
+                        extracted = tldextract.extract(url)
+                        subdomain = '.'.join(extracted[:4])
+                        if subdomain[0] == '.':
+                            subdomain = subdomain[1:]
+                        _subdomain = ScannedHost.objects.get(
+                            subdomain=subdomain, scan_history=task)
+                        vulnerability.host = _subdomain
                         vulnerability.name = json_st['name']
                         vulnerability.url = json_st['matched']
                         if json_st['severity'] == 'info':
@@ -648,8 +704,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             severity = 2
                         elif json_st['severity'] == 'high':
                             severity = 3
-                        else:
+                        elif json_st['severity'] == 'critical':
                             severity = 4
+                        else:
+                            severity = 0
                         vulnerability.severity = severity
                         vulnerability.template_used = json_st['template']
                         if 'description' in json_st:
@@ -657,6 +715,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         if 'matcher_name' in json_st:
                             vulnerability.matcher_name = json_st['matcher_name']
                         vulnerability.discovered_date = timezone.now()
+                        vulnerability.open_status = True
                         vulnerability.save()
                         send_notification(
                             "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(

@@ -41,15 +41,15 @@ RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder/v2/cmd/sub
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
+COPY ./tools/OneForAll/requirements.txt /tmp/requirements_oneforall.txt
+RUN pip3 install -r /tmp/requirements_oneforall.txt
+
 # Make directory for app
 RUN mkdir /app
 WORKDIR /app
 
 # Copy source code
 COPY . /app/
-
-# Collect Static
-RUN python manage.py collectstatic --no-input --clear
 
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh

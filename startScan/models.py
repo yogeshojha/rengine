@@ -1,7 +1,7 @@
 from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 
 
 class ScanHistory(models.Model):
@@ -31,7 +31,8 @@ class ScannedHost(models.Model):
     http_header_path = models.CharField(max_length=1000, null=True)
     technology_stack = models.CharField(max_length=1500, null=True)
     directory_json = JSONField(null=True)
-    takeover = models.CharField(max_length=100, null=True)
+    checked = models.BooleanField(null=True, blank=True, default=False)
+    discovered_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return str(self.subdomain)
@@ -44,6 +45,7 @@ class WayBackEndPoint(models.Model):
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True)
+    discovered_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return self.page_title
@@ -61,6 +63,7 @@ class ScanActivity(models.Model):
 
 class VulnerabilityScan(models.Model):
     vulnerability_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    host = models.ForeignKey(ScannedHost, on_delete=models.CASCADE, blank=True, null=True)
     discovered_date = models.DateTimeField(null=True)
     url = models.CharField(max_length=1000)
     name = models.CharField(max_length=400)
@@ -69,6 +72,10 @@ class VulnerabilityScan(models.Model):
     extracted_results = models.CharField(max_length=1000, null=True, blank=True)
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
+    open_status = models.BooleanField(null=True, blank=True, default=True)
 
     def __str__(self):
         return self.name
+
+    def get_severity(self):
+        return self.severity

@@ -27,6 +27,10 @@ EXTENSIONS = 'extensions'
 RECURSIVE = 'recursive'
 RECURSIVE_LEVEL = 'recursive_level'
 WORDLIST = 'wordlist'
+HTTP_TIMEOUT = 'http_timeout'
+SCREENSHOT_TIMEOUT = 'screenshot_timeout'
+SCAN_TIMEOUT = 'scan_timeout'
+EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 
 ###############################################################################
 # Wordlist DEFINITIONS
@@ -39,3 +43,12 @@ AMASS_DEFAULT_WORDLIST_PATH = 'wordlist/default_wordlist/deepmagic.com-prefixes-
 ###############################################################################
 
 CONFIG_FILE_NOT_FOUND = 'Config file not found'
+
+###############################################################################
+# Preferences DEFINITIONS
+###############################################################################
+
+SMALL = '100px'
+MEDIM = '200px'
+LARGE = '400px'
+XLARGE = '500px'

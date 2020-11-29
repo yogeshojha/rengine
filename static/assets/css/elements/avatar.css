@@ -34,6 +34,15 @@
   background-color: #bfc9d4;
   color: #fff; }
 
+  .avatar .avatar-danger-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #e7515a;
+    color: #fff; }
+
 .avatar--group .avatar-xl {
   margin-left: -1.28125rem; }
 

@@ -1,19 +1,22 @@
+import os
+import requests
+
+from datetime import datetime
+
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.urls import reverse
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSchedule
+from django.utils import timezone
+from django.conf import settings
+
+from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
-from django.utils import timezone
-from django.conf import settings
-from datetime import datetime
-from reNgine.tasks import doScan
+from reNgine.tasks import doScan, create_scan_activity
 from reNgine.celery import app
-import os
-import requests
 
 
 def scan_history(request):
@@ -33,8 +36,6 @@ def detail_scan(request, id=None):
         endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
         endpoint_alive_count = WayBackEndPoint.objects.filter(
             url_of__id=id, http_status__exact=200).count()
-        subdomain_takeover_count = ScannedHost.objects.filter(
-            scan_history__id=id, takeover__isnull=False).count()
         history = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=0).count()
@@ -57,7 +58,6 @@ def detail_scan(request, id=None):
                    'endpoint_count': endpoint_count,
                    'endpoint_alive_count': endpoint_alive_count,
                    'history': history,
-                   'subdomain_takeover_count': subdomain_takeover_count,
                    'info_count': info_count,
                    'low_count': low_count,
                    'medium_count': medium_count,
@@ -226,12 +226,20 @@ def delete_scan(request, id):
 
 
 def stop_scan(request, id):
-    obj = get_object_or_404(ScanHistory, celery_id=id)
     if request.method == "POST":
+        scan_history = get_object_or_404(ScanHistory, celery_id=id)
         # stop the celery task
         app.control.revoke(id, terminate=True, signal='SIGKILL')
-        obj.scan_status = 3
-        obj.save()
+        scan_history.scan_status = 3
+        scan_history.save()
+        try:
+            last_activity = ScanActivity.objects.filter(scan_of=scan_history).order_by('-pk')[0]
+            last_activity.status = 0
+            last_activity.time = timezone.now()
+            last_activity.save()
+        except Exception as e:
+            print(e)
+        create_scan_activity(scan_history, "Scan aborted", 0)
         messageData = {'status': 'true'}
         messages.add_message(
             request,
@@ -339,6 +347,22 @@ def change_scheduled_task_status(request, id):
         task = PeriodicTask.objects.get(id=id)
         task.enabled = not task.enabled
         task.save()
+    return HttpResponse('')
+
+
+def change_vuln_status(request, id):
+    if request.method == 'POST':
+        vuln = VulnerabilityScan.objects.get(id=id)
+        vuln.open_status = not vuln.open_status
+        vuln.save()
+    return HttpResponse('')
+
+
+def change_subdomain_status(request, id):
+    if request.method == 'POST':
+        subdomain = ScannedHost.objects.get(id=id)
+        subdomain.checked = not subdomain.checked
+        subdomain.save()
     return HttpResponse('')
 
 
