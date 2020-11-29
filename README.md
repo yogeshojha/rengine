@@ -45,7 +45,7 @@
 
 ## About reNgine
 
-![](https://user-images.githubusercontent.com/17223002/95360370-e6a5ea00-08e8-11eb-848a-4639a80dbf69.png)
+![](https://user-images.githubusercontent.com/17223002/100549767-f7e0f680-329a-11eb-8a20-8b7e087c1a26.png)
 
 reNgine is an automated reconnaissance framework meant for information gathering during penetration testing of web applications. reNgine has customizable scan engines, which can be used to scan the domains, endpoints, or gather information. The beauty of reNgine is that it gathers everything in one place. It has a pipeline of reconnaissance, which is highly customizable.
 
@@ -68,8 +68,11 @@ Click below to watch the demo
 
 [![Watch the Demo](https://img.youtube.com/vi/u8_Z2-3-o2M/maxresdefault.jpg)](https://www.youtube.com/watch?v=u8_Z2-3-o2M)
 
+Version 0.5 Release Teaser
+[![Watch the Teaser](https://img.youtube.com/vi/DSOS_dkorBM/maxresdefault.jpg)](https://www.youtube.com/watch?v=DSOS_dkorBM)
+
 ### Key Features
-- Subdomain Discovery, Ports Discovery, Endpoints Discovery, Directory Bruteforce, Visual Reconnaissance (Screenshot the targets)
+- Vulnerability Scan using Nuclei, Subdomain Discovery, Ports Discovery, Endpoints Discovery, Directory Bruteforce, Visual Reconnaissance (Screenshot the targets)
 - IP Discovery, CNAME discovery, Subdomain Takeover Scan
 - Highly configurable scan engines
 - Run multiple scans in parallel
@@ -80,11 +83,11 @@ Click below to watch the demo
 ### What it is not
 
 reNgine is not a:
-* Vulnerability scanner!
 * Reconnaissance with high accuracy (No! reNgine, uses other open-source tools, to make this pipeline possible. The accuracy and capability of reNgine is also dependent on those tools)
 * Speed oriented recon framework with immediate results
 
 ### Screenshots
+
 #### Scan results
 
 ![](https://user-images.githubusercontent.com/17223002/95360568-2cfb4900-08e9-11eb-9bf4-84087b2b48d3.png)
