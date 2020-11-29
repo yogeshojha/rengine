@@ -68,9 +68,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             if '&' in search_value:
                 complex_query = search_value.split('&')
                 for query in complex_query:
-                    if query:
-                        print(query)
-                        qs = qs & self.special_lookup(query)
+                    if query.strip():
+                        qs = qs & self.special_lookup(query.strip())
             elif '|' in search_value:
                 qs = VulnerabilityScan.objects.none()
                 complex_query = search_value.split('|')
