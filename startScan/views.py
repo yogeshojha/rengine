@@ -38,15 +38,15 @@ def detail_scan(request, id=None):
             url_of__id=id, http_status__exact=200).count()
         history = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity='info').count()
+            vulnerability_of__id=id, severity=0).count()
         low_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity='low').count()
+            vulnerability_of__id=id, severity=1).count()
         medium_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity='medium').count()
+            vulnerability_of__id=id, severity=2).count()
         high_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity='high').count()
+            vulnerability_of__id=id, severity=3).count()
         critical_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity='critical').count()
+            vulnerability_of__id=id, severity=4).count()
         total_vulnerability_count = info_count + low_count + \
             medium_count + high_count + critical_count
         context = {'scan_history_active': 'true',

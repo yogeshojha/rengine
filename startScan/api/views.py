@@ -21,6 +21,174 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
         else:
             return self.queryset
 
+    def filter_queryset(self, qs):
+        qs = self.queryset.filter()
+        search_value = self.request.GET.get(u'search[value]', None)
+        _order_col = self.request.GET.get(u'order[0][column]', None)
+        _order_direction = self.request.GET.get(u'order[0][dir]', None)
+        order_col = 'content_length'
+        if _order_col == '0':
+            order_col = 'checked'
+        elif _order_col == '1':
+            order_col = 'subdomain'
+        elif _order_col == '2':
+            order_col = 'ip_address'
+        elif _order_col == '3':
+            order_col = 'http_status'
+        elif _order_col == '4':
+            order_col = 'open_ports'
+        elif _order_col == '5':
+            order_col = 'content_length'
+        elif _order_col == '6':
+            order_col = 'page_title'
+        elif _order_col == '6':
+            order_col = 'technology_stack'
+        if _order_direction == 'desc':
+            order_col = '-{}'.format(order_col)
+        # if the search query is separated by = means, it is a specific lookup
+        # divide the search query into two half and lookup
+        if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+            if '&' in search_value:
+                complex_query = search_value.split('&')
+                for query in complex_query:
+                    if query.strip():
+                        qs = qs & self.special_lookup(query.strip())
+            elif '|' in search_value:
+                qs = ScannedHost.objects.none()
+                complex_query = search_value.split('|')
+                for query in complex_query:
+                    if query.strip():
+                        qs = self.special_lookup(query.strip()) | qs
+            else:
+                qs = self.special_lookup(search_value)
+        else:
+            qs = self.general_lookup(search_value)
+        return qs.order_by(order_col)
+
+    def general_lookup(self, search_value):
+        qs = self.queryset.filter(
+            Q(discovered_date__icontains=search_value) |
+            Q(subdomain__icontains=search_value) |
+            Q(cname__icontains=search_value) |
+            Q(open_ports__icontains=search_value) |
+            Q(http_status__icontains=search_value) |
+            Q(content_length__icontains=search_value) |
+            Q(page_title__icontains=search_value) |
+            Q(http_url__icontains=search_value) |
+            Q(ip_address__icontains=search_value) |
+            Q(is_ip_cdn__icontains=search_value) |
+            Q(screenshot_path__icontains=search_value) |
+            Q(http_header_path__icontains=search_value) |
+            Q(technology_stack__icontains=search_value) |
+            Q(directory_json__icontains=search_value) |
+            Q(checked__icontains=search_value) |
+            Q(discovered_date__icontains=search_value))
+
+        return qs
+
+    def special_lookup(self, search_value):
+        qs = self.queryset.filter()
+        print(search_value)
+        if '=' in search_value:
+            search_param = search_value.split("=")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'subdomain' in lookup_title:
+                qs = self.queryset.filter(subdomain__icontains=lookup_content)
+            elif 'cname' in lookup_title:
+                qs = self.queryset.filter(cname__icontains=lookup_content)
+            elif 'ports' in lookup_title or 'open_ports' in lookup_title:
+                qs = self.queryset.filter(open_ports__icontains=lookup_content)
+            elif 'ip_address' in lookup_title or 'ip' in lookup_title:
+                qs = self.queryset.filter(ip_address__icontains=lookup_content)
+            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
+                qs = self.queryset.filter(technology_stack__icontains=lookup_content)
+            elif 'http_status' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.filter(http_status=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.filter(content_length=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'cdn' in lookup_title:
+                if lookup_content == 'true':
+                    qs = self.queryset.filter(is_ip_cdn=True)
+                elif lookup_content == 'false':
+                    qs = self.queryset.filter(is_ip_cdn=False)
+            elif 'status' in lookup_title:
+                if lookup_content == 'open':
+                    qs = self.queryset.filter(checked=False)
+                elif lookup_content == 'closed':
+                    qs = self.queryset.filter(checked=True)
+        elif '>' in search_value:
+            search_param = search_value.split(">")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'http_status' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(http_status__gt=int_val)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(content_length__gt=int_val)
+                except Exception as e:
+                    print(e)
+        elif '<' in search_value:
+            search_param = search_value.split("<")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'http_status' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(http_status__lt=int_val)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(content_length__lt=int_val)
+                except Exception as e:
+                    print(e)
+        elif '!' in search_value:
+            search_param = search_value.split("!")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'subdomain' in lookup_title:
+                qs = self.queryset.exclude(subdomain__icontains=lookup_content)
+            elif 'cname' in lookup_title:
+                qs = self.queryset.exclude(cname__icontains=lookup_content)
+            elif 'ports' in lookup_title or 'open_ports' in lookup_title:
+                qs = self.queryset.exclude(open_ports__icontains=lookup_content)
+            elif 'ip_address' in lookup_title or 'ip' in lookup_title:
+                qs = self.queryset.exclude(ip_address__icontains=lookup_content)
+            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
+                qs = self.queryset.exclude(technology_stack__icontains=lookup_content)
+            elif 'http_status' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.exclude(http_status=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'cdn' in lookup_title:
+                if lookup_content == 'true':
+                    qs = self.queryset.exclude(is_ip_cdn=True)
+                elif lookup_content == 'false':
+                    qs = self.queryset.exclude(is_ip_cdn=False)
+            elif 'status' in lookup_title:
+                if lookup_content == 'open':
+                    qs = self.queryset.exclude(checked=False)
+                elif lookup_content == 'closed':
+                    qs = self.queryset.exclude(checked=True)
+        return qs
+
 
 class EndPointViewSet(viewsets.ModelViewSet):
     queryset = WayBackEndPoint.objects.all()
@@ -62,22 +230,22 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
         search_value = self.request.GET.get(u'search[value]', None)
-        _order_col = self.request.GET.get(u'order[0][column]', None)
+        column = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'discovered_date'
-        if _order_col == 0:
+        if column == '0':
             order_col = 'open_status'
-        elif _order_col == 1:
+        elif column == '1':
             order_col = 'title'
-        elif _order_col == 2:
+        elif column == '2':
             order_col = 'severity'
-        elif _order_col == 3:
+        elif column == '3':
             order_col = 'url'
-        elif _order_col == 4:
+        elif column == '4':
             order_col = 'description'
-        elif _order_col == 5:
-            order_col = 'discovered_date'
-        elif _order_col == 6:
+        elif column == '5':
+            column = 'discovered_date'
+        elif column == '6':
             order_col = 'open_status'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
@@ -120,7 +288,19 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             lookup_title = search_param[0].lower()
             lookup_content = search_param[1].lower()
             if 'severity' in lookup_title:
-                qs = self.queryset.filter(severity__icontains=lookup_content)
+                severity_value = ''
+                if lookup_content == 'info':
+                    severity_value = 0
+                elif lookup_content == 'low':
+                    severity_value = 1
+                elif lookup_content == 'medium':
+                    severity_value = 2
+                elif lookup_content == 'high':
+                    severity_value = 3
+                elif lookup_content == 'critical':
+                    severity_value = 4
+                if severity_value:
+                    qs = self.queryset.filter(severity=severity_value)
             elif 'title' in lookup_title:
                 qs = self.queryset.filter(name__icontains=lookup_content)
             elif 'vulnerable_url' in lookup_title:
