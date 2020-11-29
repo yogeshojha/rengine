@@ -78,6 +78,7 @@ Version 0.5 Release Teaser
 - Run multiple scans in parallel
 - Run Clocked Scans (Run reconnaissance exactly at X Hours and Y minutes)
 - Run Periodic Scans (Runs reconnaissance every X minutes/hours/days/week)
+- [Advanced lookup in Recon Results](https://rengine.wiki/pentester/search/)
 
 
 ### What it is not
@@ -99,6 +100,12 @@ reNgine is not a:
 ![](https://user-images.githubusercontent.com/17223002/95360993-c62a5f80-08e9-11eb-8890-124a99c98dca.png)
 
 Of course, at this point, reNgine does not give the best of the best result compared to other tools, but reNgine has certainly minimal efforts. Also, I am continuously adding new features. You may help me on this journey by creating a PR filled with new features and bug fixes. Please have a look at the [Contributing](#contributing) section before doing so.
+
+#### Advanced Lookup
+
+![](https://rengine.wiki/static/query_2.png)
+
+![](https://rengine.wiki/static/query_3.png)
 
 ## Installation
 
