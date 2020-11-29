@@ -64,7 +64,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         # if the search query is separated by : means, it is a specific lookup
         # divide the search query into two half and lookup
         if ':' in search_value:
-            search_param = search_value.split(":")
+            search_param = search_value.split("=")
             lookup_title = search_param[0].lower()
             lookup_content = search_param[1].lower()
             if 'severity' in lookup_title:
