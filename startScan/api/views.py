@@ -102,7 +102,8 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             elif 'ip_address' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.filter(ip_address__icontains=lookup_content)
             elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
-                qs = self.queryset.filter(technology_stack__icontains=lookup_content)
+                qs = self.queryset.filter(
+                    technology_stack__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -166,11 +167,14 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             elif 'cname' in lookup_title:
                 qs = self.queryset.exclude(cname__icontains=lookup_content)
             elif 'ports' in lookup_title or 'open_ports' in lookup_title:
-                qs = self.queryset.exclude(open_ports__icontains=lookup_content)
+                qs = self.queryset.exclude(
+                    open_ports__icontains=lookup_content)
             elif 'ip_address' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.exclude(ip_address__icontains=lookup_content)
+                qs = self.queryset.exclude(
+                    ip_address__icontains=lookup_content)
             elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
-                qs = self.queryset.exclude(technology_stack__icontains=lookup_content)
+                qs = self.queryset.exclude(
+                    technology_stack__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -251,7 +255,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
-        if '=' in search_value or '&' in search_value or '|' in search_value:
+        if '=' in search_value or '&' in search_value or '|' in search_value or '!' in search_value:
             if '&' in search_value:
                 complex_query = search_value.split('&')
                 for query in complex_query:
@@ -314,6 +318,43 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     qs = self.queryset.filter(open_status=False)
             elif 'description' in lookup_title:
                 qs = self.queryset.filter(
+                    Q(description__icontains=lookup_content) |
+                    Q(template_used__icontains=lookup_content) |
+                    Q(extracted_results__icontains=lookup_content) |
+                    Q(matcher_name__icontains=lookup_content))
+        elif '!' in search_value:
+            search_param = search_value.split("!")
+            lookup_title = search_param[0].lower()
+            lookup_content = search_param[1].lower()
+            if 'severity' in lookup_title:
+                # TODO: figure out this BS
+                severity_value = 5
+                if lookup_content == 'info':
+                    severity_value = 0
+                elif lookup_content == 'low':
+                    severity_value = 1
+                elif lookup_content == 'medium':
+                    severity_value = 2
+                elif lookup_content == 'high':
+                    severity_value = 3
+                elif lookup_content == 'critical':
+                    severity_value = 4
+                print("severity_value" + str(severity_value))
+                if severity_value < 5:
+                    qs = self.queryset.exclude(severity=severity_value)
+            elif 'title' in lookup_title:
+                qs = self.queryset.exclude(name__icontains=lookup_content)
+            elif 'vulnerable_url' in lookup_title:
+                qs = self.queryset.exclude(url__icontains=lookup_content)
+            elif 'url' in lookup_title:
+                qs = self.queryset.exclude(url__icontains=lookup_content)
+            elif 'status' in lookup_title:
+                if lookup_content == 'open':
+                    qs = self.queryset.exclude(open_status=True)
+                elif lookup_content == 'closed':
+                    qs = self.queryset.exclude(open_status=False)
+            elif 'description' in lookup_title:
+                qs = self.queryset.exclude(
                     Q(description__icontains=lookup_content) |
                     Q(template_used__icontains=lookup_content) |
                     Q(extracted_results__icontains=lookup_content) |
