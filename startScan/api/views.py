@@ -60,14 +60,24 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         return self.queryset
 
     def filter_queryset(self, qs):
+        qs = self.queryset.filter()
         search_value = self.request.GET.get(u'search[value]', None)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
         if '=' in search_value or '&' in search_value or '|' in search_value:
             if '&' in search_value:
                 complex_query = search_value.split('&')
+                for query in complex_query:
+                    if query:
+                        print(query)
+                        qs = qs & self.special_lookup(query)
             elif '|' in search_value:
+                qs = VulnerabilityScan.objects.none()
+                print(search_value)
                 complex_query = search_value.split('|')
+                for query in complex_query:
+                    if query:
+                        qs = self.special_lookup(query) | qs
             else:
                 qs = self.special_lookup(search_value)
         else:
@@ -88,22 +98,27 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def special_lookup(self, search_value):
         qs = self.queryset.filter()
-        search_param = search_value.split("=")
-        lookup_title = search_param[0].lower()
-        lookup_content = search_param[1].lower()
-        if 'severity' in lookup_title:
-            qs = self.queryset.filter(severity__icontains=lookup_content)
-        elif 'title' in lookup_title:
-            qs = self.queryset.filter(name__icontains=lookup_content)
-        elif 'status' in lookup_title:
-            if lookup_content == 'open':
-                qs = self.queryset.filter(open_status=True)
-            elif lookup_content == 'closed':
-                qs = self.queryset.filter(open_status=False)
-        elif 'description' in lookup_title:
-            qs = self.queryset.filter(
-                Q(description__icontains=lookup_content) |
-                Q(template_used__icontains=lookup_content) |
-                Q(extracted_results__icontains=lookup_content) |
-                Q(matcher_name__icontains=lookup_content))
+        if '=' in search_value:
+            search_param = search_value.split("=")
+            lookup_title = search_param[0].lower()
+            lookup_content = search_param[1].lower()
+            if 'severity' in lookup_title:
+                qs = self.queryset.filter(severity__icontains=lookup_content)
+            elif 'title' in lookup_title:
+                qs = self.queryset.filter(name__icontains=lookup_content)
+            elif 'vulnerable_url' in lookup_title:
+                qs = self.queryset.filter(url__icontains=lookup_content)
+            elif 'url' in lookup_title:
+                qs = self.queryset.filter(url__icontains=lookup_content)
+            elif 'status' in lookup_title:
+                if lookup_content == 'open':
+                    qs = self.queryset.filter(open_status=True)
+                elif lookup_content == 'closed':
+                    qs = self.queryset.filter(open_status=False)
+            elif 'description' in lookup_title:
+                qs = self.queryset.filter(
+                    Q(description__icontains=lookup_content) |
+                    Q(template_used__icontains=lookup_content) |
+                    Q(extracted_results__icontains=lookup_content) |
+                    Q(matcher_name__icontains=lookup_content))
         return qs
