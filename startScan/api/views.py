@@ -61,35 +61,49 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def filter_queryset(self, qs):
         search_value = self.request.GET.get(u'search[value]', None)
-        # if the search query is separated by : means, it is a specific lookup
+        # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
-        if ':' in search_value:
-            search_param = search_value.split("=")
-            lookup_title = search_param[0].lower()
-            lookup_content = search_param[1].lower()
-            if 'severity' in lookup_title:
-                return self.queryset.filter(severity__icontains=lookup_content)
-            elif 'title' in lookup_title:
-                return self.queryset.filter(name__icontains=lookup_content)
-            elif 'status' in lookup_title:
-                if lookup_content == 'open':
-                    return self.queryset.filter(open_status=True)
-                elif lookup_content == 'closed':
-                    return self.queryset.filter(open_status=False)
-            elif 'description' in lookup_title:
-                return self.queryset.filter(
-                    Q(
-                        description__icontains=lookup_content) | Q(
-                        template_used__icontains=lookup_content) | Q(
-                        extracted_results__icontains=lookup_content) | Q(
-                        matcher_name__icontains=lookup_content))
+        if '=' in search_value or '&' in search_value or '|' in search_value:
+            if '&' in search_value:
+                complex_query = search_value.split('&')
+            elif '|' in search_value:
+                complex_query = search_value.split('|')
+            else:
+                qs = self.special_lookup(search_value)
         else:
-            qs = self.queryset.filter(Q(discovered_date__icontains=search_value)
-                    | Q(url__icontains=search_value)
-                    | Q(name__icontains=search_value)
-                    | Q(severity__icontains=search_value)
-                    | Q(description__icontains=search_value)
-                    | Q(extracted_results__icontains=search_value)
-                    | Q(template_used__icontains=search_value)
-                    | Q(matcher_name__icontains=search_value))
+            qs = self.general_lookup(search_value)
+        return qs
+
+    def general_lookup(self, search_value):
+        qs = self.queryset.filter(
+            Q(discovered_date__icontains=search_value) |
+            Q(url__icontains=search_value) |
+            Q(name__icontains=search_value) |
+            Q(severity__icontains=search_value) |
+            Q(description__icontains=search_value) |
+            Q(extracted_results__icontains=search_value) |
+            Q(template_used__icontains=search_value) |
+            Q(matcher_name__icontains=search_value))
+        return qs
+
+    def special_lookup(self, search_value):
+        qs = self.queryset.filter()
+        search_param = search_value.split("=")
+        lookup_title = search_param[0].lower()
+        lookup_content = search_param[1].lower()
+        if 'severity' in lookup_title:
+            qs = self.queryset.filter(severity__icontains=lookup_content)
+        elif 'title' in lookup_title:
+            qs = self.queryset.filter(name__icontains=lookup_content)
+        elif 'status' in lookup_title:
+            if lookup_content == 'open':
+                qs = self.queryset.filter(open_status=True)
+            elif lookup_content == 'closed':
+                qs = self.queryset.filter(open_status=False)
+        elif 'description' in lookup_title:
+            qs = self.queryset.filter(
+                Q(description__icontains=lookup_content) |
+                Q(template_used__icontains=lookup_content) |
+                Q(extracted_results__icontains=lookup_content) |
+                Q(matcher_name__icontains=lookup_content))
         return qs
