@@ -207,6 +207,131 @@ class EndPointViewSet(viewsets.ModelViewSet):
         else:
             return self.queryset
 
+    def filter_queryset(self, qs):
+        qs = self.queryset.filter()
+        search_value = self.request.GET.get(u'search[value]', None)
+        _order_col = self.request.GET.get(u'order[0][column]', None)
+        _order_direction = self.request.GET.get(u'order[0][dir]', None)
+        order_col = 'content_length'
+        if _order_col == '0':
+            order_col = 'http_url'
+        elif _order_col == '1':
+            order_col = 'http_status'
+        elif _order_col == '2':
+            order_col = 'content_type'
+        elif _order_col == '3':
+            order_col = 'content_length'
+        elif _order_col == '4':
+            order_col = 'page_title'
+        if _order_direction == 'desc':
+            order_col = '-{}'.format(order_col)
+        # if the search query is separated by = means, it is a specific lookup
+        # divide the search query into two half and lookup
+        if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+            if '&' in search_value:
+                complex_query = search_value.split('&')
+                for query in complex_query:
+                    if query.strip():
+                        qs = qs & self.special_lookup(query.strip())
+            elif '|' in search_value:
+                qs = ScannedHost.objects.none()
+                complex_query = search_value.split('|')
+                for query in complex_query:
+                    if query.strip():
+                        qs = self.special_lookup(query.strip()) | qs
+            else:
+                qs = self.special_lookup(search_value)
+        else:
+            qs = self.general_lookup(search_value)
+        return qs.order_by(order_col)
+
+    def general_lookup(self, search_value):
+        qs = self.queryset.filter(
+            Q(http_url__icontains=search_value) |
+            Q(content_length__icontains=search_value) |
+            Q(page_title__icontains=search_value) |
+            Q(http_status__icontains=search_value) |
+            Q(content_type__icontains=search_value) |
+            Q(discovered_date__icontains=search_value))
+        return qs
+
+    def special_lookup(self, search_value):
+        qs = self.queryset.filter()
+        print(search_value)
+        if '=' in search_value:
+            search_param = search_value.split("=")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'url' in lookup_title or 'http_url' in lookup_title:
+                qs = self.queryset.filter(http_url__icontains=lookup_content)
+            elif 'http_status' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.filter(http_status=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.filter(content_length=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'content_type' in lookup_title or 'ip' in lookup_title:
+                qs = self.queryset.filter(content_type__icontains=lookup_content)
+        elif '>' in search_value:
+            search_param = search_value.split(">")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'http_status' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(http_status__gt=int_val)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(content_length__gt=int_val)
+                except Exception as e:
+                    print(e)
+        elif '<' in search_value:
+            search_param = search_value.split("<")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'http_status' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(http_status__lt=int_val)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_val = int(lookup_content)
+                    qs = self.queryset.filter(content_length__lt=int_val)
+                except Exception as e:
+                    print(e)
+        elif '!' in search_value:
+            search_param = search_value.split("!")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'url' in lookup_title or 'http_url' in lookup_title:
+                qs = self.queryset.exclude(http_url__icontains=lookup_content)
+            elif 'http_status' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.exclude(http_status=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.exclude(content_length=int_http_status)
+                except Exception as e:
+                    print(e)
+            elif 'content_type' in lookup_title or 'ip' in lookup_title:
+                qs = self.queryset.exclude(content_type__icontains=lookup_content)
+        return qs
+
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
     queryset = VulnerabilityScan.objects.all().order_by('-discovered_date')
