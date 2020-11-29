@@ -73,11 +73,10 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                         qs = qs & self.special_lookup(query)
             elif '|' in search_value:
                 qs = VulnerabilityScan.objects.none()
-                print(search_value)
                 complex_query = search_value.split('|')
                 for query in complex_query:
-                    if query:
-                        qs = self.special_lookup(query) | qs
+                    if query.strip():
+                        qs = self.special_lookup(query.strip()) | qs
             else:
                 qs = self.special_lookup(search_value)
         else:
