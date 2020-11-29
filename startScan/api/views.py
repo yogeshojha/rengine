@@ -37,7 +37,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
-    queryset = VulnerabilityScan.objects.all()
+    queryset = VulnerabilityScan.objects.all().order_by('-discovered_date')
     serializer_class = VulnerabilitySerializer
 
     def get_queryset(self):
@@ -62,6 +62,25 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
         search_value = self.request.GET.get(u'search[value]', None)
+        _order_col = self.request.GET.get(u'order[0][column]', None)
+        _order_direction = self.request.GET.get(u'order[0][dir]', None)
+        order_col = 'discovered_date'
+        if _order_col == 0:
+            order_col = 'open_status'
+        elif _order_col == 1:
+            order_col = 'title'
+        elif _order_col == 2:
+            order_col = 'severity'
+        elif _order_col == 3:
+            order_col = 'url'
+        elif _order_col == 4:
+            order_col = 'description'
+        elif _order_col == 5:
+            order_col = 'discovered_date'
+        elif _order_col == 6:
+            order_col = 'open_status'
+        if _order_direction == 'desc':
+            order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
         if '=' in search_value or '&' in search_value or '|' in search_value:
@@ -80,7 +99,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                 qs = self.special_lookup(search_value)
         else:
             qs = self.general_lookup(search_value)
-        return qs
+        return qs.order_by(order_col)
 
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
