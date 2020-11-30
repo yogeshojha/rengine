@@ -223,6 +223,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 os.system(
                     'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
 
+            #findomain integration
+            if 'findomain' in tools:
+                findomain_command = '/app/tools/findomain -t {} -u {}/from_findomain.txt'.format(
+                    domain.domain_name, current_scan_dir)
+                
+                #Run Findomain
+                logging.info(findomain_command)
+                os.system(findomain_command)
+
             '''
             All tools have gathered the list of subdomains with filename
             initials as from_*
