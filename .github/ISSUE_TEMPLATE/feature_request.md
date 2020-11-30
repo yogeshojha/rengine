@@ -3,7 +3,7 @@ name: "\U0001F680 Feature request"
 about: Suggest an idea for this project
 title: Feature - Your Awesome feature title
 labels: feature_request
-assignees: ''
+assignees: 'yogeshojha'
 
 ---
 
