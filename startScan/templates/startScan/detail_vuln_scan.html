@@ -94,7 +94,7 @@ $(document).ready(function() {
 		'serverSide': true,
 		'orderCellsTop': true,
 		'fixedHeader': true,
-		'order': [5, 'desc'],
+		'order': [2, 'desc'],
 		{% if scan_history_id %}
 		"ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
 		{% else %}
