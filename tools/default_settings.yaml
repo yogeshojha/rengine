@@ -1,18 +1,17 @@
 subdomain_discovery:
-    uses_tool: [ amass-passive, subfinder, sublist3r ]
+    uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder, oneforall ]
     thread: 10
-    amass_wordlist: default
-    subfinder_config: config_short_name
-    amass_config: config_short_name
 
 port_scan:
     ports: [ top-100 ]
-    exclude_ports: null
     thread: 10
 
 visual_identification:
     port: xlarge
     thread: 2
+    http_timeout: 3000
+    screenshot_timeout: 30000
+    scan_timeout: 100
 
 dir_file_search:
     extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
@@ -23,10 +22,9 @@ dir_file_search:
 
 fetch_url:
     uses_tool: [ gau, hakrawler ]
-    # intensity will define how the URLs will be fetched
-    # Available Options: normal, aggressive
-    # normal: will fetch urls only for the main domain, subdomains urls will not be fetched
-    # aggressive: will fetch urls for all the subdomains
-    intensity: aggressive
+    intensity: normal
 
-# To learn more about YAML config visit the official documentation at https://rengine.wiki/pentester/scan_engine/
+vulnerability_scan:
+    concurrent: 10
+    template: [all]
+    severity: [critical, high, medium, low, info]
