@@ -361,7 +361,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         search_value = self.request.GET.get(u'search[value]', None)
         column = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
-        order_col = 'discovered_date'
+        order_col = 'severity'
         if column == '0':
             order_col = 'open_status'
         elif column == '1':
