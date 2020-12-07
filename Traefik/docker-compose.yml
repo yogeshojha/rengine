@@ -1,0 +1,25 @@
+version: '3.5'
+
+services:
+  traefik:
+    image: traefik:v2.2
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yml:/traefik.yml:ro
+      - ./config/acme.json:/acme.json
+      - ./config/config.yml:/config.yml:ro
+      - ./log:/log
+
+networks:
+  traefik-proxy:
+    name: traefik-proxy

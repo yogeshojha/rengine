@@ -1,0 +1,41 @@
+http:
+  middlewares:
+    https-redirect:
+      redirectScheme:
+        scheme: https
+
+    default-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    secured:
+      chain:
+        middlewares:
+        - default-headers
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      sniStrict: true
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+        - TLS_CHACHA20_POLY1305_SHA256
+        - TLS_AES_256_GCM_SHA384
+      curvePreferences:
+        - CurveP521
+        - CurveP384
+
+    mintls13:
+      minVersion: VersionTLS13
+      sniStrict: true
+      curvePreferences:
+        - CurveP521
+        - CurveP384
