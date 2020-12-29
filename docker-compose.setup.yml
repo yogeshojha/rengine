@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 services:
   certs:
     build: ./certs
@@ -12,5 +12,3 @@ services:
       - CITY=${CITY:-City}
     volumes:
       - ./secrets/certs:/certs:rw
-
-
