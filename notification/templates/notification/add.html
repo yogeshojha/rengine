@@ -17,7 +17,8 @@ Add new Notification Hook
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-{% include 'notification/_items/add_hook_form.html' with button_title="Submit" widget_title="Add Slack Notification Hook" %}
+{% include 'notification/_items/add_hook_form.html' with service_name="Slack" logo="/staticfiles/img/slack.svg" api_guide_url="https://api.slack.com/messaging/webhooks" web_hook_format="https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX" button_title="Submit" hook_name=slack_form.hook_name hook_url=slack_form.hook_url send_notif=slack_form.send_notif errors=slack_form.errors %}
+{% include 'notification/_items/add_hook_form.html' with service_name="Discord" logo="/staticfiles/img/discord.svg" api_guide_url="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" web_hook_format="https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" button_title="Submit" hook_name=discord_form.hook_name hook_url=discord_form.hook_url send_notif=discord_form.send_notif errors=discord_form.errors %}
 {% endblock main_content %}
 
 

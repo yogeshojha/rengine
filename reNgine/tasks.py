@@ -742,11 +742,13 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
 def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    # notify on slack
-    scan_status_msg = {
-        'text': message}
+    scan_status_msg = {}
     headers = {'content-type': 'application/json'}
     for notif in notif_hook:
+        if ('slack.com' in notif.hook_url):
+            scan_status_msg['text'] = message
+        elif ('discord.com' in notif.hook_url):
+            scan_status_msg['content'] = message
         requests.post(
             notif.hook_url,
             data=json.dumps(scan_status_msg),
