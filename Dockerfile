@@ -31,7 +31,7 @@ ENV PATH="${PATH}:${GOPATH}/bin"
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/httpx
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder
-RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/subfinder
+RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/nuclei
 RUN GO111MODULE=on go get -u -v github.com/projectdiscovery/naabu
 RUN GO111MODULE=on go get -u -v github.com/lc/gau
 
