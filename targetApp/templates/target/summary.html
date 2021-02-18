@@ -1,0 +1,135 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_tags %}
+{% block title %}
+{% if scan_history_id %}
+Scan history
+{% else %}
+All Subdomains
+{% endif %}
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
+<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
+<script src="{% static 'custom/custom.js' %}"></script>
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+Target Summary for yogeshojha.com
+{% endblock breadcrumb_title %}
+
+
+{% block main_content %}
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
+	{% if scan_history_id %}
+	<div class="row layout-top-spacing">
+		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+			<div class="widget widget-one_hybrid">
+				<div class="widget-heading">
+					<div class="w-icon text-info">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="2" y1="12" x2="22" y2="12"></line>
+							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+						</svg>
+					</div>
+					&nbsp;
+					<h2 class="text-warning">{{subdomain_count}}</h2>
+					<h6 class="">Subdomains Discovered</h6>
+				</div>
+				<div class="widget-content">
+					Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+					<br>
+					<a href="#subdomainDiscovered" class="text-info">View all subdomains</a>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+			<div class="widget widget-one_hybrid">
+				<div class="widget-heading">
+					<div class="w-icon text-info">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+							<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+							<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+						</svg>
+					</div>
+					&nbsp;
+					<h2 class="text-warning">{{endpoint_count}}</h2>
+					<h6 class="">Endpoints</h6>
+				</div>
+				<div class="widget-content">
+					Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
+					<br>
+					<a href="endpoint/{{scan_history_id}}" class="text-info">View all Endpoints</a>
+				</div>
+			</div>
+		</div>
+		{% if history.scan_type.vulnerability_scan %}
+		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+			<div class="widget widget-one_hybrid">
+				<div class="widget-heading">
+					<div class="w-icon text-danger">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+						</svg>
+					</div>
+					&nbsp;
+					<h2 class="text-danger">{{total_vulnerability_count}}</h2>
+					<h6 class="">Vulnerabilities Discovered</h6>
+				</div>
+				<div class="widget-content">
+					<span class="text-danger">{{critical_count}} Critical and {{high_count}} High</span>
+					<br>
+					<a href="vuln/{{scan_history_id}}" class="text-info">View all Vulnerabilities</a>
+				</div>
+			</div>
+		</div>
+		{% else %}
+		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+			<div class="widget widget-one_hybrid">
+				<div class="widget-heading">
+					<div class="w-icon text-danger">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+						</svg>
+					</div>
+					&nbsp;
+					<h2 class="text-danger">0</h2>
+					<h6 class="">Vulnerabilities Discovered</h6>
+				</div>
+				<div class="widget-content">
+					<small class="text-info">Vulnerability scan hasn't been performed.</small>
+					<br>
+					<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
+					<br>
+				</div>
+			</div>
+		</div>
+		{% endif %}
+	</div>
+	{% endif %}
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+
+<script type="text/javascript">
+</script>
+{% endblock page_level_script %}

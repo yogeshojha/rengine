@@ -162,3 +162,9 @@ def update_target_form(request, id):
         "domain": domain,
         "form": form}
     return render(request, 'target/update.html', context)
+
+
+def target_summary(request, id):
+    target = get_object_or_404(Domain, id=id)
+    context = {}
+    return render(request, 'target/summary.html', context)
