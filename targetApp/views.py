@@ -173,57 +173,6 @@ def update_target_form(request, id):
 
 
 def target_summary(request, id):
-    context = {}
     target = get_object_or_404(Domain, id=id)
-    context['target'] = target
-    context['scan_count'] = ScanHistory.objects.filter(
-        domain_name_id=id).count()
-    last_week = timezone.now() - timedelta(days=7)
-    context['this_week_scan_count'] = ScanHistory.objects.filter(
-        domain_name_id=id, last_scan_date__gte=last_week).count()
-    subdomain_count = ScannedHost.objects.filter(
-        target_domain__id=id).values('subdomain').distinct().count()
-    endpoint_count = WayBackEndPoint.objects.filter(
-        target_domain__id=id).values('http_url').distinct().count()
-    vulnerability_count = VulnerabilityScan.objects.filter(
-        target_domain__id=id).count()
-    context['subdomain_count'] = subdomain_count
-    context['endpoint_count'] = endpoint_count
-    context['vulnerability_count'] = vulnerability_count
-    if ScanHistory.objects.filter(domain_name=id).count() > 1:
-        subdomain_count_query = ScanHistory.objects.filter(
-            domain_name=id).order_by('-last_scan_date')[0:2]
-        context['subdomain_difference'] = ScannedHost.objects.filter(
-            scan_history__id=subdomain_count_query[0].id).count() - ScannedHost.objects.filter(
-            scan_history__id=subdomain_count_query[1].id).count()
-
-        context['endpoint_difference'] = WayBackEndPoint.objects.filter(
-            url_of__id=subdomain_count_query[0].id).count() - WayBackEndPoint.objects.filter(
-            url_of__id=subdomain_count_query[1].id).count()
-
-        context['vulnerability_difference'] = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=subdomain_count_query[0].id).count() - VulnerabilityScan.objects.filter(
-            vulnerability_of__id=subdomain_count_query[1].id).count()
-    else:
-        context['subdomain_difference'] = subdomain_count
-        context['endpoint_difference'] = endpoint_count
-        context['vulnerability_difference'] = vulnerability_count
-    context['recent_scans'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-last_scan_date')[:3]
-    context['info_count'] = VulnerabilityScan.objects.filter(
-        target_domain=id).filter(severity=0).count()
-    context['low_count'] = VulnerabilityScan.objects.filter(
-        target_domain=id).filter(severity=1).count()
-    context['medium_count'] = VulnerabilityScan.objects.filter(
-        target_domain=id).filter(severity=2).count()
-    context['high_count'] = VulnerabilityScan.objects.filter(
-        target_domain=id).filter(severity=3).count()
-    context['critical_count'] = VulnerabilityScan.objects.filter(
-        target_domain=id).filter(severity=4).count()
-    context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values(
-        "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
-    context['interesting_subdomain'] = get_interesting_subdomains(target=id)
-    context['interesting_endpoint'] = get_interesting_endpoint(target=id)
-    context['scan_history'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-last_scan_date')
+    context = {}
     return render(request, 'target/summary.html', context)
