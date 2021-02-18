@@ -64,7 +64,7 @@ List all Target for Recon
                   {% else %}
                   <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
                   {% endif %}
-                  <td class="text-center"><a href="#" class="btn btn-outline-primary">View</a></td>
+                  <td class="text-center"><a href="{% url 'target_summary' domain.id %}" class="btn btn-outline-primary">View</a></td>
                   <td class="text-center">
                     <a href="{% url 'start_scan' domain.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
