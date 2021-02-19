@@ -753,12 +753,8 @@ def send_notification(message):
                 data=json.dumps(scan_status_msg),
                 headers=headers)
         elif 'discordapp.com' in notif.hook_url:
-            logging.info(message)
-            logging.info(notif.hook_url)
             webhook = DiscordWebhook(url=notif.hook_url, content=message)
-            response = webhook.execute()
-            logging.info(response)
-
+            webhook.execute()
 
 
 def scan_failed(task):
