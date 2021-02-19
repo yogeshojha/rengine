@@ -1,43 +1,40 @@
-<div class="col-lg-12 layout-spacing">
-    <div class="statbox widget box box-shadow">
-        <div class="widget-header">
-            <div class="row layout-top-spacing">
-                <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-                    <h4>{{widget_title}}</h4>
-                </div>
-                <div class="infobox-3 m-4">
-                    <div class="info-icon">
-                        <svg enable-background="new 0 0 24 24" height="512" viewBox="0 0 24 24" width="512" xmlns="http://www.w3.org/2000/svg"><path d="m8.843 12.651c-1.392 0-2.521 1.129-2.521 2.521v6.306c0 1.392 1.129 2.521 2.521 2.521s2.521-1.129 2.521-2.521v-6.306c-.001-1.392-1.13-2.521-2.521-2.521z" fill="#e91e63"/><path d="m.019 15.172c0 1.393 1.13 2.523 2.523 2.523s2.523-1.13 2.523-2.523v-2.523h-2.521c-.001 0-.001 0-.002 0-1.393 0-2.523 1.13-2.523 2.523z" fill="#e91e63"/><path d="m8.846-.001c-.001 0-.002 0-.003 0-1.393 0-2.523 1.13-2.523 2.523s1.13 2.523 2.523 2.523h2.521v-2.523c0-.001 0-.003 0-.005-.001-1.391-1.128-2.518-2.518-2.518z" fill="#00bcd4"/><path d="m2.525 11.37h6.318c1.393 0 2.523-1.13 2.523-2.523s-1.13-2.523-2.523-2.523h-6.318c-1.393 0-2.523 1.13-2.523 2.523s1.13 2.523 2.523 2.523z" fill="#00bcd4"/><path d="m21.457 6.323c-1.391 0-2.518 1.127-2.518 2.518v.005 2.523h2.521c1.393 0 2.523-1.13 2.523-2.523s-1.13-2.523-2.523-2.523c-.001 0-.002 0-.003 0z" fill="#4caf50"/><path d="m12.641 2.522v6.325c0 1.392 1.129 2.521 2.521 2.521s2.521-1.129 2.521-2.521v-6.325c0-1.392-1.129-2.521-2.521-2.521-1.392 0-2.521 1.129-2.521 2.521z" fill="#4caf50"/><g fill="#ff9800"><path d="m17.682 21.476c0-1.392-1.129-2.521-2.521-2.521h-2.521v2.523c.001 1.391 1.129 2.519 2.521 2.519s2.521-1.129 2.521-2.521z"/><path d="m21.479 12.649h-6.318c-1.393 0-2.523 1.13-2.523 2.523s1.13 2.523 2.523 2.523h6.318c1.393 0 2.523-1.13 2.523-2.523s-1.13-2.523-2.523-2.523z"/></g></svg>
-                    </div>
-                    <h5 class="info-heading">Support for Slack</h5>
-                    <p class="info-text">Currently the notification service works only with slack. While in the future we might bring support for collaboration tools like Microsoft Teams and others, as of now we do not have any immediate plans to integrate with other collaboration platform.</p>
-                    <p class="info-text">If you want to learn more on how to get the slack web hook URL, please follow this guide. <a href="https://api.slack.com/messaging/webhooks" target="_blank" class="text-info">https://api.slack.com/messaging/webhooks</a></p>
-                    <p class="info-text">Please note that, your slack web hook url must be in the format of https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX</p>
-                    <a class="info-link" href="https://api.slack.com/messaging/webhooks" target="_blank">Read more <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></a>
-                </div>
-            </div>
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row layout-top-spacing">
+      <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+        <h4>Add {{ service_name }} Notification Hook</h4>
+      </div>
+      <div class="infobox-3 m-4">
+        <div class="info-icon">
+          <img src="{{ logo }}" alt="{{ service_name }}">
         </div>
-        <div class="widget-content widget-content-area">
-                <form class="simple-example" method="POST">
-                {% csrf_token %}
-                <div class="form-row">
-                    <div class="col-md-6 mb-4">
-                        <label for="domainName">Your slack channel</label>
-                        {{ form.hook_name }}
-                    </div>
-                    <div class="col-md-6 mb-4">
-                        <label for="domainDescription">Hook URL</label>
-                        {{ form.hook_url }}
-                        {% if form.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {{ form.errors.hook_url|striptags }}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {{ form.send_notif }}
-                <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">{{button_title}}</button>
-            </form>
-        </div>
+        <h5 class="info-heading">Support for {{ service_name }}</h5>
+        <p class="info-text">If you want to learn more on how to get the {{ service_name }} web hook URL, please follow this guide. <a href="{{ api_guide_url }}" target="_blank" class="text-info">{{ api_guide_url }}</a></p>
+        <p class="info-text">Please note that, your {{ service_name }} web hook url must be in the format of {{ web_hook_format }}</p>
+        <a class="info-link" href="{{ api_guide_url }}" target="_blank">Read more <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></a>
+      </div>
     </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <form class="simple-example" method="POST">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="col-md-6 mb-4">
+          <label for="domainName">Your {{ service_name }} channel</label>
+          {{ hook_name }}
+        </div>
+        <div class="col-md-6 mb-4">
+          <label for="domainDescription">Hook URL</label>
+          {{ hook_url }}
+          {% if errors %}
+          <div class="invalid-feedback" style="display: block;">
+            {{ errors.hook_url|striptags }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {{ send_notif }}
+      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit" name="{{ service_name }}">{{button_title}}</button>
+    </form>
+  </div>
 </div>

@@ -9,6 +9,7 @@ import tldextract
 
 
 from celery import shared_task
+from discord_webhook import DiscordWebhook
 from reNgine.celery import app
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from targetApp.models import Domain
@@ -742,15 +743,18 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
 def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    # notify on slack
-    scan_status_msg = {
-        'text': message}
+    scan_status_msg = {}
     headers = {'content-type': 'application/json'}
     for notif in notif_hook:
-        requests.post(
-            notif.hook_url,
-            data=json.dumps(scan_status_msg),
-            headers=headers)
+        if 'slack.com' in notif.hook_url:
+            scan_status_msg['text'] = message
+            requests.post(
+                notif.hook_url,
+                data=json.dumps(scan_status_msg),
+                headers=headers)
+        elif 'discordapp.com' in notif.hook_url:
+            webhook = DiscordWebhook(url=notif.hook_url, content=message)
+            webhook.execute()
 
 
 def scan_failed(task):
