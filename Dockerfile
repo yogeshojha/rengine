@@ -14,7 +14,8 @@ RUN apk update \
     && apk add --virtual build-deps gcc python3-dev musl-dev \
     && apk add postgresql-dev chromium git netcat-openbsd build-base \
     && pip install psycopg2 \
-    && apk del build-deps
+    && apk del build-deps \
+    && apk add libpcap-dev
 
 
 # Download and install go 1.14
@@ -35,7 +36,7 @@ RUN GO111MODULE=on go get -v github.com/projectdiscovery/httpx/cmd/httpx
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder \
     github.com/projectdiscovery/nuclei/v2/cmd/nuclei \
     github.com/lc/gau \
-    github.com/projectdiscovery/naabu/cmd/naabu
+    github.com/projectdiscovery/naabu/v2/cmd/naabu
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
