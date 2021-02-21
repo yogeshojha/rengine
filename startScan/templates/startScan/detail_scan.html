@@ -210,14 +210,6 @@ All Subdomains
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
-// collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
-if ($(window).width() > 992) {
-	$( document ).ready(function() {
-		$("html, body").addClass("sidebar-noneoverflow");
-		$("#container").addClass("sidebar-closed");
-		$("header").addClass("expand-header");
-	});
-}
 function fetch_http_headers(id, http_header_path, screenshot_path){
 	$('#screenshot'+id).attr('src', '/media/'+screenshot_path);
 	fetch('/media/'+http_header_path)
@@ -226,6 +218,8 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 }
 </script>
 <script>
+// Collapse Sidebar
+collapse_sidebar();
 $(document).ready(function() {
 	var scan_history_table = $('#subdomain_scan_results').DataTable({
 		"oLanguage": {
