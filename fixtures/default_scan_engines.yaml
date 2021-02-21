@@ -7,7 +7,7 @@
     port_scan: true
     fetch_url: true
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
-      \ sublist3r, assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nport_scan:\r\n\
+      \ sublist3r, assetfinder, oneforall, findomain ]\r\n    thread: 10\r\n\r\nport_scan:\r\n\
       \    ports: [ top-100 ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
       \    port: xlarge\r\n    thread: 2\r\n    http_timeout: 3000\r\n    screenshot_timeout:\
       \ 30000\r\n    scan_timeout: 100\r\n\r\ndir_file_search:\r\n    extensions:\
@@ -27,7 +27,7 @@
     port_scan: false
     fetch_url: true
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
-      \ sublist3r, assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\
+      \ sublist3r, assetfinder, oneforall, findomain ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\
       \n    port: xlarge\r\n    thread: 2\r\n    http_timeout: 3000\r\n    screenshot_timeout:\
       \ 30000\r\n    scan_timeout: 100\r\n\r\nfetch_url:\r\n    uses_tool: [ gau,\
       \ hakrawler ]\r\n    intensity: normal"
@@ -42,7 +42,7 @@
     port_scan: false
     fetch_url: false
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
-      \ sublist3r, assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\
+      \ sublist3r, assetfinder, oneforall, findomain ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\
       \n    port: xlarge\r\n    thread: 2\r\n    http_timeout: 3000\r\n    screenshot_timeout:\
       \ 30000\r\n    scan_timeout: 100"
     vulnerability_scan: false
@@ -56,7 +56,7 @@
     port_scan: false
     fetch_url: false
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ subfinder, sublist3r,\
-      \ assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nvulnerability_scan:\r\n\
+      \ assetfinder, oneforall, findomain ]\r\n    thread: 10\r\n\r\nvulnerability_scan:\r\n\
       \    concurrent: 10\r\n    template: [all]\r\n    severity: [critical, high,\
       \ medium, low, info]"
     vulnerability_scan: true

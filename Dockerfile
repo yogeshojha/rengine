@@ -44,6 +44,10 @@ RUN pip3 install -r /tmp/requirements.txt
 COPY ./tools/OneForAll/requirements.txt /tmp/requirements_oneforall.txt
 RUN pip3 install -r /tmp/requirements_oneforall.txt
 
+#Findomain Installation
+ADD https://github.com/Edu4rdSHL/findomain/releases/latest/download/findomain-linux ./tools/findomain
+RUN chmod +x ./tools/findomain
+
 # Make directory for app
 RUN mkdir /app
 WORKDIR /app
