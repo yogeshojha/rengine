@@ -31,7 +31,6 @@ Target Summary for yogeshojha.com
 
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-	{% if scan_history_id %}
 	<div class="row layout-top-spacing">
 		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
 			<div class="widget widget-one_hybrid">
@@ -44,13 +43,38 @@ Target Summary for yogeshojha.com
 						</svg>
 					</div>
 					&nbsp;
-					<h2 class="text-warning">{{subdomain_count}}</h2>
-					<h6 class="">Subdomains Discovered</h6>
+					<h2 class="text-warning">12</h2>
+					<h6 class="">Total Scans</h6>
 				</div>
 				<div class="widget-content">
-					Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
+					<div class="icon-container">
+						{% include 'base/_items/down_arrow.html' %}
+						<span class="icon-name"> 32 Scans this week</span>
+					</div>
 					<br>
-					<a href="#subdomainDiscovered" class="text-info">View all subdomains</a>
+					<a href="#" class="text-info">View all Scans</a>
+				</div>
+			</div>
+		</div>
+		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+			<div class="widget widget-one_hybrid">
+				<div class="widget-heading">
+					<div class="w-icon text-info">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+						</svg>
+					</div>
+					&nbsp;
+					<h2 class="text-warning">20</h2>
+					<h6 class="">Unique Subdomains</h6>
+				</div>
+				<div class="widget-content">
+					<div class="icon-container">
+						{% include 'base/_items/down_arrow.html' %}
+						<span class="icon-name"> 50 Subdomains</span>
+					</div>
+					<br>
+					<a href="#" class="text-info">View all Subdomains</a>
 				</div>
 			</div>
 		</div>
@@ -64,37 +88,19 @@ Target Summary for yogeshojha.com
 						</svg>
 					</div>
 					&nbsp;
-					<h2 class="text-warning">{{endpoint_count}}</h2>
-					<h6 class="">Endpoints</h6>
+					<h2 class="text-warning">210</h2>
+					<h6 class="">Unique Endpoints</h6>
 				</div>
 				<div class="widget-content">
-					Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
-					<br>
-					<a href="endpoint/{{scan_history_id}}" class="text-info">View all Endpoints</a>
-				</div>
-			</div>
-		</div>
-		{% if history.scan_type.vulnerability_scan %}
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-danger">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-						</svg>
+					<div class="icon-container">
+						{% include 'base/_items/up_arrow.html' %}
+						<span class="icon-name"> 32 Endpoints</span>
 					</div>
-					&nbsp;
-					<h2 class="text-danger">{{total_vulnerability_count}}</h2>
-					<h6 class="">Vulnerabilities Discovered</h6>
-				</div>
-				<div class="widget-content">
-					<span class="text-danger">{{critical_count}} Critical and {{high_count}} High</span>
 					<br>
-					<a href="vuln/{{scan_history_id}}" class="text-info">View all Vulnerabilities</a>
+					<a href="#" class="text-info">View all Endpoints</a>
 				</div>
 			</div>
 		</div>
-		{% else %}
 		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
 			<div class="widget widget-one_hybrid">
 				<div class="widget-heading">
@@ -108,16 +114,16 @@ Target Summary for yogeshojha.com
 					<h6 class="">Vulnerabilities Discovered</h6>
 				</div>
 				<div class="widget-content">
-					<small class="text-info">Vulnerability scan hasn't been performed.</small>
+					<div class="icon-container">
+						{% include 'base/_items/up_arrow.html' %}
+						<span class="icon-name"> 101 Vulnerabilities</span>
+					</div>
 					<br>
-					<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
-					<br>
+					<a href="#" class="text-info">View all Vulnerabilities</a>
 				</div>
 			</div>
 		</div>
-		{% endif %}
 	</div>
-	{% endif %}
 </div>
 {% endblock main_content %}
 
@@ -131,5 +137,7 @@ Target Summary for yogeshojha.com
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
+	// Collapse Sidebar
+	collapse_sidebar();
 </script>
 {% endblock page_level_script %}
