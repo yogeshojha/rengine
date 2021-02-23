@@ -164,7 +164,7 @@ $(document).ready(function() {
 			},
 			{
 				"render": function ( data, type, row ) {
-					return "<a href='"+data+"' target='_blank' class='text-danger'>"+data+"</a>";
+					return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
 				},
 				"targets": 3,
 			},
@@ -172,13 +172,13 @@ $(document).ready(function() {
 				"render": function ( data, type, row ) {
 					// Could be better
 					if (data && row['matcher_name']) {
-						return data + "\n" + row['matcher_name'];
+						return htmlEncode(data) + "\n" + row['matcher_name'];
 					}
 					else if (data) {
-						return data;
+						return htmlEncode(data);
 					}
 					else if (row['matcher_name']) {
-						return row['matcher_name'].charAt(0).toUpperCase() + row['matcher_name'].slice(1);
+						return htmlEncode(row['matcher_name']).charAt(0).toUpperCase() + htmlEncode(row['matcher_name']).slice(1);
 					}
 					else {
 						return "";
@@ -188,7 +188,7 @@ $(document).ready(function() {
 			},
 			{
 				"render": function ( data, type, row ) {
-					return data;
+					return htmlEncode(data);
 				},
 				"targets": 5,
 			},
