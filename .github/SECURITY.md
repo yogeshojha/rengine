@@ -13,7 +13,7 @@ Please report all security issues [here](https://github.com/yogeshojha/rengine/i
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/178) on Detail Scan Page via Page Title Parameter, Reported by [omemishra](https://github.com/omemishra)
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/347) on Vulnerability Scan page via URL Parameter, Reported by [Arif Khan, payloadartist](https://twitter.com/payloadartist)
 
-**reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine more safer!**
+**reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine safer!**
 
 * [onemishra](https://github.com/omemishra)
 * [Arif Khan, payloadartist](https://twitter.com/payloadartist)
