@@ -8,7 +8,7 @@
     fetch_url: true
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
       \ sublist3r, assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nport_scan:\r\n\
-      \    ports: [ top-100 ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\n\
+      \    ports: [ top-100 ]\r\n    rate: 100\r\n\r\nvisual_identification:\r\n\
       \    port: xlarge\r\n    thread: 2\r\n    http_timeout: 3000\r\n    screenshot_timeout:\
       \ 30000\r\n    scan_timeout: 100\r\n\r\ndir_file_search:\r\n    extensions:\
       \ [ php,asp,aspx,txt,conf,db,sql,json ]\r\n    recursive: false\r\n    recursive_level:\

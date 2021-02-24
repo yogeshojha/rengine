@@ -447,13 +447,12 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 naabu_command = naabu_command + \
                     ' -exclude-ports {}'.format(exclude_ports)
 
-            # TODO thread is removed in later versio of naabu, replace with rate :(
-            # if THREAD in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][THREAD] > 0:
-            #     naabu_command = naabu_command + \
-            #         ' -t {}'.format(
-            #             yaml_configuration['subdomain_discovery']['thread'])
-            # else:
-            #     naabu_command = naabu_command + ' -t 10'
+            if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
+                naabu_command = naabu_command + \
+                    ' -rate {}'.format(
+                        yaml_configuration['subdomain_discovery']['thread'])
+            else:
+                naabu_command = naabu_command + ' -t 10'
 
             # run naabu
             print(naabu_command)
