@@ -133,10 +133,12 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
                 if 'amass-passive' in tools:
                     amass_command = AMASS_COMMAND + \
-                        ' -passive -d {} -o {}/from_amass.txt'.format(domain.domain_name, current_scan_dir)
+                        ' -passive -d {} -o {}/from_amass.txt'.format(
+                            domain.domain_name, current_scan_dir)
                     if amass_config_path:
                         amass_command = amass_command + \
-                            ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+                            ' -config {}'.format(settings.TOOL_LOCATION +
+                                                 'scan_results/' + amass_config_path)
 
                     # Run Amass Passive
                     logging.info(amass_command)
@@ -144,7 +146,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
                 if 'amass-active' in tools:
                     amass_command = AMASS_COMMAND + \
-                        ' -active -d {} -o {}/from_amass_active.txt'.format(domain.domain_name, current_scan_dir)
+                        ' -active -d {} -o {}/from_amass_active.txt'.format(
+                            domain.domain_name, current_scan_dir)
 
                     if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                         wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
@@ -158,7 +161,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             ' -brute -w {}'.format(wordlist_path)
                     if amass_config_path:
                         amass_command = amass_command + \
-                            ' -config {}'.format(settings.TOOL_LOCATION + 'scan_results/' + amass_config_path)
+                            ' -config {}'.format(settings.TOOL_LOCATION +
+                                                 'scan_results/' + amass_config_path)
 
                     # Run Amass Active
                     logging.info(amass_command)
@@ -416,18 +420,25 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
             # check the yaml_configuration and choose the ports to be scanned
 
-            scan_ports = 'top-100'  # default port scan
+            scan_ports = '-'  # default port scan everything
             if PORTS in yaml_configuration[PORT_SCAN]:
-                scan_ports = ','.join(
-                    str(port) for port in yaml_configuration[PORT_SCAN][PORTS])
-
-            # TODO: New version of naabu has -p instead of -ports
-            if scan_ports:
-                naabu_command = 'cat {} | naabu -json -o {} -ports {}'.format(
-                    subdomain_scan_results_file, port_results_file, scan_ports)
-            else:
-                naabu_command = 'cat {} | naabu -json -o {}'.format(
-                    subdomain_scan_results_file, port_results_file)
+                # TODO:  legacy code, remove top-100 in future versions
+                all_ports = yaml_configuration[PORT_SCAN][PORTS]
+                print(all_ports)
+                if 'full' in all_ports:
+                    naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
+                        subdomain_scan_results_file, port_results_file, '-')
+                elif 'top-100' in all_ports:
+                    naabu_command = 'cat {} | naabu -json -o {} -top-ports 100'.format(
+                        subdomain_scan_results_file, port_results_file)
+                elif 'top-1000' in all_ports:
+                    naabu_command = 'cat {} | naabu -json -o {} -top-ports 1000'.format(
+                        subdomain_scan_results_file, port_results_file)
+                else:
+                    scan_ports = ','.join(
+                        str(port) for port in all_ports)
+                    naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
+                        subdomain_scan_results_file, port_results_file, scan_ports)
 
             # check for exclude ports
             if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
@@ -436,15 +447,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 naabu_command = naabu_command + \
                     ' -exclude-ports {}'.format(exclude_ports)
 
-            # TODO thread is removed in later versio of naabu, replace with rate :(
-            # if THREAD in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][THREAD] > 0:
-            #     naabu_command = naabu_command + \
-            #         ' -t {}'.format(
-            #             yaml_configuration['subdomain_discovery']['thread'])
-            # else:
-            #     naabu_command = naabu_command + ' -t 10'
+            if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
+                naabu_command = naabu_command + \
+                    ' -rate {}'.format(
+                        yaml_configuration['subdomain_discovery']['rate'])
+            else:
+                naabu_command = naabu_command + ' -t 10'
 
             # run naabu
+            print(naabu_command)
             os.system(naabu_command)
 
             # writing port results

@@ -1,5 +1,12 @@
 # Changelog
 
+### V0.5.3 Feb25 2021
+- Build error for Naabu v2 Fixed
+- Added rate support for Naabu
+
+### V0.5.2 Feb 23 2021
+- Fixed XSS https://github.com/yogeshojha/rengine/issues/347
+
 ### V0.5.1 Feb 19 2021
 
 ### Features
