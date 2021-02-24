@@ -450,7 +450,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
                 naabu_command = naabu_command + \
                     ' -rate {}'.format(
-                        yaml_configuration['subdomain_discovery']['thread'])
+                        yaml_configuration['subdomain_discovery']['rate'])
             else:
                 naabu_command = naabu_command + ' -t 10'
 
