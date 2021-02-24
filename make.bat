@@ -32,4 +32,4 @@ if "%1" == "images" docker-compose %COMPOSE_ALL_FILES% images %SERVICES%
 :: Remove containers and delete volume data.
 if "%1" == "prune" docker-compose %COMPOSE_ALL_FILES% stop %SERVICES% & docker-compose %COMPOSE_ALL_FILES% rm -f %SERVICES% & docker volume prune -f
 :: Show this help.
-if "%1" == "help" @echo Make application docker images and manage containers using docker-compose files.
+if "%1" == "help" @echo Make application docker images and manage containers using docker-compose files only for windows.
