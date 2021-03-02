@@ -130,6 +130,36 @@ Target Summary for yogeshojha.com
     </div>
   </div>
   <div class="row layout-top-spacing">
+    <div class="col-xl-6 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="widget widget-table-two">
+        <div class="widget-heading">
+          <h6><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Interesting Subdomains</h6>
+        </div>
+
+        <div class="widget-content">
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th><div class="th-content">Subdomain</div></th>
+                  <th><div class="th-content">Page Title</div></th>
+                  <th><div class="th-content">Reason</div></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="td-content"><a href="#" class="text-info">admin.google.com</a></div></td>
+                  <td><div class="td-content">Admin Dashboard Panel</div></td>
+                  <td><div class="td-content"><span class="badge outline-badge-primary">Page Title</span></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row layout-spacing">
     {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-chart-two">
@@ -309,8 +339,8 @@ Target Summary for yogeshojha.com
     }]
   }
   var chart = new ApexCharts(
-  	document.querySelector("#vulnerability-chart"),
-  	options
+  document.querySelector("#vulnerability-chart"),
+  options
   );
 
   chart.render();
