@@ -2,6 +2,7 @@
 {% load static %}
 {% load humanize %}
 {% load custom_tags %}
+{% load mathfilters %}
 {% block title %}
 {% if scan_history_id %}
 Scan history
@@ -31,99 +32,169 @@ Target Summary for yogeshojha.com
 
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-	<div class="row layout-top-spacing">
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-info">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
-							<circle cx="12" cy="12" r="10"></circle>
-							<line x1="2" y1="12" x2="22" y2="12"></line>
-							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-warning">12</h2>
-					<h6 class="">Total Scans</h6>
-				</div>
-				<div class="widget-content">
-					<div class="icon-container">
-						{% include 'base/_items/down_arrow.html' %}
-						<span class="icon-name"> 32 Scans this week</span>
-					</div>
-					<br>
-					<a href="#" class="text-info">View all Scans</a>
-				</div>
-			</div>
-		</div>
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-info">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-warning">20</h2>
-					<h6 class="">Unique Subdomains</h6>
-				</div>
-				<div class="widget-content">
-					<div class="icon-container">
-						{% include 'base/_items/down_arrow.html' %}
-						<span class="icon-name"> 50 Subdomains</span>
-					</div>
-					<br>
-					<a href="#" class="text-info">View all Subdomains</a>
-				</div>
-			</div>
-		</div>
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-info">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
-							<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-							<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-warning">210</h2>
-					<h6 class="">Unique Endpoints</h6>
-				</div>
-				<div class="widget-content">
-					<div class="icon-container">
-						{% include 'base/_items/up_arrow.html' %}
-						<span class="icon-name"> 32 Endpoints</span>
-					</div>
-					<br>
-					<a href="#" class="text-info">View all Endpoints</a>
-				</div>
-			</div>
-		</div>
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-danger">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-danger">0</h2>
-					<h6 class="">Vulnerabilities Discovered</h6>
-				</div>
-				<div class="widget-content">
-					<div class="icon-container">
-						{% include 'base/_items/up_arrow.html' %}
-						<span class="icon-name"> 101 Vulnerabilities</span>
-					</div>
-					<br>
-					<a href="#" class="text-info">View all Vulnerabilities</a>
-				</div>
-			</div>
-		</div>
-	</div>
+  <div class="row layout-top-spacing">
+    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+      <div class="widget widget-one_hybrid">
+        <div class="widget-heading">
+          <div class="w-icon text-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </div>
+          &nbsp;
+          <h2 class="text-warning">12</h2>
+          <h6 class="">Total Scans</h6>
+        </div>
+        <div class="widget-content">
+          <div class="icon-container">
+            {% include 'base/_items/down_arrow.html' %}
+            <span class="icon-name"> 32 Scans this week</span>
+          </div>
+          <br>
+          <a href="#" class="text-info">View all Scans</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+      <div class="widget widget-one_hybrid">
+        <div class="widget-heading">
+          <div class="w-icon text-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
+              <circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+            </svg>
+          </div>
+          &nbsp;
+          <h2 class="text-warning">20</h2>
+          <h6 class="">Unique Subdomains</h6>
+        </div>
+        <div class="widget-content">
+          <div class="icon-container">
+            {% include 'base/_items/down_arrow.html' %}
+            <span class="icon-name"> 50 Subdomains</span>
+          </div>
+          <br>
+          <a href="#" class="text-info">View all Subdomains</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+      <div class="widget widget-one_hybrid">
+        <div class="widget-heading">
+          <div class="w-icon text-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </div>
+          &nbsp;
+          <h2 class="text-warning">210</h2>
+          <h6 class="">Unique Endpoints</h6>
+        </div>
+        <div class="widget-content">
+          <div class="icon-container">
+            {% include 'base/_items/up_arrow.html' %}
+            <span class="icon-name"> 32 Endpoints</span>
+          </div>
+          <br>
+          <a href="#" class="text-info">View all Endpoints</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
+      <div class="widget widget-one_hybrid">
+        <div class="widget-heading">
+          <div class="w-icon text-danger">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield-off">
+              <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"></path>
+              <path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38">
+              </path>
+              <line x1="1" y1="1" x2="23" y2="23">
+              </line>
+            </svg>
+          </div>
+          &nbsp;
+          <h2 class="text-danger">0</h2>
+          <h6 class="">Vulnerabilities</h6>
+        </div>
+        <div class="widget-content">
+          <div class="icon-container">
+            {% include 'base/_items/up_arrow.html' %}
+            <span class="icon-name"> 101 Vulnerabilities</span>
+          </div>
+          <br>
+          <a href="#" class="text-info">View all Vulnerabilities</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row layout-top-spacing">
+    {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="widget widget-chart-two">
+        <div class="widget-heading">
+          <div class="row">
+            <div class="col-6">
+              <h6 class="">Vulnerability Scan Summary</h6>
+            </div>
+            <div class="col-6">
+              <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
+            </div>
+          </div>
+        </div>
+        <div class="widget-content">
+          <div class="row">
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+              <h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
+              <div id="vulnerability-chart" class=""></div>
+            </div>
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+              <h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
+              <div class="table-responsive">
+                <table class="table table-hover table-light">
+                  <tbody>
+                    <thead>
+                      <th>Vulnerability Name</th>
+                      <th class="text-center">Count</th>
+                      <th>Severity</th>
+                    </thead>
+                    {% for item in most_common_vulnerability %}
+                    <tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+                      <td>{{item.name}}</td>
+                      <td class="text-center">
+                        {{item.count}}
+                      </td>
+                      <td>
+                        <div class="t-rate">
+                          {% if item.severity == 0 %}
+                          <span class='badge badge-info'>Info</span>
+                          {% elif item.severity == 1 %}
+                          <span class='badge badge-low'>Low</span>
+                          {% elif item.severity == 2 %}
+                          <span class='badge badge-warning'>Medium</span>
+                          {% elif item.severity == 3 %}
+                          <span class='badge badge-danger'>High</span>
+                          {% elif item.severity == 4 %}
+                          <span class='badge badge-critical'>Critical</span>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    Not enough data
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock main_content %}
 
@@ -137,7 +208,112 @@ Target Summary for yogeshojha.com
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
-	// Collapse Sidebar
-	collapse_sidebar();
+  // Collapse Sidebar
+  collapse_sidebar();
+  // apex charts for vulnerability summary
+  var options = {
+    chart: {
+      type: 'donut',
+      width: 380
+    },
+    colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+    dataLabels: {
+      enabled: false
+    },
+    legend: {
+      position: 'bottom',
+      horizontalAlign: 'center',
+      fontSize: '14px',
+      markers: {
+        width: 10,
+        height: 10,
+      },
+      itemMargin: {
+        horizontal: 0,
+        vertical: 8
+      }
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          background: 'transparent',
+          labels: {
+            show: true,
+            name: {
+              show: true,
+              fontSize: '29px',
+              fontFamily: 'Nunito, sans-serif',
+              color: undefined,
+              offsetY: -10
+            },
+            value: {
+              show: true,
+              fontSize: '26px',
+              fontFamily: 'Nunito, sans-serif',
+              color: '20',
+              offsetY: 16,
+              formatter: function (val) {
+                return val
+              }
+            },
+            total: {
+              show: true,
+              showAlways: true,
+              label: 'Total',
+              color: '#888ea8',
+              formatter: function (w) {
+                return w.globals.seriesTotals.reduce( function(a, b) {
+                  return a + b
+                }, 0)
+              }
+            }
+          }
+        }
+      }
+    },
+    stroke: {
+      show: true,
+      width: 25,
+    },
+    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+    responsive: [{
+      breakpoint: 1599,
+      options: {
+        chart: {
+          width: '350px',
+          height: '400px'
+        },
+        legend: {
+          position: 'bottom'
+        }
+      },
+      breakpoint: 1439,
+      options: {
+        chart: {
+          width: '250px',
+          height: '390px'
+        },
+        legend: {
+          position: 'bottom'
+        },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '65%',
+            }
+          }
+        }
+      },
+    }]
+  }
+  var chart = new ApexCharts(
+  	document.querySelector("#vulnerability-chart"),
+  	options
+  );
+
+  chart.render();
 </script>
+
 {% endblock page_level_script %}
