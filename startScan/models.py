@@ -33,6 +33,7 @@ class ScannedHost(models.Model):
     directory_json = JSONField(null=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return str(self.subdomain)
