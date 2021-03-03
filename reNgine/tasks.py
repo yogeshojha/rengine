@@ -272,6 +272,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         scanned = ScannedHost()
                         scanned.subdomain = subdomain.rstrip('\n')
                         scanned.scan_history = task
+                        scanned.target_domain = domain
                         scanned.save()
         else:
             only_subdomain_file = open(
