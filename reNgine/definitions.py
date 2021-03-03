@@ -53,3 +53,9 @@ SMALL = '100px'
 MEDIM = '200px'
 LARGE = '400px'
 XLARGE = '500px'
+
+###############################################################################
+# Interesting Subdomain DEFINITIONS
+###############################################################################
+MATCHED_SUBDOMAIN = 'Subdomain'
+MATCHED_PAGE_TITLE = 'Page Title'
