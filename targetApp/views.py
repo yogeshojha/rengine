@@ -13,7 +13,7 @@ from targetApp.forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from reNgine.common_func import *
 
@@ -205,4 +205,5 @@ def target_summary(request, id):
         context['subdomain_difference'] = subdomain_count
         context['endpoint_difference'] = endpoint_count
         context['vulnerability_difference'] = vulnerability_count
+    context['recent_scans'] = ScanHistory.objects.filter(domain_name=id).order_by('-last_scan_date')[:3]
     return render(request, 'target/summary.html', context)
