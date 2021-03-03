@@ -82,8 +82,7 @@ class WayBackEndPoint(models.Model):
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.page_title
@@ -106,8 +105,7 @@ class VulnerabilityScan(models.Model):
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
