@@ -10,6 +10,7 @@ class EngineType(models.Model):
     vulnerability_scan = models.BooleanField(null=True, default=False)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
+    interesting_subdomain_lookup = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.engine_name

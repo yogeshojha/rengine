@@ -99,6 +99,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
+        self.initial['interesting_subdomain_lookup'] = engine.interesting_subdomain_lookup
 
 
 class AddWordlistForm(forms.Form):
