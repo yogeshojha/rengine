@@ -9,6 +9,7 @@ Update Engine Type
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/taginput/tags-input.css' %}">
 {{ form.media }}
 <style media="screen">
 	.ace_editor {
@@ -52,6 +53,18 @@ Update Engine
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/taginput/tags-input.js' %}"></script>
+
 <script type="text/javascript">
+// get values from interesting_subdomain_lookup
+var lookup = document.getElementById('interesting_subdomain_lookup').value
+var instance = new TagsInput({
+		selector: 'interesting_subdomain_lookup'
+});
+// update existing keywords
+var keyword = lookup.split(",");
+for (i = 0; i < keyword.length; i++) {
+	instance.addData([keyword[i]]);
+}
 </script>
 {% endblock page_level_script %}
