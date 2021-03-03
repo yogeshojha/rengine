@@ -75,7 +75,7 @@ Target Summary for {{target.domain_name}}
             {% elif subdomain_difference < 0 %}
             {% include 'base/_items/down_arrow.html' %}
             {% endif %}
-            <span class="icon-name"> {{subdomain_difference}} Subdomains</span>
+            <span class="icon-name bs-tooltip" title="{{subdomain_difference}} subdomains discovered on the last scan"> {{subdomain_difference}} Subdomains</span>
           </div>
           <br>
           <a href="#" class="text-info">View all Subdomains</a>
@@ -92,13 +92,17 @@ Target Summary for {{target.domain_name}}
             </svg>
           </div>
           &nbsp;
-          <h2 class="text-warning">210</h2>
+          <h2 class="text-warning">{{endpoint_count}}</h2>
           <h6 class="">Unique Endpoints</h6>
         </div>
         <div class="widget-content">
           <div class="icon-container">
+            {% if endpoint_difference > 0 %}
             {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name"> 32 Endpoints</span>
+            {% elif endpoint_difference < 0 %}
+            {% include 'base/_items/down_arrow.html' %}
+            {% endif %}
+            <span class="icon-name bs-tooltip" title="{{endpoint_difference}} endpoints discovered on the last scan"> {{endpoint_difference}} Endpoints</span>
           </div>
           <br>
           <a href="#" class="text-info">View all Endpoints</a>
@@ -118,13 +122,17 @@ Target Summary for {{target.domain_name}}
             </svg>
           </div>
           &nbsp;
-          <h2 class="text-danger">0</h2>
+          <h2 class="text-danger">{{vulnerability_count}}</h2>
           <h6 class="">Vulnerabilities</h6>
         </div>
         <div class="widget-content">
           <div class="icon-container">
+            {% if vulnerability_difference > 0 %}
             {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name"> 101 Vulnerabilities</span>
+            {% elif vulnerability_difference < 0 %}
+            {% include 'base/_items/down_arrow.html' %}
+            {% endif %}
+            <span class="icon-name bs-tooltip" title="{{vulnerability_difference}} endpoints discovered on the last scan"> {{vulnerability_difference}} Vulnerabilities</span>
           </div>
           <br>
           <a href="#" class="text-info">View all Vulnerabilities</a>

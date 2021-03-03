@@ -598,6 +598,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                 if 'title' in json_st:
                                     endpoint.page_title = json_st['title']
                                 endpoint.discovered_date = timezone.now()
+                                endpoint.target_domain = domain
                                 if 'content-type' in json_st:
                                     endpoint.content_type = json_st['content-type']
                                 endpoint.save()
@@ -747,6 +748,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                             vulnerability.matcher_name = json_st['matcher_name']
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
+                        vulnerability.target_domain = domain
                         vulnerability.save()
                         send_notification(
                             "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
