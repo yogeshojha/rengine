@@ -206,4 +206,10 @@ def target_summary(request, id):
         context['endpoint_difference'] = endpoint_count
         context['vulnerability_difference'] = vulnerability_count
     context['recent_scans'] = ScanHistory.objects.filter(domain_name=id).order_by('-last_scan_date')[:3]
+    context['info_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=0).count()
+    context['low_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=1).count()
+    context['medium_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=2).count()
+    context['high_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=3).count()
+    context['critical_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=4).count()
+    context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values("name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     return render(request, 'target/summary.html', context)
