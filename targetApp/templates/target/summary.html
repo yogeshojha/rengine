@@ -26,7 +26,7 @@ All Subdomains
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Target Summary for yogeshojha.com
+Target Summary for {{target.domain_name}}
 {% endblock breadcrumb_title %}
 
 
@@ -44,13 +44,12 @@ Target Summary for yogeshojha.com
             </svg>
           </div>
           &nbsp;
-          <h2 class="text-warning">12</h2>
+          <h2 class="text-warning">{{scan_count}}</h2>
           <h6 class="">Total Scans</h6>
         </div>
         <div class="widget-content">
           <div class="icon-container">
-            {% include 'base/_items/down_arrow.html' %}
-            <span class="icon-name"> 32 Scans this week</span>
+            <span class="icon-name"> <b>{{this_week_scan_count}}</b> Scans this week</span>
           </div>
           <br>
           <a href="#" class="text-info">View all Scans</a>
@@ -66,13 +65,17 @@ Target Summary for yogeshojha.com
             </svg>
           </div>
           &nbsp;
-          <h2 class="text-warning">20</h2>
+          <h2 class="text-warning">{{subdomain_count}}</h2>
           <h6 class="">Unique Subdomains</h6>
         </div>
         <div class="widget-content">
           <div class="icon-container">
+            {% if subdomain_difference > 0 %}
+            {% include 'base/_items/up_arrow.html' %}
+            {% elif subdomain_difference < 0 %}
             {% include 'base/_items/down_arrow.html' %}
-            <span class="icon-name"> 50 Subdomains</span>
+            {% endif %}
+            <span class="icon-name"> {{subdomain_difference}} Subdomains</span>
           </div>
           <br>
           <a href="#" class="text-info">View all Subdomains</a>
