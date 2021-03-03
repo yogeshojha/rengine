@@ -35,6 +35,8 @@ from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType, Configuration, Wordlist
 
+from .utils import *
+
 '''
 task for background scan
 '''
@@ -90,9 +92,13 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             task.scan_type.yaml_configuration,
             Loader=yaml.FullLoader)
         excluded_subdomains = ''
+
         # Excluded subdomains
         if EXCLUDED_SUBDOMAINS in yaml_configuration:
             excluded_subdomains = yaml_configuration[EXCLUDED_SUBDOMAINS]
+
+        # Convert keywords to list
+        keyword_list = task.scan_type.interesting_subdomain_lookup.split(",")
 
         if(task.scan_type.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
@@ -330,6 +336,15 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     sub_domain.cname = cname_list
+                # check if subdomain is interesting_subdomain
+                if check_keyword_exists(keyword_list, json_st['url'].split("//")[-1]):
+                    sub_domain.interesting_subdomain = True
+                    sub_domain.interesting_subdomain_reason = MATCHED_SUBDOMAIN
+
+                if check_keyword_exists(keyword_list, json_st['title']):
+                    sub_domain.interesting_subdomain = True
+                    sub_domain.interesting_subdomain_reason = MATCHED_SUBDOMAIN
+
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
