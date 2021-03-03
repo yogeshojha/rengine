@@ -4,19 +4,16 @@ import io
 import os
 
 from datetime import timedelta
-from operator import and_, or_
-from functools import reduce
 from django import http
 from django.shortcuts import render, get_object_or_404
 from .models import Domain
 from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
-from scanEngine.models import InterestingLookupModel
 from django.contrib import messages
 from targetApp.forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
 from django.conf import settings
-from django.db.models import Count, Q
+from django.db.models import Count
 
 from reNgine.common_func import *
 
@@ -173,6 +170,23 @@ def update_target_form(request, id):
 
 
 def target_summary(request, id):
-    target = get_object_or_404(Domain, id=id)
     context = {}
+    target = get_object_or_404(Domain, id=id)
+    context['target'] = target
+    context['scan_count'] = ScanHistory.objects.filter(
+        domain_name_id=id).count()
+    last_week = timezone.now() - timedelta(days=7)
+    context['this_week_scan_count'] = ScanHistory.objects.filter(
+        domain_name_id=id, last_scan_date__gte=last_week).count()
+    context['subdomain_count'] = ScannedHost.objects.filter(
+        target_domain__id=id).values('subdomain').distinct().count()
+    try:
+        subdomain_count_query = ScanHistory.objects.filter(
+            domain_name=id).order_by('-last_scan_date')[0:2]
+        context['subdomain_difference'] = ScannedHost.objects.filter(
+            scan_history__id=subdomain_count_query[0].id).count() - ScannedHost.objects.filter(
+            scan_history__id=subdomain_count_query[1].id).count()
+    except Exception as e:
+        context['subdomain_difference'] = ScannedHost.objects.filter(
+            target_domain__id=id).values('subdomain').distinct().count()
     return render(request, 'target/summary.html', context)
