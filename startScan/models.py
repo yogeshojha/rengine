@@ -69,6 +69,8 @@ class ScannedHost(models.Model):
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
     target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    interesting_subdomain = models.BooleanField(null=True, default=False)
+    interesting_subdomain_reason = models.CharField(max_length=100, null=True)
 
     def __str__(self):
         return str(self.subdomain)
