@@ -286,6 +286,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             scanned = ScannedHost()
             scanned.subdomain = domain.domain_name
             scanned.scan_history = task
+            scanned.target_domain = domain
             scanned.save()
 
         subdomain_scan_results_file = results_dir + \
