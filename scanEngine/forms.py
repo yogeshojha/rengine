@@ -38,6 +38,14 @@ class AddEngineForm(forms.ModelForm):
         tabsize=4,
         fontsize=13,
         toolbar=True,))
+    interesting_subdomain_lookup = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "interesting_subdomain_lookup",
+                "placeholder": "Interesting Subdomains",
+            }))
 
 
 class UpdateEngineForm(forms.ModelForm):
@@ -74,6 +82,14 @@ class UpdateEngineForm(forms.ModelForm):
         tabsize=4,
         fontsize=13,
         toolbar=True,))
+    interesting_subdomain_lookup = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "interesting_subdomain_lookup",
+                "placeholder": "Interesting Subdomains",
+            }))
 
     def set_value(self, engine):
         self.initial['engine_name'] = engine.engine_name
@@ -83,6 +99,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
+        self.initial['interesting_subdomain_lookup'] = engine.interesting_subdomain_lookup
 
 
 class AddWordlistForm(forms.Form):
@@ -128,13 +145,13 @@ class ConfigurationForm(forms.ModelForm):
                 'id': 'short_name',
                 'placeholder': 'my_awesome_configuration', }))
     content = forms.CharField(widget=AceWidget(
-            mode="text",
-            theme="monokai",
-            width="100%",
-            height="450px",
-            tabsize=4,
-            fontsize=13,
-            toolbar=True,))
+        mode="text",
+        theme="monokai",
+        width="100%",
+        height="450px",
+        tabsize=4,
+        fontsize=13,
+        toolbar=True,))
 
     def set_value(self, configuration):
         self.initial['name'] = configuration.name
