@@ -6,7 +6,7 @@ import validators
 import requests
 import logging
 import tldextract
-
+import re
 
 from celery import shared_task
 from discord_webhook import DiscordWebhook
@@ -482,19 +482,24 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         '''
         Directory search is not provided by default, check for conditions
         '''
-        if(task.scan_type.dir_file_search):
+        if task.scan_type.dir_file_search:  # type: EngineType
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Directory Search", 1)
             # scan directories for all the alive subdomain with http status >
             # 200
             alive_subdomains = ScannedHost.objects.filter(
-                scan_history__id=task.id).exclude(http_url='')
+                scan_history_id=task.id
+            ).exclude(
+                http_url=''
+            )
+
             dirs_results = current_scan_dir + '/dirs.json'
 
             # check the yaml settings
             if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
                 extensions = ','.join(
-                    str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+                    str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS]
+                )
             else:
                 extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
@@ -504,39 +509,45 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             else:
                 threads = 10
 
+            dirsearch_tool = yaml_configuration[DIR_FILE_SEARCH].get(USES_TOOLS, "")
+            if  dirsearch_tool == "gobuster":
+                tool = "gobuster"
+            else:
+                tool = "dirsearch"  # backward compatibility
+
+            recursive = yaml_configuration[DIR_FILE_SEARCH].get(RECURSIVE)
+            recursive_level = yaml_configuration[DIR_FILE_SEARCH].get(RECURSIVE_LEVEL)
+            wordlist_location = get_wordlist_location(yaml_configuration)
+            status_codes = yaml_configuration[DIR_FILE_SEARCH].get(STATUS_CODES) or "200"
+
+            builder_command = BuilderDirSearchCommand(
+                tool,
+                wordlist_location,
+                dirs_results,
+                extensions,
+                threads,
+                status_codes,
+                recursive,
+                recursive_level
+            )
+
             for subdomain in alive_subdomains:
-                # /app/tools/dirsearch/db/dicc.txt
-                if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
-                    not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
-                        'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
-                    wordlist_location = settings.TOOL_LOCATION + 'dirsearch/db/dicc.txt'
-                else:
-                    wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
-                        yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
+                dirsearch_command = builder_command.build(subdomain.http_url)
 
-                dirsearch_command = settings.TOOL_LOCATION + 'get_dirs.sh {} {} {}'.format(
-                    subdomain.http_url, wordlist_location, dirs_results)
-                dirsearch_command = dirsearch_command + \
-                    ' {} {}'.format(extensions, threads)
-
-                # check if recursive strategy is set to on
-                if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
-                    dirsearch_command = dirsearch_command + \
-                        ' {}'.format(
-                            yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
-
-                os.system(dirsearch_command)
+                logging.info(f"Run command: {dirsearch_command}")
+                run_console_command(dirsearch_command)
 
                 try:
-                    with open(dirs_results, "r") as json_file:
-                        json_string = json_file.read()
-                        scanned_host = ScannedHost.objects.get(
-                            scan_history__id=task.id, http_url=subdomain.http_url)
-                        scanned_host.directory_json = json_string
-                        scanned_host.save()
+                    save_dirsearch_result(
+                        tool,
+                        dirs_results,
+                        subdomain.http_url,
+                        task.id
+                    )
                 except Exception as exception:
-                    logging.error(exception)
+                    logging.error(f"Error when saving dirsearch result:  {exception}")
                     update_last_activity(activity_id, 0)
+
 
         '''
         Getting endpoint from GAU, is also not set by default, check for conditions.
@@ -773,7 +784,11 @@ def scan_failed(task):
     task.save()
 
 
-def create_scan_activity(task, message, status):
+def create_scan_activity(
+        task: ScanHistory,
+        message: str,
+        status: int
+):
     scan_activity = ScanActivity()
     scan_activity.scan_of = task
     scan_activity.title = message
@@ -785,9 +800,137 @@ def create_scan_activity(task, message, status):
 
 def update_last_activity(id, activity_status):
     ScanActivity.objects.filter(
-        id=id).update(
+        id=id
+    ).update(
         status=activity_status,
-        time=timezone.now())
+        time=timezone.now()
+    )
+
+
+class BuilderDirSearchCommand(object):
+
+    TOOLS = {
+        "dirsearch": "get_dirs.sh",
+        "gobuster": "get_dirs_gobuster.sh",
+    }
+
+    def __init__(
+            self,
+            tool: str,
+            wordlist_location: str,
+            dirs_results: str,
+            extensions: str,
+            threads: int,
+            status_codes: str or list,
+            recursive=None,
+            recursive_level=None
+    ):
+        if tool not in ("dirsearch", "gobuster"):
+            raise NotImplementedError
+
+        script = self.TOOLS[tool]
+
+        if isinstance(status_codes, (list, tuple)):
+            status_codes = ",".join(status_codes)
+
+        dirsearch_command_tmpl = (
+            f"sh {settings.TOOL_LOCATION}{script} "
+            f"{{http_url}} {wordlist_location} {dirs_results} {extensions} {threads}"
+        )
+
+        if tool == "gobuster":
+            dirsearch_command_tmpl += f" {status_codes}"  # TODO: update dirsearch and add status_codes for dirsearch
+
+        # check if recursive strategy is set to on
+        if recursive and recursive_level:
+            dirsearch_command_tmpl = (
+                    dirsearch_command_tmpl + f" {recursive_level}"
+            )
+
+        self.dirsearch_command_tmpl = dirsearch_command_tmpl
+
+    def build(self, http_url):
+        return self.dirsearch_command_tmpl.format(http_url=http_url)
+
+
+def get_wordlist_location(yaml_configuration):
+    # /app/tools/dirsearch/db/dicc.txt
+    if (
+            WORDLIST not in yaml_configuration[DIR_FILE_SEARCH]
+            or not yaml_configuration[DIR_FILE_SEARCH][WORDLIST]
+            or 'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]
+    ):
+        wordlist_location = settings.TOOL_LOCATION + 'dirsearch/db/dicc.txt'
+    else:
+        wordlist_location = (
+                settings.TOOL_LOCATION
+                + 'wordlist/'
+                + yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
+        )
+
+    return wordlist_location
+
+
+def save_dirsearch_result(
+        tool,
+        dirs_result_path,
+        http_url,
+        scan_history_id,
+):
+
+    logging.info("Read dirsearch result")
+    with open(dirs_result_path, "r") as file:
+        text = file.read()
+
+    scanned_host = ScannedHost.objects.get(
+        scan_history_id=scan_history_id,
+        http_url=http_url
+    )
+
+    if tool == "gobuster":
+        data = parse_gobuster_result(text)
+        scanned_host.directory_json = {http_url: data}
+    else:
+        scanned_host.directory_json = text
+
+    if scanned_host.directory_json:
+        scanned_host.save(update_fields=["directory_json"])
+        logging.info("Successfully saved dirsearch results")
+    else:
+        logging.info("Failed to save dirsearch results")
+
+
+def parse_gobuster_result(text: str) -> list:
+    data = []
+    for line in text.split("\n"):
+        # Example: /.htpasswd (Status: 403) [Size: 4059]
+        re_obj_path = re.search("\/[A-Za-z0-9\-\.]+", line)
+        if not re_obj_path:
+            continue
+        path = re_obj_path.group()
+
+        re_obj_status_code = re.search("Status:\s\d+", line)
+        if not re_obj_status_code:
+            continue
+        status_code = re_obj_status_code.group().replace("Status: ", "")
+        status_code = int(status_code)
+
+        re_obj_content_length = re.search("Size:\s\d+", line)
+        if not re_obj_content_length:
+            continue
+        content_length = re_obj_content_length.group().replace("Size: ", "")
+
+        data.append({
+            "path": path,
+            "status": status_code,
+            "content-length": content_length,
+        })
+
+    return data
+
+
+def run_console_command(command):
+    os.system(command)
 
 
 @app.task(bind=True)

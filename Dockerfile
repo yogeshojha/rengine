@@ -18,8 +18,8 @@ RUN apk update \
     && apk add libpcap-dev
 
 
-# Download and install go 1.14
-COPY --from=golang:1.14-alpine /usr/local/go/ /usr/local/go/
+# Download and install go 1.16
+COPY --from=golang:1.16.0-alpine3.13 /usr/local/go/ /usr/local/go/
 
 # Environment vars
 ENV DATABASE="postgres"
@@ -27,6 +27,7 @@ ENV GOROOT="/usr/local/go"
 ENV GOPATH="/root/go"
 ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
+RUN go version
 
 # Download Go packages
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
@@ -37,6 +38,7 @@ RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfin
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
 RUN GO111MODULE=on go get -v github.com/lc/gau
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/naabu/v2/cmd/naabu
+RUN GO111MODULE=on go get -v github.com/OJ/gobuster
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
@@ -53,6 +55,7 @@ WORKDIR /app
 COPY . /app/
 
 RUN chmod +x /app/tools/get_dirs.sh
+RUN chmod +x /app/tools/get_dirs_gobuster.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
 
