@@ -25,7 +25,7 @@
     subdomain_discovery: true
     dir_file_search: false
     port_scan: false
-    fetch_url: true
+    fetch_url: false
     yaml_configuration: "subdomain_discovery:\r\n    uses_tool: [ amass-passive, subfinder,\
       \ sublist3r, assetfinder, oneforall ]\r\n    thread: 10\r\n\r\nvisual_identification:\r\
       \n    port: xlarge\r\n    thread: 2\r\n    http_timeout: 3000\r\n    screenshot_timeout:\
