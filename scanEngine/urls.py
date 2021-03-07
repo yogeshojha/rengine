@@ -48,4 +48,8 @@ urlpatterns = [
         'configuration/delete/<int:id>',
         views.delete_configuration,
         name='delete_configuration'),
+    path(
+        'interesting/lookup/',
+        views.interesting_lookup,
+        name='interesting_lookup'),
 ]
