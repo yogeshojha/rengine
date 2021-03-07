@@ -195,14 +195,19 @@ def update_configuration(request, id):
     return render(request, 'scanEngine/configuration/update.html', context)
 
 def interesting_lookup(request):
-    lookup_keywords = InterestingLookupModel.objects.latest('id')
+    lookup_keywords = None
     context = {}
-    context['interesting_lookup_found'] = False
     context['scan_engine_nav_active'] = 'true'
     context['interesting_lookup_li'] = 'active'
     form = InterestingLookupForm()
+    if InterestingLookupModel.objects.filter(custom_type=True):
+        lookup_keywords = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0]
     if request.method == "POST":
-        form = InterestingLookupForm(request.POST, instance=lookup_keywords)
+        if lookup_keywords:
+            form = InterestingLookupForm(request.POST, instance=lookup_keywords)
+        else:
+            form = InterestingLookupForm(request.POST or None)
+        print(form.errors)
         if form.is_valid():
             print(form.cleaned_data)
             form.save()
@@ -215,4 +220,5 @@ def interesting_lookup(request):
         form.set_value(lookup_keywords)
         context['interesting_lookup_found'] = True
     context['form'] = form
+    context['default_lookup'] = InterestingLookupModel.objects.filter(custom_type=False)
     return render(request, 'scanEngine/lookup.html', context)
