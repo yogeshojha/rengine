@@ -99,7 +99,6 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
-        self.initial['interesting_subdomain_lookup'] = engine.interesting_subdomain_lookup
 
 
 class AddWordlistForm(forms.Form):
@@ -172,42 +171,5 @@ class InterestingLookupForm(forms.ModelForm):
                 "placeholder": "Interesting Keywords",
             }))
 
-    custom_type = forms.BooleanField(
-        required=False,
-        widget=forms.HiddenInput(
-            attrs={
-                "value": 'true'
-                }))
-
-    title_lookup = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={
-                "class": "new-control-input",
-            }))
-
-    url_lookup = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={
-                "class": "new-control-input",
-            }))
-
-    condition_200_http_lookup = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={
-                "class": "new-control-input",
-            }))
-
     def set_value(self, key):
-        print(key.url_lookup)
         self.initial['keywords'] = key.keywords
-        self.initial['title_lookup'] = key.title_lookup
-        self.initial['url_lookup'] = key.url_lookup
-        self.initial['condition_200_http_lookup'] = key.condition_200_http_lookup
-
-    def initial_checkbox(self):
-        self.initial['title_lookup'] = True
-        self.initial['url_lookup'] = True
-        self.initial['condition_200_http_lookup'] = False

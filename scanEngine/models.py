@@ -10,7 +10,6 @@ class EngineType(models.Model):
     vulnerability_scan = models.BooleanField(null=True, default=False)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
-    interesting_subdomain_lookup = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.engine_name
@@ -45,7 +44,3 @@ class Configuration(models.Model):
 
 class InterestingLookupModel(models.Model):
     keywords = models.TextField(null=True, blank=True)
-    custom_type = models.BooleanField(default=False)
-    title_lookup = models.BooleanField(default=True)
-    url_lookup = models.BooleanField(default=True)
-    condition_200_http_lookup = models.BooleanField(default=False)
