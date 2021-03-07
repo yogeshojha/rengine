@@ -14,9 +14,10 @@ from django.conf import settings
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
 from targetApp.models import Domain
-from scanEngine.models import EngineType, Configuration
 from reNgine.tasks import doScan, create_scan_activity
 from reNgine.celery import app
+
+from reNgine.common_func import *
 
 
 def scan_history(request):
@@ -26,17 +27,21 @@ def scan_history(request):
 
 
 def detail_scan(request, id=None):
+    context = {}
     if id:
-        subdomain_count = ScannedHost.objects.filter(scan_history__id=id).count()
-        alive_count = ScannedHost.objects.filter(
+        context['scan_history_id'] = id
+        context['subdomain_count'] = ScannedHost.objects.filter(
+            scan_history__id=id).count()
+        context['alive_count'] = ScannedHost.objects.filter(
             scan_history__id=id).exclude(
             http_status__exact=0).count()
-        scan_activity = ScanActivity.objects.filter(
+        context['scan_activity'] = ScanActivity.objects.filter(
             scan_of__id=id).order_by('time')
-        endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
-        endpoint_alive_count = WayBackEndPoint.objects.filter(
+        context['endpoint_count'] = WayBackEndPoint.objects.filter(
+            url_of__id=id).count()
+        context['endpoint_alive_count'] = WayBackEndPoint.objects.filter(
             url_of__id=id, http_status__exact=200).count()
-        history = get_object_or_404(ScanHistory, id=id)
+        context['history'] = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=0).count()
         low_count = VulnerabilityScan.objects.filter(
@@ -47,26 +52,16 @@ def detail_scan(request, id=None):
             vulnerability_of__id=id, severity=3).count()
         critical_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=4).count()
-        total_vulnerability_count = info_count + low_count + \
+        context['total_vulnerability_count'] = info_count + low_count + \
             medium_count + high_count + critical_count
-        context = {'scan_history_active': 'true',
-                   'scan_history': scan_history,
-                   'scan_activity': scan_activity,
-                   'alive_count': alive_count,
-                   'scan_history_id': id,
-                   'subdomain_count': subdomain_count,
-                   'endpoint_count': endpoint_count,
-                   'endpoint_alive_count': endpoint_alive_count,
-                   'history': history,
-                   'info_count': info_count,
-                   'low_count': low_count,
-                   'medium_count': medium_count,
-                   'high_count': high_count,
-                   'critical_count': critical_count,
-                   'total_vulnerability_count': total_vulnerability_count,
-                   }
-    else:
-        context = {}
+        context['info_count'] = info_count
+        context['low_count'] = low_count
+        context['medium_count'] = medium_count
+        context['high_count'] = high_count
+        context['critical_count'] = critical_count
+        context['interesting_subdomain'] = get_interesting_subdomains(
+            scan_history=id)
+        context['scan_history_active'] = 'true'
     return render(request, 'startScan/detail_scan.html', context)
 
 
@@ -233,7 +228,8 @@ def stop_scan(request, id):
         scan_history.scan_status = 3
         scan_history.save()
         try:
-            last_activity = ScanActivity.objects.filter(scan_of=scan_history).order_by('-pk')[0]
+            last_activity = ScanActivity.objects.filter(
+                scan_of=scan_history).order_by('-pk')[0]
             last_activity.status = 0
             last_activity.time = timezone.now()
             last_activity.save()

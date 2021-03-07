@@ -18,6 +18,8 @@ from django.urls import reverse
 from django.conf import settings
 from django.db.models import Count, Q
 
+from reNgine.common_func import *
+
 
 def index(request):
     # TODO bring default target page
@@ -220,17 +222,5 @@ def target_summary(request, id):
         target_domain=id).filter(severity=4).count()
     context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values(
         "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
-    default_lookup_keywords = InterestingLookupModel.objects.get(
-        id=1).keywords.split(',')
-    custom_lookup_keywords = []
-    if InterestingLookupModel.objects.filter(custom_type=True):
-        custom_lookup_keywords = InterestingLookupModel.objects.filter(
-            custom_type=True).order_by('-id')[0].keywords.split(',')
-    lookup_keywords = default_lookup_keywords + custom_lookup_keywords
-    subdomain_lookup = ScannedHost.objects.none()
-    page_title_lookup = ScannedHost.objects.none()
-    for key in lookup_keywords:
-        subdomain_lookup = subdomain_lookup | ScannedHost.objects.filter(target_domain__id=id).filter(target_domain__id=id).filter(subdomain__icontains='uat')
-        page_title_lookup = page_title_lookup | ScannedHost.objects.filter(target_domain__id=id).filter(page_title__iregex="\y{}\y".format(key))
-    context['interesting_subdomain'] = subdomain_lookup | page_title_lookup
+    context['interesting_subdomain'] = get_interesting_subdomains(target=id)
     return render(request, 'target/summary.html', context)
