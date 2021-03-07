@@ -1,0 +1,10 @@
+[
+{
+  "model": "scanEngine.interestinglookupmodel",
+  "pk": 1,
+  "fields": {
+    "keywords": "admin, dashboard , settings, dev, server, prod, app, api, ftp, support, web, remote",
+    "custom_type": false
+  }
+}
+]
