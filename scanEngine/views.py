@@ -220,5 +220,5 @@ def interesting_lookup(request):
         form.set_value(lookup_keywords)
         context['interesting_lookup_found'] = True
     context['form'] = form
-    context['default_lookup'] = InterestingLookupModel.objects.filter(custom_type=False)
+    context['default_lookup'] = InterestingLookupModel.objects.filter(id=1)
     return render(request, 'scanEngine/lookup.html', context)
