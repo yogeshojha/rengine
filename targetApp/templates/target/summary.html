@@ -216,43 +216,7 @@ Target Summary for {{target.domain_name}}
           <b>{{interesting_subdomain.count}}</b> Interesting Subdomains
         </h6>
       </div>
-
-      <div class="widget-content">
-        <div class="table-responsive">
-          <table class="table table-striped table-bordered table-hover">
-            <thead>
-              <tr>
-                <th><div class="th-content">Subdomain</div></th>
-                <th><div class="th-content">Page Title</div></th>
-                <th><div class="th-content">HTTP Status</div></th>
-                <th><div class="th-content">Content Length</div></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for subdomain in interesting_subdomain %}
-              <tr>
-                <td><a href="{{subdomain.http_url}}" target="_blank" class="text-info">{{subdomain.subdomain}}</a></td>
-                <td>{{subdomain.page_title|truncatechars:50}}</td>
-                <td class="text-center">
-                  {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %}
-                  <span class='badge badge-pills badge-success'>{{subdomain.http_status}}</span>
-                  {% elif subdomain.http_status >= 300 and subdomain.content_length < 400 %}
-                  <span class='badge badge-pills badge-warning'>{{subdomain.http_status}}</span>
-                  {% elif subdomain.http_status == 0 %}
-                  &nbsp;
-                  {% else %}
-                  <span class='badge badge-pills badge-danger'>{{subdomain.http_status}}</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {{subdomain.content_length}}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {% include 'base/_items/interesting_subdomains.html' %}
     </div>
   </div>
 </div>
