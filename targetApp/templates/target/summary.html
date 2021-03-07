@@ -208,25 +208,45 @@ Target Summary for {{target.domain_name}}
   <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
     <div class="widget widget-table-two">
       <div class="widget-heading">
-        <h6><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> Interesting Subdomains</h6>
+        <h6>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
+            </polygon>
+          </svg>
+          <b>{{interesting_subdomain.count}}</b> Interesting Subdomains
+        </h6>
       </div>
 
       <div class="widget-content">
         <div class="table-responsive">
-          <table class="table">
+          <table class="table table-striped table-bordered table-hover">
             <thead>
               <tr>
                 <th><div class="th-content">Subdomain</div></th>
                 <th><div class="th-content">Page Title</div></th>
-                <th><div class="th-content">Reason</div></th>
+                <th><div class="th-content">HTTP Status</div></th>
+                <th><div class="th-content">Content Length</div></th>
               </tr>
             </thead>
             <tbody>
               {% for subdomain in interesting_subdomain %}
               <tr>
-                <td><div class="td-content"><a href="#" class="text-info">{{subdomain.subdomain}}</a></div></td>
-                <td><div class="td-content">{{subdomain.page_title}}</div></td>
-                <td><div class="td-content"><span class="badge outline-badge-primary">{{subdomain.interesting_subdomain_reason}}</span></div></td>
+                <td><a href="{{subdomain.http_url}}" target="_blank" class="text-info">{{subdomain.subdomain}}</a></td>
+                <td>{{subdomain.page_title|truncatechars:50}}</td>
+                <td class="text-center">
+                  {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %}
+                  <span class='badge badge-pills badge-success'>{{subdomain.http_status}}</span>
+                  {% elif subdomain.http_status >= 300 and subdomain.content_length < 400 %}
+                  <span class='badge badge-pills badge-warning'>{{subdomain.http_status}}</span>
+                  {% elif subdomain.http_status == 0 %}
+                  &nbsp;
+                  {% else %}
+                  <span class='badge badge-pills badge-danger'>{{subdomain.http_status}}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {{subdomain.content_length}}
+                </td>
               </tr>
               {% endfor %}
             </tbody>
