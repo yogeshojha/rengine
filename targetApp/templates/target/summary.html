@@ -149,7 +149,7 @@ Target Summary for {{target.domain_name}}
     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-table-one">
         <div class="widget-heading">
-          <h6 class="">Recently completed Scans</h6>
+          <h6 class="">Recent Scans</h6>
         </div>
         <div class="widget-content">
           {% for item in recent_scans %}
@@ -222,11 +222,13 @@ Target Summary for {{target.domain_name}}
               </tr>
             </thead>
             <tbody>
+              {% for subdomain in interesting_subdomain %}
               <tr>
-                <td><div class="td-content"><a href="#" class="text-info">admin.google.com</a></div></td>
-                <td><div class="td-content">Admin Dashboard Panel</div></td>
-                <td><div class="td-content"><span class="badge outline-badge-primary">Page Title</span></div></td>
+                <td><div class="td-content"><a href="#" class="text-info">{{subdomain.subdomain}}</a></div></td>
+                <td><div class="td-content">{{subdomain.page_title}}</div></td>
+                <td><div class="td-content"><span class="badge outline-badge-primary">{{subdomain.interesting_subdomain_reason}}</span></div></td>
               </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>

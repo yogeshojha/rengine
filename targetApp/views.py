@@ -210,4 +210,5 @@ def target_summary(request, id):
     context['high_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=3).count()
     context['critical_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=4).count()
     context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values("name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
+    context['interesting_subdomain'] = ScannedHost.objects.filter(target_domain__id=id).filter(interesting_subdomain=True)
     return render(request, 'target/summary.html', context)

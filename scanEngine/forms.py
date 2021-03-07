@@ -1,5 +1,5 @@
 from django import forms
-from scanEngine.models import EngineType, Configuration
+from scanEngine.models import EngineType, Configuration, InterestingLookupModel
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
 
@@ -99,7 +99,6 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
-        self.initial['interesting_subdomain_lookup'] = engine.interesting_subdomain_lookup
 
 
 class AddWordlistForm(forms.Form):
@@ -157,3 +156,20 @@ class ConfigurationForm(forms.ModelForm):
         self.initial['name'] = configuration.name
         self.initial['short_name'] = configuration.short_name
         self.initial['content'] = configuration.content
+
+
+class InterestingLookupForm(forms.ModelForm):
+    class Meta:
+        model = InterestingLookupModel
+        fields = '__all__'
+    keywords = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "keywords",
+                "placeholder": "Interesting Keywords",
+            }))
+
+    def set_value(self, key):
+        self.initial['keywords'] = key.keywords

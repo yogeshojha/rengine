@@ -2,8 +2,8 @@ import io
 import re
 import os
 from django.shortcuts import render, get_object_or_404
-from scanEngine.models import EngineType, Wordlist, Configuration
-from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm
+from scanEngine.models import EngineType, Wordlist, Configuration, InterestingLookupModel
+from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm, InterestingLookupForm
 from scanEngine.forms import ConfigurationForm
 from django.contrib import messages
 from django import http
@@ -14,6 +14,7 @@ from django.conf import settings
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
     context = {
+            'engine_li': 'active',
             'scan_engine_nav_active': 'true',
             'engine_type': engine_type, }
     return render(request, 'scanEngine/index.html', context)
@@ -192,3 +193,26 @@ def update_configuration(request, id):
             'configuration_nav_active':
             'true', 'form': form}
     return render(request, 'scanEngine/configuration/update.html', context)
+
+def interesting_lookup(request):
+    lookup_keywords = InterestingLookupModel.objects.latest('id')
+    context = {}
+    context['interesting_lookup_found'] = False
+    context['scan_engine_nav_active'] = 'true'
+    context['interesting_lookup_li'] = 'active'
+    form = InterestingLookupForm()
+    if request.method == "POST":
+        form = InterestingLookupForm(request.POST, instance=lookup_keywords)
+        if form.is_valid():
+            print(form.cleaned_data)
+            form.save()
+            messages.add_message(
+                                request,
+                                messages.INFO,
+                                'Lookup Keywords updated successfully')
+            return http.HttpResponseRedirect(reverse('interesting_lookup'))
+    if lookup_keywords:
+        form.set_value(lookup_keywords)
+        context['interesting_lookup_found'] = True
+    context['form'] = form
+    return render(request, 'scanEngine/lookup.html', context)
