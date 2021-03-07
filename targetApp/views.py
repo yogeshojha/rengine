@@ -227,6 +227,10 @@ def target_summary(request, id):
         custom_lookup_keywords = InterestingLookupModel.objects.filter(
             custom_type=True).order_by('-id')[0].keywords.split(',')
     lookup_keywords = default_lookup_keywords + custom_lookup_keywords
-    context['interesting_subdomain'] = ScannedHost.objects.filter(target_domain__id=id).filter(reduce(
-        or_, [Q(subdomain__icontains=key) | Q(page_title__iregex="\y{}\y".format(key)) for key in lookup_keywords]))
+    subdomain_lookup = ScannedHost.objects.none()
+    page_title_lookup = ScannedHost.objects.none()
+    for key in lookup_keywords:
+        subdomain_lookup = subdomain_lookup | ScannedHost.objects.filter(target_domain__id=id).filter(target_domain__id=id).filter(subdomain__icontains='uat')
+        page_title_lookup = page_title_lookup | ScannedHost.objects.filter(target_domain__id=id).filter(page_title__iregex="\y{}\y".format(key))
+    context['interesting_subdomain'] = subdomain_lookup | page_title_lookup
     return render(request, 'target/summary.html', context)
