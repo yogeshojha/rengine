@@ -171,5 +171,12 @@ class InterestingLookupForm(forms.ModelForm):
                 "placeholder": "Interesting Keywords",
             }))
 
+    custom_type = forms.BooleanField(
+        required=False,
+        widget=forms.HiddenInput(
+            attrs={
+                "value": 'true'
+                }))
+
     def set_value(self, key):
         self.initial['keywords'] = key.keywords
