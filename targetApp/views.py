@@ -4,10 +4,13 @@ import io
 import os
 
 from datetime import timedelta
+from operator import and_, or_
+from functools import reduce
 from django import http
 from django.shortcuts import render, get_object_or_404
 from .models import Domain
 from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
+from scanEngine.models import InterestingLookupModel
 from django.contrib import messages
 from targetApp.forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
@@ -205,12 +208,27 @@ def target_summary(request, id):
         context['subdomain_difference'] = subdomain_count
         context['endpoint_difference'] = endpoint_count
         context['vulnerability_difference'] = vulnerability_count
-    context['recent_scans'] = ScanHistory.objects.filter(domain_name=id).order_by('-last_scan_date')[:3]
-    context['info_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=0).count()
-    context['low_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=1).count()
-    context['medium_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=2).count()
-    context['high_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=3).count()
-    context['critical_count'] = VulnerabilityScan.objects.filter(target_domain=id).filter(severity=4).count()
-    context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values("name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
-    context['interesting_subdomain'] = ScannedHost.objects.filter(target_domain__id=id).filter(interesting_subdomain=True)
+    context['recent_scans'] = ScanHistory.objects.filter(
+        domain_name=id).order_by('-last_scan_date')[:3]
+    context['info_count'] = VulnerabilityScan.objects.filter(
+        target_domain=id).filter(severity=0).count()
+    context['low_count'] = VulnerabilityScan.objects.filter(
+        target_domain=id).filter(severity=1).count()
+    context['medium_count'] = VulnerabilityScan.objects.filter(
+        target_domain=id).filter(severity=2).count()
+    context['high_count'] = VulnerabilityScan.objects.filter(
+        target_domain=id).filter(severity=3).count()
+    context['critical_count'] = VulnerabilityScan.objects.filter(
+        target_domain=id).filter(severity=4).count()
+    context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values(
+        "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
+    default_lookup_keywords = InterestingLookupModel.objects.get(
+        id=1).keywords.split(',')
+    custom_lookup_keywords = []
+    if InterestingLookupModel.objects.filter(custom_type=True):
+        custom_lookup_keywords = InterestingLookupModel.objects.filter(
+            custom_type=True).order_by('-id')[0].keywords.split(',')
+    lookup_keywords = default_lookup_keywords + custom_lookup_keywords
+    context['interesting_subdomain'] = ScannedHost.objects.filter(target_domain__id=id).filter(reduce(
+        or_, [Q(subdomain__icontains=key) | Q(page_title__iregex="\y{}\y".format(key)) for key in lookup_keywords]))
     return render(request, 'target/summary.html', context)

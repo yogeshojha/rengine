@@ -3,7 +3,7 @@
   "model": "scanEngine.interestinglookupmodel",
   "pk": 1,
   "fields": {
-    "keywords": "admin, dashboard , settings, dev, server, prod, app, api, ftp, support, web, remote",
+    "keywords": "admin, dashboard, dev, prod, api, ftp, mail",
     "custom_type": false
   }
 }
