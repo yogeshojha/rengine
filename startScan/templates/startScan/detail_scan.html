@@ -169,7 +169,43 @@ All Subdomains
 	</div>
 	{% endif %}
 	{% endif %}
-	{% include 'base/_items/interesting_recon.html' %}
+	<div class="row layout-top-spacing mb-4">
+		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+			<div class="widget-content widget-content-area br-6">
+				<h5 class="text-info"> Interesting Recon Data</h5>
+				<div id="iconsAccordion" class="accordion-icons">
+					<div class="card">
+						<div class="card-header" id="...">
+							<section class="mb-0 mt-0">
+								<div role="menu" class="collapsed" data-toggle="collapse" data-target="#iconAccordionOne" aria-expanded="true" aria-controls="iconAccordionOne">
+									<div class="accordion-icon">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
+											<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
+											</polygon>
+										</svg>
+									</div>
+									<b>{{interesting_subdomain.count}}</b> Interesting Subdomains
+									<div class="icons text-info">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+									</div>
+								</div>
+							</section>
+						</div>
+
+						<div id="iconAccordionOne" class="collapse show" aria-labelledby="" data-parent="#iconsAccordion">
+							<div class="card-body">
+								<div class="widget-table-two">
+									<div class="widget-content">
+										{% include 'base/_items/interesting_subdomains.html' %}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="row layout-top-spacing mb-4" id="subdomainDiscovered">
 		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 			<div class="widget-content widget-content-area br-6">

@@ -14,7 +14,6 @@ from django.conf import settings
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
 from targetApp.models import Domain
-from scanEngine.models import EngineType, Configuration
 from reNgine.tasks import doScan, create_scan_activity
 from reNgine.celery import app
 
@@ -61,8 +60,6 @@ def detail_scan(request, id=None):
         context['high_count'] = high_count
         context['critical_count'] = critical_count
         context['interesting_subdomain'] = get_interesting_subdomains(
-            scan_history=id)
-        context['interesting_endpoint'] = get_interesting_endpoint(
             scan_history=id)
         context['scan_history_active'] = 'true'
     return render(request, 'startScan/detail_scan.html', context)
