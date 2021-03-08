@@ -15,6 +15,41 @@ class ScanHistory(models.Model):
         # debug purpose remove scan type and id in prod
         return self.domain_name.domain_name
 
+    def get_subdomain_count(self):
+        return ScannedHost.objects.filter(scan_history__id=self.id).count()
+
+    def get_endpoint_count(self):
+        return WayBackEndPoint.objects.filter(url_of__id=self.id).count()
+
+    def get_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).count()
+
+    def get_info_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).filter(
+            severity=0).count()
+
+    def get_low_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).filter(
+            severity=1).count()
+
+    def get_medium_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).filter(
+            severity=2).count()
+
+    def get_high_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).filter(
+            severity=3).count()
+
+    def get_critical_vulnerability_count(self):
+        return VulnerabilityScan.objects.filter(
+            vulnerability_of__id=self.id).filter(
+            severity=4).count()
+
 
 class ScannedHost(models.Model):
     subdomain = models.CharField(max_length=1000)
@@ -33,7 +68,8 @@ class ScannedHost(models.Model):
     directory_json = JSONField(null=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
     interesting_subdomain = models.BooleanField(null=True, default=False)
     interesting_subdomain_reason = models.CharField(max_length=100, null=True)
 
@@ -49,7 +85,8 @@ class WayBackEndPoint(models.Model):
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.page_title
@@ -57,17 +94,23 @@ class WayBackEndPoint(models.Model):
 
 class VulnerabilityScan(models.Model):
     vulnerability_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    host = models.ForeignKey(ScannedHost, on_delete=models.CASCADE, blank=True, null=True)
+    host = models.ForeignKey(
+        ScannedHost,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True)
     discovered_date = models.DateTimeField(null=True)
     url = models.CharField(max_length=1000)
     name = models.CharField(max_length=400)
     severity = models.IntegerField()
     description = models.CharField(max_length=1000, null=True, blank=True)
-    extracted_results = models.CharField(max_length=1000, null=True, blank=True)
+    extracted_results = models.CharField(
+        max_length=1000, null=True, blank=True)
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
