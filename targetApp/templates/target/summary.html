@@ -49,7 +49,69 @@ Target Summary for {{target.domain_name}}
             <span class="icon-name"> <b>{{this_week_scan_count}}</b> Scans this week</span>
           </div>
           <br>
-          <a href="#" class="text-info">View all Scans</a>
+          <a data-toggle="modal" data-target="#exampleModal" class="text-info">View all Scans</a>
+          <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="exampleModalLabel">Scans initiated for {{target.domain_name}}</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="widget-table-two">
+                    <div class="widget-content">
+                      <div class="table-responsive">
+                        <table class="table table-striped table-bordered table-hover">
+                          <thead>
+                            <tr>
+                              <th><div class="th-content">Scan Type</div></th>
+                              <th><div class="th-content">Last Scanned on</div></th>
+                              <th><div class="th-content">Status</div></th>
+                              <th><div class="text-center">Scan Result</div></th>
+                              <th>&nbsp;</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for scan in scan_history %}
+                            <tr>
+                              <td>{{scan.scan_type}}</td>
+                              <td>{{scan.last_scan_date}}</td>
+                              <td class="text-center">
+                                {% if scan.scan_status == -1 %}
+                                <span class="shadow-none badge badge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
+                                {% elif scan.scan_status == 0 %}
+                                <span class="shadow-none badge badge-danger">Failed</span>
+                                {% elif scan.scan_status == 1 %}
+                                <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+                                {% elif scan.scan_status == 2 %}
+                                <span class="shadow-none badge badge-success p-2">Successful</span>
+                                {% elif scan.scan_status == 3 %}
+                                <span class="shadow-none badge badge-danger">Aborted</span>
+                                {% else %}
+                                <span class="shadow-none badge badge-danger">Unknown</span>
+                                {% endif %}
+                              </td>
+                              <td class="text-center">
+                                <span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan.get_subdomain_count}}</span>
+                                <span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan.get_endpoint_count}}</span>
+                                <span class="badge badge-pills badge-danger bs-tooltip" title="Vulnerabilities">{{scan.get_vulnerability_count}}</span>
+              								</td>
+                              <td class="text-center">
+                                <a href="{% url 'detail_scan' scan.id %}" class="text-info">View More...</a>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

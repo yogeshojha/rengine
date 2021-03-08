@@ -55,9 +55,6 @@ def get_interesting_endpoint(scan_history=None, target=None):
         url_lookup_query |= Q(http_url__icontains=key)
         page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
 
-    print(url_lookup_query)
-    print(page_title_lookup_query)
-
     if target:
         url_lookup = WayBackEndPoint.objects.filter(
             target_domain__id=target).filter(url_lookup_query)
