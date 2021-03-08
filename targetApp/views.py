@@ -224,4 +224,6 @@ def target_summary(request, id):
         "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     context['interesting_subdomain'] = get_interesting_subdomains(target=id)
     context['interesting_endpoint'] = get_interesting_endpoint(target=id)
+    context['scan_history'] = ScanHistory.objects.filter(
+        domain_name=id).order_by('-last_scan_date')
     return render(request, 'target/summary.html', context)
