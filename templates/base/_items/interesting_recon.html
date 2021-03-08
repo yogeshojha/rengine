@@ -1,8 +1,11 @@
 {% if interesting_subdomain.count > 0 or interesting_endpoint.count > 0 %}
-<div class="row layout mb-2">
+<div class="row layout-top-spacing mb-2">
   <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-    <div class="widget-content widget-content-area br-6">
-      <h5 class="text-info"> Interesting Recon Data</h5>
+    <div class="widget widget-table-one">
+      <div class="widget-heading">
+        <h6 class=""> Interesting Recon Data</h6>
+      </div>
+      <div class="widget-content">
       <div id="interesting_recon_accordion" class="accordion-icons">
         {% if interesting_subdomain.count > 0 %}
         <div class="card">
@@ -65,6 +68,7 @@
         </div>
         {% endif %}
       </div>
+    </div>
     </div>
   </div>
 </div>
