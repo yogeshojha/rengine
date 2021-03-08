@@ -33,9 +33,9 @@ def get_interesting_subdomains(scan_history=None, target=None):
 
     if target:
         subdomain_lookup = ScannedHost.objects.filter(
-            target_domain__id=target).filter(subdomain_lookup_query)
-        title_lookup = ScannedHost.objects.filter(
-            page_title_lookup_query).filter(target_domain__id=target)
+            target_domain__id=target).filter(subdomain_lookup_query).distinct('subdomain')
+        title_lookup = ScannedHost.objects.filter(page_title_lookup_query).filter(
+            target_domain__id=target).distinct('subdomain')
     elif scan_history:
         subdomain_lookup = ScannedHost.objects.filter(
             scan_history__id=scan_history).filter(subdomain_lookup_query)
@@ -57,9 +57,9 @@ def get_interesting_endpoint(scan_history=None, target=None):
 
     if target:
         url_lookup = WayBackEndPoint.objects.filter(
-            target_domain__id=target).filter(url_lookup_query)
+            target_domain__id=target).filter(url_lookup_query).distinct('http_url')
         title_lookup = WayBackEndPoint.objects.filter(
-            target_domain__id=target).filter(page_title_lookup_query)
+            target_domain__id=target).filter(page_title_lookup_query).distinct('http_url')
     elif scan_history:
         url_lookup = WayBackEndPoint.objects.filter(
             url_of__id=scan_history).filter(url_lookup_query)
