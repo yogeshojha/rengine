@@ -18,6 +18,7 @@ Target Summary for {{target.domain_name}}
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -204,22 +205,7 @@ Target Summary for {{target.domain_name}}
     </div>
   </div>
 </div>
-<div class="row">
-  <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-    <div class="widget widget-table-two">
-      <div class="widget-heading">
-        <h6>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
-            </polygon>
-          </svg>
-          <b>{{interesting_subdomain.count}}</b> Interesting Subdomains
-        </h6>
-      </div>
-      {% include 'base/_items/interesting_subdomains.html' %}
-    </div>
-  </div>
-</div>
+{% include 'base/_items/interesting_recon.html' %}
 <div class="row layout-spacing">
   {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
   <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
@@ -301,6 +287,7 @@ Target Summary for {{target.domain_name}}
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 

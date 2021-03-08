@@ -223,4 +223,5 @@ def target_summary(request, id):
     context['most_common_vulnerability'] = VulnerabilityScan.objects.filter(target_domain=id).values(
         "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     context['interesting_subdomain'] = get_interesting_subdomains(target=id)
+    context['interesting_endpoint'] = get_interesting_endpoint(target=id)
     return render(request, 'target/summary.html', context)
