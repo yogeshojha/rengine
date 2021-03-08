@@ -47,27 +47,27 @@ table.dataTable {
     box-shadow: 0px 0px 14px 3px rgba(126, 142, 177, 0.24);
 }
 
-.style-2 .badge {
+.style-2 .tbadge {
     background: transparent;
     transform: none;
 }
 
-.style-2 .badge-primary {
+.style-2 .tbadge-primary {
     color: #2196f3;
     border: 2px dashed #2196f3;
 }
 
-.style-2 .badge-success {
+.style-2 .tbadge-success {
     color: #8dbf42;
     border: 2px dashed #8dbf42;
 }
 
-.style-2 .badge-warning {
+.style-2 .tbadge-warning {
     color: #e2a03f;
     border: 2px dashed #e2a03f;
 }
 
-.style-2 .badge-danger {
+.style-2 .tbadge-danger {
     color: #e7515a;
     border: 2px dashed #e7515a;
 }
