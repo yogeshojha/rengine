@@ -327,6 +327,9 @@ Dashboard
 
 							</div>
 							<div class="t-rate">
+								<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{item.get_subdomain_count}}</span>
+								<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{item.get_endpoint_count}}</span>
+								<span class="badge badge-pills badge-danger bs-tooltip" title="{{item.get_critical_vulnerability_count}} Critical, {{item.get_high_vulnerability_count}} High, {{item.get_medium_vulnerability_count}} Medium Vulnerabilities">{{item.get_vulnerability_count}}</span>
 								{% if item.scan_status == -1 %}
 								<span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
 								{% elif item.scan_status == 0 %}
