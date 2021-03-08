@@ -1,0 +1,34 @@
+<div class="table-responsive">
+  <table class="table table-striped table-bordered table-hover">
+    <thead>
+      <tr>
+        <th><div class="th-content">URL</div></th>
+        <th><div class="th-content">Title</div></th>
+        <th><div class="th-content">HTTP Status</div></th>
+        <th><div class="th-content">Content Length</div></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for url in interesting_endpoint %}
+      <tr>
+        <td><a href="{{url.http_url}}" target="_blank" class="text-info">{{ url.http_url|truncatechars:100 }}</a></td>
+        <td>{{url.page_title|truncatechars:50}}</td>
+        <td class="text-center">
+          {% if url.http_status >= 200 and url.http_status < 300 %}
+          <span class='badge badge-pills badge-success'>{{url.http_status}}</span>
+          {% elif url.http_status >= 300 and url.content_length < 400 %}
+          <span class='badge badge-pills badge-warning'>{{url.http_status}}</span>
+          {% elif url.http_status == 0 %}
+          &nbsp;
+          {% else %}
+          <span class='badge badge-pills badge-danger'>{{url.http_status}}</span>
+          {% endif %}
+        </td>
+        <td>
+          {{url.content_length}}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
