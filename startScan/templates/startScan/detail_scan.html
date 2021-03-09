@@ -236,7 +236,15 @@ $(document).ready(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
+		{% if scan_history_id %}
 		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		{% else %}
+		{% if request.GET.query %}
+		"ajax": '/start_scan/api/scanHistory/?scan_id=&format=datatables&query_param={{request.GET.query}}',
+		{% else %}
+		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables',
+    {% endif %}
+		{% endif %}
 		"order": [[ 5, "desc" ]],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
 		"<'row'<'col'tr>>" +
