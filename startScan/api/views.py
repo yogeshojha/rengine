@@ -201,7 +201,18 @@ class EndPointViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         req = self.request
         url_of = req.query_params.get('url_of')
-        if url_of:
+        url_query = req.query_params.get('query_param')
+        if url_query:
+            if url_query.isnumeric():
+                self.queryset = WayBackEndPoint.objects.filter(
+                    Q(
+                        url_of__domain_name__domain_name=url_query) | Q(
+                        http_url=url_query) | Q(
+                        id=url_query))
+            else:
+                self.queryset = WayBackEndPoint.objects.filter(
+                    Q(url_of__domain_name__domain_name=url_query) | Q(http_url=url_query))
+        elif url_of:
             self.queryset = WayBackEndPoint.objects.filter(url_of__id=url_of)
             return self.queryset
         else:
