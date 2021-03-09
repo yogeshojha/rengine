@@ -14,7 +14,12 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         req = self.request
         scan_id = req.query_params.get('scan_id')
-        if scan_id:
+
+        url_query = req.query_params.get('query_param')
+        if url_query:
+            self.queryset = ScannedHost.objects.filter(
+                Q(target_domain__domain_name=url_query))
+        elif scan_id:
             self.queryset = ScannedHost.objects.filter(
                 scan_history__id=scan_id)
             return self.queryset
@@ -288,7 +293,8 @@ class EndPointViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
             elif 'content_type' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.filter(content_type__icontains=lookup_content)
+                qs = self.queryset.filter(
+                    content_type__icontains=lookup_content)
         elif '>' in search_value:
             search_param = search_value.split(">")
             lookup_title = search_param[0].lower().strip()
@@ -340,7 +346,8 @@ class EndPointViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
             elif 'content_type' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.exclude(content_type__icontains=lookup_content)
+                qs = self.queryset.exclude(
+                    content_type__icontains=lookup_content)
         return qs
 
 
