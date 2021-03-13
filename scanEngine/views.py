@@ -200,8 +200,10 @@ def interesting_lookup(request):
     context['scan_engine_nav_active'] = 'true'
     context['interesting_lookup_li'] = 'active'
     form = InterestingLookupForm()
-    if InterestingLookupModel.objects.filter(custom_type=True):
+    if InterestingLookupModel.objects.filter(custom_type=True).exists():
         lookup_keywords = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0]
+    else:
+        form.initial_checkbox()
     if request.method == "POST":
         if lookup_keywords:
             form = InterestingLookupForm(request.POST, instance=lookup_keywords)
@@ -216,6 +218,7 @@ def interesting_lookup(request):
                                 messages.INFO,
                                 'Lookup Keywords updated successfully')
             return http.HttpResponseRedirect(reverse('interesting_lookup'))
+
     if lookup_keywords:
         form.set_value(lookup_keywords)
         context['interesting_lookup_found'] = True
