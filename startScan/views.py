@@ -32,7 +32,7 @@ def detail_scan(request, id=None):
             scan_history__id=id).exclude(
             http_status__exact=0).count()
         scan_activity = ScanActivity.objects.filter(
-            scan_of__id=id).order_by('time')
+            scan_of__id=id).order_by('-time')
         endpoint_count = WayBackEndPoint.objects.filter(url_of__id=id).count()
         endpoint_alive_count = WayBackEndPoint.objects.filter(
             url_of__id=id, http_status__exact=200).count()
