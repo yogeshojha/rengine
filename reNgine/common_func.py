@@ -28,20 +28,32 @@ def get_interesting_subdomains(scan_history=None, target=None):
     page_title_lookup_query = Q()
 
     for key in lookup_keywords:
-        subdomain_lookup_query |= Q(subdomain__icontains=key)
-        page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+        if InterestingLookupModel.objects.filter(custom_type=True):
+            if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].url_lookup:
+                subdomain_lookup_query |= Q(subdomain__icontains=key)
+            if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].title_lookup:
+                page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+        else:
+            subdomain_lookup_query |= Q(subdomain__icontains=key)
+            page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+
+    subdomain_lookup = ScannedHost.objects.none()
+    title_lookup = ScannedHost.objects.none()
 
     if target:
-        subdomain_lookup = ScannedHost.objects.filter(
-            target_domain__id=target).filter(subdomain_lookup_query).distinct('subdomain')
-        title_lookup = ScannedHost.objects.filter(page_title_lookup_query).filter(
-            target_domain__id=target).distinct('subdomain')
+        if subdomain_lookup_query:
+            subdomain_lookup = ScannedHost.objects.filter(
+                target_domain__id=target).filter(subdomain_lookup_query).distinct('subdomain')
+        if page_title_lookup_query:
+            title_lookup = ScannedHost.objects.filter(page_title_lookup_query).filter(
+                target_domain__id=target).distinct('subdomain')
     elif scan_history:
-        subdomain_lookup = ScannedHost.objects.filter(
-            scan_history__id=scan_history).filter(subdomain_lookup_query)
-        title_lookup = ScannedHost.objects.filter(
-            scan_history__id=scan_history).filter(page_title_lookup_query)
-
+        if subdomain_lookup_query:
+            subdomain_lookup = ScannedHost.objects.filter(
+                scan_history__id=scan_history).filter(subdomain_lookup_query)
+        if page_title_lookup_query:
+            title_lookup = ScannedHost.objects.filter(
+                scan_history__id=scan_history).filter(page_title_lookup_query)
     return subdomain_lookup | title_lookup
 
 
