@@ -7,6 +7,7 @@ Interesting entries Lookup
 
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -48,7 +49,18 @@ Interesting entries lookup
         {{ form.custom_type }}
         <span class="text-danger"><b>Press comma , to add and separate the keywords</b></span>
         <br>
-        <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Keywords</button>
+        <h6 class="mt-2">Lookup in</h6>
+        <div class="n-chk">
+          <label class="new-control new-checkbox checkbox-primary">
+            {{form.url_lookup}}
+            <span class="new-control-indicator"></span><span class="text-dark">Subdomains/URLs</span>
+          </label>
+          <label class="new-control new-checkbox checkbox-primary">
+            {{form.title_lookup}}
+            <span class="new-control-indicator"></span><span class="text-dark">Page Title</span>
+          </label>
+        </div>
+        <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Lookup</button>
       </form>
     </div>
   </div>

@@ -178,5 +178,21 @@ class InterestingLookupForm(forms.ModelForm):
                 "value": 'true'
                 }))
 
+    title_lookup = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+            }))
+
+    url_lookup = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+            }))
+
     def set_value(self, key):
         self.initial['keywords'] = key.keywords
+        self.initial['title_lookup'] = key.title_lookup
+        self.initial['url_lookup'] = key.url_lookup
