@@ -6,7 +6,8 @@
     "keywords": "admin, ftp, cpanel, dashboard",
     "custom_type": false,
     "title_lookup": true,
-    "url_lookup": true
+    "url_lookup": true,
+    "condition_200_http_lookup": false
   }
 }
 ]
