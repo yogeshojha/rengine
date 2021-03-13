@@ -65,3 +65,7 @@ function GetIEVersion() {
   else
     return 0; //It is not IE
 }
+
+function truncate(str, n){
+  return (str.length > n) ? str.substr(0, n-1) + '&hellip;' : str;
+};
