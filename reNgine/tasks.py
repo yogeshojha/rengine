@@ -543,11 +543,6 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     logging.error(exception)
                     update_last_activity(activity_id, 0)
 
-        '''
-        Getting endpoint from GAU, is also not set by default, check for conditions.
-        One thing to change is that, currently in gau, providers is set to wayback,
-        later give them choice
-        '''
         # TODO: give providers as choice for users between commoncrawl,
         # alienvault or wayback
         if(task.scan_type.fetch_url):
@@ -631,18 +626,12 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             vulnerability_result_path = results_dir + \
                 current_scan_dir + '/vulnerability.json'
 
-            nuclei_scan_urls = results_dir + current_scan_dir + \
-                '/alive.txt'
-
-            '''
-            TODO: if endpoints are scanned, append the alive subdomains url
-            to the final list of all the urls and run the nuclei against that
-            URL collection
-            '''
-            # if task.scan_type.fetch_url:
-            #     all_urls = results_dir + current_scan_dir + '/all_urls.txt'
-            #     os.system('cat {} >> {}'.format(nuclei_scan_urls, all_urls))
-            #     nuclei_scan_urls = all_urls
+            if(task.scan_type.fetch_url):
+                nuclei_scan_urls = results_dir + current_scan_dir + \
+                    '/unfurl_urls.txt'
+            else:
+                nuclei_scan_urls = results_dir + current_scan_dir + \
+                    '/alive.txt'
 
             nuclei_command = 'nuclei -json -l {} -o {}'.format(
                 nuclei_scan_urls, vulnerability_result_path)
