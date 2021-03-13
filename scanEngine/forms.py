@@ -192,12 +192,21 @@ class InterestingLookupForm(forms.ModelForm):
                 "class": "new-control-input",
             }))
 
+    condition_200_http_lookup = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+            }))
+
     def set_value(self, key):
         print(key.url_lookup)
         self.initial['keywords'] = key.keywords
         self.initial['title_lookup'] = key.title_lookup
         self.initial['url_lookup'] = key.url_lookup
+        self.initial['condition_200_http_lookup'] = key.condition_200_http_lookup
 
     def initial_checkbox(self):
         self.initial['title_lookup'] = True
         self.initial['url_lookup'] = True
+        self.initial['condition_200_http_lookup'] = False

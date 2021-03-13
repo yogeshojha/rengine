@@ -47,3 +47,4 @@ class InterestingLookupModel(models.Model):
     custom_type = models.BooleanField(default=False)
     title_lookup = models.BooleanField(default=True)
     url_lookup = models.BooleanField(default=True)
+    condition_200_http_lookup = models.BooleanField(default=False)

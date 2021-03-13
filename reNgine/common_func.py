@@ -28,14 +28,24 @@ def get_interesting_subdomains(scan_history=None, target=None):
     page_title_lookup_query = Q()
 
     for key in lookup_keywords:
-        if InterestingLookupModel.objects.filter(custom_type=True):
-            if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].url_lookup:
+        if InterestingLookupModel.objects.filter(custom_type=True).exists():
+            if InterestingLookupModel.objects.filter(
+                    custom_type=True).order_by('-id')[0].url_lookup:
                 subdomain_lookup_query |= Q(subdomain__icontains=key)
-            if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].title_lookup:
-                page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+            if InterestingLookupModel.objects.filter(
+                    custom_type=True).order_by('-id')[0].title_lookup:
+                page_title_lookup_query |= Q(
+                    page_title__iregex="\\y{}\\y".format(key))
         else:
             subdomain_lookup_query |= Q(subdomain__icontains=key)
-            page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+            page_title_lookup_query |= Q(
+                page_title__iregex="\\y{}\\y".format(key))
+
+    if InterestingLookupModel.objects.filter(
+            custom_type=True) and InterestingLookupModel.objects.filter(
+            custom_type=True).order_by('-id')[0].condition_200_http_lookup:
+        subdomain_lookup_query &= Q(http_status=200)
+        page_title_lookup_query &= Q(http_status=200)
 
     subdomain_lookup = ScannedHost.objects.none()
     title_lookup = ScannedHost.objects.none()
