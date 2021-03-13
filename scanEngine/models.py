@@ -45,3 +45,5 @@ class Configuration(models.Model):
 class InterestingLookupModel(models.Model):
     keywords = models.TextField(null=True, blank=True)
     custom_type = models.BooleanField(default=False)
+    title_lookup = models.BooleanField(default=True)
+    url_lookup = models.BooleanField(default=True)
