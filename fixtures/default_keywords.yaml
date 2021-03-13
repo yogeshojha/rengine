@@ -4,7 +4,9 @@
   "pk": 1,
   "fields": {
     "keywords": "admin, ftp, cpanel, dashboard",
-    "custom_type": false
+    "custom_type": false,
+    "title_lookup": true,
+    "url_lookup": true
   }
 }
 ]
