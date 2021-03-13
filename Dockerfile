@@ -37,6 +37,7 @@ RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfin
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
 RUN GO111MODULE=on go get -v github.com/lc/gau
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/naabu/v2/cmd/naabu
+RUN GO111MODULE=on go get -u github.com/tomnomnom/unfurl
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
