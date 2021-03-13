@@ -54,10 +54,15 @@
     </tr>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Vulnerability Scanner&nbsp;&nbsp;&nbsp;<span class="badge badge-danger">BETA</span></h6>
+        <h6 style="margin-right:1%">Vulnerability Scanner&nbsp;&nbsp;&nbsp;</h6>
         <span class="preview">Scan for low hanging CVE and vulnerabilities.</span>
         <br>
-        <span class="text-warning">Subdomain takeover is now a part of Vulnerability Scanner and is no longer provided as a separate option.</span>
+        <span class="text-info">
+          <span class="badge badge-danger"> New </span>
+          For better Vulnerability Scan results, please turn on the <b>Fetch Endpoints</b>.
+          <br>reNgine will use nuclei to find vulnerabilities on those endpoints as well.
+          <br><span class="text-danger">This will also increase the scan time exponentially but much better results.</span>
+        </span>
       </td>
       <td>
         <label class="switch s-icons s-outline s-outline-info">
