@@ -193,6 +193,11 @@ class InterestingLookupForm(forms.ModelForm):
             }))
 
     def set_value(self, key):
+        print(key.url_lookup)
         self.initial['keywords'] = key.keywords
         self.initial['title_lookup'] = key.title_lookup
         self.initial['url_lookup'] = key.url_lookup
+
+    def initial_checkbox(self):
+        self.initial['title_lookup'] = True
+        self.initial['url_lookup'] = True
