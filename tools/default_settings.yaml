@@ -1,14 +1,14 @@
 subdomain_discovery:
     uses_tool: [ amass-passive, subfinder, sublist3r, assetfinder, oneforall ]
-    thread: 10
+    thread: 150
 
 port_scan:
     ports: [ top-100 ]
-    thread: 10
+    thread: 50
 
 visual_identification:
     port: xlarge
-    thread: 2
+    thread: 50
     http_timeout: 3000
     screenshot_timeout: 30000
     scan_timeout: 100
@@ -17,14 +17,14 @@ dir_file_search:
     extensions: [ php,asp,aspx,txt,conf,db,sql,json ]
     recursive: false
     recursive_level: 1
-    thread: 100
+    thread: 200
     wordlist: default
 
 fetch_url:
-    uses_tool: [ gau, hakrawler ]
-    intensity: normal
+    uses_tool: [ all ]
+    intensity: passive
 
 vulnerability_scan:
-    concurrent: 10
+    concurrent: 200
     template: [all]
     severity: [critical, high, medium, low, info]
