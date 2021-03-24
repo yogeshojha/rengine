@@ -33,7 +33,9 @@ RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
 
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/httpx/cmd/httpx
 
-RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/tree/master/v2/cmd/subfinder
+# Subfinder issue, https://github.com/projectdiscovery/subfinder/issues/405, change back to normal once stable
+
+RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@221eee8e0891c1bdae1228eb7068aa7b033d8483
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
 RUN GO111MODULE=on go get -v github.com/lc/gau
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/naabu/v2/cmd/naabu
