@@ -33,7 +33,7 @@ PySocks==1.7.1
 python-crontab==2.5.1
 python-dateutil==2.8.1
 pytz==2020.4
-PyYAML==5.3.1
+PyYAML==5.4
 redis==3.5.3
 requests==2.24.0
 requests-file==1.5.1
