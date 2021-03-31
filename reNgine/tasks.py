@@ -1,3 +1,4 @@
+import csv
 import os
 import traceback
 import yaml
@@ -338,77 +339,89 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         alive_file.close()
 
         if VISUAL_IDENTIFICATION in yaml_configuration:
+            logging.info(f"Visual identification step")
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(
-                task, "Visual Recon - Screenshot", 1)
+                task, "Visual Recon - Screenshot", 1
+            )
 
-            # after subdomain discovery run aquatone for visual identification
-            with_protocol_path = results_dir + current_scan_dir + '/alive.txt'
-            output_aquatone_path = results_dir + current_scan_dir + '/aquascreenshots'
+            screenshot_config = ScreenshotConfig(yaml_configuration)
+            tool = screenshot_config.tool
 
-            if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-                scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
-                # check if scan port is valid otherwise proceed with default xlarge
-                # port
-                if scan_port not in ['small', 'medium', 'large', 'xlarge']:
-                    scan_port = 'xlarge'
+            if tool == "eyewitness":
+                output_result_path = results_dir + current_scan_dir + '/eyewitness'
             else:
-                scan_port = 'xlarge'
+                output_result_path = results_dir + current_scan_dir + '/aquascreenshots'
 
-            if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-                threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
-            else:
-                threads = 10
+            input_urls_path = results_dir + current_scan_dir + '/alive.txt'
 
-            if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-                http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
-            else:
-                http_timeout = 3000  # Default Timeout for HTTP
+            builder_command = BuilderScreenshotCommand(
+                tool,
+                input_urls_path,
+                output_result_path,
+                screenshot_config.scan_port,
+                screenshot_config.threads,
+                screenshot_config.http_timeout,
+                screenshot_config.screenshot_timeout,
+                screenshot_config.scan_timeout,
+            )
 
-            if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-                screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
-            else:
-                screenshot_timeout = 30000  # Default Timeout for Screenshot
+            input_urls_path = results_dir + current_scan_dir + '/alive.txt'
+            screenshot_command = builder_command.build(input_urls_path)
 
-            if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-                scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
-            else:
-                scan_timeout = 100  # Default Timeout for Scan
+            logging.info(f"Run command: {screenshot_command}")
+            run_console_command(screenshot_command)
 
-            aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
-                with_protocol_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+            os.system('chmod -R 777 /app/tools/scan_results/*')
 
-            logging.info(aquatone_command)
-            os.system(aquatone_command)
-            os.system('chmod -R 607 /app/tools/scan_results/*')
-            aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+            if tool == "eyewitness":
+                try:
+                    eyewitness_requests_path = os.path.join(output_result_path, "Requests.csv")
+                    eyewitness_requests = load_csv(eyewitness_requests_path)
+                    if eyewitness_requests:
+                        eyewitness_protocol = eyewitness_requests[0]["Protocol"]
+                        eyewitness_domain = eyewitness_requests[0]["Domain"]
 
-            try:
-                if os.path.isfile(aqua_json_path):
-                    with open(aqua_json_path, 'r') as json_file:
-                        data = json.load(json_file)
-
-                    for host in data['pages']:
                         sub_domain = ScannedHost.objects.get(
                             scan_history__id=task.id,
-                            subdomain=data['pages'][host]['hostname'])
-                        # list_ip = data['pages'][host]['addrs']
-                        # ip_string = ','.join(list_ip)
-                        # sub_domain.ip_address = ip_string
-                        sub_domain.screenshot_path = current_scan_dir + \
-                            '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                        sub_domain.http_header_path = current_scan_dir + \
-                            '/aquascreenshots/' + data['pages'][host]['headersPath']
-                        tech_list = []
-                        if data['pages'][host]['tags'] is not None:
-                            for tag in data['pages'][host]['tags']:
-                                tech_list.append(tag['text'])
-                        tech_string = ','.join(tech_list)
-                        sub_domain.technology_stack = tech_string
+                            subdomain=domain
+                        )
+                        screenshot_path = os.path.join(
+                            current_scan_dir, "eyewitness", "screens", f"{eyewitness_protocol}.{eyewitness_domain}.png"
+                        )
+                        sub_domain.screenshot_path = screenshot_path
                         sub_domain.save()
-            except Exception as exception:
-                logging.error(exception)
-                update_last_activity(activity_id, 0)
+                except Exception as e:
+                    logging.error(e)
+                    update_last_activity(activity_id, 0)
+            else:
+                aqua_json_path = output_result_path + '/aquatone_session.json'
+                try:
+                    if os.path.isfile(aqua_json_path):
+                        with open(aqua_json_path, 'r') as json_file:
+                            data = json.load(json_file)
+
+                        for host in data['pages']:
+                            sub_domain = ScannedHost.objects.get(
+                                scan_history__id=task.id,
+                                subdomain=data['pages'][host]['hostname'])
+                            # list_ip = data['pages'][host]['addrs']
+                            # ip_string = ','.join(list_ip)
+                            # sub_domain.ip_address = ip_string
+                            sub_domain.screenshot_path = current_scan_dir + \
+                                '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                            sub_domain.http_header_path = current_scan_dir + \
+                                '/aquascreenshots/' + data['pages'][host]['headersPath']
+                            tech_list = []
+                            if data['pages'][host]['tags'] is not None:
+                                for tag in data['pages'][host]['tags']:
+                                    tech_list.append(tag['text'])
+                            tech_string = ','.join(tech_list)
+                            sub_domain.technology_stack = tech_string
+                            sub_domain.save()
+                except Exception as e:
+                    logging.error(e)
+                    update_last_activity(activity_id, 0)
 
         if(task.scan_type.port_scan):
             update_last_activity(activity_id, 2)
@@ -785,9 +798,131 @@ def create_scan_activity(task, message, status):
 
 def update_last_activity(id, activity_status):
     ScanActivity.objects.filter(
-        id=id).update(
+        id=id
+    ).update(
         status=activity_status,
-        time=timezone.now())
+        time=timezone.now()
+    )
+
+
+class ScreenshotConfig(object):
+
+    def __init__(
+            self,
+            yaml_configuration: dict
+    ):
+        self.tool = get_screenshot_tool_name(yaml_configuration)
+        self.yaml_configuration = yaml_configuration
+
+    @property
+    def scan_port(self):
+        if PORT in self.yaml_configuration[VISUAL_IDENTIFICATION]:
+            scan_port = self.yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+            # check if scan port is valid otherwise proceed with default xlarge
+            # port
+            if scan_port not in ['small', 'medium', 'large', 'xlarge']:
+                scan_port = 'xlarge'
+        else:
+            scan_port = 'xlarge'
+
+        return scan_port
+
+    @property
+    def threads(self):
+        if THREAD in self.yaml_configuration[VISUAL_IDENTIFICATION] and self.yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
+            threads = self.yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+        else:
+            threads = 10
+
+        return threads
+
+    @property
+    def http_timeout(self):
+        if HTTP_TIMEOUT in self.yaml_configuration[VISUAL_IDENTIFICATION]:
+            http_timeout = self.yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+        else:
+            http_timeout = 3000  # Default Timeout for HTTP
+
+        return http_timeout
+
+    @property
+    def screenshot_timeout(self):
+        if SCREENSHOT_TIMEOUT in self.yaml_configuration[VISUAL_IDENTIFICATION]:
+            screenshot_timeout = self.yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+        else:
+            screenshot_timeout = 30000  # Default Timeout for Screenshot
+
+        return screenshot_timeout
+
+    @property
+    def scan_timeout(self):
+        if SCAN_TIMEOUT in self.yaml_configuration[VISUAL_IDENTIFICATION]:
+            scan_timeout = self.yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+        else:
+            scan_timeout = 100  # Default Timeout for Scan
+
+        return scan_timeout
+
+
+class BuilderScreenshotCommand(object):
+
+    def __init__(
+            self,
+            tool: str,
+            input_urls_path: str,
+            output_result_path: str,
+            scan_port: str,
+            threads: str,
+            http_timeout: int,
+            screenshot_timeout: str or list,
+            scan_timeout=None,
+    ):
+        if tool not in ("eyewitness", "aquatone"):
+            raise NotImplementedError
+
+        if tool == "eyewitness":
+            only_ports = {
+                "small": "80,443",
+                "medium": "80,443,8000,8080,8443",
+                "large": "80,81,443,591,2082,2087,2095,2096,3000,8000,8001,8008,8080,8083,8443,8834,8888",
+                "xlarge": "80,81,300,443,591,593,832,981,1010,1311,2082,2087,2095,2096,2480,3000,3128,3333,4243,4567,"
+                          "4711,4712,4993,5000,5104,5108,5800,6543,7000,7396,7474,8000,8001,8008,8014,8042,8069,8080,"
+                          "8081,8088,8090,8091,8118,8123,8172,8222,8243,8280,8281,8333,8443,8500,8834,8880,8888,8983,"
+                          "9000,9043,9060,9080,9090,9091,9200,9443,9800,9981,12443,16080,18091,18092,20720,28017",
+            }.get(scan_port)  # ports from https://github.com/michenriksen/aquatone
+            screenshot_command_tmpl = (
+                f'/app/tools/EyeWitness/Python/EyeWitness.py -f {input_urls_path} --web --no-prompt --timeout {http_timeout} --threads {threads} '
+                f'-d {output_result_path} --only-ports {only_ports}'
+            )
+        else:
+            screenshot_command_tmpl = (
+                f'cat {input_urls_path} '
+                f'| /app/tools/aquatone --threads {threads} -ports {scan_port} -out {output_result_path} '
+                f'-http-timeout {http_timeout} -scan-timeout {scan_timeout} -screenshot-timeout {screenshot_timeout}'
+            )
+
+        self.screenshot_command_tmpl = screenshot_command_tmpl
+
+    def build(self, input_urls_path):
+        return self.screenshot_command_tmpl.format(input_urls_path=input_urls_path)
+
+
+def get_screenshot_tool_name(yaml_configuration: dict):
+    default_tool = "aquatone"  # backward compatibility
+    screenshot_tool = yaml_configuration[VISUAL_IDENTIFICATION].get(USES_TOOLS, default_tool)
+    assert screenshot_tool in ("eyewitness", default_tool), "unsupported screenshot tool"
+    return screenshot_tool
+
+
+def run_console_command(command):
+    os.system(command)
+
+
+def load_csv(file_path, delimiter=","):
+    with open(file_path, 'r', encoding='utf-8') as csvfile:
+        reader = csv.DictReader(csvfile, delimiter=delimiter)
+        result = [row for row in reader]
+    return result
 
 
 @app.task(bind=True)

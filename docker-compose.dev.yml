@@ -22,8 +22,6 @@ services:
         command: python3 manage.py runserver 0.0.0.0:8000
         environment:
             - DEBUG=1
-        volumes:
-          - .:/app
         ports:
           - "8000:8000"
         depends_on:
@@ -45,6 +43,8 @@ services:
             - redis
         networks:
             - rengine_network
+        volumes:
+            - ./tools/scan_results:/app/tools/scan_results
     celery-beat:
         build: .
         command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
