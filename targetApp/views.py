@@ -204,10 +204,13 @@ def target_summary(request, id):
         context['vulnerability_difference'] = VulnerabilityScan.objects.filter(
             vulnerability_of__id=subdomain_count_query[0].id).count() - VulnerabilityScan.objects.filter(
             vulnerability_of__id=subdomain_count_query[1].id).count()
-    else:
-        context['subdomain_difference'] = subdomain_count
-        context['endpoint_difference'] = endpoint_count
-        context['vulnerability_difference'] = vulnerability_count
+
+        q1 = ScannedHost.objects.filter(target_domain__id=id).exclude(scan_history__id=subdomain_count_query[0].id).values('subdomain')
+        q2 = ScannedHost.objects.filter(scan_history__id=subdomain_count_query[0].id).values('subdomain')
+
+        context['new_subdomains'] = q2.difference(q1)
+        context['removed_subdomains'] = q1.difference(q2)
+
     context['recent_scans'] = ScanHistory.objects.filter(
         domain_name=id).order_by('-last_scan_date')[:3]
     context['info_count'] = VulnerabilityScan.objects.filter(

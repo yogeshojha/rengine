@@ -49,12 +49,12 @@ Target Summary for {{target.domain_name}}
             <span class="icon-name"> <b>{{this_week_scan_count}}</b> Scans this week</span>
           </div>
           <br>
-          <a data-toggle="modal" data-target="#exampleModal" class="text-info">View all Scans</a>
-          <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+          <a data-toggle="modal" data-target="#scanHistoryModal" class="text-info">View all Scans</a>
+          <div class="modal fade" id="scanHistoryModal" tabindex="-1" role="dialog" aria-labelledby="scanHistoryModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
-                  <h5 class="modal-title" id="exampleModalLabel">Scans initiated for {{target.domain_name}}</h5>
+                  <h5 class="modal-title" id="scanHistoryModalLabel">Scans initiated for {{target.domain_name}}</h5>
                   <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
@@ -97,7 +97,7 @@ Target Summary for {{target.domain_name}}
                                 <span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan.get_subdomain_count}}</span>
                                 <span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan.get_endpoint_count}}</span>
                                 <span class="badge badge-pills badge-danger bs-tooltip" title="Vulnerabilities">{{scan.get_vulnerability_count}}</span>
-              								</td>
+                              </td>
                               <td class="text-center">
                                 <a href="{% url 'detail_scan' scan.id %}" class="text-info">View More...</a>
                               </td>
@@ -129,14 +129,14 @@ Target Summary for {{target.domain_name}}
         </div>
         <div class="widget-content">
           <div class="icon-container">
+            {{ removed_subdomains.count }}
             {% if subdomain_difference > 0 %}
             {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{subdomain_difference}} more subdomains discovered on the last scan"> {{subdomain_difference}} Subdomains</span>
+            <span class="icon-name bs-tooltip" title="{{subdomain_difference}} extra subdomains discovered on the last scan"> {{subdomain_difference}} Subdomains</span>
             {% elif subdomain_difference < 0 %}
             {% include 'base/_items/down_arrow.html' %}
             <span class="icon-name bs-tooltip" title="{{subdomain_difference|abs}} less subdomains discovered on the last scan"> {{subdomain_difference|abs}} Subdomains</span>
             {% else %}
-            &nbsp;
             {% endif %}
           </div>
           <br>
@@ -153,7 +153,7 @@ Target Summary for {{target.domain_name}}
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
             </svg>
           </div>
-          &nbsp;
+          <br><br>
           <h2 class="text-warning">{{endpoint_count}}</h2>
           <h6 class="">Unique Endpoints</h6>
         </div>
@@ -161,15 +161,16 @@ Target Summary for {{target.domain_name}}
           <div class="icon-container">
             {% if endpoint_difference > 0 %}
             {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{endpoint_difference}} more endpoints discovered on the last scan"> {{endpoint_difference}} Endpoints</span>
+            <span class="icon-name bs-tooltip" title="{{endpoint_difference}} extra endpoints discovered on the last scan"> {{endpoint_difference}} Endpoints</span>
+            <br>
+            <a href="#" class="text-danger">View Changes</a>
             {% elif endpoint_difference < 0 %}
             <span class="icon-name bs-tooltip" title="{{endpoint_difference|abs}} less endpoints discovered on the last scan"> {{endpoint_difference|abs}} Endpoints</span>
             {% include 'base/_items/down_arrow.html' %}
             {% else %}
-            &nbsp;
+            <br>
             {% endif %}
           </div>
-          <br>
           <a href="javascript:window.location='../../start_scan/detail/endpoint?query={{target.domain_name}}';" class="text-info">View all Endpoints</a>
         </div>
       </div>
@@ -186,7 +187,7 @@ Target Summary for {{target.domain_name}}
               </line>
             </svg>
           </div>
-          &nbsp;
+          <br><br>
           <h2 class="text-danger">{{vulnerability_count}}</h2>
           <h6 class="">Vulnerabilities</h6>
         </div>
@@ -194,16 +195,52 @@ Target Summary for {{target.domain_name}}
           <div class="icon-container">
             {% if vulnerability_difference > 0 %}
             {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{vulnerability_difference}} more Vulnerabilities discovered on the last scan"> {{vulnerability_difference}} Vulnerabilities</span>
+            <span class="icon-name bs-tooltip" title="{{vulnerability_difference}} extra Vulnerabilities discovered on the last scan"> {{vulnerability_difference}} Vulnerabilities</span>
+            <br>
+            <a href="#" class="text-danger">View Changes</a>
             {% elif vulnerability_difference < 0 %}
             {% include 'base/_items/down_arrow.html' %}
             <span class="icon-name bs-tooltip" title="{{vulnerability_difference|abs}} less Vulnerabilities discovered on the last scan"> {{vulnerability_difference|abs}} Vulnerabilities</span>
             {% else %}
-            &nbsp;
+            <br>
             {% endif %}
           </div>
-          <br>
           <a href="javascript:window.location='../../start_scan/detail/vuln?query={{target.domain_name}}';" class="text-info">View all Vulnerabilities</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row layout-top-spacing">
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+      <div class="widget widget-table-one">
+        <div class="widget-heading">
+          <h6 class="">Subdomain Changes</h6>
+        </div>
+        <div class="widget-content">
+          <div class="table-responsive">
+            <table class="table table-bordered table-striped mb-4">
+              <thead>
+                <tr>
+                  <th>Subdomain</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for subdomain in new_subdomains %}
+                <tr>
+                  <td class="text-success">{{subdomain.subdomain}}</td>
+                  <td><span class="badge badge-success"> Added </span></td>
+                </tr>
+                {% endfor %}
+                {% for subdomain in removed_subdomains %}
+                <tr>
+                  <td class="text-danger">{{subdomain.subdomain}}</td>
+                  <td><span class="badge badge-danger"> Removed </span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -266,80 +303,79 @@ Target Summary for {{target.domain_name}}
       </div>
     </div>
   </div>
-</div>
-{% include 'base/_items/interesting_recon.html' %}
-<div class="row layout-top-spacing mb-2">
-  {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-  <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-    <div class="widget widget-chart-two">
-      <div class="widget-heading">
-        <div class="row">
-          <div class="col-6">
-            <h6 class=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield-off text-danger">
-              <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"></path>
-              <path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38">
-              </path>
-              <line x1="1" y1="1" x2="23" y2="23">
-              </line>
-            </svg> Vulnerability Scan Summary</h6>
-          </div>
-          <div class="col-6">
-            <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
+  {% include 'base/_items/interesting_recon.html' %}
+  <div class="row layout-top-spacing mb-2">
+    {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="widget widget-chart-two">
+        <div class="widget-heading">
+          <div class="row">
+            <div class="col-6">
+              <h6 class=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield-off text-danger">
+                <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"></path>
+                <path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38">
+                </path>
+                <line x1="1" y1="1" x2="23" y2="23">
+                </line>
+              </svg> Vulnerability Scan Summary</h6>
+            </div>
+            <div class="col-6">
+              <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="widget-content">
-        <div class="row">
-          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-            <h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
-            <div id="vulnerability-chart" class=""></div>
-          </div>
-          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
-            <div class="table-responsive">
-              <table class="table table-hover table-light">
-                <tbody>
-                  <thead>
-                    <th>Vulnerability Name</th>
-                    <th class="text-center">Count</th>
-                    <th>Severity</th>
-                  </thead>
-                  {% for item in most_common_vulnerability %}
-                  <tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
-                    <td>{{item.name}}</td>
-                    <td class="text-center">
-                      {{item.count}}
-                    </td>
-                    <td>
-                      <div class="t-rate">
-                        {% if item.severity == 0 %}
-                        <span class='badge badge-info'>Info</span>
-                        {% elif item.severity == 1 %}
-                        <span class='badge badge-low'>Low</span>
-                        {% elif item.severity == 2 %}
-                        <span class='badge badge-warning'>Medium</span>
-                        {% elif item.severity == 3 %}
-                        <span class='badge badge-danger'>High</span>
-                        {% elif item.severity == 4 %}
-                        <span class='badge badge-critical'>Critical</span>
-                        {% endif %}
-                      </div>
-                    </td>
-                  </tr>
-                  {% empty %}
-                  Not enough data
-                  {% endfor %}
-                </tbody>
-              </table>
-              <small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
+        <div class="widget-content">
+          <div class="row">
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+              <h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
+              <div id="vulnerability-chart" class=""></div>
+            </div>
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+              <h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
+              <div class="table-responsive">
+                <table class="table table-hover table-light">
+                  <tbody>
+                    <thead>
+                      <th>Vulnerability Name</th>
+                      <th class="text-center">Count</th>
+                      <th>Severity</th>
+                    </thead>
+                    {% for item in most_common_vulnerability %}
+                    <tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+                      <td>{{item.name}}</td>
+                      <td class="text-center">
+                        {{item.count}}
+                      </td>
+                      <td>
+                        <div class="t-rate">
+                          {% if item.severity == 0 %}
+                          <span class='badge badge-info'>Info</span>
+                          {% elif item.severity == 1 %}
+                          <span class='badge badge-low'>Low</span>
+                          {% elif item.severity == 2 %}
+                          <span class='badge badge-warning'>Medium</span>
+                          {% elif item.severity == 3 %}
+                          <span class='badge badge-danger'>High</span>
+                          {% elif item.severity == 4 %}
+                          <span class='badge badge-critical'>Critical</span>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                    {% empty %}
+                    Not enough data
+                    {% endfor %}
+                  </tbody>
+                </table>
+                <small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    {% endif %}
   </div>
-  {% endif %}
-</div>
 </div>
 {% endblock main_content %}
 
