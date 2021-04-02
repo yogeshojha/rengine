@@ -184,6 +184,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 logging.info(sublist3r_command)
                 os.system(sublist3r_command)
 
+            if 'knock'in tools:
+                knockpy_command = "python3 /app/tools/knock/knockpy/knockpy.py  -d {} -t {} -o {}/from_knockpy.txt".format(
+                    domain.domain_name, threads, current_scan_dir)
+
+                # Run Knockpy
+                logging.info(knockpy_command)
+                os.system(knockpy_command)
+
             if 'subfinder' in tools:
                 subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
                     domain.domain_name, threads, current_scan_dir)
