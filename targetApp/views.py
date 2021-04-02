@@ -191,25 +191,24 @@ def target_summary(request, id):
     context['endpoint_count'] = endpoint_count
     context['vulnerability_count'] = vulnerability_count
     if ScanHistory.objects.filter(domain_name=id).count() > 1:
-        subdomain_count_query = ScanHistory.objects.filter(
-            domain_name=id).order_by('-last_scan_date')[0:2]
-        context['subdomain_difference'] = ScannedHost.objects.filter(
-            scan_history__id=subdomain_count_query[0].id).count() - ScannedHost.objects.filter(
-            scan_history__id=subdomain_count_query[1].id).count()
 
-        context['endpoint_difference'] = WayBackEndPoint.objects.filter(
-            url_of__id=subdomain_count_query[0].id).count() - WayBackEndPoint.objects.filter(
-            url_of__id=subdomain_count_query[1].id).count()
+        last_scan = ScanHistory.objects.filter(domain_name=id).order_by('-last_scan_date')
 
-        context['vulnerability_difference'] = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=subdomain_count_query[0].id).count() - VulnerabilityScan.objects.filter(
-            vulnerability_of__id=subdomain_count_query[1].id).count()
+        # context['endpoint_difference'] = WayBackEndPoint.objects.filter(
+        #     url_of__id=subdomain_count_query[0].id).count() - WayBackEndPoint.objects.filter(
+        #     url_of__id=subdomain_count_query[1].id).count()
+        #
+        # context['vulnerability_difference'] = VulnerabilityScan.objects.filter(
+        #     vulnerability_of__id=subdomain_count_query[0].id).count() - VulnerabilityScan.objects.filter(
+        #     vulnerability_of__id=subdomain_count_query[1].id).count()
 
-        q1 = ScannedHost.objects.filter(target_domain__id=id).exclude(scan_history__id=subdomain_count_query[0].id).values('subdomain')
-        q2 = ScannedHost.objects.filter(scan_history__id=subdomain_count_query[0].id).values('subdomain')
+        q1 = ScannedHost.objects.filter(target_domain__id=id).exclude(
+            scan_history__id=last_scan[0].id).values('subdomain')
+        q2 = ScannedHost.objects.filter(
+            scan_history__id=last_scan[0].id).values('subdomain')
 
-        context['new_subdomains'] = q2.difference(q1)
-        context['removed_subdomains'] = q1.difference(q2)
+        context['new_subdomains'] = q1.difference(q2)
+        context['removed_subdomains'] = q2.difference(q1)
 
     context['recent_scans'] = ScanHistory.objects.filter(
         domain_name=id).order_by('-last_scan_date')[:3]

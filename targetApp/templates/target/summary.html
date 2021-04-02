@@ -129,15 +129,18 @@ Target Summary for {{target.domain_name}}
         </div>
         <div class="widget-content">
           <div class="icon-container">
-            {{ removed_subdomains.count }}
-            {% if subdomain_difference > 0 %}
-            {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{subdomain_difference}} extra subdomains discovered on the last scan"> {{subdomain_difference}} Subdomains</span>
-            {% elif subdomain_difference < 0 %}
-            {% include 'base/_items/down_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{subdomain_difference|abs}} less subdomains discovered on the last scan"> {{subdomain_difference|abs}} Subdomains</span>
-            {% else %}
+            {% if new_subdomains.count or removed_subdomains.count %}
+            {% if new_subdomains.count %}
+            <span class="icon-name bs-tooltip text-success" title="{{new_subdomains.count}} new subdomains discovered on the last scan"> {% include 'base/_items/plus_icon.html' %} {{new_subdomains.count}}</span>
             {% endif %}
+            {% if removed_subdomains.count %}
+            <span class="icon-name bs-tooltip text-danger" title="{{removed_subdomains.count}} subdomains were removed on the last scan"> {% include 'base/_items/minus_icon.html' %} {{removed_subdomains.count}}</span>
+            {% endif %}
+            <span class="text-warning">Subdomains Changed</span>
+            {% else %}
+            &nbsp;
+            {% endif %}
+
           </div>
           <br>
           <a href="javascript:window.location='../../start_scan/all/subdomains?query={{target.domain_name}}';" class="text-info">View all Subdomains</a>
