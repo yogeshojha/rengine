@@ -191,9 +191,10 @@ def target_summary(request, id):
     context['endpoint_count'] = endpoint_count
     context['vulnerability_count'] = vulnerability_count
     if ScanHistory.objects.filter(domain_name=id).filter(
-            scan_type__subdomain_discovery=True).count() > 1:
+            scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
+        print('ok')
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
-            scan_type__subdomain_discovery=True).order_by('-last_scan_date')
+            scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-last_scan_date')
 
         scanned_host_q1 = ScannedHost.objects.filter(
             target_domain__id=id).exclude(
@@ -202,15 +203,14 @@ def target_summary(request, id):
             scan_history__id=last_scan[0].id).values('subdomain')
 
         context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
-        context['removed_subdomains'] = scanned_host_q1.difference(
-            scanned_host_q2)
+        context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
 
     if ScanHistory.objects.filter(
             domain_name=id).filter(
-            scan_type__fetch_url=True).count() > 1:
+            scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
-            scan_type__fetch_url=True).order_by('-last_scan_date')
+            scan_type__fetch_url=True).filter(scan_status=2).order_by('-last_scan_date')
 
         endpoint_q1 = WayBackEndPoint.objects.filter(
             target_domain__id=id).exclude(
