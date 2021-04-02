@@ -29,7 +29,7 @@ Target Summary for {{target.domain_name}}
 
 {% block main_content %}
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-  <div class="row layout-top-spacing">
+  <div class="row layout">
     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
       <div class="widget widget-one_hybrid">
         <div class="widget-heading">
@@ -136,11 +136,10 @@ Target Summary for {{target.domain_name}}
             {% if removed_subdomains.count %}
             <span class="icon-name bs-tooltip text-danger" title="{{removed_subdomains.count}} subdomains were removed on the last scan"> {% include 'base/_items/minus_icon.html' %} {{removed_subdomains.count}}</span>
             {% endif %}
-            <span class="text-warning">Subdomains Changed</span>
+            <span class="text-warning"> Subdomains Changed</span>
             {% else %}
             &nbsp;
             {% endif %}
-
           </div>
           <br>
           <a href="javascript:window.location='../../start_scan/all/subdomains?query={{target.domain_name}}';" class="text-info">View all Subdomains</a>
@@ -162,16 +161,16 @@ Target Summary for {{target.domain_name}}
         </div>
         <div class="widget-content">
           <div class="icon-container">
-            {% if endpoint_difference > 0 %}
-            {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{endpoint_difference}} extra endpoints discovered on the last scan"> {{endpoint_difference}} Endpoints</span>
-            <br>
-            <a href="#" class="text-danger">View Changes</a>
-            {% elif endpoint_difference < 0 %}
-            <span class="icon-name bs-tooltip" title="{{endpoint_difference|abs}} less endpoints discovered on the last scan"> {{endpoint_difference|abs}} Endpoints</span>
-            {% include 'base/_items/down_arrow.html' %}
+            {% if new_urls.count or removed_urls.count %}
+            {% if new_urls.count %}
+            <span class="icon-name bs-tooltip text-success" title="{{new_urls.count}} new endpoints discovered on the last scan"> {% include 'base/_items/plus_icon.html' %} {{new_urls.count}}</span>
+            {% endif %}
+            {% if removed_urls.count %}
+            <span class="icon-name bs-tooltip text-danger" title="{{removed_urls.count}} endpoints were removed on the last scan"> {% include 'base/_items/minus_icon.html' %} {{removed_urls.count}}</span>
+            {% endif %}
+            <span class="text-warning"> Endpoints Changed</span>
             {% else %}
-            <br>
+            &nbsp;
             {% endif %}
           </div>
           <a href="javascript:window.location='../../start_scan/detail/endpoint?query={{target.domain_name}}';" class="text-info">View all Endpoints</a>
@@ -214,100 +213,79 @@ Target Summary for {{target.domain_name}}
     </div>
   </div>
   <div class="row layout-top-spacing">
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-      <div class="widget widget-table-one">
+    <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="widget widget-activity-four">
         <div class="widget-heading">
           <h6 class="">Subdomain Changes</h6>
         </div>
         <div class="widget-content">
-          <div class="table-responsive">
-            <table class="table table-bordered table-striped mb-4">
-              <thead>
-                <tr>
-                  <th>Subdomain</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for subdomain in new_subdomains %}
-                <tr>
-                  <td class="text-success">{{subdomain.subdomain}}</td>
-                  <td><span class="badge badge-success"> Added </span></td>
-                </tr>
-                {% endfor %}
-                {% for subdomain in removed_subdomains %}
-                <tr>
-                  <td class="text-danger">{{subdomain.subdomain}}</td>
-                  <td><span class="badge badge-danger"> Removed </span></td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+          <div class="mt-container mx-auto">
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped mb-4">
+                <thead>
+                  <tr>
+                    <th>Subdomain</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for subdomain in new_subdomains %}
+                  <tr>
+                    <td class="text-success">{{subdomain.subdomain}}</td>
+                    <td><span class="badge badge-success"> Added </span></td>
+                  </tr>
+                  {% endfor %}
+                  {% for subdomain in removed_subdomains %}
+                  <tr>
+                    <td class="text-danger">{{subdomain.subdomain}}</td>
+                    <td><span class="badge badge-danger"> Removed </span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="row layout-top-spacing">
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-      <div class="widget widget-table-one">
+    <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+      <div class="widget widget-activity-four">
         <div class="widget-heading">
-          <h6 class="">Recent Scans</h6>
+          <h6 class="">Endpoint Changes</h6>
         </div>
         <div class="widget-content">
-          {% for item in recent_scans %}
-          <div class="transactions-list">
-            <a href="{% url 'detail_scan' item.id %}">
-              <div class="t-item">
-                <div class="t-company-name">
-                  <div class="t-icon">
-                    <div class="icon">
-                      {% if item.scan_status == 1 %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                      {% elif item.scan_status == 2 %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                      {% else %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                      {% endif %}
-                    </div>
-                  </div>
-                  <div class="t-name">
-                    <h4>{{item.domain_name}}</h4>
-                    <p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
-                  </div>
-
-                </div>
-                <div class="t-rate">
-                  {% if item.scan_status == -1 %}
-                  <span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
-                  {% elif item.scan_status == 0 %}
-                  <span class="shadow-none badge badge-danger">Failed</span>
-                  {% elif item.scan_status == 1 %}
-                  <span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-                  {% elif item.scan_status == 2 %}
-                  <span class="shadow-none badge badge-success">Successful</span>
-                  {% elif item.scan_status == 3 %}
-                  <span class="shadow-none badge badge-danger">Aborted</span>
-                  {% else %}
-                  <span class="shadow-none badge badge-danger">Unknown</span>
-                  {% endif %}
-                </div>
-              </div>
-            </a>
+          <div class="mt-container mx-auto">
+            <div class="table-responsive">
+              <table class="table table-bordered table-striped mb-4">
+                <thead>
+                  <tr>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for url in new_urls %}
+                  <tr>
+                    <td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
+                    <td><span class="badge badge-success"> Added </span></td>
+                  </tr>
+                  {% endfor %}
+                  {% for url in removed_urls %}
+                  <tr>
+                    <td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
+                    <td><span class="badge badge-danger"> Removed </span></td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           </div>
-          {% empty %}
-          <div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-            Please wait for the scans to be completed, if any, or You may also initiate the scan
-            <a href="{% url 'list_target' %}" class='text-info'>from here.</a>
-          </strong>
         </div>
-        {% endfor %}
       </div>
     </div>
   </div>
   {% include 'base/_items/interesting_recon.html' %}
-  <div class="row layout-top-spacing mb-2">
+  <div class="row layout">
     {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
       <div class="widget widget-chart-two">
@@ -378,6 +356,67 @@ Target Summary for {{target.domain_name}}
       </div>
     </div>
     {% endif %}
+  </div>
+
+
+  <div class="row layout-top-spacing mb-4">
+    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+      <div class="widget widget-table-one">
+        <div class="widget-heading">
+          <h6 class="">Recent Scans</h6>
+        </div>
+        <div class="widget-content">
+          {% for item in recent_scans %}
+          <div class="transactions-list">
+            <a href="{% url 'detail_scan' item.id %}">
+              <div class="t-item">
+                <div class="t-company-name">
+                  <div class="t-icon">
+                    <div class="icon">
+                      {% if item.scan_status == 1 %}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                      {% elif item.scan_status == 2 %}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                      {% else %}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="t-name">
+                    <h4>{{item.domain_name}}</h4>
+                    <p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
+                  </div>
+
+                </div>
+                <div class="t-rate">
+                  {% if item.scan_status == -1 %}
+                  <span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
+                  {% elif item.scan_status == 0 %}
+                  <span class="shadow-none badge badge-danger">Failed</span>
+                  {% elif item.scan_status == 1 %}
+                  <span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+                  {% elif item.scan_status == 2 %}
+                  <span class="shadow-none badge badge-success">Successful</span>
+                  {% elif item.scan_status == 3 %}
+                  <span class="shadow-none badge badge-danger">Aborted</span>
+                  {% else %}
+                  <span class="shadow-none badge badge-danger">Unknown</span>
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+          </div>
+          {% empty %}
+          <div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+            Please wait for the scans to be completed, if any, or You may also initiate the scan
+            <a href="{% url 'list_target' %}" class='text-info'>from here.</a>
+          </strong>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
   </div>
 </div>
 {% endblock main_content %}
