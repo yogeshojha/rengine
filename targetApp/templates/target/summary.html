@@ -217,6 +217,19 @@ Target Summary for {{target.domain_name}}
       <div class="widget widget-activity-four">
         <div class="widget-heading">
           <h6 class="">Subdomain Changes</h6>
+          <p>
+            {% if new_subdomains.count or removed_subdomains.count %}
+            During the last scan
+            {% if new_subdomains.count %}
+            <span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
+            {% endif %}
+            {% if removed_subdomains.count %}
+            <span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
+            {% endif %}
+            {% else %}
+            <br>
+            {% endif %}
+          </p>
         </div>
         <div class="widget-content">
           <div class="mt-container mx-auto">
@@ -252,6 +265,19 @@ Target Summary for {{target.domain_name}}
       <div class="widget widget-activity-four">
         <div class="widget-heading">
           <h6 class="">Endpoint Changes</h6>
+          <p>
+            {% if new_urls.count or removed_urls.count %}
+            During the last scan
+            {% if new_urls.count %}
+            <span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
+            {% endif %}
+            {% if removed_urls.count %}
+            <span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
+            {% endif %}
+            {% else %}
+            <br>
+            {% endif %}
+          </p>
         </div>
         <div class="widget-content">
           <div class="mt-container mx-auto">
@@ -357,7 +383,7 @@ Target Summary for {{target.domain_name}}
     </div>
     {% endif %}
   </div>
-  <div class="row layout mb-4">
+  <div class="row layout-top-spacing mb-4">
     <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
       <div class="widget widget-table-one">
         <div class="widget-heading">
