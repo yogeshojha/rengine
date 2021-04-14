@@ -96,14 +96,15 @@
     .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item span {
       align-self: center; }
     .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item svg {
-      margin-left: 20px;
       color: #888ea8;
       align-self: center;
       width: 20px;
       height: 20px;
-      fill: rgba(0, 23, 55, 0.08); }
+      fill: rgba(0, 23, 55, 0.08);
+      float: right;
+      margin-right: 0; }
     .m-o-dropdown-list .media .media-heading div.dropdown-list a.dropdown-item:hover svg {
-      color: #1b55e2;
+      color: #4361ee;
       fill: rgba(27, 85, 226, 0.239216); }
 
 .m-o-dropdown-list .dropdown-menu {
@@ -134,7 +135,7 @@
   height: 30px;
   margin-right: 16px; }
   .m-o-label-icon .media svg.label-icon.label-success {
-    color: #8dbf42; }
+    color: #1abc9c; }
   .m-o-label-icon .media svg.label-icon.label-danger {
     color: #ee3d49; }
   .m-o-label-icon .media svg.label-icon.label-warning {

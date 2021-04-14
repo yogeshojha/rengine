@@ -363,7 +363,7 @@ body.swal2-iosfix {
     text-align: center; }
   .swal2-icon.swal2-info {
     font-family: 'Open Sans', sans-serif;
-    color: #1b55e2 !important;
+    color: #4361ee !important;
     border: 5px solid #f1f2f3 !important;
     box-shadow: 0px 3px 25px 0px rgba(113, 106, 202, 0.2);
     font-size: 60px;
@@ -371,7 +371,7 @@ body.swal2-iosfix {
     text-align: center; }
   .swal2-icon.swal2-question {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #5c1ac3 !important;
+    color: #805dca !important;
     border: solid 5px #ebedf2 !important;
     border-color: none !important;
     text-align: center;
@@ -462,7 +462,7 @@ body.swal2-iosfix {
     display: inline-block;
     position: relative; }
   .swal2-progresssteps .swal2-progresscircle {
-    background: #1b55e2;
+    background: #4361ee;
     border-radius: 2em;
     color: #fff;
     height: 2em;
@@ -479,7 +479,7 @@ body.swal2-iosfix {
       .swal2-progresssteps .swal2-progresscircle.swal2-activeprogressstep ~ .swal2-progresscircle, .swal2-progresssteps .swal2-progresscircle.swal2-activeprogressstep ~ .swal2-progressline {
         background: #ebedf2 !important; }
   .swal2-progresssteps .swal2-progressline {
-    background: #1b55e2;
+    background: #4361ee;
     height: .4em;
     margin: 0 -1px;
     z-index: 10; }

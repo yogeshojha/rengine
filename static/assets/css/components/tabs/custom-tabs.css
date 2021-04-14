@@ -8,6 +8,9 @@
 			@Import	Mixins
 	===============================
 */
+.nav-tabs .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu.show, .nav-pills .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu.show {
+  top: 36px !important; }
+
 .nav-tabs {
   border-bottom: 1px solid #ebedf2; }
   .nav-tabs svg {
@@ -30,7 +33,7 @@
   color: #515365; }
 
 .nav-tabs li a.disabled {
-  color: #acb0c3 !important; }
+  color: #e3e4eb !important; }
 
 .nav-pills .nav-item:not(:last-child) {
   margin-right: 5px; }
@@ -44,7 +47,7 @@
   background-color: #e95f2b; }
 
 .nav-pills li a.disabled {
-  color: #acb0c3 !important; }
+  color: #e3e4eb !important; }
 
 h4 {
   font-size: 1.125rem; }
@@ -56,7 +59,7 @@ h4 {
   color: #3b3f5c; }
 
 .simple-tab .nav-tabs .nav-item.show .nav-link, .simple-tab .nav-tabs .nav-link.active {
-  color: #1b55e2;
+  color: #4361ee;
   font-weight: 600;
   background-color: #fff; }
 
@@ -73,7 +76,7 @@ h4 {
   color: #3b3f5c; }
 
 .simple-pills .nav-pills .nav-link.active, .simple-pills .nav-pills .show > .nav-link {
-  background-color: #1b55e2;
+  background-color: #4361ee;
   border-color: transparent; }
 
 .simple-pills .tab-content > .tab-pane {
@@ -128,12 +131,12 @@ h4 {
 
 .underline-content .nav-tabs .nav-link.active, .underline-content .nav-tabs .show > .nav-link {
   border-color: transparent;
-  border-bottom: 1px solid #5c1ac3;
-  color: #5c1ac3;
+  border-bottom: 1px solid #805dca;
+  color: #805dca;
   background-color: transparent; }
 
 .underline-content .nav-tabs .nav-link.active:hover, .underline-content .nav-tabs .show > .nav-link:hover, .underline-content .nav-tabs .nav-link.active:focus, .underline-content .nav-tabs .show > .nav-link:focus {
-  border-bottom: 1px solid #5c1ac3; }
+  border-bottom: 1px solid #805dca; }
 
 .underline-content .nav-tabs .nav-link:focus, .underline-content .nav-tabs .nav-link:hover {
   border-color: transparent; }
@@ -153,7 +156,7 @@ h4 {
 
 .animated-underline-content .nav-tabs .nav-link.active, .animated-underline-content .nav-tabs .show > .nav-link {
   border-color: transparent;
-  color: #5c1ac3; }
+  color: #805dca; }
 
 .animated-underline-content .nav-tabs .nav-link:focus, .animated-underline-content .nav-tabs .nav-link:hover {
   border-color: transparent; }
@@ -169,7 +172,7 @@ h4 {
   width: 100%;
   left: 0;
   bottom: 0;
-  background-color: #5c1ac3;
+  background-color: #805dca;
   -webkit-transform: scale(0);
   transform: scale(0);
   transition: all .3s; }
@@ -181,7 +184,7 @@ h4 {
   color: #3b3f5c; }
 
 .justify-tab .nav-tabs .nav-item.show .nav-link, .justify-tab .nav-tabs .nav-link.active {
-  color: #1b55e2;
+  color: #4361ee;
   background-color: #fff;
   border-color: #e0e6ed #e0e6ed #fff; }
 
@@ -234,7 +237,7 @@ h4 {
   color: #3b3f5c; }
 
 .tab-justify-right .nav-tabs .nav-item.show .nav-link, .tab-justify-right .nav-tabs .nav-link.active {
-  color: #1b55e2;
+  color: #4361ee;
   background-color: #fff;
   border-color: #e0e6ed #e0e6ed #fff; }
 
@@ -251,7 +254,7 @@ h4 {
   padding: 20px 0 0 0; }
 
 /*
-    With Icons   
+    With Icons
 */
 .rounded-pills-icon .nav-pills li a {
   -webkit-border-radius: 0.625rem !important;
@@ -306,7 +309,7 @@ h4 {
   border-color: transparent; }
 
 /*
-    Rouned Circle With Icons   
+    Rouned Circle With Icons
 */
 .rounded-circle-pills-icon .nav-pills li a {
   background-color: #f1f2f3;
@@ -373,13 +376,13 @@ h4 {
       position: relative;
       background-color: transparent;
       border-color: transparent;
-      color: #5c1ac3;
+      color: #805dca;
       font-weight: 600; }
   .vertical-line-pill .nav-pills .show > .nav-link {
     position: relative;
     background-color: transparent;
     border-color: transparent;
-    color: #5c1ac3;
+    color: #805dca;
     font-weight: 600; }
   .vertical-line-pill .nav-pills .nav-link:focus, .vertical-line-pill .nav-pills .nav-link:hover {
     border-color: transparent; }
@@ -393,7 +396,7 @@ h4 {
     position: absolute;
     width: 1px;
     right: -1px;
-    background-color: #5c1ac3;
+    background-color: #805dca;
     -webkit-transform: scale(0);
     transform: scale(0);
     transition: all .3s; }
@@ -441,11 +444,11 @@ h4 {
     .vertical-border-pill .nav-pills .nav-link.active {
       position: relative;
       color: #fff;
-      background-color: #8dbf42; }
+      background-color: #1abc9c; }
   .vertical-border-pill .nav-pills .show > .nav-link {
     position: relative;
     color: #fff;
-    background-color: #8dbf42; }
+    background-color: #1abc9c; }
 
 /*
     Border Top Tab
@@ -467,19 +470,19 @@ h4 {
   border-radius: 0px;
   padding: 12px 30px;
   background: #f6f7f8;
-  color: #5c1ac3;
+  color: #805dca;
   border: 1px solid transparent;
-  border-top: 2px solid #5c1ac3; }
+  border-top: 2px solid #805dca; }
 
 .border-top-tab .nav-tabs .nav-link.active {
   color: #495057;
   border-radius: 0px;
   padding: 12px 30px;
   background: #f6f7f8;
-  color: #5c1ac3;
+  color: #805dca;
   border: 1px solid transparent;
-  border-top: 2px solid #5c1ac3; }
+  border-top: 2px solid #805dca; }
 
 .border-top-tab .nav-tabs .nav-link:focus, .border-top-tab .nav-tabs .nav-link:hover {
   border: 1px solid transparent;
-  border-top: 2px solid #5c1ac3; }
+  border-top: 2px solid #805dca; }

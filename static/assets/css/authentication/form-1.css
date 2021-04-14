@@ -59,7 +59,7 @@ body {
       color: #3b3f5c;
       margin-bottom: 0; }
   .form-form .form-form-wrap h1 .brand-name {
-    color: #1b55e2;
+    color: #4361ee;
     font-weight: 600; }
   .form-form .form-form-wrap p.signup-link {
     font-size: 14px;
@@ -67,7 +67,7 @@ body {
     font-weight: 700;
     margin-bottom: 50px; }
     .form-form .form-form-wrap p.signup-link a {
-      color: #1b55e2;
+      color: #4361ee;
       border-bottom: 1px solid; }
   .form-form .form-form-wrap form .field-wrapper.input {
     position: relative;
@@ -85,7 +85,7 @@ body {
   .form-form .form-form-wrap form .field-wrapper svg {
     position: absolute;
     top: 16px;
-    color: #1b55e2;
+    color: #4361ee;
     fill: rgba(27, 85, 226, 0.239216); }
   .form-form .form-form-wrap form .field-wrapper.terms_condition {
     margin-bottom: 20px; }
@@ -95,7 +95,7 @@ body {
       padding-left: 31px;
       font-weight: 100; }
     .form-form .form-form-wrap form .field-wrapper.terms_condition a {
-      color: #1b55e2; }
+      color: #4361ee; }
   .form-form .form-form-wrap form .field-wrapper input {
     display: inline-block;
     vertical-align: middle;
@@ -109,15 +109,15 @@ body {
     -ms-transition: all 0.2s ease-in-out 0s;
     transition: all 0.2s ease-in-out 0s;
     color: #3b3f5c;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 16px;
     border-bottom: 1px solid #e0e6ed;
     padding: 0px 0 10px 35px; }
     .form-form .form-form-wrap form .field-wrapper input::-webkit-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-ms-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-moz-placeholder {
-      color: #d3d3d3;
+      color: #bfc9d4;
       font-size: 14px; }
     .form-form .form-form-wrap form .field-wrapper input:focus {
-      border-bottom: 1px solid #1b55e2;
+      border-bottom: 1px solid #4361ee;
       box-shadow: none; }
   .form-form .form-form-wrap form .field-wrapper.toggle-pass {
     align-self: center;
@@ -131,7 +131,7 @@ body {
   .form-form .form-form-wrap form .field-wrapper a.forgot-pass-link {
     width: 100%;
     font-weight: 700;
-    color: #1b55e2;
+    color: #4361ee;
     text-align: center;
     display: block;
     letter-spacing: 2px;
@@ -157,7 +157,7 @@ body {
     font-weight: 600;
     margin-top: 90px; }
     .form-form .terms-conditions a {
-      color: #1b55e2;
+      color: #4361ee;
       font-weight: 700; }
 
 .form-image {

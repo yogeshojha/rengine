@@ -54,15 +54,15 @@
   .switch.s-default .slider:before {
     background-color: #d3d3d3; }
   .switch.s-primary .slider:before {
-    background-color: #1b55e2; }
+    background-color: #4361ee; }
   .switch.s-success .slider:before {
-    background-color: #8dbf42; }
+    background-color: #1abc9c; }
   .switch.s-warning .slider:before {
     background-color: #e2a03f; }
   .switch.s-danger .slider:before {
     background-color: #e7515a; }
   .switch.s-secondary .slider:before {
-    background-color: #5c1ac3; }
+    background-color: #805dca; }
   .switch.s-info .slider:before {
     background-color: #2196f3; }
   .switch.s-dark .slider:before {
@@ -74,13 +74,13 @@
   .switch.s-default input:focus + .slider {
     box-shadow: 0 0 1px #ebedf2; }
   .switch.s-primary input:checked + .slider {
-    background-color: #1b55e2; }
+    background-color: #4361ee; }
   .switch.s-primary input:focus + .slider {
-    box-shadow: 0 0 1px #1b55e2; }
+    box-shadow: 0 0 1px #4361ee; }
   .switch.s-success input:checked + .slider {
-    background-color: #8dbf42; }
+    background-color: #1abc9c; }
   .switch.s-success input:focus + .slider {
-    box-shadow: 0 0 1px #8dbf42; }
+    box-shadow: 0 0 1px #1abc9c; }
   .switch.s-warning input:checked + .slider {
     background-color: #e2a03f; }
   .switch.s-warning input:focus + .slider {
@@ -90,9 +90,9 @@
   .switch.s-danger input:focus + .slider {
     box-shadow: 0 0 1px #e7515a; }
   .switch.s-secondary input:checked + .slider {
-    background-color: #5c1ac3; }
+    background-color: #805dca; }
   .switch.s-secondary input:focus + .slider {
-    box-shadow: 0 0 1px #5c1ac3; }
+    box-shadow: 0 0 1px #805dca; }
   .switch.s-info input:checked + .slider {
     background-color: #2196f3; }
   .switch.s-info input:focus + .slider {
@@ -119,15 +119,15 @@
   .switch.s-icons.s-outline-default {
     color: #d3d3d3; }
   .switch.s-icons.s-outline-primary {
-    color: #1b55e2; }
+    color: #4361ee; }
   .switch.s-icons.s-outline-success {
-    color: #8dbf42; }
+    color: #1abc9c; }
   .switch.s-icons.s-outline-warning {
     color: #e2a03f; }
   .switch.s-icons.s-outline-danger {
     color: #e7515a; }
   .switch.s-icons.s-outline-secondary {
-    color: #5c1ac3; }
+    color: #805dca; }
   .switch.s-icons.s-outline-info {
     color: #2196f3; }
   .switch.s-icons.s-outline-dark {
@@ -141,21 +141,21 @@
   .switch.s-outline-default input:focus + .slider {
     box-shadow: 0 0 1px #ebedf2; }
   .switch.s-outline-primary input:checked + .slider {
-    border: 2px solid #1b55e2; }
+    border: 2px solid #4361ee; }
     .switch.s-outline-primary input:checked + .slider:before {
-      border: 2px solid #1b55e2;
-      background-color: #1b55e2;
+      border: 2px solid #4361ee;
+      background-color: #4361ee;
       box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
   .switch.s-outline-primary input:focus + .slider {
-    box-shadow: 0 0 1px #1b55e2; }
+    box-shadow: 0 0 1px #4361ee; }
   .switch.s-outline-success input:checked + .slider {
-    border: 2px solid #8dbf42; }
+    border: 2px solid #1abc9c; }
     .switch.s-outline-success input:checked + .slider:before {
-      border: 2px solid #8dbf42;
-      background-color: #8dbf42;
+      border: 2px solid #1abc9c;
+      background-color: #1abc9c;
       box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
   .switch.s-outline-success input:focus + .slider {
-    box-shadow: 0 0 1px #8dbf42; }
+    box-shadow: 0 0 1px #1abc9c; }
   .switch.s-outline-warning input:checked + .slider {
     border: 2px solid #e2a03f; }
     .switch.s-outline-warning input:checked + .slider:before {
@@ -173,13 +173,13 @@
   .switch.s-outline-danger input:focus + .slider {
     box-shadow: 0 0 1px #e7515a; }
   .switch.s-outline-secondary input:checked + .slider {
-    border: 2px solid #5c1ac3; }
+    border: 2px solid #805dca; }
     .switch.s-outline-secondary input:checked + .slider:before {
-      border: 2px solid #5c1ac3;
-      background-color: #5c1ac3;
+      border: 2px solid #805dca;
+      background-color: #805dca;
       box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
   .switch.s-outline-secondary input:focus + .slider {
-    box-shadow: 0 0 1px #5c1ac3; }
+    box-shadow: 0 0 1px #805dca; }
   .switch.s-outline-info input:checked + .slider {
     border: 2px solid #2196f3; }
     .switch.s-outline-info input:checked + .slider:before {

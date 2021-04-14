@@ -86,11 +86,11 @@
   position: absolute; }
 
 .ps__rail-x:hover > .ps__thumb-x, .ps__rail-x:focus > .ps__thumb-x, .ps__rail-x.ps--clicking .ps__thumb-x {
-  background-color: #acb0c3;
+  background-color: #e3e4eb;
   height: 6px; }
 
 .ps__rail-y:hover > .ps__thumb-y, .ps__rail-y:focus > .ps__thumb-y, .ps__rail-y.ps--clicking .ps__thumb-y {
-  background-color: #acb0c3;
+  background-color: #e3e4eb;
   width: 6px; }
 
 /* MS supports */

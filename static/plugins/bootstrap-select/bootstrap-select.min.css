@@ -60,15 +60,15 @@ select.bs-select-hidden, select.selectpicker {
   width: 220px; }
 
 .bootstrap-select.show .dropdown-toggle {
-  border: 1px solid #1b55e2 !important;
+  border: 1px solid #4361ee !important;
   box-shadow: 0 0 5px 2px rgba(194, 213, 255, 0.619608);
   color: #3b3f5c; }
   .bootstrap-select.show .dropdown-toggle.btn-outline-primary {
-    border: 1px solid #1b55e2 !important; }
+    border: 1px solid #4361ee !important; }
   .bootstrap-select.show .dropdown-toggle.btn-outline-info {
     border: 1px solid #2196f3 !important; }
   .bootstrap-select.show .dropdown-toggle.btn-outline-success {
-    border: 1px solid #8dbf42 !important; }
+    border: 1px solid #1abc9c !important; }
   .bootstrap-select.show .dropdown-toggle.btn-outline-warning {
     border: 1px solid #e2a03f !important; }
   .bootstrap-select.show .dropdown-toggle.btn-outline-danger {
@@ -201,7 +201,7 @@ select.bs-select-hidden, select.selectpicker {
   padding: 9px 19px;
   font-weight: 600; }
   .bootstrap-select.btn-group .dropdown-menu a.dropdown-item span.dropdown-item-inner:not([class*="bg-"]):hover {
-    color: #1b55e2;
+    color: #4361ee;
     background-color: rgba(27, 85, 226, 0.239216); }
   .bootstrap-select.btn-group .dropdown-menu a.dropdown-item span.dropdown-item-inner.opt {
     position: relative;
@@ -338,7 +338,7 @@ select.bs-select-hidden, select.selectpicker {
   width: 100%; }
 
 .btn-outline-primary:hover {
-  color: #1b55e2 !important; }
+  color: #4361ee !important; }
 
 .btn-outline-info:hover {
   color: #2196f3 !important; }
@@ -347,7 +347,7 @@ select.bs-select-hidden, select.selectpicker {
   color: #e2a03f !important; }
 
 .btn-outline-success:hover {
-  color: #8dbf42 !important; }
+  color: #1abc9c !important; }
 
 .btn-outline-danger:hover {
   color: #e7515a !important; }
@@ -357,19 +357,19 @@ select.bs-select-hidden, select.selectpicker {
 
 .btn-outline-primary:not(:disabled):not(.disabled).active, .btn-outline-primary:not(:disabled):not(.disabled):active {
   background-color: transparent;
-  color: #1b55e2 !important; }
+  color: #4361ee !important; }
 
 .show > .btn-outline-primary.dropdown-toggle {
   background-color: transparent;
-  color: #1b55e2 !important; }
+  color: #4361ee !important; }
 
 .btn-outline-success:not(:disabled):not(.disabled).active, .btn-outline-success:not(:disabled):not(.disabled):active {
   background-color: transparent;
-  color: #8dbf42 !important; }
+  color: #1abc9c !important; }
 
 .show > .btn-outline-success.dropdown-toggle {
   background-color: transparent;
-  color: #8dbf42 !important; }
+  color: #1abc9c !important; }
 
 .btn-outline-info:not(:disabled):not(.disabled).active, .btn-outline-info:not(:disabled):not(.disabled):active {
   background-color: transparent;
@@ -396,10 +396,10 @@ select.bs-select-hidden, select.selectpicker {
   color: #e2a03f !important; }
 
 .btn.btn-outline-primary .caret {
-  border-top-color: #1b55e2; }
+  border-top-color: #4361ee; }
 
 .btn.btn-outline-success .caret {
-  border-top-color: #8dbf42; }
+  border-top-color: #1abc9c; }
 
 .btn.btn-outline-info .caret {
   border-top-color: #2196f3; }

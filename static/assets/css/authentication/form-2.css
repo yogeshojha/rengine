@@ -47,9 +47,9 @@ body {
       text-align: center;
       border-radius: 15px;
       border: 1px solid #e0e6ed;
-      -webkit-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-      -moz-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-      box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06); }
+      -webkit-box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01);
+      -moz-box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01);
+      box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01); }
       .form-form .form-container .form-content h1 {
         font-size: 32px;
         color: #3b3f5c; }
@@ -91,7 +91,7 @@ body {
     .form-form .form-form-wrap p.signup-link.recovery {
       margin-top: 0; }
     .form-form .form-form-wrap p.signup-link a {
-      color: #1b55e2;
+      color: #4361ee;
       border-bottom: 1px solid; }
   .form-form .form-form-wrap form .field-wrapper {
     width: 100%; }
@@ -121,7 +121,7 @@ body {
         padding-left: 31px;
         font-weight: 100; }
       .form-form .form-form-wrap form .field-wrapper.terms_condition a {
-        color: #1b55e2; }
+        color: #4361ee; }
     .form-form .form-form-wrap form .field-wrapper svg.feather-user {
       top: 53px; }
     .form-form .form-form-wrap form .field-wrapper svg.feather-lock {
@@ -155,11 +155,11 @@ body {
       -ms-transition: all 0.2s ease-in-out 0s;
       transition: all 0.2s ease-in-out 0s;
       color: #3b3f5c;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 16px;
       padding: 13px 35px 13px 46px; }
       .form-form .form-form-wrap form .field-wrapper input::-webkit-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-ms-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-moz-placeholder {
-        color: #d3d3d3;
+        color: #bfc9d4;
         font-size: 14px; }
     .form-form .form-form-wrap form .field-wrapper button.btn {
       align-self: center;
@@ -200,7 +200,7 @@ body {
     .form-form .form-form-wrap form .social a.social-fb {
       margin-right: 15px; }
       .form-form .form-form-wrap form .social a.social-fb svg, .form-form .form-form-wrap form .social a.social-fb .brand-name {
-        color: #1b55e2; }
+        color: #4361ee; }
 
 @media (max-width: 991px) {
   .form-form {

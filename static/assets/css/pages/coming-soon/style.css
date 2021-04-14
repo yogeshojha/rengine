@@ -46,7 +46,7 @@ body {
     font-size: 40px;
     margin-top: 30px;
     font-weight: 700;
-    color: #1b55e2;
+    color: #4361ee;
     margin-bottom: 0;
     text-shadow: 0px 5px 4px rgba(31, 45, 61, 0.101961); }
   .coming-soon-cont .coming-soon-content > p:not(.terms-conditions) {
@@ -58,7 +58,7 @@ body {
     display: flex; }
     .coming-soon-cont #timer .days, .coming-soon-cont #timer .hours, .coming-soon-cont #timer .min {
       padding: 28px 0;
-      background: #1b55e2;
+      background: #4361ee;
       color: #fff;
       border-radius: 4px;
       font-weight: 600;
@@ -70,7 +70,7 @@ body {
       margin-right: 15px; }
     .coming-soon-cont #timer .sec {
       padding: 28px 0;
-      background: #1b55e2;
+      background: #4361ee;
       color: #fff;
       border-radius: 4px;
       font-weight: 600;
@@ -102,7 +102,7 @@ body {
     .coming-soon-cont .coming-soon-wrap form .field-wrapper svg {
       position: absolute;
       top: 11px;
-      color: #1b55e2;
+      color: #4361ee;
       fill: rgba(27, 85, 226, 0.239216);
       left: 8px; }
     .coming-soon-cont .coming-soon-wrap form .field-wrapper input {
@@ -111,7 +111,7 @@ body {
         color: #d3d3d3;
         font-size: 14px; }
       .coming-soon-cont .coming-soon-wrap form .field-wrapper input:focus {
-        border-bottom: 1px solid #1b55e2; }
+        border-bottom: 1px solid #4361ee; }
     .coming-soon-cont .coming-soon-wrap form .field-wrapper button.btn {
       align-self: center;
       position: absolute;
@@ -122,7 +122,7 @@ body {
         transform: none; }
   .coming-soon-cont .social {
     text-align: center;
-    color: #1b55e2;
+    color: #4361ee;
     margin: 45px 0 0 0; }
     .coming-soon-cont .social li {
       margin: 0; }
@@ -131,7 +131,7 @@ body {
         padding-right: 10px;
         border-right: 2px solid #d3d3d3; }
     .coming-soon-cont .social svg {
-      color: #1b55e2;
+      color: #4361ee;
       width: 20px;
       height: 20px; }
   .coming-soon-cont .terms-conditions {
@@ -141,7 +141,7 @@ body {
     font-weight: 600;
     margin-top: 70px; }
     .coming-soon-cont .terms-conditions a {
-      color: #1b55e2;
+      color: #4361ee;
       font-weight: 700; }
 
 .coming-soon-image {

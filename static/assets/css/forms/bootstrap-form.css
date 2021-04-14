@@ -23,7 +23,7 @@ body {
   .form-control:disabled, .form-control[readonly] {
     background-color: #f1f2f3; }
   .form-control:focus {
-    border-color: #5c1ac3; }
+    border-color: #805dca; }
 
 .help-block, .help-inline {
   color: #888ea8; }

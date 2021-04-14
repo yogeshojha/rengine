@@ -105,15 +105,15 @@
       color: #e7515a;
       border: 2px dashed #e7515a; }
     .searchable-container .items .user-status span.badge.badge-primary {
-      color: #1b55e2;
-      border: 2px dashed #1b55e2; }
+      color: #4361ee;
+      border: 2px dashed #4361ee; }
   .searchable-container .items .action-btn p {
     margin-bottom: 0;
     color: #3b3f5c;
     cursor: pointer;
     font-weight: 600; }
   .searchable-container .items:hover .serial-number p, .searchable-container .items:hover .user-name p, .searchable-container .items:hover .user-work p, .searchable-container .items:hover .user-email p, .searchable-container .items:hover .action-btn p {
-    color: #1b55e2; }
+    color: #4361ee; }
 
 /*
     Line Search
@@ -204,7 +204,7 @@
     border: 1px solid #ffffff;
     background-color: #ffffff; }
     .search-input-group-style.input-group .input-group-prepend .input-group-text svg {
-      color: #1b55e2; }
+      color: #4361ee; }
 
 .search-input-group-style input {
   border: none;

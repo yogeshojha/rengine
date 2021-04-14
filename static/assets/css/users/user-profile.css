@@ -9,9 +9,8 @@
 	===============================
 */
 .widget-content-area {
-  -webkit-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-  -moz-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06); }
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06); }
 
 .layout-spacing {
   padding-bottom: 25px; }
@@ -29,7 +28,7 @@
     display: flex;
     justify-content: center;
     align-self: center;
-    background-color: #1b55e2;
+    background-color: #4361ee;
     background: linear-gradient(to right, #0081ff 0%, #0045ff 100%);
     border-radius: 50%;
     box-shadow: 0 10px 15px rgba(0, 69, 255, 0.2); }
@@ -51,7 +50,7 @@
       content: "";
       height: 2px;
       width: 55px;
-      background: #1b55e2;
+      background: #4361ee;
       border-radius: 50%;
       bottom: 9px;
       left: 15px; }
@@ -64,7 +63,7 @@
       font-size: 20px;
       font-weight: 600;
       margin-top: 22px;
-      color: #1b55e2; }
+      color: #4361ee; }
   .user-profile .widget-content-area .user-info-list ul.contacts-block {
     border: none;
     max-width: 217px;
@@ -76,7 +75,7 @@
       .user-profile .widget-content-area .user-info-list ul.contacts-block li a {
         font-weight: 600;
         font-size: 15px;
-        color: #1b55e2; }
+        color: #4361ee; }
     .user-profile .widget-content-area .user-info-list ul.contacts-block svg {
       width: 21px;
       margin-right: 15px;
@@ -84,7 +83,7 @@
       vertical-align: middle;
       fill: rgba(0, 23, 55, 0.08); }
     .user-profile .widget-content-area .user-info-list ul.contacts-block li:hover svg {
-      color: #1b55e2;
+      color: #4361ee;
       fill: rgba(27, 85, 226, 0.239216); }
     .user-profile .widget-content-area .user-info-list ul.contacts-block ul.list-inline {
       margin: 27px auto; }
@@ -98,7 +97,7 @@
         align-self: center; }
       .user-profile .widget-content-area .user-info-list ul.contacts-block ul.list-inline svg {
         margin-right: 0;
-        color: #1b55e2;
+        color: #4361ee;
         width: 19px;
         align-self: center; }
 
@@ -120,7 +119,7 @@
       content: "";
       height: 2px;
       width: 47px;
-      background: #1b55e2;
+      background: #4361ee;
       border-radius: 50%;
       bottom: -2px;
       left: 15px; }
@@ -134,7 +133,7 @@
     box-shadow: 1px 3px 20px 3px #f1f2f3;
     margin-bottom: 31px; }
     .skills .widget-content-area .progress .progress-bar {
-      background-color: #1b55e2;
+      background-color: #4361ee;
       background: linear-gradient(to right, #0081ff 0%, #0045ff 100%);
       border-radius: 1rem;
       box-shadow: 0 2px 4px rgba(0, 69, 255, 0.15), 0 8px 16px rgba(0, 69, 255, 0.2);
@@ -167,7 +166,7 @@
       content: "";
       height: 2px;
       width: 30px;
-      background: #1b55e2;
+      background: #4361ee;
       border-radius: 50%;
       bottom: -2px;
       left: 15px; }
@@ -191,7 +190,7 @@
       width: 30px;
       height: 30px;
       margin-right: 21px;
-      color: #1b55e2; }
+      color: #4361ee; }
     .bio .widget-content-area .b-skills h5 {
       margin-bottom: 10px;
       font-size: 16px; }
@@ -216,7 +215,7 @@
       content: "";
       height: 2px;
       width: 97px;
-      background: #1b55e2;
+      background: #4361ee;
       border-radius: 50%;
       bottom: -2px;
       left: 15px; }
@@ -224,7 +223,7 @@
     display: flex; }
     .education .widget-content-area .timeline-alter .item-timeline .t-dot {
       position: relative;
-      border-color: #1b55e2;
+      border-color: #4361ee;
       padding: 10px; }
       .education .widget-content-area .timeline-alter .item-timeline .t-dot:before {
         content: '';
@@ -311,7 +310,7 @@
       content: "";
       height: 2px;
       width: 173px;
-      background: #1b55e2;
+      background: #4361ee;
       border-radius: 50%;
       bottom: -2px;
       left: 15px; }
@@ -319,7 +318,7 @@
     display: flex; }
     .work-experience .widget-content-area .timeline-alter .item-timeline .t-dot {
       position: relative;
-      border-color: #1b55e2;
+      border-color: #4361ee;
       padding: 10px; }
       .work-experience .widget-content-area .timeline-alter .item-timeline .t-dot:before {
         content: '';

@@ -9,9 +9,8 @@
 	===============================
 */
 .section {
-  -webkit-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-  -moz-box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 6px 0 rgba(85, 85, 85, 0.0901961), 0 1px 20px 0 rgba(0, 0, 0, 0.08), 0px 1px 11px 0px rgba(0, 0, 0, 0.06); }
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06); }
 
 .layout-spacing {
   padding-bottom: 25px; }
@@ -23,7 +22,7 @@
   display: none;
   text-align: left;
   padding: 15px;
-  background-color: #8dbf42;
+  background-color: #1abc9c;
   color: #fff;
   border-radius: 3px; }
   .blockui-growl-message i {
@@ -51,10 +50,10 @@
     .general-info .info .upload p {
       font-size: 14px;
       font-weight: 600;
-      color: #1b55e2; }
+      color: #4361ee; }
       .general-info .info .upload p i {
         font-size: 22px;
-        color: #1b55e2;
+        color: #4361ee;
         vertical-align: middle; }
   .general-info .info label {
     color: #888ea8;
@@ -66,12 +65,12 @@
     border: none;
     border-radius: 6px; }
     .general-info .info .dropify-wrapper .dropify-preview {
-      background-color: #fff;
+      background-color: #FFF;
       padding: 0; }
     .general-info .info .dropify-wrapper .dropify-clear {
       font-size: 16px;
       padding: 4px 8px;
-      color: #fff;
+      color: #FFF;
       border: none; }
       .general-info .info .dropify-wrapper .dropify-clear:hover {
         background-color: transparent; }
@@ -160,7 +159,7 @@
     border: none; }
 
 .input-group .input-group-prepend .input-group-text svg {
-  color: #1b55e2; }
+  color: #4361ee; }
 
 .social .info input {
   border-radius: 0.25rem !important; }
@@ -190,7 +189,7 @@
     padding: 20px; }
   .skill .info label {
     text-transform: uppercase;
-    color: #c2d5ff; }
+    color: #eaf1ff; }
   .skill .custom-progress.progress-up .range-count {
     margin-top: 11px; }
   .skill .custom-progress.progress-down .range-count {
@@ -203,14 +202,14 @@
       background: #ffffff;
       padding: 3px 8px;
       border-radius: 5px;
-      color: #1b55e2;
+      color: #4361ee;
       border: 1px solid #e0e6ed; }
   .skill .custom-progress.top-right .range-count, .skill .custom-progress.bottom-right .range-count {
     text-align: right; }
   .skill .progress-range-counter::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    background: #1b55e2;
+    background: #4361ee;
     cursor: pointer;
     height: 16px;
     width: 16px;
@@ -221,14 +220,14 @@
     -webkit-transform: scale(1.2);
     transform: scale(1.2); }
   .skill .progress-range-counter:focus::-webkit-slider-thumb {
-    background: #1b55e2;
+    background: #4361ee;
     cursor: pointer;
     height: 16px;
     width: 16px;
     margin-top: -4px;
     box-shadow: none; }
   .skill .progress-range-counter::-moz-range-thumb {
-    background: #1b55e2;
+    background: #4361ee;
     cursor: pointer;
     height: 16px;
     width: 16px;
@@ -278,8 +277,8 @@
 .account-settings-footer {
   position: fixed;
   bottom: 0;
-  width: calc(100% - 266px);
-  background: #191e3a;
+  width: calc(100% - 96px);
+  background: #3b3f5c;
   padding: 12px 20px;
   -webkit-box-shadow: -2px -9px 20px rgba(126, 142, 177, 0.12);
   -moz-box-shadow: -2px -9px 20px rgba(126, 142, 177, 0.12);
@@ -290,9 +289,6 @@
   .account-settings-footer .as-footer-container {
     display: flex;
     justify-content: space-between; }
-
-.sidebar-closed .account-settings-footer {
-  width: calc(100% - 32px); }
 
 @media (max-width: 991px) {
   .account-settings-container .account-content {
