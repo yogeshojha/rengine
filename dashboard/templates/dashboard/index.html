@@ -28,7 +28,7 @@ Dashboard
 			</div>
 			<div class="w-chart">
 
-				<div class="w-chart-section total-visits-content">
+				<div class="w-chart-section primary-card">
 					<div class="w-detail">
 						<p class="w-title">Total Targets</p>
 						<p class="w-stats">{{domain_count|intcomma}}</p>
@@ -38,9 +38,9 @@ Dashboard
 					</div>
 					<br>
 					<br>
-					<a href="../target/list/" class="text-info">View all targets</a>
+					<a href="../target/list/">View all targets</a>
 				</div>
-				<div class="w-chart-section paid-visits-content">
+				<div class="w-chart-section warning-card">
 					<div class="w-detail">
 						<p class="w-title">Total Subdomains</p>
 						<p class="w-stats">{{subdomain_count|intcomma}}</p>
@@ -49,10 +49,10 @@ Dashboard
 						<div id="subdomains_chart"></div>
 					</div>
 					<br>
-					<p class="w-title">Alive Subdomains: {{alive_count|intcomma}}</p>
-					<a href="{% url 'all_subdomains' %}" class="text-warning">View all subdomains</a>
+					<p class="w-title">Alive Subdomains: <b>{{alive_count|intcomma}}</b></p>
+					<a href="{% url 'all_subdomains' %}">View all subdomains</a>
 				</div>
-				<div class="w-chart-section paid-visits-content">
+				<div class="w-chart-section purple-card">
 					<div class="w-detail">
 						<p class="w-title">Total Endpoints</p>
 						<p class="w-stats">{{endpoint_count|intcomma}}</p>
@@ -61,10 +61,10 @@ Dashboard
 						<div id="endpoint_chart"></div>
 					</div>
 					<br>
-					<p class="w-title">Alive Endpoints: {{endpoint_alive_count|intcomma}}</p>
-					<a href="{% url 'all_endpoints' %}" class="text-warning">View all endpoints</a>
+					<p class="w-title">Alive Endpoints: <b>{{endpoint_alive_count|intcomma}}</b></p>
+					<a href="{% url 'all_endpoints' %}">View all endpoints</a>
 				</div>
-				<div class="w-chart-section paid-visits-content">
+				<div class="w-chart-section danger-card">
 					<div class="w-detail">
 						<p class="w-title">Total Vulnerabilities</p>
 						<p class="w-stats">{{total_vul_count|intcomma}}</p>
@@ -73,8 +73,8 @@ Dashboard
 						<div id="vuln_chart"></div>
 					</div>
 					<br>
-					<p class="w-title">{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
-					<a href="{% url 'all_vulns' %}" class="text-warning">View all subdomains</a>
+					<p class="w-title"><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
+					<a href="{% url 'all_vulns' %}">View all subdomains</a>
 				</div>
 			</div>
 		</div>
