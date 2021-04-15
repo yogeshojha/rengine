@@ -204,3 +204,6 @@
 
 .widget.widget-one .w-chart .w-chart-section.danger-card .w-title, .widget.widget-one .w-chart .w-chart-section.danger-card .w-stats, .widget.widget-one .w-chart .w-chart-section.danger-card a {
   color: #e7515a; }
+
+.widget-three .widget-content .summary-list.summary-success {
+  background: #ddf5f0 }

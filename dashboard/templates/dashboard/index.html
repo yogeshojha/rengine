@@ -20,312 +20,293 @@ Dashboard
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-<div class="col-lg-12 layout-px-spacing">
-	<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-		<div class="widget widget-one">
-			<div class="widget-heading">
-				<h6 class="">Statistics</h6>
-			</div>
-			<div class="w-chart">
-
-				<div class="w-chart-section primary-card">
-					<div class="w-detail">
-						<p class="w-title">Total Targets</p>
-						<p class="w-stats">{{domain_count|intcomma}}</p>
-					</div>
-					<div class="w-chart-render-one">
-						<div id="targets_chart"></div>
-					</div>
-					<br>
-					<br>
-					<a href="../target/list/">View all targets</a>
-				</div>
-				<div class="w-chart-section warning-card">
-					<div class="w-detail">
-						<p class="w-title">Total Subdomains</p>
-						<p class="w-stats">{{subdomain_count|intcomma}}</p>
-					</div>
-					<div class="w-chart-render-one">
-						<div id="subdomains_chart"></div>
-					</div>
-					<br>
-					<p class="w-title">Alive Subdomains: <b>{{alive_count|intcomma}}</b></p>
-					<a href="{% url 'all_subdomains' %}">View all subdomains</a>
-				</div>
-				<div class="w-chart-section purple-card">
-					<div class="w-detail">
-						<p class="w-title">Total Endpoints</p>
-						<p class="w-stats">{{endpoint_count|intcomma}}</p>
-					</div>
-					<div class="w-chart-render-one">
-						<div id="endpoint_chart"></div>
-					</div>
-					<br>
-					<p class="w-title">Alive Endpoints: <b>{{endpoint_alive_count|intcomma}}</b></p>
-					<a href="{% url 'all_endpoints' %}">View all endpoints</a>
-				</div>
-				<div class="w-chart-section danger-card">
-					<div class="w-detail">
-						<p class="w-title">Total Vulnerabilities</p>
-						<p class="w-stats">{{total_vul_count|intcomma}}</p>
-					</div>
-					<div class="w-chart-render-one">
-						<div id="vuln_chart"></div>
-					</div>
-					<br>
-					<p class="w-title"><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
-					<a href="{% url 'all_vulns' %}">View all subdomains</a>
-				</div>
-			</div>
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-one">
+		<div class="widget-heading">
+			<h6 class="">Statistics</h6>
 		</div>
-	</div>
-	<div class="row layout-top-spacing">
-		{% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-chart-two">
-				<div class="widget-heading">
-					<div class="row">
-						<div class="col-6">
-							<h6 class="">Vulnerability Scan Summary</h6>
-						</div>
-						<div class="col-6">
-							<span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
-						</div>
-					</div>
-				</div>
-				<div class="widget-content">
-					<div class="row">
-						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-							<h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
-							<div id="vulnerability-chart" class=""></div>
-						</div>
-						<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
-							<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
-							<div class="table-responsive">
-								<table class="table table-hover table-light">
-									<thead>
-										<th>Target</th>
-										<th>&nbsp;</th>
-									</thead>
-									<tbody>
-										{% for item in most_vulnerable_target %}
-										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
-											<td>{{item.domain_name}}</td>
-											<td class="text-center">
-												<div class="progress br-30">
-													<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-												</div>
-											</td>
-										</tr>
-										{% empty %}
-										Not enough data.
-										{% endfor %}
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
-							<h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
-							<div class="table-responsive">
-								<table class="table table-hover table-light">
-									<tbody>
-										<thead>
-											<th>Vulnerability Name</th>
-											<th class="text-center">Count</th>
-											<th>Severity</th>
-										</thead>
-										{% for item in most_common_vulnerability %}
-										<tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
-											<td>{{item.name}}</td>
-											<td class="text-center">
-												{{item.count}}
-											</td>
-											<td>
-												<div class="t-rate">
-													{% if item.severity == 0 %}
-													<span class='badge badge-info'>Info</span>
-													{% elif item.severity == 1 %}
-													<span class='badge badge-low'>Low</span>
-													{% elif item.severity == 2 %}
-													<span class='badge badge-warning'>Medium</span>
-													{% elif item.severity == 3 %}
-													<span class='badge badge-danger'>High</span>
-													{% elif item.severity == 4 %}
-													<span class='badge badge-critical'>Critical</span>
-													{% endif %}
-												</div>
-											</td>
-										</tr>
-										{% empty %}
-										Not enough data
-										{% endfor %}
-									</tbody>
-								</table>
-								<small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		{% endif %}
-	</div>
-	<div class="row">
-		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-activity-feed">
-				<div class="widget-heading">
-					<h6 class="">Activity Feed</h6>
-				</div>
-				<div class="widget-content">
-					<div class="mt-container mx-auto">
-						<div class="timeline-line">
-							{% for item in activity_feed %}
-							<div class="item-timeline
-							{% if item.status == 0 %}
-							timeline-danger
-							{% elif item.status == 1 %}
-							timeline-primary
-							{% elif item.status == 2 %}
-							timeline-success
-							{% endif %}
-							">
-							<div class="t-dot" data-original-title="" title="">
-							</div>
-							<div class="t-text">
-								<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
-								<p class="t-time">{{item.time|naturaltime}}</p>
-							</div>
-						</div>
-						{% empty %}
-						Feed will be automatically generated while the scan is running.
-						{% endfor %}
-					</div>
-				</div>
-				<div class="tm-action-btn">
-					<br>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-		<div class="widget widget-activity-feed">
-			<div class="widget-heading">
-				<h6 class="">Vulnerability Feed</h6>
-			</div>
-			<div class="widget-content">
-				<div class="mt-container mx-auto">
-					<div class="timeline-line">
+		<div class="w-chart">
 
-						{% for item in vulnerability_feed %}
-						<div class="item-timeline
-						{% if item.severity == 0 %}
-						timeline-primary
-						{% elif item.severity == 1 %}
-						timeline-low
-						{% elif item.severity == 2 %}
-						timeline-warning
-						{% elif item.severity == 3 %}
-						timeline-danger
-						{% elif item.severity == 4 %}
-						timeline-critical
-						{% endif %}
-						">
-						<div class="t-dot" data-original-title="" title="">
-						</div>
-						<div class="t-text">
-							<p>
-								<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
-									<br>
-									{{item.host}}
-								</a>
-							</p>
-							{% if item.severity == 0 %}
-							<span class='badge badge-info'>Info</span>
-							{% elif item.severity == 1 %}
-							<span class='badge badge-low'>Low</span>
-							{% elif item.severity == 2 %}
-							<span class='badge badge-warning'>Medium</span>
-							{% elif item.severity == 3 %}
-							<span class='badge badge-danger'>High</span>
-							{% elif item.severity == 4 %}
-							<span class='badge badge-critical'>critical</span>
-							{% endif %}
-							<p class="t-time">{{item.discovered_date|naturaltime}}</p>
-						</div>
-					</div>
-					{% empty %}
-					Feed will be automatically generated while the scan is running.
-					{% endfor %}
-
+			<div class="w-chart-section primary-card">
+				<div class="w-detail">
+					<p class="w-title">Total Targets</p>
+					<p class="w-stats">{{domain_count|intcomma}}</p>
 				</div>
+				<div class="w-chart-render-one">
+					<div id="targets_chart"></div>
+				</div>
+				<br>
+				<br>
+				<a href="../target/list/">View all targets</a>
 			</div>
-
-			<div class="tm-action-btn">
-				<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+			<div class="w-chart-section warning-card">
+				<div class="w-detail">
+					<p class="w-title">Total Subdomains</p>
+					<p class="w-stats">{{subdomain_count|intcomma}}</p>
+				</div>
+				<div class="w-chart-render-one">
+					<div id="subdomains_chart"></div>
+				</div>
+				<br>
+				<p class="w-title">Alive Subdomains: <b>{{alive_count|intcomma}}</b></p>
+				<a href="{% url 'all_subdomains' %}">View all subdomains</a>
+			</div>
+			<div class="w-chart-section purple-card">
+				<div class="w-detail">
+					<p class="w-title">Total Endpoints</p>
+					<p class="w-stats">{{endpoint_count|intcomma}}</p>
+				</div>
+				<div class="w-chart-render-one">
+					<div id="endpoint_chart"></div>
+				</div>
+				<br>
+				<p class="w-title">Alive Endpoints: <b>{{endpoint_alive_count|intcomma}}</b></p>
+				<a href="{% url 'all_endpoints' %}">View all endpoints</a>
+			</div>
+			<div class="w-chart-section danger-card">
+				<div class="w-detail">
+					<p class="w-title">Total Vulnerabilities</p>
+					<p class="w-stats">{{total_vul_count|intcomma}}</p>
+				</div>
+				<div class="w-chart-render-one">
+					<div id="vuln_chart"></div>
+				</div>
+				<br>
+				<p class="w-title"><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
+				<a href="{% url 'all_vulns' %}">View all subdomains</a>
 			</div>
 		</div>
 	</div>
 </div>
-</div>
-<div class="row">
-	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
-		<div class="widget widget-table-one">
-			<div class="widget-heading">
-				<h6 class="">Recently completed Scans</h6>
+{% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-chart-two">
+		<div class="widget-heading">
+			<div class="row">
+				<div class="col-6">
+					<h6 class="">Vulnerability Scan Summary</h6>
+				</div>
+				<div class="col-6">
+					<span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
+				</div>
 			</div>
-
-			<div class="widget-content">
-				{% for item in recent_completed_scans %}
-				<div class="transactions-list">
-					<a href="{% url 'detail_scan' item.id %}">
-						<div class="t-item">
-							<div class="t-company-name">
-								<div class="t-icon">
-									<div class="icon">
-										{% if item.scan_status == 1 %}
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-										{% elif item.scan_status == 2 %}
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-										{% else %}
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-										{% endif %}
-									</div>
-								</div>
-								<div class="t-name">
-									<h4>{{item.domain_name}}</h4>
-									<p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
-								</div>
-
-							</div>
-							<div class="t-rate">
-								<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{item.get_subdomain_count}}</span>
-								<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{item.get_endpoint_count}}</span>
-								<span class="badge badge-pills badge-danger bs-tooltip" title="{{item.get_critical_vulnerability_count}} Critical, {{item.get_high_vulnerability_count}} High, {{item.get_medium_vulnerability_count}} Medium Vulnerabilities">{{item.get_vulnerability_count}}</span>
-								{% if item.scan_status == -1 %}
-								<span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
-								{% elif item.scan_status == 0 %}
-								<span class="shadow-none badge badge-danger">Failed</span>
-								{% elif item.scan_status == 1 %}
-								<span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-								{% elif item.scan_status == 2 %}
-								<span class="shadow-none badge badge-success">Successful</span>
-								{% elif item.scan_status == 3 %}
-								<span class="shadow-none badge badge-danger">Aborted</span>
-								{% else %}
-								<span class="shadow-none badge badge-danger">Unknown</span>
-								{% endif %}
-							</div>
-						</div>
-					</a>
+		</div>
+		<div class="widget-content">
+			<div class="row">
+				<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+					<h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
+					<div id="vulnerability-chart" class=""></div>
+				</div>
+				<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
+					<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
+					<div class="table-responsive">
+						<table class="table table-hover table-light">
+							<thead>
+								<th>Target</th>
+								<th>&nbsp;</th>
+							</thead>
+							<tbody>
+								{% for item in most_vulnerable_target %}
+								<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
+									<td>{{item.domain_name}}</td>
+									<td class="text-center">
+										<div class="progress br-30">
+											<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+										</div>
+									</td>
+								</tr>
+								{% empty %}
+								Not enough data.
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
+					<h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
+					<div class="table-responsive">
+						<table class="table table-hover table-light">
+							<tbody>
+								<thead>
+									<th>Vulnerability Name</th>
+									<th class="text-center">Count</th>
+									<th>Severity</th>
+								</thead>
+								{% for item in most_common_vulnerability %}
+								<tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+									<td>{{item.name}}</td>
+									<td class="text-center">
+										{{item.count}}
+									</td>
+									<td>
+										<div class="t-rate">
+											{% if item.severity == 0 %}
+											<span class='badge badge-info'>Info</span>
+											{% elif item.severity == 1 %}
+											<span class='badge badge-low'>Low</span>
+											{% elif item.severity == 2 %}
+											<span class='badge badge-warning'>Medium</span>
+											{% elif item.severity == 3 %}
+											<span class='badge badge-danger'>High</span>
+											{% elif item.severity == 4 %}
+											<span class='badge badge-critical'>Critical</span>
+											{% endif %}
+										</div>
+									</td>
+								</tr>
+								{% empty %}
+								Not enough data
+								{% endfor %}
+							</tbody>
+						</table>
+						<small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-activity-feed">
+		<div class="widget-heading">
+			<h6 class="">Activity Feed</h6>
+		</div>
+		<div class="widget-content">
+			<div class="mt-container mx-auto">
+				<div class="timeline-line">
+					{% for item in activity_feed %}
+					<div class="item-timeline
+					{% if item.status == 0 %}
+					timeline-danger
+					{% elif item.status == 1 %}
+					timeline-primary
+					{% elif item.status == 2 %}
+					timeline-success
+					{% endif %}
+					">
+					<div class="t-dot" data-original-title="" title="">
+					</div>
+					<div class="t-text">
+						<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
+						<p class="t-time">{{item.time|naturaltime}}</p>
+					</div>
 				</div>
 				{% empty %}
-				<div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-					Please wait for the scans to be completed, if any, or You may also initiate the scan
-					<a href="{% url 'list_target' %}" class='text-info'>from here.</a>
-				</strong>
+				Feed will be automatically generated while the scan is running.
+				{% endfor %}
 			</div>
-			{% endfor %}
+		</div>
+		<div class="tm-action-btn">
+			<br>
+		</div>
+	</div>
+</div>
+</div>
+<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-activity-feed">
+		<div class="widget-heading">
+			<h6 class="">Vulnerability Feed</h6>
+		</div>
+		<div class="widget-content">
+			<div class="mt-container mx-auto">
+				<div class="timeline-line">
+					{% for item in vulnerability_feed %}
+					<div class="item-timeline
+					{% if item.severity == 0 %}
+					timeline-primary
+					{% elif item.severity == 1 %}
+					timeline-low
+					{% elif item.severity == 2 %}
+					timeline-warning
+					{% elif item.severity == 3 %}
+					timeline-danger
+					{% elif item.severity == 4 %}
+					timeline-critical
+					{% endif %}
+					">
+					<div class="t-dot" data-original-title="" title="">
+					</div>
+					<div class="t-text">
+						<p>
+							<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
+								<br>
+								{{item.host}}
+							</a>
+						</p>
+						{% if item.severity == 0 %}
+						<span class='badge badge-info'>Info</span>
+						{% elif item.severity == 1 %}
+						<span class='badge badge-low'>Low</span>
+						{% elif item.severity == 2 %}
+						<span class='badge badge-warning'>Medium</span>
+						{% elif item.severity == 3 %}
+						<span class='badge badge-danger'>High</span>
+						{% elif item.severity == 4 %}
+						<span class='badge badge-critical'>critical</span>
+						{% endif %}
+						<p class="t-time">{{item.discovered_date|naturaltime}}</p>
+					</div>
+				</div>
+				{% empty %}
+				Feed will be automatically generated while the scan is running.
+				{% endfor %}
+			</div>
+		</div>
+		<div class="tm-action-btn">
+			<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+		</div>
+	</div>
+</div>
+</div>
+<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-three">
+		<div class="widget-heading">
+			<h6 class="">Recently completed Scans</h6>
+		</div>
+		<div class="widget-content">
+			<div class="order-summary">
+				{% for item in recent_completed_scans %}
+				<a href="{% url 'detail_scan' item.id %}">
+					<div class="summary-list summary-success">
+						<div class="summery-info">
+							<div class="w-icon">
+								{% if item.scan_status == 1 %}
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+								{% elif item.scan_status == 2 %}
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+								{% else %}
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+								{% endif %}
+							</div>
+							<div class="w-summary-details">
+								<div class="w-summary-info">
+									<h6>{{item.domain_name}}</h6>
+									<p class="summary-average">{{item.last_scan_date|naturaltime}}</p>
+								</div>
+								<div class="t-rate">
+									<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{item.get_subdomain_count}}</span>
+									<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{item.get_endpoint_count}}</span>
+									<span class="badge badge-pills badge-danger bs-tooltip" title="{{item.get_critical_vulnerability_count}} Critical, {{item.get_high_vulnerability_count}} High, {{item.get_medium_vulnerability_count}} Medium Vulnerabilities">{{item.get_vulnerability_count}}</span>
+									{% if item.scan_status == -1 %}
+									<span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
+									{% elif item.scan_status == 0 %}
+									<span class="shadow-none badge badge-danger">Failed</span>
+									{% elif item.scan_status == 1 %}
+									<span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+									{% elif item.scan_status == 2 %}
+									<span class="shadow-none badge badge-success">Successful</span>
+									{% elif item.scan_status == 3 %}
+									<span class="shadow-none badge badge-danger">Aborted</span>
+									{% else %}
+									<span class="shadow-none badge badge-danger">Unknown</span>
+									{% endif %}
+								</div>
+							</div>
+						</div>
+					</div>
+				</a>
+				{% endfor %}
+			</div>
 		</div>
 	</div>
 </div>
@@ -334,7 +315,6 @@ Dashboard
 		<div class="widget-heading">
 			<h6 class="">Currently Scanning</h6>
 		</div>
-
 		<div class="widget-content">
 			{% for item in currently_scanning %}
 			<div class="transactions-list">
@@ -425,8 +405,7 @@ Dashboard
 		</div>
 	</div>
 </div>
-</div>
-</div>
+{% endif %}
 {% endblock main_content %}
 
 
