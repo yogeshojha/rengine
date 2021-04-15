@@ -206,4 +206,7 @@
   color: #e7515a; }
 
 .widget-three .widget-content .summary-list.summary-success {
-  background: #ddf5f0 }
+  background: #ddf5f0; }
+
+.widget-three .widget-content .summary-list.summary-danger {
+  background: #fff5f5; }
