@@ -21,280 +21,251 @@ Dashboard
 
 {% block main_content %}
 <div class="col-lg-12 layout-px-spacing">
-	<div class="row">
-		<div class="col layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-dash-chart">
-				<div class="widget-heading">
-					<div class="w-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+	<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+		<div class="widget widget-one">
+			<div class="widget-heading">
+				<h6 class="">Statistics</h6>
+			</div>
+			<div class="w-chart">
+
+				<div class="w-chart-section total-visits-content">
+					<div class="w-detail">
+						<p class="w-title">Total Targets</p>
+						<p class="w-stats">{{domain_count|intcomma}}</p>
 					</div>
-					<h6 class="w-value">{{domain_count|intcomma}} <span>Targets</span></h6>
+					<div class="w-chart-render-one">
+						<div id="targets_chart"></div>
+					</div>
+					<br>
 					<br>
 					<a href="../target/list/" class="text-info">View all targets</a>
 				</div>
-				<div class="widget-content">
-					<div class="w-chart">
-						<div id="targets_chart"></div>
+				<div class="w-chart-section paid-visits-content">
+					<div class="w-detail">
+						<p class="w-title">Total Subdomains</p>
+						<p class="w-stats">{{subdomain_count|intcomma}}</p>
 					</div>
+					<div class="w-chart-render-one">
+						<div id="subdomains_chart"></div>
+					</div>
+					<br>
+					<p class="w-title">Alive Subdomains: {{alive_count|intcomma}}</p>
+					<a href="{% url 'all_subdomains' %}" class="text-warning">View all subdomains</a>
+				</div>
+				<div class="w-chart-section paid-visits-content">
+					<div class="w-detail">
+						<p class="w-title">Total Endpoints</p>
+						<p class="w-stats">{{endpoint_count|intcomma}}</p>
+					</div>
+					<div class="w-chart-render-one">
+						<div id="endpoint_chart"></div>
+					</div>
+					<br>
+					<p class="w-title">Alive Endpoints: {{endpoint_alive_count|intcomma}}</p>
+					<a href="{% url 'all_endpoints' %}" class="text-warning">View all endpoints</a>
+				</div>
+				<div class="w-chart-section paid-visits-content">
+					<div class="w-detail">
+						<p class="w-title">Total Vulnerabilities</p>
+						<p class="w-stats">{{total_vul_count|intcomma}}</p>
+					</div>
+					<div class="w-chart-render-one">
+						<div id="vuln_chart"></div>
+					</div>
+					<br>
+					<p class="w-title">{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
+					<a href="{% url 'all_vulns' %}" class="text-warning">View all subdomains</a>
 				</div>
 			</div>
 		</div>
-		<div class="col layout-top-spacing">
-			<div class="widget-chart widget-chart_hybrid widget-warning">
+	</div>
+	<div class="row layout-top-spacing">
+		{% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
+		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+			<div class="widget widget-chart-two">
 				<div class="widget-heading">
-					<div class="w-icon">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chrome"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
-					</div>
-					<h6 class="w-value">{{subdomain_count|intcomma}} <span>Subdomains</span></h6>
-					<span>Alive Subdomains: <span><b class="text-warning">{{alive_count|intcomma}}</b><br>
-						<a href="{% url 'all_subdomains' %}" class="text-warning">View all subdomains</a>
-					</div>
-					<div class="widget-content">
-						<div class="w-chart">
-							<div id="subdomains_chart"></div>
+					<div class="row">
+						<div class="col-6">
+							<h6 class="">Vulnerability Scan Summary</h6>
+						</div>
+						<div class="col-6">
+							<span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div class="col layout-top-spacing">
-				<div class="widget-chart widget-chart_hybrid widget-purple">
-					<div class="widget-heading">
-						<div class="w-icon">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+				<div class="widget-content">
+					<div class="row">
+						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+							<h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
+							<div id="vulnerability-chart" class=""></div>
 						</div>
-						<h6 class="w-value">{{endpoint_count|intcomma}} <span>Endpoints</span></h6>
-						<span>Alive endpoints:</span> <b class="text-secondary">{{endpoint_alive_count|intcomma}}</b><br>
-						<a href="{% url 'all_endpoints' %}" class="text-secondary">View all endpoints</a>
-					</div>
-					<div class="widget-content">
-						<div class="w-chart">
-							<div id="endpoint_chart"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col layout-top-spacing">
-				<div class="widget-chart widget-chart_hybrid widget-referral">
-					<div class="widget-heading">
-						<div class="w-icon">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-						</div>
-						<h6 class="w-value">{{total_vul_count|intcomma}} <span>Vulnerabilities</span></h6>
-						<span><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</span><br>
-						<a href="{% url 'all_vulns' %}" class="text-danger">View all vulnerabilities</a>
-					</div>
-					<div class="widget-content">
-						<div class="w-chart">
-							<div id="vuln_chart"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col layout-top-spacing">
-				<div class="widget-chart widget-chart_hybrid widget-engagement">
-					<div class="widget-heading">
-						<div class="w-icon">
-							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-						</div>
-						<h6 class="w-value">{{scan_count|intcomma}} <span>Scans Performed</span></h6>
-						Currently Scanning <b class="text-success">{{currently_scanning.count}}</b><br>
-						<a href="{% url 'scan_history' %}" class="text-success">View all scan history</a>
-					</div>
-					<div class="widget-content">
-						<div class="w-chart">
-							<div id="scan_chart"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="row layout-top-spacing">
-			{% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-				<div class="widget widget-chart-two">
-					<div class="widget-heading">
-						<div class="row">
-							<div class="col-6">
-								<h6 class="">Vulnerability Scan Summary</h6>
-							</div>
-							<div class="col-6">
-								<span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
+						<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
+							<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
+							<div class="table-responsive">
+								<table class="table table-hover table-light">
+									<thead>
+										<th>Target</th>
+										<th>&nbsp;</th>
+									</thead>
+									<tbody>
+										{% for item in most_vulnerable_target %}
+										<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
+											<td>{{item.domain_name}}</td>
+											<td class="text-center">
+												<div class="progress br-30">
+													<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+												</div>
+											</td>
+										</tr>
+										{% empty %}
+										Not enough data.
+										{% endfor %}
+									</tbody>
+								</table>
 							</div>
 						</div>
-					</div>
-					<div class="widget-content">
-						<div class="row">
-							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-								<h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
-								<div id="vulnerability-chart" class=""></div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
-								<h6 class="text-danger text-center">Most Vulnerable Targets</h6>
-								<div class="table-responsive">
-									<table class="table table-hover table-light">
+						<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
+							<h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
+							<div class="table-responsive">
+								<table class="table table-hover table-light">
+									<tbody>
 										<thead>
-											<th>Target</th>
-											<th>&nbsp;</th>
+											<th>Vulnerability Name</th>
+											<th class="text-center">Count</th>
+											<th>Severity</th>
 										</thead>
-										<tbody>
-											{% for item in most_vulnerable_target %}
-											<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
-												<td>{{item.domain_name}}</td>
-												<td class="text-center">
-													<div class="progress br-30">
-														<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-													</div>
-												</td>
-											</tr>
-											{% empty %}
-											Not enough data.
-											{% endfor %}
-										</tbody>
-									</table>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12">
-								<h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
-								<div class="table-responsive">
-									<table class="table table-hover table-light">
-										<tbody>
-											<thead>
-												<th>Vulnerability Name</th>
-												<th class="text-center">Count</th>
-												<th>Severity</th>
-											</thead>
-											{% for item in most_common_vulnerability %}
-											<tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
-												<td>{{item.name}}</td>
-												<td class="text-center">
-													{{item.count}}
-												</td>
-												<td>
-													<div class="t-rate">
-														{% if item.severity == 0 %}
-														<span class='badge badge-info'>Info</span>
-														{% elif item.severity == 1 %}
-														<span class='badge badge-low'>Low</span>
-														{% elif item.severity == 2 %}
-														<span class='badge badge-warning'>Medium</span>
-														{% elif item.severity == 3 %}
-														<span class='badge badge-danger'>High</span>
-														{% elif item.severity == 4 %}
-														<span class='badge badge-critical'>Critical</span>
-														{% endif %}
-													</div>
-												</td>
-											</tr>
-											{% empty %}
-											Not enough data
-											{% endfor %}
-										</tbody>
-									</table>
-									<small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
-								</div>
+										{% for item in most_common_vulnerability %}
+										<tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+											<td>{{item.name}}</td>
+											<td class="text-center">
+												{{item.count}}
+											</td>
+											<td>
+												<div class="t-rate">
+													{% if item.severity == 0 %}
+													<span class='badge badge-info'>Info</span>
+													{% elif item.severity == 1 %}
+													<span class='badge badge-low'>Low</span>
+													{% elif item.severity == 2 %}
+													<span class='badge badge-warning'>Medium</span>
+													{% elif item.severity == 3 %}
+													<span class='badge badge-danger'>High</span>
+													{% elif item.severity == 4 %}
+													<span class='badge badge-critical'>Critical</span>
+													{% endif %}
+												</div>
+											</td>
+										</tr>
+										{% empty %}
+										Not enough data
+										{% endfor %}
+									</tbody>
+								</table>
+								<small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			{% endif %}
 		</div>
-		<div class="row">
-			<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-				<div class="widget widget-activity-feed">
-					<div class="widget-heading">
-						<h6 class="">Activity Feed</h6>
-					</div>
-					<div class="widget-content">
-						<div class="mt-container mx-auto">
-							<div class="timeline-line">
-								{% for item in activity_feed %}
-								<div class="item-timeline
-								{% if item.status == 0 %}
-								timeline-danger
-								{% elif item.status == 1 %}
-								timeline-primary
-								{% elif item.status == 2 %}
-								timeline-success
-								{% endif %}
-								">
-								<div class="t-dot" data-original-title="" title="">
-								</div>
-								<div class="t-text">
-									<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
-									<p class="t-time">{{item.time|naturaltime}}</p>
-								</div>
-							</div>
-							{% empty %}
-							Feed will be automatically generated while the scan is running.
-							{% endfor %}
-						</div>
-					</div>
-					<div class="tm-action-btn">
-						<br>
-					</div>
-				</div>
-			</div>
-		</div>
+		{% endif %}
+	</div>
+	<div class="row">
 		<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 			<div class="widget widget-activity-feed">
 				<div class="widget-heading">
-					<h6 class="">Vulnerability Feed</h6>
+					<h6 class="">Activity Feed</h6>
 				</div>
 				<div class="widget-content">
 					<div class="mt-container mx-auto">
 						<div class="timeline-line">
-
-							{% for item in vulnerability_feed %}
+							{% for item in activity_feed %}
 							<div class="item-timeline
-							{% if item.severity == 0 %}
-							timeline-primary
-							{% elif item.severity == 1 %}
-							timeline-low
-							{% elif item.severity == 2 %}
-							timeline-warning
-							{% elif item.severity == 3 %}
+							{% if item.status == 0 %}
 							timeline-danger
-							{% elif item.severity == 4 %}
-							timeline-critical
+							{% elif item.status == 1 %}
+							timeline-primary
+							{% elif item.status == 2 %}
+							timeline-success
 							{% endif %}
 							">
 							<div class="t-dot" data-original-title="" title="">
 							</div>
 							<div class="t-text">
-								<p>
-									<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
-										<br>
-										{{item.host}}
-									</a>
-								</p>
-								{% if item.severity == 0 %}
-								<span class='badge badge-info'>Info</span>
-								{% elif item.severity == 1 %}
-								<span class='badge badge-low'>Low</span>
-								{% elif item.severity == 2 %}
-								<span class='badge badge-warning'>Medium</span>
-								{% elif item.severity == 3 %}
-								<span class='badge badge-danger'>High</span>
-								{% elif item.severity == 4 %}
-								<span class='badge badge-critical'>critical</span>
-								{% endif %}
-								<p class="t-time">{{item.discovered_date|naturaltime}}</p>
+								<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
+								<p class="t-time">{{item.time|naturaltime}}</p>
 							</div>
 						</div>
 						{% empty %}
 						Feed will be automatically generated while the scan is running.
 						{% endfor %}
-
 					</div>
 				</div>
-
 				<div class="tm-action-btn">
-					<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+					<br>
 				</div>
 			</div>
 		</div>
 	</div>
+	<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+		<div class="widget widget-activity-feed">
+			<div class="widget-heading">
+				<h6 class="">Vulnerability Feed</h6>
+			</div>
+			<div class="widget-content">
+				<div class="mt-container mx-auto">
+					<div class="timeline-line">
+
+						{% for item in vulnerability_feed %}
+						<div class="item-timeline
+						{% if item.severity == 0 %}
+						timeline-primary
+						{% elif item.severity == 1 %}
+						timeline-low
+						{% elif item.severity == 2 %}
+						timeline-warning
+						{% elif item.severity == 3 %}
+						timeline-danger
+						{% elif item.severity == 4 %}
+						timeline-critical
+						{% endif %}
+						">
+						<div class="t-dot" data-original-title="" title="">
+						</div>
+						<div class="t-text">
+							<p>
+								<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
+									<br>
+									{{item.host}}
+								</a>
+							</p>
+							{% if item.severity == 0 %}
+							<span class='badge badge-info'>Info</span>
+							{% elif item.severity == 1 %}
+							<span class='badge badge-low'>Low</span>
+							{% elif item.severity == 2 %}
+							<span class='badge badge-warning'>Medium</span>
+							{% elif item.severity == 3 %}
+							<span class='badge badge-danger'>High</span>
+							{% elif item.severity == 4 %}
+							<span class='badge badge-critical'>critical</span>
+							{% endif %}
+							<p class="t-time">{{item.discovered_date|naturaltime}}</p>
+						</div>
+					</div>
+					{% empty %}
+					Feed will be automatically generated while the scan is running.
+					{% endfor %}
+
+				</div>
+			</div>
+
+			<div class="tm-action-btn">
+				<button class="btn"><a href='{% url 'all_vulns' %}' class='text-primary'>View All</a> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+			</div>
+		</div>
+	</div>
+</div>
 </div>
 <div class="row">
 	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-12 col-12 layout-spacing">
@@ -586,7 +557,7 @@ var target_chart_option = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 70,
+		height: 58,
 		sparkline: {
 			enabled: true
 		},
@@ -594,6 +565,9 @@ var target_chart_option = {
 	stroke: {
 		curve: 'smooth',
 		width: 2,
+	},
+	markers: {
+		size: 0
 	},
 	series: [{
 		name: 'Target added',
@@ -603,11 +577,18 @@ var target_chart_option = {
 	yaxis: {
 		min: 0
 	},
-	colors: ['#1b55e2'],
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
+		}
+	},
+	colors: ['#2196f3'],
 	tooltip: {
 		x: {
 			show: true,
-		}
+		},
 	},
 	fill: fill_options,
 }
@@ -619,7 +600,7 @@ var subdomains_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 70,
+		height: 58,
 		sparkline: {
 			enabled: true
 		},
@@ -628,6 +609,9 @@ var subdomains_chart_options = {
 		curve: 'smooth',
 		width: 2,
 	},
+	markers: {
+		size: 0
+	},
 	series: [{
 		name: 'Subdomains Discovered',
 		data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
@@ -635,6 +619,13 @@ var subdomains_chart_options = {
 	labels: label_dates,
 	yaxis: {
 		min: 0
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
+		}
 	},
 	colors: ['#FF8F00'],
 	tooltip: {
@@ -652,7 +643,7 @@ var vuln_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 70,
+		height: 58,
 		sparkline: {
 			enabled: true
 		},
@@ -660,6 +651,16 @@ var vuln_chart_options = {
 	stroke: {
 		curve: 'smooth',
 		width: 2,
+	},
+	markers: {
+		size: 0
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
+		}
 	},
 	series: [{
 		name: 'Vulnerabilities Discovered',
@@ -718,14 +719,27 @@ var endpoint_chart_options = {
 	chart: {
 		id: 'sparkline1',
 		type: 'area',
-		height: 70,
+		height: 58,
 		sparkline: {
 			enabled: true
 		},
 	},
+	markers: {
+		size: 0
+	},
 	stroke: {
 		curve: 'smooth',
 		width: 2,
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
+		}
+	},
+	markers: {
+		size: 0
 	},
 	series: [{
 		name: 'Endpoints Discovered',
