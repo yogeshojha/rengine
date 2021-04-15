@@ -576,43 +576,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                 settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
                                 (subdomain.rstrip('\n'), current_scan_dir, tools))
 
-                            url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
-
-                            urls_json_result = open(url_results_file, 'r')
-                            lines = urls_json_result.readlines()
-                            for line in lines:
-                                json_st = json.loads(line.strip())
-                                endpoint = WayBackEndPoint()
-                                endpoint.url_of = task
-                                endpoint.http_url = json_st['url']
-                                endpoint.content_length = json_st['content-length']
-                                endpoint.http_status = json_st['status-code']
-                                endpoint.page_title = json_st['title']
-                                endpoint.discovered_date = timezone.now()
-                                if 'content-type' in json_st:
-                                    endpoint.content_type = json_st['content-type']
-                                endpoint.save()
-            else:
-                os.system(
-                    settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
-                    (domain.domain_name, current_scan_dir, tools))
-
-                url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
-
-                urls_json_result = open(url_results_file, 'r')
-                lines = urls_json_result.readlines()
-                for line in lines:
-                    json_st = json.loads(line.strip())
-                    endpoint = WayBackEndPoint()
-                    endpoint.url_of = task
-                    endpoint.http_url = json_st['url']
-                    endpoint.content_length = json_st['content-length']
-                    endpoint.http_status = json_st['status-code']
-                    endpoint.page_title = json_st['title']
-                    endpoint.discovered_date = timezone.now()
-                    if 'content-type' in json_st:
-                        endpoint.content_type = json_st['content-type']
-                    endpoint.save()
+            endpoint_parser(results_dir, current_scan_dir)
 
         '''
         Run Nuclei Scan
@@ -751,6 +715,23 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     return {"status": True}
 
+def endpoint_parser(results_dir, current_scan_dir):
+    url_results_file = results_dir + current_scan_dir + '/final_httpx_urls.json'
+
+    urls_json_result = open(url_results_file, 'r')
+    lines = urls_json_result.readlines()
+    for line in lines:
+        json_st = json.loads(line.strip())
+        endpoint = WayBackEndPoint()
+        endpoint.url_of = task
+        endpoint.http_url = json_st['url']
+        endpoint.content_length = json_st['content-length']
+        endpoint.http_status = json_st['status-code']
+        endpoint.page_title = json_st['title']
+        endpoint.discovered_date = timezone.now()
+        if 'content-type' in json_st:
+            endpoint.content_type = json_st['content-type']
+        endpoint.save()
 
 def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
