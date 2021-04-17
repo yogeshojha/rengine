@@ -26,10 +26,10 @@ def index(request):
     endpoint_alive_count = \
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
     recent_completed_scans = ScanHistory.objects.all().order_by(
-        '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:4]
+        '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
     currently_scanning = ScanHistory.objects.order_by(
-        '-last_scan_date').filter(scan_status=1)[:4]
-    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:4]
+        '-last_scan_date').filter(scan_status=1)[:5]
+    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
     info_count = VulnerabilityScan.objects.filter(severity=0).count()
     low_count = VulnerabilityScan.objects.filter(severity=1).count()
     medium_count = VulnerabilityScan.objects.filter(severity=2).count()
