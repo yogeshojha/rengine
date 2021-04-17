@@ -213,3 +213,6 @@
 
 .widget-three .widget-content .summary-list.summary-warning {
   background: #fff9ed; }
+
+.widget-three .widget-content .summary-list.summary-info {
+  background: #eaf1ff; }
