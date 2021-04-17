@@ -22,182 +22,61 @@ All Subdomains
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
 <link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <script src="{% static 'custom/custom.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
 {% if scan_history_id %}
-Detailed Scan for {{history.domain_name}}
+Detailed Scan Results for {{history.domain_name}}
 {% else %}
 All Subdomains
 {% endif %}
 {% endblock breadcrumb_title %}
 
-
 {% block main_content %}
-<div class="">
-hi
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+	<div class="col-lg-6 col-md-6 col-sm-12 filtered-list-search mx-auto">
+		<form class="form-inline my-2 my-lg-0 justify-content-center">
+			<div class="w-100">
+				<input type="text" class="w-100 form-control product-search br-30" id="input-search" placeholder="Search Recon Data (Subdomain/Endpoint/Vulnerability)" >
+				<button class="btn btn-info" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+			</div>
+		</form>
+	</div>
 </div>
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-	{% if scan_history_id %}
-	<div class="row layout-top-spacing">
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-activity-four">
-				<div class="widget-heading">
-					<h5>Recent Activities</h5>
-				</div>
-				<div class="widget-content">
-					<div class="mt-container mx-auto">
-						<div class="timeline-line">
-							{% for activity in scan_activity %}
-							<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
-								<div class="t-dot" data-original-title="" title="">
-								</div>
-								<div class="t-text">
-									<b>{{activity.title}}</b>
-									<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-										{% if activity.status == 0 %}&nbsp;Failed&nbsp;
-										{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-										{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-										{% endif %}
-									</span>
-									<p class="t-time">{{activity.time|naturaltime}}</p>
-								</div>
-							</div>
-							{% endfor %}
-						</div>
-					</div>
-					<br>
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+	<div class="widget widget-one">
+		<div class="widget-heading">
+			<h6 class="">Statistics</h6>
+		</div>
+		<div class="w-chart">
+
+			<div class="w-chart-section primary-card">
+				<div class="w-detail">
+					<p class="w-title">Total Targets</p>
+					<p class="w-stats">{{domain_count|intcomma}}</p>
 				</div>
 			</div>
-		</div>
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-info">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
-							<circle cx="12" cy="12" r="10"></circle>
-							<line x1="2" y1="12" x2="22" y2="12"></line>
-							<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-warning">{{subdomain_count}}</h2>
-					<h6 class="">Subdomains Discovered</h6>
+			<div class="w-chart-section warning-card">
+				<div class="w-detail">
+					<p class="w-title">Total Subdomains</p>
+					<p class="w-stats">{{subdomain_count|intcomma}}</p>
 				</div>
-				<div class="widget-content">
-					Total Alive Subdomains: <b class="text-info">{{alive_count}}</b>
-					<br>
-					<a href="#subdomainDiscovered" class="text-info">View all subdomains</a>
+				<br>
+			</div>
+			<div class="w-chart-section purple-card">
+				<div class="w-detail">
+					<p class="w-title">Total Endpoints</p>
+					<p class="w-stats">{{endpoint_count|intcomma}}</p>
 				</div>
 			</div>
-		</div>
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-info">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
-							<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-							<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-warning">{{endpoint_count}}</h2>
-					<h6 class="">Endpoints</h6>
-				</div>
-				<div class="widget-content">
-					Total Alive Endpoints: <b class="text-info">{{endpoint_alive_count}}</b>
-					<br>
-					<a href="endpoint/{{scan_history_id}}" class="text-info">View all Endpoints</a>
-				</div>
-			</div>
-		</div>
-		{% if history.scan_type.vulnerability_scan %}
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-danger">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-danger">{{total_vulnerability_count}}</h2>
-					<h6 class="">Vulnerabilities Discovered</h6>
-				</div>
-				<div class="widget-content">
-					<span class="text-danger">{{critical_count}} Critical and {{high_count}} High</span>
-					<br>
-					<a href="vuln/{{scan_history_id}}" class="text-info">View all Vulnerabilities</a>
-				</div>
-			</div>
-		</div>
-		{% else %}
-		<div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-			<div class="widget widget-one_hybrid">
-				<div class="widget-heading">
-					<div class="w-icon text-danger">
-						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-							<circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-						</svg>
-					</div>
-					&nbsp;
-					<h2 class="text-danger">0</h2>
-					<h6 class="">Vulnerabilities Discovered</h6>
-				</div>
-				<div class="widget-content">
-					<small class="text-info">Vulnerability scan hasn't been performed.</small>
-					<br>
-					<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
-					<br>
-				</div>
-			</div>
-		</div>
-		{% endif %}
-	</div>
-	{% endif %}
-	{% if history.scan_type.vulnerability_scan %}
-	{% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-	<div class="row  layout-top-spacing mb-4">
-		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-			<div class="widget widget-chart-two">
-				<div class="widget-heading">
-					<h5 class="">Vulnerability Scan Summary</h5>
-				</div>
-				<div class="widget-content">
-					<div id="vulnerability-chart" class=""></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	{% endif %}
-	{% endif %}
-	{% include 'base/_items/interesting_recon.html' %}
-	<div class="row layout-top-spacing mb-4" id="subdomainDiscovered">
-		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-			<div class="widget-content widget-content-area br-6">
-				<h5 class="text-info">{% if scan_history_id %}Subdomains Discovered {% else %}All Discovered Subdomains{% endif %}</h5>
-				{% if subdomain_count and scan_history_id %}
-				<a href="../export/subdomains/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Subdomains(txt format)</a>
-				<a href="../export/urls/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export URLs(txt format)</a>
-				{% endif %}
-				<div class="table-responsive mb-4 mt-4">
-					<table id="subdomain_scan_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
-						<thead>
-							<tr>
-								<th class="checkbox-column">Status</th>
-								<th>Subdomain</th>
-								<th>IP Address</th>
-								<th>HTTP Status</th>
-								<th>Ports</th>
-								<th>Content Length</th>
-								<th>Page Title</th>
-								<th>Technology</th>
-								<th>Screenshot</th>
-								<th>Directories</th>
-							</tr>
-						</thead>
-					</table>
+			<div class="w-chart-section danger-card">
+				<div class="w-detail">
+					<p class="w-title">Total Vulnerabilities</p>
+					<p class="w-stats">{{total_vul_count|intcomma}}</p>
 				</div>
 			</div>
 		</div>
@@ -246,7 +125,7 @@ $(document).ready(function() {
 		"ajax": '/start_scan/api/scanHistory/?scan_id=&format=datatables&query_param={{request.GET.query}}',
 		{% else %}
 		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables',
-    {% endif %}
+		{% endif %}
 		{% endif %}
 		"order": [[ 5, "desc" ]],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
