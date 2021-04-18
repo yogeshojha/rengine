@@ -51,3 +51,4 @@ validators==0.18.1
 vine==5.0.0
 wcwidth==0.2.5
 discord-webhook==0.11.0
+python-whois

@@ -10,6 +10,7 @@ class ScanHistory(models.Model):
     domain_name = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
+    whois_json = JSONField(null=True)
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
