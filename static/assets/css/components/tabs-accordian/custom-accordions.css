@@ -15,7 +15,7 @@ h1, h2, h3, h4, h5, h6 {
     Basic
 */
 .card {
-  border: 2px solid #e0e6ed;
+  border: 1px solid #d3d3d3;
   border-radius: 6px;
   margin-bottom: 4px; }
 
@@ -35,8 +35,8 @@ h1, h2, h3, h4, h5, h6 {
     .card-header section > div.collapsed {
       color: #888ea8; }
     .card-header section > div:not(.collapsed) {
-      color: #1b55e2;
-      border-bottom: 2px solid #e0e6ed;
+      color: #4361ee;
+      border-bottom: 1px solid #d3d3d3;
       font-weight: 600; }
     .card-header section > div .icons {
       position: absolute;
@@ -66,13 +66,13 @@ h1, h2, h3, h4, h5, h6 {
       font-size: 13px;
       font-weight: 600; }
       .card .card-body ul li a:hover {
-        color: #1b55e2; }
+        color: #4361ee; }
 
 /*
     No Outer Spacing
 */
 .no-outer-spacing {
-  border: 2px solid #e0e6ed;
+  border: 1px solid #d3d3d3;
   border-radius: 6px; }
   .no-outer-spacing .card {
     margin-bottom: 0;
@@ -85,7 +85,7 @@ h1, h2, h3, h4, h5, h6 {
       border-bottom-left-radius: 6px;
       border-bottom-right-radius: 6px; }
     .no-outer-spacing .card:not(:last-child) {
-      border-bottom: 2px solid #e0e6ed; }
+      border-bottom: 1px solid #d3d3d3; }
   .no-outer-spacing .card-header section > div:not(.collapsed) {
     border-bottom: none; }
 
@@ -104,5 +104,5 @@ h1, h2, h3, h4, h5, h6 {
     fill: rgba(0, 23, 55, 0.08); }
 
 .accordion-icons div:not(.collapsed) .accordion-icon svg {
-  color: #1b55e2;
+  color: #4361ee;
   fill: rgba(27, 85, 226, 0.239216); }

@@ -47,7 +47,7 @@ All Subdomains
 		</form>
 	</div>
 </div>
-<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-activity-four activity-log">
 		<div class="widget-content">
 			<div class="mt-container mx-auto">
@@ -73,7 +73,7 @@ All Subdomains
 		</div>
 	</div>
 </div>
-<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-one">
 		<div class="w-chart">
 			<div class="w-chart-section primary-card">
@@ -112,10 +112,11 @@ All Subdomains
 		<br>
 	</div>
 </div>
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-top-spacing">
+
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 	{% include 'base/_items/interesting_recon.html' %}
 </div>
-<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-activity-four">
 		<div class="widget-heading">
 			<h6 class="">Subdomain Changes</h6>
@@ -163,7 +164,7 @@ All Subdomains
 		</div>
 	</div>
 </div>
-<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-activity-four">
 		<div class="widget-heading">
 			<h6 class="">Endpoint Changes</h6>
@@ -211,7 +212,7 @@ All Subdomains
 		</div>
 	</div>
 </div>
-<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-activity-four">
 		<div class="widget-heading">
 			<h6 class="">Vulnerability Scan Summary</h6>
@@ -236,47 +237,47 @@ All Subdomains
 								<tr>
 									<td>{{vulnerability.name}}</td>
 									<td>{% if vulnerability.severity == 0 %}
-									<span class='badge badge-info'>Info</span>
-									{% elif vulnerability.severity == 1 %}
-									<span class='badge badge-low'>Low</span>
-									{% elif vulnerability.severity == 2 %}
-									<span class='badge badge-warning'>Medium</span>
-									{% elif vulnerability.severity == 3 %}
-									<span class='badge badge-danger'>High</span>
-									{% elif vulnerability.severity == 4 %}
-									<span class='badge badge-critical'>Critical</span>
-									{% endif %}</td>
-									<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger">{{vulnerability.url|truncatechars:20}}</a></td>
-								</tr>
-								{% endfor %}
-							</tbody>
-						</table>
+										<span class='badge badge-info'>Info</span>
+										{% elif vulnerability.severity == 1 %}
+										<span class='badge badge-low'>Low</span>
+										{% elif vulnerability.severity == 2 %}
+										<span class='badge badge-warning'>Medium</span>
+										{% elif vulnerability.severity == 3 %}
+										<span class='badge badge-danger'>High</span>
+										{% elif vulnerability.severity == 4 %}
+										<span class='badge badge-critical'>Critical</span>
+										{% endif %}</td>
+										<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger">{{vulnerability.url|truncatechars:20}}</a></td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-</div>
 
-{% endblock main_content %}
+	{% endblock main_content %}
 
 
-{% block page_level_script %}
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+	{% block page_level_script %}
+	<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+	<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+	<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+	<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+	<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+	<script src="{% static 'custom/custom.js' %}"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
-<script type="text/javascript">
-// whois raw json
-// https://stackoverflow.com/a/54487295
-var x = { "data": { "x": "1", "y": "1", "url": "http://url.com" }, "event": "start", "show": 1, "id": 50 };
-document.querySelector('#whois-json').innerHTML = JSON.stringify(x, null, 6).replace(/\n( *)/g, function (match, p1) {
-	return '<br>' + '&nbsp;'.repeat(p1.length);
-});
+	<script type="text/javascript">
+	// whois raw json
+	// https://stackoverflow.com/a/54487295
+	var x = { "data": { "x": "1", "y": "1", "url": "http://url.com" }, "event": "start", "show": 1, "id": 50 };
+	document.querySelector('#whois-json').innerHTML = JSON.stringify(x, null, 6).replace(/\n( *)/g, function (match, p1) {
+		return '<br>' + '&nbsp;'.repeat(p1.length);
+	});
 </script>
 
 <script type="text/javascript">

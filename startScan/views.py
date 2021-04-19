@@ -67,6 +67,21 @@ def detail_scan(request, id=None):
         context['interesting_endpoint'] = get_interesting_endpoint(
             scan_history=id)
         context['scan_history_active'] = 'true'
+        
+        if ScanHistory.objects.filter(domain_name=id).filter(
+                scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
+            print('ok')
+            last_scan = ScanHistory.objects.filter(domain_name=id).filter(
+                scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-last_scan_date')
+
+            scanned_host_q1 = ScannedHost.objects.filter(
+                target_domain__id=id).exclude(
+                scan_history__id=last_scan[0].id).values('subdomain')
+            scanned_host_q2 = ScannedHost.objects.filter(
+                scan_history__id=last_scan[0].id).values('subdomain')
+
+            context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
+            context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
     return render(request, 'startScan/detail_scan.html', context)
 
 
