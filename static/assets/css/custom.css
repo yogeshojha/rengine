@@ -238,3 +238,18 @@
   font-weight: 600;
   color: #e3e4eb;
   letter-spacing: 1px; }
+
+div.dataTables_wrapper div.dataTables_filter input {
+  width: 100%;
+  float: left;
+  transition: all .2s ease-in-out;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus {
+  width: 300%;
+  transform: scale(1);
+}
+
+div.dataTables_wrapper div.dataTables_length {
+  float: right;
+}

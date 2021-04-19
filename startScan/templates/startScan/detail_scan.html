@@ -14,7 +14,6 @@ All Subdomains
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
@@ -52,7 +51,7 @@ All Subdomains
 				<a class="nav-link active" id="pills-summary-tab" data-toggle="pill" href="#pills-summary" role="tab" aria-controls="pills-summary" aria-selected="true">Home</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomain Scan</a>
+				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomain Results</a>
 			</li>
 		</ul>
 	</div>
@@ -270,9 +269,9 @@ All Subdomains
 			</div>
 			<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
 				<div class="row">
-					<div class="col-xl-12 col-lg-12 col-sm-12  layout-spacing">
+					<div class="col-xl-12 col-lg-12 col-sm-12">
 						<div class="widget-content widget-content-area br-6">
-							<table id="subdomain_scan_results" class="multi-table table table-striped table-bordered table-hover" style="width:100%">
+							<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
 								<thead>
 									<tr>
 										<th class="checkbox-column">Status</th>
@@ -310,55 +309,31 @@ All Subdomains
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
 <script type="text/javascript">
-// whois raw json
-// https://stackoverflow.com/a/54487295
-var x = { "data": { "x": "1", "y": "1", "url": "http://url.com" }, "event": "start", "show": 1, "id": 50 };
-document.querySelector('#whois-json').innerHTML = JSON.stringify(x, null, 6).replace(/\n( *)/g, function (match, p1) {
-	return '<br>' + '&nbsp;'.repeat(p1.length);
-});
-</script>
+// Collapse Sidebar
+collapse_sidebar();
 
-<script type="text/javascript">
-document.getElementsByClassName('full-search')[0].addEventListener('click', function() {
-	this.classList.add("input-focused");
-	document.getElementsByClassName('demo-search-overlay')[0].classList.add("show");
-})
 function fetch_http_headers(id, http_header_path, screenshot_path){
 	$('#screenshot'+id).attr('src', '/media/'+screenshot_path);
 	fetch('/media/'+http_header_path)
 	.then(response => response.text())
 	.then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
 }
-</script>
-<script>
-// Collapse Sidebar
-collapse_sidebar();
+
 $(document).ready(function() {
 	var scan_history_table = $('#subdomain_scan_results').DataTable({
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
+			"sSearchPlaceholder": "Search Query...",
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"stripeClasses": [],
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		{% if scan_history_id %}
 		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-		{% else %}
-		{% if request.GET.query %}
-		"ajax": '/start_scan/api/scanHistory/?scan_id=&format=datatables&query_param={{request.GET.query}}',
-		{% else %}
-		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables',
-		{% endif %}
-		{% endif %}
 		"order": [[ 5, "desc" ]],
-		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-		"<'row'<'col'tr>>" +
-		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 		"columns": [
 			{'data': 'id'},
 			{'data': 'subdomain'},
@@ -516,6 +491,9 @@ $(document).ready(function() {
 				"targets": 9,
 			},
 		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-xs-12'f><'col-lg-2 col-md-2 col-xs-12'l>>" +
+           "<'row'<'col-sm-12'tr>>" +
+           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
