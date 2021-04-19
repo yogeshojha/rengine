@@ -47,7 +47,7 @@ All Subdomains
 		</form>
 	</div>
 </div>
-<div class="col-xl-4 col-lg-4 col-md-3 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-top-spacing">
 	<div class="widget widget-activity-four activity-log">
 		<div class="widget-content">
 			<div class="mt-container mx-auto">
@@ -73,7 +73,7 @@ All Subdomains
 		</div>
 	</div>
 </div>
-<div class="col-xl-8 col-lg-8 col-md-9 col-sm-12 col-12 layout-top-spacing">
+<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-top-spacing">
 	<div class="widget widget-one">
 		<div class="w-chart">
 			<div class="w-chart-section primary-card">
@@ -112,6 +112,152 @@ All Subdomains
 		<br>
 	</div>
 </div>
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-top-spacing">
+	{% include 'base/_items/interesting_recon.html' %}
+</div>
+<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+	<div class="widget widget-activity-four">
+		<div class="widget-heading">
+			<h6 class="">Subdomain Changes</h6>
+			<p>
+				{% if new_subdomains.count or removed_subdomains.count %}
+				During the last scan
+				{% if new_subdomains.count %}
+				<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
+				{% endif %}
+				{% if removed_subdomains.count %}
+				<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
+				{% endif %}
+				{% else %}
+				<br>
+				{% endif %}
+			</p>
+		</div>
+		<div class="widget-content">
+			<div class="mt-container mx-auto">
+				<div class="table-responsive">
+					<table class="table table-bordered table-striped mb-4">
+						<thead>
+							<tr>
+								<th>Subdomain</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for subdomain in new_subdomains %}
+							<tr>
+								<td class="text-success">{{subdomain.subdomain}}</td>
+								<td><span class="badge badge-success"> Added </span></td>
+							</tr>
+							{% endfor %}
+							{% for subdomain in removed_subdomains %}
+							<tr>
+								<td class="text-danger">{{subdomain.subdomain}}</td>
+								<td><span class="badge badge-danger"> Removed </span></td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+	<div class="widget widget-activity-four">
+		<div class="widget-heading">
+			<h6 class="">Endpoint Changes</h6>
+			<p>
+				{% if new_urls.count or removed_urls.count %}
+				During the last scan
+				{% if new_urls.count %}
+				<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
+				{% endif %}
+				{% if removed_urls.count %}
+				<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
+				{% endif %}
+				{% else %}
+				<br>
+				{% endif %}
+			</p>
+		</div>
+		<div class="widget-content">
+			<div class="mt-container mx-auto">
+				<div class="table-responsive">
+					<table class="table table-bordered table-striped mb-4">
+						<thead>
+							<tr>
+								<th>Endpoint</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for url in new_urls %}
+							<tr>
+								<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
+								<td><span class="badge badge-success"> Added </span></td>
+							</tr>
+							{% endfor %}
+							{% for url in removed_urls %}
+							<tr>
+								<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
+								<td><span class="badge badge-danger"> Removed </span></td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-top-spacing">
+	<div class="widget widget-activity-four">
+		<div class="widget-heading">
+			<h6 class="">Vulnerability Scan Summary</h6>
+		</div>
+		<div class="widget-content">
+			<div class="row">
+				<div class="col-5">
+					<div id="vulnerability-chart" class=""></div>
+				</div>
+				<div class="col-7">
+					<div class="table-responsive mt-container mx-auto">
+						<table class="table">
+							<thead>
+								<tr>
+									<th><div class="th-content">Vulnerability</div></th>
+									<th><div class="th-content">Severity</div></th>
+									<th><div class="th-content">Vulnerable URL</div></th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for vulnerability in vulnerability_list  %}
+								<tr>
+									<td>{{vulnerability.name}}</td>
+									<td>{% if vulnerability.severity == 0 %}
+									<span class='badge badge-info'>Info</span>
+									{% elif vulnerability.severity == 1 %}
+									<span class='badge badge-low'>Low</span>
+									{% elif vulnerability.severity == 2 %}
+									<span class='badge badge-warning'>Medium</span>
+									{% elif vulnerability.severity == 3 %}
+									<span class='badge badge-danger'>High</span>
+									{% elif vulnerability.severity == 4 %}
+									<span class='badge badge-critical'>Critical</span>
+									{% endif %}</td>
+									<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger">{{vulnerability.url|truncatechars:20}}</a></td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
 {% endblock main_content %}
 
 
@@ -383,7 +529,7 @@ function span_values(data, color)
 var options = {
 	chart: {
 		type: 'donut',
-		width: 380
+		width: 355
 	},
 	colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
 	dataLabels: {
@@ -446,36 +592,7 @@ var options = {
 		width: 25,
 	},
 	series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-	labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
-	responsive: [{
-		breakpoint: 1599,
-		options: {
-			chart: {
-				width: '350px',
-				height: '400px'
-			},
-			legend: {
-				position: 'bottom'
-			}
-		},
-		breakpoint: 1439,
-		options: {
-			chart: {
-				width: '250px',
-				height: '390px'
-			},
-			legend: {
-				position: 'bottom'
-			},
-			plotOptions: {
-				pie: {
-					donut: {
-						size: '65%',
-					}
-				}
-			}
-		},
-	}]
+	labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
 }
 
 var chart = new ApexCharts(

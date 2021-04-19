@@ -53,6 +53,8 @@ def detail_scan(request, id=None):
             vulnerability_of__id=id, severity=3).count()
         critical_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=4).count()
+        context['vulnerability_list'] = VulnerabilityScan.objects.filter(
+            vulnerability_of__id=id).all()
         context['total_vulnerability_count'] = info_count + low_count + \
             medium_count + high_count + critical_count
         context['info_count'] = info_count
