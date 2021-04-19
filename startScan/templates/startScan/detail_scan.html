@@ -47,7 +47,34 @@ All Subdomains
 		</form>
 	</div>
 </div>
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+<div class="col-xl-4 col-lg-4 col-md-3 col-sm-12 col-12 layout-top-spacing">
+	<div class="widget widget-activity-four activity-log">
+		<div class="widget-content">
+			<div class="mt-container mx-auto">
+				<div class="timeline-line">
+
+					{% for activity in scan_activity %}
+					<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+						<div class="t-dot" data-original-title="" title="">
+						</div>
+						<div class="t-text">
+							<p>{{activity.title}}</p>
+							<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+								{% if activity.status == 0 %}&nbsp;Failed&nbsp;
+								{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+								{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+								{% endif %}
+							</span>
+							<p class="t-time">{{activity.time|naturaltime}}</p>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-8 col-lg-8 col-md-9 col-sm-12 col-12 layout-top-spacing">
 	<div class="widget widget-one">
 		<div class="w-chart">
 			<div class="w-chart-section primary-card">
@@ -84,7 +111,7 @@ All Subdomains
 			</div>
 		</div>
 		<br>
-
+	</div>
 </div>
 {% endblock main_content %}
 

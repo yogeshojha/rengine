@@ -222,3 +222,10 @@
 
 .widget-three .widget-content .summary-list.summary-info {
   background: #eaf1ff; }
+
+
+.activity-log .mt-container {
+  position: relative;
+  height: 150px;
+  overflow: auto;
+  padding-right: 12px; }
