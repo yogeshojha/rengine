@@ -37,247 +37,274 @@ All Subdomains
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-	<div class="col-lg-6 col-md-6 col-sm-12 filtered-list-search mx-auto">
-		<form class="form-inline my-2 my-lg-0 justify-content-center">
-			<div class="w-100">
-				<input type="text" class="w-100 form-control product-search br-30" id="input-search" placeholder="Search Recon Data (Subdomain/Endpoint/Vulnerability)" >
-				<button class="btn btn-info" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
-			</div>
-		</form>
-	</div>
-</div>
-<div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-activity-four activity-log">
-		<div class="widget-content">
-			<div class="mt-container mx-auto">
-				<div class="timeline-line">
-					{% for activity in scan_activity %}
-					<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
-						<div class="t-dot" data-original-title="" title="">
-						</div>
-						<div class="t-text">
-							<p>{{activity.title}}</p>
-							<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-								{% if activity.status == 0 %}&nbsp;Failed&nbsp;
-								{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-								{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-								{% endif %}
-							</span>
-							<p class="t-time">{{activity.time|naturaltime}}</p>
-						</div>
-					</div>
-					{% endfor %}
-				</div>
-			</div>
+<div class="col-lg-4 col-md-4 col-sm-12 filtered-list-search mx-auto">
+	<form class="form-inline my-2 my-lg-0 justify-content-center">
+		<div class="w-100">
+			<input type="text" class="w-100 form-control product-search br-30" id="input-search" placeholder="Search Recon Data (Subdomain/Endpoint/Vulnerability)" >
+			<button class="btn btn-info" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
 		</div>
-	</div>
+	</form>
 </div>
-<div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-one">
-		<div class="w-chart">
-			<div class="w-chart-section primary-card">
-				<div class="w-detail">
-					<p class="w-stats">{{subdomain_count|intcomma}} <span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
-					<p class="w-title">Subdomains Discovered</p>
-					<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
-					<br>
-					<a href="#subdomainDiscovered" class="text-info float-right">View all subdomains</a>
-				</div>
-			</div>
-			<div class="w-chart-section purple-card">
-				<div class="w-detail">
-					<p class="w-stats">{{endpoint_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
-					<p class="w-title">Endpoints Discovered</p>
-					<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
-					<br>
-					<a href="endpoint/{{scan_history_id}}" class="text-info float-right">View all Endpoints</a>
-				</div>
-			</div>
-			<div class="w-chart-section danger-card">
-				<div class="w-detail">
-					<p class="w-stats">{{total_vulnerability_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
-					<p class="w-title">Vulnerabilities Discovered</p>
-					{% if history.scan_type.vulnerability_scan %}
-					<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
-					<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
-					<a href="vuln/{{scan_history_id}}" class="text-info float-right">View all Vulnerabilities</a>
-					{% else %}
-					<small class="text-muted">Vulnerability scan hasn't been performed.</small>
-					<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
-					{% endif %}
-				</div>
-			</div>
-		</div>
-		<br>
-	</div>
-</div>
-
 <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-	{% include 'base/_items/interesting_recon.html' %}
-</div>
-<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-activity-four">
-		<div class="widget-heading">
-			<h6 class="">Subdomain Changes</h6>
-			<p>
-				{% if new_subdomains.count or removed_subdomains.count %}
-				During the last scan
-				{% if new_subdomains.count %}
-				<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
-				{% endif %}
-				{% if removed_subdomains.count %}
-				<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
-				{% endif %}
-				{% else %}
-				<br>
-				{% endif %}
-			</p>
-		</div>
-		<div class="widget-content">
-			<div class="mt-container mx-auto">
-				<div class="table-responsive">
-					<table class="table table-bordered table-striped mb-4">
-						<thead>
-							<tr>
-								<th>Subdomain</th>
-								<th>Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{% for subdomain in new_subdomains %}
-							<tr>
-								<td class="text-success">{{subdomain.subdomain}}</td>
-								<td><span class="badge badge-success"> Added </span></td>
-							</tr>
-							{% endfor %}
-							{% for subdomain in removed_subdomains %}
-							<tr>
-								<td class="text-danger">{{subdomain.subdomain}}</td>
-								<td><span class="badge badge-danger"> Removed </span></td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
+	<div class="simple-pills">
+		<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+			<li class="nav-item">
+				<a class="nav-link active" id="summary-home-tab" data-toggle="pill" href="#summary-tab" role="tab" aria-controls="summary-tab" aria-selected="true">Scan Summary</a>
+			</li>
+			<li class="nav-item dropdown">
+				<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Profile <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></a>
+				<div class="dropdown-menu">
+					<a class="dropdown-item" id="pills-profile-tab" data-toggle="tab" href="#pills-profile" role="tab" aria-controls="pills-profile" aria-selected="false">Action</a>
+					<a class="dropdown-item"  id="pills-profile-tab2" data-toggle="tab" href="#pills-profile2" role="tab" aria-controls="pills-profile2" aria-selected="false">Another action</a>
 				</div>
-			</div>
-		</div>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="pills-contact-tab" data-toggle="pill" href="#pills-contact" role="tab" aria-controls="pills-contact" aria-selected="false">Contact</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+			</li>
+		</ul>
 	</div>
-</div>
-<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-activity-four">
-		<div class="widget-heading">
-			<h6 class="">Endpoint Changes</h6>
-			<p>
-				{% if new_urls.count or removed_urls.count %}
-				During the last scan
-				{% if new_urls.count %}
-				<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
-				{% endif %}
-				{% if removed_urls.count %}
-				<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
-				{% endif %}
-				{% else %}
-				<br>
-				{% endif %}
-			</p>
-		</div>
-		<div class="widget-content">
-			<div class="mt-container mx-auto">
-				<div class="table-responsive">
-					<table class="table table-bordered table-striped mb-4">
-						<thead>
-							<tr>
-								<th>Endpoint</th>
-								<th>Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{% for url in new_urls %}
-							<tr>
-								<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
-								<td><span class="badge badge-success"> Added </span></td>
-							</tr>
-							{% endfor %}
-							{% for url in removed_urls %}
-							<tr>
-								<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
-								<td><span class="badge badge-danger"> Removed </span></td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-activity-four">
-		<div class="widget-heading">
-			<h6 class="">Vulnerability Scan Summary</h6>
-		</div>
-		<div class="widget-content">
+	<div class="tab-content" id="pills-tabContent">
+		<div class="tab-pane fade show active" id="summary-tab" role="tabpanel" aria-labelledby="summary-home-tab">
 			<div class="row">
-				<div class="col-5">
-					<div id="vulnerability-chart" class=""></div>
-				</div>
-				<div class="col-7">
-					<div class="table-responsive mt-container mx-auto">
-						<table class="table">
-							<thead>
-								<tr>
-									<th><div class="th-content">Vulnerability</div></th>
-									<th><div class="th-content">Severity</div></th>
-									<th><div class="th-content">Vulnerable URL</div></th>
-								</tr>
-							</thead>
-							<tbody>
-								{% for vulnerability in vulnerability_list  %}
-								<tr>
-									<td>{{vulnerability.name}}</td>
-									<td>{% if vulnerability.severity == 0 %}
-										<span class='badge badge-info'>Info</span>
-										{% elif vulnerability.severity == 1 %}
-										<span class='badge badge-low'>Low</span>
-										{% elif vulnerability.severity == 2 %}
-										<span class='badge badge-warning'>Medium</span>
-										{% elif vulnerability.severity == 3 %}
-										<span class='badge badge-danger'>High</span>
-										{% elif vulnerability.severity == 4 %}
-										<span class='badge badge-critical'>Critical</span>
-										{% endif %}</td>
-										<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger">{{vulnerability.url|truncatechars:20}}</a></td>
-									</tr>
+				<div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+					<div class="widget widget-activity-four activity-log">
+						<div class="widget-content">
+							<div class="mt-container mx-auto">
+								<div class="timeline-line">
+									{% for activity in scan_activity %}
+									<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+										<div class="t-dot" data-original-title="" title="">
+										</div>
+										<div class="t-text">
+											<p>{{activity.title}}</p>
+											<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+												{% if activity.status == 0 %}&nbsp;Failed&nbsp;
+												{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+												{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+												{% endif %}
+											</span>
+											<p class="t-time">{{activity.time|naturaltime}}</p>
+										</div>
+									</div>
 									{% endfor %}
-								</tbody>
-							</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-12 layout-spacing">
+					<div class="widget widget-one">
+						<div class="w-chart">
+							<div class="w-chart-section primary-card">
+								<div class="w-detail">
+									<p class="w-stats">{{subdomain_count|intcomma}} <span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-title">Subdomains Discovered</p>
+									<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
+									<br>
+									<a href="#subdomainDiscovered" class="text-info float-right">View all subdomains</a>
+								</div>
+							</div>
+							<div class="w-chart-section purple-card">
+								<div class="w-detail">
+									<p class="w-stats">{{endpoint_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-title">Endpoints Discovered</p>
+									<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
+									<br>
+									<a href="endpoint/{{scan_history_id}}" class="text-info float-right">View all Endpoints</a>
+								</div>
+							</div>
+							<div class="w-chart-section danger-card">
+								<div class="w-detail">
+									<p class="w-stats">{{total_vulnerability_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-title">Vulnerabilities Discovered</p>
+									{% if history.scan_type.vulnerability_scan %}
+									<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
+									<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
+									<a href="vuln/{{scan_history_id}}" class="text-info float-right">View all Vulnerabilities</a>
+									{% else %}
+									<small class="text-muted">Vulnerability scan hasn't been performed.</small>
+									<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
+									{% endif %}
+								</div>
+							</div>
+						</div>
+						<br>
+					</div>
+				</div>
+				<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12">
+					<div class="widget widget-activity-four">
+						<div class="widget-heading">
+							<h6 class="">Subdomain Changes</h6>
+							<p>
+								{% if new_subdomains.count or removed_subdomains.count %}
+								During the last scan
+								{% if new_subdomains.count %}
+								<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
+								{% endif %}
+								{% if removed_subdomains.count %}
+								<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
+								{% endif %}
+								{% else %}
+								<br>
+								{% endif %}
+							</p>
+						</div>
+						<div class="widget-content">
+							<div class="mt-container mx-auto">
+								<div class="table-responsive">
+									<table class="table table-bordered table-striped mb-4">
+										<thead>
+											<tr>
+												<th>Subdomain</th>
+												<th>Status</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for subdomain in new_subdomains %}
+											<tr>
+												<td class="text-success">{{subdomain.subdomain}}</td>
+												<td><span class="badge badge-success"> Added </span></td>
+											</tr>
+											{% endfor %}
+											{% for subdomain in removed_subdomains %}
+											<tr>
+												<td class="text-danger">{{subdomain.subdomain}}</td>
+												<td><span class="badge badge-danger"> Removed </span></td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+					<div class="widget widget-activity-four">
+						<div class="widget-heading">
+							<h6 class="">Endpoint Changes</h6>
+							<p>
+								{% if new_urls.count or removed_urls.count %}
+								During the last scan
+								{% if new_urls.count %}
+								<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
+								{% endif %}
+								{% if removed_urls.count %}
+								<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
+								{% endif %}
+								{% else %}
+								<br>
+								{% endif %}
+							</p>
+						</div>
+						<div class="widget-content">
+							<div class="mt-container mx-auto">
+								<div class="table-responsive">
+									<table class="table table-bordered table-striped mb-4">
+										<thead>
+											<tr>
+												<th>Endpoint</th>
+												<th>Status</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for url in new_urls %}
+											<tr>
+												<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
+												<td><span class="badge badge-success"> Added </span></td>
+											</tr>
+											{% endfor %}
+											{% for url in removed_urls %}
+											<tr>
+												<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
+												<td><span class="badge badge-danger"> Removed </span></td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+					<div class="widget widget-activity-four">
+						<div class="widget-heading">
+							<h6 class="">Vulnerability Scan Summary</h6>
+						</div>
+						<div class="widget-content">
+							<div class="row">
+								<div class="col-5">
+									<div id="vulnerability-chart" class=""></div>
+								</div>
+								<div class="col-7">
+									<div class="table-responsive mt-container mx-auto">
+										<table class="table">
+											<thead>
+												<tr>
+													<th><div class="th-content">Vulnerability</div></th>
+													<th><div class="th-content">Severity</div></th>
+													<th><div class="th-content">Vulnerable URL</div></th>
+												</tr>
+											</thead>
+											<tbody>
+												{% for vulnerability in vulnerability_list  %}
+												<tr>
+													<td>{{vulnerability.name}}</td>
+													<td>{% if vulnerability.severity == 0 %}
+														<span class='badge badge-info'>Info</span>
+														{% elif vulnerability.severity == 1 %}
+														<span class='badge badge-low'>Low</span>
+														{% elif vulnerability.severity == 2 %}
+														<span class='badge badge-warning'>Medium</span>
+														{% elif vulnerability.severity == 3 %}
+														<span class='badge badge-danger'>High</span>
+														{% elif vulnerability.severity == 4 %}
+														<span class='badge badge-critical'>Critical</span>
+														{% endif %}</td>
+														<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger">{{vulnerability.url|truncatechars:20}}</a></td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
+		<div class="tab-pane fade show active" id="summary-tab" role="tabpanel" aria-labelledby="summary-home-tab">
+			
+		</div>
 	</div>
+</div>
 
-	{% endblock main_content %}
+
+{% endblock main_content %}
 
 
-	{% block page_level_script %}
-	<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-	<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-	<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-	<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-	<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
-	<script src="{% static 'custom/custom.js' %}"></script>
-	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 
-	<script type="text/javascript">
-	// whois raw json
-	// https://stackoverflow.com/a/54487295
-	var x = { "data": { "x": "1", "y": "1", "url": "http://url.com" }, "event": "start", "show": 1, "id": 50 };
-	document.querySelector('#whois-json').innerHTML = JSON.stringify(x, null, 6).replace(/\n( *)/g, function (match, p1) {
-		return '<br>' + '&nbsp;'.repeat(p1.length);
-	});
+<script type="text/javascript">
+// whois raw json
+// https://stackoverflow.com/a/54487295
+var x = { "data": { "x": "1", "y": "1", "url": "http://url.com" }, "event": "start", "show": 1, "id": 50 };
+document.querySelector('#whois-json').innerHTML = JSON.stringify(x, null, 6).replace(/\n( *)/g, function (match, p1) {
+	return '<br>' + '&nbsp;'.repeat(p1.length);
+});
 </script>
 
 <script type="text/javascript">
