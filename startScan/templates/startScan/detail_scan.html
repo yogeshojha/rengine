@@ -52,7 +52,6 @@ All Subdomains
 		<div class="widget-content">
 			<div class="mt-container mx-auto">
 				<div class="timeline-line">
-
 					{% for activity in scan_activity %}
 					<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
 						<div class="t-dot" data-original-title="" title="">

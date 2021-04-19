@@ -229,3 +229,12 @@
   height: 150px;
   overflow: auto;
   padding-right: 12px; }
+
+.widget-activity-four .timeline-line .item-timeline .t-time {
+  margin: 0;
+  min-width: 90px;
+  max-width: 90px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e3e4eb;
+  letter-spacing: 1px; }
