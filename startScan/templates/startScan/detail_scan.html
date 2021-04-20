@@ -268,27 +268,25 @@ All Subdomains
 				</div>
 			</div>
 			<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
-				<div class="row">
-					<div class="col-xl-12 col-lg-12 col-sm-12">
-						<div class="widget-content widget-content-area br-6">
-							<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-								<thead>
-									<tr>
-										<th class="checkbox-column">Status</th>
-										<th>Subdomain</th>
-										<th>IP Address</th>
-										<th>HTTP Status</th>
-										<th>Ports</th>
-										<th>Content Length</th>
-										<th>Page Title</th>
-										<th>Technology</th>
-										<th>Screenshot</th>
-										<th>Directories</th>
-									</tr>
-								</thead>
-							</table>
-						</div>
-					</div>
+				<div class="col-xl-12 col-lg-12 col-sm-12">
+				    <div class="widget widget-content widget-content-area br-6">
+				    <table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+				      <thead>
+				        <tr>
+				          <th class="checkbox-column">Status</th>
+				          <th>Subdomain</th>
+				          <th>IP Address</th>
+				          <th>HTTP Status</th>
+				          <th>Ports</th>
+				          <th>Content Length</th>
+				          <th>Page Title</th>
+				          <th>Technology</th>
+				          <th>Screenshot</th>
+				          <th>Directories</th>
+				        </tr>
+				      </thead>
+				    </table>
+				  </div>
 				</div>
 			</div>
 		</div>
@@ -325,7 +323,7 @@ $(document).ready(function() {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search Query...",
+			"sSearchPlaceholder": "Filter Subdomains...",
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"stripeClasses": [],
@@ -344,7 +342,6 @@ $(document).ready(function() {
 			{'data': 'page_title'},
 			{'data': 'technology_stack'},
 			{'data': 'screenshot_path', 'searchable': false},
-			{'data': 'directory_json'},
 			{'data': 'http_url'},
 			{'data': 'is_ip_cdn'},
 			{'data': 'cname'},
@@ -352,12 +349,12 @@ $(document).ready(function() {
 		],
 		"columnDefs": [
 			{
-				"targets": [ 10, 11],
+				"targets": [ 9, 10],
 				"visible": false,
 				"searchable": false,
 			},
 			{
-				"targets": [ 12, 13 ],
+				"targets": [ 11, 12 ],
 				"visible": false,
 				"searchable": true,
 			},
@@ -460,40 +457,10 @@ $(document).ready(function() {
 				},
 				"targets": 8,
 			},
-			{
-				"render": function ( data, type, row ) {
-					if (data) {
-						// TODO: this could be done better
-						data = JSON.parse(data);
-						main_url = Object.keys(data)[0];
-						var json_obj = data[main_url];
-						var html_treeview = `<ul class="file-tree">`;
-						for(var i = 0; i < json_obj.length; i++)
-						{
-							if(json_obj[i].status==200)
-							{
-								var path = json_obj[i].path;
-								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
-								// id path has / the its a directory else consider as file
-								if (path.substr(path.length - 1) == '/') {
-									html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-								}
-								else {
-									html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-								}
-							}
-						}
-						html_treeview += `</ul>`;
-						return html_treeview;
-					}
-					return '';
-				},
-				"targets": 9,
-			},
 		],
-		"dom": "<'row'<'col-lg-10 col-md-10 col-xs-12'f><'col-lg-2 col-md-2 col-xs-12'l>>" +
-           "<'row'<'col-sm-12'tr>>" +
-           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+        "<'table-responsive'tr>" +
+        "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
