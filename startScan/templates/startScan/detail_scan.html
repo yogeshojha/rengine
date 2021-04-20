@@ -53,6 +53,9 @@ All Subdomains
 			<li class="nav-item">
 				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomain Results</a>
 			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
+			</li>
 		</ul>
 	</div>
 	<div class="tab-content" id="pills-tabContent">
@@ -458,9 +461,9 @@ $(document).ready(function() {
 				"targets": 8,
 			},
 		],
-		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
-        "<'table-responsive'tr>" +
-        "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+	         "<'row'<'col'tr>>" +
+	         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');

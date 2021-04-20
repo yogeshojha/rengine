@@ -253,3 +253,7 @@ div.dataTables_wrapper div.dataTables_filter input:focus {
 div.dataTables_wrapper div.dataTables_length {
   float: right;
 }
+
+div.dataTables_wrapper div.dataTables_filter {
+  text-align: left;
+}
