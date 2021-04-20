@@ -3,11 +3,7 @@
 {% load humanize %}
 {% load custom_tags %}
 {% block title %}
-{% if scan_history_id %}
 Detailed Scan
-{% else %}
-All Subdomains
-{% endif %}
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -71,7 +67,7 @@ All Subdomains
 										<div class="t-dot" data-original-title="" title="">
 										</div>
 										<div class="t-text">
-											<p>{{activity.title}}</p>
+											<p>{{activity.title}}{% if activity.status == 1 %}<span class="badge badge-warning">In Progress</span>{% endif %}</p>
 											<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
 												{% if activity.status == 0 %}&nbsp;Failed&nbsp;
 												{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
@@ -126,6 +122,7 @@ All Subdomains
 						<br>
 					</div>
 				</div>
+				{% include 'base/_items/interesting_recon.html' %}
 				<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
@@ -272,24 +269,23 @@ All Subdomains
 			</div>
 			<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
 				<div class="col-xl-12 col-lg-12 col-sm-12">
-				    <div class="widget widget-content widget-content-area br-6">
-				    <table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-				      <thead>
-				        <tr>
-				          <th class="checkbox-column">Status</th>
-				          <th>Subdomain</th>
-				          <th>IP Address</th>
-				          <th>HTTP Status</th>
-				          <th>Ports</th>
-				          <th>Content Length</th>
-				          <th>Page Title</th>
-				          <th>Technology</th>
-				          <th>Screenshot</th>
-				          <th>Directories</th>
-				        </tr>
-				      </thead>
-				    </table>
-				  </div>
+					<div class="widget widget-content widget-content-area br-6">
+						<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+							<thead>
+								<tr>
+									<th class="checkbox-column">Status</th>
+									<th>Subdomain</th>
+									<th>IP Address</th>
+									<th>HTTP Status</th>
+									<th>Ports</th>
+									<th>Content Length</th>
+									<th>Page Title</th>
+									<th>Technology</th>
+									<th>Screenshot</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -462,8 +458,8 @@ $(document).ready(function() {
 			},
 		],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-	         "<'row'<'col'tr>>" +
-	         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
