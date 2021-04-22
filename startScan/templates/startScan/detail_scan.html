@@ -88,7 +88,16 @@ All Subdomains
 						<div class="w-chart">
 							<div class="w-chart-section primary-card">
 								<div class="w-detail">
-									<p class="w-stats">{{subdomain_count|intcomma}} <span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-stats">{{subdomain_count|intcomma}}
+										<span class="float-right">
+											{% if new_subdomains %}
+											<span class="badge badge-pills badge-success">+{{new_subdomains.count}}</span>&nbsp;
+											{% endif %}
+											{% if removed_subdomains %}
+											<span class="badge badge-pills badge-danger">-{{removed_subdomains.count}}</span>
+											{% endif %}
+										</span>
+									</p>
 									<p class="w-title">Subdomains Discovered</p>
 									<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
 									<br>
