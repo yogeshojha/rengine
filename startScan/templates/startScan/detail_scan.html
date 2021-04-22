@@ -91,10 +91,10 @@ All Subdomains
 									<p class="w-stats">{{subdomain_count|intcomma}}
 										<span class="float-right">
 											{% if new_subdomains %}
-											<span class="badge badge-pills badge-success">+{{new_subdomains.count}}</span>&nbsp;
+											<span class="badge badge-pills badge-success bs-tooltip" title="{{new_subdomains.count}} Subdomains Added">+{{new_subdomains.count}}</span>&nbsp;
 											{% endif %}
 											{% if removed_subdomains %}
-											<span class="badge badge-pills badge-danger">-{{removed_subdomains.count}}</span>
+											<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_subdomains.count}} Subdomains Removed">-{{removed_subdomains.count}}</span>
 											{% endif %}
 										</span>
 									</p>
@@ -106,7 +106,16 @@ All Subdomains
 							</div>
 							<div class="w-chart-section purple-card">
 								<div class="w-detail">
-									<p class="w-stats">{{endpoint_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-stats">{{endpoint_count|intcomma}}
+										<span class="float-right">
+											{% if new_urls %}
+											<span class="badge badge-pills badge-success bs-tooltip" title="{{new_urls.count}} Endpoints Added">+{{new_urls.count}}</span>&nbsp;
+											{% endif %}
+											{% if removed_urls %}
+											<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_urls.count}} Endpoints Removed">-{{removed_urls.count}}</span>
+											{% endif %}
+										</span>
+									</p>
 									<p class="w-title">Endpoints Discovered</p>
 									<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
 									<br>
@@ -115,7 +124,10 @@ All Subdomains
 							</div>
 							<div class="w-chart-section danger-card">
 								<div class="w-detail">
-									<p class="w-stats">{{total_vulnerability_count|intcomma}}<span class="float-right"><span class="badge badge-pills badge-success">+5</span>&nbsp;<span class="badge badge-pills badge-danger">-10</span></span></p>
+									<p class="w-stats">{{total_vulnerability_count|intcomma}}
+										<span class="float-right">
+										</span>
+									</p>
 									<p class="w-title">Vulnerabilities Discovered</p>
 									{% if history.scan_type.vulnerability_scan %}
 									<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
@@ -132,7 +144,7 @@ All Subdomains
 					</div>
 				</div>
 				{% include 'base/_items/interesting_recon.html' %}
-				<div class="col-xl-3 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+				<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
 							<h6 class="">Subdomain Changes</h6>
@@ -180,7 +192,7 @@ All Subdomains
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+				<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
 							<h6 class="">Endpoint Changes</h6>
@@ -228,7 +240,7 @@ All Subdomains
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-5 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+				<div class="col-xl-12 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
 							<h6 class="">Vulnerability Scan Summary</h6>
