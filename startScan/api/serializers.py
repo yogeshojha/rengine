@@ -2,13 +2,19 @@ from rest_framework import serializers
 
 from startScan.models import ScannedHost, ScanHistory, WayBackEndPoint, VulnerabilityScan
 
+from reNgine.common_func import *
 
 class ScanHistorySerializer(serializers.ModelSerializer):
+
+    is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
     class Meta:
         model = ScannedHost
         fields = '__all__'
         # lookup_field = 'scan_history'
+
+    def get_is_interesting(self, ScannedHost):
+        return False
 
 
 class EndpointSerializer(serializers.ModelSerializer):

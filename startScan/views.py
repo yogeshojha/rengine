@@ -10,6 +10,7 @@ from django.urls import reverse
 from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSchedule
 from django.utils import timezone
 from django.conf import settings
+from django.core import serializers
 
 from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
@@ -67,7 +68,7 @@ def detail_scan(request, id=None):
         context['interesting_endpoint'] = get_interesting_endpoint(
             scan_history=id)
         context['scan_history_active'] = 'true'
-        
+
         if ScanHistory.objects.filter(domain_name=id).filter(
                 scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
             print('ok')
@@ -82,6 +83,7 @@ def detail_scan(request, id=None):
 
             context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
             context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
+
     return render(request, 'startScan/detail_scan.html', context)
 
 
