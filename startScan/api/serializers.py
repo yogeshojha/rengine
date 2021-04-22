@@ -14,7 +14,7 @@ class ScanHistorySerializer(serializers.ModelSerializer):
         # lookup_field = 'scan_history'
 
     def get_is_interesting(self, ScannedHost):
-        return False
+        return get_interesting_subdomains(ScannedHost.scan_history.id).filter(subdomain=ScannedHost.subdomain).exists()
 
 
 class EndpointSerializer(serializers.ModelSerializer):

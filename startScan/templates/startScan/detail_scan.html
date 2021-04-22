@@ -378,12 +378,17 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (row['http_url']) {
-						if (row['cname']) {
-							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+						interesting_badge = '';
+						if(row['is_interesting'])
+						{
+							interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
 						}
-						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
+						if (row['cname']) {
+							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+						}
+						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
 					}
-					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
+					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
 				},
 				"targets": 1
 			},
