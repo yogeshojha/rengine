@@ -117,8 +117,7 @@ function collapse_sidebar()
 	}
 }
 
-function clear_datatables() {
-	// $('#subdomain_scan_results').DataTable().destroy().empty();
-	$('#subdomain_scan_results').DataTable().clear();
-	$('#subdomain_scan_results').DataTable().destroy();
+function clear_datatables(datatable_id) {
+	$(datatable_id).DataTable().clear();
+	$(datatable_id).DataTable().destroy();
 }

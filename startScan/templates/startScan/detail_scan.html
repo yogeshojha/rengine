@@ -39,10 +39,19 @@ All Subdomains
 				<a class="nav-link active" id="pills-summary-tab" data-toggle="pill" href="#pills-summary" role="tab" aria-controls="pills-summary" aria-selected="true">Home</a>
 			</li>
 			<li class="nav-item">
-				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomain Results</a>
+				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
 			</li>
 			<li class="nav-item">
 				<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="pills-endpoints-tab" data-toggle="pill" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">Endpoints</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="pills-Vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
+			</li>
+			<li class="nav-item">
+				<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
 			</li>
 		</ul>
 	</div>
@@ -301,6 +310,23 @@ All Subdomains
 					</div>
 				</div>
 			</div>
+			<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
+				<div class="col-xl-12 col-lg-12 col-sm-12">
+					<div class="widget widget-content widget-content-area br-6">
+						<table id="directories-table" class="table dt-table-hover" style="width:100%">
+							<thead>
+								<tr>
+									<th class="checkbox-column">Status</th>
+									<th>Subdomain</th>
+									<th>HTTP Status</th>
+									<th>Page Title</th>
+									<th>Directories</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -330,7 +356,7 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 }
 
 $("#pills-subdomain-tab").click(function() {
-	clear_datatables();
+	clear_datatables('#subdomain_scan_results');
 	var scan_history_table = $('#subdomain_scan_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -476,6 +502,159 @@ $("#pills-subdomain-tab").click(function() {
 					return "";
 				},
 				"targets": 8,
+			},
+		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+			// get screenshot size from localStorage
+			var elements = document.getElementsByClassName("screenshot");
+			screenshot_size = localStorage.getItem('screenshotSize');
+			if (screenshot_size){
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", screenshot_size);
+					elements[index].setAttribute("width", screenshot_size);
+				}
+			}
+			else{
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", "200px");
+					elements[index].setAttribute("width", "200px");
+				}
+			}
+		},
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+	});
+});
+
+$("#pills-directories-tab").click(function() {
+	clear_datatables('#directories-table');
+	var scan_history_table = $('#directories-table').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Filter Subdomains...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"order": [[ 5, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'subdomain'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'directory_json'},
+			{'data': 'http_url'},
+			{'data': 'is_interesting'},
+			{'data': 'checked'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 5, 6, 7],
+				"visible": false,
+				"searchable": false,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (row['http_url']) {
+						interesting_badge = '';
+						if(row['is_interesting'])
+						{
+							interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
+						}
+						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
+					}
+					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
+				},
+				"targets": 1
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+				},
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data) {
+						data = JSON.parse(data);
+						main_url = Object.keys(data)[0];
+						var json_obj = data[main_url];
+						var html_treeview = `<ul class="file-tree">`;
+						for(var i = 0; i < json_obj.length; i++)
+						{
+							if(json_obj[i].status==200)
+							{
+								var path = json_obj[i].path;
+								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
+								// id path has / the its a directory else consider as file
+								if (path.substr(path.length - 1) == '/') {
+									html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+								}
+								else {
+									html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+								}
+							}
+						}
+						html_treeview += `</ul>`;
+						return html_treeview;
+					}
+					return '';
+				},
+				"targets": 4,
 			},
 		],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
