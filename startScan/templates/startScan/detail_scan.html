@@ -710,8 +710,8 @@ $("#pills-directories-tab").click(function() {
 			}
 		},
 		"rowCallback": function( row, data, index ) {
-			if (data["directory_json"].length <= 0) {
-				$(row).remove();
+			if (!data["directory_json"]) {
+				$(row).hide();
 			}
 		},
 	});
