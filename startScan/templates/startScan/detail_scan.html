@@ -102,7 +102,7 @@ All Subdomains
 									<p class="w-title">Subdomains Discovered</p>
 									<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
 									<br>
-									<a href="#subdomainDiscovered" class="text-info float-right">View Subdomains</a>
+									<br>
 								</div>
 							</div>
 							<div class="w-chart-section purple-card">
@@ -120,7 +120,7 @@ All Subdomains
 									<p class="w-title">Endpoints Discovered</p>
 									<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
 									<br>
-									<a href="endpoint/{{scan_history_id}}" class="text-info float-right">View Endpoints</a>
+									<br>
 								</div>
 							</div>
 							<div class="w-chart-section danger-card">
@@ -133,7 +133,7 @@ All Subdomains
 									{% if history.scan_type.vulnerability_scan %}
 									<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
 									<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
-									<a href="vuln/{{scan_history_id}}" class="text-info float-right">View Vulnerabilities</a>
+									<br>
 									{% else %}
 									<small class="text-muted">Vulnerability scan hasn't been performed.</small>
 									<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
@@ -347,7 +347,7 @@ All Subdomains
 			<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
 				<div class="col-xl-12 col-lg-12 col-sm-12">
 					<div class="widget widget-content widget-content-area br-6">
-						<table id="vulnerability_results" class="table table-hover">
+						<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
 							<thead>
 								<tr>
 									<th class="checkbox-column">Status</th>
@@ -357,6 +357,7 @@ All Subdomains
 									<th>Description</th>
 									<th>Last Seen</th>
 									<th>Status</th>
+									<th>Matcher Name</th>
 								</tr>
 							</thead>
 						</table>
@@ -393,7 +394,7 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 
 $("#pills-subdomain-tab").click(function() {
 	clear_datatables('#subdomain_scan_results');
-	var scan_history_table = $('#subdomain_scan_results').DataTable({
+	$('#subdomain_scan_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
@@ -701,21 +702,6 @@ $("#pills-directories-tab").click(function() {
 			$('.dataTables_wrapper table').removeClass('table-striped');
 			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
-			// get screenshot size from localStorage
-			var elements = document.getElementsByClassName("screenshot");
-			screenshot_size = localStorage.getItem('screenshotSize');
-			if (screenshot_size){
-				for (index = 0; index < elements.length; ++index) {
-					elements[index].setAttribute("height", screenshot_size);
-					elements[index].setAttribute("width", screenshot_size);
-				}
-			}
-			else{
-				for (index = 0; index < elements.length; ++index) {
-					elements[index].setAttribute("height", "200px");
-					elements[index].setAttribute("width", "200px");
-				}
-			}
 		},
 		initComplete: function( settings, json ) {
 			var script = document.createElement("script");
@@ -738,8 +724,8 @@ $("#pills-directories-tab").click(function() {
 
 
 $("#pills-endpoints-tab").click(function() {
-	clear_datatables('#endpoint_results');
 	$('#endpoint_results').DataTable({
+		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
@@ -754,15 +740,7 @@ $("#pills-endpoints-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		{% if scan_history_id %}
 		"ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
-		{% else %}
-		{% if request.GET.query %}
-		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables&query_param={{request.GET.query}}',
-		{% else %}
-		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables',
-		{% endif %}
-		{% endif %}
 		"order": [[ 3, "desc" ]],
 		"columns": [
 			{'data': 'http_url'},
@@ -815,13 +793,13 @@ $("#pills-endpoints-tab").click(function() {
 });
 
 $("#pills-vulnerabilities-tab").click(function() {
-	clear_datatables('#vulnerability_results');
 	$('#vulnerability_results').DataTable({
+		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search Query...",
+			"sSearchPlaceholder": "Search...",
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
@@ -831,18 +809,8 @@ $("#pills-vulnerabilities-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		'orderCellsTop': true,
-		'fixedHeader': true,
-		'order': [2, 'desc'],
-		{% if scan_history_id %}
 		"ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
-		{% else %}
-		{% if request.GET.query %}
-		"ajax": '/start_scan/api/listVulnerability/?vulnerability_of=&format=datatables&query_param={{request.GET.query}}',
-		{% else %}
-		"ajax": '/start_scan/api/listVulnerability/?vulnerability_of=&format=datatables',
-		{% endif %}
-		{% endif %}
+		"order": [[ 3, "desc" ]],
 		"columns": [
 			{'data': 'id'},
 			{'data': 'name'},
@@ -943,11 +911,11 @@ $("#pills-vulnerabilities-tab").click(function() {
 				"targets": 6,
 			},
 		],
-		'drawCallback': function () {
+		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
 		},
-		'createdRow': function( row, data, dataIndex ) {
+		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
 				$(row).addClass('table-secondary text-strike');
 			}
