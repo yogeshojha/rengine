@@ -692,6 +692,11 @@ $("#pills-directories-tab").click(function() {
 				$(row).addClass('table-secondary text-strike');
 			}
 		},
+		"rowCallback": function( row, data, index ) {
+			if (data["directory_json"].length <= 0) {
+				$(row).remove();
+			}
+		},
 	});
 });
 </script>
