@@ -321,6 +321,9 @@ All Subdomains
 									<th>HTTP Status</th>
 									<th>Page Title</th>
 									<th>Directories</th>
+									<th>HTTP URL</th>
+									<th>Is Intereting</th>
+									<th>Checked</th>
 								</tr>
 							</thead>
 						</table>
@@ -574,7 +577,6 @@ $("#pills-subdomain-tab").click(function() {
 });
 
 $("#pills-directories-tab").click(function() {
-	clear_datatables('#directories-table');
 	var scan_history_table = $('#directories-table').DataTable({
 		"destroy": true,
 		"oLanguage": {
