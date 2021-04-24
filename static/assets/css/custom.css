@@ -257,3 +257,8 @@ div.dataTables_wrapper div.dataTables_length {
 div.dataTables_wrapper div.dataTables_filter {
   text-align: left;
 }
+
+.navbar .navbar-item .nav-item .form-inline.search .search-form-control {
+  width: 420px;
+  color: #fff;
+}
