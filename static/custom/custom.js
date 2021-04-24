@@ -117,7 +117,14 @@ function collapse_sidebar()
 	}
 }
 
-function clear_datatables(datatable_id) {
-	$(datatable_id).DataTable().clear();
-	$(datatable_id).DataTable().destroy();
+function vuln_status_change(checkbox, id)
+{
+	if (checkbox.checked) {
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+	}
+	else {
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+	}
+	change_vuln_status(id);
 }
