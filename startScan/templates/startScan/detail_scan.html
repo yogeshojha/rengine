@@ -304,6 +304,11 @@ All Subdomains
 									<th>Page Title</th>
 									<th>Technology</th>
 									<th>Screenshot</th>
+									<th>HTTP URL</th>
+									<th>IS CDN</th>
+									<th>CNAME</th>
+									<th>Checked</th>
+									<th>Is Intereting</th>
 								</tr>
 							</thead>
 						</table>
@@ -396,7 +401,6 @@ function fetch_http_headers(id, http_header_path, screenshot_path){
 }
 
 $("#pills-subdomain-tab").click(function() {
-	clear_datatables('#subdomain_scan_results');
 	$('#subdomain_scan_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
