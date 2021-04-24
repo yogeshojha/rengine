@@ -10,7 +10,7 @@
         <div class="card">
           <div class="card-header" id="">
             <section class="mb-0 mt-0">
-              <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_subdomain" aria-expanded="true" aria-controls="iconAccordionOne">
+              <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_subdomain" aria-expanded="false" aria-controls="iconAccordionOne">
                 <div class="accordion-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
@@ -24,7 +24,7 @@
               </div>
             </section>
           </div>
-          <div id="interesting_subdomain" class="collapse show" aria-labelledby="" data-parent="#interesting_recon_accordion">
+          <div id="interesting_subdomain" class="collapse hide" aria-labelledby="" data-parent="#interesting_recon_accordion">
             <div class="card-body">
               <div class="widget-table-two">
                 <div class="widget-content">
@@ -37,9 +37,9 @@
         {% endif %}
         {% if interesting_endpoint.count > 0 %}
         <div class="card">
-          <div class="card-header" id="...">
+          <div class="card-header" id="">
             <section class="mb-0 mt-0">
-              <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_endpoint" aria-expanded="true" aria-controls="iconAccordionOne">
+              <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_endpoint" aria-expanded="false" aria-controls="iconAccordionOne">
                 <div class="accordion-icon">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
                     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
