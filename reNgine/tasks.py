@@ -749,7 +749,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         vulnerability.save()
                         send_notification(
                             "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
-                                json_st['name'], json_st['severity'], domain.domain_name, json_st['matched']))
+                                json_st['info']['name'], json_st['info']['severity'], domain.domain_name, json_st['matched']))
             except Exception as exception:
                 print('-' * 30)
                 print(traceback.format_exc())
