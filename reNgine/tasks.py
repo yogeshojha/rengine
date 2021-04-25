@@ -718,8 +718,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         _subdomain = ScannedHost.objects.get(
                             subdomain=subdomain, scan_history=task)
                         vulnerability.host = _subdomain
-                        vulnerability.name = json_st['name']
-                        vulnerability.url = json_st['matched']
+                        if 'name' in json_st:
+                            vulnerability.name = json_st['name']
+                        if ['matched'] in json_st:
+                            vulnerability.url = json_st['matched']
                         if 'severity' in json_st:
                             if json_st['severity'] == 'info':
                                 severity = 0
@@ -736,7 +738,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         else:
                             severity = 0
                         vulnerability.severity = severity
-                        vulnerability.template_used = json_st['template']
+                        if 'template' in json_st:
+                            vulnerability.template_used = json_st['template']
                         if 'description' in json_st:
                             vulnerability.description = json_st['description']
                         if 'matcher_name' in json_st:
