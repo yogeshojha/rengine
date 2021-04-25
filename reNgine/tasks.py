@@ -736,7 +736,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         else:
                             severity = 0
                         vulnerability.severity = severity
-                        if ['matched'] in json_st:
+                        if 'matched' in json_st:
                             vulnerability.url = json_st['matched']
                         if 'templateID' in json_st:
                             vulnerability.template_used = json_st['templateID']
