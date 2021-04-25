@@ -316,11 +316,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             try:
                 sub_domain = ScannedHost.objects.get(
                     scan_history=task, subdomain=json_st['url'].split("//")[-1])
-                sub_domain.http_url = json_st['url']
-                sub_domain.http_status = json_st['status-code']
-                sub_domain.page_title = json_st['title']
-                sub_domain.content_length = json_st['content-length']
-                sub_domain.discovered_date = timezone.now()
+                if 'url' in json_st:
+                    sub_domain.http_url = json_st['url']
+                if 'status-code' in json_st:
+                    sub_domain.http_status = json_st['status-code']
+                if 'title' in json_st:
+                    sub_domain.page_title = json_st['title']
+                if 'content-length' in json_st:
+                    sub_domain.content_length = json_st['content-length']
                 if 'ip' in json_st:
                     sub_domain.ip_address = json_st['ip']
                 if 'cdn' in json_st:
@@ -328,6 +331,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     sub_domain.cname = cname_list
+                sub_domain.discovered_date = timezone.now()
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
@@ -584,10 +588,14 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                                 json_st = json.loads(line.strip())
                                 endpoint = WayBackEndPoint()
                                 endpoint.url_of = task
-                                endpoint.http_url = json_st['url']
-                                endpoint.content_length = json_st['content-length']
-                                endpoint.http_status = json_st['status-code']
-                                endpoint.page_title = json_st['title']
+                                if 'url' in json_st:
+                                    endpoint.http_url = json_st['url']
+                                if 'content-length' in json_st:
+                                    endpoint.content_length = json_st['content-length']
+                                if 'status-code' in json_st:
+                                    endpoint.http_status = json_st['status-code']
+                                if 'title' in json_st:
+                                    endpoint.page_title = json_st['title']
                                 endpoint.discovered_date = timezone.now()
                                 if 'content-type' in json_st:
                                     endpoint.content_type = json_st['content-type']
@@ -605,13 +613,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                     json_st = json.loads(line.strip())
                     endpoint = WayBackEndPoint()
                     endpoint.url_of = task
-                    endpoint.http_url = json_st['url']
-                    endpoint.content_length = json_st['content-length']
-                    endpoint.http_status = json_st['status-code']
-                    endpoint.page_title = json_st['title']
-                    endpoint.discovered_date = timezone.now()
+                    if 'url' in json_st:
+                        endpoint.http_url = json_st['url']
+                    if 'content-length' in json_st:
+                        endpoint.content_length = json_st['content-length']
+                    if 'status-code' in json_st:
+                        endpoint.http_status = json_st['status-code']
+                    if 'title' in json_st:
+                        endpoint.page_title = json_st['title']
                     if 'content-type' in json_st:
                         endpoint.content_type = json_st['content-type']
+                    endpoint.discovered_date = timezone.now()
                     endpoint.save()
 
         '''
