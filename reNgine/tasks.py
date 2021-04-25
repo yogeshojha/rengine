@@ -336,6 +336,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     sub_domain.cname = cname_list
+                sub_domain.discovered_date = timezone.now()
                 sub_domain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
