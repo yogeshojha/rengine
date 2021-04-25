@@ -718,22 +718,28 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         _subdomain = ScannedHost.objects.get(
                             subdomain=subdomain, scan_history=task)
                         vulnerability.host = _subdomain
-                        vulnerability.name = json_st['name']
-                        vulnerability.url = json_st['matched']
-                        if json_st['severity'] == 'info':
-                            severity = 0
-                        elif json_st['severity'] == 'low':
-                            severity = 1
-                        elif json_st['severity'] == 'medium':
-                            severity = 2
-                        elif json_st['severity'] == 'high':
-                            severity = 3
-                        elif json_st['severity'] == 'critical':
-                            severity = 4
+                        if 'name' in json_st['info']:
+                            vulnerability.name = json_st['info']['name']
+                        if 'severity' in json_st['info']:
+                            if json_st['info']['severity'] == 'info':
+                                severity = 0
+                            elif json_st['info']['severity'] == 'low':
+                                severity = 1
+                            elif json_st['info']['severity'] == 'medium':
+                                severity = 2
+                            elif json_st['info']['severity'] == 'high':
+                                severity = 3
+                            elif json_st['info']['severity'] == 'critical':
+                                severity = 4
+                            else:
+                                severity = 0
                         else:
                             severity = 0
                         vulnerability.severity = severity
-                        vulnerability.template_used = json_st['template']
+                        if 'matched' in json_st:
+                            vulnerability.url = json_st['matched']
+                        if 'templateID' in json_st:
+                            vulnerability.template_used = json_st['templateID']
                         if 'description' in json_st:
                             vulnerability.description = json_st['description']
                         if 'matcher_name' in json_st:
@@ -743,10 +749,10 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                         vulnerability.save()
                         send_notification(
                             "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
-                                json_st['name'], json_st['severity'], domain.domain_name, json_st['matched']))
+                                json_st['info']['name'], json_st['info']['severity'], domain.domain_name, json_st['matched']))
             except Exception as exception:
                 print('-' * 30)
-                print(exception)
+                print(traceback.format_exc())
                 print('-' * 30)
                 update_last_activity(activity_id, 0)
         '''
