@@ -52,6 +52,9 @@ WORKDIR /app
 # Copy source code
 COPY . /app/
 
+RUN git clone https://github.com/FortyNorthSecurity/EyeWitness.git /app/tools/EyeWitness/
+RUN sh /app/tools/EyeWitness/Python/setup/setup.sh
+
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
 RUN chmod +x /app/tools/takeover.sh
