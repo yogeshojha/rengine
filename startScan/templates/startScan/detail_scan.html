@@ -166,7 +166,7 @@ All Subdomains
 							<h6 class="">Subdomain Changes</h6>
 							<p>
 								{% if new_subdomains.count or removed_subdomains.count %}
-								During the last scan
+								During this scan
 								{% if new_subdomains.count %}
 								<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
 								{% endif %}
@@ -214,7 +214,7 @@ All Subdomains
 							<h6 class="">Endpoint Changes</h6>
 							<p>
 								{% if new_urls.count or removed_urls.count %}
-								During the last scan
+								During this scan
 								{% if new_urls.count %}
 								<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
 								{% endif %}

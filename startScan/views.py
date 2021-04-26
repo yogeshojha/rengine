@@ -33,16 +33,16 @@ def detail_scan(request, id=None):
     if id:
         context['scan_history_id'] = id
         context['subdomain_count'] = ScannedHost.objects.filter(
-            scan_history__id=id).count()
+            scan_history__id=id).values('subdomain').distinct().count()
         context['alive_count'] = ScannedHost.objects.filter(
-            scan_history__id=id).exclude(
+            scan_history__id=id).values('subdomain').distinct().exclude(
             http_status__exact=0).count()
         context['scan_activity'] = ScanActivity.objects.filter(
             scan_of__id=id).order_by('-time')
         context['endpoint_count'] = WayBackEndPoint.objects.filter(
-            url_of__id=id).count()
+            url_of__id=id).values('http_url').distinct().count()
         context['endpoint_alive_count'] = WayBackEndPoint.objects.filter(
-            url_of__id=id, http_status__exact=200).count()
+            url_of__id=id, http_status__exact=200).values('http_url').distinct().count()
         context['history'] = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
             vulnerability_of__id=id, severity=0).count()
@@ -86,9 +86,6 @@ def detail_scan(request, id=None):
                 scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
             last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__fetch_url=True).filter(scan_status=2).filter(id__lt=id).order_by('-last_scan_date')[0]
-
-            print(id)
-            print(last_scan.id)
 
             endpoint_q1 = WayBackEndPoint.objects.filter(url_of__id=id).values('http_url')
             endpoint_q2 = WayBackEndPoint.objects.filter(url_of__id=last_scan.id).values('http_url')
