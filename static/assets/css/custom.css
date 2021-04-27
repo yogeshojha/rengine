@@ -182,13 +182,13 @@
 
 
 .widget.widget-one .w-chart .w-chart-section.primary-card {
-  background-color: #e7f7ff; }
+  background-color: #eaf1ff; }
 
 .widget.widget-one .w-chart .w-chart-section.danger-card {
   background-color: #fff5f5; }
 
-.widget.widget-one .w-chart .w-chart-section.warning-card {
-  background-color: #fff9ed; }
+.widget.widget-one .w-chart .w-chart-section.info-card {
+  background-color: #e7f7ff; }
 
 .widget.widget-one .w-chart .w-chart-section.purple-card {
   background-color: #f3effc; }
@@ -196,8 +196,8 @@
 .widget.widget-one .w-chart .w-chart-section.dark-card {
   background-color: #1b2e4b; }
 
-.widget.widget-one .w-chart .w-chart-section.warning-card .w-title, .widget.widget-one .w-chart .w-chart-section.warning-card .w-stats, .widget.widget-one .w-chart .w-chart-section.warning-card a {
-  color: #e2a03f; }
+.widget.widget-one .w-chart .w-chart-section.info-card .w-title, .widget.widget-one .w-chart .w-chart-section.warning-card .w-stats, .widget.widget-one .w-chart .w-chart-section.warning-card a {
+  color: #2196f3; }
 
 .widget.widget-one .w-chart .w-chart-section.primary-card .w-title, .widget.widget-one .w-chart .w-chart-section.primary-card .w-stats, .widget.widget-one .w-chart .w-chart-section.primary-card a {
   color: #4361ee; }
