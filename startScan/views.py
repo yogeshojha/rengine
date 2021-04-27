@@ -80,7 +80,7 @@ def detail_scan(request, id=None):
 
             context['new_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
             context['removed_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
-            context['last_scan'] = last_scan
+            context['last_scan_subdomain'] = last_scan
 
         if ScanHistory.objects.filter(
                 domain_name=domain_id).filter(
@@ -93,6 +93,7 @@ def detail_scan(request, id=None):
 
             context['new_urls'] = endpoint_q1.difference(endpoint_q2)
             context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
+            context['last_scan_endpoint'] = last_scan
 
     return render(request, 'startScan/detail_scan.html', context)
 

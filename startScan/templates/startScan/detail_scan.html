@@ -164,9 +164,9 @@ All Subdomains
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
 							<h6 class="">Subdomain Changes</h6>
-							<p>
+							<p class='text-muted small'>
 								Comparing against the last scan performed on
-								<a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan.">{{last_scan.last_scan_date}}</a>
+								<a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.last_scan_date}}</small></a>
 							</p>
 							<p>
 								{% if new_subdomains.count or removed_subdomains.count %}
@@ -216,9 +216,9 @@ All Subdomains
 					<div class="widget widget-activity-four">
 						<div class="widget-heading">
 							<h6 class="">Endpoint Changes</h6>
-							<p>
+							<p class='text-muted small'>
 								Comparing against the last scan performed on
-								<a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan.">{{last_scan.last_scan_date}}</a>
+								<a href="{{last_scan_endpoint.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_endpoint.get_endpoint_count}} endpoints were discovered during the last scan."><small>{{last_scan_endpoint.last_scan_date}}</small></a>
 							</p>
 							<p>
 								{% if new_urls.count or removed_urls.count %}
