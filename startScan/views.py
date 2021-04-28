@@ -69,7 +69,7 @@ def detail_scan(request, id=None):
             scan_history=id)
         context['scan_history_active'] = 'true'
 
-        domain_id = ScannedHost.objects.filter(scan_history__id=id)[0].scan_history.domain_name.id
+        domain_id = ScanHistory.objects.filter(id=id)[0].domain_name.id
         if ScanHistory.objects.filter(domain_name=domain_id).filter(
                 scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
 
