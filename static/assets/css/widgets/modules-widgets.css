@@ -972,9 +972,7 @@
       border-radius: 30px;
       height: 12px; }
       .widget-five .widget-content .progress-data .progress .progress-bar {
-        margin: 3px;
-        background-color: #60dfcd;
-        background-image: linear-gradient(315deg, #60dfcd 0%, #1e9afe 74%); }
+        margin: 3px;}
   .widget-five .widget-content .meta-info {
     display: flex;
     justify-content: space-between; }
