@@ -373,14 +373,17 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data) {
+						console.log("There is dirsearch result")
 						// TODO: this could be done better
-						data = JSON.parse(data);
+						try {
+							data = JSON.parse(data);
+						} catch (e) {}
 						main_url = Object.keys(data)[0];
 						var json_obj = data[main_url];
 						var html_treeview = `<ul class="file-tree">`;
 						for(var i = 0; i < json_obj.length; i++)
 						{
-							if(json_obj[i].status==200)
+							if([200,500].includes(json_obj[i].status))
 							{
 								var path = json_obj[i].path;
 								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
