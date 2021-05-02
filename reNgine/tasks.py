@@ -755,6 +755,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         Once the scan is completed, save the status to successful
         '''
         task.scan_status = 2
+        task.stop_scan_date = timezone.now()
         task.save()
     except Exception as exception:
         logging.error(exception)
@@ -784,6 +785,7 @@ def send_notification(message):
 
 def scan_failed(task):
     task.scan_status = 0
+    task.stop_scan_date = timezone.now()
     task.save()
 
 

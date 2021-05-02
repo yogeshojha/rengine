@@ -192,13 +192,13 @@ Detailed Scan Results for {{history.domain_name}}
 									{% if history.scan_status == -1 %}
 									<p class="text-center"><small class="text-center text-muted">Scan not yet started.</small></p>
 									{% elif history.scan_status == 0 %}
-									<h5 class="text-center text-danger">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h5>
+									<h6 class="text-center text-danger">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 									{% elif history.scan_status == 1 %}
-									<h5 class="text-center text-info">{{ history.get_elapsed_time }}</h5>
+									<h6 class="text-center text-info">{{ history.get_elapsed_time }}</h6>
 									{% elif history.scan_status == 2 %}
-									<h5 class="text-center text-success">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h5>
+									<h6 class="text-center text-success">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 									{% elif history.scan_status == 3 %}
-									<h5 class="text-center text-danger">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h5>
+									<h6 class="text-center text-danger">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 									{% endif %}
 								</div>
 							</div>
