@@ -54,9 +54,15 @@ class ScanHistory(models.Model):
             vulnerability_of__id=self.id).filter(
             severity=4).count()
 
+    def get_completed_time(self):
+        return self.stop_scan_date - self.start_scan_date
+
     def get_elapsed_time(self):
-        now = timezone.make_aware(datetime.datetime.now(), timezone.get_default_timezone())
-        return self.last_scan_date - now
+        duration = timezone.now() - self.start_scan_date
+        days, seconds = duration.days, duration.seconds
+        hours = days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        return '{} hours {} minutes'.format(hours, minutes)
 
 
 class ScannedHost(models.Model):
