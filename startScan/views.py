@@ -70,26 +70,45 @@ def detail_scan(request, id=None):
         context['scan_history_active'] = 'true'
 
         domain_id = ScanHistory.objects.filter(id=id)[0].domain_name.id
-        if ScanHistory.objects.filter(domain_name=domain_id).filter(
-                scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
+        if ScanHistory.objects.filter(
+            domain_name=domain_id).filter(
+            scan_type__subdomain_discovery=True).filter(
+            id__lt=id).filter(
+                scan_status=2).count() > 1:
 
-            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__subdomain_discovery=True).filter(scan_status=2).filter(id__lt=id).order_by('-start_scan_date')[0]
+            last_scan = ScanHistory.objects.filter(
+                domain_name=domain_id).filter(
+                scan_type__subdomain_discovery=True).filter(
+                scan_status=2).filter(
+                id__lt=id).order_by('-start_scan_date')[0]
 
-            scanned_host_q1 = ScannedHost.objects.filter(scan_history__id=id).values('subdomain')
-            scanned_host_q2 = ScannedHost.objects.filter(scan_history__id=last_scan.id).values('subdomain')
+            scanned_host_q1 = ScannedHost.objects.filter(
+                scan_history__id=id).values('subdomain')
+            scanned_host_q2 = ScannedHost.objects.filter(
+                scan_history__id=last_scan.id).values('subdomain')
 
-            context['new_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
-            context['removed_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
+            context['new_subdomains'] = scanned_host_q1.difference(
+                scanned_host_q2)
+            context['removed_subdomains'] = scanned_host_q2.difference(
+                scanned_host_q1)
             context['last_scan_subdomain'] = last_scan
 
         if ScanHistory.objects.filter(
+            domain_name=domain_id).filter(
+            scan_type__fetch_url=True).filter(
+            scan_status=2).filter(
+                id__lt=id).count() > 1:
+
+            last_scan = ScanHistory.objects.filter(
                 domain_name=domain_id).filter(
-                scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
+                scan_type__fetch_url=True).filter(
+                scan_status=2).filter(
+                id__lt=id).order_by('-start_scan_date')[0]
 
-            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__fetch_url=True).filter(scan_status=2).filter(id__lt=id).order_by('-start_scan_date')[0]
-
-            endpoint_q1 = WayBackEndPoint.objects.filter(url_of__id=id).values('http_url')
-            endpoint_q2 = WayBackEndPoint.objects.filter(url_of__id=last_scan.id).values('http_url')
+            endpoint_q1 = WayBackEndPoint.objects.filter(
+                url_of__id=id).values('http_url')
+            endpoint_q2 = WayBackEndPoint.objects.filter(
+                url_of__id=last_scan.id).values('http_url')
 
             context['new_urls'] = endpoint_q1.difference(endpoint_q2)
             context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
