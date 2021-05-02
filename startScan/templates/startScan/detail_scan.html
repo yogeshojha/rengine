@@ -168,9 +168,30 @@ Detailed Scan Results for {{history.domain_name}}
 							</a>
 						</div>
 						<div class="widget-content">
-							<p>
-
-							</p>
+							<div class="row">
+								<div class="col-6">
+									<h6 class="text-center">Scan Status</h6>
+									<div class="text-center">
+										{% if history.scan_status == -1 %}
+										<h6 class="badge badge-warning">Pending</h6>
+										{% elif history.scan_status == 0 %}
+										<h6 class="badge badge-danger">Failed</h6>
+										{% elif history.scan_status == 1 %}
+										<h6 class="badge badge-info">Scanning</h6>
+										{% elif history.scan_status == 2 %}
+										<h6 class="badge badge-success">Completed</h6>
+										{% elif history.scan_status == 3 %}
+										<h6 class="badge badge-danger">Aborted</h6>
+										{% else %}
+										<h6 class="badge badge-danger">Unknown</h6>
+										{% endif %}
+									</div>
+								</div>
+								<div class="col-6">
+									<h6 class="text-center">Scan Duration</h6>
+									<h5 class="text-center text-info">00:35 minutes</h5>
+								</div>
+							</div>
 							<div class="progress-data">
 								<div class="progress">
 									{% if history.scan_status == -1 %}
@@ -194,25 +215,6 @@ Detailed Scan Results for {{history.domain_name}}
 										</div>
 									</div>
 									{% endif %}
-								</div>
-							</div>
-							<div class="meta-info">
-								<div class="due-time">
-									<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> 3 Days Left</p>
-								</div>
-								<div class="avatar--group">
-									<div class="avatar translateY-axis more-group">
-										<span class="avatar-title">+6</span>
-									</div>
-									<div class="avatar translateY-axis">
-										<img alt="avatar" src="assets/img/90x90.jpg"/>
-									</div>
-									<div class="avatar translateY-axis">
-										<img alt="avatar" src="assets/img/90x90.jpg"/>
-									</div>
-									<div class="avatar translateY-axis">
-										<img alt="avatar" src="assets/img/90x90.jpg"/>
-									</div>
 								</div>
 							</div>
 						</div>
