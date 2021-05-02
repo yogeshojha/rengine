@@ -266,8 +266,8 @@ Dashboard
 		<div class="widget-content">
 			<div class="order-summary">
 				{% for item in recent_completed_scans %}
+				<a href="{% url 'detail_scan' item.id %}">
 					{% if item.scan_status == 2 %}
-					<a href="{% url 'detail_scan' item.id %}">
 					<div class="summary-list summary-success">
 						{% else %}
 						<div class="summary-list summary-danger">
