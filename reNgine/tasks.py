@@ -305,7 +305,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         # background thread later
         httpx_results_file = results_dir + current_scan_dir + '/httpx.json'
 
-        httpx_command = 'cat {} | httpx -cdn -json -o {}'.format(
+        httpx_command = 'cat {} | httpx -cdn -json -o {} -threads 100'.format(
             subdomain_scan_results_file, httpx_results_file)
         os.system(httpx_command)
 

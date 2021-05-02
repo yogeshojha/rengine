@@ -62,6 +62,12 @@ class ScanHistory(models.Model):
         days, seconds = duration.days, duration.seconds
         hours = days * 24 + seconds // 3600
         minutes = (seconds % 3600) // 60
+        if not hours and not minutes:
+            return 'Just now'
+        elif not hours:
+            return '{} minutes'.format(minutes)
+        elif not minutes:
+            return '{} hours'.format(hours)
         return '{} hours {} minutes'.format(hours, minutes)
 
 
