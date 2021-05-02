@@ -57,13 +57,17 @@ class ScanHistory(models.Model):
     def get_completed_time(self):
         return self.stop_scan_date - self.start_scan_date
 
+    def get_completed_time_in_sec(self):
+        return (self.stop_scan_date - self.start_scan_date).seconds
+
     def get_elapsed_time(self):
         duration = timezone.now() - self.start_scan_date
         days, seconds = duration.days, duration.seconds
         hours = days * 24 + seconds // 3600
         minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
         if not hours and not minutes:
-            return 'Just Started'
+            return '{} seconds'.format(seconds)
         elif not hours:
             return '{} minutes'.format(minutes)
         elif not minutes:

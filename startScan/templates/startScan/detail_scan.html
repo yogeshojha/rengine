@@ -163,7 +163,7 @@ Detailed Scan Results for {{history.domain_name}}
 									<span>{{history.domain_name.domain_name|slice:"0:2"|upper}}</span>
 								</div>
 								<div class="w-title">
-									<h6>Scan Information {{history.domain_name.domain_name}}</h6>
+									<h6>Scan Information for <span class="badge badge-info">{{history.domain_name.domain_name}}</span></h6>
 								</div>
 							</a>
 						</div>
@@ -196,7 +196,11 @@ Detailed Scan Results for {{history.domain_name}}
 									{% elif history.scan_status == 1 %}
 									<h6 class="text-center text-info">{{ history.get_elapsed_time }}</h6>
 									{% elif history.scan_status == 2 %}
+									{% if history.get_completed_time_in_sec < 60 %}
+									<h6 class="text-center text-success">Completed in < 1 minutes</h6>
+									{% else %}
 									<h6 class="text-center text-success">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
+									{% endif %}
 									{% elif history.scan_status == 3 %}
 									<h6 class="text-center text-danger">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 									{% endif %}
