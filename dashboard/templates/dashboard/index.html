@@ -284,7 +284,7 @@ Dashboard
 								</div>
 								<div class="w-summary-details">
 									<div class="w-summary-info">
-										<h6>{{item.domain_name}}<br><small>{{item.last_scan_date|naturaltime}}</small></h6>
+										<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
 											{% if item.scan_status == -1 %}
 											<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
@@ -331,7 +331,7 @@ Dashboard
 								</div>
 								<div class="w-summary-details">
 									<div class="w-summary-info">
-										<h6>{{item.domain_name}}<br><small>{{item.last_scan_date|naturaltime}}</small></h6>
+										<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
 											<span class="badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
 										</p>
@@ -371,7 +371,7 @@ Dashboard
 							</div>
 							<div class="w-summary-details">
 								<div class="w-summary-info">
-									<h6>{{item.domain_name}}<br><small>{{item.last_scan_date|naturaltime}}</small></h6>
+									<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 									<p class="summary-average">
 										{% if item.scan_status == -1 %}
 										<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>

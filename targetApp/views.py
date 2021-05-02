@@ -180,7 +180,7 @@ def target_summary(request, id):
         domain_name_id=id).count()
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = ScanHistory.objects.filter(
-        domain_name_id=id, last_scan_date__gte=last_week).count()
+        domain_name_id=id, start_scan_date__gte=last_week).count()
     subdomain_count = ScannedHost.objects.filter(
         target_domain__id=id).values('subdomain').distinct().count()
     endpoint_count = WayBackEndPoint.objects.filter(
@@ -194,7 +194,7 @@ def target_summary(request, id):
             scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
         print('ok')
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
-            scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-last_scan_date')
+            scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-start_scan_date')
 
         scanned_host_q1 = ScannedHost.objects.filter(
             target_domain__id=id).exclude(
@@ -210,7 +210,7 @@ def target_summary(request, id):
             scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
-            scan_type__fetch_url=True).filter(scan_status=2).order_by('-last_scan_date')
+            scan_type__fetch_url=True).filter(scan_status=2).order_by('-start_scan_date')
 
         endpoint_q1 = WayBackEndPoint.objects.filter(
             target_domain__id=id).exclude(
@@ -222,7 +222,7 @@ def target_summary(request, id):
         context['removed_urls'] = endpoint_q1.difference(endpoint_q2)
 
     context['recent_scans'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-last_scan_date')[:3]
+        domain_name=id).order_by('-start_scan_date')[:3]
     context['info_count'] = VulnerabilityScan.objects.filter(
         target_domain=id).filter(severity=0).count()
     context['low_count'] = VulnerabilityScan.objects.filter(
@@ -238,5 +238,5 @@ def target_summary(request, id):
     context['interesting_subdomain'] = get_interesting_subdomains(target=id)
     context['interesting_endpoint'] = get_interesting_endpoint(target=id)
     context['scan_history'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-last_scan_date')
+        domain_name=id).order_by('-start_scan_date')
     return render(request, 'target/summary.html', context)

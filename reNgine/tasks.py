@@ -57,7 +57,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         task.scan_status = -1
         task.scan_type = engine_object
         task.celery_id = doScan.request.id
-        task.last_scan_date = current_scan_time
+        task.scan_start_date = current_scan_time
         task.save()
     elif scan_type == 0:
         domain = Domain.objects.get(pk=domain_id)
@@ -69,7 +69,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
     # once the celery task starts, change the task status to Started
     task.scan_status = 1
-    task.last_scan_date = current_scan_time
+    task.scan_start_date = current_scan_time
     # task.whois = get_whois(domain.domain_name)
     task.save()
 

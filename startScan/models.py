@@ -1,16 +1,19 @@
+import datetime
+
 from django.db import models
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 from django.db.models import JSONField
-
+from django.utils import timezone
 
 class ScanHistory(models.Model):
-    last_scan_date = models.DateTimeField()
+    start_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
     domain_name = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
     whois_json = JSONField(null=True)
+    stop_scan_date = models.DateTimeField(null=True)
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
@@ -50,6 +53,10 @@ class ScanHistory(models.Model):
         return VulnerabilityScan.objects.filter(
             vulnerability_of__id=self.id).filter(
             severity=4).count()
+
+    def get_elapsed_time(self):
+        now = timezone.make_aware(datetime.datetime.now(), timezone.get_default_timezone())
+        return self.last_scan_date - now
 
 
 class ScannedHost(models.Model):

@@ -59,8 +59,8 @@ List all Target for Recon
                   <td>{{ domain.domain_name }}</td>
                   <td>{{ domain.domain_description }}</td>
                   <td>{{ domain.insert_date }}</td>
-                  {% if domain.last_scan_date %}
-                  <td class="text-center">{{domain.last_scan_date}}</td>
+                  {% if domain.start_scan_date %}
+                  <td class="text-center">{{domain.start_scan_date}}</td>
                   {% else %}
                   <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
                   {% endif %}

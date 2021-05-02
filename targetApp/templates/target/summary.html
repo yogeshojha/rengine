@@ -77,7 +77,7 @@ Target Summary for {{target.domain_name}}
                             {% for scan in scan_history %}
                             <tr>
                               <td>{{scan.scan_type}}</td>
-                              <td>{{scan.last_scan_date}}</td>
+                              <td>{{scan.start_scan_date}}</td>
                               <td class="text-center">
                                 {% if scan.scan_status == -1 %}
                                 <span class="shadow-none badge badge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
@@ -408,7 +408,7 @@ Target Summary for {{target.domain_name}}
                   </div>
                   <div class="t-name">
                     <h4>{{item.domain_name}}</h4>
-                    <p class="meta-date">{{item.last_scan_date|naturaltime}}</p>
+                    <p class="meta-date">{{item.start_scan_date|naturaltime}}</p>
                   </div>
 
                 </div>

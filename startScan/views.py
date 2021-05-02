@@ -23,7 +23,7 @@ from reNgine.common_func import *
 
 
 def scan_history(request):
-    host = ScanHistory.objects.all().order_by('-last_scan_date')
+    host = ScanHistory.objects.all().order_by('-start_scan_date')
     context = {'scan_history_active': 'true', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
@@ -73,7 +73,7 @@ def detail_scan(request, id=None):
         if ScanHistory.objects.filter(domain_name=domain_id).filter(
                 scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
 
-            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__subdomain_discovery=True).filter(scan_status=2).filter(id__lt=id).order_by('-last_scan_date')[0]
+            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__subdomain_discovery=True).filter(scan_status=2).filter(id__lt=id).order_by('-start_scan_date')[0]
 
             scanned_host_q1 = ScannedHost.objects.filter(scan_history__id=id).values('subdomain')
             scanned_host_q2 = ScannedHost.objects.filter(scan_history__id=last_scan.id).values('subdomain')
@@ -86,7 +86,7 @@ def detail_scan(request, id=None):
                 domain_name=domain_id).filter(
                 scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
-            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__fetch_url=True).filter(scan_status=2).filter(id__lt=id).order_by('-last_scan_date')[0]
+            last_scan = ScanHistory.objects.filter(domain_name=domain_id).filter(scan_type__fetch_url=True).filter(scan_status=2).filter(id__lt=id).order_by('-start_scan_date')[0]
 
             endpoint_q1 = WayBackEndPoint.objects.filter(url_of__id=id).values('http_url')
             endpoint_q2 = WayBackEndPoint.objects.filter(url_of__id=last_scan.id).values('http_url')
@@ -200,7 +200,7 @@ def export_subdomains(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="subdomains_' + \
         domain_results.domain_name.domain_name + '_' + \
-        str(domain_results.last_scan_date.date()) + '.txt"'
+        str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
 
@@ -213,7 +213,7 @@ def export_endpoints(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="endpoints_' + \
         domain_results.domain_name.domain_name + '_' + \
-        str(domain_results.last_scan_date.date()) + '.txt"'
+        str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
 
@@ -227,7 +227,7 @@ def export_urls(request, scan_id):
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="urls_' + \
         domain_results.domain_name.domain_name + '_' + \
-        str(domain_results.last_scan_date.date()) + '.txt"'
+        str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
 
@@ -235,7 +235,7 @@ def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
         delete_dir = obj.domain_name.domain_name + '_' + \
-            str(datetime.strftime(obj.last_scan_date, '%Y_%m_%d_%H_%M_%S'))
+            str(datetime.strftime(obj.start_scan_date, '%Y_%m_%d_%H_%M_%S'))
         delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
         os.system('rm -rf ' + delete_path)
         obj.delete()
@@ -409,9 +409,9 @@ def create_scan_object(host_id, engine_type):
     task.scan_status = -1
     task.domain_name = domain
     task.scan_type = engine_object
-    task.last_scan_date = current_scan_time
+    task.start_scan_date = current_scan_time
     task.save()
     # save last scan date for domain model
-    domain.last_scan_date = current_scan_time
+    domain.start_scan_date = current_scan_time
     domain.save()
     return task.id

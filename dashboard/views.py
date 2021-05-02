@@ -26,9 +26,9 @@ def index(request):
     endpoint_alive_count = \
         WayBackEndPoint.objects.filter(http_status__exact=200).count()
     recent_completed_scans = ScanHistory.objects.all().order_by(
-        '-last_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
+        '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
     currently_scanning = ScanHistory.objects.order_by(
-        '-last_scan_date').filter(scan_status=1)[:5]
+        '-start_scan_date').filter(scan_status=1)[:5]
     pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
     info_count = VulnerabilityScan.objects.filter(severity=0).count()
     low_count = VulnerabilityScan.objects.filter(severity=1).count()
@@ -65,8 +65,8 @@ def index(request):
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
     count_scans_by_date = ScanHistory.objects.filter(
-        last_scan_date__gte=last_week).annotate(
-        date=TruncDay('last_scan_date')).values("date").annotate(
+        start_scan_date__gte=last_week).annotate(
+        date=TruncDay('start_scan_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
     count_endpoints_by_date = WayBackEndPoint.objects.filter(
         discovered_date__gte=last_week).annotate(
