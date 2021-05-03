@@ -262,3 +262,11 @@ div.dataTables_wrapper div.dataTables_filter {
   width: 420px;
   color: #fff;
 }
+
+
+.new-control.new-checkbox .new-control-indicator {
+  top: 0;
+  height: 22px;
+  width: 22px;
+  border-radius: 50%;
+}

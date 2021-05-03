@@ -97,7 +97,7 @@ table.dataTable {
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 1px;
-  white-space: nowrap; }
+}
 
 .dataTable.table-striped.table > thead > tr > th {
   background: transparent;
@@ -120,7 +120,7 @@ table.dataTable {
   padding: 10px 21px 10px 21px;
   color: #515365;
   letter-spacing: normal;
-  white-space: nowrap; }
+}
 
 .table-striped tbody tr:nth-of-type(odd) {
   background-color: transparent !important; }
@@ -207,7 +207,6 @@ div.dataTables_wrapper div.dataTables_length label {
 
 div.dataTables_wrapper div.dataTables_paginate {
   margin: 0;
-  white-space: nowrap;
   text-align: right;
   display: inline-block; }
 
