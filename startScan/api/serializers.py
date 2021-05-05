@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from startScan.models import Subdomain, ScanHistory, EndPoint, VulnerabilityScan
+from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 
 from reNgine.common_func import *
 
@@ -30,21 +30,21 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 
     severity = serializers.SerializerMethodField()
 
-    def get_discovered_date(self, VulnerabilityScan):
-        return VulnerabilityScan.discovered_date.strftime("%b %d, %Y %H:%M")
+    def get_discovered_date(self, Vulnerability):
+        return Vulnerability.discovered_date.strftime("%b %d, %Y %H:%M")
 
-    def get_severity(self, VulnerabilityScan):
-        if VulnerabilityScan.severity == 0:
+    def get_severity(self, Vulnerability):
+        if Vulnerability.severity == 0:
             return "Info"
-        elif VulnerabilityScan.severity == 1:
+        elif Vulnerability.severity == 1:
             return "Low"
-        elif VulnerabilityScan.severity == 2:
+        elif Vulnerability.severity == 2:
             return "Medium"
-        elif VulnerabilityScan.severity == 3:
+        elif Vulnerability.severity == 3:
             return "High"
-        elif VulnerabilityScan.severity == 4:
+        elif Vulnerability.severity == 4:
             return "Critical"
 
     class Meta:
-        model = VulnerabilityScan
+        model = Vulnerability
         fields = '__all__'

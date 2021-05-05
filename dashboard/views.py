@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from targetApp.models import Domain
-from startScan.models import ScanHistory, EndPoint, Subdomain, VulnerabilityScan, ScanActivity
+from startScan.models import ScanHistory, EndPoint, Subdomain, Vulnerability, ScanActivity
 
 from django.utils import timezone
 from django.shortcuts import render, redirect
@@ -30,12 +30,12 @@ def index(request):
     currently_scanning = ScanHistory.objects.order_by(
         '-start_scan_date').filter(scan_status=1)[:5]
     pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
-    info_count = VulnerabilityScan.objects.filter(severity=0).count()
-    low_count = VulnerabilityScan.objects.filter(severity=1).count()
-    medium_count = VulnerabilityScan.objects.filter(severity=2).count()
-    high_count = VulnerabilityScan.objects.filter(severity=3).count()
-    critical_count = VulnerabilityScan.objects.filter(severity=4).count()
-    vulnerability_feed = VulnerabilityScan.objects.all().order_by(
+    info_count = Vulnerability.objects.filter(severity=0).count()
+    low_count = Vulnerability.objects.filter(severity=1).count()
+    medium_count = Vulnerability.objects.filter(severity=2).count()
+    high_count = Vulnerability.objects.filter(severity=3).count()
+    critical_count = Vulnerability.objects.filter(severity=4).count()
+    vulnerability_feed = Vulnerability.objects.all().order_by(
         '-discovered_date')[:20]
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
@@ -48,7 +48,7 @@ def index(request):
     #             :5]
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
         'scanhistory__Subdomain__vulnerabilityscan__name')).order_by('-num_vul')[:7]
-    most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
+    most_common_vulnerability = Vulnerability.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)
 
@@ -60,7 +60,7 @@ def index(request):
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_vulns_by_date = VulnerabilityScan.objects.filter(
+    count_vulns_by_date = Vulnerability.objects.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")

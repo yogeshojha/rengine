@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core import serializers
 
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, VulnerabilityScan
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Vulnerability
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -44,17 +44,17 @@ def detail_scan(request, id=None):
         context['endpoint_alive_count'] = EndPoint.objects.filter(
             scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
         context['history'] = get_object_or_404(ScanHistory, id=id)
-        info_count = VulnerabilityScan.objects.filter(
+        info_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=0).count()
-        low_count = VulnerabilityScan.objects.filter(
+        low_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=1).count()
-        medium_count = VulnerabilityScan.objects.filter(
+        medium_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=2).count()
-        high_count = VulnerabilityScan.objects.filter(
+        high_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=3).count()
-        critical_count = VulnerabilityScan.objects.filter(
+        critical_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=4).count()
-        context['vulnerability_list'] = VulnerabilityScan.objects.filter(
+        context['vulnerability_list'] = Vulnerability.objects.filter(
             scan_history__id=id).order_by('-severity').all()[:20]
         context['total_vulnerability_count'] = info_count + low_count + \
             medium_count + high_count + critical_count
@@ -400,7 +400,7 @@ def change_scheduled_task_status(request, id):
 
 def change_vuln_status(request, id):
     if request.method == 'POST':
-        vuln = VulnerabilityScan.objects.get(id=id)
+        vuln = Vulnerability.objects.get(id=id)
         vuln.open_status = not vuln.open_status
         vuln.save()
     return HttpResponse('')

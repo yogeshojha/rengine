@@ -26,31 +26,31 @@ class ScanHistory(models.Model):
         return EndPoint.objects.filter(scan_history__id=self.id).count()
 
     def get_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).count()
 
     def get_info_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=0).count()
 
     def get_low_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=1).count()
 
     def get_medium_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=2).count()
 
     def get_high_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=3).count()
 
     def get_critical_vulnerability_count(self):
-        return VulnerabilityScan.objects.filter(
+        return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=4).count()
 
@@ -113,17 +113,16 @@ class EndPoint(models.Model):
         return self.page_title
 
 
-class VulnerabilityScan(models.Model):
+class Vulnerability(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     endpoint = models.ForeignKey(EndPoint, on_delete=models.CASCADE, blank=True, null=True)
     domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
     discovered_date = models.DateTimeField(null=True)
-    host = models.CharField(max_length=1000)
+    http_url = models.CharField(max_length=8000, null=True)
     name = models.CharField(max_length=400)
     severity = models.IntegerField()
     description = models.CharField(max_length=1000, null=True, blank=True)
-    extracted_results = models.CharField(
-        max_length=1000, null=True, blank=True)
+    extracted_results = models.CharField(max_length=1000, null=True, blank=True)
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)

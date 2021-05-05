@@ -10,7 +10,7 @@ import tldextract
 from celery import shared_task
 from discord_webhook import DiscordWebhook
 from reNgine.celery import app
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, VulnerabilityScan
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Vulnerability
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType
@@ -133,7 +133,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
 
         if(task.scan_type.vulnerability_scan):
             update_last_activity(activity_id, 2)
-            activity_id = create_scan_activity(task, "Fetching endpoints", 1)
+            activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
             vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
@@ -763,11 +763,11 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
             lines = urls_json_result.readlines()
             for line in lines:
                 json_st = json.loads(line.strip())
-                vulnerability = VulnerabilityScan()
+                vulnerability = Vulnerability()
                 vulnerability.scan_history = task
                 vulnerability.target_domain = domain
                 # Get Domain name from URL for Foreign Key Host
-                url = json_st['matched']
+                url = json_st['host']
                 endpoint = EndPoint.objects.get(scan_history=task, target_domain=domain, http_url=url)
                 vulnerability.endpoint = endpoint
                 if 'name' in json_st['info']:
@@ -788,8 +788,8 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
                 else:
                     severity = 0
                 vulnerability.severity = severity
-                if 'host' in json_st:
-                    vulnerability.host = json_st['host']
+                if 'matched' in json_st:
+                    vulnerability.http_url = json_st['matched']
                 if 'templateID' in json_st:
                     vulnerability.template_used = json_st['templateID']
                 if 'description' in json_st:

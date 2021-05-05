@@ -1,6 +1,6 @@
 from startScan.api.serializers import ScanHistorySerializer, EndpointSerializer, VulnerabilitySerializer
 from rest_framework import viewsets
-from startScan.models import Subdomain, ScanHistory, EndPoint, VulnerabilityScan
+from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
@@ -352,7 +352,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
-    queryset = VulnerabilityScan.objects.all().order_by('-discovered_date')
+    queryset = Vulnerability.objects.all().order_by('-discovered_date')
     serializer_class = VulnerabilitySerializer
 
     def get_queryset(self):
@@ -361,16 +361,16 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         url_query = req.query_params.get('query_param')
         if url_query:
             if url_query.isnumeric():
-                self.queryset = VulnerabilityScan.objects.filter(
+                self.queryset = Vulnerability.objects.filter(
                     Q(
                         vulnerability_of__domain_name__domain_name=url_query) | Q(
                         name=url_query) | Q(
                         id=url_query))
             else:
-                self.queryset = VulnerabilityScan.objects.filter(
+                self.queryset = Vulnerability.objects.filter(
                     Q(vulnerability_of__domain_name__domain_name=url_query) | Q(name=url_query))
         elif vulnerability_of:
-            self.queryset = VulnerabilityScan.objects.filter(
+            self.queryset = Vulnerability.objects.filter(
                 vulnerability_of__id=vulnerability_of)
         return self.queryset
 
@@ -405,7 +405,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     if query.strip():
                         qs = qs & self.special_lookup(query.strip())
             elif '|' in search_value:
-                qs = VulnerabilityScan.objects.none()
+                qs = Vulnerability.objects.none()
                 complex_query = search_value.split('|')
                 for query in complex_query:
                     if query.strip():
@@ -419,7 +419,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
             Q(discovered_date__icontains=search_value) |
-            Q(url__icontains=search_value) |
+            Q(http_url__icontains=search_value) |
             Q(name__icontains=search_value) |
             Q(severity__icontains=search_value) |
             Q(description__icontains=search_value) |
