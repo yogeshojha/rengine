@@ -1,6 +1,6 @@
 from startScan.api.serializers import ScanHistorySerializer, EndpointSerializer, VulnerabilitySerializer
 from rest_framework import viewsets
-from startScan.models import ScannedHost, ScanHistory, WayBackEndPoint, VulnerabilityScan
+from startScan.models import Subdomain, ScanHistory, EndPoint, VulnerabilityScan
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
@@ -8,7 +8,7 @@ from django.db.models import Q
 
 
 class ScanHistoryViewSet(viewsets.ModelViewSet):
-    queryset = ScannedHost.objects.all()
+    queryset = Subdomain.objects.all()
     serializer_class = ScanHistorySerializer
 
     def get_queryset(self):
@@ -17,10 +17,10 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
 
         url_query = req.query_params.get('query_param')
         if url_query:
-            self.queryset = ScannedHost.objects.filter(
+            self.queryset = Subdomain.objects.filter(
                 Q(target_domain__domain_name=url_query))
         elif scan_id:
-            self.queryset = ScannedHost.objects.filter(
+            self.queryset = Subdomain.objects.filter(
                 scan_history__id=scan_id)
             return self.queryset
         else:
@@ -35,7 +35,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
         if _order_col == '0':
             order_col = 'checked'
         elif _order_col == '1':
-            order_col = 'subdomain'
+            order_col = 'name'
         elif _order_col == '2':
             order_col = 'ip_address'
         elif _order_col == '3':
@@ -59,7 +59,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
                     if query.strip():
                         qs = qs & self.special_lookup(query.strip())
             elif '|' in search_value:
-                qs = ScannedHost.objects.none()
+                qs = Subdomain.objects.none()
                 complex_query = search_value.split('|')
                 for query in complex_query:
                     if query.strip():
@@ -73,7 +73,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
             Q(discovered_date__icontains=search_value) |
-            Q(subdomain__icontains=search_value) |
+            Q(name__icontains=search_value) |
             Q(cname__icontains=search_value) |
             Q(open_ports__icontains=search_value) |
             Q(http_status__icontains=search_value) |
@@ -98,7 +98,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             search_param = search_value.split("=")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
-            if 'subdomain' in lookup_title:
+            if 'name' in lookup_title:
                 qs = self.queryset.filter(subdomain__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.filter(cname__icontains=lookup_content)
@@ -167,7 +167,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             search_param = search_value.split("!")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
-            if 'subdomain' in lookup_title:
+            if 'name' in lookup_title:
                 qs = self.queryset.exclude(subdomain__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.exclude(cname__icontains=lookup_content)
@@ -200,25 +200,25 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
 
 
 class EndPointViewSet(viewsets.ModelViewSet):
-    queryset = WayBackEndPoint.objects.all()
+    queryset = EndPoint.objects.all()
     serializer_class = EndpointSerializer
 
     def get_queryset(self):
         req = self.request
-        url_of = req.query_params.get('url_of')
+        scan_history = req.query_params.get('scan_history')
         url_query = req.query_params.get('query_param')
         if url_query:
             if url_query.isnumeric():
-                self.queryset = WayBackEndPoint.objects.filter(
+                self.queryset = EndPoint.objects.filter(
                     Q(
-                        url_of__domain_name__domain_name=url_query) | Q(
+                        scan_history__domain_name__domain_name=url_query) | Q(
                         http_url=url_query) | Q(
                         id=url_query))
             else:
-                self.queryset = WayBackEndPoint.objects.filter(
-                    Q(url_of__domain_name__domain_name=url_query) | Q(http_url=url_query))
-        elif url_of:
-            self.queryset = WayBackEndPoint.objects.filter(url_of__id=url_of)
+                self.queryset = EndPoint.objects.filter(
+                    Q(scan_history__domain_name__domain_name=url_query) | Q(http_url=url_query))
+        elif scan_history:
+            self.queryset = EndPoint.objects.filter(scan_history__id=scan_history)
             return self.queryset
         else:
             return self.queryset
@@ -250,7 +250,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
                     if query.strip():
                         qs = qs & self.special_lookup(query.strip())
             elif '|' in search_value:
-                qs = ScannedHost.objects.none()
+                qs = Subdomain.objects.none()
                 complex_query = search_value.split('|')
                 for query in complex_query:
                     if query.strip():

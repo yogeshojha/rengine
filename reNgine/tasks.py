@@ -10,7 +10,7 @@ import tldextract
 from celery import shared_task
 from discord_webhook import DiscordWebhook
 from reNgine.celery import app
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, VulnerabilityScan
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType
@@ -29,7 +29,7 @@ from django.shortcuts import get_object_or_404
 from reNgine.celery import app
 from reNgine.definitions import *
 
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType, Configuration, Wordlist
@@ -109,7 +109,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
         alive_file_location = results_dir + '/alive.txt'
-        http_crawler(task, results_dir, alive_file_location, activity_id)
+        http_crawler(task, domain, results_dir, alive_file_location, activity_id)
 
         if VISUAL_IDENTIFICATION in yaml_configuration:
             update_last_activity(activity_id, 2)
@@ -135,16 +135,21 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
             vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id)
-        '''
-        Once the scan is completed, save the status to successful
-        '''
-        task.scan_status = 2
-        task.stop_scan_date = timezone.now()
-        task.save()
 
-    send_notification("reEngine finished scanning " + domain.domain_name)
-    update_last_activity(activity_id, 2)
     activity_id = create_scan_activity(task, "Scan Completed", 2)
+    update_last_activity(activity_id, 2)
+
+    '''
+    Once the scan is completed, save the status to successful
+    '''
+    if ScanActivity.objects.filter(scan_of=task).filter(status=0).all():
+        task.scan_status = 0
+    else:
+        task.scan_status = 2
+    task.stop_scan_date = timezone.now()
+    task.save()
+    send_notification("reEngine finished scanning " + domain.domain_name)
+
     return {"status": True}
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
@@ -312,20 +317,15 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     # parse the subdomain list file and store in db
     with open(subdomain_scan_results_file) as subdomain_list:
-        for subdomain in subdomain_list:
-            if(subdomain.rstrip('\n') in excluded_subdomains):
+        for _subdomain in subdomain_list:
+            if(_subdomain.rstrip('\n') in excluded_subdomains):
                 continue
-            '''
-            subfinder sometimes produces weird super long subdomain
-            output which is likely to crash the scan, so validate
-            subdomains before saving
-            '''
-            if validators.domain(subdomain.rstrip('\n')):
-                scanned = ScannedHost()
-                scanned.subdomain = subdomain.rstrip('\n')
-                scanned.scan_history = task
-                scanned.target_domain = domain
-                scanned.save()
+            if validators.domain(_subdomain.rstrip('\n')):
+                subdomain = Subdomain()
+                subdomain.scan_history = task
+                subdomain.target_domain = domain
+                subdomain.name = _subdomain.rstrip('\n')
+                subdomain.save()
 
 def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
     '''
@@ -334,13 +334,13 @@ def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
     only_subdomain_file.write(domain.domain_name + "\n")
     only_subdomain_file.close()
 
-    scanned = ScannedHost()
+    scanned = Subdomain()
     scanned.subdomain = domain.domain_name
     scanned.scan_history = task
     scanned.target_domain = domain
     scanned.save()
 
-def http_crawler(task, results_dir, alive_file_location, activity_id):
+def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
     '''
     This function is runs right after subdomain gathering, and gathers important
     like page title, http status, etc
@@ -358,33 +358,53 @@ def http_crawler(task, results_dir, alive_file_location, activity_id):
     alive_file = open(alive_file_location, 'w')
 
     # writing httpx results
-    httpx_json_result = open(httpx_results_file, 'r')
-    lines = httpx_json_result.readlines()
-    for line in lines:
-        json_st = json.loads(line.strip())
-        try:
-            sub_domain = ScannedHost.objects.get(
-                scan_history=task, subdomain=json_st['url'].split("//")[-1])
-            if 'url' in json_st:
-                sub_domain.http_url = json_st['url']
-            if 'status-code' in json_st:
-                sub_domain.http_status = json_st['status-code']
-            if 'title' in json_st:
-                sub_domain.page_title = json_st['title']
-            if 'content-length' in json_st:
-                sub_domain.content_length = json_st['content-length']
-            if 'ip' in json_st:
-                sub_domain.ip_address = json_st['ip']
-            if 'cdn' in json_st:
-                sub_domain.is_ip_cdn = json_st['cdn']
-            if 'cnames' in json_st:
-                cname_list = ','.join(json_st['cnames'])
-                sub_domain.cname = cname_list
-            sub_domain.discovered_date = timezone.now()
-            sub_domain.save()
-            alive_file.write(json_st['url'] + '\n')
-        except Exception as exception:
-            logging.error(exception)
+    if os.path.isfile(httpx_results_file):
+        httpx_json_result = open(httpx_results_file, 'r')
+        lines = httpx_json_result.readlines()
+        for line in lines:
+            json_st = json.loads(line.strip())
+            try:
+                subdomain = Subdomain.objects.get(scan_history=task, name=json_st['url'].split("//")[-1])
+                if 'url' in json_st:
+                    subdomain.http_url = json_st['url']
+                if 'status-code' in json_st:
+                    subdomain.http_status = json_st['status-code']
+                if 'title' in json_st:
+                    subdomain.page_title = json_st['title']
+                if 'content-length' in json_st:
+                    subdomain.content_length = json_st['content-length']
+                if 'ip' in json_st:
+                    subdomain.ip_address = json_st['ip']
+                if 'cdn' in json_st:
+                    subdomain.is_ip_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    subdomain.cname = cname_list
+                subdomain.discovered_date = timezone.now()
+                subdomain.save()
+                alive_file.write(json_st['url'] + '\n')
+                '''
+                Saving Default http urls to EndPoint
+                '''
+                endpoint = EndPoint()
+                endpoint.scan_history = task
+                endpoint.target_domain = domain
+                endpoint.subdomain = subdomain
+                if 'url' in json_st:
+                    endpoint.http_url = json_st['url']
+                if 'status-code' in json_st:
+                    endpoint.http_status = json_st['status-code']
+                if 'title' in json_st:
+                    endpoint.page_title = json_st['title']
+                if 'content-length' in json_st:
+                    endpoint.content_length = json_st['content-length']
+                if 'content-type' in json_st:
+                    endpoint.conteny_type = json_st['content-type']
+                endpoint.discovered_date = timezone.now()
+                endpoint.save()
+            except Exception as exception:
+                logging.error(exception)
+                update_last_activity(activity_id, 0)
 
     alive_file.close()
 
@@ -439,7 +459,7 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
                 data = json.load(json_file)
 
             for host in data['pages']:
-                sub_domain = ScannedHost.objects.get(
+                sub_domain = Subdomain.objects.get(
                     scan_history__id=task.id,
                     subdomain=data['pages'][host]['hostname'])
                 # list_ip = data['pages'][host]['addrs']
@@ -514,7 +534,7 @@ def port_scanning(task, yaml_configuration, results_dir, activity_id):
                 json_st = json.loads(line.strip())
             except Exception as exception:
                 json_st = "{'host':'','port':''}"
-            sub_domain = ScannedHost.objects.get(
+            sub_domain = Subdomain.objects.get(
                 scan_history=task, subdomain=json_st['host'])
             if sub_domain.open_ports:
                 sub_domain.open_ports = sub_domain.open_ports + \
@@ -547,7 +567,7 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
     '''
     # scan directories for all the alive subdomain with http status >
     # 200
-    alive_subdomains = ScannedHost.objects.filter(scan_history__id=task.id).exclude(http_url='')
+    alive_subdomains = Subdomain.objects.filter(scan_history__id=task.id).exclude(http_url='')
     dirs_results = results_dir + '/dirs.json'
 
     # check the yaml settings
@@ -590,7 +610,7 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
             if os.path.isfile(dirs_results):
                 with open(dirs_results, "r") as json_file:
                     json_string = json_file.read()
-                    scanned_host = ScannedHost.objects.get(
+                    scanned_host = Subdomain.objects.get(
                         scan_history__id=task.id, http_url=subdomain.http_url)
                     scanned_host.directory_json = json_string
                     scanned_host.save()
@@ -619,9 +639,7 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
         with open(subdomain_scan_results_file) as subdomain_list:
             for subdomain in subdomain_list:
                 if validators.domain(subdomain.rstrip('\n')):
-                    print('-' * 20)
                     print('Fetching URL for ' + subdomain.rstrip('\n'))
-                    print('-' * 20)
                     os.system(
                         settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
                         (subdomain.rstrip('\n'), results_dir, tools))
@@ -632,8 +650,8 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
                     lines = urls_json_result.readlines()
                     for line in lines:
                         json_st = json.loads(line.strip())
-                        endpoint = WayBackEndPoint()
-                        endpoint.url_of = task
+                        endpoint = EndPoint()
+                        endpoint.scan_history = task
                         if 'url' in json_st:
                             endpoint.http_url = json_st['url']
                         if 'content-length' in json_st:
@@ -652,24 +670,28 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
 
         url_results_file = results_dir + '/final_httpx_urls.json'
 
-        urls_json_result = open(url_results_file, 'r')
-        lines = urls_json_result.readlines()
-        for line in lines:
-            json_st = json.loads(line.strip())
-            endpoint = WayBackEndPoint()
-            endpoint.url_of = task
-            if 'url' in json_st:
-                endpoint.http_url = json_st['url']
-            if 'content-length' in json_st:
-                endpoint.content_length = json_st['content-length']
-            if 'status-code' in json_st:
-                endpoint.http_status = json_st['status-code']
-            if 'title' in json_st:
-                endpoint.page_title = json_st['title']
-            if 'content-type' in json_st:
-                endpoint.content_type = json_st['content-type']
-            endpoint.discovered_date = timezone.now()
-            endpoint.save()
+        try:
+            urls_json_result = open(url_results_file, 'r')
+            lines = urls_json_result.readlines()
+            for line in lines:
+                json_st = json.loads(line.strip())
+                endpoint = EndPoint()
+                endpoint.scan_history = task
+                if 'url' in json_st:
+                    endpoint.http_url = json_st['url']
+                if 'content-length' in json_st:
+                    endpoint.content_length = json_st['content-length']
+                if 'status-code' in json_st:
+                    endpoint.http_status = json_st['status-code']
+                if 'title' in json_st:
+                    endpoint.page_title = json_st['title']
+                if 'content-type' in json_st:
+                    endpoint.content_type = json_st['content-type']
+                endpoint.discovered_date = timezone.now()
+                endpoint.save()
+        except Exception as exception:
+            logging.error(exception)
+            update_last_activity(activity_id, 0)
 
 def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
@@ -742,16 +764,12 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
             for line in lines:
                 json_st = json.loads(line.strip())
                 vulnerability = VulnerabilityScan()
-                vulnerability.vulnerability_of = task
+                vulnerability.scan_history = task
+                vulnerability.target_domain = domain
                 # Get Domain name from URL for Foreign Key Host
                 url = json_st['matched']
-                extracted = tldextract.extract(url)
-                subdomain = '.'.join(extracted[:4])
-                if subdomain[0] == '.':
-                    subdomain = subdomain[1:]
-                _subdomain = ScannedHost.objects.get(
-                    subdomain=subdomain, scan_history=task)
-                vulnerability.host = _subdomain
+                endpoint = EndPoint.objects.get(scan_history=task, target_domain=domain, http_url=url)
+                vulnerability.endpoint = endpoint
                 if 'name' in json_st['info']:
                     vulnerability.name = json_st['info']['name']
                 if 'severity' in json_st['info']:
@@ -770,28 +788,25 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
                 else:
                     severity = 0
                 vulnerability.severity = severity
-                if 'matched' in json_st:
-                    vulnerability.url = json_st['matched']
+                if 'host' in json_st:
+                    vulnerability.host = json_st['host']
                 if 'templateID' in json_st:
                     vulnerability.template_used = json_st['templateID']
                 if 'description' in json_st:
                     vulnerability.description = json_st['description']
                 if 'matcher_name' in json_st:
                     vulnerability.matcher_name = json_st['matcher_name']
+                if 'extracted_results' in json_st:
+                    vulnerability.extracted_results = json_st['extracted_results']
                 vulnerability.discovered_date = timezone.now()
                 vulnerability.open_status = True
-                vulnerability.target_domain = domain
                 vulnerability.save()
                 send_notification(
                     "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
                         json_st['info']['name'], json_st['info']['severity'], domain.domain_name, json_st['matched']))
     except Exception as exception:
-        print('-' * 30)
-        print(traceback.format_exc())
-        print('-' * 30)
+        logging.error(exception)
         update_last_activity(activity_id, 0)
-
-
 
 def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)

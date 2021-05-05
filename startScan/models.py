@@ -20,38 +20,38 @@ class ScanHistory(models.Model):
         return self.domain_name.domain_name
 
     def get_subdomain_count(self):
-        return ScannedHost.objects.filter(scan_history__id=self.id).count()
+        return Subdomain.objects.filter(scan_history__id=self.id).count()
 
     def get_endpoint_count(self):
-        return WayBackEndPoint.objects.filter(url_of__id=self.id).count()
+        return EndPoint.objects.filter(scan_history__id=self.id).count()
 
     def get_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).count()
+            scan_history__id=self.id).count()
 
     def get_info_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).filter(
+            scan_history__id=self.id).filter(
             severity=0).count()
 
     def get_low_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).filter(
+            scan_history__id=self.id).filter(
             severity=1).count()
 
     def get_medium_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).filter(
+            scan_history__id=self.id).filter(
             severity=2).count()
 
     def get_high_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).filter(
+            scan_history__id=self.id).filter(
             severity=3).count()
 
     def get_critical_vulnerability_count(self):
         return VulnerabilityScan.objects.filter(
-            vulnerability_of__id=self.id).filter(
+            scan_history__id=self.id).filter(
             severity=4).count()
 
     def get_completed_time(self):
@@ -75,10 +75,11 @@ class ScanHistory(models.Model):
         return '{} hours {} minutes'.format(hours, minutes)
 
 
-class ScannedHost(models.Model):
-    subdomain = models.CharField(max_length=1000)
-    cname = models.CharField(max_length=500, blank=True)
+class Subdomain(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    name = models.CharField(max_length=1000)
+    cname = models.CharField(max_length=500, blank=True)
     open_ports = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
     content_length = models.IntegerField(default=0)
@@ -92,37 +93,32 @@ class ScannedHost(models.Model):
     directory_json = JSONField(null=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return str(self.subdomain)
+        return str(self.name)
 
 
-class WayBackEndPoint(models.Model):
-    url_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+class EndPoint(models.Model):
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE, null=True, blank=True)
     http_url = models.CharField(max_length=5000)
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.page_title
 
 
 class VulnerabilityScan(models.Model):
-    vulnerability_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    host = models.ForeignKey(
-        ScannedHost,
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True)
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    endpoint = models.ForeignKey(EndPoint, on_delete=models.CASCADE, blank=True, null=True)
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
     discovered_date = models.DateTimeField(null=True)
-    url = models.CharField(max_length=1000)
+    host = models.CharField(max_length=1000)
     name = models.CharField(max_length=400)
     severity = models.IntegerField()
     description = models.CharField(max_length=1000, null=True, blank=True)
@@ -131,8 +127,6 @@ class VulnerabilityScan(models.Model):
     template_used = models.CharField(max_length=100)
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name

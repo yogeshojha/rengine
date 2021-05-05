@@ -76,12 +76,12 @@ $(document).ready(function() {
     "pageLength": 20,
     'serverSide': true,
     {% if scan_history_id %}
-    "ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
+    "ajax": '/start_scan/api/listEndpoints/?scan_history={{scan_history_id}}&format=datatables',
     {% else %}
     {% if request.GET.query %}
-		"ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables&query_param={{request.GET.query}}',
+		"ajax": '/start_scan/api/listEndpoints/?scan_history=&format=datatables&query_param={{request.GET.query}}',
     {% else %}
-    "ajax": '/start_scan/api/listEndpoints/?url_of=&format=datatables',
+    "ajax": '/start_scan/api/listEndpoints/?scan_history=&format=datatables',
     {% endif %}
     {% endif %}
     "order": [[ 3, "desc" ]],

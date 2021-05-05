@@ -9,7 +9,7 @@ from functools import reduce
 from django import http
 from django.shortcuts import render, get_object_or_404
 from .models import Domain
-from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
+from startScan.models import ScanHistory, EndPoint, Subdomain, VulnerabilityScan, ScanActivity
 from scanEngine.models import InterestingLookupModel
 from django.contrib import messages
 from targetApp.forms import AddTargetForm, UpdateTargetForm
@@ -181,9 +181,9 @@ def target_summary(request, id):
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = ScanHistory.objects.filter(
         domain_name_id=id, start_scan_date__gte=last_week).count()
-    subdomain_count = ScannedHost.objects.filter(
+    subdomain_count = Subdomain.objects.filter(
         target_domain__id=id).values('subdomain').distinct().count()
-    endpoint_count = WayBackEndPoint.objects.filter(
+    endpoint_count = EndPoint.objects.filter(
         target_domain__id=id).values('http_url').distinct().count()
     vulnerability_count = VulnerabilityScan.objects.filter(
         target_domain__id=id).count()
@@ -196,10 +196,10 @@ def target_summary(request, id):
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
             scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-start_scan_date')
 
-        scanned_host_q1 = ScannedHost.objects.filter(
+        scanned_host_q1 = Subdomain.objects.filter(
             target_domain__id=id).exclude(
             scan_history__id=last_scan[0].id).values('subdomain')
-        scanned_host_q2 = ScannedHost.objects.filter(
+        scanned_host_q2 = Subdomain.objects.filter(
             scan_history__id=last_scan[0].id).values('subdomain')
 
         context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
@@ -212,10 +212,10 @@ def target_summary(request, id):
         last_scan = ScanHistory.objects.filter(domain_name=id).filter(
             scan_type__fetch_url=True).filter(scan_status=2).order_by('-start_scan_date')
 
-        endpoint_q1 = WayBackEndPoint.objects.filter(
+        endpoint_q1 = EndPoint.objects.filter(
             target_domain__id=id).exclude(
             url_of__id=last_scan[0].id).values('http_url')
-        endpoint_q2 = WayBackEndPoint.objects.filter(
+        endpoint_q2 = EndPoint.objects.filter(
             url_of__id=last_scan[0].id).values('http_url')
 
         context['new_urls'] = endpoint_q2.difference(endpoint_q1)

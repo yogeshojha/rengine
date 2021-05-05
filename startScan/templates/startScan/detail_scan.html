@@ -278,13 +278,13 @@ Detailed Scan Results for {{history.domain_name}}
 											<tbody>
 												{% for subdomain in new_subdomains %}
 												<tr>
-													<td class="text-success">{{subdomain.subdomain}}</td>
+													<td class="text-success">{{subdomain.name}}</td>
 													<td><span class="badge badge-success"> Added </span></td>
 												</tr>
 												{% endfor %}
 												{% for subdomain in removed_subdomains %}
 												<tr>
-													<td class="text-danger">{{subdomain.subdomain}}</td>
+													<td class="text-danger">{{subdomain.name}}</td>
 													<td><span class="badge badge-danger"> Removed </span></td>
 												</tr>
 												{% endfor %}
@@ -530,7 +530,7 @@ Detailed Scan Results for {{history.domain_name}}
 			"order": [[ 5, "desc" ]],
 			"columns": [
 				{'data': 'id'},
-				{'data': 'subdomain'},
+				{'data': 'name'},
 				{'data': 'ip_address'},
 				{'data': 'http_status'},
 				{'data': 'open_ports'},
@@ -653,7 +653,7 @@ Detailed Scan Results for {{history.domain_name}}
 					"render": function ( data, type, row ) {
 						if (data){
 							//return lightbox with caption as http link
-							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['subdomain']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
 						}
 						return "";
 					},
@@ -710,7 +710,7 @@ Detailed Scan Results for {{history.domain_name}}
 			"order": [[ 5, "desc" ]],
 			"columns": [
 				{'data': 'id'},
-				{'data': 'subdomain'},
+				{'data': 'name'},
 				{'data': 'http_status'},
 				{'data': 'page_title'},
 				{'data': 'directory_json'},
@@ -858,7 +858,7 @@ Detailed Scan Results for {{history.domain_name}}
 			"lengthMenu": [20, 50, 100, 500, 1000],
 			"pageLength": 20,
 			'serverSide': true,
-			"ajax": '/start_scan/api/listEndpoints/?url_of={{scan_history_id}}&format=datatables',
+			"ajax": '/start_scan/api/listEndpoints/?scan_history={{scan_history_id}}&format=datatables',
 			"order": [[ 3, "desc" ]],
 			"columns": [
 				{'data': 'http_url'},
@@ -927,7 +927,7 @@ Detailed Scan Results for {{history.domain_name}}
 			"lengthMenu": [20, 50, 100, 500, 1000],
 			"pageLength": 20,
 			'serverSide': true,
-			"ajax": '/start_scan/api/listVulnerability/?vulnerability_of={{scan_history_id}}&format=datatables',
+			"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
 			"order": [[ 2, "desc" ]],
 			"columns": [
 				{'data': 'id'},

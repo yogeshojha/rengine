@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core import serializers
 
-from startScan.models import ScanHistory, ScannedHost, ScanActivity, WayBackEndPoint, VulnerabilityScan
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, VulnerabilityScan
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -32,30 +32,30 @@ def detail_scan(request, id=None):
     context = {}
     if id:
         context['scan_history_id'] = id
-        context['subdomain_count'] = ScannedHost.objects.filter(
-            scan_history__id=id).values('subdomain').distinct().count()
-        context['alive_count'] = ScannedHost.objects.filter(
-            scan_history__id=id).values('subdomain').distinct().exclude(
+        context['subdomain_count'] = Subdomain.objects.filter(
+            scan_history__id=id).values('name').distinct().count()
+        context['alive_count'] = Subdomain.objects.filter(
+            scan_history__id=id).values('name').distinct().exclude(
             http_status__exact=0).count()
         context['scan_activity'] = ScanActivity.objects.filter(
             scan_of__id=id).order_by('-time')
-        context['endpoint_count'] = WayBackEndPoint.objects.filter(
-            url_of__id=id).values('http_url').distinct().count()
-        context['endpoint_alive_count'] = WayBackEndPoint.objects.filter(
-            url_of__id=id, http_status__exact=200).values('http_url').distinct().count()
+        context['endpoint_count'] = EndPoint.objects.filter(
+            scan_history__id=id).values('http_url').distinct().count()
+        context['endpoint_alive_count'] = EndPoint.objects.filter(
+            scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
         context['history'] = get_object_or_404(ScanHistory, id=id)
         info_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity=0).count()
+            scan_history__id=id, severity=0).count()
         low_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity=1).count()
+            scan_history__id=id, severity=1).count()
         medium_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity=2).count()
+            scan_history__id=id, severity=2).count()
         high_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity=3).count()
+            scan_history__id=id, severity=3).count()
         critical_count = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id, severity=4).count()
+            scan_history__id=id, severity=4).count()
         context['vulnerability_list'] = VulnerabilityScan.objects.filter(
-            vulnerability_of__id=id).order_by('-severity').all()[:20]
+            scan_history__id=id).order_by('-severity').all()[:20]
         context['total_vulnerability_count'] = info_count + low_count + \
             medium_count + high_count + critical_count
         context['info_count'] = info_count
@@ -82,10 +82,10 @@ def detail_scan(request, id=None):
                 scan_status=2).filter(
                 id__lt=id).order_by('-start_scan_date')[0]
 
-            scanned_host_q1 = ScannedHost.objects.filter(
-                scan_history__id=id).values('subdomain')
-            scanned_host_q2 = ScannedHost.objects.filter(
-                scan_history__id=last_scan.id).values('subdomain')
+            scanned_host_q1 = Subdomain.objects.filter(
+                scan_history__id=id).values('name')
+            scanned_host_q2 = Subdomain.objects.filter(
+                scan_history__id=last_scan.id).values('name')
 
             context['new_subdomains'] = scanned_host_q1.difference(
                 scanned_host_q2)
@@ -105,10 +105,10 @@ def detail_scan(request, id=None):
                 scan_status=2).filter(
                 id__lt=id).order_by('-start_scan_date')[0]
 
-            endpoint_q1 = WayBackEndPoint.objects.filter(
-                url_of__id=id).values('http_url')
-            endpoint_q2 = WayBackEndPoint.objects.filter(
-                url_of__id=last_scan.id).values('http_url')
+            endpoint_q1 = EndPoint.objects.filter(
+                scan_history__id=id).values('http_url')
+            endpoint_q2 = EndPoint.objects.filter(
+                scan_history__id=last_scan.id).values('http_url')
 
             context['new_urls'] = endpoint_q1.difference(endpoint_q2)
             context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
@@ -211,11 +211,11 @@ def start_multiple_scan(request):
 
 
 def export_subdomains(request, scan_id):
-    subdomain_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    subdomain_list = Subdomain.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
-    for subdomain in subdomain_list:
-        response_body = response_body + subdomain.subdomain + "\n"
+    for name in subdomain_list:
+        response_body = response_body + name.name + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="subdomains_' + \
         domain_results.domain_name.domain_name + '_' + \
@@ -224,7 +224,7 @@ def export_subdomains(request, scan_id):
 
 
 def export_endpoints(request, scan_id):
-    endpoint_list = WayBackEndPoint.objects.filter(url_of__id=scan_id)
+    endpoint_list = EndPoint.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
     for endpoint in endpoint_list:
@@ -237,7 +237,7 @@ def export_endpoints(request, scan_id):
 
 
 def export_urls(request, scan_id):
-    urls_list = ScannedHost.objects.filter(scan_history__id=scan_id)
+    urls_list = Subdomain.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
     for url in urls_list:
@@ -408,9 +408,9 @@ def change_vuln_status(request, id):
 
 def change_subdomain_status(request, id):
     if request.method == 'POST':
-        subdomain = ScannedHost.objects.get(id=id)
-        subdomain.checked = not subdomain.checked
-        subdomain.save()
+        name = Subdomain.objects.get(id=id)
+        name.checked = not name.checked
+        name.save()
     return HttpResponse('')
 
 

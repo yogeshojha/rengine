@@ -12,5 +12,5 @@ class StartscanConfig(AppConfig):
         This does not include pending_scans, pending_scans are taken care by celery
         '''
         logger.info('Cancelling all the ongoing scans')
-        ScanHistory = self.get_model('ScanHistory')
-        ScanHistory.objects.filter(scan_status=1).update(scan_status=0)
+        # ScanHistory = self.get_model('ScanHistory')
+        # ScanHistory.objects.filter(scan_status=1).update(scan_status=0)

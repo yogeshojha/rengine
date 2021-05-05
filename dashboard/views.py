@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from targetApp.models import Domain
-from startScan.models import ScanHistory, WayBackEndPoint, ScannedHost, VulnerabilityScan, ScanActivity
+from startScan.models import ScanHistory, EndPoint, Subdomain, VulnerabilityScan, ScanActivity
 
 from django.utils import timezone
 from django.shortcuts import render, redirect
@@ -18,13 +18,13 @@ from django.db.models import Count, Value, CharField, Q
 
 def index(request):
     domain_count = Domain.objects.all().count()
-    endpoint_count = WayBackEndPoint.objects.all().count()
+    endpoint_count = EndPoint.objects.all().count()
     scan_count = ScanHistory.objects.all().count()
-    subdomain_count = ScannedHost.objects.all().count()
+    subdomain_count = Subdomain.objects.all().count()
     alive_count = \
-        ScannedHost.objects.all().exclude(http_status__exact=0).count()
+        Subdomain.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
-        WayBackEndPoint.objects.filter(http_status__exact=200).count()
+        EndPoint.objects.filter(http_status__exact=200).count()
     recent_completed_scans = ScanHistory.objects.all().order_by(
         '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
     currently_scanning = ScanHistory.objects.order_by(
@@ -41,13 +41,13 @@ def index(request):
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count
     # most_vulnerable_target = Domain.objects.exclude(
-    #     scanhistory__scannedhost__vulnerabilityscan__severity=0).annotate(
+    #     scanhistory__Subdomain__vulnerabilityscan__severity=0).annotate(
     #     num_vul=Count(
-    #         'scanhistory__scannedhost__vulnerabilityscan__name',
+    #         'scanhistory__Subdomain__vulnerabilityscan__name',
     #         distinct=True)).order_by('-num_vul')[
     #             :5]
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
-        'scanhistory__scannedhost__vulnerabilityscan__name')).order_by('-num_vul')[:7]
+        'scanhistory__Subdomain__vulnerabilityscan__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = VulnerabilityScan.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)
@@ -56,7 +56,7 @@ def index(request):
         insert_date__gte=last_week).annotate(
         date=TruncDay('insert_date')).values("date").annotate(
             created_count=Count('id')).order_by("-date")
-    count_subdomains_by_date = ScannedHost.objects.filter(
+    count_subdomains_by_date = Subdomain.objects.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
@@ -68,7 +68,7 @@ def index(request):
         start_scan_date__gte=last_week).annotate(
         date=TruncDay('start_scan_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_endpoints_by_date = WayBackEndPoint.objects.filter(
+    count_endpoints_by_date = EndPoint.objects.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
