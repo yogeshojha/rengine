@@ -102,18 +102,29 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     if yaml_configuration:
         if(task.scan_type.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-            subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id)
+            subdomain_scan(
+                task,
+                domain,
+                yaml_configuration,
+                results_dir,
+                activity_id)
         else:
             skip_subdomain_scan(task, domain, subdomain_scan_results_file)
 
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
         alive_file_location = results_dir + '/alive.txt'
-        http_crawler(task, domain, results_dir, alive_file_location, activity_id)
+        http_crawler(
+            task,
+            domain,
+            results_dir,
+            alive_file_location,
+            activity_id)
 
         if VISUAL_IDENTIFICATION in yaml_configuration:
             update_last_activity(activity_id, 2)
-            activity_id = create_scan_activity(task, "Visual Recon - Screenshot", 1)
+            activity_id = create_scan_activity(
+                task, "Visual Recon - Screenshot", 1)
             grab_screenshot(task, yaml_configuration, results_dir, activity_id)
 
         if(task.scan_type.port_scan):
@@ -129,12 +140,22 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
         if(task.scan_type.fetch_url):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
-            fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id)
+            fetch_endpoints(
+                task,
+                domain,
+                yaml_configuration,
+                results_dir,
+                activity_id)
 
         if(task.scan_type.vulnerability_scan):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
-            vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id)
+            vulnerability_scan(
+                task,
+                domain,
+                yaml_configuration,
+                results_dir,
+                activity_id)
             update_last_activity(activity_id, 2)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
@@ -152,6 +173,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     send_notification("reEngine finished scanning " + domain.domain_name)
 
     return {"status": True}
+
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
@@ -236,21 +258,24 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
             os.system(amass_command)
 
     if 'assetfinder' in tools:
-        assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(domain.domain_name, results_dir)
+        assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
+            domain.domain_name, results_dir)
 
         # Run Assetfinder
         logging.info(assetfinder_command)
         os.system(assetfinder_command)
 
     if 'sublist3r' in tools:
-        sublist3r_command = 'python3 /app/tools/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(domain.domain_name, threads, results_dir)
+        sublist3r_command = 'python3 /app/tools/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
+            domain.domain_name, threads, results_dir)
 
         # Run sublist3r
         logging.info(sublist3r_command)
         os.system(sublist3r_command)
 
     if 'subfinder' in tools:
-        subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(domain.domain_name, threads, results_dir)
+        subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
+            domain.domain_name, threads, results_dir)
 
         # Check for Subfinder config files
         if SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
@@ -275,19 +300,22 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         os.system(subfinder_command)
 
     if 'oneforall' in tools:
-        oneforall_command = 'python3 /app/tools/OneForAll/oneforall.py --target {} run'.format(domain.domain_name, results_dir)
+        oneforall_command = 'python3 /app/tools/OneForAll/oneforall.py --target {} run'.format(
+            domain.domain_name, results_dir)
 
         # Run OneForAll
         logging.info(oneforall_command)
         os.system(oneforall_command)
 
-        extract_subdomain = "cut -d',' -f6 /app/tools/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(domain.domain_name, results_dir)
+        extract_subdomain = "cut -d',' -f6 /app/tools/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
+            domain.domain_name, results_dir)
 
         os.system(extract_subdomain)
 
         # remove the results from oneforall directory
 
-        os.system('rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
+        os.system(
+            'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
 
     '''
     All tools have gathered the list of subdomains with filename
@@ -296,7 +324,8 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     remove the older results from_*
     '''
 
-    os.system('cat {}/*.txt > {}/subdomain_collection.txt'.format(results_dir, results_dir))
+    os.system(
+        'cat {}/*.txt > {}/subdomain_collection.txt'.format(results_dir, results_dir))
 
     '''
     Remove all the from_* files
@@ -310,7 +339,8 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     os.system(
         'sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(
-            results_dir, results_dir))
+            results_dir,
+            results_dir))
 
     '''
     The final results will be stored in sorted_subdomain_collection.
@@ -328,6 +358,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 subdomain.name = _subdomain.rstrip('\n')
                 subdomain.save()
 
+
 def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
     '''
     When subdomain scanning is not performed, the target itself is subdomain
@@ -341,6 +372,7 @@ def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
     scanned.target_domain = domain
     scanned.save()
 
+
 def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
     '''
     This function is runs right after subdomain gathering, and gathers important
@@ -351,7 +383,8 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
 
-    httpx_command = 'cat {} | httpx -follow-host-redirects -random-agent -cdn -json -o {} -threads 100'.format(subdomain_scan_results_file, httpx_results_file)
+    httpx_command = 'cat {} | httpx -follow-host-redirects -random-agent -cdn -json -o {} -threads 100'.format(
+        subdomain_scan_results_file, httpx_results_file)
 
     os.system(httpx_command)
 
@@ -365,7 +398,8 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
         for line in lines:
             json_st = json.loads(line.strip())
             try:
-                subdomain = Subdomain.objects.get(scan_history=task, name=json_st['url'].split("//")[-1])
+                subdomain = Subdomain.objects.get(
+                    scan_history=task, name=json_st['url'].split("//")[-1])
                 if 'url' in json_st:
                     subdomain.http_url = json_st['url']
                 if 'status-code' in json_st:
@@ -409,6 +443,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     alive_file.close()
 
+
 def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for taking screenshots
@@ -447,7 +482,8 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     else:
         scan_timeout = 100  # Default Timeout for Scan
 
-    aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(alive_subdomains_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+    aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+        alive_subdomains_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
 
     logging.info(aquatone_command)
     os.system(aquatone_command)
@@ -480,6 +516,7 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     except Exception as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
+
 
 def port_scanning(task, yaml_configuration, results_dir, activity_id):
     '''
@@ -556,11 +593,13 @@ def unusual_port_detection():
     '''
     pass
 
+
 def check_waf():
     '''
     This function will check for the WAF being used in subdomains using wafw00f
     '''
     pass
+
 
 def directory_brute(task, yaml_configuration, results_dir, activity_id):
     '''
@@ -568,7 +607,9 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
     '''
     # scan directories for all the alive subdomain with http status >
     # 200
-    alive_subdomains = Subdomain.objects.filter(scan_history__id=task.id).exclude(http_url='')
+    alive_subdomains = Subdomain.objects.filter(
+        scan_history__id=task.id).exclude(
+        http_url='')
     dirs_results = results_dir + '/dirs.json'
 
     # check the yaml settings
@@ -620,7 +661,12 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
             update_last_activity(activity_id, 0)
 
 
-def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
+def fetch_endpoints(
+        task,
+        domain,
+        yaml_configuration,
+        results_dir,
+        activity_id):
     '''
     This function is responsible for fetching all the urls associated with target
     and run HTTP probe
@@ -640,7 +686,9 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
             for subdomain in subdomain_list:
                 if validators.domain(subdomain.rstrip('\n')):
                     print('Fetching URL for ' + subdomain.rstrip('\n'))
-                    os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' % (subdomain.rstrip('\n'), results_dir, tools))
+                    os.system(
+                        settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
+                        (subdomain.rstrip('\n'), results_dir, tools))
 
                     url_results_file = results_dir + '/final_httpx_urls.json'
 
@@ -648,7 +696,9 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
                     lines = urls_json_result.readlines()
                     for line in lines:
                         json_st = json.loads(line.strip())
-                        if not EndPoint.objects.filter(scan_history=task).filter(http_url=json_st['url']).count():
+                        if not EndPoint.objects.filter(
+                                scan_history=task).filter(
+                                http_url=json_st['url']).count():
                             endpoint = EndPoint()
                             endpoint.scan_history = task
                             if 'url' in json_st:
@@ -665,7 +715,12 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
                                 endpoint.content_type = json_st['content-type']
                             endpoint.save()
     else:
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh {} {} {}'.format(domain.domain_name, results_dir, tools))
+        os.system(
+            settings.TOOL_LOCATION +
+            'get_urls.sh {} {} {}'.format(
+                domain.domain_name,
+                results_dir,
+                tools))
 
         url_results_file = results_dir + '/final_httpx_urls.json'
 
@@ -692,7 +747,13 @@ def fetch_endpoints(task, domain, yaml_configuration, results_dir, activity_id):
             logging.error(exception)
             update_last_activity(activity_id, 0)
 
-def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id):
+
+def vulnerability_scan(
+        task,
+        domain,
+        yaml_configuration,
+        results_dir,
+        activity_id):
     '''
     This function will run nuclei as a vulnerability scanner
     '''
@@ -742,13 +803,12 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
                 _severity = ','.join(
                     [str(element) for element in yaml_configuration['vulnerability_scan']['severity']])
                 severity = _severity.replace(" ", "")
-                # Update nuclei command based on severity
-                nuclei_command = nuclei_command + ' -severity ' + severity
             else:
                 severity = yaml_configuration['vulnerability_scan']['severity'].replace(
                     " ", "")
-                # Update nuclei command based on severity
-                nuclei_command = nuclei_command + ' -severity ' + severity
+
+            # Update nuclei command based on severity
+            nuclei_command = nuclei_command + ' -severity ' + severity
 
     # update nuclei templates before running scan
     os.system('nuclei -update-templates')
@@ -768,13 +828,15 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
                 if _subdomain[0] == '.':
                     _subdomain = _subdomain[1:]
                 try:
-                    subdomain = Subdomain.objects.get(name=_subdomain, scan_history=task)
+                    subdomain = Subdomain.objects.get(
+                        name=_subdomain, scan_history=task)
                     vulnerability = Vulnerability()
                     vulnerability.subdomain = subdomain
                     vulnerability.scan_history = task
                     vulnerability.target_domain = domain
                     try:
-                        endpoint = EndPoint.objects.get(scan_history=task, target_domain=domain, http_url=host)
+                        endpoint = EndPoint.objects.get(
+                            scan_history=task, target_domain=domain, http_url=host)
                         vulnerability.endpoint = endpoint
                     except Exception as exception:
                         pass
@@ -811,12 +873,16 @@ def vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_i
                     vulnerability.save()
                     send_notification(
                         "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
-                            json_st['info']['name'], json_st['info']['severity'], domain.domain_name, json_st['matched']))
+                            json_st['info']['name'],
+                            json_st['info']['severity'],
+                            domain.domain_name,
+                            json_st['matched']))
                 except ObjectDoesNotExist:
                     logger.error('Object not found')
     except Exception as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
+
 
 def send_notification(message):
     notif_hook = NotificationHooks.objects.filter(send_notif=True)
