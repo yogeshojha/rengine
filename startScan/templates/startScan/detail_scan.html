@@ -476,10 +476,9 @@ Detailed Scan Results for {{history.domain_name}}
 										<th>Title</th>
 										<th>Severity</th>
 										<th>Vulnerable URL</th>
-										<th>Description</th>
-										<th>Last Seen</th>
+										<th>Detail</th>
 										<th>Status</th>
-										<th>Matcher Name</th>
+										<th>Last Seen</th>
 									</tr>
 								</thead>
 							</table>
@@ -933,8 +932,8 @@ Detailed Scan Results for {{history.domain_name}}
 				{'data': 'id'},
 				{'data': 'name'},
 				{'data': 'severity'},
-				{'data': 'url'},
-				{'data': 'description'},
+				{'data': 'http_url'},
+				{'data': 'extracted_results'},
 				{'data': 'discovered_date'},
 				{'data': 'open_status'},
 				{'data': 'matcher_name'},
@@ -943,7 +942,7 @@ Detailed Scan Results for {{history.domain_name}}
 				{
 					"targets": [ 7 ],
 					"visible": false,
-					"searchable": false,
+					"searchable": true,
 				},
 				{
 					"render": function ( data, type, row ) {
@@ -961,6 +960,30 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 					},
 					"targets": 0,
+				},
+				{
+					"render": function ( data, type, row ) {
+						switch (row['severity']) {
+							case 'Info':
+							badge = 'text-info'
+							break;
+							case 'Low':
+							badge = 'text-low';
+							break;
+							case 'Medium':
+							badge = 'text-warning';
+							break;
+							case 'High':
+							badge = 'text-danger';
+							break;
+							case 'Critical':
+							badge = 'text-danger';
+							break;
+							default:
+						}
+						return `<b class="${badge}">`+data+`</b><br><small>Last Seen: ` + row['discovered_date']+`</small>`;
+					},
+					"targets": 1,
 				},
 				{
 					"render": function ( data, type, row ) {
@@ -983,7 +1006,6 @@ Detailed Scan Results for {{history.domain_name}}
 							default:
 							return "";
 						}
-						// return data;
 					},
 					"targets": 2,
 				},
@@ -995,19 +1017,9 @@ Detailed Scan Results for {{history.domain_name}}
 				},
 				{
 					"render": function ( data, type, row ) {
-						// Could be better
-						if (data && row['matcher_name']) {
-							return htmlEncode(data) + "\n" + row['matcher_name'];
-						}
-						else if (data) {
-							return htmlEncode(data);
-						}
-						else if (row['matcher_name']) {
-							return htmlEncode(row['matcher_name']).charAt(0).toUpperCase() + htmlEncode(row['matcher_name']).slice(1);
-						}
-						else {
-							return "";
-						}
+						extracted_results = row['extracted_results'] ? row['extracted_results'] : ""
+						matcher_name = row['matcher_name'] ? row['matcher_name'] : ""
+						return extracted_results + matcher_name;
 					},
 					"targets": 4,
 				},
@@ -1041,114 +1053,114 @@ Detailed Scan Results for {{history.domain_name}}
 		});
 	});
 
-</script>
-<script type="text/javascript">
-// span values function will seperate the values by comma and put badge around it
-function span_values(data, color)
-{
-	var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-	var data_with_span ="";
-	data.split(/\s*,\s*/).forEach(function(split_vals) {
-		data_with_span+=badge + split_vals + "</span>";
-	});
-	return data_with_span;
-}
+	</script>
+	<script type="text/javascript">
+	// span values function will seperate the values by comma and put badge around it
+	function span_values(data, color)
+	{
+		var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+		var data_with_span ="";
+		data.split(/\s*,\s*/).forEach(function(split_vals) {
+			data_with_span+=badge + split_vals + "</span>";
+		});
+		return data_with_span;
+	}
 
 
-// apex charts for vulnerability summary
-var options = {
-	chart: {
-		type: 'donut',
-		width: 355
-	},
-	colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-	dataLabels: {
-		enabled: false
-	},
-	legend: {
-		position: 'bottom',
-		horizontalAlign: 'center',
-		fontSize: '14px',
-		markers: {
-			width: 10,
-			height: 10,
+	// apex charts for vulnerability summary
+	var options = {
+		chart: {
+			type: 'donut',
+			width: 355
 		},
-		itemMargin: {
-			horizontal: 0,
-			vertical: 8
-		}
-	},
-	plotOptions: {
-		pie: {
-			donut: {
-				size: '65%',
-				background: 'transparent',
-				labels: {
-					show: true,
-					name: {
+		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			position: 'bottom',
+			horizontalAlign: 'center',
+			fontSize: '14px',
+			markers: {
+				width: 10,
+				height: 10,
+			},
+			itemMargin: {
+				horizontal: 0,
+				vertical: 8
+			}
+		},
+		plotOptions: {
+			pie: {
+				donut: {
+					size: '65%',
+					background: 'transparent',
+					labels: {
 						show: true,
-						fontSize: '29px',
-						fontFamily: 'Nunito, sans-serif',
-						color: undefined,
-						offsetY: -10
-					},
-					value: {
-						show: true,
-						fontSize: '26px',
-						fontFamily: 'Nunito, sans-serif',
-						color: '20',
-						offsetY: 16,
-						formatter: function (val) {
-							return val
-						}
-					},
-					total: {
-						show: true,
-						showAlways: true,
-						label: 'Total',
-						color: '#888ea8',
-						formatter: function (w) {
-							return w.globals.seriesTotals.reduce( function(a, b) {
-								return a + b
-							}, 0)
+						name: {
+							show: true,
+							fontSize: '29px',
+							fontFamily: 'Nunito, sans-serif',
+							color: undefined,
+							offsetY: -10
+						},
+						value: {
+							show: true,
+							fontSize: '26px',
+							fontFamily: 'Nunito, sans-serif',
+							color: '20',
+							offsetY: 16,
+							formatter: function (val) {
+								return val
+							}
+						},
+						total: {
+							show: true,
+							showAlways: true,
+							label: 'Total',
+							color: '#888ea8',
+							formatter: function (w) {
+								return w.globals.seriesTotals.reduce( function(a, b) {
+									return a + b
+								}, 0)
+							}
 						}
 					}
 				}
 			}
+		},
+		stroke: {
+			show: true,
+			width: 25,
+		},
+		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+		labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
+	}
+
+	var chart = new ApexCharts(
+		document.querySelector("#vulnerability-chart"),
+		options
+	);
+
+	chart.render();
+
+	//to remove the image element if there is no screenshot captured
+	function removeImageElement(element)
+	{
+		element.parentElement.remove();
+	}
+
+	function subdomain_status_change(checkbox, id)
+	{
+		if (checkbox.checked) {
+			checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 		}
-	},
-	stroke: {
-		show: true,
-		width: 25,
-	},
-	series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-	labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
-}
-
-var chart = new ApexCharts(
-	document.querySelector("#vulnerability-chart"),
-	options
-);
-
-chart.render();
-
-//to remove the image element if there is no screenshot captured
-function removeImageElement(element)
-{
-	element.parentElement.remove();
-}
-
-function subdomain_status_change(checkbox, id)
-{
-	if (checkbox.checked) {
-		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+		else {
+			checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+			checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+		}
+		change_subdomain_status(id);
 	}
-	else {
-		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
-		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
-	}
-	change_subdomain_status(id);
-}
 
-</script>
-{% endblock page_level_script %}
+	</script>
+	{% endblock page_level_script %}

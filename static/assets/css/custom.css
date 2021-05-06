@@ -9,6 +9,14 @@
   background-color: #FFD600;
 }
 
+.text-low {
+  color: #FFD600;
+}
+
+.text-critical {
+  color: #AA2C00;
+}
+
 .badge-critical {
   color: #fff;
   background-color: #AA2C00;

@@ -135,6 +135,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
             vulnerability_scan(task, domain, yaml_configuration, results_dir, activity_id)
+            update_last_activity(activity_id, 2)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     update_last_activity(activity_id, 2)

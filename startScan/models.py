@@ -110,13 +110,14 @@ class EndPoint(models.Model):
     discovered_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
-        return self.page_title
+        return self.http_url
 
 
 class Vulnerability(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE, null=True, blank=True)
     endpoint = models.ForeignKey(EndPoint, on_delete=models.CASCADE, blank=True, null=True)
-    domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
     discovered_date = models.DateTimeField(null=True)
     http_url = models.CharField(max_length=8000, null=True)
     name = models.CharField(max_length=400)
