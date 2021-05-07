@@ -368,7 +368,7 @@ def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
     only_subdomain_file.close()
 
     scanned = Subdomain()
-    scanned.subdomain = domain.domain_name
+    scanned.name = domain.domain_name
     scanned.scan_history = task
     scanned.target_domain = domain
     scanned.save()
@@ -502,7 +502,7 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
             for host in data['pages']:
                 sub_domain = Subdomain.objects.get(
                     scan_history__id=task.id,
-                    subdomain=data['pages'][host]['hostname'])
+                    name=data['pages'][host]['hostname'])
                 # list_ip = data['pages'][host]['addrs']
                 # ip_string = ','.join(list_ip)
                 # sub_domain.ip_address = ip_string
