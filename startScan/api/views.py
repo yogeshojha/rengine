@@ -357,21 +357,21 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
-        vulnerability_of = req.query_params.get('vulnerability_of')
+        vulnerability_of = req.query_params.get('scan_history')
         url_query = req.query_params.get('query_param')
         if url_query:
             if url_query.isnumeric():
                 self.queryset = Vulnerability.objects.filter(
                     Q(
-                        vulnerability_of__domain_name__domain_name=url_query) | Q(
+                        scan_history__domain_name__domain_name=url_query) | Q(
                         name=url_query) | Q(
                         id=url_query))
             else:
                 self.queryset = Vulnerability.objects.filter(
-                    Q(vulnerability_of__domain_name__domain_name=url_query) | Q(name=url_query))
+                    Q(scan_history__domain_name__domain_name=url_query) | Q(name=url_query))
         elif vulnerability_of:
             self.queryset = Vulnerability.objects.filter(
-                vulnerability_of__id=vulnerability_of)
+                scan_history__id=vulnerability_of)
         return self.queryset
 
     def filter_queryset(self, qs):

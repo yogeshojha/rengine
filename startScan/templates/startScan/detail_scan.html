@@ -388,7 +388,7 @@ Detailed Scan Results for {{history.domain_name}}
 															{% elif vulnerability.severity == 4 %}
 															<span class='badge badge-critical'>Critical</span>
 															{% endif %}</td>
-															<td><a href="{{vulnerability.url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.url}}">{{vulnerability.url|truncatechars:50}}</a></td>
+															<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
 														</tr>
 														{% endfor %}
 													</tbody>
@@ -478,7 +478,9 @@ Detailed Scan Results for {{history.domain_name}}
 										<th>Vulnerable URL</th>
 										<th>Detail</th>
 										<th>Status</th>
-										<th>Last Seen</th>
+										<th>Matcher Name</th>
+										<th>Tags</th>
+										<th>Reference</th>
 									</tr>
 								</thead>
 							</table>
@@ -934,13 +936,16 @@ Detailed Scan Results for {{history.domain_name}}
 				{'data': 'severity'},
 				{'data': 'http_url'},
 				{'data': 'extracted_results'},
-				{'data': 'discovered_date'},
 				{'data': 'open_status'},
 				{'data': 'matcher_name'},
+				{'data': 'discovered_date'},
+				{'data': 'tags'},
+				{'data': 'description'},
+				{'data': 'reference'},
 			],
 			"columnDefs": [
 				{
-					"targets": [ 7 ],
+					"targets": [ 6, 7, 8, 9, 10 ],
 					"visible": false,
 					"searchable": true,
 				},
@@ -963,25 +968,32 @@ Detailed Scan Results for {{history.domain_name}}
 				},
 				{
 					"render": function ( data, type, row ) {
+						var tags_span ="";
 						switch (row['severity']) {
 							case 'Info':
-							badge = 'text-info'
+							color = 'info'
 							break;
 							case 'Low':
-							badge = 'text-low';
+							color = 'low'
 							break;
 							case 'Medium':
-							badge = 'text-warning';
+							color = 'warning'
 							break;
 							case 'High':
-							badge = 'text-danger';
+							color = 'danger'
 							break;
 							case 'Critical':
-							badge = 'text-danger';
+							color = 'critical'
 							break;
 							default:
 						}
-						return `<b class="${badge}">`+data+`</b><br><small>Last Seen: ` + row['discovered_date']+`</small>`;
+						if (row['tags']) {
+							var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+							row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+								tags_span+=badge + split_vals + "</span>";
+							});
+						}
+						return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
 					},
 					"targets": 1,
 				},
@@ -1009,6 +1021,7 @@ Detailed Scan Results for {{history.domain_name}}
 					},
 					"targets": 2,
 				},
+
 				{
 					"render": function ( data, type, row ) {
 						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
@@ -1017,17 +1030,13 @@ Detailed Scan Results for {{history.domain_name}}
 				},
 				{
 					"render": function ( data, type, row ) {
-						extracted_results = row['extracted_results'] ? row['extracted_results'] : ""
-						matcher_name = row['matcher_name'] ? row['matcher_name'] : ""
-						return extracted_results + matcher_name;
+						extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+						matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+						description = row['description'] ? row['description'] + `</br>` : "";
+						reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+						return extracted_results + matcher_name + description + reference;
 					},
 					"targets": 4,
-				},
-				{
-					"render": function ( data, type, row ) {
-						return htmlEncode(data);
-					},
-					"targets": 5,
 				},
 				{
 					"render": function ( data, type, row ) {
@@ -1038,7 +1047,7 @@ Detailed Scan Results for {{history.domain_name}}
 							return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
 						}
 					},
-					"targets": 6,
+					"targets": 5,
 				},
 			],
 			drawCallback: function () {

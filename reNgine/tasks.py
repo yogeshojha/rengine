@@ -443,6 +443,9 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     alive_file.close()
 
+    # sort and unique alive urls
+    os.system('sort -u {} -o {}'.format(alive_file_location, alive_file_location))
+
 
 def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     '''
@@ -760,10 +763,13 @@ def vulnerability_scan(
 
     vulnerability_result_path = results_dir + '/vulnerability.json'
 
+    nuclei_scan_urls = results_dir + '/unfurl_urls.txt'
+
     if(task.scan_type.fetch_url):
-        nuclei_scan_urls = results_dir + '/unfurl_urls.txt'
-    else:
-        nuclei_scan_urls = results_dir + '/alive.txt'
+        os.system('cat {} >> {}'.format(results_dir + '/unfurl_urls.txt', results_dir + '/alive.txt'))
+        os.system('sort -u {} -o {}'.format(results_dir + '/alive.txt', results_dir + '/alive.txt'))
+
+    nuclei_scan_urls = results_dir + '/alive.txt'
 
     nuclei_command = 'nuclei -json -l {} -o {}'.format(
         nuclei_scan_urls, vulnerability_result_path)
@@ -806,82 +812,93 @@ def vulnerability_scan(
             else:
                 severity = yaml_configuration['vulnerability_scan']['severity'].replace(
                     " ", "")
-
-            # Update nuclei command based on severity
-            nuclei_command = nuclei_command + ' -severity ' + severity
+        else:
+            severity = "critical, high, medium, low, info"
 
     # update nuclei templates before running scan
     os.system('nuclei -update-templates')
-    # run nuclei
-    print(nuclei_command)
-    os.system(nuclei_command)
-
-    try:
+    for _severity in severity.split(","):
+        # delete any existing vulnerability.json file
         if os.path.isfile(vulnerability_result_path):
-            urls_json_result = open(vulnerability_result_path, 'r')
-            lines = urls_json_result.readlines()
-            for line in lines:
-                json_st = json.loads(line.strip())
-                host = json_st['host']
-                extracted_subdomain = tldextract.extract(host)
-                _subdomain = '.'.join(extracted_subdomain[:4])
-                if _subdomain[0] == '.':
-                    _subdomain = _subdomain[1:]
-                try:
-                    subdomain = Subdomain.objects.get(
-                        name=_subdomain, scan_history=task)
-                    vulnerability = Vulnerability()
-                    vulnerability.subdomain = subdomain
-                    vulnerability.scan_history = task
-                    vulnerability.target_domain = domain
+            os.system('rm {}'.format(vulnerability_result_path))
+        # run nuclei
+        final_nuclei_command = nuclei_command + ' -severity ' + _severity
+        logger.info(final_nuclei_command)
+
+        os.system(final_nuclei_command)
+        try:
+            if os.path.isfile(vulnerability_result_path):
+                urls_json_result = open(vulnerability_result_path, 'r')
+                lines = urls_json_result.readlines()
+                for line in lines:
+                    json_st = json.loads(line.strip())
+                    host = json_st['host']
+                    extracted_subdomain = tldextract.extract(host)
+                    _subdomain = '.'.join(extracted_subdomain[:4])
+                    if _subdomain[0] == '.':
+                        _subdomain = _subdomain[1:]
                     try:
-                        endpoint = EndPoint.objects.get(
-                            scan_history=task, target_domain=domain, http_url=host)
-                        vulnerability.endpoint = endpoint
-                    except Exception as exception:
-                        pass
-                    if 'name' in json_st['info']:
-                        vulnerability.name = json_st['info']['name']
-                    if 'severity' in json_st['info']:
-                        if json_st['info']['severity'] == 'info':
-                            severity = 0
-                        elif json_st['info']['severity'] == 'low':
-                            severity = 1
-                        elif json_st['info']['severity'] == 'medium':
-                            severity = 2
-                        elif json_st['info']['severity'] == 'high':
-                            severity = 3
-                        elif json_st['info']['severity'] == 'critical':
-                            severity = 4
+                        subdomain = Subdomain.objects.get(
+                            name=_subdomain, scan_history=task)
+                        vulnerability = Vulnerability()
+                        vulnerability.subdomain = subdomain
+                        vulnerability.scan_history = task
+                        vulnerability.target_domain = domain
+                        try:
+                            endpoint = EndPoint.objects.get(
+                                scan_history=task, target_domain=domain, http_url=host)
+                            vulnerability.endpoint = endpoint
+                        except Exception as exception:
+                            pass
+                        if 'name' in json_st['info']:
+                            vulnerability.name = json_st['info']['name']
+                        if 'severity' in json_st['info']:
+                            if json_st['info']['severity'] == 'info':
+                                severity = 0
+                            elif json_st['info']['severity'] == 'low':
+                                severity = 1
+                            elif json_st['info']['severity'] == 'medium':
+                                severity = 2
+                            elif json_st['info']['severity'] == 'high':
+                                severity = 3
+                            elif json_st['info']['severity'] == 'critical':
+                                severity = 4
+                            else:
+                                severity = 0
                         else:
                             severity = 0
-                    else:
-                        severity = 0
-                    vulnerability.severity = severity
-                    if 'matched' in json_st:
-                        vulnerability.http_url = json_st['matched']
-                    if 'templateID' in json_st:
-                        vulnerability.template_used = json_st['templateID']
-                    if 'description' in json_st:
-                        vulnerability.description = json_st['description']
-                    if 'matcher_name' in json_st:
-                        vulnerability.matcher_name = json_st['matcher_name']
-                    if 'extracted_results' in json_st:
-                        vulnerability.extracted_results = json_st['extracted_results']
-                    vulnerability.discovered_date = timezone.now()
-                    vulnerability.open_status = True
-                    vulnerability.save()
-                    send_notification(
-                        "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
-                            json_st['info']['name'],
-                            json_st['info']['severity'],
-                            domain.domain_name,
-                            json_st['matched']))
-                except ObjectDoesNotExist:
-                    logger.error('Object not found')
-    except Exception as exception:
-        logging.error(exception)
-        update_last_activity(activity_id, 0)
+                        vulnerability.severity = severity
+                        if 'tags' in json_st['info']:
+                            vulnerability.tags = json_st['info']['tags']
+                        if 'description' in json_st['info']:
+                            vulnerability.description = json_st['info']['description']
+                        if 'reference' in json_st['info']:
+                            vulnerability.reference = json_st['info']['reference']
+                        if 'matched' in json_st:
+                            vulnerability.http_url = json_st['matched']
+                        if 'templateID' in json_st:
+                            vulnerability.template_used = json_st['templateID']
+                        if 'description' in json_st:
+                            vulnerability.description = json_st['description']
+                        if 'matcher_name' in json_st:
+                            vulnerability.matcher_name = json_st['matcher_name']
+                        if 'extracted_results' in json_st:
+                            vulnerability.extracted_results = json_st['extracted_results']
+                        vulnerability.discovered_date = timezone.now()
+                        vulnerability.open_status = True
+                        vulnerability.save()
+                        send_notification(
+                            "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
+                                json_st['info']['name'],
+                                json_st['info']['severity'],
+                                domain.domain_name,
+                                json_st['matched']))
+                    except ObjectDoesNotExist:
+                        logger.error('Object not found')
+
+        except Exception as exception:
+            logging.error(exception)
+            update_last_activity(activity_id, 0)
 
 
 def send_notification(message):
