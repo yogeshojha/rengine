@@ -171,7 +171,8 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     task.stop_scan_date = timezone.now()
     task.save()
     send_notification("reEngine finished scanning " + domain.domain_name)
-
+    # cleanup results
+    delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -938,6 +939,14 @@ def update_last_activity(id, activity_status):
         id=id).update(
         status=activity_status,
         time=timezone.now())
+
+def delete_scan_data(results_dir):
+    # remove all text files
+    os.system('rm -r {}/*.txt'.format(results_dir))
+    # remove all json files
+    os.system('rm -r {}/*.json'.format(results_dir))
+    # remove all html files
+    os.system('rm -r {}/*.html'.format(results_dir))
 
 
 @app.task(bind=True)
