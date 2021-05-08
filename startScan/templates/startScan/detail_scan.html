@@ -544,10 +544,11 @@ Detailed Scan Results for {{history.domain_name}}
 				{'data': 'cname'},
 				{'data': 'checked'},
 				{'data': 'is_interesting'},
+				{'data': 'vulnerability_count'},
 			],
 			"columnDefs": [
 				{
-					"targets": [ 9, 10, 13],
+					"targets": [ 9, 10, 13, 14],
 					"visible": false,
 					"searchable": false,
 				},
@@ -594,6 +595,7 @@ Detailed Scan Results for {{history.domain_name}}
 					"render": function ( data, type, row ) {
 						// display badge based on http status
 						// green for http status 2XX, orange for 3XX and warning for everything else
+						return row['vulnerability_count'];
 						if (data) {
 							if (row['is_ip_cdn']) {
 								return `<span class='badge badge-pills badge-warning bs-tooltip' title="CDN IP Address">` + data + `</span>`

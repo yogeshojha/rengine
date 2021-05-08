@@ -577,7 +577,7 @@ def port_scanning(task, yaml_configuration, results_dir, activity_id):
             except Exception as exception:
                 json_st = "{'host':'','port':''}"
             sub_domain = Subdomain.objects.get(
-                scan_history=task, subdomain=json_st['host'])
+                scan_history=task, name=json_st['host'])
             if sub_domain.open_ports:
                 sub_domain.open_ports = sub_domain.open_ports + \
                     ',' + str(json_st['port'])
@@ -767,8 +767,14 @@ def vulnerability_scan(
     nuclei_scan_urls = results_dir + '/unfurl_urls.txt'
 
     if(task.scan_type.fetch_url):
-        os.system('cat {} >> {}'.format(results_dir + '/unfurl_urls.txt', results_dir + '/alive.txt'))
-        os.system('sort -u {} -o {}'.format(results_dir + '/alive.txt', results_dir + '/alive.txt'))
+        os.system(
+            'cat {} >> {}'.format(
+                results_dir +
+                '/unfurl_urls.txt',
+                results_dir +
+                '/alive.txt'))
+        os.system('sort -u {} -o {}'.format(results_dir + \
+                  '/alive.txt', results_dir + '/alive.txt'))
 
     nuclei_scan_urls = results_dir + '/alive.txt'
 
@@ -940,13 +946,12 @@ def update_last_activity(id, activity_status):
         status=activity_status,
         time=timezone.now())
 
+
 def delete_scan_data(results_dir):
-    # remove all text files
-    os.system('rm -r {}/*.txt'.format(results_dir))
-    # remove all json files
-    os.system('rm -r {}/*.json'.format(results_dir))
-    # remove all html files
-    os.system('rm -r {}/*.html'.format(results_dir))
+    # remove all txt,html,json files
+    os.system('find {} -name "*.txt" -type f -delete'.format(results_dir))
+    os.system('find {} -name "*.html" -type f -delete'.format(results_dir))
+    os.system('find {} -name "*.json" -type f -delete'.format(results_dir))
 
 
 @app.task(bind=True)

@@ -1,4 +1,4 @@
-from startScan.api.serializers import ScanHistorySerializer, EndpointSerializer, VulnerabilitySerializer
+from startScan.api.serializers import SubdomainSerializer, EndpointSerializer, VulnerabilitySerializer
 from rest_framework import viewsets
 from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 from rest_framework.response import Response
@@ -9,7 +9,7 @@ from django.db.models import Q
 
 class ScanHistoryViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.all()
-    serializer_class = ScanHistorySerializer
+    serializer_class = SubdomainSerializer
 
     def get_queryset(self):
         req = self.request
