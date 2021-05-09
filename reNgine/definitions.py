@@ -20,6 +20,7 @@ PORT_SCAN = 'port_scan'
 VISUAL_IDENTIFICATION = 'visual_identification'
 DIR_FILE_SEARCH = 'dir_file_search'
 FETCH_URL = 'fetch_url'
+INTENSITY = 'intensity'
 
 USES_TOOLS = 'uses_tool'
 THREAD = 'thread'

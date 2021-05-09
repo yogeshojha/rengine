@@ -677,79 +677,64 @@ def fetch_endpoints(
     '''
     # check yaml settings
     if 'all' in yaml_configuration[FETCH_URL][USES_TOOLS]:
-        tools = 'gau hakrawler'
+        tools = 'gauplus hakrawler waybackurls gospider'
     else:
         tools = ' '.join(
             str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
 
-    subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+    scan_type = yaml_configuration[FETCH_URL][INTENSITY]
 
-    if 'aggressive' in yaml_configuration['fetch_url']['intensity']:
-        with open(subdomain_scan_results_file) as subdomain_list:
-            for subdomain in subdomain_list:
-                if validators.domain(subdomain.rstrip('\n')):
-                    print('Fetching URL for ' + subdomain.rstrip('\n'))
-                    os.system(
-                        settings.TOOL_LOCATION + 'get_urls.sh %s %s %s' %
-                        (subdomain.rstrip('\n'), results_dir, tools))
-
-                    url_results_file = results_dir + '/final_httpx_urls.json'
-
-                    urls_json_result = open(url_results_file, 'r')
-                    lines = urls_json_result.readlines()
-                    for line in lines:
-                        json_st = json.loads(line.strip())
-                        if not EndPoint.objects.filter(
-                                scan_history=task).filter(
-                                http_url=json_st['url']).count():
-                            endpoint = EndPoint()
-                            endpoint.scan_history = task
-                            if 'url' in json_st:
-                                endpoint.http_url = json_st['url']
-                            if 'content-length' in json_st:
-                                endpoint.content_length = json_st['content-length']
-                            if 'status-code' in json_st:
-                                endpoint.http_status = json_st['status-code']
-                            if 'title' in json_st:
-                                endpoint.page_title = json_st['title']
-                            endpoint.discovered_date = timezone.now()
-                            endpoint.target_domain = domain
-                            if 'content-type' in json_st:
-                                endpoint.content_type = json_st['content-type']
-                            endpoint.save()
+    if 'deep' in scan_type:
+        # performs deep url gathering for all the subdomains present - RECOMMENDED
+        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s' % ("None", results_dir, scan_type, tools))
     else:
-        os.system(
-            settings.TOOL_LOCATION +
-            'get_urls.sh {} {} {}'.format(
-                domain.domain_name,
-                results_dir,
-                tools))
+        # perform url gathering only for main domain - USE only for quick scan
+        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s' % (domain.domain_name, results_dir, scan_type, tools))
 
-        url_results_file = results_dir + '/final_httpx_urls.json'
+    url_results_file = results_dir + '/final_httpx_urls.json'
 
-        try:
-            urls_json_result = open(url_results_file, 'r')
-            lines = urls_json_result.readlines()
-            for line in lines:
-                json_st = json.loads(line.strip())
-                endpoint = EndPoint()
-                endpoint.scan_history = task
-                if 'url' in json_st:
-                    endpoint.http_url = json_st['url']
-                if 'content-length' in json_st:
-                    endpoint.content_length = json_st['content-length']
-                if 'status-code' in json_st:
-                    endpoint.http_status = json_st['status-code']
-                if 'title' in json_st:
-                    endpoint.page_title = json_st['title']
-                if 'content-type' in json_st:
-                    endpoint.content_type = json_st['content-type']
-                endpoint.discovered_date = timezone.now()
-                endpoint.save()
-        except Exception as exception:
-            logging.error(exception)
-            update_last_activity(activity_id, 0)
+    try:
+        urls_json_result = open(url_results_file, 'r')
+        lines = urls_json_result.readlines()
+        for line in lines:
+            json_st = json.loads(line.strip())
+            endpoint = EndPoint()
+            endpoint.scan_history = task
+            endpoint.http_url = json_st['url']
 
+            if 'title' in json_st:
+                endpoint.page_title = json_st['title']
+            if 'webserver' in json_st:
+                endpoint.webserver = json_st['webserver']
+            if 'content-length' in json_st:
+                endpoint.content_length = json_st['content-length']
+            if 'content-type' in json_st:
+                endpoint.content_type = json_st['content-type']
+            if 'status-code' in json_st:
+                endpoint.http_status = json_st['status-code']
+            if 'technologies' in json_st:
+                endpoint.technology_stack = ','.join(json_st['technologies'])
+            endpoint.target_domain = domain
+            endpoint.discovered_date = timezone.now()
+
+            # extract the subdomain from url and map to Subdomain Model
+            url = tldextract.extract(json_st['url'])
+            _subdomain = '.'.join(url[:4])
+            if _subdomain[0] == '.':
+                _subdomain = _subdomain[1:]
+
+            # find the subdomain, if exists then it's not an external url
+            try:
+                subdomain = Subdomain.objects.get(
+                    scan_history=task, name=_subdomain)
+                endpoint.subdomain = subdomain
+                endpoint.is_external = False
+            except Exception as exception:
+                endpoint.is_external = True
+            endpoint.save()
+    except Exception as exception:
+        logging.error(exception)
+        update_last_activity(activity_id, 0)
 
 def vulnerability_scan(
         task,

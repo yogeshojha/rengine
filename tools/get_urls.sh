@@ -1,27 +1,61 @@
 #!/bin/sh
 
+echo $@
 
-for i in "$@" ; do
-    if [[ $i == "gau" ]] ; then
-        echo $1 | gau -providers wayback -o $2/urls_gau.txt
-        httpx -l $2/urls_gau.txt -status-code -content-length -title -json -o $2/httpx_wayback.json
-    fi
-    if [[ $i == "hakrawler" ]] ; then
-        hakrawler -plain -url $1 > $2/urls_hakrawler.txt
-        httpx -l $2/urls_hakrawler.txt -status-code -content-length -title -json -o $2/httpx_hakrawler.json
-    fi
-done
+if [[ $3 == "deep" ]] ; then
+  for i in "$@" ; do
+      if [[ $i == "gauplus" ]] ; then
+        echo "Running gauplus"
+        cat $2/sorted_subdomain_collection.txt | gauplus --random-agent -o $2/urls_gau.txt
+      fi
+      if [[ $i == "hakrawler" ]] ; then
+        echo "Running hakrawler"
+        cat $2/sorted_subdomain_collection.txt | hakrawler -plain | grep -Eo 'https?://[^ ]+' >> $2/urls_hakrawler.txt
+      fi
+      if [[ $i == "waybackurls" ]] ; then
+        echo "Running waybackurls"
+        cat $2/sorted_subdomain_collection.txt | waybackurls | grep -Eo 'https?://[^ ]+' > $2/urls_wayback.txt
+      fi
+      if [[ $i == "gospider" ]] ; then
+        echo "Running gospider"
+        gospider -S $2/alive.txt -d 2 --sitemap --robots --js | grep -Eo 'https?://[^ ]+' >> $2/urls_gospider.txt
+      fi
+  done
+else
+  for i in "$@" ; do
+      if [[ $i == "gauplus" ]] ; then
+        echo "Running gauplus"
+        echo $1 | gauplus --random-agent -o $2/urls_gau.txt
+      fi
+      if [[ $i == "hakrawler" ]] ; then
+        echo "Running hakrawler"
+        hakrawler -plain -url $1 | grep -Eo 'https?://[^ ]+' > $2/urls_hakrawler.txt
+      fi
+      if [[ $i == "waybackurls" ]] ; then
+        echo "Running waybackurls"
+        echo $1 | waybackurls > $2/urls_wayback.txt
+      fi
+      if [[ $i == "gospider" ]] ; then
+        echo "Running gospider"
+        gospider -s "https://"$2/alive.txt -d 2 --sitemap --robots --js | grep -Eo 'https?://[^ ]+' >> $2/urls_gospider.txt
+      fi
+  done
+fi
 
-cat $2/httpx* > $2/final_httpx_urls.json
+echo "Finished gathering urls, now sorting and running http probing"
 
-cat $2/url* >> $2/all_urls.txt
+cat $2/urls* > $2/urls.txt
 
 # Sort and unique the endpoints
-sort -u $2/all_urls.txt -o $2/all_urls.txt
+sort -u $2/urls.txt -o $2/all_urls.txt
+
+# remove all urls*
+rm -rf $2/url*
+
+echo "HTTP Probing"
+
+httpx -l $2/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -threads 100 -timeout 3 -o $2/final_httpx_urls.json
 
 # unfurl the urls to keep only domain and path
 cat $2/all_urls.txt | unfurl -u format %s://%d%p >> $2/unfurl_urls.txt
 sort -u $2/unfurl_urls.txt -o $2/unfurl_urls.txt
-
-rm -rf $2/url*
-rm -rf $2/httpx*

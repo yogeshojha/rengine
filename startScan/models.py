@@ -139,6 +139,10 @@ class EndPoint(models.Model):
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
+    technology_stack = models.CharField(max_length=1500, null=True)
+    response_time = models.FloatField(null=True, blank=True)
+    webserver = models.CharField(max_length=1000, blank=True, null=True)
+    is_external = models.BooleanField(null=True, blank=True, default=False)
 
     def __str__(self):
         return self.http_url
