@@ -47,7 +47,7 @@ def index(request):
     #         distinct=True)).order_by('-num_vul')[
     #             :5]
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
-        'scanhistory__Subdomain__vulnerabilityscan__name')).order_by('-num_vul')[:7]
+        'subdomain__vulnerability__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = Vulnerability.objects.values("name", "severity").exclude(
         severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)

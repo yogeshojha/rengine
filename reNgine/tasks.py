@@ -120,25 +120,25 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             results_dir,
             alive_file_location,
             activity_id)
+        update_last_activity(activity_id, 2)
 
         if VISUAL_IDENTIFICATION in yaml_configuration:
-            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(
                 task, "Visual Recon - Screenshot", 1)
             grab_screenshot(task, yaml_configuration, results_dir, activity_id)
+            update_last_activity(activity_id, 2)
 
         if(task.scan_type.port_scan):
-            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Port Scanning", 1)
             port_scanning(task, yaml_configuration, results_dir, activity_id)
+            update_last_activity(activity_id, 2)
 
         if(task.scan_type.dir_file_search):
-            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Directory Search", 1)
             directory_brute(task, yaml_configuration, results_dir, activity_id)
+            update_last_activity(activity_id, 2)
 
         if(task.scan_type.fetch_url):
-            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
             fetch_endpoints(
                 task,
@@ -146,9 +146,9 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 yaml_configuration,
                 results_dir,
                 activity_id)
+            update_last_activity(activity_id, 2)
 
         if(task.scan_type.vulnerability_scan):
-            update_last_activity(activity_id, 2)
             activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
             vulnerability_scan(
                 task,
@@ -159,7 +159,6 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             update_last_activity(activity_id, 2)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
-    update_last_activity(activity_id, 2)
 
     '''
     Once the scan is completed, save the status to successful
@@ -172,7 +171,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     task.save()
     send_notification("reEngine finished scanning " + domain.domain_name)
     # cleanup results
-    delete_scan_data(results_dir)
+    # delete_scan_data(results_dir)
     return {"status": True}
 
 
