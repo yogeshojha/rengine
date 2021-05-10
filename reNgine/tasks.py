@@ -684,15 +684,18 @@ def fetch_endpoints(
 
     scan_type = yaml_configuration[FETCH_URL][INTENSITY]
 
+    domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.domain_name)
+
+    print(domain_regex)
+
     if 'deep' in scan_type:
         # performs deep url gathering for all the subdomains present - RECOMMENDED
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s' % ("None", results_dir, scan_type, tools))
+        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' % ("None", results_dir, scan_type, domain_regex, tools))
     else:
         # perform url gathering only for main domain - USE only for quick scan
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s' % (domain.domain_name, results_dir, scan_type, tools))
+        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' % (domain.domain_name, results_dir, scan_type, domain_regex, tools))
 
     url_results_file = results_dir + '/final_httpx_urls.json'
-
     try:
         urls_json_result = open(url_results_file, 'r')
         lines = urls_json_result.readlines()
@@ -886,6 +889,7 @@ def vulnerability_scan(
                                 json_st['matched']))
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
+                        continue
 
         except Exception as exception:
             logging.error(exception)
