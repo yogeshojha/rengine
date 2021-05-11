@@ -439,6 +439,9 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                 if 'technologies' in json_st:
                     endpoint.technology_stack = ','.join(
                         json_st['technologies'])
+                if 'response-time' in json_st:
+                    response_time = float(json_st['response-time'][:-1])
+                    endpoint.response_time = response_time
                 endpoint.discovered_date = timezone.now()
                 endpoint.is_default = True
                 endpoint.save()
@@ -762,6 +765,9 @@ def fetch_endpoints(
                 if 'technologies' in json_st:
                     endpoint.technology_stack = ','.join(
                         json_st['technologies'])
+                if 'response-time' in json_st:
+                    response_time = float(json_st['response-time'][:-1])
+                    endpoint.response_time = response_time
                 endpoint.save()
     except Exception as exception:
         logging.error(exception)

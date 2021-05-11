@@ -412,7 +412,7 @@ Detailed Scan Results for {{history.domain_name}}
 										<th class="checkbox-column">Status</th>
 										<th>Subdomain</th>
 										<th>IP Address</th>
-										<th>HTTP Status</th>
+										<th>Status</th>
 										<th>Ports</th>
 										<th>Content Length</th>
 										<th>Page Title</th>
@@ -437,7 +437,7 @@ Detailed Scan Results for {{history.domain_name}}
 									<tr>
 										<th class="checkbox-column">Status</th>
 										<th>Subdomain</th>
-										<th>HTTP Status</th>
+										<th>Status</th>
 										<th>Page Title</th>
 										<th>Directories</th>
 										<th>HTTP URL</th>
@@ -455,11 +455,15 @@ Detailed Scan Results for {{history.domain_name}}
 							<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
 								<thead>
 									<tr>
-										<th>Endpoint</th>
-										<th>HTTP Status</th>
+										<th>HTTP URL</th>
+										<th>Status</th>
+										<th>Page Title</th>
 										<th>Content Type</th>
 										<th>Content Length</th>
-										<th>Page Title</th>
+										<th>Technology</th>
+										<th>Webserver</th>
+										<th>Response time</th>
+										<th>Default URL</th>
 									</tr>
 								</thead>
 							</table>
@@ -862,17 +866,31 @@ Detailed Scan Results for {{history.domain_name}}
 			"pageLength": 20,
 			'serverSide': true,
 			"ajax": '/start_scan/api/listEndpoints/?scan_history={{scan_history_id}}&format=datatables',
-			"order": [[ 3, "desc" ]],
+			"order": [[ 4, "desc" ]],
 			"columns": [
 				{'data': 'http_url'},
 				{'data': 'http_status'},
-				{'data': 'content_type'},
-				{'data': 'content_length'},
 				{'data': 'page_title'},
+				{'data': 'content_type'},
+				{'data': 'content_length', 'searchable': false},
+				{'data': 'technology_stack'},
+				{'data': 'webserver'},
+				{'data': 'response_time', 'searchable': false},
+				{'data': 'is_default', 'searchable': false}
 			],
 			"columnDefs": [
 				{
+					"targets": [ 8 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{
 					"render": function ( data, type, row ) {
+						// var isDefault = '';
+						// if (row['is_default'])
+						// {
+						// 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
+						// }
 						return "<a href='"+data+"' target='_blank' class='text-info'>"+data+"</a>";
 					},
 					"targets": 0,
@@ -899,11 +917,11 @@ Detailed Scan Results for {{history.domain_name}}
 				{
 					"render": function ( data, type, row ) {
 						if (data){
-							return htmlEncode(data);
+							return span_values(data, "info");
 						}
 						return "";
 					},
-					"targets": 4,
+					"targets": 5,
 				},
 			],
 			drawCallback: function () {
