@@ -142,7 +142,7 @@ class EndPoint(models.Model):
     technology_stack = models.CharField(max_length=1500, null=True)
     response_time = models.FloatField(null=True, blank=True)
     webserver = models.CharField(max_length=1000, blank=True, null=True)
-    is_external = models.BooleanField(null=True, blank=True, default=False)
+    is_default = models.BooleanField(null=True, blank=True, default=False)
 
     def __str__(self):
         return self.http_url

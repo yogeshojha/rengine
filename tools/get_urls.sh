@@ -51,12 +51,3 @@ sort -u $2/urls.txt -o $2/all_urls.txt
 
 # remove all urls*
 rm -rf $2/url*
-
-echo "HTTP Probing"
-
-httpx -l $2/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -timeout 3 -o $2/final_httpx_urls.json
-
-# unfurl the urls to keep only domain and path, this will be sent to vuln scan, ignore certain file extensions.
-# Source: https://github.com/six2dez/reconftw
-cat $2/all_urls.txt | grep -Eiv "\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js)$" | unfurl -u format %s://%d%p >> $2/unfurl_urls.txt
-sort -u $2/unfurl_urls.txt -o $2/unfurl_urls.txt

@@ -325,7 +325,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
 
     os.system(
-        'cat {}/*.txt > {}/subdomain_collection.txt'.format(results_dir, results_dir))
+        'cat {0}/*.txt > {0}/subdomain_collection.txt'.format(results_dir))
 
     '''
     Remove all the from_* files
@@ -436,6 +436,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                 if 'content-type' in json_st:
                     endpoint.conteny_type = json_st['content-type']
                 endpoint.discovered_date = timezone.now()
+                endpoint.is_default = True
                 endpoint.save()
             except Exception as exception:
                 logging.error(exception)
@@ -682,11 +683,12 @@ def fetch_endpoints(
         tools = ' '.join(
             str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
 
-    scan_type = yaml_configuration[FETCH_URL][INTENSITY]
+    if INTENSITY in yaml_configuration[FETCH_URL]:
+        scan_type = yaml_configuration[FETCH_URL][INTENSITY]
+    else:
+        scan_type = 'normal'
 
     domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.domain_name)
-
-    print(domain_regex)
 
     if 'deep' in scan_type:
         # performs deep url gathering for all the subdomains present - RECOMMENDED
@@ -694,6 +696,23 @@ def fetch_endpoints(
     else:
         # perform url gathering only for main domain - USE only for quick scan
         os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' % (domain.domain_name, results_dir, scan_type, domain_regex, tools))
+
+    ignore_extension = None
+    if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
+        ignore_extension = '|'.join(yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
+        logger.info('Ignore extensions' + ignore_extension)
+
+    # once the get_urls finishes gathering urls, ignore file extensions
+    if ignore_extension:
+        os.system('{0}/all_urls.txt | grep -Eiv "\.({1}).*" > {0}/final_urls.txt'.format(results_dir, ignore_extensione))
+        os.system('rm {0}/all_urls.txt && mv {0}/final_urls.txt {0}/all_urls.txt'.format(results_dirs))
+    '''
+    Go spider & waybackurls accumulates a lot of urls, which is good but nuclei
+    takes forever to scan even a simple website, so we will do http probing
+    and filter HTTP status 404, this way we can reduce the number of Non Existent
+    URLS
+    '''
+    os.system('httpx -l {}/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -timeout 3 -f 404 -o {}/final_httpx_urls.json'.format(results_dir))
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
@@ -703,8 +722,21 @@ def fetch_endpoints(
             json_st = json.loads(line.strip())
             endpoint = EndPoint()
             endpoint.scan_history = task
+            endpoint.target_domain = domain
             endpoint.http_url = json_st['url']
-
+            # extract the subdomain from url and map to Subdomain Model
+            url = tldextract.extract(json_st['url'])
+            _subdomain = '.'.join(url[:4])
+            if _subdomain[0] == '.':
+                _subdomain = _subdomain[1:]
+            # find the subdomain, if exists then it's not an external url
+            try:
+                subdomain = Subdomain.objects.get(
+                    scan_history=task, name=_subdomain)
+                endpoint.subdomain = subdomain
+            except Exception as exception:
+                logger.error('Subdomain not found...')
+                continue
             if 'title' in json_st:
                 endpoint.page_title = json_st['title']
             if 'webserver' in json_st:
@@ -717,23 +749,6 @@ def fetch_endpoints(
                 endpoint.http_status = json_st['status-code']
             if 'technologies' in json_st:
                 endpoint.technology_stack = ','.join(json_st['technologies'])
-            endpoint.target_domain = domain
-            endpoint.discovered_date = timezone.now()
-
-            # extract the subdomain from url and map to Subdomain Model
-            url = tldextract.extract(json_st['url'])
-            _subdomain = '.'.join(url[:4])
-            if _subdomain[0] == '.':
-                _subdomain = _subdomain[1:]
-
-            # find the subdomain, if exists then it's not an external url
-            try:
-                subdomain = Subdomain.objects.get(
-                    scan_history=task, name=_subdomain)
-                endpoint.subdomain = subdomain
-                endpoint.is_external = False
-            except Exception as exception:
-                endpoint.is_external = True
             endpoint.save()
     except Exception as exception:
         logging.error(exception)
@@ -747,26 +762,25 @@ def vulnerability_scan(
         activity_id):
     '''
     This function will run nuclei as a vulnerability scanner
+    ----
+    unfurl the urls to keep only domain and path, this will be sent to vuln scan
+    ignore certain file extensions
+    Thanks: https://github.com/six2dez/reconftw
     '''
+    os.system('cat $2/all_urls.txt | grep -Eiv "\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js)$" | unfurl -u format %s://%d%p >> $2/unfurl_urls.txt')
+    sort -u $2/unfurl_urls.txt -o $2/unfurl_urls.txt
 
     vulnerability_result_path = results_dir + '/vulnerability.json'
 
     nuclei_scan_urls = results_dir + '/unfurl_urls.txt'
 
     if(task.scan_type.fetch_url):
-        os.system(
-            'cat {} >> {}'.format(
-                results_dir +
-                '/unfurl_urls.txt',
-                results_dir +
-                '/alive.txt'))
-        os.system('sort -u {} -o {}'.format(results_dir + \
-                  '/alive.txt', results_dir + '/alive.txt'))
+        os.system('cat {0}/unfurl_urls.txt >> {0}/alive.txt'.format(results_dir))
+        os.system('sort -u {} -o {}'.format(results_dir + '/alive.txt', results_dir + '/alive.txt'))
 
     nuclei_scan_urls = results_dir + '/alive.txt'
 
-    nuclei_command = 'nuclei -json -l {} -o {}'.format(
-        nuclei_scan_urls, vulnerability_result_path)
+    nuclei_command = 'nuclei -json -l {} -o {}'.format(nuclei_scan_urls, vulnerability_result_path)
 
     # check yaml settings for templates
     if 'all' in yaml_configuration['vulnerability_scan']['template']:
