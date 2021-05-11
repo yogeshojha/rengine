@@ -923,6 +923,14 @@ Detailed Scan Results for {{history.domain_name}}
 					},
 					"targets": 5,
 				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return data.toFixed(4)+'s';
+						}
+					},
+					"targets": 7,
+				},
 			],
 			drawCallback: function () {
 				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })

@@ -440,10 +440,12 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                     endpoint.technology_stack = ','.join(
                         json_st['technologies'])
                 if 'response-time' in json_st:
-                    response_time = float(json_st['response-time'][:-1])
+                    response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
+                    if json_st['response-time'][-2:] == 'ms':
+                        response_time = response_time / 1000
                     endpoint.response_time = response_time
-                endpoint.discovered_date = timezone.now()
-                endpoint.is_default = True
+                endpoint.discovered_date=timezone.now()
+                endpoint.is_default=True
                 endpoint.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
@@ -457,69 +459,69 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     This function is responsible for taking screenshots
     '''
     # after subdomain discovery run aquatone for visual identification
-    output_aquatone_path = results_dir + '/aquascreenshots'
+    output_aquatone_path=results_dir + '/aquascreenshots'
 
-    alive_subdomains_path = results_dir + '/alive.txt'
+    alive_subdomains_path=results_dir + '/alive.txt'
 
     if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+        scan_port=yaml_configuration[VISUAL_IDENTIFICATION][PORT]
         # check if scan port is valid otherwise proceed with default xlarge
         # port
         if scan_port not in ['small', 'medium', 'large', 'xlarge']:
-            scan_port = 'xlarge'
+            scan_port='xlarge'
     else:
-        scan_port = 'xlarge'
+        scan_port='xlarge'
 
     if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-        threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+        threads=yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
     else:
-        threads = 10
+        threads=10
 
     if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+        http_timeout=yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
     else:
-        http_timeout = 3000  # Default Timeout for HTTP
+        http_timeout=3000  # Default Timeout for HTTP
 
     if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+        screenshot_timeout=yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
     else:
-        screenshot_timeout = 30000  # Default Timeout for Screenshot
+        screenshot_timeout=30000  # Default Timeout for Screenshot
 
     if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+        scan_timeout=yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
     else:
-        scan_timeout = 100  # Default Timeout for Scan
+        scan_timeout=100  # Default Timeout for Scan
 
-    aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+    aquatone_command='cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
         alive_subdomains_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
 
     logging.info(aquatone_command)
     os.system(aquatone_command)
     os.system('chmod -R 607 /app/tools/scan_results/*')
-    aqua_json_path = output_aquatone_path + '/aquatone_session.json'
+    aqua_json_path=output_aquatone_path + '/aquatone_session.json'
 
     try:
         if os.path.isfile(aqua_json_path):
             with open(aqua_json_path, 'r') as json_file:
-                data = json.load(json_file)
+                data=json.load(json_file)
 
             for host in data['pages']:
-                sub_domain = Subdomain.objects.get(
-                    scan_history__id=task.id,
-                    name=data['pages'][host]['hostname'])
+                sub_domain=Subdomain.objects.get(
+                    scan_history__id = task.id,
+                    name = data['pages'][host]['hostname'])
                 # list_ip = data['pages'][host]['addrs']
                 # ip_string = ','.join(list_ip)
                 # sub_domain.ip_address = ip_string
-                sub_domain.screenshot_path = results_dir + \
+                sub_domain.screenshot_path=results_dir + \
                     '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                sub_domain.http_header_path = results_dir + \
+                sub_domain.http_header_path=results_dir + \
                     '/aquascreenshots/' + data['pages'][host]['headersPath']
-                tech_list = []
+                tech_list=[]
                 if data['pages'][host]['tags'] is not None:
                     for tag in data['pages'][host]['tags']:
                         tech_list.append(tag['text'])
-                tech_string = ','.join(tech_list)
-                sub_domain.technology_stack = tech_string
+                tech_string=','.join(tech_list)
+                sub_domain.technology_stack=tech_string
                 sub_domain.save()
     except Exception as exception:
         logging.error(exception)
@@ -530,17 +532,17 @@ def port_scanning(task, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for running the port scan
     '''
-    subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-    port_results_file = results_dir + '/ports.json'
+    subdomain_scan_results_file=results_dir + '/sorted_subdomain_collection.txt'
+    port_results_file=results_dir + '/ports.json'
 
     # check the yaml_configuration and choose the ports to be scanned
 
-    scan_ports = '-'  # default port scan everything
+    scan_ports='-'  # default port scan everything
     if PORTS in yaml_configuration[PORT_SCAN]:
         # TODO:  legacy code, remove top-100 in future versions
-        all_ports = yaml_configuration[PORT_SCAN][PORTS]
+        all_ports=yaml_configuration[PORT_SCAN][PORTS]
         if 'full' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
+            naabu_command='cat {} | naabu -json -o {} -p {}'.format(
                 subdomain_scan_results_file, port_results_file, '-')
         elif 'top-100' in all_ports:
             naabu_command = 'cat {} | naabu -json -o {} -top-ports 100'.format(
@@ -766,7 +768,9 @@ def fetch_endpoints(
                     endpoint.technology_stack = ','.join(
                         json_st['technologies'])
                 if 'response-time' in json_st:
-                    response_time = float(json_st['response-time'][:-1])
+                    response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
+                    if json_st['response-time'][-2:] == 'ms':
+                        response_time = response_time / 1000
                     endpoint.response_time = response_time
                 endpoint.save()
     except Exception as exception:
