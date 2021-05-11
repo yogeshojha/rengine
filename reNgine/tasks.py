@@ -383,7 +383,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
 
-    httpx_command = 'cat {} | httpx -follow-host-redirects -random-agent -cdn -json -o {} -threads 100'.format(
+    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -follow-host-redirects -random-agent -json -o {} -threads 100'.format(
         subdomain_scan_results_file, httpx_results_file)
 
     os.system(httpx_command)
@@ -417,7 +417,6 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                     subdomain.cname = cname_list
                 subdomain.discovered_date = timezone.now()
                 subdomain.save()
-                alive_file.write(json_st['url'] + '\n')
                 '''
                 Saving Default http urls to EndPoint
                 '''
@@ -434,18 +433,20 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                 if 'content-length' in json_st:
                     endpoint.content_length = json_st['content-length']
                 if 'content-type' in json_st:
-                    endpoint.conteny_type = json_st['content-type']
+                    endpoint.content_type = json_st['content-type']
+                if 'webserver' in json_st:
+                    endpoint.webserver = json_st['webserver']
+                if 'technologies' in json_st:
+                    endpoint.technology_stack = ','.join(
+                        json_st['technologies'])
                 endpoint.discovered_date = timezone.now()
                 endpoint.is_default = True
                 endpoint.save()
+                alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
                 logging.error(exception)
                 update_last_activity(activity_id, 0)
-
     alive_file.close()
-
-    # sort and unique alive urls
-    os.system('sort -u {} -o {}'.format(alive_file_location, alive_file_location))
 
 
 def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
@@ -691,28 +692,38 @@ def fetch_endpoints(
     domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.domain_name)
 
     if 'deep' in scan_type:
-        # performs deep url gathering for all the subdomains present - RECOMMENDED
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' % ("None", results_dir, scan_type, domain_regex, tools))
+        # performs deep url gathering for all the subdomains present -
+        # RECOMMENDED
+        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' %
+                  ("None", results_dir, scan_type, domain_regex, tools))
     else:
         # perform url gathering only for main domain - USE only for quick scan
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' % (domain.domain_name, results_dir, scan_type, domain_regex, tools))
+        os.system(
+            settings.TOOL_LOCATION +
+            'get_urls.sh %s %s %s %s %s' %
+            (domain.domain_name,
+             results_dir,
+             scan_type,
+             domain_regex,
+             tools))
 
-    ignore_extension = None
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
-        ignore_extension = '|'.join(yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
+        ignore_extension = '|'.join(
+            yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
         logger.info('Ignore extensions' + ignore_extension)
+        os.system(
+            'cat {0}/all_urls.txt | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
+                results_dir, ignore_extension))
+        os.system(
+            'rm {0}/all_urls.txt && mv {0}/temp_urls.txt {0}/all_urls.txt'.format(results_dir))
 
-    # once the get_urls finishes gathering urls, ignore file extensions
-    if ignore_extension:
-        os.system('{0}/all_urls.txt | grep -Eiv "\.({1}).*" > {0}/final_urls.txt'.format(results_dir, ignore_extensione))
-        os.system('rm {0}/all_urls.txt && mv {0}/final_urls.txt {0}/all_urls.txt'.format(results_dirs))
     '''
     Go spider & waybackurls accumulates a lot of urls, which is good but nuclei
     takes forever to scan even a simple website, so we will do http probing
     and filter HTTP status 404, this way we can reduce the number of Non Existent
     URLS
     '''
-    os.system('httpx -l {}/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -timeout 3 -f 404 -o {}/final_httpx_urls.json'.format(results_dir))
+    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -timeout 3 -o {0}/final_httpx_urls.json'.format(results_dir))
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
@@ -720,39 +731,42 @@ def fetch_endpoints(
         lines = urls_json_result.readlines()
         for line in lines:
             json_st = json.loads(line.strip())
-            endpoint = EndPoint()
-            endpoint.scan_history = task
-            endpoint.target_domain = domain
-            endpoint.http_url = json_st['url']
-            # extract the subdomain from url and map to Subdomain Model
-            url = tldextract.extract(json_st['url'])
-            _subdomain = '.'.join(url[:4])
-            if _subdomain[0] == '.':
-                _subdomain = _subdomain[1:]
-            # find the subdomain, if exists then it's not an external url
-            try:
-                subdomain = Subdomain.objects.get(
-                    scan_history=task, name=_subdomain)
-                endpoint.subdomain = subdomain
-            except Exception as exception:
-                logger.error('Subdomain not found...')
-                continue
-            if 'title' in json_st:
-                endpoint.page_title = json_st['title']
-            if 'webserver' in json_st:
-                endpoint.webserver = json_st['webserver']
-            if 'content-length' in json_st:
-                endpoint.content_length = json_st['content-length']
-            if 'content-type' in json_st:
-                endpoint.content_type = json_st['content-type']
-            if 'status-code' in json_st:
-                endpoint.http_status = json_st['status-code']
-            if 'technologies' in json_st:
-                endpoint.technology_stack = ','.join(json_st['technologies'])
-            endpoint.save()
+            if not EndPoint.objects.filter(http_url=json_st['url']).count():
+                endpoint = EndPoint()
+                endpoint.scan_history = task
+                endpoint.target_domain = domain
+                endpoint.http_url = json_st['url']
+                # extract the subdomain from url and map to Subdomain Model
+                url = tldextract.extract(json_st['url'])
+                _subdomain = '.'.join(url[:4])
+                if _subdomain[0] == '.':
+                    _subdomain = _subdomain[1:]
+                # find the subdomain, if exists then it's not an external url
+                try:
+                    subdomain = Subdomain.objects.get(
+                        scan_history=task, name=_subdomain)
+                    endpoint.subdomain = subdomain
+                except Exception as exception:
+                    logger.error('Subdomain not found...')
+                    continue
+                if 'title' in json_st:
+                    endpoint.page_title = json_st['title']
+                if 'webserver' in json_st:
+                    endpoint.webserver = json_st['webserver']
+                if 'content-length' in json_st:
+                    endpoint.content_length = json_st['content-length']
+                if 'content-type' in json_st:
+                    endpoint.content_type = json_st['content-type']
+                if 'status-code' in json_st:
+                    endpoint.http_status = json_st['status-code']
+                if 'technologies' in json_st:
+                    endpoint.technology_stack = ','.join(
+                        json_st['technologies'])
+                endpoint.save()
     except Exception as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
+
 
 def vulnerability_scan(
         task,
@@ -767,20 +781,19 @@ def vulnerability_scan(
     ignore certain file extensions
     Thanks: https://github.com/six2dez/reconftw
     '''
-    os.system('cat $2/all_urls.txt | grep -Eiv "\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js)$" | unfurl -u format %s://%d%p >> $2/unfurl_urls.txt')
-    sort -u $2/unfurl_urls.txt -o $2/unfurl_urls.txt
+    urls_path = '/alive.txt'
+    if task.scan_type.fetch_url:
+        os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
+        os.system(
+            'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
+        urls_path = '/unfurl_urls.txt'
 
     vulnerability_result_path = results_dir + '/vulnerability.json'
 
-    nuclei_scan_urls = results_dir + '/unfurl_urls.txt'
+    vulnerability_scan_input_file = results_dir + urls_path
 
-    if(task.scan_type.fetch_url):
-        os.system('cat {0}/unfurl_urls.txt >> {0}/alive.txt'.format(results_dir))
-        os.system('sort -u {} -o {}'.format(results_dir + '/alive.txt', results_dir + '/alive.txt'))
-
-    nuclei_scan_urls = results_dir + '/alive.txt'
-
-    nuclei_command = 'nuclei -json -l {} -o {}'.format(nuclei_scan_urls, vulnerability_result_path)
+    nuclei_command = 'nuclei -json -l {} -o {}'.format(
+        vulnerability_scan_input_file, vulnerability_result_path)
 
     # check yaml settings for templates
     if 'all' in yaml_configuration['vulnerability_scan']['template']:

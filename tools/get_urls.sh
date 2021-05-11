@@ -44,10 +44,11 @@ fi
 
 echo "Finished gathering urls, now sorting and running http probing"
 
-cat $2/urls* > $2/urls.txt
-
-# Sort and unique the endpoints
-sort -u $2/urls.txt -o $2/all_urls.txt
+cat $2/urls* > $2/final_urls.txt
 
 # remove all urls*
 rm -rf $2/url*
+
+# Sort and unique the endpoints
+cat $2/alive.txt >> $2/final_urls.txt
+sort -u $2/final_urls.txt -o $2/all_urls.txt
