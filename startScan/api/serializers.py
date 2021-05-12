@@ -8,8 +8,6 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
-    vulnerability_count = serializers.SerializerMethodField('get_vulnerability_count')
-
     class Meta:
         model = Subdomain
         fields = '__all__'
@@ -17,10 +15,6 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
     def get_is_interesting(self, Subdomain):
         return get_interesting_subdomains(Subdomain.scan_history.id).filter(name=Subdomain.name).exists()
-
-    def get_vulnerability_count(self, Subdomain):
-        return Subdomain.get_vulnerability_count();
-
 
 class EndpointSerializer(serializers.ModelSerializer):
 

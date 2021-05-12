@@ -383,7 +383,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
 
-    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -follow-host-redirects -random-agent -json -o {} -threads 100'.format(
+    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -json -o {} -threads 100'.format(
         subdomain_scan_results_file, httpx_results_file)
 
     os.system(httpx_command)
@@ -400,23 +400,6 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
             try:
                 subdomain = Subdomain.objects.get(
                     scan_history=task, name=json_st['url'].split("//")[-1])
-                if 'url' in json_st:
-                    subdomain.http_url = json_st['url']
-                if 'status-code' in json_st:
-                    subdomain.http_status = json_st['status-code']
-                if 'title' in json_st:
-                    subdomain.page_title = json_st['title']
-                if 'content-length' in json_st:
-                    subdomain.content_length = json_st['content-length']
-                if 'ip' in json_st:
-                    subdomain.ip_address = json_st['ip']
-                if 'cdn' in json_st:
-                    subdomain.is_ip_cdn = json_st['cdn']
-                if 'cnames' in json_st:
-                    cname_list = ','.join(json_st['cnames'])
-                    subdomain.cname = cname_list
-                subdomain.discovered_date = timezone.now()
-                subdomain.save()
                 '''
                 Saving Default http urls to EndPoint
                 '''
@@ -426,27 +409,49 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                 endpoint.subdomain = subdomain
                 if 'url' in json_st:
                     endpoint.http_url = json_st['url']
+                    subdomain.http_url = json_st['url']
                 if 'status-code' in json_st:
                     endpoint.http_status = json_st['status-code']
+                    subdomain.http_status = json_st['status-code']
                 if 'title' in json_st:
                     endpoint.page_title = json_st['title']
+                    subdomain.page_title = json_st['title']
                 if 'content-length' in json_st:
                     endpoint.content_length = json_st['content-length']
+                    subdomain.content_length = json_st['content-length']
                 if 'content-type' in json_st:
                     endpoint.content_type = json_st['content-type']
+                    subdomain.content_type = json_st['content-type']
                 if 'webserver' in json_st:
                     endpoint.webserver = json_st['webserver']
+                    subdomain.webserver = json_st['webserver']
                 if 'technologies' in json_st:
                     endpoint.technology_stack = ','.join(
+                        json_st['technologies'])
+                    subdomain.technology_stack = ','.join(
                         json_st['technologies'])
                 if 'response-time' in json_st:
                     response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
+                    subdomain.response_time = response_time
+                if 'cdn' in json_st:
+                    subdomain.is_cdn = json_st['cdn']
+                    endpoint.is_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    endpoint.cname = cname_list
+                    subdomain.cname = cname_list
+                if 'a' in json_st['a']:
+                    ip_list = ','.join(json_st['a'])
+                    endpoint.ip_address = ip_list
+                    subdomain.ip_address = ip_list
                 endpoint.discovered_date=timezone.now()
+                subdomain.discovered_date = timezone.now()
                 endpoint.is_default=True
                 endpoint.save()
+                subdomain.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
                 logging.error(exception)
@@ -728,7 +733,7 @@ def fetch_endpoints(
     and filter HTTP status 404, this way we can reduce the number of Non Existent
     URLS
     '''
-    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -title -tech-detect -json -follow-redirects -timeout 3 -o {0}/final_httpx_urls.json'.format(results_dir))
+    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -timeout 3 -o {0}/final_httpx_urls.json'.format(results_dir))
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
@@ -752,6 +757,8 @@ def fetch_endpoints(
                         scan_history=task, name=_subdomain)
                     endpoint.subdomain = subdomain
                 except Exception as exception:
+                    print(url)
+                    print(_subdomain)
                     logger.error('Subdomain not found...')
                     continue
                 if 'title' in json_st:
@@ -772,6 +779,14 @@ def fetch_endpoints(
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
+                if 'cdn' in json_st:
+                    endpoint.is_cdn = json_st['cdn']
+                if 'cnames' in json_st:
+                    cname_list = ','.join(json_st['cnames'])
+                    endpoint.cname = cname_list
+                if 'a' in json_st['a']:
+                    ip_list = ','.join(json_st['a'])
+                    endpoint.ip_address = ip_list
                 endpoint.save()
     except Exception as exception:
         logging.error(exception)

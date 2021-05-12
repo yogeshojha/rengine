@@ -79,54 +79,26 @@ class Subdomain(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=1000)
-    cname = models.CharField(max_length=500, blank=True)
     open_ports = models.CharField(max_length=1000)
-    http_status = models.IntegerField(default=0)
-    content_length = models.IntegerField(default=0)
-    page_title = models.CharField(max_length=1000)
     http_url = models.CharField(max_length=1000)
-    ip_address = models.CharField(max_length=1000)
-    is_ip_cdn = models.BooleanField(null=True, default=False)
     screenshot_path = models.CharField(max_length=1000, null=True)
     http_header_path = models.CharField(max_length=1000, null=True)
-    technology_stack = models.CharField(max_length=1500, null=True)
     directory_json = JSONField(null=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
+    ip_address = models.CharField(max_length=1500, null=True, blank=True,)
+    cname = models.CharField(max_length=1500, blank=True, null=True)
+    is_cdn = models.BooleanField(null=True, default=False)
+    http_status = models.IntegerField(default=0)
+    content_type = models.CharField(max_length=100, null=True, blank=True)
+    technology_stack = models.CharField(max_length=1500, null=True, blank=True)
+    response_time = models.FloatField(null=True, blank=True)
+    webserver = models.CharField(max_length=1000, blank=True, null=True)
+    content_length = models.IntegerField(default=0)
+    page_title = models.CharField(max_length=1000, blank=True, null=True)
 
     def __str__(self):
         return str(self.name)
-
-    def get_endpoint_count(self):
-        return EndPoint.objects.filter(scan_history__id=self.id).count()
-
-    def get_vulnerability_count(self):
-        return Vulnerability.objects.filter(subdomain__name=self.name).count()
-
-    def get_info_vulnerability_count(self):
-        return Vulnerability.objects.filter(
-            scan_history__id=self.id).filter(
-            severity=0).count()
-
-    def get_low_vulnerability_count(self):
-        return Vulnerability.objects.filter(
-            scan_history__id=self.id).filter(
-            severity=1).count()
-
-    def get_medium_vulnerability_count(self):
-        return Vulnerability.objects.filter(
-            scan_history__id=self.id).filter(
-            severity=2).count()
-
-    def get_high_vulnerability_count(self):
-        return Vulnerability.objects.filter(
-            scan_history__id=self.id).filter(
-            severity=3).count()
-
-    def get_critical_vulnerability_count(self):
-        return Vulnerability.objects.filter(
-            scan_history__id=self.id).filter(
-            severity=4).count()
 
 
 class EndPoint(models.Model):
@@ -137,12 +109,15 @@ class EndPoint(models.Model):
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
     http_status = models.IntegerField(default=0)
-    content_type = models.CharField(max_length=100, null=True)
+    content_type = models.CharField(max_length=100, null=True, blank=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    technology_stack = models.CharField(max_length=1500, null=True)
+    technology_stack = models.CharField(max_length=1500, null=True, blank=True)
     response_time = models.FloatField(null=True, blank=True)
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     is_default = models.BooleanField(null=True, blank=True, default=False)
+    ip_address = models.CharField(max_length=1500, null=True, blank=True)
+    cname = models.CharField(max_length=1500, blank=True, null=True)
+    is_cdn = models.BooleanField(null=True, default=False)
 
     def __str__(self):
         return self.http_url

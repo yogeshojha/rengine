@@ -418,6 +418,7 @@ Detailed Scan Results for {{history.domain_name}}
 										<th>Page Title</th>
 										<th>Technology</th>
 										<th>Screenshot</th>
+										<th>Response Time</th>
 										<th>HTTP URL</th>
 										<th>IS CDN</th>
 										<th>CNAME</th>
@@ -543,16 +544,16 @@ Detailed Scan Results for {{history.domain_name}}
 				{'data': 'page_title'},
 				{'data': 'technology_stack'},
 				{'data': 'screenshot_path', 'searchable': false},
-				{'data': 'http_url'},
-				{'data': 'is_ip_cdn'},
-				{'data': 'cname'},
+				{'data': 'response_time'},
 				{'data': 'checked'},
+				{'data': 'http_url'},
+				{'data': 'is_cdn'},
+				{'data': 'cname'},
 				{'data': 'is_interesting'},
-				{'data': 'vulnerability_count'},
 			],
 			"columnDefs": [
 				{
-					"targets": [ 9, 10, 13, 14],
+					"targets": [ 10, 13, 14],
 					"visible": false,
 					"searchable": false,
 				},
@@ -594,23 +595,6 @@ Detailed Scan Results for {{history.domain_name}}
 						return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
 					},
 					"targets": 1
-				},
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						return row['vulnerability_count'];
-						if (data) {
-							if (row['is_ip_cdn']) {
-								return `<span class='badge badge-pills badge-warning bs-tooltip' title="CDN IP Address">` + data + `</span>`
-							}
-							return `<span class='badge badge-pills badge-info'>` + data + `</span>`
-						}
-						else {
-							return '';
-						}
-					},
-					"targets": 2,
 				},
 				{
 					"render": function ( data, type, row ) {
@@ -665,6 +649,15 @@ Detailed Scan Results for {{history.domain_name}}
 						return "";
 					},
 					"targets": 8,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return data.toFixed(4)+'s';
+						}
+						return ""
+					},
+					"targets": 9,
 				},
 			],
 			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
@@ -928,6 +921,7 @@ Detailed Scan Results for {{history.domain_name}}
 						if (data){
 							return data.toFixed(4)+'s';
 						}
+						return "";
 					},
 					"targets": 7,
 				},

@@ -80,8 +80,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             Q(content_length__icontains=search_value) |
             Q(page_title__icontains=search_value) |
             Q(http_url__icontains=search_value) |
-            Q(ip_address__icontains=search_value) |
-            Q(is_ip_cdn__icontains=search_value) |
+            Q(is_cdn__icontains=search_value) |
             Q(screenshot_path__icontains=search_value) |
             Q(http_header_path__icontains=search_value) |
             Q(technology_stack__icontains=search_value) |
@@ -123,9 +122,9 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
                     print(e)
             elif 'cdn' in lookup_title:
                 if lookup_content == 'true':
-                    qs = self.queryset.filter(is_ip_cdn=True)
+                    qs = self.queryset.filter(is_cdn=True)
                 elif lookup_content == 'false':
-                    qs = self.queryset.filter(is_ip_cdn=False)
+                    qs = self.queryset.filter(is_cdn=False)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.filter(checked=False)
@@ -188,9 +187,9 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
                     print(e)
             elif 'cdn' in lookup_title:
                 if lookup_content == 'true':
-                    qs = self.queryset.exclude(is_ip_cdn=True)
+                    qs = self.queryset.exclude(is_cdn=True)
                 elif lookup_content == 'false':
-                    qs = self.queryset.exclude(is_ip_cdn=False)
+                    qs = self.queryset.exclude(is_cdn=False)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.exclude(checked=False)
