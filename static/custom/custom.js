@@ -128,3 +128,43 @@ function vuln_status_change(checkbox, id)
 	}
 	change_vuln_status(id);
 }
+
+// truncate the long string and put ... in the end
+function truncate(source, size) {
+  return source.length > size ? source.slice(0, size - 1) + "…" : source;
+}
+
+// splits really long strings into multiple lines
+// Souce: https://stackoverflow.com/a/52395960
+function split(str, maxWidth) {
+  const newLineStr = "</br>";
+  done = false;
+  res = '';
+  do {
+    found = false;
+    // Inserts new line at first whitespace of the line
+    for (i = maxWidth - 1; i >= 0; i--) {
+      if (testWhite(str.charAt(i))) {
+        res = res + [str.slice(0, i), newLineStr].join('');
+        str = str.slice(i + 1);
+        found = true;
+        break;
+      }
+    }
+    // Inserts new line at maxWidth position, the word is too long to wrap
+    if (!found) {
+      res += [str.slice(0, maxWidth), newLineStr].join('');
+      str = str.slice(maxWidth);
+    }
+
+    if (str.length < maxWidth)
+      done = true;
+  } while (!done);
+
+  return res + str;
+}
+
+function testWhite(x) {
+  const white = new RegExp(/^\s$/);
+  return white.test(x.charAt(0));
+};

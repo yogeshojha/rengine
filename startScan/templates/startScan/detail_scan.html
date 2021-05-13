@@ -884,7 +884,8 @@ Detailed Scan Results for {{history.domain_name}}
 						// {
 						// 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
 						// }
-						return "<a href='"+data+"' target='_blank' class='text-info'>"+data+"</a>";
+						var url = split(data, 70);
+						return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
 					},
 					"targets": 0,
 				},
