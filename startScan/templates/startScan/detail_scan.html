@@ -157,7 +157,7 @@ Detailed Scan Results for {{history.domain_name}}
 			<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
 				<div class="row">
 					<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-five">
+						<div class="widget widget-five widget-progress">
 							<div class="widget-heading">
 								<a href="javascript:void(0)" class="task-info">
 									<div class="usr-avatar">
@@ -235,12 +235,26 @@ Detailed Scan Results for {{history.domain_name}}
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-8 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+						<div class="widget widget-ip">
+							<div class="widget-heading">
+								<h6 class="">{{discovered_ip_length}} Discovered IP Addresses</h6>
+							</div>
+							<div class="widget-content">
+								<div class="mt-container mx-auto">
+									{% for ip in ip_list %}
+										<span class='badge badge-info badge-pills m-1'>{{ip}}</span>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
 					<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 						{% include 'base/_items/interesting_recon.html' %}
 					</div>
 					{% if new_urls.count or removed_urls.count or new_subdomains or removed_subdomains %}
 					<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-activity-four">
+						<div class="widget widget-five">
 							<div class="widget-heading">
 								<h6 class="">Subdomain Changes</h6>
 								<p class='text-muted small'>
@@ -581,18 +595,28 @@ Detailed Scan Results for {{history.domain_name}}
 				},
 				{
 					"render": function ( data, type, row ) {
+						badges = '';
 						interesting_badge = '';
+						cdn_badge = '';
+						if (row['is_cdn'])
+						{
+							cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
+						}
 						if(row['is_interesting'])
 						{
-							interesting_badge = "<span class='mb-2 badge badge-pills badge-danger'>Interesting</span></br>"
+							interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+						}
+						if(cdn_badge || interesting_badge)
+						{
+							badges = cdn_badge + interesting_badge + '</br>';
 						}
 						if (row['http_url']) {
 							if (row['cname']) {
-								return interesting_badge + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
 							}
-							return interesting_badge + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
 						}
-						return interesting_badge + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
+						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
 					},
 					"targets": 1
 				},
@@ -616,11 +640,9 @@ Detailed Scan Results for {{history.domain_name}}
 				},
 				{
 					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
 						if (data)
 						{
-							return span_values(data, "info");
+							return parse_ip(data, row['is_cdn']);
 						}
 						return "";
 					},
@@ -1101,114 +1123,102 @@ Detailed Scan Results for {{history.domain_name}}
 		});
 	});
 
-	</script>
-	<script type="text/javascript">
-	// span values function will seperate the values by comma and put badge around it
-	function span_values(data, color)
-	{
-		var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-		var data_with_span ="";
-		data.split(/\s*,\s*/).forEach(function(split_vals) {
-			data_with_span+=badge + split_vals + "</span>";
-		});
-		return data_with_span;
-	}
-
-
-	// apex charts for vulnerability summary
-	var options = {
-		chart: {
-			type: 'donut',
-			width: 355
+</script>
+<script type="text/javascript">
+// apex charts for vulnerability summary
+var options = {
+	chart: {
+		type: 'donut',
+		width: 355
+	},
+	colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+	dataLabels: {
+		enabled: false
+	},
+	legend: {
+		position: 'bottom',
+		horizontalAlign: 'center',
+		fontSize: '14px',
+		markers: {
+			width: 10,
+			height: 10,
 		},
-		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-		dataLabels: {
-			enabled: false
-		},
-		legend: {
-			position: 'bottom',
-			horizontalAlign: 'center',
-			fontSize: '14px',
-			markers: {
-				width: 10,
-				height: 10,
-			},
-			itemMargin: {
-				horizontal: 0,
-				vertical: 8
-			}
-		},
-		plotOptions: {
-			pie: {
-				donut: {
-					size: '65%',
-					background: 'transparent',
-					labels: {
+		itemMargin: {
+			horizontal: 0,
+			vertical: 8
+		}
+	},
+	plotOptions: {
+		pie: {
+			donut: {
+				size: '65%',
+				background: 'transparent',
+				labels: {
+					show: true,
+					name: {
 						show: true,
-						name: {
-							show: true,
-							fontSize: '29px',
-							fontFamily: 'Nunito, sans-serif',
-							color: undefined,
-							offsetY: -10
-						},
-						value: {
-							show: true,
-							fontSize: '26px',
-							fontFamily: 'Nunito, sans-serif',
-							color: '20',
-							offsetY: 16,
-							formatter: function (val) {
-								return val
-							}
-						},
-						total: {
-							show: true,
-							showAlways: true,
-							label: 'Total',
-							color: '#888ea8',
-							formatter: function (w) {
-								return w.globals.seriesTotals.reduce( function(a, b) {
-									return a + b
-								}, 0)
-							}
+						fontSize: '29px',
+						fontFamily: 'Nunito, sans-serif',
+						color: undefined,
+						offsetY: -10
+					},
+					value: {
+						show: true,
+						fontSize: '26px',
+						fontFamily: 'Nunito, sans-serif',
+						color: '20',
+						offsetY: 16,
+						formatter: function (val) {
+							return val
+						}
+					},
+					total: {
+						show: true,
+						showAlways: true,
+						label: 'Total',
+						color: '#888ea8',
+						formatter: function (w) {
+							return w.globals.seriesTotals.reduce( function(a, b) {
+								return a + b
+							}, 0)
 						}
 					}
 				}
 			}
-		},
-		stroke: {
-			show: true,
-			width: 25,
-		},
-		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
-	}
-
-	var chart = new ApexCharts(
-		document.querySelector("#vulnerability-chart"),
-		options
-	);
-
-	chart.render();
-
-	//to remove the image element if there is no screenshot captured
-	function removeImageElement(element)
-	{
-		element.parentElement.remove();
-	}
-
-	function subdomain_status_change(checkbox, id)
-	{
-		if (checkbox.checked) {
-			checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 		}
-		else {
-			checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
-			checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
-		}
-		change_subdomain_status(id);
-	}
+	},
+	stroke: {
+		show: true,
+		width: 25,
+	},
+	series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+	labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
+}
 
-	</script>
-	{% endblock page_level_script %}
+var chart = new ApexCharts(
+	document.querySelector("#vulnerability-chart"),
+	options
+);
+
+chart.render();
+
+//to remove the image element if there is no screenshot captured
+function removeImageElement(element)
+{
+	element.parentElement.remove();
+}
+
+function subdomain_status_change(checkbox, id)
+{
+	if (checkbox.checked) {
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+	}
+	else {
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+	}
+	change_subdomain_status(id);
+}
+
+</script>
+{% endblock page_level_script %}

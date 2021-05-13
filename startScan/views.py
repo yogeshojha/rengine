@@ -1,5 +1,6 @@
 import os
 import requests
+import itertools
 
 from datetime import datetime
 
@@ -113,6 +114,13 @@ def detail_scan(request, id=None):
             context['new_urls'] = endpoint_q1.difference(endpoint_q2)
             context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
             context['last_scan_endpoint'] = last_scan
+
+        ip_addresses = Subdomain.objects.filter(scan_history=id).values('ip_addresses').distinct()
+        if ip_addresses:
+            ip_list = [ip['ip_addresses'].split(',') for ip in ip_addresses if ip['ip_addresses'] is not None]
+            ip_list = list(set(list(itertools.chain(*ip_list))))
+            context['ip_list'] = ip_list
+            context['discovered_ip_length'] = len(ip_list)
 
     return render(request, 'startScan/detail_scan.html', context)
 

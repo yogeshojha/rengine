@@ -278,3 +278,165 @@ div.dataTables_wrapper div.dataTables_filter {
   width: 22px;
   border-radius: 50%;
 }
+
+.widget.widget-ip {
+  position: relative;
+  background: #fff;
+  border-radius: 6px;
+  height: 250px;
+  padding: 0; }
+  .widget.widget-ip .widget-heading {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #e0e6ed;
+    padding: 20px 20px;
+    padding-bottom: 20px;
+    margin-bottom: 0; }
+    .widget.widget-ip .widget-heading h5 {
+      font-size: 17px;
+      display: block;
+      color: #0e1726;
+      font-weight: 600;
+      margin-bottom: 0; }
+    .widget.widget-ip .widget-heading .task-action svg {
+      color: #888ea8;
+      width: 19px;
+      height: 19px; }
+    .widget.widget-ip .widget-heading .task-action .dropdown-menu {
+      transform: translate3d(-141px, 0, 0px); }
+
+/*
+    =====================
+        Unique Visitors
+    =====================
+*/
+/*
+    =========================
+        Organic Vs Direct
+    =========================
+*/
+/*
+    ========================
+        Recent Activities
+    ========================
+*/
+.widget-ip .widget-content {
+  padding: 12px 10px 21px 20px; }
+
+.widget-ip .w-shadow-top {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  height: 17px;
+  width: 97%;
+  pointer-events: none;
+  margin-top: -10px;
+  left: 2px;
+  -webkit-filter: blur(9px);
+  filter: blur(9px);
+  background: -webkit-linear-gradient(180deg, #060818 44%, #060818eb 73%, #2C303C00);
+  background: linear-gradient(180deg, #ffffff 44%, #ffffffde 73%, #2C303C00); }
+
+.widget-ip .w-shadow-bottom {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  height: 17px;
+  width: 97%;
+  pointer-events: none;
+  margin-top: -3px;
+  left: 2px;
+  -webkit-filter: blur(9px);
+  filter: blur(9px);
+  background: -webkit-linear-gradient(180deg, #ffffff 44%, #ffffffde 73%, #2C303C00);
+  background: linear-gradient(180deg, #ffffff 44%, #ffffffde 73%, #2C303C00); }
+
+.widget-ip .mt-container {
+  position: relative;
+  height: 170px;
+  overflow: auto;
+  padding: 15px 12px 0 12px; }
+
+.widget-ip .timeline-line .item-timeline {
+  display: flex;
+  margin-bottom: 35px; }
+  .widget-ip .timeline-line .item-timeline .t-dot {
+    position: relative; }
+    .widget-ip .timeline-line .item-timeline .t-dot div {
+      background: transparent;
+      border-radius: 50%;
+      padding: 5px;
+      margin-right: 11px;
+      display: flex;
+      height: 32px;
+      justify-content: center;
+      width: 32px; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-primary {
+        background-color: #c2d5ff; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-primary svg {
+          color: #4361ee; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-secondary {
+        background-color: #dccff7; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-secondary svg {
+          color: #805dca; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-success {
+        background-color: #c7e6e4; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-success svg {
+          color: #009688; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-danger {
+        background-color: #ffe1e2; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-danger svg {
+          color: #e7515a; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-warning {
+        background-color: #ffeccb; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-warning svg {
+          color: #e2a03f; }
+      .widget-ip .timeline-line .item-timeline .t-dot div.t-dark {
+        background-color: #acb0c3; }
+        .widget-ip .timeline-line .item-timeline .t-dot div.t-dark svg {
+          color: #3b3f5c; }
+    .widget-ip .timeline-line .item-timeline .t-dot svg {
+      color: #fff;
+      height: 15px;
+      width: 15px;
+      align-self: center; }
+  .widget-ip .timeline-line .item-timeline .t-content {
+    width: 100%; }
+    .widget-ip .timeline-line .item-timeline .t-content .t-uppercontent {
+      display: flex;
+      justify-content: space-between; }
+      .widget-ip .timeline-line .item-timeline .t-content .t-uppercontent h5 {
+        font-size: 14px;
+        letter-spacing: 0;
+        font-weight: 600;
+        margin-bottom: 0; }
+      .widget-ip .timeline-line .item-timeline .t-content .t-uppercontent span {
+        margin-bottom: 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: #009688; }
+    .widget-ip .timeline-line .item-timeline .t-content p {
+      margin-bottom: 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #888ea8; }
+      .widget-ip .timeline-line .item-timeline .t-content p a {
+        font-weight: 700; }
+  .widget-ip .timeline-line .item-timeline .t-dot:after {
+    content: '';
+    position: absolute;
+    border-width: 1px;
+    border-style: solid;
+    left: 39%;
+    transform: translateX(-50%);
+    border-color: #bfc9d4;
+    width: 0;
+    height: auto;
+    top: 45px;
+    bottom: -23px;
+    border-right-width: 0;
+    border-top-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0; }
+  .widget-ip .timeline-line .item-timeline:last-child .t-dot:after {
+    display: none; }

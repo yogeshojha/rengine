@@ -131,42 +131,42 @@ function vuln_status_change(checkbox, id)
 
 // truncate the long string and put ... in the end
 function truncate(source, size) {
-  return source.length > size ? source.slice(0, size - 1) + "…" : source;
+	return source.length > size ? source.slice(0, size - 1) + "…" : source;
 }
 
 // splits really long strings into multiple lines
 // Souce: https://stackoverflow.com/a/52395960
 function split(str, maxWidth) {
-  const newLineStr = "</br>";
-  done = false;
-  res = '';
-  do {
-    found = false;
-    // Inserts new line at first whitespace of the line
-    for (i = maxWidth - 1; i >= 0; i--) {
-      if (testWhite(str.charAt(i))) {
-        res = res + [str.slice(0, i), newLineStr].join('');
-        str = str.slice(i + 1);
-        found = true;
-        break;
-      }
-    }
-    // Inserts new line at maxWidth position, the word is too long to wrap
-    if (!found) {
-      res += [str.slice(0, maxWidth), newLineStr].join('');
-      str = str.slice(maxWidth);
-    }
+	const newLineStr = "</br>";
+	done = false;
+	res = '';
+	do {
+		found = false;
+		// Inserts new line at first whitespace of the line
+		for (i = maxWidth - 1; i >= 0; i--) {
+			if (testWhite(str.charAt(i))) {
+				res = res + [str.slice(0, i), newLineStr].join('');
+				str = str.slice(i + 1);
+				found = true;
+				break;
+			}
+		}
+		// Inserts new line at maxWidth position, the word is too long to wrap
+		if (!found) {
+			res += [str.slice(0, maxWidth), newLineStr].join('');
+			str = str.slice(maxWidth);
+		}
 
-    if (str.length < maxWidth)
-      done = true;
-  } while (!done);
+		if (str.length < maxWidth)
+		done = true;
+	} while (!done);
 
-  return res + str;
+	return res + str;
 }
 
 function testWhite(x) {
-  const white = new RegExp(/^\s$/);
-  return white.test(x.charAt(0));
+	const white = new RegExp(/^\s$/);
+	return white.test(x.charAt(0));
 };
 
 
@@ -179,4 +179,31 @@ function get_response_time_text(response_time){
 		text_color = 'warning'
 	}
 	return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
+}
+
+// span values function will seperate the values by comma and put badge around it
+function span_values(data, color)
+{
+	var badge = `<span class='badge badge-pill badge-`+color+` m-1 bs-tooltip' title="Ok">`;
+	var data_with_span ="";
+	data.split(/\s*,\s*/).forEach(function(split_vals) {
+		data_with_span+=badge + split_vals + "</span>";
+	});
+	return data_with_span;
+}
+
+// span values function will seperate the values by comma and put badge around it
+function parse_ip(data, cdn){
+	if (cdn)
+	{
+		var badge = `<span class='badge badge-pill badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
+	}
+	else{
+		var badge = `<span class='badge badge-pill badge-info m-1'>`;
+	}
+	var data_with_span ="";
+	data.split(/\s*,\s*/).forEach(function(split_vals) {
+		data_with_span+=badge + split_vals + "</span>";
+	});
+	return data_with_span;
 }
