@@ -238,11 +238,15 @@ Detailed Scan Results for {{history.domain_name}}
 					<div class="col-xl-8 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 						<div class="widget widget-ip">
 							<div class="widget-heading">
-								<h6 class="">{{discovered_ip_length}} Discovered IP Addresses</h6>
+								<h6 class="">{{discovered_cdn_ip_length|add:discovered_non_cdn_ip_length}} Discovered IP Addresses<small class='text-warning'>({{discovered_cdn_ip_length}} CDN IPs)</small></h6>
+								<small class="text-muted">*IP Addresses highlighted with yellow are CDN IP</small>
 							</div>
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
-									{% for ip in ip_list %}
+									{% for ip in cdn_ip_list %}
+										<span class='badge badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address">{{ip}}</span>
+									{% endfor %}
+									{% for ip in non_cdn_ip_list %}
 										<span class='badge badge-info badge-pills m-1'>{{ip}}</span>
 									{% endfor %}
 								</div>
