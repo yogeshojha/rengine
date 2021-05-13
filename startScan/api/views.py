@@ -37,7 +37,7 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
         elif _order_col == '1':
             order_col = 'name'
         elif _order_col == '2':
-            order_col = 'ip_address'
+            order_col = 'ip_addresses'
         elif _order_col == '3':
             order_col = 'http_status'
         elif _order_col == '4':
@@ -103,8 +103,8 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
                 qs = self.queryset.filter(cname__icontains=lookup_content)
             elif 'ports' in lookup_title or 'open_ports' in lookup_title:
                 qs = self.queryset.filter(open_ports__icontains=lookup_content)
-            elif 'ip_address' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.filter(ip_address__icontains=lookup_content)
+            elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
+                qs = self.queryset.filter(ip_addresses__icontains=lookup_content)
             elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
                 qs = self.queryset.filter(
                     technology_stack__icontains=lookup_content)
@@ -173,9 +173,9 @@ class ScanHistoryViewSet(viewsets.ModelViewSet):
             elif 'ports' in lookup_title or 'open_ports' in lookup_title:
                 qs = self.queryset.exclude(
                     open_ports__icontains=lookup_content)
-            elif 'ip_address' in lookup_title or 'ip' in lookup_title:
+            elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.exclude(
-                    ip_address__icontains=lookup_content)
+                    ip_addresses__icontains=lookup_content)
             elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
                 qs = self.queryset.exclude(
                     technology_stack__icontains=lookup_content)

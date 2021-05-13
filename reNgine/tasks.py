@@ -438,16 +438,16 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                     subdomain.response_time = response_time
                 if 'cdn' in json_st:
                     subdomain.is_cdn = json_st['cdn']
-                    endpoint.is_cdn = json_st['cdn']
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
-                    endpoint.cname = cname_list
                     subdomain.cname = cname_list
-                if 'a' in json_st['a']:
+                if 'a' in json_st:
                     ip_list = ','.join(json_st['a'])
-                    endpoint.ip_address = ip_list
-                    subdomain.ip_address = ip_list
-                endpoint.discovered_date=timezone.now()
+                    endpoint.ip_addresses = ip_list
+                    subdomain.ip_addresses = ip_list
+                if 'host' in json_st:
+                    subdomain.host_ip = json_st['host']
+                endpoint.discovered_date = timezone.now()
                 subdomain.discovered_date = timezone.now()
                 endpoint.is_default=True
                 endpoint.save()
@@ -779,14 +779,10 @@ def fetch_endpoints(
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
-                if 'cdn' in json_st:
-                    endpoint.is_cdn = json_st['cdn']
-                if 'cnames' in json_st:
-                    cname_list = ','.join(json_st['cnames'])
-                    endpoint.cname = cname_list
-                if 'a' in json_st['a']:
+                if 'a' in json_st:
                     ip_list = ','.join(json_st['a'])
                     endpoint.ip_address = ip_list
+                    endpoint.discovered_date=timezone.now()
                 endpoint.save()
     except Exception as exception:
         logging.error(exception)

@@ -537,7 +537,7 @@ Detailed Scan Results for {{history.domain_name}}
 			"columns": [
 				{'data': 'id'},
 				{'data': 'name'},
-				{'data': 'ip_address'},
+				{'data': 'ip_addresses'},
 				{'data': 'http_status'},
 				{'data': 'open_ports'},
 				{'data': 'content_length', 'searchable': false},
@@ -618,7 +618,23 @@ Detailed Scan Results for {{history.domain_name}}
 					"render": function ( data, type, row ) {
 						// display badge based on http status
 						// green for http status 2XX, orange for 3XX and warning for everything else
-						return span_values(data, "info");
+						if (data)
+						{
+							return span_values(data, "info");
+						}
+						return "";
+					},
+					"targets": 2,
+				},
+				{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data)
+						{
+							return span_values(data, "info");
+						}
+						return "";
 					},
 					"targets": 4,
 				},
