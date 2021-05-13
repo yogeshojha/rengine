@@ -168,3 +168,15 @@ function testWhite(x) {
   const white = new RegExp(/^\s$/);
   return white.test(x.charAt(0));
 };
+
+
+function get_response_time_text(response_time){
+	var text_color = 'danger';
+	if (response_time < 0.5){
+		text_color = 'success'
+	}
+	else if (response_time >= 0.5 && response_time < 1){
+		text_color = 'warning'
+	}
+	return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
+}

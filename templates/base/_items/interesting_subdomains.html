@@ -3,7 +3,7 @@
     <thead>
       <tr>
         <th><div class="th-content">Subdomain</div></th>
-        <th><div class="th-content">Page Title</div></th>
+        <th><div class="th-content text-center">Page Title</div></th>
         <th><div class="th-content">HTTP Status</div></th>
         <th><div class="th-content">Content Length</div></th>
       </tr>
@@ -11,8 +11,8 @@
     <tbody>
       {% for subdomain in interesting_subdomain %}
       <tr>
-        <td><a href="{{subdomain.http_url}}" target="_blank" class="text-info">{{subdomain.subdomain}}</a></td>
-        <td>{{subdomain.page_title|truncatechars:50}}</td>
+        <td><a href="{{subdomain.http_url}}" target="_blank" class="text-info">{{subdomain.name}}</a></td>
+        <td class="text-center">{{subdomain.page_title|truncatechars:50}}</td>
         <td class="text-center">
           {% if subdomain.http_status >= 200 and subdomain.http_status < 300 %}
           <span class='badge badge-pills badge-success'>{{subdomain.http_status}}</span>
