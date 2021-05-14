@@ -15,8 +15,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     medium_count = serializers.SerializerMethodField('get_medium_count')
     high_count = serializers.SerializerMethodField('get_high_count')
     critical_count = serializers.SerializerMethodField('get_critical_count')
-    total_vulnerability_count = serializers.SerializerMethodField(
-        'get_total_vulnerability_count')
+    ports = serializers.SerializerMethodField('get_ports')
 
     class Meta:
         model = Subdomain
@@ -46,8 +45,8 @@ class SubdomainSerializer(serializers.ModelSerializer):
     def get_critical_count(self, Subdomain):
         return Subdomain.get_critical_count
 
-    def get_total_vulnerability_count(self, Subdomain):
-        return Subdomain.get_total_vulnerability_count
+    def get_ports(self, Subdomain):
+        return Subdomain.get_ports
 
 
 class EndpointSerializer(serializers.ModelSerializer):

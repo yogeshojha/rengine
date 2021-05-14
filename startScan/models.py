@@ -6,6 +6,9 @@ from scanEngine.models import EngineType
 from django.db.models import JSONField
 from django.utils import timezone
 
+from django.core.serializers import serialize
+from django.http import JsonResponse
+
 
 class ScanHistory(models.Model):
     start_scan_date = models.DateTimeField()
@@ -149,6 +152,10 @@ class Subdomain(models.Model):
             scan_history=self.scan_history).filter(
             subdomain__name=self.name).count()
 
+    @property
+    def get_ports(self):
+        return Port.objects.filter(scan_history=self.scan_history).filter(subdomain__name=self.name).values()
+
 
 class EndPoint(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
@@ -218,3 +225,17 @@ class ScanActivity(models.Model):
 
     def __str__(self):
         return str(self.title)
+
+
+class Port(models.Model):
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(
+        Subdomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
+    number = models.IntegerField(default=0)
+    service_name = models.CharField(max_length=100, blank=True, null=True)
+    description = models.CharField(max_length=1000, blank=True, null=True)

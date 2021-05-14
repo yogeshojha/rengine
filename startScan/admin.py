@@ -1,9 +1,10 @@
 from django.contrib import admin
 from startScan.models import ScanHistory, Subdomain, ScanActivity, \
-    EndPoint, Vulnerability
+    EndPoint, Vulnerability, Port
 
 admin.site.register(ScanHistory)
 admin.site.register(Subdomain)
 admin.site.register(ScanActivity)
 admin.site.register(EndPoint)
 admin.site.register(Vulnerability)
+admin.site.register(Port)

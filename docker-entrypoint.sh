@@ -19,4 +19,7 @@ python manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.En
 #Load Default keywords
 python manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
 
+# update whatportis
+yes | whatportis --update
+
 exec "$@"

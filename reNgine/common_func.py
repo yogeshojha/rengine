@@ -1,4 +1,3 @@
-import whois
 import json
 
 from django.db.models import Q
@@ -112,14 +111,3 @@ def get_interesting_endpoint(scan_history=None, target=None):
 
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
-
-# def get_whois(domain_name):
-#     whois_data = whois.whois(domain_name)
-#     whois_json = {}
-#     for data in whois_data:
-#         if data == 'expiration_date' or data == 'updated_date' or data == 'created_date':
-#             if type
-#             whois_json[data] = whois_data
-#         whois_json[data] = whois_data[data]
-#     print(json.dumps(whois_json))
-#     return json.loads(whois_json)

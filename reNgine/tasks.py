@@ -6,6 +6,7 @@ import validators
 import requests
 import logging
 import tldextract
+import whatportis
 
 from celery import shared_task
 from discord_webhook import DiscordWebhook
@@ -29,7 +30,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from reNgine.celery import app
 from reNgine.definitions import *
 
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Port
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType, Configuration, Wordlist
@@ -130,7 +131,7 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
 
         if(task.port_scan):
             activity_id = create_scan_activity(task, "Port Scanning", 1)
-            port_scanning(task, yaml_configuration, results_dir, activity_id)
+            port_scanning(task, domain, yaml_configuration, results_dir)
             update_last_activity(activity_id, 2)
 
         if(task.dir_file_search):
@@ -533,7 +534,7 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
         update_last_activity(activity_id, 0)
 
 
-def port_scanning(task, yaml_configuration, results_dir, activity_id):
+def port_scanning(task, domain, yaml_configuration, results_dir):
     '''
     This function is responsible for running the port scan
     '''
@@ -585,16 +586,20 @@ def port_scanning(task, yaml_configuration, results_dir, activity_id):
         for line in lines:
             try:
                 json_st = json.loads(line.strip())
+                port = Port()
+                port.scan_history = task
+                port.target_domain = domain
+                sub_domain = Subdomain.objects.get(scan_history=task, name=json_st['host'])
+                port.subdomain = sub_domain
+                port_number = json_st['port']
+                port.number = port_number
+                port_detail = whatportis.get_ports(str(port_number))[0]
+                port.service_name = port_detail.name
+                port.description = port_detail.description
+                port.save()
             except Exception as exception:
-                json_st = "{'host':'','port':''}"
-            sub_domain = Subdomain.objects.get(
-                scan_history=task, name=json_st['host'])
-            if sub_domain.open_ports:
-                sub_domain.open_ports = sub_domain.open_ports + \
-                    ',' + str(json_st['port'])
-            else:
-                sub_domain.open_ports = str(json_st['port'])
-            sub_domain.save()
+                logger.exception(exception)
+                continue
     except BaseException as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
