@@ -239,3 +239,4 @@ class Port(models.Model):
     number = models.IntegerField(default=0)
     service_name = models.CharField(max_length=100, blank=True, null=True)
     description = models.CharField(max_length=1000, blank=True, null=True)
+    is_uncommon = models.BooleanField(default=False)

@@ -593,6 +593,8 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 port.subdomain = sub_domain
                 port_number = json_st['port']
                 port.number = port_number
+                if port_number in UNCOMMON_WEB_PORTS:
+                    port.is_uncommon = True
                 port_detail = whatportis.get_ports(str(port_number))[0]
                 port.service_name = port_detail.name
                 port.description = port_detail.description

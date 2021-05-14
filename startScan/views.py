@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core import serializers
 
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Vulnerability
+from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Vulnerability, Port
 from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
@@ -118,16 +118,18 @@ def detail_scan(request, id=None):
         ip_addresses = Subdomain.objects.filter(scan_history=id).all()
         cdn_ip = ip_addresses.filter(is_cdn=True).values('ip_addresses').distinct()
         non_cdn_ip = ip_addresses.filter(is_cdn=False).values('ip_addresses').distinct()
-        if cdn_ip:
+        if cdn_ip.exists():
             ip_list = [ip['ip_addresses'].split(',') for ip in cdn_ip if ip['ip_addresses'] is not None]
             ip_list = list(set(list(itertools.chain(*ip_list))))
             context['cdn_ip_list'] = ip_list
             context['discovered_cdn_ip_length'] = len(ip_list)
-        if non_cdn_ip:
+        if non_cdn_ip.exists():
             ip_list = [ip['ip_addresses'].split(',') for ip in non_cdn_ip if ip['ip_addresses'] is not None]
             ip_list = list(set(list(itertools.chain(*ip_list))))
             context['non_cdn_ip_list'] = ip_list
             context['discovered_non_cdn_ip_length'] = len(ip_list)
+
+        context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by()
 
     return render(request, 'startScan/detail_scan.html', context)
 

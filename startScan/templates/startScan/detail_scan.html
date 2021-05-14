@@ -159,7 +159,7 @@ Detailed Scan Results for {{history.domain_name}}
 		<div class="tab-content" id="pills-tabContent">
 			<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
 				<div class="row">
-					<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+					<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
 						<div class="widget widget-five widget-progress">
 							<div class="widget-heading">
 								<a href="javascript:void(0)" class="task-info">
@@ -238,7 +238,7 @@ Detailed Scan Results for {{history.domain_name}}
 							</div>
 						</div>
 					</div>
-					<div class="col-xl-8 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+					<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 						<div class="widget widget-ip">
 							<div class="widget-heading">
 								<h6 class="">{{discovered_cdn_ip_length|add:discovered_non_cdn_ip_length}} Discovered IP Addresses<small class='text-warning'>({{discovered_cdn_ip_length}} CDN IPs)</small></h6>
@@ -247,10 +247,25 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
 									{% for ip in cdn_ip_list %}
-									<span class='badge badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address">{{ip}}</span>
+									<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address">{{ip}}</span>
 									{% endfor %}
 									{% for ip in non_cdn_ip_list %}
-									<span class='badge badge-info badge-pills m-1'>{{ip}}</span>
+									<span class='badge outline-badge-info badge-pills m-1'>{{ip}}</span>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="widget widget-ip">
+							<div class="widget-heading">
+								<h6 class="">{{ports.count}} Unique Discovered Ports</small></h6>
+								<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
+							</div>
+							<div class="widget-content">
+								<div class="mt-container mx-auto">
+									{% for port in  ports %}
+									<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{{port.2}}'>{{port.0}}/{{port.1}}</span>
 									{% endfor %}
 								</div>
 							</div>
@@ -741,7 +756,9 @@ Detailed Scan Results for {{history.domain_name}}
 						if (data)
 						{
 							Object.entries(data).forEach(([key, value]) => {
-								port_badge += `<span class='m-1 badge badge-pills outline-badge-info bs-tooltip' title='${value.description}'>${value.number}/${value.service_name.toUpperCase()}</span>`
+								badge_color = value.is_uncommon ? 'danger' : 'info';
+								title = value.is_uncommon ? 'Uncommon Port - ' + value.description : value.description;
+								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name.toUpperCase()}</span>`
 							});
 							return port_badge;
 						}
