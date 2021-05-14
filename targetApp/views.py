@@ -182,7 +182,7 @@ def target_summary(request, id):
     context['this_week_scan_count'] = ScanHistory.objects.filter(
         domain_name_id=id, start_scan_date__gte=last_week).count()
     subdomain_count = Subdomain.objects.filter(
-        target_domain__id=id).values('subdomain').distinct().count()
+        target_domain__id=id).values('name').distinct().count()
     endpoint_count = EndPoint.objects.filter(
         target_domain__id=id).values('http_url').distinct().count()
     vulnerability_count = Vulnerability.objects.filter(

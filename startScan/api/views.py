@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, action
 from django.db.models import Q
 
 
-class ScanHistoryViewSet(viewsets.ModelViewSet):
+class SubdomainViewset(viewsets.ModelViewSet):
     queryset = Subdomain.objects.all()
     serializer_class = SubdomainSerializer
 

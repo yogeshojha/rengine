@@ -6,6 +6,7 @@ from scanEngine.models import EngineType
 from django.db.models import JSONField
 from django.utils import timezone
 
+
 class ScanHistory(models.Model):
     start_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
@@ -77,7 +78,8 @@ class ScanHistory(models.Model):
 
 class Subdomain(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=1000)
     open_ports = models.CharField(max_length=1000, null=True, blank=True)
     http_url = models.CharField(max_length=1000)
@@ -101,11 +103,52 @@ class Subdomain(models.Model):
     def __str__(self):
         return str(self.name)
 
+    @property
+    def get_endpoint_count(self):
+        return EndPoint.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).count()
+
+    @property
+    def get_info_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).filter(severity=0).count()
+
+    @property
+    def get_low_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).filter(severity=1).count()
+
+    @property
+    def get_medium_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).filter(severity=2).count()
+
+    @property
+    def get_high_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).filter(severity=3).count()
+
+    @property
+    def get_critical_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).filter(severity=4).count()
+
 
 class EndPoint(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
-    subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE, null=True, blank=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(
+        Subdomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
     http_url = models.CharField(max_length=5000)
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000)
@@ -125,14 +168,24 @@ class EndPoint(models.Model):
 
 class Vulnerability(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE, null=True, blank=True)
-    endpoint = models.ForeignKey(EndPoint, on_delete=models.CASCADE, blank=True, null=True)
-    target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(
+        Subdomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
+    endpoint = models.ForeignKey(
+        EndPoint,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
     template_used = models.CharField(max_length=100)
     name = models.CharField(max_length=400)
     severity = models.IntegerField()
     description = models.CharField(max_length=10000, null=True, blank=True)
-    extracted_results = models.CharField(max_length=3000, null=True, blank=True)
+    extracted_results = models.CharField(
+        max_length=3000, null=True, blank=True)
     reference = models.CharField(max_length=3000, null=True, blank=True)
     tags = models.CharField(max_length=1000, null=True, blank=True)
     http_url = models.CharField(max_length=8000, null=True)

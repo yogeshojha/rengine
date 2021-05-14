@@ -4,9 +4,19 @@ from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 
 from reNgine.common_func import *
 
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
+
+    endpoint_count = serializers.SerializerMethodField('get_endpoint_count')
+    info_count = serializers.SerializerMethodField('get_info_count')
+    low_count = serializers.SerializerMethodField('get_low_count')
+    medium_count = serializers.SerializerMethodField('get_medium_count')
+    high_count = serializers.SerializerMethodField('get_high_count')
+    critical_count = serializers.SerializerMethodField('get_critical_count')
+    total_vulnerability_count = serializers.SerializerMethodField(
+        'get_total_vulnerability_count')
 
     class Meta:
         model = Subdomain
@@ -14,7 +24,31 @@ class SubdomainSerializer(serializers.ModelSerializer):
         # lookup_field = 'scan_history'
 
     def get_is_interesting(self, Subdomain):
-        return get_interesting_subdomains(Subdomain.scan_history.id).filter(name=Subdomain.name).exists()
+        return get_interesting_subdomains(
+            Subdomain.scan_history.id).filter(
+            name=Subdomain.name).exists()
+
+    def get_endpoint_count(self, Subdomain):
+        return Subdomain.get_endpoint_count
+
+    def get_info_count(self, Subdomain):
+        return Subdomain.get_info_count
+
+    def get_low_count(self, Subdomain):
+        return Subdomain.get_low_count
+
+    def get_medium_count(self, Subdomain):
+        return Subdomain.get_medium_count
+
+    def get_high_count(self, Subdomain):
+        return Subdomain.get_high_count
+
+    def get_critical_count(self, Subdomain):
+        return Subdomain.get_critical_count
+
+    def get_total_vulnerability_count(self, Subdomain):
+        return 50
+
 
 class EndpointSerializer(serializers.ModelSerializer):
 
