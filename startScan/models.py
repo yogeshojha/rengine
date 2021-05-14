@@ -154,6 +154,10 @@ class Subdomain(models.Model):
     def get_ports(self):
         return Port.objects.filter(scan_history=self.scan_history).filter(subdomain__name=self.name).values()
 
+    @property
+    def get_ip_addressess(self):
+        return IPAddress.objects.filter(scan_history=self.scan_history).filter(subdomain__name=self.name).values()
+
 
 class EndPoint(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)

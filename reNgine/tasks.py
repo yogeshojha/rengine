@@ -600,13 +600,27 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 port.number = port_number
                 if port_number in UNCOMMON_WEB_PORTS:
                     port.is_uncommon = True
-                port_detail = whatportis.get_ports(str(port_number))[0]
-                port.service_name = port_detail.name
-                port.description = port_detail.description
+
+                port_detail = whatportis.get_ports(str(port_number))
+                if len(port_detail):
+                    port.service_name = port_detail[0].name
+                    port.description = port_detail[0].description
                 try:
+                    if not IPAddress.objects.filter(scan_history=task).filter(subdomain=sub_domain).filter(address=json_st['ip']).exists():
+                        # create new ip
+                        ip = IPAddress()
+                        ip.scan_history = task
+                        ip.target_domain = domain
+                        ip.subdomain = sub_domain
+                        ip.address = json_st['ip']
+                        ip.is_host = False
+                        ip.is_cdn = False
+                        ip.save()
                     ip_address = IPAddress.objects.get(scan_history=task, subdomain=sub_domain, address=json_st['ip'])
                     port.ip = ip_address
                 except Exception as e:
+                    logger.info(json_st['ip'])
+                    logger.info(sub_domain)
                     logger.exception(e)
                     continue
                 port.save()

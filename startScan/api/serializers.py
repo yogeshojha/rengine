@@ -16,6 +16,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     high_count = serializers.SerializerMethodField('get_high_count')
     critical_count = serializers.SerializerMethodField('get_critical_count')
     ports = serializers.SerializerMethodField('get_ports')
+    ip_addresses = serializers.SerializerMethodField('get_ip_addressess')
 
     class Meta:
         model = Subdomain
@@ -47,6 +48,9 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
     def get_ports(self, Subdomain):
         return Subdomain.get_ports
+
+    def get_ip_addressess(self, Subdomain):
+        return Subdomain.get_ip_addressess
 
 
 class EndpointSerializer(serializers.ModelSerializer):

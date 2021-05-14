@@ -741,9 +741,14 @@ Detailed Scan Results for {{history.domain_name}}
 				// ip address
 				{
 					"render": function ( data, type, row ) {
+						ip_badge = ''
 						if (data)
 						{
-							return parse_ip(data, row['is_cdn']);
+							Object.entries(data).forEach(([key, value]) => {
+								badge_color = value.is_cdn ? 'warning' : 'info';
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color}'>${value.address}</span>`
+							});
+							return ip_badge;
 						}
 						return "";
 					},
@@ -756,9 +761,11 @@ Detailed Scan Results for {{history.domain_name}}
 						if (data)
 						{
 							Object.entries(data).forEach(([key, value]) => {
-								badge_color = value.is_uncommon ? 'danger' : 'info';
-								title = value.is_uncommon ? 'Uncommon Port - ' + value.description : value.description;
-								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name.toUpperCase()}</span>`
+								if(value){
+									badge_color = value.is_uncommon ? 'danger' : 'info';
+									title = value.is_uncommon ? 'Uncommon Port - ' + value.description : value.description;
+									port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name}</span>`
+								}
 							});
 							return port_badge;
 						}
