@@ -95,8 +95,6 @@ class Subdomain(models.Model):
     directory_json = JSONField(null=True, blank=True)
     checked = models.BooleanField(null=True, blank=True, default=False)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    ip_addresses = models.CharField(max_length=1500, null=True, blank=True)
-    host_ip = models.CharField(max_length=300, null=True, blank=True)
     cname = models.CharField(max_length=1500, blank=True, null=True)
     is_cdn = models.BooleanField(null=True, default=False)
     http_status = models.IntegerField(default=0)
@@ -227,6 +225,22 @@ class ScanActivity(models.Model):
         return str(self.title)
 
 
+class IPAddress(models.Model):
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(
+        Subdomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
+    address = models.CharField(max_length=100, blank=True, null=True)
+    is_host = models.BooleanField(default=False)
+    is_cdn = models.BooleanField(default=False)
+
+    def __str__(self):
+        return str(self.address)
+
 class Port(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     target_domain = models.ForeignKey(
@@ -236,7 +250,15 @@ class Port(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True)
+    ip = models.ForeignKey(
+        IPAddress,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
     number = models.IntegerField(default=0)
     service_name = models.CharField(max_length=100, blank=True, null=True)
     description = models.CharField(max_length=1000, blank=True, null=True)
     is_uncommon = models.BooleanField(default=False)
+
+    def __str__(self):
+        return str(self.service_name)

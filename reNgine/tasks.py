@@ -11,7 +11,7 @@ import whatportis
 from celery import shared_task
 from discord_webhook import DiscordWebhook
 from reNgine.celery import app
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Vulnerability
+from startScan.models import *
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType
@@ -30,7 +30,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from reNgine.celery import app
 from reNgine.definitions import *
 
-from startScan.models import ScanHistory, Subdomain, ScanActivity, EndPoint, Port
+from startScan.models import *
 from targetApp.models import Domain
 from notification.models import NotificationHooks
 from scanEngine.models import EngineType, Configuration, Wordlist
@@ -80,11 +80,10 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
 
     try:
         current_scan_dir = domain.domain_name + '_' + \
-            str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+            str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
     except Exception as exception:
         logger.error(exception)
-        # do something here
         scan_failed(task)
 
     yaml_configuration = None
@@ -442,17 +441,23 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     subdomain.cname = cname_list
-                if 'a' in json_st:
-                    ip_list = ','.join(json_st['a'])
-                    endpoint.ip_addresses = ip_list
-                    subdomain.ip_addresses = ip_list
-                if 'host' in json_st:
-                    subdomain.host_ip = json_st['host']
                 endpoint.discovered_date = timezone.now()
                 subdomain.discovered_date = timezone.now()
                 endpoint.is_default=True
                 endpoint.save()
                 subdomain.save()
+                if 'a' in json_st:
+                    for _ip in json_st['a']:
+                        ip = IPAddress()
+                        ip.scan_history = task
+                        ip.target_domain = domain
+                        ip.subdomain = subdomain
+                        ip.address = _ip
+                        if 'host' in json_st and json_st['host'] == _ip:
+                                ip.is_host = True
+                        if 'cdn' in json_st:
+                            ip.is_cdn = json_st['cdn']
+                        ip.save()
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
                 logging.error(exception)
@@ -598,6 +603,12 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 port_detail = whatportis.get_ports(str(port_number))[0]
                 port.service_name = port_detail.name
                 port.description = port_detail.description
+                try:
+                    ip_address = IPAddress.objects.get(scan_history=task, subdomain=sub_domain, address=json_st['ip'])
+                    port.ip = ip_address
+                except Exception as e:
+                    logger.exception(e)
+                    continue
                 port.save()
             except Exception as exception:
                 logger.exception(exception)
