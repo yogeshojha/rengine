@@ -13,7 +13,11 @@ class ScanHistory(models.Model):
     domain_name = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
-    whois_json = JSONField(null=True)
+    subdomain_discovery = models.BooleanField(null=True, default=False)
+    dir_file_search = models.BooleanField(null=True, default=False)
+    port_scan = models.BooleanField(null=True, default=False)
+    fetch_url = models.BooleanField(null=True, default=False)
+    vulnerability_scan = models.BooleanField(null=True, default=False)
     stop_scan_date = models.DateTimeField(null=True)
 
     def __str__(self):
@@ -138,6 +142,12 @@ class Subdomain(models.Model):
         return Vulnerability.objects.filter(
             scan_history=self.scan_history).filter(
             subdomain__name=self.name).filter(severity=4).count()
+
+    @property
+    def get_total_vulnerability_count(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name).count()
 
 
 class EndPoint(models.Model):

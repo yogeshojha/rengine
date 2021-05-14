@@ -42,35 +42,35 @@ task for background scan
 
 
 @app.task
-def doScan(domain_id, scan_history_id, scan_type, engine_type):
-    # get current time
-    current_scan_time = timezone.now()
+def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
     '''
     scan_type = 0 -> immediate scan, need not create scan object
     scan_type = 1 -> scheduled scan
     '''
+    print(engine_type)
+    engine_object = EngineType.objects.get(pk=engine_type)
+    domain = Domain.objects.get(pk=domain_id)
     if scan_type == 1:
-        engine_object = EngineType.objects.get(pk=engine_type)
-        domain = Domain.objects.get(pk=domain_id)
         task = ScanHistory()
-        task.domain_name = domain
         task.scan_status = -1
-        task.scan_type = engine_object
-        task.celery_id = doScan.request.id
-        task.scan_start_date = current_scan_time
-        task.save()
     elif scan_type == 0:
-        domain = Domain.objects.get(pk=domain_id)
         task = ScanHistory.objects.get(pk=scan_history_id)
 
     # save the last scan date for domain model
-    domain.last_scan_date = current_scan_time
+    domain.last_scan_date = timezone.now()
     domain.save()
 
     # once the celery task starts, change the task status to Started
+    task.scan_type = engine_object
+    task.celery_id = initiate_scan.request.id
+    task.domain_name = domain
     task.scan_status = 1
-    task.scan_start_date = current_scan_time
-    # task.whois = get_whois(domain.domain_name)
+    task.scan_start_date = timezone.now()
+    task.subdomain_discovery = True if engine_object.subdomain_discovery else False
+    task.dir_file_search = True if engine_object.dir_file_search else False
+    task.port_scan = True if engine_object.port_scan else False
+    task.fetch_url = True if engine_object.fetch_url else False
+    task.vulnerability_scan = True if engine_object.vulnerability_scan else False
     task.save()
 
     activity_id = create_scan_activity(task, "Scanning Started", 2)
@@ -100,7 +100,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
     results_dir = results_dir + current_scan_dir
 
     if yaml_configuration:
-        if(task.scan_type.subdomain_discovery):
+        if(task.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
             subdomain_scan(
                 task,
@@ -128,17 +128,17 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
             grab_screenshot(task, yaml_configuration, results_dir, activity_id)
             update_last_activity(activity_id, 2)
 
-        if(task.scan_type.port_scan):
+        if(task.port_scan):
             activity_id = create_scan_activity(task, "Port Scanning", 1)
             port_scanning(task, yaml_configuration, results_dir, activity_id)
             update_last_activity(activity_id, 2)
 
-        if(task.scan_type.dir_file_search):
+        if(task.dir_file_search):
             activity_id = create_scan_activity(task, "Directory Search", 1)
             directory_brute(task, yaml_configuration, results_dir, activity_id)
             update_last_activity(activity_id, 2)
 
-        if(task.scan_type.fetch_url):
+        if(task.fetch_url):
             activity_id = create_scan_activity(task, "Fetching endpoints", 1)
             fetch_endpoints(
                 task,
@@ -148,7 +148,7 @@ def doScan(domain_id, scan_history_id, scan_type, engine_type):
                 activity_id)
             update_last_activity(activity_id, 2)
 
-        if(task.scan_type.vulnerability_scan):
+        if(task.vulnerability_scan):
             activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
             vulnerability_scan(
                 task,
