@@ -124,9 +124,11 @@ Detailed Scan Results for {{history.domain_name}}
 			<li class="nav-item">
 				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
 			</li>
+			{% if history.dir_file_search %}
 			<li class="nav-item">
 				<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
 			</li>
+			{% endif %}
 			<li class="nav-item dropdown">
 				<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
 					URLs
@@ -145,9 +147,11 @@ Detailed Scan Results for {{history.domain_name}}
 					<a class="dropdown-item" id="pills-ssrf-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">SSRF</a>
 				</div>
 			</li>
+			{% if history.vulnerability_scan %}
 			<li class="nav-item">
 				<a class="nav-link" id="pills-vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
 			</li>
+			{% endif %}
 			<li class="nav-item">
 				<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
 			</li>
@@ -794,7 +798,7 @@ Detailed Scan Results for {{history.domain_name}}
 			},
 		});
 	});
-
+	{% if history.dir_file_search %}
 	$("#pills-directories-tab").click(function() {
 		var history_table = $('#directories-table').DataTable({
 			"destroy": true,
@@ -942,7 +946,7 @@ Detailed Scan Results for {{history.domain_name}}
 			},
 		});
 	});
-
+	{% endif %}
 
 	$("#pills-endpoints-tab").click(function() {
 		$('#endpoint_results').DataTable({
@@ -1037,6 +1041,7 @@ Detailed Scan Results for {{history.domain_name}}
 		});
 	});
 
+	{% if history.vulnerability_scan %}
 	$("#pills-vulnerabilities-tab").click(function() {
 		$('#vulnerability_results').DataTable({
 			"destroy": true,
@@ -1187,6 +1192,7 @@ Detailed Scan Results for {{history.domain_name}}
 			},
 		});
 	});
+	{% endif %}
 
 </script>
 <script type="text/javascript">
