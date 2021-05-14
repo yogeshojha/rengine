@@ -242,7 +242,7 @@ Detailed Scan Results for {{history.domain_name}}
 						<div class="widget widget-ip">
 							<div class="widget-heading">
 								<h6 class="">{{discovered_cdn_ip_length|add:discovered_non_cdn_ip_length}} Discovered IP Addresses<small class='text-warning'>({{discovered_cdn_ip_length}} CDN IPs)</small></h6>
-								<small class="text-muted">*IP Addresses highlighted with yellow are CDN IP</small>
+								<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
 							</div>
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
@@ -265,7 +265,7 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
 									{% for port in  ports %}
-									<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{{port.2}}'>{{port.0}}/{{port.1}}</span>
+									<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{% if port.3 %}Uncommon Port-{{port.2}}{%else%}{{port.2}}{% endif %}'>{{port.0}}/{{port.1}}</span>
 									{% endfor %}
 								</div>
 							</div>
