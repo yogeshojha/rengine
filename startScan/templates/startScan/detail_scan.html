@@ -430,14 +430,14 @@ Detailed Scan Results for {{history.domain_name}}
 										<th>Subdomain</th>
 										<th class="text-center">Endpoints</th>
 										<th class="text-center">Vulnerabilities</th>
-										<th>IP Address</th>
 										<th>Status</th>
+										<th class="text-center">Title</th>
+										<th>IP Address</th>
 										<th>Ports</th>
 										<th>Content Length</th>
-										<th class="text-center">Page Title</th>
-										<th>Technology</th>
 										<th>Screenshot</th>
 										<th>Response Time</th>
+										<th>Technology</th>
 										<th>HTTP URL</th>
 										<th>IS CDN</th>
 										<th>CNAME</th>
@@ -557,20 +557,20 @@ Detailed Scan Results for {{history.domain_name}}
 			"pageLength": 20,
 			'serverSide': true,
 			"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-			"order": [[ 6, "asc" ]],
+			"order": [[ 8, "desc" ]],
 			"columns": [
 				{'data': 'id'},
 				{'data': 'name'},
 				{'data': 'endpoint_count'},
 				{'data': 'vulnerability_count'},
-				{'data': 'ip_addresses'},
 				{'data': 'http_status'},
-				{'data': 'open_ports'},
-				{'data': 'content_length', 'searchable': false, 'type': 'num'},
 				{'data': 'page_title'},
-				{'data': 'technology_stack'},
+				{'data': 'ip_addresses'},
+				{'data': 'open_ports'},
+				{'data': 'content_length', 'searchable': false},
 				{'data': 'screenshot_path', 'searchable': false},
 				{'data': 'response_time'},
+				{'data': 'technology_stack'},
 				{'data': 'checked'},
 				{'data': 'http_url'},
 				{'data': 'is_cdn'},
@@ -581,19 +581,42 @@ Detailed Scan Results for {{history.domain_name}}
 				{'data': 'medium_count'},
 				{'data': 'high_count'},
 				{'data': 'critical_count'},
-				{'data': 'total_vulnerability_count'},
 			],
 			"columnDefs": [
+				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 12, 15, 16, 17, 18, 19, 20, 21, 22],
+					"targets": [ 12, 15, 16, 17, 18, 19, 20, 21],
 					"visible": false,
 					"searchable": false,
 				},
 				{
-					"targets": [ 13, 14 ],
+					"targets": [ 11, 13, 14 ],
 					"visible": false,
 					"searchable": true,
 				},
+				// hide any columns if scan is not initiated
+				{% if not history.port_scan %}
+				{
+					"targets": [ 7 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{% if not history.vulnerability_scan %}
+				{
+					"targets": [ 3 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{% if not history.fetch_url %}
+				{
+					"targets": [ 2 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
 				// checkbox
 				{
 					"render": function ( data, type, row ) {
@@ -618,6 +641,10 @@ Detailed Scan Results for {{history.domain_name}}
 						badges = '';
 						interesting_badge = '';
 						cdn_badge = '';
+						tech_badge = '';
+						if (row['technology_stack']){
+							tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+						}
 						if (row['is_cdn'])
 						{
 							cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
@@ -632,11 +659,11 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						if (row['http_url']) {
 							if (row['cname']) {
-								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>` + tech_badge;
 							}
-							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br>`;
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 						}
-						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
+						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 					},
 					"targets": 1
 				},
@@ -654,25 +681,14 @@ Detailed Scan Results for {{history.domain_name}}
 				// vulnerability_count
 				{
 					"render": function ( data, type, row ) {
-						info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerability">${row['info_count']}</span>`
-						low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerability">${row['low_count']}</span>`
-						medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerability">${row['medium_count']}</span>`
-						high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerability">${row['high_count']}</span>`
-						critical_count_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerability">${row['critical_count']}</span>`
-						return info_badge + low_badge + medium_badge + high_badge + critical_count_badge;
+						info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerabilities">${row['info_count']}</span>`;
+						low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerabilities">${row['low_count']}</span>`;
+						medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerabilities">${row['medium_count']}</span>`;
+						high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerabilities">${row['high_count']}</span>`;
+						critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerabilities">${row['critical_count']}</span>`;
+						return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
 					},
 					"targets": 3,
-				},
-				// ip address
-				{
-					"render": function ( data, type, row ) {
-						if (data)
-						{
-							return parse_ip(data, row['is_cdn']);
-						}
-						return "";
-					},
-					"targets": 4,
 				},
 				// http_status
 				{
@@ -691,18 +707,7 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 					},
-					"targets": 5,
-				},
-				// open ports
-				{
-					"render": function ( data, type, row ) {
-						if (data)
-						{
-							return span_values(data, "info");
-						}
-						return "";
-					},
-					"targets": 6,
+					"targets": 4,
 				},
 				// page title
 				{
@@ -712,17 +717,29 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						return "";
 					},
-					"targets": 8,
+					"targets": 5,
 				},
-				// technology_stack
+				// ip address
 				{
 					"render": function ( data, type, row ) {
-						if (data){
-							return span_values(data, "info");
+						if (data)
+						{
+							return parse_ip(data, row['is_cdn']);
 						}
 						return "";
 					},
-					"targets": 9,
+					"targets": 6,
+				},
+				// open ports
+				{
+					"render": function ( data, type, row ) {
+						if (data)
+						{
+							return parse_comma_values_into_span(data, "info", outline=true);
+						}
+						return "";
+					},
+					"targets": 7,
 				},
 				// screenshot
 				{
@@ -733,7 +750,7 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						return "";
 					},
-					"targets": 10,
+					"targets": 9,
 				},
 				// response_time
 				{
@@ -743,7 +760,7 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						return "";
 					},
-					"targets": 11,
+					"targets": 10,
 				},
 			],
 			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
@@ -997,7 +1014,7 @@ Detailed Scan Results for {{history.domain_name}}
 				{
 					"render": function ( data, type, row ) {
 						if (data){
-							return span_values(data, "info");
+							return parse_comma_values_into_span(data, "info");
 						}
 						return "";
 					},

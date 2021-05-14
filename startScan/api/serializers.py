@@ -47,7 +47,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
         return Subdomain.get_critical_count
 
     def get_total_vulnerability_count(self, Subdomain):
-        return 50
+        return Subdomain.get_total_vulnerability_count
 
 
 class EndpointSerializer(serializers.ModelSerializer):

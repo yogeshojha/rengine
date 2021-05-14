@@ -182,9 +182,15 @@ function get_response_time_text(response_time){
 }
 
 // span values function will seperate the values by comma and put badge around it
-function span_values(data, color)
+function parse_comma_values_into_span(data, color, outline=null)
 {
-	var badge = `<span class='badge badge-pill badge-`+color+` m-1 bs-tooltip' title="Ok">`;
+	if(outline)
+	{
+		var badge = `<span class='badge badge-pill outline-badge-`+color+` m-1'>`;
+	}
+	else {
+		var badge = `<span class='badge badge-pill badge-`+color+` m-1'>`;
+	}
 	var data_with_span ="";
 	data.split(/\s*,\s*/).forEach(function(split_vals) {
 		data_with_span+=badge + split_vals + "</span>";
@@ -196,10 +202,10 @@ function span_values(data, color)
 function parse_ip(data, cdn){
 	if (cdn)
 	{
-		var badge = `<span class='badge badge-pill badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
+		var badge = `<span class='badge badge-pill outline-badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
 	}
 	else{
-		var badge = `<span class='badge badge-pill badge-info m-1'>`;
+		var badge = `<span class='badge badge-pill outline-badge-info m-1'>`;
 	}
 	var data_with_span ="";
 	data.split(/\s*,\s*/).forEach(function(split_vals) {
