@@ -41,6 +41,7 @@ RUN GO111MODULE=on go get -u -v github.com/bp0lr/gauplus
 RUN GO111MODULE=on go get github.com/tomnomnom/waybackurls
 RUN GO111MODULE=on go get -u github.com/jaeles-project/gospider
 RUN GO111MODULE=on go get -u github.com/tomnomnom/gf
+RUN go get -u github.com/tomnomnom/gf
 
 
 # Copy requirements

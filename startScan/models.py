@@ -180,6 +180,14 @@ class EndPoint(models.Model):
     is_default = models.BooleanField(null=True, blank=True, default=False)
     ip_addresses = models.CharField(max_length=1500, null=True, blank=True)
     host_ip = models.CharField(max_length=300, null=True, blank=True)
+    is_xss = models.BooleanField(null=True, blank=True, default=False)
+    is_sqli = models.BooleanField(null=True, blank=True, default=False)
+    is_ssti = models.BooleanField(null=True, blank=True, default=False)
+    is_redirect = models.BooleanField(null=True, blank=True, default=False)
+    is_lfi = models.BooleanField(null=True, blank=True, default=False)
+    is_rce = models.BooleanField(null=True, blank=True, default=False)
+    is_ssrf = models.BooleanField(null=True, blank=True, default=False)
+    matched_patterns = models.CharField(max_length=2000, null=True, blank=True)
 
     def __str__(self):
         return self.http_url

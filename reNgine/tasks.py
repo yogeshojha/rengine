@@ -383,7 +383,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
 
-    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -json -o {} -threads 100'.format(
+    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -json -o {}'.format(
         subdomain_scan_results_file, httpx_results_file)
 
     os.system(httpx_command)
@@ -765,7 +765,7 @@ def fetch_endpoints(
     and filter HTTP status 404, this way we can reduce the number of Non Existent
     URLS
     '''
-    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -timeout 3 -o {0}/final_httpx_urls.json'.format(results_dir))
+    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -o {0}/final_httpx_urls.json'.format(results_dir))
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
@@ -820,6 +820,49 @@ def fetch_endpoints(
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
+    # once endpoint is saved, run gf patterns
+    if GF_PATTERNS in yaml_configuration[FETCH_URL]:
+        for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
+            logger.info('Running GF for {}'.format(pattern))
+            gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(results_dir, pattern)
+            gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(results_dir, pattern, gf_output_file_path)
+            os.system(gf_command)
+            if os.path.exists(gf_output_file_path):
+                with open(gf_output_file_path) as gf_output:
+                    for line in gf_output:
+                        url = line.rstrip('\n')
+                        try:
+                            endpoint = EndPoint.objects.get(scan_history=task, http_url=url)
+                            earlier_pattern = endpoint.matched_patterns
+                            new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
+                            endpoint.matched_patterns = new_pattern
+                        except Exception as e:
+                            # add the url in db
+                            logger.error(e)
+                            logger.info('Adding URL' + url)
+                            endpoint = EndPoint()
+                            endpoint.http_url = url
+                            endpoint.target_domain = domain
+                            endpoint.scan_history = task
+                            _subdomain = Subdomain.objects.get(scan_history=task, name=json_st['url'].split("//")[-1])
+                            endpoint.subdomain = _subdomain
+                            endpoint.matched_patterns = patern
+                        finally:
+                            if pattern == 'xss':
+                                endpoint.is_xss = True
+                            elif pattern == 'sqli':
+                                endpoint.is_sqli = True
+                            elif pattern == 'ssti':
+                                endpoint.is_ssti = True
+                            elif pattern == 'redirect':
+                                endpoint.is_redirect = True
+                            elif pattern == 'lfi':
+                                endpoint.is_lfi = True
+                            elif pattern == 'rce':
+                                endpoint.is_rce = True
+                            elif pattern == 'ssrf':
+                                endpoint.is_ssrf = True
+                            endpoint.save()
 
 def vulnerability_scan(
         task,

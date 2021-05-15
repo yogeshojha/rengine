@@ -22,4 +22,13 @@ python manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.Intere
 # update whatportis
 yes | whatportis --update
 
+# install gf patterns
+if [ ! -d "~/Gf-Patterns" ];
+then
+  mkdir ~/.gf
+  cp -r $GOPATH/src/github.com/tomnomnom/gf/examples ~/.gf
+  git clone https://github.com/1ndianl33t/Gf-Patterns ~/Gf-Patterns
+  mv ~/Gf-Patterns/*.json ~/.gf
+fi
+
 exec "$@"
