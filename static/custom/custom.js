@@ -103,8 +103,16 @@ function change_subdomain_status(id)
 	})
 }
 
+function get_ips_from_port(port_number, history_id){
+	document.getElementById("detailScanModalLabel").innerHTML='IPs with port ' + port_number + ' OPEN';
+	var ip_badge = '';
+	fetch('../port/ip/'+port_number+'/'+history_id+'/')
+		.then(response => response.json())
+  	.then(data => render_ips(data));
+}
+
 function get_ports_for_ip(ip, history_id){
-	document.getElementById("ipAddressModalLabel").innerHTML='Open Ports identified for ' + ip;
+	document.getElementById("detailScanModalLabel").innerHTML='Open Ports identified for ' + ip;
 	var port_badge = '';
 	fetch('../ip/ports/'+ip+'/'+history_id+'/')
 		.then(response => response.json())
@@ -114,14 +122,27 @@ function get_ports_for_ip(ip, history_id){
 function render_ports(data)
 {
 	var port_badge = ''
-	ip_address_content = document.getElementById("ipAddressModalContent");
+	ip_address_content = document.getElementById("detailScanModalContent");
 	Object.entries(JSON.parse(data)).forEach(([key, value]) => {
-		console.log(value);
 		badge_color = value[3] ? 'danger' : 'info';
 		title = value[3] ? 'Uncommon Port - ' + value[2] : value[2];
 		port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value[0]}/${value[1]}</span>`
 	});
 	ip_address_content.innerHTML = port_badge;
+	$('.bs-tooltip').tooltip();
+}
+
+function render_ips(data)
+{
+	var ip_badge = ''
+	content = document.getElementById("detailScanModalContent");
+	Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+		badge_color = value[1] ? 'warning' : 'info';
+		title = value[1] ? 'CDN IP Address' : '';
+		ip_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value[0]}</span>`
+	});
+	content.innerHTML = ip_badge;
+	$('.bs-tooltip').tooltip();
 }
 
 function collapse_sidebar()

@@ -124,6 +124,10 @@ def get_ports_for_ip(request, ip, history_id):
     ports = Port.objects.filter(ip__address=ip).filter(scan_history=history_id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
     return JsonResponse(json.dumps(list(ports)), safe=False)
 
+def get_ip_from_port(request, port_number, history_id):
+    ips = Port.objects.filter(number=port_number).filter(scan_history=history_id).values_list('ip__address', 'ip__is_cdn').distinct().order_by()
+    return JsonResponse(json.dumps(list(ips)), safe=False)
+
 def detail_vuln_scan(request, id=None):
     if id:
         history = get_object_or_404(ScanHistory, id=id)

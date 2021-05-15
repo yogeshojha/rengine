@@ -92,4 +92,8 @@ urlpatterns = [
         'ip/ports/<str:ip>/<str:history_id>/',
         views.get_ports_for_ip,
         name='get_ports_for_ip'),
+    path(
+        'port/ip/<str:port_number>/<str:history_id>/',
+        views.get_ip_from_port,
+        name='get_ip_from_port'),
 ]

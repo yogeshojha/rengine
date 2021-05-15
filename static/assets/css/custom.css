@@ -306,3 +306,7 @@ div.dataTables_wrapper div.dataTables_filter {
   overflow: auto;
   padding: 15px 12px 0 12px;
 }
+
+.bs-tooltip {
+    z-index: 100000000;
+}
