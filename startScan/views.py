@@ -115,24 +115,14 @@ def detail_scan(request, id=None):
             context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
             context['last_scan_endpoint'] = last_scan
 
-        ip_addresses = IPAddress.objects.filter(scan_history=id).all()
-        cdn_ip = ip_addresses.filter(is_cdn=True).values('address').distinct()
-        non_cdn_ip = ip_addresses.filter(is_cdn=False).values('address').distinct()
-        if cdn_ip.exists():
-            ip_list = [ip['address'].split(',') for ip in cdn_ip if ip['address'] is not None]
-            ip_list = list(set(list(itertools.chain(*ip_list))))
-            context['cdn_ip_list'] = ip_list
-            context['discovered_cdn_ip_length'] = len(ip_list)
-        if non_cdn_ip.exists():
-            ip_list = [ip['address'].split(',') for ip in non_cdn_ip if ip['address'] is not None]
-            ip_list = list(set(list(itertools.chain(*ip_list))))
-            context['non_cdn_ip_list'] = ip_list
-            context['discovered_non_cdn_ip_length'] = len(ip_list)
-
-        context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by()
+        context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
+        context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
 
     return render(request, 'startScan/detail_scan.html', context)
 
+def get_ports_for_ip(request, ip, history_id):
+    ports = Port.objects.filter(ip__address=ip).filter(scan_history=history_id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
+    return JsonResponse(json.dumps(list(ports)), safe=False)
 
 def detail_vuln_scan(request, id=None):
     if id:

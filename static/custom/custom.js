@@ -103,6 +103,26 @@ function change_subdomain_status(id)
 	})
 }
 
+function get_ports_for_ip(ip, history_id){
+	document.getElementById("ipAddressModalLabel").innerHTML='Open Ports identified for ' + ip;
+	var port_badge = '';
+	fetch('../ip/ports/'+ip+'/'+history_id+'/')
+		.then(response => response.json())
+  	.then(data => render_ports(data));
+}
+
+function render_ports(data)
+{
+	var port_badge = ''
+	ip_address_content = document.getElementById("ipAddressModalContent");
+	Object.entries(JSON.parse(data)).forEach(([key, value]) => {
+		console.log(value);
+		badge_color = value[3] ? 'danger' : 'info';
+		title = value[3] ? 'Uncommon Port - ' + value[2] : value[2];
+		port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value[0]}/${value[1]}</span>`
+	});
+	ip_address_content.innerHTML = port_badge;
+}
 
 function collapse_sidebar()
 {

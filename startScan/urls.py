@@ -87,5 +87,9 @@ urlpatterns = [
     path(
         'start/multiple/',
         views.start_multiple_scan,
-        name='start_multiple_scan')
+        name='start_multiple_scan'),
+    path(
+        'ip/ports/<str:ip>/<str:history_id>/',
+        views.get_ports_for_ip,
+        name='get_ports_for_ip'),
 ]

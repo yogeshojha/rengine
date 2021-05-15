@@ -241,17 +241,33 @@ Detailed Scan Results for {{history.domain_name}}
 					<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 						<div class="widget widget-ip">
 							<div class="widget-heading">
-								<h6 class="">{{discovered_cdn_ip_length|add:discovered_non_cdn_ip_length}} Discovered IP Addresses<small class='text-warning'>({{discovered_cdn_ip_length}} CDN IPs)</small></h6>
+								<h6 class="">{{ip_addresses|length}} Discovered IP Addresses<small class='text-warning'>({{discovered_cdn_ip_length}} CDN IPs)</small></h6>
 								<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
 							</div>
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
-									{% for ip in cdn_ip_list %}
-									<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address">{{ip}}</span>
+									{% for ip in ip_addresses %}
+									{% if ip.1 %}
+									<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address" data-toggle="modal" data-target="#ipAddressModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
+									{% else %}
+									<span class='badge outline-badge-info badge-pills m-1' data-toggle="modal" data-target="#ipAddressModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
+									{% endif %}
 									{% endfor %}
-									{% for ip in non_cdn_ip_list %}
-									<span class='badge outline-badge-info badge-pills m-1'>{{ip}}</span>
-									{% endfor %}
+									<div class="modal fade" id="ipAddressModal" tabindex="-1" role="dialog" aria-labelledby="ipAddressModalLabel" aria-hidden="true">
+										<div class="modal-dialog modal-lg" role="document">
+											<div class="modal-content">
+												<div class="modal-header">
+													<h5 class="modal-title" id="ipAddressModalLabel"></h5>
+													<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+														<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+													</button>
+												</div>
+												<div class="modal-body">
+													<p class="modal-text" id="ipAddressModalContent"></p>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -264,9 +280,13 @@ Detailed Scan Results for {{history.domain_name}}
 							</div>
 							<div class="widget-content">
 								<div class="mt-container mx-auto">
+									{% if not history.port_scan %}
+									<span class='text-muted'>Port Scan has not been initiated, please initiate port scan to discover unique and uncommon ports.</span>
+									{% else %}
 									{% for port in  ports %}
 									<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{% if port.3 %}Uncommon Port-{{port.2}}{%else%}{{port.2}}{% endif %}'>{{port.0}}/{{port.1}}</span>
 									{% endfor %}
+									{% endif %}
 								</div>
 							</div>
 						</div>
