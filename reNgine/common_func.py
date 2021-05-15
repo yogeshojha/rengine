@@ -1,4 +1,5 @@
 import json
+import tldextract
 
 from django.db.models import Q
 from functools import reduce
@@ -111,3 +112,10 @@ def get_interesting_endpoint(scan_history=None, target=None):
 
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
+
+def get_subdomain_from_url(url):
+    extract_url = tldextract.extract(url)
+    subdomain = '.'.join(extract_url[:4])
+    if subdomain[0] == '.':
+        subdomain = subdomain[1:]
+    return subdomain

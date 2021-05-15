@@ -5,7 +5,6 @@ import json
 import validators
 import requests
 import logging
-import tldextract
 import whatportis
 
 from celery import shared_task
@@ -779,11 +778,7 @@ def fetch_endpoints(
                 endpoint.target_domain = domain
                 endpoint.http_url = json_st['url']
                 # extract the subdomain from url and map to Subdomain Model
-                url = tldextract.extract(json_st['url'])
-                _subdomain = '.'.join(url[:4])
-                if _subdomain[0] == '.':
-                    _subdomain = _subdomain[1:]
-                # find the subdomain, if exists then it's not an external url
+                _subdomain = get_subdomain_from_url(json_st['url'])
                 try:
                     subdomain = Subdomain.objects.get(
                         scan_history=task, name=_subdomain)
@@ -792,6 +787,7 @@ def fetch_endpoints(
                     print(url)
                     print(_subdomain)
                     logger.error('Subdomain not found...')
+                    # probably add subdomain
                     continue
                 if 'title' in json_st:
                     endpoint.page_title = json_st['title']
@@ -844,7 +840,7 @@ def fetch_endpoints(
                             endpoint.http_url = url
                             endpoint.target_domain = domain
                             endpoint.scan_history = task
-                            _subdomain = Subdomain.objects.get(scan_history=task, name=json_st['url'].split("//")[-1])
+                            _subdomain = Subdomain.objects.get(scan_history=task, name=get_subdomain_from_url(url))
                             endpoint.subdomain = _subdomain
                             endpoint.matched_patterns = patern
                         finally:
@@ -950,10 +946,7 @@ def vulnerability_scan(
                 for line in lines:
                     json_st = json.loads(line.strip())
                     host = json_st['host']
-                    extracted_subdomain = tldextract.extract(host)
-                    _subdomain = '.'.join(extracted_subdomain[:4])
-                    if _subdomain[0] == '.':
-                        _subdomain = _subdomain[1:]
+                    _subdomain = get_subdomain_from_url(host)
                     try:
                         subdomain = Subdomain.objects.get(
                             name=_subdomain, scan_history=task)
