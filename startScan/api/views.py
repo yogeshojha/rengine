@@ -237,11 +237,19 @@ class EndPointViewSet(viewsets.ModelViewSet):
         elif _order_col == '1':
             order_col = 'http_status'
         elif _order_col == '2':
-            order_col = 'content_type'
-        elif _order_col == '3':
-            order_col = 'content_length'
-        elif _order_col == '4':
             order_col = 'page_title'
+        elif _order_col == '3':
+            order_col = 'matched_patterns'
+        elif _order_col == '4':
+            order_col = 'content_type'
+        elif _order_col == '5':
+            order_col = 'content_length'
+        elif _order_col == '6':
+            order_col = 'technology_stack'
+        elif _order_col == '7':
+            order_col = 'webserver'
+        elif _order_col == '8':
+            order_col = 'response_time'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup

@@ -522,6 +522,7 @@ Detailed Scan Results for {{history.domain_name}}
 										<th>HTTP URL</th>
 										<th>Status</th>
 										<th>Page Title</th>
+										<th>Tags</th>
 										<th>Content Type</th>
 										<th>Content Length</th>
 										<th>Technology</th>
@@ -1014,11 +1015,12 @@ Detailed Scan Results for {{history.domain_name}}
 			"pageLength": 20,
 			'serverSide': true,
 			"ajax": '/start_scan/api/listEndpoints/?scan_history={{scan_history_id}}&format=datatables',
-			"order": [[ 4, "desc" ]],
+			"order": [[ 5, "desc" ]],
 			"columns": [
 				{'data': 'http_url'},
 				{'data': 'http_status'},
 				{'data': 'page_title'},
+				{'data': 'matched_patterns'},
 				{'data': 'content_type'},
 				{'data': 'content_length', 'searchable': false},
 				{'data': 'technology_stack'},
@@ -1066,11 +1068,20 @@ Detailed Scan Results for {{history.domain_name}}
 				{
 					"render": function ( data, type, row ) {
 						if (data){
-							return parse_comma_values_into_span(data, "info");
+							return parse_comma_values_into_span(data.toUpperCase(), "info");
 						}
 						return "";
 					},
-					"targets": 5,
+					"targets": 6,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return parse_comma_values_into_span(data, "danger", outline=true);
+						}
+						return "";
+					},
+					"targets": 3,
 				},
 				{
 					"render": function ( data, type, row ) {
@@ -1079,7 +1090,7 @@ Detailed Scan Results for {{history.domain_name}}
 						}
 						return "";
 					},
-					"targets": 7,
+					"targets": 8,
 				},
 			],
 			drawCallback: function () {
