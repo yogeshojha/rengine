@@ -99,6 +99,18 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
     results_dir = results_dir + current_scan_dir
 
     if yaml_configuration:
+        '''
+        a target in itself is a subdomain, some tool give subdomains as
+        www.yogeshojha.com but url and everything else resolves to yogeshojha.com
+        In that case, we would already need to store target itself as subdomain
+        '''
+
+        initial_subdomain_file = '/target_domain.txt' if task.subdomain_discovery else '/sorted_subdomain_collection.txt'
+
+        subdomain_file = open(results_dir + initial_subdomain_file, "w")
+        subdomain_file.write(domain.domain_name + "\n")
+        subdomain_file.close()
+
         if(task.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
             subdomain_scan(
@@ -108,7 +120,7 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
                 results_dir,
                 activity_id)
         else:
-            skip_subdomain_scan(task, domain, subdomain_scan_results_file)
+            skip_subdomain_scan(task, domain)
 
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
@@ -173,6 +185,13 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
     # delete_scan_data(results_dir)
     return {"status": True}
 
+def skip_subdomain_scan(task, domain):
+    # store default target as subdomain
+    scanned = Subdomain()
+    scanned.name = domain.domain_name
+    scanned.scan_history = task
+    scanned.target_domain = domain
+    scanned.save()
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
@@ -312,7 +331,6 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         os.system(extract_subdomain)
 
         # remove the results from oneforall directory
-
         os.system(
             'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
 
@@ -322,29 +340,28 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     We will gather all the results in one single file, sort them and
     remove the older results from_*
     '''
-
     os.system(
         'cat {0}/*.txt > {0}/subdomain_collection.txt'.format(results_dir))
 
     '''
+    Write target domain into subdomain_collection
+    '''
+    os.system(
+        'cat {0}/target_domain.txt >> {0}/subdomain_collection.txt'.format(results_dir))
+
+    '''
     Remove all the from_* files
     '''
-
-    os.system('rm -rf {}/from*'.format(results_dir))
+    os.system('rm -f {}/from*'.format(results_dir))
 
     '''
     Sort all Subdomains
     '''
-
-    os.system(
-        'sort -u {}/subdomain_collection.txt -o {}/sorted_subdomain_collection.txt'.format(
-            results_dir,
-            results_dir))
+    os.system('sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
 
     '''
     The final results will be stored in sorted_subdomain_collection.
     '''
-
     # parse the subdomain list file and store in db
     with open(subdomain_scan_results_file) as subdomain_list:
         for _subdomain in subdomain_list:
@@ -356,21 +373,6 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 subdomain.target_domain = domain
                 subdomain.name = _subdomain.rstrip('\n')
                 subdomain.save()
-
-
-def skip_subdomain_scan(task, domain, subdomain_scan_results_file):
-    '''
-    When subdomain scanning is not performed, the target itself is subdomain
-    '''
-    only_subdomain_file.write(domain.domain_name + "\n")
-    only_subdomain_file.close()
-
-    scanned = Subdomain()
-    scanned.name = domain.domain_name
-    scanned.scan_history = task
-    scanned.target_domain = domain
-    scanned.save()
-
 
 def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
     '''
@@ -630,22 +632,11 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
-
-def unusual_port_detection():
-    '''
-    OSINT
-    If port scan is enabled this function will run nmap to identify the unusual
-    ports
-    '''
-    pass
-
-
 def check_waf():
     '''
     This function will check for the WAF being used in subdomains using wafw00f
     '''
     pass
-
 
 def directory_brute(task, yaml_configuration, results_dir, activity_id):
     '''
@@ -784,7 +775,7 @@ def fetch_endpoints(
                         scan_history=task, name=_subdomain)
                     endpoint.subdomain = subdomain
                 except Exception as exception:
-                    print(url)
+                    logger.error(json_st['url'])
                     print(_subdomain)
                     logger.error('Subdomain not found...')
                     # probably add subdomain
@@ -842,7 +833,7 @@ def fetch_endpoints(
                             endpoint.scan_history = task
                             _subdomain = Subdomain.objects.get(scan_history=task, name=get_subdomain_from_url(url))
                             endpoint.subdomain = _subdomain
-                            endpoint.matched_patterns = patern
+                            endpoint.matched_patterns = pattern
                         finally:
                             if pattern == 'xss':
                                 endpoint.is_xss = True
