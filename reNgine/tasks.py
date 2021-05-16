@@ -763,7 +763,7 @@ def fetch_endpoints(
         lines = urls_json_result.readlines()
         for line in lines:
             json_st = json.loads(line.strip())
-            if not EndPoint.objects.filter(http_url=json_st['url']).count():
+            if not EndPoint.objects.filter(scan_history=task).filter(http_url=json_st['url']).count():
                 endpoint = EndPoint()
                 endpoint.scan_history = task
                 endpoint.target_domain = domain
@@ -771,15 +771,22 @@ def fetch_endpoints(
                 # extract the subdomain from url and map to Subdomain Model
                 _subdomain = get_subdomain_from_url(json_st['url'])
                 try:
-                    subdomain = Subdomain.objects.get(
-                        scan_history=task, name=_subdomain)
-                    endpoint.subdomain = subdomain
+                    subdomain = Subdomain.objects.get(scan_history=task, name=_subdomain)
                 except Exception as exception:
+                    '''
+                    gau or gosppider can gather interesting endpoints which
+                    when parsed can give subdomains that were not existent from
+                    subdomain scan. so storing them
+                    '''
                     logger.error(json_st['url'])
-                    print(_subdomain)
-                    logger.error('Subdomain not found...')
-                    # probably add subdomain
-                    continue
+                    logger.error('Subdomain {} not found, adding...'.format(_subdomain))
+                    subdomain = Subdomain()
+                    subdomain.name = _subdomain
+                    subdomain.target_domain = domain
+                    subdomain.scan_history = task
+                    subdomain.save()
+                finally:
+                    endpoint.subdomain = subdomain
                 if 'title' in json_st:
                     endpoint.page_title = json_st['title']
                 if 'webserver' in json_st:
@@ -818,6 +825,7 @@ def fetch_endpoints(
                 with open(gf_output_file_path) as gf_output:
                     for line in gf_output:
                         url = line.rstrip('\n')
+                        print(repr(url))
                         try:
                             endpoint = EndPoint.objects.get(scan_history=task, http_url=url)
                             earlier_pattern = endpoint.matched_patterns
