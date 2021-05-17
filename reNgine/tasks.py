@@ -868,9 +868,12 @@ def fetch_endpoints(
                             endpoint.http_url = url
                             endpoint.target_domain = domain
                             endpoint.scan_history = task
-                            _subdomain = Subdomain.objects.get(
+                            try:
+                                _subdomain = Subdomain.objects.get(
                                 scan_history=task, name=get_subdomain_from_url(url))
-                            endpoint.subdomain = _subdomain
+                                endpoint.subdomain = _subdomain
+                            except Exception as e:
+                                continue
                             endpoint.matched_gf_patterns = pattern
                         finally:
                             endpoint.save()

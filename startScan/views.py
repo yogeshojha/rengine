@@ -322,7 +322,7 @@ def schedule_scan(request, host_id):
         task_name = engine_object.engine_name + ' for ' + \
             domain.domain_name + \
             ':' + \
-            str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+            str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         if request.POST['scheduled_mode'] == 'periodic':
             # periodic task
             frequency_value = int(request.POST['frequency'])
