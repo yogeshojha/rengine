@@ -26,7 +26,7 @@ yes | whatportis --update
 if [ ! -d "~/Gf-Patterns" ];
 then
   mkdir ~/.gf
-  cp -r $GOPATH/src/github.com/tomnomnom/gf/examples ~/.gf
+  cp -r $GOPATH/src/github.com/tomnomnom/gf/examples/*.json ~/.gf
   git clone https://github.com/1ndianl33t/Gf-Patterns ~/Gf-Patterns
   mv ~/Gf-Patterns/*.json ~/.gf
 fi
