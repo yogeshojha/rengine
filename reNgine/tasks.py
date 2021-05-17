@@ -86,15 +86,22 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
         scan_failed(task)
 
     yaml_configuration = None
+    excluded_subdomains = ''
 
     try:
         yaml_configuration = yaml.load(
             task.scan_type.yaml_configuration,
             Loader=yaml.FullLoader)
-        excluded_subdomains = ''
     except Exception as exception:
         logger.error(exception)
         # TODO: Put failed reason on db
+
+    '''
+    Add GF patterns name to db for dynamic URLs menu
+    '''
+    task.used_gf_patterns = ','.join(
+        pattern for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]) if engine_object.fetch_url else None
+    task.save()
 
     results_dir = results_dir + current_scan_dir
 
@@ -185,6 +192,7 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
     # delete_scan_data(results_dir)
     return {"status": True}
 
+
 def skip_subdomain_scan(task, domain):
     # store default target as subdomain
     scanned = Subdomain()
@@ -192,6 +200,7 @@ def skip_subdomain_scan(task, domain):
     scanned.scan_history = task
     scanned.target_domain = domain
     scanned.save()
+
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
@@ -357,7 +366,8 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     Sort all Subdomains
     '''
-    os.system('sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
+    os.system(
+        'sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
 
     '''
     The final results will be stored in sorted_subdomain_collection.
@@ -373,6 +383,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 subdomain.target_domain = domain
                 subdomain.name = _subdomain.rstrip('\n')
                 subdomain.save()
+
 
 def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
     '''
@@ -432,7 +443,9 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                     subdomain.technology_stack = ','.join(
                         json_st['technologies'])
                 if 'response-time' in json_st:
-                    response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
+                    response_time = float(
+                        ''.join(
+                            ch for ch in json_st['response-time'] if not ch.isalpha()))
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
@@ -444,7 +457,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                     subdomain.cname = cname_list
                 endpoint.discovered_date = timezone.now()
                 subdomain.discovered_date = timezone.now()
-                endpoint.is_default=True
+                endpoint.is_default = True
                 endpoint.save()
                 subdomain.save()
                 if 'a' in json_st:
@@ -455,7 +468,7 @@ def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
                         ip.subdomain = subdomain
                         ip.address = _ip
                         if 'host' in json_st and json_st['host'] == _ip:
-                                ip.is_host = True
+                            ip.is_host = True
                         if 'cdn' in json_st:
                             ip.is_cdn = json_st['cdn']
                         ip.save()
@@ -471,69 +484,69 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     This function is responsible for taking screenshots
     '''
     # after subdomain discovery run aquatone for visual identification
-    output_aquatone_path=results_dir + '/aquascreenshots'
+    output_aquatone_path = results_dir + '/aquascreenshots'
 
-    alive_subdomains_path=results_dir + '/alive.txt'
+    alive_subdomains_path = results_dir + '/alive.txt'
 
     if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_port=yaml_configuration[VISUAL_IDENTIFICATION][PORT]
+        scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
         # check if scan port is valid otherwise proceed with default xlarge
         # port
         if scan_port not in ['small', 'medium', 'large', 'xlarge']:
-            scan_port='xlarge'
+            scan_port = 'xlarge'
     else:
-        scan_port='xlarge'
+        scan_port = 'xlarge'
 
     if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-        threads=yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
+        threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
     else:
-        threads=10
+        threads = 10
 
     if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        http_timeout=yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
+        http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
     else:
-        http_timeout=3000  # Default Timeout for HTTP
+        http_timeout = 3000  # Default Timeout for HTTP
 
     if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        screenshot_timeout=yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
+        screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
     else:
-        screenshot_timeout=30000  # Default Timeout for Screenshot
+        screenshot_timeout = 30000  # Default Timeout for Screenshot
 
     if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_timeout=yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
+        scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
     else:
-        scan_timeout=100  # Default Timeout for Scan
+        scan_timeout = 100  # Default Timeout for Scan
 
-    aquatone_command='cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
+    aquatone_command = 'cat {} | /app/tools/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
         alive_subdomains_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
 
     logging.info(aquatone_command)
     os.system(aquatone_command)
     os.system('chmod -R 607 /app/tools/scan_results/*')
-    aqua_json_path=output_aquatone_path + '/aquatone_session.json'
+    aqua_json_path = output_aquatone_path + '/aquatone_session.json'
 
     try:
         if os.path.isfile(aqua_json_path):
             with open(aqua_json_path, 'r') as json_file:
-                data=json.load(json_file)
+                data = json.load(json_file)
 
             for host in data['pages']:
-                sub_domain=Subdomain.objects.get(
-                    scan_history__id = task.id,
-                    name = data['pages'][host]['hostname'])
+                sub_domain = Subdomain.objects.get(
+                    scan_history__id=task.id,
+                    name=data['pages'][host]['hostname'])
                 # list_ip = data['pages'][host]['addrs']
                 # ip_string = ','.join(list_ip)
                 # sub_domain.ip_address = ip_string
-                sub_domain.screenshot_path=results_dir + \
+                sub_domain.screenshot_path = results_dir + \
                     '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                sub_domain.http_header_path=results_dir + \
+                sub_domain.http_header_path = results_dir + \
                     '/aquascreenshots/' + data['pages'][host]['headersPath']
-                tech_list=[]
+                tech_list = []
                 if data['pages'][host]['tags'] is not None:
                     for tag in data['pages'][host]['tags']:
                         tech_list.append(tag['text'])
-                tech_string=','.join(tech_list)
-                sub_domain.technology_stack=tech_string
+                tech_string = ','.join(tech_list)
+                sub_domain.technology_stack = tech_string
                 sub_domain.save()
     except Exception as exception:
         logging.error(exception)
@@ -544,17 +557,17 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
     '''
     This function is responsible for running the port scan
     '''
-    subdomain_scan_results_file=results_dir + '/sorted_subdomain_collection.txt'
-    port_results_file=results_dir + '/ports.json'
+    subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+    port_results_file = results_dir + '/ports.json'
 
     # check the yaml_configuration and choose the ports to be scanned
 
-    scan_ports='-'  # default port scan everything
+    scan_ports = '-'  # default port scan everything
     if PORTS in yaml_configuration[PORT_SCAN]:
         # TODO:  legacy code, remove top-100 in future versions
-        all_ports=yaml_configuration[PORT_SCAN][PORTS]
+        all_ports = yaml_configuration[PORT_SCAN][PORTS]
         if 'full' in all_ports:
-            naabu_command='cat {} | naabu -json -o {} -p {}'.format(
+            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
                 subdomain_scan_results_file, port_results_file, '-')
         elif 'top-100' in all_ports:
             naabu_command = 'cat {} | naabu -json -o {} -top-ports 100'.format(
@@ -595,7 +608,8 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 port = Port()
                 port.scan_history = task
                 port.target_domain = domain
-                sub_domain = Subdomain.objects.get(scan_history=task, name=json_st['host'])
+                sub_domain = Subdomain.objects.get(
+                    scan_history=task, name=json_st['host'])
                 port.subdomain = sub_domain
                 port_number = json_st['port']
                 port.number = port_number
@@ -607,7 +621,10 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                     port.service_name = port_detail[0].name
                     port.description = port_detail[0].description
                 try:
-                    if not IPAddress.objects.filter(scan_history=task).filter(subdomain=sub_domain).filter(address=json_st['ip']).exists():
+                    if not IPAddress.objects.filter(
+                            scan_history=task).filter(
+                            subdomain=sub_domain).filter(
+                            address=json_st['ip']).exists():
                         # create new ip
                         ip = IPAddress()
                         ip.scan_history = task
@@ -617,7 +634,8 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                         ip.is_host = False
                         ip.is_cdn = False
                         ip.save()
-                    ip_address = IPAddress.objects.get(scan_history=task, subdomain=sub_domain, address=json_st['ip'])
+                    ip_address = IPAddress.objects.get(
+                        scan_history=task, subdomain=sub_domain, address=json_st['ip'])
                     port.ip = ip_address
                 except Exception as e:
                     logger.info(json_st['ip'])
@@ -632,11 +650,13 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
+
 def check_waf():
     '''
     This function will check for the WAF being used in subdomains using wafw00f
     '''
     pass
+
 
 def directory_brute(task, yaml_configuration, results_dir, activity_id):
     '''
@@ -763,7 +783,9 @@ def fetch_endpoints(
         lines = urls_json_result.readlines()
         for line in lines:
             json_st = json.loads(line.strip())
-            if not EndPoint.objects.filter(scan_history=task).filter(http_url=json_st['url']).count():
+            if not EndPoint.objects.filter(
+                    scan_history=task).filter(
+                    http_url=json_st['url']).count():
                 endpoint = EndPoint()
                 endpoint.scan_history = task
                 endpoint.target_domain = domain
@@ -771,7 +793,8 @@ def fetch_endpoints(
                 # extract the subdomain from url and map to Subdomain Model
                 _subdomain = get_subdomain_from_url(json_st['url'])
                 try:
-                    subdomain = Subdomain.objects.get(scan_history=task, name=_subdomain)
+                    subdomain = Subdomain.objects.get(
+                        scan_history=task, name=_subdomain)
                 except Exception as exception:
                     '''
                     gau or gosppider can gather interesting endpoints which
@@ -779,7 +802,8 @@ def fetch_endpoints(
                     subdomain scan. so storing them
                     '''
                     logger.error(json_st['url'])
-                    logger.error('Subdomain {} not found, adding...'.format(_subdomain))
+                    logger.error(
+                        'Subdomain {} not found, adding...'.format(_subdomain))
                     subdomain = Subdomain()
                     subdomain.name = _subdomain
                     subdomain.target_domain = domain
@@ -801,14 +825,16 @@ def fetch_endpoints(
                     endpoint.technology_stack = ','.join(
                         json_st['technologies'])
                 if 'response-time' in json_st:
-                    response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
+                    response_time = float(
+                        ''.join(
+                            ch for ch in json_st['response-time'] if not ch.isalpha()))
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
                 if 'a' in json_st:
                     ip_list = ','.join(json_st['a'])
                     endpoint.ip_address = ip_list
-                    endpoint.discovered_date=timezone.now()
+                    endpoint.discovered_date = timezone.now()
                 endpoint.save()
     except Exception as exception:
         logging.error(exception)
@@ -818,8 +844,10 @@ def fetch_endpoints(
     if GF_PATTERNS in yaml_configuration[FETCH_URL]:
         for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
             logger.info('Running GF for {}'.format(pattern))
-            gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(results_dir, pattern)
-            gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(results_dir, pattern, gf_output_file_path)
+            gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
+                results_dir, pattern)
+            gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(
+                results_dir, pattern, gf_output_file_path)
             os.system(gf_command)
             if os.path.exists(gf_output_file_path):
                 with open(gf_output_file_path) as gf_output:
@@ -827,7 +855,8 @@ def fetch_endpoints(
                         url = line.rstrip('\n')
                         print(repr(url))
                         try:
-                            endpoint = EndPoint.objects.get(scan_history=task, http_url=url)
+                            endpoint = EndPoint.objects.get(
+                                scan_history=task, http_url=url)
                             earlier_pattern = endpoint.matched_gf_patterns
                             new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
                             endpoint.matched_gf_patterns = new_pattern
@@ -839,11 +868,13 @@ def fetch_endpoints(
                             endpoint.http_url = url
                             endpoint.target_domain = domain
                             endpoint.scan_history = task
-                            _subdomain = Subdomain.objects.get(scan_history=task, name=get_subdomain_from_url(url))
+                            _subdomain = Subdomain.objects.get(
+                                scan_history=task, name=get_subdomain_from_url(url))
                             endpoint.subdomain = _subdomain
                             endpoint.matched_gf_patterns = pattern
                         finally:
                             endpoint.save()
+
 
 def vulnerability_scan(
         task,

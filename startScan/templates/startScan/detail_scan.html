@@ -138,13 +138,11 @@ Detailed Scan Results for {{history.domain_name}}
 				</a>
 				<div class="dropdown-menu">
 					<a class="dropdown-item" id="pills-endpoints-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">All Endpoints</a>
-					<a class="dropdown-item" id="pills-xss-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">XSS</a>
-					<a class="dropdown-item" id="pills-sqli-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">SQLI</a>
-					<a class="dropdown-item" id="pills-ssti-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">SSTI</a>
-					<a class="dropdown-item" id="pills-open-redirect-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">Open Redirects</a>
-					<a class="dropdown-item" id="pills-lfi-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">LFI</a>
-					<a class="dropdown-item" id="pills-rce-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">RCE</a>
-					<a class="dropdown-item" id="pills-ssrf-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">SSRF</a>
+					{% if history.fetch_url and history.used_gf_patterns%}
+					{% for pattern in history.used_gf_patterns|split:"," %}
+					<a class="dropdown-item" id="pills-{{pattern}}-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">{{pattern|upper}}</a>
+					{% endfor %}
+					{% endif %}
 				</div>
 			</li>
 			{% if history.vulnerability_scan %}
@@ -997,38 +995,6 @@ Detailed Scan Results for {{history.domain_name}}
 	});
 	{% endif %}
 
-	$("#pills-endpoints-tab").click(function() {
-		get_endpoints({{scan_history_id}}, null);
-	});
-
-	$("#pills-xss-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'xss');
-	});
-
-	$("#pills-sqli-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'sqli');
-	});
-
-	$("#pills-ssti-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'ssti');
-	});
-
-	$("#pills-open-redirect-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'redirect');
-	});
-
-	$("#pills-lfi-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'lfi');
-	});
-
-	$("#pills-rce-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'rce');
-	});
-
-	$("#pills-ssrf-tab").click(function() {
-		get_endpoints({{scan_history_id}}, 'ssrf');
-	});
-
 	{% if history.vulnerability_scan %}
 	$("#pills-vulnerabilities-tab").click(function() {
 		$('#vulnerability_results').DataTable({
@@ -1278,6 +1244,20 @@ function subdomain_status_change(checkbox, id)
 	}
 	change_subdomain_status(id);
 }
+
+// default get urls
+$("#pills-endpoints-tab").click(function() {
+	get_endpoints({{scan_history_id}}, null);
+});
+
+{% if history.fetch_url and history.used_gf_patterns %}
+// gf patterns
+{% for pattern in history.used_gf_patterns|split:"," %}
+$("#pills-{{pattern}}-tab").click(function() {
+	get_endpoints({{scan_history_id}}, '{{pattern}}');
+});
+{% endfor %}
+{% endif %}
 
 </script>
 {% endblock page_level_script %}

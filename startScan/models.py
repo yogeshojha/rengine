@@ -22,6 +22,7 @@ class ScanHistory(models.Model):
     fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)
     stop_scan_date = models.DateTimeField(null=True)
+    used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 
     def __str__(self):
         # debug purpose remove scan type and id in prod

@@ -6,7 +6,7 @@ register = template.Library()
 
 @register.filter(name='split')
 def split(value, key):
-    return value.split(key)
+    return [x.strip() for x in value.split(key)]
 
 
 @register.filter(name='count')

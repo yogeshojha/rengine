@@ -265,7 +265,7 @@ def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
         delete_dir = obj.domain_name.domain_name + '_' + \
-            str(datetime.strftime(obj.start_scan_date, '%Y_%m_%d_%H_%M_%S'))
+            str(datetime.datetime.strftime(obj.start_scan_date, '%Y_%m_%d_%H_%M_%S'))
         delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
         os.system('rm -rf ' + delete_path)
         obj.delete()
