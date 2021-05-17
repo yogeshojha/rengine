@@ -139,8 +139,10 @@ Detailed Scan Results for {{history.domain_name}}
 				<div class="dropdown-menu">
 					<a class="dropdown-item" id="pills-endpoints-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">All Endpoints</a>
 					{% if history.fetch_url and history.used_gf_patterns%}
-					{% for pattern in history.used_gf_patterns|split:"," %}
-					<a class="dropdown-item" id="pills-{{pattern}}-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">{{pattern|upper}}</a>
+					{% for key,value in matched_gf_count.items %}
+					{% if value > 0 %}
+					<a class="dropdown-item" id="pills-{{key}}-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">{{key|upper}}&nbsp;&nbsp;<span class="badge badge-pills badge-danger">{{value}}</span></a>
+					{% endif %}
 					{% endfor %}
 					{% endif %}
 				</div>

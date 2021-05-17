@@ -44,7 +44,8 @@ def detail_scan(request, id=None):
             scan_history__id=id).values('http_url').distinct().count()
         context['endpoint_alive_count'] = EndPoint.objects.filter(
             scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
-        context['history'] = get_object_or_404(ScanHistory, id=id)
+        history = get_object_or_404(ScanHistory, id=id)
+        context['history'] = history
         info_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=0).count()
         low_count = Vulnerability.objects.filter(
@@ -117,6 +118,13 @@ def detail_scan(request, id=None):
 
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
+
+    # badge count for gfs
+    count_gf = {}
+    for gf in history.used_gf_patterns.split(','):
+        count_gf[gf] = EndPoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
+
+    context['matched_gf_count'] = count_gf
 
     return render(request, 'startScan/detail_scan.html', context)
 
