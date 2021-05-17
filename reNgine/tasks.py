@@ -828,9 +828,9 @@ def fetch_endpoints(
                         print(repr(url))
                         try:
                             endpoint = EndPoint.objects.get(scan_history=task, http_url=url)
-                            earlier_pattern = endpoint.matched_patterns
+                            earlier_pattern = endpoint.matched_gf_patterns
                             new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
-                            endpoint.matched_patterns = new_pattern
+                            endpoint.matched_gf_patterns = new_pattern
                         except Exception as e:
                             # add the url in db
                             logger.error(e)
@@ -841,22 +841,8 @@ def fetch_endpoints(
                             endpoint.scan_history = task
                             _subdomain = Subdomain.objects.get(scan_history=task, name=get_subdomain_from_url(url))
                             endpoint.subdomain = _subdomain
-                            endpoint.matched_patterns = pattern
+                            endpoint.matched_gf_patterns = pattern
                         finally:
-                            if pattern == 'xss':
-                                endpoint.is_xss = True
-                            elif pattern == 'sqli':
-                                endpoint.is_sqli = True
-                            elif pattern == 'ssti':
-                                endpoint.is_ssti = True
-                            elif pattern == 'redirect':
-                                endpoint.is_redirect = True
-                            elif pattern == 'lfi':
-                                endpoint.is_lfi = True
-                            elif pattern == 'rce':
-                                endpoint.is_rce = True
-                            elif pattern == 'ssrf':
-                                endpoint.is_ssrf = True
                             endpoint.save()
 
 def vulnerability_scan(

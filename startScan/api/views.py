@@ -208,8 +208,9 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
-        scan_history = req.query_params.get('scan_history')
-        url_query = req.query_params.get('query_param')
+        scan_history = req.query_params.get('scan_history') if 'scan_history' in req.query_params else None
+        gf_tag = req.query_params.get('gf_tag') if 'gf_tag' in req.query_params else None
+        url_query = req.query_params.get('query_param') if 'query_param' in req.query_params else None
         if url_query:
             if url_query.isnumeric():
                 self.queryset = EndPoint.objects.filter(
@@ -222,9 +223,13 @@ class EndPointViewSet(viewsets.ModelViewSet):
                     Q(scan_history__domain_name__domain_name=url_query) | Q(http_url=url_query))
         elif scan_history:
             self.queryset = EndPoint.objects.filter(scan_history__id=scan_history)
-            return self.queryset
-        else:
-            return self.queryset
+
+        '''
+        look for tags
+        '''
+        if gf_tag and scan_history:
+            self.queryset = EndPoint.objects.filter(scan_history__id=scan_history).filter(matched_gf_patterns__icontains=gf_tag)
+        return self.queryset
 
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
@@ -239,7 +244,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
         elif _order_col == '2':
             order_col = 'page_title'
         elif _order_col == '3':
-            order_col = 'matched_patterns'
+            order_col = 'matched_gf_patterns'
         elif _order_col == '4':
             order_col = 'content_type'
         elif _order_col == '5':
