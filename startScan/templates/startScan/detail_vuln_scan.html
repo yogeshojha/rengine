@@ -29,27 +29,29 @@ All Vulnerabilities
 
 
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-	<div class="row layout-top-spacing mb-4" id="vulnerabilityDiscovered">
-		<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-			<div class="widget-content widget-content-area br-6">
-				<h5 class="text-danger">Vulnerability Scan Results</h5>
-				<div class="table-responsive mb-4 mt-4">
-					<table id="vulnerability_results" class="table table-hover">
-						<thead>
-							<tr>
-								<th class="checkbox-column">Status</th>
-								<th>Title</th>
-								<th>Severity</th>
-								<th>Vulnerable URL</th>
-								<th>Description</th>
-								<th>Last Seen</th>
-								<th>Status</th>
-							</tr>
-						</thead>
-					</table>
-				</div>
+<div class="statbox widget box box-shadow">
+	<div class="widget-header">
+		<div class="row">
+			<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+				<h4 class="text-danger">Vulnerability Scan Results</h4>
 			</div>
+		</div>
+	</div>
+	<div class="widget-content widget-content-area">
+		<div class="table-responsive mb-4 mt-4">
+			<table id="vulnerability_results" class="table table-hover">
+				<thead>
+					<tr>
+						<th class="checkbox-column">Status</th>
+						<th>Title</th>
+						<th>Severity</th>
+						<th>Vulnerable URL</th>
+						<th>Description</th>
+						<th>Last Seen</th>
+						<th>Status</th>
+					</tr>
+				</thead>
+			</table>
 		</div>
 	</div>
 </div>
@@ -78,8 +80,8 @@ $(document).ready(function() {
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-	         "<'row'<'col'tr>>" +
-	         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
 		"stripeClasses": [],
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,

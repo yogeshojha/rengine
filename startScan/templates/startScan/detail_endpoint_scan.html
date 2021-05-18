@@ -24,31 +24,33 @@ All Endpoints
 
 
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-  <div class="row mb-4">
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12" id="endpointDiscovered">
-      <div class="widget-content widget-content-area br-6 layout-top-spacing">
-        <h5 class="text-info">Endpoints</h5>
-        {% if endpoint_count %}
-        <a href="../export/endpoints/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Endpoints(txt format)</a>
-        {% endif %}
-        <div class="table-responsive mb-4 mt-4">
-          <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-            <thead>
-              <tr>
-                <th>Endpoint</th>
-                <th>HTTP Status</th>
-                <th>Content Type</th>
-                <th>Content Length</th>
-                <th>Page Title</th>
-              </tr>
-            </thead>
-          </table>
-        </div>
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4 class="text-info">Endpoints</h4>
       </div>
     </div>
   </div>
+<div class="widget-content widget-content-area">
+  {% if endpoint_count %}
+  <a href="../export/endpoints/{{scan_history_id}}" class="btn btn-info mb-2 mt-4">Export Endpoints(txt format)</a>
+  {% endif %}
+  <div class="table-responsive mb-4 mt-4">
+    <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+      <thead>
+        <tr>
+          <th>Endpoint</th>
+          <th>HTTP Status</th>
+          <th>Content Type</th>
+          <th>Content Length</th>
+          <th>Page Title</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
 </div>
+
 {% endblock main_content %}
 
 
@@ -59,7 +61,7 @@ All Endpoints
 <script type="text/javascript">
 $(document).ready(function() {
   // Collapse Sidebar
-	collapse_sidebar();
+  collapse_sidebar();
   $('#endpoint_results').DataTable({
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
@@ -69,8 +71,8 @@ $(document).ready(function() {
       "sLengthMenu": "Results :  _MENU_",
     },
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-           "<'row'<'col'tr>>" +
-           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'row'<'col'tr>>" +
+    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     "stripeClasses": [],
     "lengthMenu": [20, 50, 100, 500, 1000],
     "pageLength": 20,
@@ -79,7 +81,7 @@ $(document).ready(function() {
     "ajax": '/start_scan/api/listEndpoints/?scan_history={{scan_history_id}}&format=datatables',
     {% else %}
     {% if request.GET.query %}
-		"ajax": '/start_scan/api/listEndpoints/?scan_history=&format=datatables&query_param={{request.GET.query}}',
+    "ajax": '/start_scan/api/listEndpoints/?scan_history=&format=datatables&query_param={{request.GET.query}}',
     {% else %}
     "ajax": '/start_scan/api/listEndpoints/?scan_history=&format=datatables',
     {% endif %}

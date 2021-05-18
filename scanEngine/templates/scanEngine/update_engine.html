@@ -11,15 +11,15 @@ Update Engine Type
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {{ form.media }}
 <style media="screen">
-	.ace_editor {
-		width:100%;
-		height:450px;
-		font-size:12px;
-		border:1px solid #CCC;
-	}
-	.django-ace-toolbar{
-		display: none;
-	}
+.ace_editor {
+	width:100%;
+	height:450px;
+	font-size:12px;
+	border:1px solid #CCC;
+}
+.django-ace-toolbar{
+	display: none;
+}
 </style>
 {% endblock custom_js_css_link %}
 
@@ -28,24 +28,22 @@ Update Engine
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-<div class="col-lg-12 layout-spacing">
-	<div class="statbox widget box box-shadow">
-		<div class="widget-header">
-			<div class="row">
-				<div class="col-12">
-					<h4>Update Engine</h4>
-					{{ form.errors }}
-					{{ form.non_field_errors }}
-				</div>
+<div class="statbox widget box box-shadow">
+	<div class="widget-header">
+		<div class="row">
+			<div class="col-12">
+				<h4>Update Engine</h4>
+				{{ form.errors }}
+				{{ form.non_field_errors }}
 			</div>
 		</div>
-		<div class="widget-content widget-content-area">
-			<form class="simple-example" method="POST">
-				{% csrf_token %}
-				{% include "scanEngine/_items/form_engine.html" %}
-				<button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Engine</button>
-			</form>
-		</div>
+	</div>
+	<div class="widget-content widget-content-area">
+		<form class="simple-example" method="POST">
+			{% csrf_token %}
+			{% include "scanEngine/_items/form_engine.html" %}
+			<button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Engine</button>
+		</form>
 	</div>
 </div>
 {% endblock main_content %}

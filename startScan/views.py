@@ -14,7 +14,6 @@ from django.conf import settings
 from django.core import serializers
 
 from startScan.models import *
-from notification.models import NotificationHooks
 from targetApp.models import Domain
 from scanEngine.models import EngineType, Configuration
 from reNgine.tasks import initiate_scan, create_scan_activity

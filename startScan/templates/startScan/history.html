@@ -22,116 +22,112 @@ Scan History
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-<div class="col-lg-12 layout-spacing">
-	<div class="col-lg-12">
-		<div class="statbox widget box box-shadow">
-			<div class="widget-header">
-				<div class="row">
-					<div class="col-xl-12 col-md-12 col-sm-12 col-12">
-						<h4>Scan History</h4>
-					</div>
-				</div>
+<div class="statbox widget box box-shadow">
+	<div class="widget-header">
+		<div class="row">
+			<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+				<h4>Scan History</h4>
 			</div>
-			<div class="widget-content widget-content-area">
-				<div class="table-responsive mb-4">
-					<table id="style-2" class="table style-2 table-hover">
-						<thead>
-							<tr>
-								<th class="text-center">Serial</th>
-								<th class="">Target Name</th>
-								<th class="text-center">Scan Summary</th>
-								<th class="text-center">Scan Type</th>
-								<th class="text-center">Last Scanned On</th>
-								<th class="text-center">Status</th>
-								<th class="">Progress</th>
-								<th class="text-center">Result</th>
-								<th class="text-center">Action</th>
-							</tr>
-						</thead>
-						<tbody>
-							{% for scan_history in scan_history.all %}
-							<tr>
-								<td class="checkbox-column"> {{ scan_history.id }} </td>
-								<td class="">{{ scan_history.domain_name }}</td>
-								<td class="text-center">
-									<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan_history.get_subdomain_count}}</span>
-									<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan_history.get_endpoint_count}}</span>
-									<span class="badge badge-pills badge-danger bs-tooltip" title="{{scan_history.get_critical_vulnerability_count}} Critical, {{scan_history.get_high_vulnerability_count}} High, {{scan_history.get_medium_vulnerability_count}} Medium Vulnerabilities">{{scan_history.get_vulnerability_count}}</span>
-								</td>
-								<td class="text-center">{{ scan_history.scan_type }}</td>
-								<td class="text-center">{{ scan_history.last_scan_date }}</td>
-								<td class="text-center">
-									{% if scan_history.scan_status == -1 %}
-									<span class="shadow-none badge tbadge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
-									{% elif scan_history.scan_status == 0 %}
-									<span class="shadow-none badge tbadge-danger">Failed</span>
-									{% elif scan_history.scan_status == 1 %}
-									<span class="shadow-none badge tbadge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-									{% elif scan_history.scan_status == 2 %}
-									<span class="shadow-none badge tbadge-success">Successful</span>
-									{% elif scan_history.scan_status == 3 %}
-									<span class="shadow-none badge tbadge-danger">Aborted</span>
-									{% else %}
-									<span class="shadow-none badge tbadge-danger">Unknown</span>
-									{% endif %}
-								</td>
-								<td class="text-center">
-									{% if scan_history.scan_status == -1 %}
-									<div class="progress">
-										<div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
-										</div>
-									</div>
-									{% elif scan_history.scan_status == 0 %}
-									<div class="progress">
-										<div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-									</div>
-									{% elif scan_history.scan_status == 1 %}
-									<div class="progress">
-										<div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-									</div>
-									{% elif scan_history.scan_status == 2 %}
-									<div class="progress bs-tooltip" data-placement="top" title="Scan Completed">
-										<div class="progress-bar bg-success progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
-										</div>
-									</div>
-									{% elif scan_history.scan_status == 3 %}
-									<div class="progress">
-										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-									</div>
-									{% else %}
-									<div class="progress">
-										<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
-										</div>
-									</div>
-									{% endif %}
-								</td>
-								<td class="text-center">
-									<a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-outline-primary">View</a>
-								</td>
-								<td class="text-center">
-									{% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
-									<a onclick="stop_scan('{{ scan_history.celery_id }}')" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Stop Scan">
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-									</a>
-									{% endif %}
-									<a onclick="delete_scan({{ scan_history.id }})" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scan {{ scan_history.domain_name }}">
-										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
-											<circle cx="12" cy="12" r="10"></circle>
-											<line x1="15" y1="9" x2="9" y2="15"></line>
-											<line x1="9" y1="9" x2="15" y2="15"></line>
-										</svg>
-									</a>
+		</div>
+	</div>
+	<div class="widget-content widget-content-area">
+		<div class="table-responsive mb-4">
+			<table id="style-2" class="table style-2 table-hover">
+				<thead>
+					<tr>
+						<th class="text-center">Serial</th>
+						<th class="">Target Name</th>
+						<th class="text-center">Scan Summary</th>
+						<th class="text-center">Scan Type</th>
+						<th class="text-center">Last Scanned On</th>
+						<th class="text-center">Status</th>
+						<th class="">Progress</th>
+						<th class="text-center">Result</th>
+						<th class="text-center">Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for scan_history in scan_history.all %}
+					<tr>
+						<td class="checkbox-column"> {{ scan_history.id }} </td>
+						<td class="">{{ scan_history.domain_name }}</td>
+						<td class="text-center">
+							<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan_history.get_subdomain_count}}</span>
+							<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan_history.get_endpoint_count}}</span>
+							<span class="badge badge-pills badge-danger bs-tooltip" title="{{scan_history.get_critical_vulnerability_count}} Critical, {{scan_history.get_high_vulnerability_count}} High, {{scan_history.get_medium_vulnerability_count}} Medium Vulnerabilities">{{scan_history.get_vulnerability_count}}</span>
+						</td>
+						<td class="text-center">{{ scan_history.scan_type }}</td>
+						<td class="text-center">{{ scan_history.last_scan_date }}</td>
+						<td class="text-center">
+							{% if scan_history.scan_status == -1 %}
+							<span class="shadow-none badge tbadge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
+							{% elif scan_history.scan_status == 0 %}
+							<span class="shadow-none badge tbadge-danger">Failed</span>
+							{% elif scan_history.scan_status == 1 %}
+							<span class="shadow-none badge tbadge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+							{% elif scan_history.scan_status == 2 %}
+							<span class="shadow-none badge tbadge-success">Successful</span>
+							{% elif scan_history.scan_status == 3 %}
+							<span class="shadow-none badge tbadge-danger">Aborted</span>
+							{% else %}
+							<span class="shadow-none badge tbadge-danger">Unknown</span>
+							{% endif %}
+						</td>
+						<td class="text-center">
+							{% if scan_history.scan_status == -1 %}
+							<div class="progress">
+								<div class="progress-bar bg-warning progress-bar-striped" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
+								</div>
+							</div>
+							{% elif scan_history.scan_status == 0 %}
+							<div class="progress">
+								<div class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+								</div>
+							</div>
+							{% elif scan_history.scan_status == 1 %}
+							<div class="progress">
+								<div class="progress-bar bg-info progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+								</div>
+							</div>
+							{% elif scan_history.scan_status == 2 %}
+							<div class="progress bs-tooltip" data-placement="top" title="Scan Completed">
+								<div class="progress-bar bg-success progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+								</div>
+							</div>
+							{% elif scan_history.scan_status == 3 %}
+							<div class="progress">
+								<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: {% widthratio scan_history.scanactivity_set.all|length scan_history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+								</div>
+							</div>
+							{% else %}
+							<div class="progress">
+								<div class="progress-bar bg-danger progress-bar-striped" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+								</div>
+							</div>
+							{% endif %}
+						</td>
+						<td class="text-center">
+							<a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-outline-primary">View</a>
+						</td>
+						<td class="text-center">
+							{% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
+							<a onclick="stop_scan('{{ scan_history.celery_id }}')" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Stop Scan">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+							</a>
+							{% endif %}
+							<a onclick="delete_scan({{ scan_history.id }})" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scan {{ scan_history.domain_name }}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+									<circle cx="12" cy="12" r="10"></circle>
+									<line x1="15" y1="9" x2="9" y2="15"></line>
+									<line x1="9" y1="9" x2="15" y2="15"></line>
+								</svg>
+							</a>
 
-								</td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
-				</div>
-			</div>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
 		</div>
 	</div>
 </div>

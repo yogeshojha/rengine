@@ -52,4 +52,8 @@ urlpatterns = [
         'interesting/lookup/',
         views.interesting_lookup,
         name='interesting_lookup'),
+    path(
+        'settings',
+        views.settings,
+        name='settings'),
 ]

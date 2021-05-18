@@ -27,95 +27,98 @@ Detailed Scan Results for {{history.domain_name}}
 {% endblock breadcrumb_title %}
 {% block main_content %}
 <!-- Activity Feed -->
-<div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-activity-four activity-log">
-		<div class="widget-content">
-			<div class="mt-container mx-auto">
-				<div class="timeline-line">
-					{% for activity in scan_activity %}
-					<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
-						<div class="t-dot" data-original-title="" title="">
+<div class="row">
+	<div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+		<div class="widget widget-activity-four activity-log">
+			<div class="widget-content">
+				<div class="mt-container mx-auto">
+					<div class="timeline-line">
+						{% for activity in scan_activity %}
+						<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+							<div class="t-dot" data-original-title="" title="">
+							</div>
+							<div class="t-text">
+								<p>{{activity.title}}{% if activity.status == 1 %}<span class="badge badge-warning">In Progress</span>{% endif %}</p>
+								<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+									{% if activity.status == 0 %}&nbsp;Failed&nbsp;
+									{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+									{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+									{% endif %}
+								</span>
+								<p class="t-time">{{activity.time|naturaltime}}</p>
+							</div>
 						</div>
-						<div class="t-text">
-							<p>{{activity.title}}{% if activity.status == 1 %}<span class="badge badge-warning">In Progress</span>{% endif %}</p>
-							<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-								{% if activity.status == 0 %}&nbsp;Failed&nbsp;
-								{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-								{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-								{% endif %}
-							</span>
-							<p class="t-time">{{activity.time|naturaltime}}</p>
-						</div>
+						{% endfor %}
 					</div>
-					{% endfor %}
 				</div>
 			</div>
 		</div>
 	</div>
-</div>
-<!-- Summary Cards -->
-<div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-12 layout-spacing">
-	<div class="widget widget-one">
-		<div class="w-chart">
-			<div class="w-chart-section primary-card">
-				<div class="w-detail">
-					<p class="w-stats">{{subdomain_count|intcomma}}
-						<span class="float-right">
-							{% if new_subdomains %}
-							<span class="badge badge-pills badge-success bs-tooltip" title="{{new_subdomains.count}} Subdomains Added">+{{new_subdomains.count}}</span>&nbsp;
-							{% endif %}
-							{% if removed_subdomains %}
-							<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_subdomains.count}} Subdomains Removed">-{{removed_subdomains.count}}</span>
-							{% endif %}
-						</span>
-					</p>
-					<p class="w-title">Subdomains Discovered</p>
-					<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
-					<br>
-					<br>
+	<!-- Summary Cards -->
+	<div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-12 layout-spacing">
+		<div class="widget widget-one">
+			<div class="w-chart">
+				<div class="w-chart-section primary-card">
+					<div class="w-detail">
+						<p class="w-stats">{{subdomain_count|intcomma}}
+							<span class="float-right">
+								{% if new_subdomains %}
+								<span class="badge badge-pills badge-success bs-tooltip" title="{{new_subdomains.count}} Subdomains Added">+{{new_subdomains.count}}</span>&nbsp;
+								{% endif %}
+								{% if removed_subdomains %}
+								<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_subdomains.count}} Subdomains Removed">-{{removed_subdomains.count}}</span>
+								{% endif %}
+							</span>
+						</p>
+						<p class="w-title">Subdomains Discovered</p>
+						<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
+						<br>
+						<br>
+					</div>
+				</div>
+				<div class="w-chart-section purple-card">
+					<div class="w-detail">
+						<p class="w-stats">{{endpoint_count|intcomma}}
+							<span class="float-right">
+								{% if new_urls %}
+								<span class="badge badge-pills badge-success bs-tooltip" title="{{new_urls.count}} Endpoints Added">+{{new_urls.count}}</span>&nbsp;
+								{% endif %}
+								{% if removed_urls %}
+								<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_urls.count}} Endpoints Removed">-{{removed_urls.count}}</span>
+								{% endif %}
+							</span>
+						</p>
+						<p class="w-title">Endpoints Discovered</p>
+						<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
+						<br>
+						<br>
+					</div>
+				</div>
+				<div class="w-chart-section danger-card">
+					<div class="w-detail">
+						<p class="w-stats">{{total_vulnerability_count|intcomma}}
+							<span class="float-right">
+							</span>
+						</p>
+						<p class="w-title">Vulnerabilities Discovered</p>
+						{% if history.scan_type.vulnerability_scan %}
+						<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
+						<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
+						<br>
+						{% else %}
+						<small class="text-muted">Vulnerability scan hasn't been performed.</small>
+						<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
+						{% endif %}
+					</div>
 				</div>
 			</div>
-			<div class="w-chart-section purple-card">
-				<div class="w-detail">
-					<p class="w-stats">{{endpoint_count|intcomma}}
-						<span class="float-right">
-							{% if new_urls %}
-							<span class="badge badge-pills badge-success bs-tooltip" title="{{new_urls.count}} Endpoints Added">+{{new_urls.count}}</span>&nbsp;
-							{% endif %}
-							{% if removed_urls %}
-							<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_urls.count}} Endpoints Removed">-{{removed_urls.count}}</span>
-							{% endif %}
-						</span>
-					</p>
-					<p class="w-title">Endpoints Discovered</p>
-					<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
-					<br>
-					<br>
-				</div>
-			</div>
-			<div class="w-chart-section danger-card">
-				<div class="w-detail">
-					<p class="w-stats">{{total_vulnerability_count|intcomma}}
-						<span class="float-right">
-						</span>
-					</p>
-					<p class="w-title">Vulnerabilities Discovered</p>
-					{% if history.scan_type.vulnerability_scan %}
-					<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
-					<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
-					<br>
-					{% else %}
-					<small class="text-muted">Vulnerability scan hasn't been performed.</small>
-					<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
-					{% endif %}
-				</div>
-			</div>
+			<br>
 		</div>
-		<br>
 	</div>
 </div>
 <!-- nav menu and contents -->
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+<div class="row">
+	<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
 	<div class="simple-pills">
 		<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
 			<li class="nav-item">
@@ -1151,6 +1154,7 @@ Detailed Scan Results for {{history.domain_name}}
 	{% endif %}
 
 </script>
+</div>
 <script type="text/javascript">
 // apex charts for vulnerability summary
 var options = {

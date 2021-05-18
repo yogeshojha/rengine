@@ -225,3 +225,7 @@ def interesting_lookup(request):
     context['form'] = form
     context['default_lookup'] = InterestingLookupModel.objects.filter(id=1)
     return render(request, 'scanEngine/lookup.html', context)
+
+def settings(request):
+    context = {}
+    return render(request, 'scanEngine/settings/index.html', context)
