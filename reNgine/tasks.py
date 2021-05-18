@@ -12,7 +12,6 @@ from discord_webhook import DiscordWebhook
 from reNgine.celery import app
 from startScan.models import *
 from targetApp.models import Domain
-from notification.models import NotificationHooks
 from scanEngine.models import EngineType
 from django.conf import settings
 from django.utils import timezone, dateformat
@@ -31,7 +30,6 @@ from reNgine.definitions import *
 
 from startScan.models import *
 from targetApp.models import Domain
-from notification.models import NotificationHooks
 from scanEngine.models import EngineType, Configuration, Wordlist
 
 from .common_func import *
@@ -187,7 +185,6 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
         task.scan_status = 2
     task.stop_scan_date = timezone.now()
     task.save()
-    send_notification("reEngine finished scanning " + domain.domain_name)
     # cleanup results
     # delete_scan_data(results_dir)
     return {"status": True}
@@ -1016,12 +1013,6 @@ def vulnerability_scan(
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
-                        send_notification(
-                            "ALERT! {} vulnerability with {} severity identified in {} \n Vulnerable URL: {}".format(
-                                json_st['info']['name'],
-                                json_st['info']['severity'],
-                                domain.domain_name,
-                                json_st['matched']))
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
                         continue
@@ -1029,23 +1020,6 @@ def vulnerability_scan(
         except Exception as exception:
             logging.error(exception)
             update_last_activity(activity_id, 0)
-
-
-def send_notification(message):
-    notif_hook = NotificationHooks.objects.filter(send_notif=True)
-    scan_status_msg = {}
-    headers = {'content-type': 'application/json'}
-    for notif in notif_hook:
-        if 'slack.com' in notif.hook_url:
-            scan_status_msg['text'] = message
-            requests.post(
-                notif.hook_url,
-                data=json.dumps(scan_status_msg),
-                headers=headers)
-        elif 'discordapp.com' in notif.hook_url:
-            webhook = DiscordWebhook(url=notif.hook_url, content=message)
-            webhook.execute()
-
 
 def scan_failed(task):
     task.scan_status = 0

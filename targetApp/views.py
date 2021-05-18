@@ -198,9 +198,9 @@ def target_summary(request, id):
 
         scanned_host_q1 = Subdomain.objects.filter(
             target_domain__id=id).exclude(
-            scan_history__id=last_scan[0].id).values('subdomain')
+            scan_history__id=last_scan[0].id).values('name')
         scanned_host_q2 = Subdomain.objects.filter(
-            scan_history__id=last_scan[0].id).values('subdomain')
+            scan_history__id=last_scan[0].id).values('name')
 
         context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
         context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
@@ -214,9 +214,9 @@ def target_summary(request, id):
 
         endpoint_q1 = EndPoint.objects.filter(
             target_domain__id=id).exclude(
-            url_of__id=last_scan[0].id).values('http_url')
+            scan_history__id=last_scan[0].id).values('http_url')
         endpoint_q2 = EndPoint.objects.filter(
-            url_of__id=last_scan[0].id).values('http_url')
+            scan_history__id=last_scan[0].id).values('http_url')
 
         context['new_urls'] = endpoint_q2.difference(endpoint_q1)
         context['removed_urls'] = endpoint_q1.difference(endpoint_q2)

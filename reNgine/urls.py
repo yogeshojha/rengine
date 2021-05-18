@@ -21,9 +21,6 @@ urlpatterns = [
         'start_scan/',
         include('startScan.urls')),
     path(
-        'notification/',
-        include('notification.urls')),
-    path(
         'login/',
         auth_views.LoginView.as_view(template_name='base/login.html'),
         name='login'),
