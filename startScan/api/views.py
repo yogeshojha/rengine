@@ -1,10 +1,47 @@
 from startScan.api.serializers import SubdomainSerializer, EndpointSerializer, VulnerabilitySerializer
-from rest_framework import viewsets
+from scanEngine.models import InterestingLookupModel
 from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
+
+from reNgine.common_func import *
+
+from django.db.models import Q
+
+from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
-from django.db.models import Q
+
+
+class InterestingSubdomainViewSet(viewsets.ModelViewSet):
+    queryset = Subdomain.objects.none()
+    serializer_class = SubdomainSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        target_id = req.query_params.get('target_id')
+        if scan_id:
+            return get_interesting_subdomains(scan_history=scan_id)
+        elif target_id:
+            return get_interesting_subdomains(target=target_id)
+        else:
+            return get_interesting_subdomains()
+
+
+class InterestingEndpointViewSet(viewsets.ModelViewSet):
+    queryset = EndPoint.objects.none()
+    serializer_class = EndpointSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        target_id = req.query_params.get('target_id')
+        if scan_id:
+            return get_interesting_endpoint(scan_history=scan_id)
+        elif target_id:
+            return get_interesting_endpoint(target=target_id)
+        else:
+            return get_interesting_endpoint()
 
 
 class SubdomainViewset(viewsets.ModelViewSet):

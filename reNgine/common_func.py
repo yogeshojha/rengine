@@ -66,6 +66,11 @@ def get_interesting_subdomains(scan_history=None, target=None):
         if page_title_lookup_query:
             title_lookup = Subdomain.objects.filter(
                 scan_history__id=scan_history).filter(page_title_lookup_query)
+    else:
+        if subdomain_lookup_query:
+            subdomain_lookup = Subdomain.objects.filter(subdomain_lookup_query)
+        if page_title_lookup_query:
+            title_lookup = Subdomain.objects.filter(page_title_lookup_query)
     return subdomain_lookup | title_lookup
 
 
@@ -107,6 +112,12 @@ def get_interesting_endpoint(scan_history=None, target=None):
         if page_title_lookup_query:
             title_lookup = EndPoint.objects.filter(
                 scan_history__id=scan_history).filter(page_title_lookup_query)
+
+    else:
+        if url_lookup_query:
+            url_lookup = EndPoint.objects.filter(url_lookup_query)
+        if page_title_lookup_query:
+            title_lookup = EndPoint.objects.filter(page_title_lookup_query)
 
     return url_lookup | title_lookup
 

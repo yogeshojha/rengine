@@ -1,7 +1,7 @@
 from django.conf.urls import url, include
 from django.urls import path
 from rest_framework import routers
-from .views import SubdomainViewset, EndPointViewSet, VulnerabilityViewSet
+from .views import *
 
 app_name = 'startScan'
 router = routers.DefaultRouter()
@@ -11,6 +11,10 @@ router.register(r'scanHistory', SubdomainViewset)
 router.register(r'listEndpoints', EndPointViewSet)
 
 router.register(r'listVulnerability', VulnerabilityViewSet)
+
+router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet)
+
+router.register(r'listInterestingEndpoints', InterestingEndpointViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
