@@ -119,1043 +119,1040 @@ Detailed Scan Results for {{history.domain_name}}
 <!-- nav menu and contents -->
 <div class="row">
 	<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-	<div class="simple-pills">
-		<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-			<li class="nav-item">
-				<a class="nav-link active" id="pills-summary-tab" data-toggle="pill" href="#pills-summary" role="tab" aria-controls="pills-summary" aria-selected="true">Home</a>
-			</li>
-			<li class="nav-item">
-				<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
-			</li>
-			{% if history.dir_file_search %}
-			<li class="nav-item">
-				<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
-			</li>
-			{% endif %}
-			<li class="nav-item dropdown">
-				<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
-					URLs
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down">
-						<polyline points="6 9 12 15 18 9"></polyline>
-					</svg>
-				</a>
-				<div class="dropdown-menu">
-					<a class="dropdown-item" id="pills-endpoints-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">All Endpoints</a>
-					{% if history.fetch_url and history.used_gf_patterns%}
-					{% for key,value in matched_gf_count.items %}
-					{% if value > 0 %}
-					<a class="dropdown-item" id="pills-{{key}}-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">{{key|upper}}&nbsp;&nbsp;<span class="badge badge-pills badge-danger">{{value}}</span></a>
-					{% endif %}
-					{% endfor %}
-					{% endif %}
-				</div>
-			</li>
-			{% if history.vulnerability_scan %}
-			<li class="nav-item">
-				<a class="nav-link" id="pills-vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
-			</li>
-			{% endif %}
-			<li class="nav-item">
-				<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
-			</li>
-		</ul>
-		<div class="tab-content" id="pills-tabContent">
-			<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
-				<div class="row">
-					<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-five widget-progress">
-							<div class="widget-heading">
-								<a href="javascript:void(0)" class="task-info">
-									<div class="usr-avatar">
-										<span>{{history.domain_name.domain_name|slice:"0:2"|upper}}</span>
-									</div>
-									<div class="w-title">
-										<h6>Scan Information for <span class="badge badge-info">{{history.domain_name.domain_name}}</span></h6>
-									</div>
-								</a>
-							</div>
-							<div class="widget-content">
-								<div class="row">
-									<div class="col-6">
-										<h6 class="text-center">Scan Status</h6>
-										<div class="text-center">
+		<div class="simple-pills">
+			<ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+				<li class="nav-item">
+					<a class="nav-link active" id="pills-summary-tab" data-toggle="pill" href="#pills-summary" role="tab" aria-controls="pills-summary" aria-selected="true">Home</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
+				</li>
+				{% if history.dir_file_search %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
+				</li>
+				{% endif %}
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+						URLs
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down">
+							<polyline points="6 9 12 15 18 9"></polyline>
+						</svg>
+					</a>
+					<div class="dropdown-menu">
+						<a class="dropdown-item" id="pills-endpoints-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">All Endpoints</a>
+						{% if history.fetch_url and history.used_gf_patterns%}
+						{% for key,value in matched_gf_count.items %}
+						{% if value > 0 %}
+						<a class="dropdown-item" id="pills-{{key}}-tab" data-toggle="tab" href="#pills-endpoints" role="tab" aria-controls="pills-endpoints" aria-selected="false">{{key|upper}}&nbsp;&nbsp;<span class="badge badge-pills badge-danger">{{value}}</span></a>
+						{% endif %}
+						{% endfor %}
+						{% endif %}
+					</div>
+				</li>
+				{% if history.vulnerability_scan %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
+				</li>
+				{% endif %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
+				</li>
+			</ul>
+			<div class="tab-content" id="pills-tabContent">
+				<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+					<div class="row">
+						<div class="col-xl-4 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-five widget-progress">
+								<div class="widget-heading">
+									<a href="javascript:void(0)" class="task-info">
+										<div class="usr-avatar">
+											<span>{{history.domain_name.domain_name|slice:"0:2"|upper}}</span>
+										</div>
+										<div class="w-title">
+											<h6>Scan Information for <span class="badge badge-info">{{history.domain_name.domain_name}}</span></h6>
+										</div>
+									</a>
+								</div>
+								<div class="widget-content">
+									<div class="row">
+										<div class="col-6">
+											<h6 class="text-center">Scan Status</h6>
+											<div class="text-center">
+												{% if history.scan_status == -1 %}
+												<h6 class="badge badge-warning">Pending</h6>
+												{% elif history.scan_status == 0 %}
+												<h6 class="badge badge-danger">Failed</h6>
+												{% elif history.scan_status == 1 %}
+												<h6 class="badge badge-info">Scanning</h6>
+												{% elif history.scan_status == 2 %}
+												<h6 class="badge badge-success">Completed</h6>
+												{% elif history.scan_status == 3 %}
+												<h6 class="badge badge-danger">Aborted</h6>
+												{% else %}
+												<h6 class="badge badge-danger">Unknown</h6>
+												{% endif %}
+											</div>
+										</div>
+										<div class="col-6">
+											<h6 class="text-center">Scan Duration</h6>
 											{% if history.scan_status == -1 %}
-											<h6 class="badge badge-warning">Pending</h6>
+											<p class="text-center"><small class="text-center text-muted">Scan not yet started.</small></p>
 											{% elif history.scan_status == 0 %}
-											<h6 class="badge badge-danger">Failed</h6>
+											<h6 class="text-center text-danger">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 											{% elif history.scan_status == 1 %}
-											<h6 class="badge badge-info">Scanning</h6>
+											<h6 class="text-center text-info">{{ history.get_elapsed_time }}</h6>
 											{% elif history.scan_status == 2 %}
-											<h6 class="badge badge-success">Completed</h6>
-											{% elif history.scan_status == 3 %}
-											<h6 class="badge badge-danger">Aborted</h6>
+											{% if history.get_completed_time_in_sec < 60 %}
+											<h6 class="text-center text-success">Completed in < 1 minutes</h6>
 											{% else %}
-											<h6 class="badge badge-danger">Unknown</h6>
+											<h6 class="text-center text-success">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
+											{% endif %}
+											{% elif history.scan_status == 3 %}
+											<h6 class="text-center text-danger">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
 											{% endif %}
 										</div>
 									</div>
-									<div class="col-6">
-										<h6 class="text-center">Scan Duration</h6>
-										{% if history.scan_status == -1 %}
-										<p class="text-center"><small class="text-center text-muted">Scan not yet started.</small></p>
-										{% elif history.scan_status == 0 %}
-										<h6 class="text-center text-danger">{{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
-										{% elif history.scan_status == 1 %}
-										<h6 class="text-center text-info">{{ history.get_elapsed_time }}</h6>
-										{% elif history.scan_status == 2 %}
-										{% if history.get_completed_time_in_sec < 60 %}
-										<h6 class="text-center text-success">Completed in < 1 minutes</h6>
-										{% else %}
-										<h6 class="text-center text-success">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
-										{% endif %}
-										{% elif history.scan_status == 3 %}
-										<h6 class="text-center text-danger">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</h6>
-										{% endif %}
-									</div>
-								</div>
-								<div class="progress-data">
-									<div class="progress">
-										{% if history.scan_status == -1 %}
-										<div class="progress-bar bg-gradient-warning" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
-										</div>
-										{% elif history.scan_status == 0 %}
-										<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-										{% elif history.scan_status == 1 %}
-										<div class="progress-bar bg-gradient-info" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-										{% elif history.scan_status == 2 %}
-										<div class="progress-bar bg-gradient-success" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
-										</div>
-										{% elif history.scan_status == 3 %}
-										<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-										</div>
-										{% else %}
+									<div class="progress-data">
 										<div class="progress">
-											<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+											{% if history.scan_status == -1 %}
+											<div class="progress-bar bg-gradient-warning" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
 											</div>
+											{% elif history.scan_status == 0 %}
+											<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+											</div>
+											{% elif history.scan_status == 1 %}
+											<div class="progress-bar bg-gradient-info" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+											</div>
+											{% elif history.scan_status == 2 %}
+											<div class="progress-bar bg-gradient-success" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+											</div>
+											{% elif history.scan_status == 3 %}
+											<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+											</div>
+											{% else %}
+											<div class="progress">
+												<div class="progress-bar bg-gradient-danger" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+												</div>
+											</div>
+											{% endif %}
 										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class="">{{ip_addresses|length}} Discovered IP Addresses</h6>
+									<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										{% for ip in ip_addresses %}
+										{% if ip.1 %}
+										<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address" data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
+										{% else %}
+										<span class='badge outline-badge-info badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
+										{% endif %}
+										{% endfor %}
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class="">{{ports.count}} Unique Discovered Ports</small></h6>
+									<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										{% if not history.port_scan %}
+										<span class='text-muted'>Port Scan has not been initiated, please initiate port scan to discover unique and uncommon ports.</span>
+										{% else %}
+										{% for port in  ports %}
+										<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{% if port.3 %}Uncommon Port-{{port.2}}{%else%}{{port.2}}{% endif %}' data-toggle="modal" data-target="#detailScanModal" onclick="get_ips_from_port('{{port.0}}', {{history.id}})">{{port.0}}/{{port.1}}</span>
+										{% endfor %}
 										{% endif %}
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-					<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-ip">
-							<div class="widget-heading">
-								<h6 class="">{{ip_addresses|length}} Discovered IP Addresses</h6>
-								<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
-							</div>
-							<div class="widget-content">
-								<div class="mt-container mx-auto">
-									{% for ip in ip_addresses %}
-									{% if ip.1 %}
-									<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address" data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
-									{% else %}
-									<span class='badge outline-badge-info badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
-									{% endif %}
-									{% endfor %}
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-ip">
-							<div class="widget-heading">
-								<h6 class="">{{ports.count}} Unique Discovered Ports</small></h6>
-								<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
-							</div>
-							<div class="widget-content">
-								<div class="mt-container mx-auto">
-									{% if not history.port_scan %}
-									<span class='text-muted'>Port Scan has not been initiated, please initiate port scan to discover unique and uncommon ports.</span>
-									{% else %}
-									{% for port in  ports %}
-									<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{% if port.3 %}Uncommon Port-{{port.2}}{%else%}{{port.2}}{% endif %}' data-toggle="modal" data-target="#detailScanModal" onclick="get_ips_from_port('{{port.0}}', {{history.id}})">{{port.0}}/{{port.1}}</span>
-									{% endfor %}
-									{% endif %}
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="modal fade" id="detailScanModal" tabindex="-1" role="dialog" aria-labelledby="detailScanModalLabel" aria-hidden="true">
-						<div class="modal-dialog modal-lg" role="document">
-							<div class="modal-content">
-								<div class="modal-header">
-									<h5 class="modal-title" id="detailScanModalLabel"></h5>
-									<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-										<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-									</button>
-								</div>
-								<div class="modal-body">
-									<p class="modal-text" id="detailScanModalContent"></p>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-						{% include 'base/_items/interesting_recon.html' %}
-					</div>
-					{% if new_urls.count or removed_urls.count or new_subdomains or removed_subdomains %}
-					<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-five">
-							<div class="widget-heading">
-								<h6 class="">Subdomain Changes</h6>
-								<p class='text-muted small'>
-									Comparing against the last scan performed on
-									{% if last_scan_subdomain.start_scan_date %}
-									<a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a>
-									{% else %}
-									<br>
-									{% endif %}
-								</p>
-								<p>
-									{% if new_subdomains.count or removed_subdomains.count %}
-									During this scan
-									{% if new_subdomains.count %}
-									<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
-									{% endif %}
-									{% if removed_subdomains.count %}
-									<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
-									{% endif %}
-									{% else %}
-									<br>
-									{% endif %}
-								</p>
-							</div>
-							<div class="widget-content">
-								<div class="mt-container mx-auto">
-									<div class="table-responsive">
-										<table class="table table-bordered table-striped mb-4">
-											<thead>
-												<tr>
-													<th>Subdomain</th>
-													<th>Status</th>
-												</tr>
-											</thead>
-											<tbody>
-												{% for subdomain in new_subdomains %}
-												<tr>
-													<td class="text-success">{{subdomain.name}}</td>
-													<td><span class="badge badge-success"> Added </span></td>
-												</tr>
-												{% endfor %}
-												{% for subdomain in removed_subdomains %}
-												<tr>
-													<td class="text-danger">{{subdomain.name}}</td>
-													<td><span class="badge badge-danger"> Removed </span></td>
-												</tr>
-												{% endfor %}
-											</tbody>
-										</table>
+						<div class="modal fade" id="detailScanModal" tabindex="-1" role="dialog" aria-labelledby="detailScanModalLabel" aria-hidden="true">
+							<div class="modal-dialog modal-lg" role="document">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title" id="detailScanModalLabel"></h5>
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+											<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+										</button>
+									</div>
+									<div class="modal-body">
+										<p class="modal-text" id="detailScanModalContent"></p>
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-					<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-activity-four">
-							<div class="widget-heading">
-								<h6 class="">Endpoint Changes</h6>
-								<p class='text-muted small'>
-									{% if last_scan_endpoint.start_scan_date %}
-									Comparing against the last scan performed on
-									<a href="{{last_scan_endpoint.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_endpoint.get_endpoint_count}} endpoints were discovered during the last scan."><small>{{last_scan_endpoint.start_scan_date}}</small></a>
-									{% else %}
-									<br>
-									{% endif %}
-								</p>
-								<p>
-									{% if new_urls.count or removed_urls.count %}
-									During this scan
-									{% if new_urls.count %}
-									<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
-									{% endif %}
-									{% if removed_urls.count %}
-									<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
-									{% endif %}
-									{% else %}
-									<br>
-									{% endif %}
-								</p>
-							</div>
-							<div class="widget-content">
-								<div class="mt-container mx-auto">
-									<div class="table-responsive">
-										<table class="table table-bordered table-striped mb-4">
-											<thead>
-												<tr>
-													<th>Endpoint</th>
-													<th>Status</th>
-												</tr>
-											</thead>
-											<tbody>
-												{% for url in new_urls %}
-												<tr>
-													<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
-													<td><span class="badge badge-success"> Added </span></td>
-												</tr>
-												{% endfor %}
-												{% for url in removed_urls %}
-												<tr>
-													<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
-													<td><span class="badge badge-danger"> Removed </span></td>
-												</tr>
-												{% endfor %}
-											</tbody>
-										</table>
-									</div>
-								</div>
-							</div>
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							{% include 'base/_items/interesting_recon.html' %}
 						</div>
-					</div>
-					{% endif %}
-					{% if history.scan_type.vulnerability_scan %}
-					<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-						<div class="widget widget-activity-four">
-							<div class="widget-heading">
-								<h6 class="">Vulnerability Scan Summary</h6>
-							</div>
-							<div class="widget-content">
-								<div class="row">
-									<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
-										<div id="vulnerability-chart" class=""></div>
-									</div>
-									<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
-										<div class="table-responsive mt-container mx-auto">
-											<table class="table">
+						{% if new_urls.count or removed_urls.count or new_subdomains or removed_subdomains %}
+						<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-five">
+								<div class="widget-heading">
+									<h6 class="">Subdomain Changes</h6>
+									<p class='text-muted small'>
+										Comparing against the last scan performed on
+										{% if last_scan_subdomain.start_scan_date %}
+										<a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a>
+										{% else %}
+										<br>
+										{% endif %}
+									</p>
+									<p>
+										{% if new_subdomains.count or removed_subdomains.count %}
+										During this scan
+										{% if new_subdomains.count %}
+										<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
+										{% endif %}
+										{% if removed_subdomains.count %}
+										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
+										{% endif %}
+										{% else %}
+										<br>
+										{% endif %}
+									</p>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div class="table-responsive">
+											<table class="table table-bordered table-striped mb-4">
 												<thead>
 													<tr>
-														<th><div class="th-content">Vulnerability</div></th>
-														<th><div class="th-content">Severity</div></th>
-														<th><div class="th-content">Vulnerable URL</div></th>
+														<th>Subdomain</th>
+														<th>Status</th>
 													</tr>
 												</thead>
 												<tbody>
-													{% for vulnerability in vulnerability_list  %}
+													{% for subdomain in new_subdomains %}
 													<tr>
-														<td>{{vulnerability.name}}</td>
-														<td>{% if vulnerability.severity == 0 %}
-															<span class='badge badge-info'>Info</span>
-															{% elif vulnerability.severity == 1 %}
-															<span class='badge badge-low'>Low</span>
-															{% elif vulnerability.severity == 2 %}
-															<span class='badge badge-warning'>Medium</span>
-															{% elif vulnerability.severity == 3 %}
-															<span class='badge badge-danger'>High</span>
-															{% elif vulnerability.severity == 4 %}
-															<span class='badge badge-critical'>Critical</span>
-															{% endif %}</td>
-															<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
-														</tr>
-														{% endfor %}
-													</tbody>
-												</table>
-											</div>
-											<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
+														<td class="text-success">{{subdomain.name}}</td>
+														<td><span class="badge badge-success"> Added </span></td>
+													</tr>
+													{% endfor %}
+													{% for subdomain in removed_subdomains %}
+													<tr>
+														<td class="text-danger">{{subdomain.name}}</td>
+														<td><span class="badge badge-danger"> Removed </span></td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-activity-four">
+								<div class="widget-heading">
+									<h6 class="">Endpoint Changes</h6>
+									<p class='text-muted small'>
+										{% if last_scan_endpoint.start_scan_date %}
+										Comparing against the last scan performed on
+										<a href="{{last_scan_endpoint.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_endpoint.get_endpoint_count}} endpoints were discovered during the last scan."><small>{{last_scan_endpoint.start_scan_date}}</small></a>
+										{% else %}
+										<br>
+										{% endif %}
+									</p>
+									<p>
+										{% if new_urls.count or removed_urls.count %}
+										During this scan
+										{% if new_urls.count %}
+										<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
+										{% endif %}
+										{% if removed_urls.count %}
+										<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
+										{% endif %}
+										{% else %}
+										<br>
+										{% endif %}
+									</p>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div class="table-responsive">
+											<table class="table table-bordered table-striped mb-4">
+												<thead>
+													<tr>
+														<th>Endpoint</th>
+														<th>Status</th>
+													</tr>
+												</thead>
+												<tbody>
+													{% for url in new_urls %}
+													<tr>
+														<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
+														<td><span class="badge badge-success"> Added </span></td>
+													</tr>
+													{% endfor %}
+													{% for url in removed_urls %}
+													<tr>
+														<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
+														<td><span class="badge badge-danger"> Removed </span></td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
 						{% endif %}
-					</div>
-				</div>
-				<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
-					<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
-						<div class="widget widget-content widget-content-area br-6">
-							<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-								<thead>
-									<tr>
-										<th class="checkbox-column">Status</th>
-										<th>Subdomain</th>
-										<th class="text-center">Endpoints</th>
-										<th class="text-center">Vulnerabilities</th>
-										<th>Status</th>
-										<th class="text-center">Title</th>
-										<th>IP Address</th>
-										<th>Ports</th>
-										<th>Content Length</th>
-										<th>Screenshot</th>
-										<th>Response Time</th>
-										<th>Technology</th>
-										<th>HTTP URL</th>
-										<th>IS CDN</th>
-										<th>CNAME</th>
-										<th>Checked</th>
-										<th>Is Intereting</th>
-										<th>Info</th>
-										<th>Low</th>
-										<th>Medium</th>
-										<th>High</th>
-										<th>Critical</th>
-									</tr>
-								</thead>
-							</table>
+						{% if history.scan_type.vulnerability_scan %}
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-activity-four">
+								<div class="widget-heading">
+									<h6 class="">Vulnerability Scan Summary</h6>
+								</div>
+								<div class="widget-content">
+									<div class="row">
+										<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+											<div id="vulnerability-chart" class=""></div>
+										</div>
+										<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+											<div class="table-responsive mt-container mx-auto">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Vulnerability</div></th>
+															<th><div class="th-content">Severity</div></th>
+															<th><div class="th-content">Vulnerable URL</div></th>
+														</tr>
+													</thead>
+													<tbody>
+														{% for vulnerability in vulnerability_list  %}
+														<tr>
+															<td>{{vulnerability.name}}</td>
+															<td>{% if vulnerability.severity == 0 %}
+																<span class='badge badge-info'>Info</span>
+																{% elif vulnerability.severity == 1 %}
+																<span class='badge badge-low'>Low</span>
+																{% elif vulnerability.severity == 2 %}
+																<span class='badge badge-warning'>Medium</span>
+																{% elif vulnerability.severity == 3 %}
+																<span class='badge badge-danger'>High</span>
+																{% elif vulnerability.severity == 4 %}
+																<span class='badge badge-critical'>Critical</span>
+																{% endif %}</td>
+																<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+															</tr>
+															{% endfor %}
+														</tbody>
+													</table>
+												</div>
+												<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							{% endif %}
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
-					<div class="col-xl-12 col-lg-12 col-sm-12">
-						<div class="widget widget-content widget-content-area br-6">
-							<table id="directories-table" class="table dt-table-hover" style="width:100%">
-								<thead>
-									<tr>
-										<th class="checkbox-column">Status</th>
-										<th>Subdomain</th>
-										<th>Status</th>
-										<th>Page Title</th>
-										<th>Directories</th>
-										<th>HTTP URL</th>
-										<th>Is Intereting</th>
-										<th>Checked</th>
-									</tr>
-								</thead>
-							</table>
+					<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th class="text-center">Endpoints</th>
+											<th class="text-center">Vulnerabilities</th>
+											<th>Status</th>
+											<th class="text-center">Title</th>
+											<th>IP Address</th>
+											<th>Ports</th>
+											<th>Content Length</th>
+											<th>Screenshot</th>
+											<th>Response Time</th>
+											<th>Technology</th>
+											<th>HTTP URL</th>
+											<th>IS CDN</th>
+											<th>CNAME</th>
+											<th>Checked</th>
+											<th>Is Intereting</th>
+											<th>Info</th>
+											<th>Low</th>
+											<th>Medium</th>
+											<th>High</th>
+											<th>Critical</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
-					<div class="col-xl-12 col-lg-12 col-sm-12">
-						<div class="widget widget-content widget-content-area br-6">
-							<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-								<thead>
-									<tr>
-										<th>HTTP URL</th>
-										<th>Status</th>
-										<th>Page Title</th>
-										<th>Tags</th>
-										<th>Content Type</th>
-										<th>Content Length</th>
-										<th>Technology</th>
-										<th>Webserver</th>
-										<th>Response time</th>
-										<th>Default URL</th>
-									</tr>
-								</thead>
-							</table>
+					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="directories-table" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Directories</th>
+											<th>HTTP URL</th>
+											<th>Is Intereting</th>
+											<th>Checked</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
-					<div class="col-xl-12 col-lg-12 col-sm-12">
-						<div class="widget widget-content widget-content-area br-6">
-							<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-								<thead>
-									<tr>
-										<th class="checkbox-column">Status</th>
-										<th>Title</th>
-										<th>Severity</th>
-										<th>Vulnerable URL</th>
-										<th>Detail</th>
-										<th>Status</th>
-										<th>Matcher Name</th>
-										<th>Tags</th>
-										<th>Reference</th>
-									</tr>
-								</thead>
-							</table>
+					<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+									<thead>
+										<tr>
+											<th>HTTP URL</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Tags</th>
+											<th>Content Type</th>
+											<th>Content Length</th>
+											<th>Technology</th>
+											<th>Webserver</th>
+											<th>Response time</th>
+											<th>Default URL</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Title</th>
+											<th>Severity</th>
+											<th>Vulnerable URL</th>
+											<th>Detail</th>
+											<th>Status</th>
+											<th>Matcher Name</th>
+											<th>Tags</th>
+											<th>Reference</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-	{% endblock main_content %}
+</div>
+{% endblock main_content %}
 
 
-	{% block page_level_script %}
-	<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
-	<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-	<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-	<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-	<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
-	<script src="{% static 'custom/custom.js' %}"></script>
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
 
-	<script type="text/javascript">
-	// Collapse Sidebar
-	collapse_sidebar();
+<script type="text/javascript">
+// Collapse Sidebar
+collapse_sidebar();
 
-	function fetch_http_headers(id, http_header_path, screenshot_path){
-		$('#screenshot'+id).attr('src', '/media/'+screenshot_path);
-		fetch('/media/'+http_header_path)
-		.then(response => response.text())
-		.then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
-	}
+function fetch_http_headers(id, http_header_path, screenshot_path){
+	$('#screenshot'+id).attr('src', '/media/'+screenshot_path);
+	fetch('/media/'+http_header_path)
+	.then(response => response.text())
+	.then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
+}
 
-	$("#pills-subdomain-tab").click(function() {
-		$('#subdomain_scan_results').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Filter Subdomains...",
-				"sLengthMenu": "Results :  _MENU_",
+$("#pills-subdomain-tab").click(function() {
+	$('#subdomain_scan_results').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Filter Subdomains...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"order": [[ 8, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'endpoint_count'},
+			{'data': 'vulnerability_count'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'ip_addresses'},
+			{'data': 'ports'},
+			{'data': 'content_length', 'searchable': false},
+			{'data': 'screenshot_path', 'searchable': false},
+			{'data': 'response_time'},
+			{'data': 'technology_stack'},
+			{'data': 'checked'},
+			{'data': 'http_url'},
+			{'data': 'is_cdn'},
+			{'data': 'cname'},
+			{'data': 'is_interesting'},
+			{'data': 'info_count'},
+			{'data': 'low_count'},
+			{'data': 'medium_count'},
+			{'data': 'high_count'},
+			{'data': 'critical_count'},
+		],
+		"columnDefs": [
+			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
+			{
+				"targets": [ 12, 15, 16, 17, 18, 19, 20, 21],
+				"visible": false,
+				"searchable": false,
 			},
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-			"order": [[ 8, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'endpoint_count'},
-				{'data': 'vulnerability_count'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'ip_addresses'},
-				{'data': 'ports'},
-				{'data': 'content_length', 'searchable': false},
-				{'data': 'screenshot_path', 'searchable': false},
-				{'data': 'response_time'},
-				{'data': 'technology_stack'},
-				{'data': 'checked'},
-				{'data': 'http_url'},
-				{'data': 'is_cdn'},
-				{'data': 'cname'},
-				{'data': 'is_interesting'},
-				{'data': 'info_count'},
-				{'data': 'low_count'},
-				{'data': 'medium_count'},
-				{'data': 'high_count'},
-				{'data': 'critical_count'},
-			],
-			"columnDefs": [
-				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
-				{
-					"targets": [ 12, 15, 16, 17, 18, 19, 20, 21],
-					"visible": false,
-					"searchable": false,
+			{
+				"targets": [ 11, 13, 14 ],
+				"visible": false,
+				"searchable": true,
+			},
+			// hide any columns if scan is not initiated
+			{% if not history.port_scan %}
+			{
+				"targets": [ 7 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{% if not history.vulnerability_scan %}
+			{
+				"targets": [ 3 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{% if not history.fetch_url %}
+			{
+				"targets": [ 2 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+			// checkbox
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
 				},
-				{
-					"targets": [ 11, 13, 14 ],
-					"visible": false,
-					"searchable": true,
-				},
-				// hide any columns if scan is not initiated
-				{% if not history.port_scan %}
-				{
-					"targets": [ 7 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{% if not history.vulnerability_scan %}
-				{
-					"targets": [ 3 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{% if not history.fetch_url %}
-				{
-					"targets": [ 2 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
-				// checkbox
-				{
-					"render": function ( data, type, row ) {
-						if(row['checked']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
+				"targets": 0,
+			},
+			// subdomain Name
+			{
+				"render": function ( data, type, row ) {
+					badges = '';
+					interesting_badge = '';
+					cdn_badge = '';
+					tech_badge = '';
+					if (row['technology_stack']){
+						tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+					}
+					if (row['is_cdn'])
+					{
+						cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
+					}
+					if(row['is_interesting'])
+					{
+						interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+					}
+					if(cdn_badge || interesting_badge)
+					{
+						badges = cdn_badge + interesting_badge + '</br>';
+					}
+					if (row['http_url']) {
+						if (row['cname']) {
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>` + tech_badge;
 						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
+						return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+					}
+					return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 				},
-				// subdomain Name
-				{
-					"render": function ( data, type, row ) {
-						badges = '';
+				"targets": 1
+			},
+			// endpoint count
+			{
+				"render": function ( data, type, row ) {
+					if (data)
+					{
+						return `<span class='badge badge-pills badge-info'>${data}</span>`;
+					}
+					return 0;
+				},
+				"targets": 2,
+			},
+			// vulnerability_count
+			{
+				"render": function ( data, type, row ) {
+					info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerabilities">${row['info_count']}</span>`;
+					low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerabilities">${row['low_count']}</span>`;
+					medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerabilities">${row['medium_count']}</span>`;
+					high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerabilities">${row['high_count']}</span>`;
+					critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerabilities">${row['critical_count']}</span>`;
+					return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
+				},
+				"targets": 3,
+			},
+			// http_status
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+				},
+				"targets": 4,
+			},
+			// page title
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 5,
+			},
+			// ip address
+			{
+				"render": function ( data, type, row ) {
+					ip_badge = ''
+					if (data)
+					{
+						Object.entries(data).forEach(([key, value]) => {
+							badge_color = value.is_cdn ? 'warning' : 'info';
+							ip_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color}'>${value.address}</span>`
+						});
+						return ip_badge;
+					}
+					return "";
+				},
+				"targets": 6,
+			},
+			// open ports
+			{
+				"render": function ( data, type, row ) {
+					port_badge = ''
+					if (data)
+					{
+						Object.entries(data).forEach(([key, value]) => {
+							if(value){
+								badge_color = value.is_uncommon ? 'danger' : 'info';
+								title = value.is_uncommon ? 'Uncommon Port - ' + value.description : value.description;
+								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name}</span>`
+							}
+						});
+						return port_badge;
+					}
+					return "";
+				},
+				"targets": 7,
+			},
+			// screenshot
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						//return lightbox with caption as http link
+						return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+					}
+					return "";
+				},
+				"targets": 9,
+			},
+			// response_time
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return get_response_time_text(data);
+					}
+					return "";
+				},
+				"targets": 10,
+			},
+		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			// get screenshot size from localStorage
+			var elements = document.getElementsByClassName("screenshot");
+			screenshot_size = localStorage.getItem('screenshotSize');
+			if (screenshot_size){
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", screenshot_size);
+					elements[index].setAttribute("width", screenshot_size);
+				}
+			}
+			else{
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", "200px");
+					elements[index].setAttribute("width", "200px");
+				}
+			}
+		},
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+	});
+});
+{% if history.dir_file_search %}
+$("#pills-directories-tab").click(function() {
+	var history_table = $('#directories-table').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Filter Subdomains...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"order": [[ 5, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'directory_json'},
+			{'data': 'http_url'},
+			{'data': 'is_interesting'},
+			{'data': 'checked'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 5, 6, 7],
+				"visible": false,
+				"searchable": false,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (row['http_url']) {
 						interesting_badge = '';
-						cdn_badge = '';
-						tech_badge = '';
-						if (row['technology_stack']){
-							tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
-						}
-						if (row['is_cdn'])
-						{
-							cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
-						}
 						if(row['is_interesting'])
 						{
-							interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+							interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
 						}
-						if(cdn_badge || interesting_badge)
-						{
-							badges = cdn_badge + interesting_badge + '</br>';
-						}
-						if (row['http_url']) {
-							if (row['cname']) {
-								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>` + tech_badge;
-							}
-							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-						}
-						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-					},
-					"targets": 1
+						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
+					}
+					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
 				},
-				// endpoint count
-				{
-					"render": function ( data, type, row ) {
-						if (data)
-						{
-							return `<span class='badge badge-pills badge-info'>${data}</span>`;
-						}
-						return 0;
-					},
-					"targets": 2,
-				},
-				// vulnerability_count
-				{
-					"render": function ( data, type, row ) {
-						info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerabilities">${row['info_count']}</span>`;
-						low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerabilities">${row['low_count']}</span>`;
-						medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerabilities">${row['medium_count']}</span>`;
-						high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerabilities">${row['high_count']}</span>`;
-						critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerabilities">${row['critical_count']}</span>`;
-						return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
-					},
-					"targets": 3,
-				},
-				// http_status
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 4,
-				},
-				// page title
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return htmlEncode(data);
-						}
+				"targets": 1
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
 						return "";
-					},
-					"targets": 5,
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
-				// ip address
-				{
-					"render": function ( data, type, row ) {
-						ip_badge = ''
-						if (data)
-						{
-							Object.entries(data).forEach(([key, value]) => {
-								badge_color = value.is_cdn ? 'warning' : 'info';
-								ip_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color}'>${value.address}</span>`
-							});
-							return ip_badge;
-						}
-						return "";
-					},
-					"targets": 6,
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
 				},
-				// open ports
-				{
-					"render": function ( data, type, row ) {
-						port_badge = ''
-						if (data)
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data) {
+						data = JSON.parse(data);
+						main_url = Object.keys(data)[0];
+						var json_obj = data[main_url];
+						var html_treeview = `<ul class="file-tree">`;
+						for(var i = 0; i < json_obj.length; i++)
 						{
-							Object.entries(data).forEach(([key, value]) => {
-								if(value){
-									badge_color = value.is_uncommon ? 'danger' : 'info';
-									title = value.is_uncommon ? 'Uncommon Port - ' + value.description : value.description;
-									port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name}</span>`
+							if(json_obj[i].status==200)
+							{
+								var path = json_obj[i].path;
+								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
+								// id path has / the its a directory else consider as file
+								if (path.substr(path.length - 1) == '/') {
+									html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 								}
-							});
-							return port_badge;
-						}
-						return "";
-					},
-					"targets": 7,
-				},
-				// screenshot
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							//return lightbox with caption as http link
-							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
-						}
-						return "";
-					},
-					"targets": 9,
-				},
-				// response_time
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return get_response_time_text(data);
-						}
-						return "";
-					},
-					"targets": 10,
-				},
-			],
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-				// get screenshot size from localStorage
-				var elements = document.getElementsByClassName("screenshot");
-				screenshot_size = localStorage.getItem('screenshotSize');
-				if (screenshot_size){
-					for (index = 0; index < elements.length; ++index) {
-						elements[index].setAttribute("height", screenshot_size);
-						elements[index].setAttribute("width", screenshot_size);
-					}
-				}
-				else{
-					for (index = 0; index < elements.length; ++index) {
-						elements[index].setAttribute("height", "200px");
-						elements[index].setAttribute("width", "200px");
-					}
-				}
-			},
-			'createdRow': function( row, data, dataIndex ) {
-				if (data['checked']){
-					$(row).addClass('table-secondary text-strike');
-				}
-			},
-		});
-	});
-	{% if history.dir_file_search %}
-	$("#pills-directories-tab").click(function() {
-		var history_table = $('#directories-table').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Filter Subdomains...",
-				"sLengthMenu": "Results :  _MENU_",
-			},
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-			"order": [[ 5, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'directory_json'},
-				{'data': 'http_url'},
-				{'data': 'is_interesting'},
-				{'data': 'checked'},
-			],
-			"columnDefs": [
-				{
-					"targets": [ 5, 6, 7],
-					"visible": false,
-					"searchable": false,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if(row['checked']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (row['http_url']) {
-							interesting_badge = '';
-							if(row['is_interesting'])
-							{
-								interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
-							}
-							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
-						}
-						return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
-					},
-					"targets": 1
-				},
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 2,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return htmlEncode(data);
-						}
-						return "";
-					},
-					"targets": 3,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data) {
-							data = JSON.parse(data);
-							main_url = Object.keys(data)[0];
-							var json_obj = data[main_url];
-							var html_treeview = `<ul class="file-tree">`;
-							for(var i = 0; i < json_obj.length; i++)
-							{
-								if(json_obj[i].status==200)
-								{
-									var path = json_obj[i].path;
-									var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
-									// id path has / the its a directory else consider as file
-									if (path.substr(path.length - 1) == '/') {
-										html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-									}
-									else {
-										html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-									}
+								else {
+									html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 								}
 							}
-							html_treeview += `</ul>`;
-							return html_treeview;
 						}
-						return '';
-					},
-					"targets": 4,
+						html_treeview += `</ul>`;
+						return html_treeview;
+					}
+					return '';
 				},
-			],
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
+				"targets": 4,
 			},
-			initComplete: function( settings, json ) {
-				var script = document.createElement("script");
-				script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
-				script.type = "text/javascript";
-				document.getElementsByTagName("head")[0].appendChild(script);
-			},
-			'createdRow': function( row, data, dataIndex ) {
-				if (data['checked']){
-					$(row).addClass('table-secondary text-strike');
-				}
-			},
-			"rowCallback": function( row, data, index ) {
-				if (!data["directory_json"]) {
-					$(row).hide();
-				}
-			},
-		});
+		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+		},
+		initComplete: function( settings, json ) {
+			var script = document.createElement("script");
+			script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
+			script.type = "text/javascript";
+			document.getElementsByTagName("head")[0].appendChild(script);
+		},
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+		"rowCallback": function( row, data, index ) {
+			if (!data["directory_json"]) {
+				$(row).hide();
+			}
+		},
 	});
-	{% endif %}
+});
+{% endif %}
 
-	{% if history.vulnerability_scan %}
-	$("#pills-vulnerabilities-tab").click(function() {
-		$('#vulnerability_results').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
+{% if history.vulnerability_scan %}
+$("#pills-vulnerabilities-tab").click(function() {
+	$('#vulnerability_results').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+		"order": [[ 2, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'severity'},
+			{'data': 'http_url'},
+			{'data': 'extracted_results'},
+			{'data': 'open_status'},
+			{'data': 'matcher_name'},
+			{'data': 'discovered_date'},
+			{'data': 'tags'},
+			{'data': 'description'},
+			{'data': 'reference'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 6, 7, 8, 9, 10 ],
+				"visible": false,
+				"searchable": true,
 			},
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-			"order": [[ 2, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'severity'},
-				{'data': 'http_url'},
-				{'data': 'extracted_results'},
-				{'data': 'open_status'},
-				{'data': 'matcher_name'},
-				{'data': 'discovered_date'},
-				{'data': 'tags'},
-				{'data': 'description'},
-				{'data': 'reference'},
-			],
-			"columnDefs": [
-				{
-					"targets": [ 6, 7, 8, 9, 10 ],
-					"visible": false,
-					"searchable": true,
+			{
+				"render": function ( data, type, row ) {
+					if(row['open_status']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
 				},
-				{
-					"render": function ( data, type, row ) {
-						if(row['open_status']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					var tags_span ="";
+					switch (row['severity']) {
+						case 'Info':
+						color = 'info'
+						break;
+						case 'Low':
+						color = 'low'
+						break;
+						case 'Medium':
+						color = 'warning'
+						break;
+						case 'High':
+						color = 'danger'
+						break;
+						case 'Critical':
+						color = 'critical'
+						break;
+						default:
+					}
+					if (row['tags']) {
+						var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+							tags_span+=badge + split_vals + "</span>";
+						});
+					}
+					return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
 				},
-				{
-					"render": function ( data, type, row ) {
-						var tags_span ="";
-						switch (row['severity']) {
-							case 'Info':
-							color = 'info'
-							break;
-							case 'Low':
-							color = 'low'
-							break;
-							case 'Medium':
-							color = 'warning'
-							break;
-							case 'High':
-							color = 'danger'
-							break;
-							case 'Critical':
-							color = 'critical'
-							break;
-							default:
-						}
-						if (row['tags']) {
-							var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-							row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-								tags_span+=badge + split_vals + "</span>";
-							});
-						}
-						return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
-					},
-					"targets": 1,
+				"targets": 1,
+			},
+			{
+				"render": function ( data, type, row ) {
+					switch (data) {
+						case 'Info':
+						return "<span class='badge badge-info'>Info</span>";
+						break;
+						case 'Low':
+						return "<span class='badge badge-low'>Low</span>";
+						break;
+						case 'Medium':
+						return "<span class='badge badge-warning'>Medium</span>";
+						break;
+						case 'High':
+						return "<span class='badge badge-danger'>High</span>";
+						break;
+						case 'Critical':
+						return "<span class='badge badge-critical'>Critical</span>";
+						break;
+						default:
+						return "";
+					}
 				},
-				{
-					"render": function ( data, type, row ) {
-						switch (data) {
-							case 'Info':
-							return "<span class='badge badge-info'>Info</span>";
-							break;
-							case 'Low':
-							return "<span class='badge badge-low'>Low</span>";
-							break;
-							case 'Medium':
-							return "<span class='badge badge-warning'>Medium</span>";
-							break;
-							case 'High':
-							return "<span class='badge badge-danger'>High</span>";
-							break;
-							case 'Critical':
-							return "<span class='badge badge-critical'>Critical</span>";
-							break;
-							default:
-							return "";
-						}
-					},
-					"targets": 2,
-				},
+				"targets": 2,
+			},
 
-				{
-					"render": function ( data, type, row ) {
-						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-					},
-					"targets": 3,
+			{
+				"render": function ( data, type, row ) {
+					return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
 				},
-				{
-					"render": function ( data, type, row ) {
-						extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-						matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-						description = row['description'] ? row['description'] + `</br>` : "";
-						reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
-						return extracted_results + matcher_name + description + reference;
-					},
-					"targets": 4,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
-						}
-						else{
-							return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
-						}
-					},
-					"targets": 5,
-				},
-			],
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
+				"targets": 3,
 			},
-			createdRow: function( row, data, dataIndex ) {
-				if (!data['open_status']){
-					$(row).addClass('table-secondary text-strike');
-				}
+			{
+				"render": function ( data, type, row ) {
+					extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+					matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+					description = row['description'] ? row['description'] + `</br>` : "";
+					reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+					return extracted_results + matcher_name + description + reference;
+				},
+				"targets": 4,
 			},
-		});
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
+					}
+					else{
+						return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
+					}
+				},
+				"targets": 5,
+			},
+		],
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+		},
+		createdRow: function( row, data, dataIndex ) {
+			if (!data['open_status']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
 	});
-	{% endif %}
+});
+{% endif %}
 
-</script>
-</div>
-<script type="text/javascript">
 // apex charts for vulnerability summary
 var options = {
 	chart: {
@@ -1254,6 +1251,11 @@ function subdomain_status_change(checkbox, id)
 // default get urls
 $("#pills-endpoints-tab").click(function() {
 	get_endpoints({{scan_history_id}}, null);
+});
+
+// get interesting subdomain
+$("#interesting_subdomain_accordion").click(function() {
+	get_interesting_subdomains({{scan_history_id}});
 });
 
 {% if history.fetch_url and history.used_gf_patterns %}

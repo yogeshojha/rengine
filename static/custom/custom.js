@@ -361,3 +361,135 @@ function get_endpoints(scan_history_id, gf_tags){
 			}
 		});
 }
+
+
+function get_interesting_subdomains(scan_history_id){
+	$('#interesting_subdomains').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"stripeClasses": [],
+		'serverSide': true,
+		"ajax": `/start_scan/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`,
+		"order": [[ 3, "desc" ]],
+		"columns": [
+			{'data': 'name'},
+			{'data': 'page_title'},
+			{'data': 'http_status'},
+			{'data': 'content_length'},
+			{'data': 'http_url'},
+			{'data': 'technology_stack'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 4 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{
+				"targets": [ 5 ],
+				"visible": false,
+				"searchable": true,
+			},
+			{"className": "text-center", "targets": [ 2 ]},
+			{
+				"render": function ( data, type, row ) {
+					tech_badge = '';
+						if (row['technology_stack']){
+							tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+						}
+					if (row['http_url']) {
+						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+					}
+					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+				},
+				"targets": 0
+			},
+			{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+						}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+					},
+					"targets": 2,
+				},
+		],
+	});
+}
+
+function get_interesting_endpoint(scan_history_id){
+	$('#interesting_endpoints').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"stripeClasses": [],
+		'serverSide': true,
+		"ajax": `/start_scan/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`,
+		"order": [[ 3, "desc" ]],
+		"columns": [
+			{'data': 'http_url'},
+			{'data': 'page_title'},
+			{'data': 'http_status'},
+			{'data': 'content_length'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 3 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{"className": "text-center", "targets": [ 2 ]},
+			{
+				"render": function ( data, type, row ) {
+					var url = split(data, 70);
+					return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+				},
+				"targets": 0
+			},
+			{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+						}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+					},
+					"targets": 2,
+				},
+		],
+	});
+}

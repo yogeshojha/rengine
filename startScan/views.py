@@ -64,10 +64,10 @@ def detail_scan(request, id=None):
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
-        context['interesting_subdomain'] = get_interesting_subdomains(
-            scan_history=id)
-        context['interesting_endpoint'] = get_interesting_endpoint(
-            scan_history=id)
+        context['interesting_subdomain_count'] = get_interesting_subdomains(
+            scan_history=id).count()
+        context['interesting_endpoint_count'] = get_interesting_endpoint(
+            scan_history=id).count()
         context['scan_history_active'] = 'true'
 
         domain_id = ScanHistory.objects.filter(id=id)[0].domain_name.id
@@ -88,11 +88,11 @@ def detail_scan(request, id=None):
             scanned_host_q2 = Subdomain.objects.filter(
                 scan_history__id=last_scan.id).values('name')
 
-            context['new_subdomains'] = scanned_host_q1.difference(
-                scanned_host_q2)
-            context['removed_subdomains'] = scanned_host_q2.difference(
-                scanned_host_q1)
-            context['last_scan_subdomain'] = last_scan
+            # context['new_subdomains'] = scanned_host_q1.difference(
+            #     scanned_host_q2)
+            # context['removed_subdomains'] = scanned_host_q2.difference(
+            #     scanned_host_q1)
+            # context['last_scan_subdomain'] = last_scan
 
         if ScanHistory.objects.filter(
             domain_name=domain_id).filter(
@@ -111,9 +111,9 @@ def detail_scan(request, id=None):
             endpoint_q2 = EndPoint.objects.filter(
                 scan_history__id=last_scan.id).values('http_url')
 
-            context['new_urls'] = endpoint_q1.difference(endpoint_q2)
-            context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
-            context['last_scan_endpoint'] = last_scan
+            # context['new_urls'] = endpoint_q1.difference(endpoint_q2)
+            # context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
+            # context['last_scan_endpoint'] = last_scan
 
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
