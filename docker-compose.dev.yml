@@ -24,11 +24,14 @@ services:
             - DEBUG=1
         volumes:
           - .:/app
+          - gf_patterns:/root/.gf
         ports:
           - "8000:8000"
         depends_on:
             - db
             - redis
+            - celery
+            - celery-beat
         networks:
             - rengine_network
     redis:
@@ -39,6 +42,9 @@ services:
         restart: always
         build: .
         command: celery -A reNgine worker -l INFO
+        volumes:
+          - .:/app
+          - gf_patterns:/root/.gf
         environment:
             - DEBUG=1
         depends_on:
@@ -54,7 +60,10 @@ services:
             - redis
         networks:
             - rengine_network
+        volumes:
+          - .:/app
 networks:
     rengine_network:
 volumes:
   postgres_data:
+  gf_patterns:

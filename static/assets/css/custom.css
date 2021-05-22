@@ -310,3 +310,7 @@ div.dataTables_wrapper div.dataTables_filter {
 .bs-tooltip {
     z-index: 100000000;
 }
+
+.form-control-file{
+  color: #000;
+}

@@ -1,6 +1,8 @@
 import io
 import re
 import os
+import subprocess
+
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType, Wordlist, Configuration, InterestingLookupModel
 from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm, InterestingLookupForm
@@ -9,6 +11,7 @@ from django.contrib import messages
 from django import http
 from django.urls import reverse
 from django.conf import settings
+from django.core.files.storage import default_storage
 
 
 def index(request):
@@ -228,4 +231,17 @@ def interesting_lookup(request):
 
 def settings(request):
     context = {}
+    # check for incoming form requests
+    if request.method == "POST":
+        if request.FILES['gfFileUpload']:
+            gf_file = request.FILES['gfFileUpload']
+            file_path = '/root/.gf/' + gf_file.name
+            file = open(file_path, "w")
+            file.write(gf_file.read().decode("utf-8"))
+            file.close()
+            messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
+            return http.HttpResponseRedirect(reverse('settings'))
+
+    gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
+    context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/index.html', context)
