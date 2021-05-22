@@ -88,11 +88,11 @@ def detail_scan(request, id=None):
             scanned_host_q2 = Subdomain.objects.filter(
                 scan_history__id=last_scan.id).values('name')
 
-            # context['new_subdomains'] = scanned_host_q1.difference(
-            #     scanned_host_q2)
-            # context['removed_subdomains'] = scanned_host_q2.difference(
-            #     scanned_host_q1)
-            # context['last_scan_subdomain'] = last_scan
+            context['new_subdomains'] = scanned_host_q1.difference(
+                scanned_host_q2)
+            context['removed_subdomains'] = scanned_host_q2.difference(
+                scanned_host_q1)
+            context['last_scan_subdomain'] = last_scan
 
         if ScanHistory.objects.filter(
             domain_name=domain_id).filter(
@@ -111,20 +111,19 @@ def detail_scan(request, id=None):
             endpoint_q2 = EndPoint.objects.filter(
                 scan_history__id=last_scan.id).values('http_url')
 
-            # context['new_urls'] = endpoint_q1.difference(endpoint_q2)
-            # context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
-            # context['last_scan_endpoint'] = last_scan
+            context['new_urls'] = endpoint_q1.difference(endpoint_q2)
+            context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
+            context['last_scan_endpoint'] = last_scan
 
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
 
     # badge count for gfs
-    count_gf = {}
-    for gf in history.used_gf_patterns.split(','):
-        count_gf[gf] = EndPoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
-
-    context['matched_gf_count'] = count_gf
-
+    if history.used_gf_patterns:
+        count_gf = {}
+        for gf in history.used_gf_patterns.split(','):
+            count_gf[gf] = EndPoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
+            context['matched_gf_count'] = count_gf
     return render(request, 'startScan/detail_scan.html', context)
 
 def get_ports_for_ip(request, ip, history_id):

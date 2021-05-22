@@ -1,4 +1,4 @@
-from startScan.api.serializers import SubdomainSerializer, EndpointSerializer, VulnerabilitySerializer
+from startScan.api.serializers import *
 from scanEngine.models import InterestingLookupModel
 from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 
@@ -10,6 +10,28 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
+
+
+class AddedSubdomainViewSet(viewsets.ModelViewSet):
+    '''
+        To get the new subdomains, we will look for ScanHistory with
+        subdomain_discovery = True and the status of the last scan has to be
+        successful and calculate difference
+    '''
+    queryset = Subdomain.objects.none()
+    serializer_class = AddedSubdomainSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
+        scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id).filter(scan_status=2)
+        if scan_history.count() > 1:
+            last_scan = scan_history.order_by('-start_scan_date')[1]
+            scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
+            scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
+            return scanned_host_q1.difference(scanned_host_q2)
+        return self.queryset
 
 
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):

@@ -459,11 +459,6 @@ function get_interesting_endpoint(scan_history_id){
 			{'data': 'content_length'},
 		],
 		"columnDefs": [
-			{
-				"targets": [ 3 ],
-				"visible": false,
-				"searchable": false,
-			},
 			{"className": "text-center", "targets": [ 2 ]},
 			{
 				"render": function ( data, type, row ) {

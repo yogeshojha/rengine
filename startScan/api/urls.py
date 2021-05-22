@@ -16,6 +16,8 @@ router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet)
 
 router.register(r'listInterestingEndpoints', InterestingEndpointViewSet)
 
+router.register(r'listNewSubdomains', AddedSubdomainViewSet)
+
 urlpatterns = [
     url('^', include(router.urls)),
 
