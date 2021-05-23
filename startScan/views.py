@@ -64,27 +64,15 @@ def detail_scan(request, id=None):
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
-        context['interesting_subdomain_count'] = get_interesting_subdomains(
-            scan_history=id).count()
-        context['interesting_endpoint_count'] = get_interesting_endpoint(
-            scan_history=id).count()
         context['scan_history_active'] = 'true'
 
-        domain_id = ScanHistory.objects.filter(id=id)[0].domain_name.id
-        if ScanHistory.objects.filter(
-            domain_name=domain_id).filter(
-            scan_type__subdomain_discovery=True).filter(
-            id__lt=id).filter(
-                scan_status=2).count() > 1:
-            last_scan = ScanHistory.objects.filter(
-                domain_name=domain_id).filter(
-                scan_type__subdomain_discovery=True).filter(
-                scan_status=2).filter(
-                id__lt=id).order_by('-start_scan_date')[0]
-
-            context['last_scan_subdomain'] = last_scan
-
-
+        domain_id = ScanHistory.objects.filter(id=id)
+        if domain_id:
+            domain_id = domain_id[0].domain_name.id
+            scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
+            if scan_history.count() > 1:
+                last_scan = scan_history.order_by('-start_scan_date')[1]
+                context['last_scan'] = last_scan
 
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')

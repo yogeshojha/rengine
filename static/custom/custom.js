@@ -623,3 +623,55 @@ function get_endpoint_changes(scan_history_id){
 		],
 	});
 }
+
+function get_subdomain_changes_values(scan_id){
+	// Subdomain Changes
+	$.getJSON(`http://127.0.0.1:8000/start_scan/api/listSubdomainChanges/?scan_id=${scan_id}`, function(data) {
+		if (data['count'] == 0){
+			$("#subdomain-changes-div").remove();
+			return;
+		}
+
+		$("#subdomain_change_count").html(data['count']);
+		added_count = 0;
+		removed_count = 0;
+		for (var val in data['results']) {
+			if (data['results'][val]['change'] == 'added'){
+				added_count++;
+			}
+			else if (data['results'][val]['change'] == 'removed')
+			{
+				removed_count++;
+			}
+		}
+		if (added_count) $("#subdomain-added-count").html(`${added_count} Subdomains were added`);
+		if (removed_count) $("#subdomain-removed-count").html(`${removed_count} Subdomains were removed`);
+	});
+	get_subdomain_changes(scan_id);
+}
+
+function get_endpoint_changes_values(scan_id){
+	// Endpoint Changes
+	$.getJSON(`http://127.0.0.1:8000/start_scan/api/listEndPointChanges/?scan_id=${scan_id}`, function(data) {
+		if (data['count'] == 0){
+			$("#endpoint-changes-div").remove();
+			return;
+		}
+
+		$("#endpoint_change_count").html(data['count']);
+		added_count = 0;
+		removed_count = 0;
+		for (var val in data['results']) {
+			if (data['results'][val]['change'] == 'added'){
+				added_count++;
+			}
+			else if (data['results'][val]['change'] == 'removed')
+			{
+				removed_count++;
+			}
+		}
+		if (added_count) $("#endpoint-added-count").html(`${added_count} Endpoints were added`);
+		if (removed_count) $("#endpoint-removed-count").html(`${removed_count} Endpoints were removed`);
+	});
+	get_endpoint_changes(scan_id);
+}

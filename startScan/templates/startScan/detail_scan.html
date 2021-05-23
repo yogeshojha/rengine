@@ -19,6 +19,7 @@ Detailed Scan
 <link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
@@ -297,17 +298,17 @@ Detailed Scan Results for {{history.domain_name}}
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							{% include 'base/_items/interesting_recon.html' %}
 						</div>
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class="">Subdomain Changes</h6>
-									<p>Comparing against the scan performed on <a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a></p>
+									<h6 class=""><span class="badge badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes</h6>
+									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
-										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span></p>
+										<span class="badge badge-success badge-pills" id="subdomain-added-count"></span>
+										<span class="badge badge-danger badge-pills" id="subdomain-removed-count"></span>
+									</p>
 								</div>
-
 								<div class="widget-content">
 									<div class="table-responsive">
 										<table class="table" id="table-subdomain-changes">
@@ -325,15 +326,16 @@ Detailed Scan Results for {{history.domain_name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class="">Endpoint Changes</h6>
-									<p>Comparing against the scan performed on <a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a></p>
+									<h6 class=""><span class="badge badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes</h6>
+									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills">{{new_subdomains.count}} EndPoints were Added</span>
-										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} EndPoints were Removed</span></p>
+										<span class="badge badge-success badge-pills" id="endpoint-added-count"></span>
+										<span class="badge badge-danger badge-pills" id="endpoint-removed-count"></span>
+									</p>
 								</div>
 
 								<div class="widget-content">
@@ -1205,9 +1207,8 @@ $("#interesting_endpoint_accordion").click(function() {
 	get_interesting_endpoint({{scan_history_id}});
 });
 
-get_subdomain_changes({{scan_history_id}});
-
-get_endpoint_changes({{scan_history_id}});
+get_subdomain_changes_values({{scan_history_id}});
+get_endpoint_changes_values({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns
