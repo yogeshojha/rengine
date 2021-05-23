@@ -107,16 +107,16 @@ function get_ips_from_port(port_number, history_id){
 	document.getElementById("detailScanModalLabel").innerHTML='IPs with port ' + port_number + ' OPEN';
 	var ip_badge = '';
 	fetch('../port/ip/'+port_number+'/'+history_id+'/')
-		.then(response => response.json())
-  	.then(data => render_ips(data));
+	.then(response => response.json())
+	.then(data => render_ips(data));
 }
 
 function get_ports_for_ip(ip, history_id){
 	document.getElementById("detailScanModalLabel").innerHTML='Open Ports identified for ' + ip;
 	var port_badge = '';
 	fetch('../ip/ports/'+ip+'/'+history_id+'/')
-		.then(response => response.json())
-  	.then(data => render_ports(data));
+	.then(response => response.json())
+	.then(data => render_ports(data));
 }
 
 function render_ports(data)
@@ -261,110 +261,6 @@ function get_endpoints(scan_history_id, gf_tags){
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
 	$('#endpoint_results').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
-			},
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": lookup_url,
-			"order": [[ 5, "desc" ]],
-			"columns": [
-				{'data': 'http_url'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'matched_gf_patterns'},
-				{'data': 'content_type'},
-				{'data': 'content_length', 'searchable': false},
-				{'data': 'technology_stack'},
-				{'data': 'webserver'},
-				{'data': 'response_time', 'searchable': false},
-				{'data': 'is_default', 'searchable': false}
-			],
-			"columnDefs": [
-				{
-					"targets": [ 9 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{
-					"render": function ( data, type, row ) {
-						// var isDefault = '';
-						// if (row['is_default'])
-						// {
-						// 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
-						// }
-						var url = split(data, 70);
-						return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
-					},
-					"targets": 0,
-				},
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
-
-					},
-					"targets": 1,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return parse_comma_values_into_span(data.toUpperCase(), "info");
-						}
-						return "";
-					},
-					"targets": 6,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return parse_comma_values_into_span(data, "danger", outline=true);
-						}
-						return "";
-					},
-					"targets": 3,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return get_response_time_text(data);
-						}
-						return "";
-					},
-					"targets": 8,
-				},
-			],
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-			}
-		});
-}
-
-
-function get_interesting_subdomains(scan_history_id){
-	$('#interesting_subdomains').DataTable({
 		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
@@ -376,6 +272,111 @@ function get_interesting_subdomains(scan_history_id){
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
 		"<'row'<'col'tr>>" +
 		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": lookup_url,
+		"order": [[ 5, "desc" ]],
+		"columns": [
+			{'data': 'http_url'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'matched_gf_patterns'},
+			{'data': 'content_type'},
+			{'data': 'content_length', 'searchable': false},
+			{'data': 'technology_stack'},
+			{'data': 'webserver'},
+			{'data': 'response_time', 'searchable': false},
+			{'data': 'is_default', 'searchable': false}
+		],
+		"columnDefs": [
+			{
+				"targets": [ 9 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{
+				"render": function ( data, type, row ) {
+					// var isDefault = '';
+					// if (row['is_default'])
+					// {
+					// 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
+					// }
+					var url = split(data, 70);
+					return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
+
+				},
+				"targets": 1,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return parse_comma_values_into_span(data.toUpperCase(), "info");
+					}
+					return "";
+				},
+				"targets": 6,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return parse_comma_values_into_span(data, "danger", outline=true);
+					}
+					return "";
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return get_response_time_text(data);
+					}
+					return "";
+				},
+				"targets": 8,
+			},
+		],
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+		}
+	});
+}
+
+
+function get_interesting_subdomains(scan_history_id){
+	$('#interesting_subdomains').DataTable({
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"destroy": true,
+		"bInfo": false,
 		"stripeClasses": [],
 		'serverSide': true,
 		"ajax": `/start_scan/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`,
@@ -403,9 +404,9 @@ function get_interesting_subdomains(scan_history_id){
 			{
 				"render": function ( data, type, row ) {
 					tech_badge = '';
-						if (row['technology_stack']){
-							tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
-						}
+					if (row['technology_stack']){
+						tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+					}
 					if (row['http_url']) {
 						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 					}
@@ -414,30 +415,29 @@ function get_interesting_subdomains(scan_history_id){
 				"targets": 0
 			},
 			{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 2,
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
+				"targets": 2,
+			},
 		],
 	});
 }
 
 function get_interesting_endpoint(scan_history_id){
 	$('#interesting_endpoints').DataTable({
-		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
@@ -448,8 +448,8 @@ function get_interesting_endpoint(scan_history_id){
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
 		"<'row'<'col'tr>>" +
 		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-		"stripeClasses": [],
 		'serverSide': true,
+		"bInfo": false,
 		"ajax": `/start_scan/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`,
 		"order": [[ 3, "desc" ]],
 		"columns": [
@@ -468,23 +468,158 @@ function get_interesting_endpoint(scan_history_id){
 				"targets": 0
 			},
 			{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 2,
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
+				"targets": 2,
+			},
+		],
+	});
+}
+
+
+function get_subdomain_changes(scan_history_id){
+	$('#table-subdomain-changes').DataTable({
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"destroy": true,
+		"stripeClasses": [],
+		'serverSide': true,
+		"ajax": `/start_scan/api/listSubdomainChanges/?scan_id=${scan_history_id}&format=datatables`,
+		"order": [[ 3, "desc" ]],
+		"columns": [
+			{'data': 'http_url'},
+			{'data': 'page_title'},
+			{'data': 'http_status'},
+			{'data': 'content_length'},
+			{'data': 'change'},
+		],
+		"bInfo": false,
+		"columnDefs": [
+			{"className": "text-center", "targets": [ 2 ]},
+			{
+				"render": function ( data, type, row ) {
+					var url = split(data, 70);
+					return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+				},
+				"targets": 0
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+				},
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data == 'added'){
+						return `<span class='badge badge-success'>Added</span>`;
+					}
+					else{
+						return `<span class='badge badge-danger'>Removed</span>`;
+					}
+				},
+				"targets": 4,
+			},
+		],
+	});
+}
+
+function get_endpoint_changes(scan_history_id){
+	$('#table-endpoint-changes').DataTable({
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"destroy": true,
+		"stripeClasses": [],
+		'serverSide': true,
+		"ajax": `/start_scan/api/listEndPointChanges/?scan_id=${scan_history_id}&format=datatables`,
+		"order": [[ 3, "desc" ]],
+		"columns": [
+			{'data': 'http_url'},
+			{'data': 'page_title'},
+			{'data': 'http_status'},
+			{'data': 'content_length'},
+			{'data': 'change'},
+		],
+		"bInfo": false,
+		"columnDefs": [
+			{"className": "text-center", "targets": [ 2 ]},
+			{
+				"render": function ( data, type, row ) {
+					var url = split(data, 70);
+					return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+				},
+				"targets": 0
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+				},
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data == 'added'){
+						return `<span class='badge badge-success'>Added</span>`;
+					}
+					else{
+						return `<span class='badge badge-danger'>Removed</span>`;
+					}
+				},
+				"targets": 4,
+			},
 		],
 	});
 }

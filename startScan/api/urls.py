@@ -18,6 +18,8 @@ router.register(r'listInterestingEndpoints', InterestingEndpointViewSet)
 
 router.register(r'listSubdomainChanges', SubdomainChangesViewSet)
 
+router.register(r'listEndPointChanges', EndPointChangesViewSet)
+
 urlpatterns = [
     url('^', include(router.urls)),
 

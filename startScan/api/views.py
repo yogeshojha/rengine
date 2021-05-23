@@ -15,6 +15,7 @@ from rest_framework.decorators import api_view, action
 
 class SubdomainChangesViewSet(viewsets.ModelViewSet):
     '''
+        This viewset will return the Subdomain changes
         To get the new subdomains, we will look for ScanHistory with
         subdomain_discovery = True and the status of the last scan has to be
         successful and calculate difference
@@ -45,11 +46,36 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
                 return changes
         return self.queryset
 
-    def retrieve(self, request, *args, **kwargs):
-        # do your customization here
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response({'test': serializer.data})
+
+class EndPointChangesViewSet(viewsets.ModelViewSet):
+    '''
+        This viewset will return the EndPoint changes
+    '''
+    queryset = EndPoint.objects.none()
+    serializer_class = EndPointChangesSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        changes = req.query_params.get('changes')
+        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
+        scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(fetch_url=True).filter(id__lte=scan_id).filter(scan_status=2)
+        if scan_history.count() > 1:
+            last_scan = scan_history.order_by('-start_scan_date')[1]
+            scanned_host_q1 = EndPoint.objects.filter(scan_history__id=scan_id).values('http_url')
+            scanned_host_q2 = EndPoint.objects.filter(scan_history__id=last_scan.id).values('http_url')
+            added_endpoints = scanned_host_q1.difference(scanned_host_q2)
+            removed_endpoints = scanned_host_q2.difference(scanned_host_q1)
+            if changes == 'added':
+                return EndPoint.objects.filter(scan_history=scan_id).filter(http_url__in=added_endpoints).annotate(change=Value('added', output_field=CharField()))
+            elif changes == 'removed':
+                return EndPoint.objects.filter(scan_history=last_scan).filter(http_url__in=removed_endpoints).annotate(change=Value('removed', output_field=CharField()))
+            else:
+                added_endpoints = EndPoint.objects.filter(scan_history=scan_id).filter(http_url__in=added_endpoints).annotate(change=Value('added', output_field=CharField()))
+                removed_endpoints = EndPoint.objects.filter(scan_history=last_scan).filter(http_url__in=removed_endpoints).annotate(change=Value('removed', output_field=CharField()))
+                changes = added_endpoints.union(removed_endpoints)
+                return changes
+        return self.queryset
 
 
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):

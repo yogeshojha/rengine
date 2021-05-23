@@ -76,44 +76,15 @@ def detail_scan(request, id=None):
             scan_type__subdomain_discovery=True).filter(
             id__lt=id).filter(
                 scan_status=2).count() > 1:
-
             last_scan = ScanHistory.objects.filter(
                 domain_name=domain_id).filter(
                 scan_type__subdomain_discovery=True).filter(
                 scan_status=2).filter(
                 id__lt=id).order_by('-start_scan_date')[0]
 
-            scanned_host_q1 = Subdomain.objects.filter(
-                scan_history__id=id).values('name')
-            scanned_host_q2 = Subdomain.objects.filter(
-                scan_history__id=last_scan.id).values('name')
-
-            context['new_subdomains'] = scanned_host_q1.difference(
-                scanned_host_q2)
-            context['removed_subdomains'] = scanned_host_q2.difference(
-                scanned_host_q1)
             context['last_scan_subdomain'] = last_scan
 
-        if ScanHistory.objects.filter(
-            domain_name=domain_id).filter(
-            scan_type__fetch_url=True).filter(
-            scan_status=2).filter(
-                id__lt=id).count() > 1:
 
-            last_scan = ScanHistory.objects.filter(
-                domain_name=domain_id).filter(
-                scan_type__fetch_url=True).filter(
-                scan_status=2).filter(
-                id__lt=id).order_by('-start_scan_date')[0]
-
-            endpoint_q1 = EndPoint.objects.filter(
-                scan_history__id=id).values('http_url')
-            endpoint_q2 = EndPoint.objects.filter(
-                scan_history__id=last_scan.id).values('http_url')
-
-            context['new_urls'] = endpoint_q1.difference(endpoint_q2)
-            context['removed_urls'] = endpoint_q2.difference(endpoint_q1)
-            context['last_scan_endpoint'] = last_scan
 
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')

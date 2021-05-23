@@ -297,120 +297,62 @@ Detailed Scan Results for {{history.domain_name}}
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							{% include 'base/_items/interesting_recon.html' %}
 						</div>
-						{% if new_urls.count or removed_urls.count or new_subdomains or removed_subdomains %}
-						<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-							<div class="widget widget-five">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-table-two">
+
 								<div class="widget-heading">
 									<h6 class="">Subdomain Changes</h6>
-									<p class='text-muted small'>
-										Comparing against the last scan performed on
-										{% if last_scan_subdomain.start_scan_date %}
-										<a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a>
-										{% else %}
-										<br>
-										{% endif %}
-									</p>
-									<p>
-										{% if new_subdomains.count or removed_subdomains.count %}
-										During this scan
-										{% if new_subdomains.count %}
+									<p>Comparing against the scan performed on <a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a></p>
+									<p class='text-muted'>During this scan
 										<span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
-										{% endif %}
-										{% if removed_subdomains.count %}
-										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
-										{% endif %}
-										{% else %}
-										<br>
-										{% endif %}
-									</p>
+										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span></p>
 								</div>
+
 								<div class="widget-content">
-									<div class="mt-container mx-auto">
-										<div class="table-responsive">
-											<table class="table table-bordered table-striped mb-4">
-												<thead>
-													<tr>
-														<th>Subdomain</th>
-														<th>Status</th>
-													</tr>
-												</thead>
-												<tbody>
-													{% for subdomain in new_subdomains %}
-													<tr>
-														<td class="text-success">{{subdomain.name}}</td>
-														<td><span class="badge badge-success"> Added </span></td>
-													</tr>
-													{% endfor %}
-													{% for subdomain in removed_subdomains %}
-													<tr>
-														<td class="text-danger">{{subdomain.name}}</td>
-														<td><span class="badge badge-danger"> Removed </span></td>
-													</tr>
-													{% endfor %}
-												</tbody>
-											</table>
-										</div>
+									<div class="table-responsive">
+										<table class="table" id="table-subdomain-changes">
+											<thead>
+												<tr>
+													<th><div class="th-content">Subdomain</div></th>
+													<th><div class="th-content">Page Title</div></th>
+													<th><div class="th-content">Status</div></th>
+													<th><div class="th-content">Content Length</div></th>
+													<th><div class="th-content">Change</div></th>
+												</tr>
+											</thead>
+										</table>
 									</div>
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-							<div class="widget widget-activity-four">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-table-two">
+
 								<div class="widget-heading">
 									<h6 class="">Endpoint Changes</h6>
-									<p class='text-muted small'>
-										{% if last_scan_endpoint.start_scan_date %}
-										Comparing against the last scan performed on
-										<a href="{{last_scan_endpoint.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_endpoint.get_endpoint_count}} endpoints were discovered during the last scan."><small>{{last_scan_endpoint.start_scan_date}}</small></a>
-										{% else %}
-										<br>
-										{% endif %}
-									</p>
-									<p>
-										{% if new_urls.count or removed_urls.count %}
-										During this scan
-										{% if new_urls.count %}
-										<span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
-										{% endif %}
-										{% if removed_urls.count %}
-										<span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
-										{% endif %}
-										{% else %}
-										<br>
-										{% endif %}
-									</p>
+									<p>Comparing against the scan performed on <a href="{{last_scan_subdomain.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan_subdomain.get_subdomain_count}} subdomains were discovered during the last scan."><small>{{last_scan_subdomain.start_scan_date}}</small></a></p>
+									<p class='text-muted'>During this scan
+										<span class="badge badge-success badge-pills">{{new_subdomains.count}} EndPoints were Added</span>
+										<span class="badge badge-danger badge-pills">{{removed_subdomains.count}} EndPoints were Removed</span></p>
 								</div>
+
 								<div class="widget-content">
-									<div class="mt-container mx-auto">
-										<div class="table-responsive">
-											<table class="table table-bordered table-striped mb-4">
-												<thead>
-													<tr>
-														<th>Endpoint</th>
-														<th>Status</th>
-													</tr>
-												</thead>
-												<tbody>
-													{% for url in new_urls %}
-													<tr>
-														<td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
-														<td><span class="badge badge-success"> Added </span></td>
-													</tr>
-													{% endfor %}
-													{% for url in removed_urls %}
-													<tr>
-														<td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
-														<td><span class="badge badge-danger"> Removed </span></td>
-													</tr>
-													{% endfor %}
-												</tbody>
-											</table>
-										</div>
+									<div class="table-responsive">
+										<table class="table" id="table-endpoint-changes">
+											<thead>
+												<tr>
+													<th><div class="th-content">URL</div></th>
+													<th><div class="th-content">Page Title</div></th>
+													<th><div class="th-content">Status</div></th>
+													<th><div class="th-content">Content Length</div></th>
+													<th><div class="th-content">Change</div></th>
+												</tr>
+											</thead>
+										</table>
 									</div>
 								</div>
 							</div>
 						</div>
-						{% endif %}
 						{% if history.scan_type.vulnerability_scan %}
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-activity-four">
@@ -1262,6 +1204,10 @@ $("#interesting_subdomain_accordion").click(function() {
 $("#interesting_endpoint_accordion").click(function() {
 	get_interesting_endpoint({{scan_history_id}});
 });
+
+get_subdomain_changes({{scan_history_id}});
+
+get_endpoint_changes({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

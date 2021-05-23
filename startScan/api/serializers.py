@@ -17,6 +17,18 @@ class SubdomainChangesSerializer(serializers.ModelSerializer):
         return Subdomain.change
 
 
+class EndPointChangesSerializer(serializers.ModelSerializer):
+
+    change = serializers.SerializerMethodField('get_change')
+
+    class Meta:
+        model = EndPoint
+        fields = '__all__'
+
+    def get_change(self, EndPoint):
+        return EndPoint.change
+
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
