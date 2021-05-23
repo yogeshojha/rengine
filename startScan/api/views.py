@@ -46,6 +46,12 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
                 return changes
         return self.queryset
 
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        else:
+            return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
 
 class EndPointChangesViewSet(viewsets.ModelViewSet):
     '''
@@ -58,6 +64,7 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         changes = req.query_params.get('changes')
+
         domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
         scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(fetch_url=True).filter(id__lte=scan_id).filter(scan_status=2)
         if scan_history.count() > 1:
@@ -76,6 +83,12 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
                 changes = added_endpoints.union(removed_endpoints)
                 return changes
         return self.queryset
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        else:
+            return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):
