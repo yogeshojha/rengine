@@ -5,10 +5,16 @@ from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 from reNgine.common_func import *
 
 
-class AddedSubdomainSerializer(serializers.ModelSerializer):
+class SubdomainChangesSerializer(serializers.ModelSerializer):
+
+    change = serializers.SerializerMethodField('get_change')
+
     class Meta:
         model = Subdomain
-        fields = ['name']
+        fields = '__all__'
+
+    def get_change(self, Subdomain):
+        return Subdomain.change
 
 
 class SubdomainSerializer(serializers.ModelSerializer):

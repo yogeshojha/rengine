@@ -5,6 +5,7 @@ from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 from reNgine.common_func import *
 
 from django.db.models import Q
+from django.db.models import CharField, Value
 
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -12,26 +13,43 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
-class AddedSubdomainViewSet(viewsets.ModelViewSet):
+class SubdomainChangesViewSet(viewsets.ModelViewSet):
     '''
         To get the new subdomains, we will look for ScanHistory with
         subdomain_discovery = True and the status of the last scan has to be
         successful and calculate difference
     '''
     queryset = Subdomain.objects.none()
-    serializer_class = AddedSubdomainSerializer
+    serializer_class = SubdomainChangesSerializer
 
     def get_queryset(self):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        changes = req.query_params.get('changes')
         domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
         scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id).filter(scan_status=2)
         if scan_history.count() > 1:
             last_scan = scan_history.order_by('-start_scan_date')[1]
             scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
             scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
-            return scanned_host_q1.difference(scanned_host_q2)
+            added_subdomain = scanned_host_q1.difference(scanned_host_q2)
+            removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
+            if changes == 'added':
+                return Subdomain.objects.filter(scan_history=scan_id).filter(name__in=added_subdomain).annotate(change=Value('added', output_field=CharField()))
+            elif changes == 'removed':
+                return Subdomain.objects.filter(scan_history=last_scan).filter(name__in=removed_subdomains).annotate(change=Value('removed', output_field=CharField()))
+            else:
+                added_subdomain = Subdomain.objects.filter(scan_history=scan_id).filter(name__in=added_subdomain).annotate(change=Value('added', output_field=CharField()))
+                removed_subdomains = Subdomain.objects.filter(scan_history=last_scan).filter(name__in=removed_subdomains).annotate(change=Value('removed', output_field=CharField()))
+                changes = added_subdomain.union(removed_subdomains)
+                return changes
         return self.queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        # do your customization here
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response({'test': serializer.data})
 
 
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):
