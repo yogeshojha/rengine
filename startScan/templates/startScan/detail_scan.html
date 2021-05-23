@@ -20,6 +20,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
@@ -302,11 +303,11 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class=""><span class="badge badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes</h6>
+									<h6 class=""><div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div><span class="badge badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes</h6>
 									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills" id="subdomain-added-count"></span>
-										<span class="badge badge-danger badge-pills" id="subdomain-removed-count"></span>
+										<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
+										<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
 									</p>
 								</div>
 								<div class="widget-content">
@@ -330,11 +331,11 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class=""><span class="badge badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes</h6>
+									<h6 class=""><div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div><span class="badge badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes</h6>
 									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills" id="endpoint-added-count"></span>
-										<span class="badge badge-danger badge-pills" id="endpoint-removed-count"></span>
+										<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
+										<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
 									</p>
 								</div>
 

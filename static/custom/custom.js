@@ -646,6 +646,7 @@ function get_subdomain_changes_values(scan_id){
 		if (added_count) $("#subdomain-added-count").html(`${added_count} Subdomains were added`);
 		if (removed_count) $("#subdomain-removed-count").html(`${removed_count} Subdomains were removed`);
 		$("#subdomain_change_count").html(added_count+removed_count);
+		$("#subdomain-changes-loader").remove();
 		get_subdomain_changes(scan_id);
 	});
 }
@@ -672,6 +673,7 @@ function get_endpoint_changes_values(scan_id){
 		if (added_count) $("#endpoint-added-count").html(`${added_count} Endpoints were added`);
 		if (removed_count) $("#endpoint-removed-count").html(`${removed_count} Endpoints were removed`);
 		$("#endpoint_change_count").html(added_count+removed_count);
+		$("#endpoint-changes-loader").remove();
 		get_endpoint_changes(scan_id);
 	});
 }
