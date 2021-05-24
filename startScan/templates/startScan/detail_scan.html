@@ -64,12 +64,8 @@ Detailed Scan Results for {{history.domain_name}}
 					<div class="w-detail">
 						<p class="w-stats">{{subdomain_count|intcomma}}
 							<span class="float-right">
-								{% if new_subdomains %}
-								<span class="badge badge-pills badge-success bs-tooltip" title="{{new_subdomains.count}} Subdomains Added">+{{new_subdomains.count}}</span>&nbsp;
-								{% endif %}
-								{% if removed_subdomains %}
-								<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_subdomains.count}} Subdomains Removed">-{{removed_subdomains.count}}</span>
-								{% endif %}
+								<span class="badge badge-pills badge-success bs-tooltip m-1" id="added_subdomain_badge"></span>
+								<span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_subdomain_badge"></span>
 							</span>
 						</p>
 						<p class="w-title">Subdomains Discovered</p>
@@ -82,12 +78,8 @@ Detailed Scan Results for {{history.domain_name}}
 					<div class="w-detail">
 						<p class="w-stats">{{endpoint_count|intcomma}}
 							<span class="float-right">
-								{% if new_urls %}
-								<span class="badge badge-pills badge-success bs-tooltip" title="{{new_urls.count}} Endpoints Added">+{{new_urls.count}}</span>&nbsp;
-								{% endif %}
-								{% if removed_urls %}
-								<span class="badge badge-pills badge-danger bs-tooltip" title="{{removed_urls.count}} Endpoints Removed">-{{removed_urls.count}}</span>
-								{% endif %}
+								<span class="badge badge-pills badge-success bs-tooltip m-1" id="added_endpoint_badge"></span>
+								<span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_endpoint_badge"></span>
 							</span>
 						</p>
 						<p class="w-title">Endpoints Discovered</p>
@@ -429,7 +421,6 @@ Detailed Scan Results for {{history.domain_name}}
 											<th>IS CDN</th>
 											<th>CNAME</th>
 											<th>Checked</th>
-											<th>Is Intereting</th>
 											<th>Info</th>
 											<th>Low</th>
 											<th>Medium</th>
@@ -629,7 +620,6 @@ $("#pills-subdomain-tab").click(function() {
 			{
 				"render": function ( data, type, row ) {
 					badges = '';
-					interesting_badge = '';
 					cdn_badge = '';
 					tech_badge = '';
 					if (row['technology_stack']){
@@ -795,6 +785,7 @@ $("#pills-subdomain-tab").click(function() {
 		},
 	});
 });
+
 {% if history.dir_file_search %}
 $("#pills-directories-tab").click(function() {
 	var history_table = $('#directories-table').DataTable({
@@ -1210,6 +1201,8 @@ $("#interesting_endpoint_accordion").click(function() {
 
 get_subdomain_changes_values({{scan_history_id}});
 get_endpoint_changes_values({{scan_history_id}});
+
+get_interesting_count({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

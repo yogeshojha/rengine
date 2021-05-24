@@ -643,8 +643,16 @@ function get_subdomain_changes_values(scan_id){
 				removed_count++;
 			}
 		}
-		if (added_count) $("#subdomain-added-count").html(`${added_count} Subdomains were added`);
-		if (removed_count) $("#subdomain-removed-count").html(`${removed_count} Subdomains were removed`);
+		if (added_count){
+			$("#subdomain-added-count").html(`${added_count} Subdomains were added`);
+			$("#added_subdomain_badge").html(`+${added_count}`);
+			$("#added_subdomain_badge").attr("data-original-title", added_count + " Subdomains were added");
+		}
+		if (removed_count){
+			$("#subdomain-removed-count").html(`${removed_count} Subdomains were removed`);
+			$("#removed_subdomain_badge").html(`-${removed_count}`);
+			$("#removed_subdomain_badge").attr("data-original-title", removed_count + " Subdomains were removed");
+		}
 		$("#subdomain_change_count").html(added_count+removed_count);
 		$("#subdomain-changes-loader").remove();
 		get_subdomain_changes(scan_id);
@@ -670,10 +678,29 @@ function get_endpoint_changes_values(scan_id){
 				removed_count++;
 			}
 		}
-		if (added_count) $("#endpoint-added-count").html(`${added_count} Endpoints were added`);
-		if (removed_count) $("#endpoint-removed-count").html(`${removed_count} Endpoints were removed`);
+		if (added_count){
+			$("#endpoint-added-count").html(`${added_count} Endpoints were added`);
+			$("#added_endpoint_badge").html(`+${added_count}`);
+			$("#added_endpoint_badge").attr("data-original-title", added_count + " Endpoints were added");
+		}
+		if (removed_count){
+			$("#endpoint-removed-count").html(`${removed_count} Endpoints were removed`);
+			$("#removed_endpoint_badge").html(`-${removed_count}`);
+			$("#removed_endpoint_badge").attr("data-original-title", removed_count + " Endpoints were added");
+		}
 		$("#endpoint_change_count").html(added_count+removed_count);
 		$("#endpoint-changes-loader").remove();
 		get_endpoint_changes(scan_id);
+	});
+}
+
+function get_interesting_count(scan_id){
+	$.getJSON(`../api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
+		$('#interesting_subdomain_count_badge').empty();
+		$('#interesting_subdomain_count_badge').html(`<span class="badge badge-danger">${data.length}</span>`);
+	});
+	$.getJSON(`../api/listInterestingEndpoints/?scan_id=${scan_id}&no_page`, function(data) {
+		$('#interesting_endpoint_count_badge').empty();
+		$('#interesting_endpoint_count_badge').html(`<span class="badge badge-danger">${data.length}</span>`);
 	});
 }

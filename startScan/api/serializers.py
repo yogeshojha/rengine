@@ -29,6 +29,20 @@ class EndPointChangesSerializer(serializers.ModelSerializer):
         return EndPoint.change
 
 
+class InterestingSubdomainSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subdomain
+        fields = ['name']
+
+
+class InterestingEndPointSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EndPoint
+        fields = ['http_url']
+
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
@@ -45,7 +59,6 @@ class SubdomainSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subdomain
         fields = '__all__'
-        # lookup_field = 'scan_history'
 
     def get_is_interesting(self, Subdomain):
         return get_interesting_subdomains(

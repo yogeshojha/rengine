@@ -99,12 +99,20 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
+        if 'only_subdomains' in self.request.query_params:
+            self.serializer_class = InterestingSubdomainSerializer
         if scan_id:
             return get_interesting_subdomains(scan_history=scan_id)
         elif target_id:
             return get_interesting_subdomains(target=target_id)
         else:
             return get_interesting_subdomains()
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        else:
+            return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class InterestingEndpointViewSet(viewsets.ModelViewSet):
@@ -115,12 +123,20 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
+        if 'only_endpoints' in self.request.query_params:
+            self.serializer_class = InterestingEndPointSerializer
         if scan_id:
             return get_interesting_endpoint(scan_history=scan_id)
         elif target_id:
             return get_interesting_endpoint(target=target_id)
         else:
             return get_interesting_endpoint()
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        else:
+            return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class SubdomainViewset(viewsets.ModelViewSet):
