@@ -17,7 +17,7 @@ services:
         restart: always
         image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
         build: .
-        command: gunicorn reNgine.wsgi:application --bind 0.0.0.0:8000
+        command: gunicorn reNgine.wsgi:application --bind 0.0.0.0:8000 --limit-request-line 8000
         volumes:
             - .:/app
             - static_volume:/app/staticfiles
