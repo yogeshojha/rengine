@@ -19,15 +19,6 @@
   {% endblock custom_js_css_link %}
 </head>
 <body>
-  <div id="load_screen">
-    <div class="loader">
-      <div class="loader-content">
-        <div class="spinner-grow align-self-center">
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- TOP NAVBAR BEGIN -->
   {% include 'base/_items/top_nav.html' %}
   <!-- TOP NAVBAR ENDS -->
@@ -86,7 +77,7 @@
 </div>
 <!-- END MAIN CONTAINER -->
 
-<script src="{% static 'assets/js/libs/jquery-3.1.1.min.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="{% static 'bootstrap/js/popper.min.js' %}"></script>
 <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>

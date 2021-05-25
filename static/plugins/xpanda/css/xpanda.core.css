@@ -1,0 +1,171 @@
+/* ||||||||||||| RESET ||||||||||||| */
+/* ====== Body ====== */
+body { margin: 0; }
+
+/* ---------------------------------------------------------------- */
+
+/* ||||||||||||| MAIN ||||||||||||| */
+/* ====== Wrapper ====== */
+.xpanda { width: 100%; margin: auto; clear: left; }
+/* - Wrapper - Preloader - */
+.xpanda.x-preloader { position: relative; height: 400px; overflow: hidden; }
+.xpanda.x-preloader:before { content: ''; position: absolute; background: #ffffff url(../assets/spinner.gif) no-repeat 50% 50%; background-size: 34px; width: 100%; height: 100%; top: 0; left: 0; z-index: 1000; }
+
+/* ====== Item Row Wrapper ====== */
+.x-item-wrap { display: flex; clear: left; position: relative; }
+
+/* ====== Item - Defaults ====== */
+.x-item { float: left; position: relative; }
+.x-item > a { display: block; position: relative; }
+.x-item > a img { height: 200px; width: auto; display: block; }
+/* ====== Item - Javascript Enabled ====== */
+.x-initiated .x-item { width: auto; float: none; }
+.x-initiated .x-item > a img { width: 100%; height: auto; opacity: 1; }
+
+/* - Item - Hover - */
+@media (min-width: 769px) {
+    .x-initiated .x-item:hover > a img { opacity: 0.8; }
+}
+
+/* - Item - Is Active - */
+.x-initiated .x-item.x-is-active > a img { opacity: 1; }
+
+/* - Item - Is Not Active - */
+.x-initiated .x-item.x-is-not-active { }
+
+/* - Item - Lazyloader Enabled - */
+.x-initiated.x-lazyload-thumbnail .x-item > a:before { content: ''; position: absolute; background: rgba(0, 0, 0, 0.5) url(../assets/spinner.gif) no-repeat 50% 50%; background-size: 34px; width: 100%; height: 100%; top: 0; left: 0; z-index: 100; opacity: 1;
+    -webkit-transition: opacity 0.4s ease-in-out 0.1s;
+    -moz-transition: opacity 0.4s ease-in-out 0.1s;
+    -ms-transition: opacity 0.4s ease-in-out 0.1s;
+    -o-transition: opacity 0.4s ease-in-out 0.1s;
+    transition: opacity 0.4s ease-in-out 0.1s;
+}
+.x-initiated.x-lazyload-thumbnail .x-item.x-is-loaded > a:before { opacity: 0; }
+
+/* ====== Item Content ====== */
+.x-item .x-content { display: none; }
+
+/* ---------------------------------------------------------------- */
+
+/* ||||||||||||| SPACER ||||||||||||| */
+/* ====== Spacer (Outside) - Javascript Disabled ====== */
+.x-spacer-outside { float: left; width: 100%; background: #000000; color: #ffffff; text-align: center; padding: 10px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+/* ====== Spacer (Outside) - Javascript Enabled ====== */
+.x-spacer-outside.x-initiated { display: none; }
+
+/* ====== Spacer (Inline) - Javascript Enabled ====== */
+.x-spacer-inside { background: #000000; color: #ffffff; text-align: center; }
+/* - Spacer (Inline) - Is Empty - */
+.x-spacer-inside.x-spacer-empty { background: none; }
+
+/* ---------------------------------------------------------------- */
+
+/* ||||||||||||| PLACEHOLDER ||||||||||||| */
+/* ====== Placeholder ====== */
+.x-placeholder { flex: 0 0 100%; position: relative; overflow: hidden;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.x-indicator { width: 16px; height: 10px; display: block; position: absolute; top: 0px; opacity: 0; }
+.x-indicator:after { content: ''; display: block; position: absolute; left: 0; bottom: 0; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 8px solid #CCCCCC; }
+.x-placeholder-inner { position: relative; opacity: 0; }
+/* - Placeholder - Is Expanded - */
+.x-placeholder.x-is-expanded { height: 0; }
+.x-placeholder.x-is-expanded .x-placeholder-inner { width: 100%; background: #CCCCCC; }
+@media (min-width: 992px) {
+    .x-placeholder.x-is-expanded .x-placeholder-inner { display: flex; }
+    .x-placeholder.x-is-expanded .x-placeholder-inner .x-updated-content { flex: 1 0 auto; width: 100%; display: flex; }
+}
+
+/* ====== Placeholder Contents - Defaults ====== */
+/* - Asset - Default */
+.x-placeholder.x-is-expanded .x-asset { margin: 0; width: 100%; position: relative; }
+.x-placeholder.x-is-expanded .x-asset.x-asset-left { width: 100%; order: 1; }
+.x-placeholder.x-is-expanded .x-asset.x-asset-right { width: 100%; order: 2; }
+.x-placeholder.x-is-expanded .x-asset img { width: 100%; height: auto; display: block; margin: 0 auto; position: relative; z-index: 0; }
+@media (min-width: 992px) {
+    .x-placeholder.x-is-expanded .x-asset.x-asset-left { width: 50%; flex: 1 0 auto; }
+    .x-placeholder.x-is-expanded .x-asset.x-asset-right { width: 50%; flex: 1 0 auto; }
+    .x-placeholder.x-is-expanded .x-asset.x-asset-center { width: 75%; margin-left: 12.5%; }
+}
+@media (min-width: 1200px) {
+    .x-placeholder.x-is-expanded .x-asset.x-asset-center { width: 60%; margin-left: 20%; }
+}
+@media (min-width: 1400px) {
+    .x-placeholder.x-is-expanded .x-asset.x-asset-center { width: 66.66667%; margin-left: 16.66667%; }
+}
+/* - Asset - Lazyloader Enabled */
+.x-initiated.x-lazyload-asset .x-placeholder.x-is-expanded .x-asset:before { content: ''; display: block; position: absolute; opacity: 1; z-index: 10; width: 100%; height: 100%; top: 0; left: 0; background: url(../assets/spinner.gif) no-repeat 50% 50%; background-size: 34px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    -webkit-transition: opacity 0.4s ease-in-out 0.1s;
+    -moz-transition: opacity 0.4s ease-in-out 0.1s;
+    -ms-transition: opacity 0.4s ease-in-out 0.1s;
+    -o-transition: opacity 0.4s ease-in-out 0.1s;
+    transition: opacity 0.4s ease-in-out 0.1s;
+}
+.x-initiated.x-lazyload-asset .x-placeholder.x-is-expanded .x-asset.x-is-loaded:before { opacity: 0; }
+.x-initiated.x-lazyload-asset .x-placeholder.x-is-expanded .x-asset.x-was-loaded:before { opacity: 0; }
+
+/* - Info - */
+.x-placeholder.x-is-expanded .x-info { padding-left: 20px; padding-right: 20px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+.x-placeholder.x-is-expanded .x-info img { width: 100%; height: auto; display: block; }
+.x-placeholder.x-is-expanded .x-info.x-info-left { width: 100%; padding: 40px 20px 20px 20px; order: 1; }
+.x-placeholder.x-is-expanded .x-info.x-info-right { width: 100%; padding: 0 20px 20px 20px; order: 2; }
+.x-placeholder.x-is-expanded .x-info.x-info-center { width: 100%; margin: auto; padding: 40px 60px 40px 60px; }
+@media (min-width: 768px) {
+    .x-placeholder.x-is-expanded .x-info.x-info-center { padding: 60px 80px 60px 80px; }
+}
+@media (min-width: 992px) {
+    .x-placeholder.x-is-expanded .x-info.x-info-left { width: 50%; }
+    .x-placeholder.x-is-expanded .x-info.x-info-right { width: 50%; padding-top: 40px; }
+}
+
+/* ====== Placeholder Controls ====== */
+/* - Control - Previous - */
+.x-placeholder .x-prev { display: block; width: 40px; height: 40px; position: absolute; top: 0px; cursor: pointer; z-index: 9999; left: 0px;
+    background-image: url(../assets/arrow-left.svg);
+    background-color: #000000;
+    background-size: 7px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+/* - Control - Next - */
+.x-placeholder .x-next { display: block; width: 40px; height: 40px; position: absolute; top: 0px; cursor: pointer; z-index: 9999; right: 42px;
+    background-image: url(../assets/arrow-right.svg);
+    background-color: #000000;
+    background-size: 7px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+/* - Control - Close - */
+.x-placeholder .x-close { display: block; width: 40px; height: 40px; position: absolute; top: 0; right: 0; cursor: pointer; z-index: 9999;
+    background-image: url(../assets/close.svg);
+    background-color: #000000;
+    background-size: 12px;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+/* - Control Arrow Disabled - */
+.x-arrow-disabled { opacity: 0.5; cursor: default !important; }
+@media (min-width: 768px) {
+    /* - Control - Previous - */
+    .x-placeholder .x-prev { width: 50px; height: 50px; background-size: 10px; }
+    /* - Control - Next - */
+    .x-placeholder .x-next { width: 50px; height: 50px; background-size: 10px; right: 52px; }
+    /* - Control - Close - */
+    .x-placeholder .x-close { width: 50px; height: 50px; background-size: 16px; }
+}
+
+/* ---------------------------------------------------------------- */

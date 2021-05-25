@@ -22,6 +22,9 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/xpanda/css/xpanda.core.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/xpanda/css/xpanda.gallery2.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -120,6 +123,9 @@ Detailed Scan Results for {{history.domain_name}}
 				</li>
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
+				</li>
+				<li class="nav-item">
+					<a class="nav-link" id="pills-screenshot-tab" data-toggle="pill" href="#pills-screenshot" role="tab" aria-controls="pills-screenshot" aria-selected="false">Screenshots</a>
 				</li>
 				{% if history.dir_file_search %}
 				<li class="nav-item">
@@ -432,6 +438,33 @@ Detailed Scan Results for {{history.domain_name}}
 							</div>
 						</div>
 					</div>
+					<div class="tab-pane fade active" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
+						<div id="xpanda-1" class="xpanda x-lazyload-thumbnail x-lazyload-asset x-preloader" data-instance="1">
+							{% for subdomain in screenshot_subdomains %}
+							<div class="x-item">
+								<a href="/media/{{screenshot_path}}" target="_blank">
+									<img src="/media/{{screenshot_path}}" data-src="/media/{{screenshot_path}}" alt="Felix Russell-Saw">
+									<div class="x-thumbnail-content">
+										<p>{{subdomain.name}}</p>
+									</div>
+								</a>
+								<div class="x-content">
+									<div class="x-asset x-asset-left">
+										<img src="/media/{{screenshot_path}}" data-src="/media/{{screenshot_path}}" alt="{{subdomain.name}}">
+									</div>
+									<div class="x-info x-info-right">
+										<div class="x-info-content">
+											{% if subdomain.page_title %}
+											<h3>{{subdomain.page_title}}</h3>
+											{% endif %}
+											<h4>{{subdomain.name}}</h4>
+										</div>
+									</div>
+								</div>
+							</div>
+							{% endfor %}
+						</div>
+					</div>
 					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
@@ -511,6 +544,8 @@ Detailed Scan Results for {{history.domain_name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+<script src="{% static 'plugins/xpanda/js/jquery.xpanda.min.js' %}"></script>
 
 <script type="text/javascript">
 // Collapse Sidebar
@@ -622,6 +657,7 @@ $("#pills-subdomain-tab").click(function() {
 					badges = '';
 					cdn_badge = '';
 					tech_badge = '';
+					interesting_badge = '';
 					if (row['technology_stack']){
 						tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
 					}
@@ -1189,6 +1225,38 @@ $("#pills-endpoints-tab").click(function() {
 	get_endpoints({{scan_history_id}}, null);
 });
 
+// load screenshots
+$("#xpanda-1").xpanda({
+	breakpoints: {
+		xs: {
+			itemsPerRow: 2
+		},
+		sm: {
+			itemsPerRow: 2
+		},
+		md: {
+			itemsPerRow: 3
+		},
+		lg: {
+			itemsPerRow: 3
+		},
+		xl: {
+			itemsPerRow: 4
+		},
+		xx: {
+			itemsPerRow: 6
+		}
+	},
+	element: {
+		equalThumbSizes: false,
+		spaceBetweenItems: 20,
+		spaceBetweenRows: 20
+	},
+	placeholder: {
+		marginSides: 0
+	}
+});
+
 // get interesting subdomain
 $("#interesting_subdomain_accordion").click(function() {
 	get_interesting_subdomains({{scan_history_id}});
@@ -1212,6 +1280,6 @@ $("#pills-{{pattern}}-tab").click(function() {
 });
 {% endfor %}
 {% endif %}
-
 </script>
+
 {% endblock page_level_script %}
