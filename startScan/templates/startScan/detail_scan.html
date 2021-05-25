@@ -442,15 +442,15 @@ Detailed Scan Results for {{history.domain_name}}
 						<div id="xpanda-1" class="xpanda x-lazyload-thumbnail x-lazyload-asset x-preloader" data-instance="1">
 							{% for subdomain in screenshot_subdomains %}
 							<div class="x-item">
-								<a href="/media/{{screenshot_path}}" target="_blank">
-									<img src="/media/{{screenshot_path}}" data-src="/media/{{screenshot_path}}" alt="Felix Russell-Saw">
+								<a href="/media/{{subdomin.screenshot_path}}" target="_blank">
+									<img src="/media/{{subdomin.screenshot_path}}" data-src="/media/{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
 									<div class="x-thumbnail-content">
 										<p>{{subdomain.name}}</p>
 									</div>
 								</a>
 								<div class="x-content">
 									<div class="x-asset x-asset-left">
-										<img src="/media/{{screenshot_path}}" data-src="/media/{{screenshot_path}}" alt="{{subdomain.name}}">
+										<img src="/media/{{subdomin.screenshot_path}}" data-src="/media/{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
 									</div>
 									<div class="x-info x-info-right">
 										<div class="x-info-content">
