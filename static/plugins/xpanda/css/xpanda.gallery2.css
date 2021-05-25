@@ -164,8 +164,8 @@
 .x-indicator { width: 60px; }
 .x-indicator:after { margin-left: 20px; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 30px solid #ffffff; }
 /* - Placeholder - Is Expanded - */
-.x-placeholder.x-is-expanded { z-index: 1; }
-.x-placeholder.x-is-expanded .x-placeholder-inner { background: #232629; }
+.x-placeholder.x-is-expanded { z-index: 1; height: auto;}
+.x-placeholder.x-is-expanded .x-placeholder-inner { background: #e3e4eb; height: auto; }
 
 /* ====== Placeholder Contents ====== */
 /* - Asset */
@@ -197,7 +197,7 @@
     .x-placeholder.x-is-expanded .x-asset.x-asset-left img { max-height: 500px; width: auto; max-width: 100%; }
 }
 /* - Info - */
-.x-placeholder.x-is-expanded .x-info .x-info-content { color: #ffffff; margin: 20px 0 0 0; }
+.x-placeholder.x-is-expanded .x-info .x-info-content { height: auto; color: #ffffff; margin: 20px 0 0 0; }
 .x-placeholder.x-is-expanded .x-info .x-info-content h3 { font-weight: 200; font-size: 30px; margin-bottom: 0; margin-top: 0; color: #3085a3; }
 .x-placeholder.x-is-expanded .x-info .x-info-content small { font-weight: 300; font-size: 12px; }
 .x-placeholder.x-is-expanded .x-info .x-info-content p { font-weight: 300; font-size: 16px; line-height: 1.6em; }

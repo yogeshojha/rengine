@@ -444,21 +444,45 @@ Detailed Scan Results for {{history.domain_name}}
 							{% for subdomain in screenshot_subdomains %}
 							<div class="x-item">
 								<a href="/media/{{subdomain.screenshot_path}}" target="_blank">
-									<img src="/media/{{subdomain.screenshot_path}}" data-src="/media/{{subdomain.screenshot_path}}" alt="{{subdomain.name}}">
+									<img src="/media/{{subdomain.screenshot_path}}" data-src="/media/{{subdomain.screenshot_path}}" alt="{{subdomain.name}}" onerror="removeImageElement(this)">
 									<div class="x-thumbnail-content">
-										<p>{{subdomain.name}}{{subdomain.screenshot_path}}</p>
+										<p>{{subdomain.name}}</p>
 									</div>
 								</a>
 								<div class="x-content">
 									<div class="x-asset x-asset-left">
-										<img src="/media/{{subdomin.screenshot_path}}" data-src="/media/{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
+										<img src="/media/{{subdomain.screenshot_path}}" data-src="/media/{{subdomain.screenshot_path}}" alt="{{subdomain.name}}" onerror="removeImageElement(this)">
 									</div>
 									<div class="x-info x-info-right">
 										<div class="x-info-content">
+											<h4 class='text-info'>
+												{% if subdomain.http_url %}
+												<a href="{{subdomain.http_url}}" class="text-info" target="_blank">{{subdomain.name}}</a>
+												{% else %}
+												<a href="https://{{subdomain.name}}" class="text-info" target="_blank">{{subdomain.name}}</a>
+												{% endif %}
+												{% if subdomain.http_status >= 200 and subdomain.http_status < 300 %}
+											</h4>
+											<span class='badge badge-pills badge-success'>{{subdomain.http_status}}</span>
+											{% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %}
+											<span class='badge badge-pills badge-warning'>{{subdomain.http_status}}</span>
+											{% else %}
+											<span class='badge badge-pills badge-danger'>{{subdomain.http_status}}</span>
+											{% endif %}</h4>
 											{% if subdomain.page_title %}
-											<h3>{{subdomain.page_title}}</h3>
+											<h5 class="text-muted">{{subdomain.page_title}}</h5>
 											{% endif %}
-											<h4>{{subdomain.name}}</h4>
+											<h5>IP Addresses:</h5>
+											{% for ip in subdomain.get_ip_addressess %}
+											<span class="badge badge-pills outline-badge-info">{{ip.address}}</span>
+											{% endfor %}
+											{% if subdomain.get_ports %}
+											<h6>Open Ports:</h6>
+											{% for port in subdomain.get_ports %}
+											<span class='m-1 badge badge-pills outline-badge-info bs-tooltip' title="{{port.description}}">{{port.number}}/{{port.service_name}}</span>
+											{% endfor %}
+											{% endif %}
+											<h6 class="text-muted">Technology Used: {{subdomain.technology_stack}}</h6>
 										</div>
 									</div>
 								</div>
@@ -546,7 +570,7 @@ Detailed Scan Results for {{history.domain_name}}
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
-<script src="{% static 'plugins/xpanda/js/jquery.xpanda.min.js' %}"></script>
+<script src="{% static 'plugins/xpanda/js/jquery.xpanda.js' %}"></script>
 
 <script type="text/javascript">
 // Collapse Sidebar
