@@ -443,15 +443,15 @@ Detailed Scan Results for {{history.domain_name}}
 						<div id="xpanda-1" class="xpanda x-lazyload-thumbnail x-lazyload-asset x-preloader" data-instance="1">
 							{% for subdomain in screenshot_subdomains %}
 							<div class="x-item">
-								<a href="/media{{subdomin.screenshot_path}}" target="_blank">
-									<img src="/media{{subdomin.screenshot_path}}" data-src="/media{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
+								<a href="/media/{{subdomin.screenshot_path}}" target="_blank">
+									<img src="/media/{{subdomin.screenshot_path}}" data-src="/media/{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
 									<div class="x-thumbnail-content">
 										<p>{{subdomain.name}}{{subdomain.screenshot_path}}</p>
 									</div>
 								</a>
 								<div class="x-content">
 									<div class="x-asset x-asset-left">
-										<img src="/media{{subdomin.screenshot_path}}" data-src="/media{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
+										<img src="/media/{{subdomin.screenshot_path}}" data-src="/media/{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
 									</div>
 									<div class="x-info x-info-right">
 										<div class="x-info-content">
@@ -769,7 +769,7 @@ $("#pills-subdomain-tab").click(function() {
 				"render": function ( data, type, row ) {
 					if (data){
 						//return lightbox with caption as http link
-						return `<a href="/media`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+						return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
 					}
 					return "";
 				},
