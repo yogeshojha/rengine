@@ -141,7 +141,7 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
         if VISUAL_IDENTIFICATION in yaml_configuration:
             activity_id = create_scan_activity(
                 task, "Visual Recon - Screenshot", 1)
-            grab_screenshot(task, yaml_configuration, results_dir, activity_id)
+            grab_screenshot(task, yaml_configuration, current_scan_dir, activity_id)
             update_last_activity(activity_id, 2)
 
         if(task.port_scan):
