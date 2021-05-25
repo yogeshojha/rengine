@@ -524,27 +524,23 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
 
     try:
         if os.path.isfile(aqua_json_path):
+            logger.info('Gathering aquatone results')
             with open(aqua_json_path, 'r') as json_file:
                 data = json.load(json_file)
 
             for host in data['pages']:
-                sub_domain = Subdomain.objects.get(
+                try:
+                    sub_domain = Subdomain.objects.get(
                     scan_history__id=task.id,
                     name=data['pages'][host]['hostname'])
-                # list_ip = data['pages'][host]['addrs']
-                # ip_string = ','.join(list_ip)
-                # sub_domain.ip_address = ip_string
-                sub_domain.screenshot_path = results_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                sub_domain.http_header_path = results_dir + \
-                    '/aquascreenshots/' + data['pages'][host]['headersPath']
-                tech_list = []
-                if data['pages'][host]['tags'] is not None:
-                    for tag in data['pages'][host]['tags']:
-                        tech_list.append(tag['text'])
-                tech_string = ','.join(tech_list)
-                sub_domain.technology_stack = tech_string
-                sub_domain.save()
+                    if data['pages'][host]['hasScreenshot']:
+                        sub_domain.screenshot_path = results_dir + \
+                        '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                        sub_domain.http_header_path = results_dir + \
+                        '/aquascreenshots/' + data['pages'][host]['headersPath']
+                        sub_domain.save()
+                except Exception as e:
+                    continue
     except Exception as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)

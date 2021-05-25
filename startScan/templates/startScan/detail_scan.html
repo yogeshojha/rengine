@@ -423,10 +423,11 @@ Detailed Scan Results for {{history.domain_name}}
 											<th>Screenshot</th>
 											<th>Response Time</th>
 											<th>Technology</th>
+											<th>Checked</th>
 											<th>HTTP URL</th>
 											<th>IS CDN</th>
 											<th>CNAME</th>
-											<th>Checked</th>
+											<th>is_interesting</th>
 											<th>Info</th>
 											<th>Low</th>
 											<th>Medium</th>
@@ -445,7 +446,7 @@ Detailed Scan Results for {{history.domain_name}}
 								<a href="/media{{subdomin.screenshot_path}}" target="_blank">
 									<img src="/media{{subdomin.screenshot_path}}" data-src="/media{{subdomin.screenshot_path}}" alt="{{subdomain.name}}">
 									<div class="x-thumbnail-content">
-										<p>{{subdomain.name}}</p>
+										<p>{{subdomain.name}}{{subdomain.screenshot_path}}</p>
 									</div>
 								</a>
 								<div class="x-content">
@@ -550,13 +551,6 @@ Detailed Scan Results for {{history.domain_name}}
 <script type="text/javascript">
 // Collapse Sidebar
 collapse_sidebar();
-
-function fetch_http_headers(id, http_header_path, screenshot_path){
-	$('#screenshot'+id).attr('src', '/media/'+screenshot_path);
-	fetch('/media/'+http_header_path)
-	.then(response => response.text())
-	.then(text => $("#tabsModal"+id+" #txt-file-content").text(text));
-}
 
 $("#pills-subdomain-tab").click(function() {
 	$('#subdomain_scan_results').DataTable({
@@ -775,7 +769,7 @@ $("#pills-subdomain-tab").click(function() {
 				"render": function ( data, type, row ) {
 					if (data){
 						//return lightbox with caption as http link
-						return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+						return `<a href="/media`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
 					}
 					return "";
 				},

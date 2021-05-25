@@ -77,7 +77,7 @@ def detail_scan(request, id=None):
         context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
         context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
 
-        context['screenshot_subdomains'] =  Subdomain.objects.filter(scan_history__id=id).exclude(screenshot_path__isnull=True,screenshot_path="")
+        context['screenshot_subdomains'] =  Subdomain.objects.filter(scan_history__id=id).exclude(screenshot_path__isnull=True)
 
     # badge count for gfs
     if history.used_gf_patterns:
