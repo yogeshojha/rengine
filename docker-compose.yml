@@ -22,9 +22,12 @@ services:
             - .:/app
             - static_volume:/app/staticfiles
             - media_volume:/app/tools/scan_results
+            - gf_patterns:/root/.gf
         depends_on:
             - db
             - redis
+            - celery
+            - celery-beat
         networks:
             rengine_network:
                 aliases:
@@ -50,6 +53,7 @@ services:
             - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
             - static_volume:/app/staticfiles
             - media_volume:/app/tools/scan_results
+            - gf_patterns:/root/.gf
         networks:
             - rengine_network
     redis:
@@ -66,6 +70,7 @@ services:
         volumes:
             - static_volume:/app/staticfiles
             - media_volume:/app/tools/scan_results
+            - gf_patterns:/root/.gf
         depends_on:
             - redis
         networks:
@@ -87,6 +92,7 @@ volumes:
     postgres_data:
     static_volume:
     media_volume:
+    gf_patterns:
 
 secrets:
     proxy.ca:
