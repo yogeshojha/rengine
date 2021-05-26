@@ -7,7 +7,6 @@ Detailed Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
@@ -26,6 +25,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -441,6 +441,11 @@ Detailed Scan Results for {{history.domain_name}}
 						</div>
 					</div>
 					<div class="tab-pane fade active" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
+						<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
+							<div class="w-100">
+								<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="Search Screenshots">
+							</div>
+						</div>
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
 								<div class="gridzy">
@@ -1228,6 +1233,7 @@ $("#pills-{{pattern}}-tab").click(function() {
 });
 {% endfor %}
 {% endif %}
+
 </script>
 
 {% endblock page_level_script %}

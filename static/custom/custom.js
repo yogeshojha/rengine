@@ -712,14 +712,17 @@ function get_screenshot(scan_id){
 	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
 	gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
 	gridzyElement.setAttribute('data-gridzy-desiredwidth', 450);
+	gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
 	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
+			figure.setAttribute('data-gridzySearchText', data[subdomain]['name']);
 			var newImage = document.createElement('img');
-			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
-			newImage.setAttribute('height', 800);
-			newImage.setAttribute('width', 800);
+			// newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
+			newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
+			newImage.setAttribute('height', 650);
+			newImage.setAttribute('width', 650);
 			var figcaption = document.createElement('figcaption');
 			figcaption.setAttribute('class', 'gridzyCaption');
 			http_status_badge = 'danger';
@@ -739,4 +742,49 @@ function get_screenshot(scan_id){
 			// figure.insertAfter(figure, gridzyElement.firstChild);
 		}
 	});
+
+	// search functionality
+	var gridzyElements = document.querySelectorAll('.gridzySkinBlank[data-gridzySearchField]'),
+	pos = gridzyElements.length;
+
+	console.log(gridzyElements);
+
+	while (pos--) {
+		(function(gridzyElement) {
+			var searchField = document.querySelector(gridzyElement.getAttribute('data-gridzySearchField'));
+			var gridzyInstance = gridzyElement.gridzy;
+			var gridzyItems = gridzyElement.children;
+
+			if (searchField) {
+				searchField.addEventListener('input', search);
+			}
+
+			function search() {
+				var pos = gridzyItems.length,
+				child,
+				itemContent,
+				found = false,
+				searchValue = searchField.value.toLowerCase();
+
+				if (searchValue) {
+					while (pos--) {
+						child = gridzyItems[pos];
+						itemContent = (child.getAttribute('data-gridzySearchText') || child.innerText).toLowerCase();
+						found = -1 < itemContent.search(searchValue);
+						child.classList[found ? 'add' : 'remove']('searchResult');
+					}
+					if (gridzyInstance.getOption('filter') !== '.searchResult') {
+						gridzyInstance.setOptions({filter:'.searchResult'});
+					}
+				} else {
+					while (pos--) {
+						gridzyItems[pos].classList.remove('searchResult');
+					}
+					if (gridzyInstance.getOption('filter') !== Gridzy.getDefaultOption('filter')) {
+						gridzyInstance.setOptions({filter:null});
+					}
+				}
+			}
+		})(gridzyElements[pos]);
+	}
 }
