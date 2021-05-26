@@ -715,6 +715,8 @@ function get_screenshot(scan_id){
 	gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
 	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
+		// add all http status as options
+
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
 			// currently lookup is supported only for http_status, page title & subdomain name,
@@ -726,6 +728,8 @@ function get_screenshot(scan_id){
 			newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
 			newImage.setAttribute('height', 650);
 			newImage.setAttribute('width', 650);
+			newImage.setAttribute('class', 'gridzyImage');
+			figure.setAttribute('class', 'http_' + data[subdomain]['http_status'])
 			var figcaption = document.createElement('figcaption');
 			figcaption.setAttribute('class', 'gridzyCaption');
 			http_status_badge = 'danger';
@@ -739,7 +743,6 @@ function get_screenshot(scan_id){
 			subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
 			http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
 			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
-			newImage.setAttribute('class', 'gridzyImage');
 			gridzyElement.appendChild(figure);
 			figure.appendChild(newImage);
 			figure.appendChild(figcaption);
@@ -750,8 +753,6 @@ function get_screenshot(scan_id){
 	// search functionality
 	var gridzyElements = document.querySelectorAll('.gridzySkinBlank[data-gridzySearchField]'),
 	pos = gridzyElements.length;
-
-	console.log(gridzyElements);
 
 	while (pos--) {
 		(function(gridzyElement) {
@@ -791,6 +792,22 @@ function get_screenshot(scan_id){
 			}
 		})(gridzyElements[pos]);
 	}
+
+	//filter functionality
+	var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
+	$('#myFilterControls').on('change', function() {
+		var values = $(this).val();
+		if(values.length){
+			gridzyInstance.setOptions({
+			filter: values
+		});
+		}
+		else{
+			gridzyInstance.setOptions({
+			filter: '*'
+		});
+		}
+	});
 }
 
 // Source: https://stackoverflow.com/a/54733055

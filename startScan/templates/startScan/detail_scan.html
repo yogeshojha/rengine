@@ -21,6 +21,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
@@ -448,7 +449,19 @@ Detailed Scan Results for {{history.domain_name}}
 						</div>
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
-								<div class="gridzy">
+								<div class="row">
+									<div class="col-xl-12 col-lg-12 col-sm-12 float-right">
+										<h6>Filters</h6>
+										<select class="form-control tagging" id="myFilterControls" multiple="multiple">
+											<option value="*">*</option>
+											<option value=".http_200">200</option>
+											<option value=".http_401">401</option>
+										</select>
+									</div>
+									<div class="col-xl-12 col-lg-12 col-sm-12">
+										<div class="gridzy">
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -529,6 +542,7 @@ Detailed Scan Results for {{history.domain_name}}
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
@@ -1218,6 +1232,19 @@ $("#interesting_endpoint_accordion").click(function() {
 // get screenshots
 $("#pills-screenshot-tab").click(function() {
 	get_screenshot({{scan_history_id}});
+
+	//animate search placeholder
+	const words = ["Search by Page Title   ",
+	"Search by HTTP Status   ",
+	"Search 'Interesting'   ",
+	"Search by Subdomain Name   "]
+
+	typingEffect(words, "screenshot-search", 0);
+
+	$(".tagging").select2({
+		tags: true
+	});
+
 });
 
 get_subdomain_changes_values({{scan_history_id}});
@@ -1235,13 +1262,9 @@ $("#pills-{{pattern}}-tab").click(function() {
 {% endif %}
 
 
-//animate search placeholder
-const words = ["Search by Page Title   ",
- "Search by HTTP Status   ",
- "Search 'Interesting'   ",
- "Search by Subdomain Name   "]
 
-typingEffect(words, "screenshot-search", 0);
+
+
 
 </script>
 
