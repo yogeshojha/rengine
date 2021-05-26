@@ -704,3 +704,39 @@ function get_interesting_count(scan_id){
 		$('#interesting_endpoint_count_badge').html(`<span class="badge badge-danger">${data.length}</span>`);
 	});
 }
+
+
+function get_screenshot(scan_id){
+	var gridzyElement = document.querySelector('.gridzy');
+	gridzyElement.setAttribute('class', 'gridzySkinBlank');
+	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
+	gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
+	gridzyElement.setAttribute('data-gridzy-desiredwidth', 450);
+	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
+	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
+		for (var subdomain in data) {
+			var figure = document.createElement('figure');
+			var newImage = document.createElement('img');
+			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['http_status']);
+			newImage.setAttribute('height', 800);
+			newImage.setAttribute('width', 800);
+			var figcaption = document.createElement('figcaption');
+			figcaption.setAttribute('class', 'gridzyCaption');
+			http_status_badge = 'danger';
+			if (data[subdomain]['http_status'] >=200 && data[subdomain]['http_status'] < 300){
+				http_status_badge = 'success';
+			}
+			else if (data[subdomain]['http_status'] >=300 && data[subdomain]['http_status'] < 400){
+				http_status_badge = 'warning';
+			}
+			subdomain_link = `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>`
+			http_status = `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>`;
+			figcaption.innerHTML = data[subdomain]['is_interesting'] ? subdomain_link + interesting_badge + http_status : subdomain_link + http_status;
+			newImage.setAttribute('class', 'gridzyImage');
+			gridzyElement.appendChild(figure);
+			figure.appendChild(newImage);
+			figure.appendChild(figcaption);
+			// figure.insertAfter(figure, gridzyElement.firstChild);
+		}
+	});
+}

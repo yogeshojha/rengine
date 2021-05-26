@@ -7,6 +7,7 @@ Detailed Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
@@ -21,10 +22,10 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/xpanda/css/xpanda.core.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/xpanda/css/xpanda.gallery2.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -440,54 +441,11 @@ Detailed Scan Results for {{history.domain_name}}
 						</div>
 					</div>
 					<div class="tab-pane fade active" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
-						<div id="xpanda-1" class="xpanda x-lazyload-thumbnail x-lazyload-asset x-preloader" data-instance="1">
-							{% for subdomain in screenshot_subdomains %}
-							<div class="x-item">
-								<a href="/media/{{subdomain.screenshot_path}}" target="_blank">
-									<img src="/media/{{subdomain.screenshot_path}}" data-src="/media/{{subdomain.screenshot_path}}" alt="{{subdomain.name}}" onerror="removeImageElement(this)">
-									<div class="x-thumbnail-content">
-										<p>{{subdomain.name}}</p>
-									</div>
-								</a>
-								<div class="x-content">
-									<div class="x-asset x-asset-left">
-										<img src="/media/{{subdomain.screenshot_path}}" data-src="/media/{{subdomain.screenshot_path}}" alt="{{subdomain.name}}" onerror="removeImageElement(this)">
-									</div>
-									<div class="x-info x-info-right">
-										<div class="x-info-content">
-											<h4 class='text-info'>
-												{% if subdomain.http_url %}
-												<a href="{{subdomain.http_url}}" class="text-info" target="_blank">{{subdomain.name}}</a>
-												{% else %}
-												<a href="https://{{subdomain.name}}" class="text-info" target="_blank">{{subdomain.name}}</a>
-												{% endif %}
-												{% if subdomain.http_status >= 200 and subdomain.http_status < 300 %}
-											</h4>
-											<span class='badge badge-pills badge-success'>{{subdomain.http_status}}</span>
-											{% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %}
-											<span class='badge badge-pills badge-warning'>{{subdomain.http_status}}</span>
-											{% else %}
-											<span class='badge badge-pills badge-danger'>{{subdomain.http_status}}</span>
-											{% endif %}</h4>
-											{% if subdomain.page_title %}
-											<h5 class="text-muted">{{subdomain.page_title}}</h5>
-											{% endif %}
-											<h5>IP Addresses:</h5>
-											{% for ip in subdomain.get_ip_addressess %}
-											<span class="badge badge-pills outline-badge-info">{{ip.address}}</span>
-											{% endfor %}
-											{% if subdomain.get_ports %}
-											<h6>Open Ports:</h6>
-											{% for port in subdomain.get_ports %}
-											<span class='m-1 badge badge-pills outline-badge-info bs-tooltip' title="{{port.description}}">{{port.number}}/{{port.service_name}}</span>
-											{% endfor %}
-											{% endif %}
-											<h6 class="text-muted">Technology Used: {{subdomain.technology_stack}}</h6>
-										</div>
-									</div>
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<div class="gridzy">
 								</div>
 							</div>
-							{% endfor %}
 						</div>
 					</div>
 					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
@@ -570,7 +528,6 @@ Detailed Scan Results for {{history.domain_name}}
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
-<script src="{% static 'plugins/xpanda/js/jquery.xpanda.js' %}"></script>
 
 <script type="text/javascript">
 // Collapse Sidebar
@@ -1243,38 +1200,6 @@ $("#pills-endpoints-tab").click(function() {
 	get_endpoints({{scan_history_id}}, null);
 });
 
-// load screenshots
-$("#xpanda-1").xpanda({
-	breakpoints: {
-		xs: {
-			itemsPerRow: 2
-		},
-		sm: {
-			itemsPerRow: 2
-		},
-		md: {
-			itemsPerRow: 3
-		},
-		lg: {
-			itemsPerRow: 3
-		},
-		xl: {
-			itemsPerRow: 4
-		},
-		xx: {
-			itemsPerRow: 6
-		}
-	},
-	element: {
-		equalThumbSizes: false,
-		spaceBetweenItems: 20,
-		spaceBetweenRows: 20
-	},
-	placeholder: {
-		marginSides: 0
-	}
-});
-
 // get interesting subdomain
 $("#interesting_subdomain_accordion").click(function() {
 	get_interesting_subdomains({{scan_history_id}});
@@ -1283,6 +1208,11 @@ $("#interesting_subdomain_accordion").click(function() {
 // get interesting endpoint
 $("#interesting_endpoint_accordion").click(function() {
 	get_interesting_endpoint({{scan_history_id}});
+});
+
+// get screenshots
+$("#pills-screenshot-tab").click(function() {
+	get_screenshot({{scan_history_id}});
 });
 
 get_subdomain_changes_values({{scan_history_id}});

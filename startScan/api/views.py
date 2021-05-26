@@ -13,6 +13,25 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
+class ListSubdomainsViewSet(viewsets.ModelViewSet):
+    queryset = Subdomain.objects.none()
+    serializer_class = SubdomainSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            if 'only_screenshot' in self.request.query_params:
+                return Subdomain.objects.filter(scan_history__id=scan_id).exclude(screenshot_path__isnull=True)
+            return Subdomain.objects.filter(scan_history=scan_id)
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+
+
 class SubdomainChangesViewSet(viewsets.ModelViewSet):
     '''
         This viewset will return the Subdomain changes
@@ -49,8 +68,7 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
             return None
-        else:
-            return self.paginator.paginate_queryset(queryset, self.request, view=self)
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class EndPointChangesViewSet(viewsets.ModelViewSet):
@@ -87,8 +105,7 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
             return None
-        else:
-            return self.paginator.paginate_queryset(queryset, self.request, view=self)
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class InterestingSubdomainViewSet(viewsets.ModelViewSet):
@@ -111,8 +128,7 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
             return None
-        else:
-            return self.paginator.paginate_queryset(queryset, self.request, view=self)
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class InterestingEndpointViewSet(viewsets.ModelViewSet):
@@ -135,8 +151,7 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
             return None
-        else:
-            return self.paginator.paginate_queryset(queryset, self.request, view=self)
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
 
 
 class SubdomainViewset(viewsets.ModelViewSet):
@@ -154,9 +169,7 @@ class SubdomainViewset(viewsets.ModelViewSet):
         elif scan_id:
             self.queryset = Subdomain.objects.filter(
                 scan_history__id=scan_id)
-            return self.queryset
-        else:
-            return self.queryset
+        return self.queryset
 
     def filter_queryset(self, qs):
         qs = self.queryset.filter()

@@ -8,6 +8,8 @@ router = routers.DefaultRouter()
 
 router.register(r'scanHistory', SubdomainViewset)
 
+router.register(r'listSubdomains', ListSubdomainsViewSet)
+
 router.register(r'listEndpoints', EndPointViewSet)
 
 router.register(r'listVulnerability', VulnerabilityViewSet)
