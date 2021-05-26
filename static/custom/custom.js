@@ -715,7 +715,6 @@ function get_screenshot(scan_id){
 	gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
 	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
-		// add all http status as options
 
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
@@ -746,7 +745,16 @@ function get_screenshot(scan_id){
 			gridzyElement.appendChild(figure);
 			figure.appendChild(newImage);
 			figure.appendChild(figcaption);
-			// figure.insertAfter(figure, gridzyElement.firstChild);
+
+			// dynamic filtering menu
+			http_status = data[subdomain]['http_status'];
+			http_status_select = document.getElementById('http_select_filter');
+			if(!$('#http_select_filter').find("option:contains('" + http_status + "')").length){
+				var option = document.createElement('option');
+				option.value = ".http_" + http_status;
+				option.innerHTML = http_status;
+				http_status_select.appendChild(option);
+			}
 		}
 	});
 
@@ -795,17 +803,17 @@ function get_screenshot(scan_id){
 
 	//filter functionality
 	var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
-	$('#myFilterControls').on('change', function() {
+	$('#http_select_filter').on('change', function() {
 		var values = $(this).val();
 		if(values.length){
 			gridzyInstance.setOptions({
-			filter: values
-		});
+				filter: values
+			});
 		}
 		else{
 			gridzyInstance.setOptions({
-			filter: '*'
-		});
+				filter: '*'
+			});
 		}
 	});
 }
