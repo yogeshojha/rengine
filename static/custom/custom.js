@@ -717,7 +717,7 @@ function get_screenshot(scan_id){
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
 			var newImage = document.createElement('img');
-			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['http_status']);
+			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
 			newImage.setAttribute('height', 800);
 			newImage.setAttribute('width', 800);
 			var figcaption = document.createElement('figcaption');
