@@ -717,7 +717,10 @@ function get_screenshot(scan_id){
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
-			figure.setAttribute('data-gridzySearchText', data[subdomain]['name']);
+			// currently lookup is supported only for http_status, page title & subdomain name,
+			interesting_field = data[subdomain]['is_interesting'] ? 'interesting' : '';
+			search_field = `${data[subdomain]['page_title']} ${data[subdomain]['name']} ${data[subdomain]['http_status']} ${interesting_field}`;
+			figure.setAttribute('data-gridzySearchText', search_field);
 			var newImage = document.createElement('img');
 			// newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
 			newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
@@ -732,9 +735,10 @@ function get_screenshot(scan_id){
 			else if (data[subdomain]['http_status'] >=300 && data[subdomain]['http_status'] < 400){
 				http_status_badge = 'warning';
 			}
-			subdomain_link = `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>`
-			http_status = `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>`;
-			figcaption.innerHTML = data[subdomain]['is_interesting'] ? subdomain_link + interesting_badge + http_status : subdomain_link + http_status;
+			page_title = data[subdomain]['page_title'] ? data[subdomain]['page_title'] + '</br>': '' ;
+			subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
+			http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
+			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
 			newImage.setAttribute('class', 'gridzyImage');
 			gridzyElement.appendChild(figure);
 			figure.appendChild(newImage);
@@ -788,3 +792,39 @@ function get_screenshot(scan_id){
 		})(gridzyElements[pos]);
 	}
 }
+
+// Source: https://stackoverflow.com/a/54733055
+function typingEffect(words, id, i) {
+	let word = words[i].split("");
+	var loopTyping = function() {
+		if (word.length > 0) {
+			let elem = document.getElementById(id);
+			elem.setAttribute('placeholder', elem.getAttribute('placeholder') + word.shift());
+		} else {
+			deletingEffect(words, id, i);
+			return false;
+		};
+		timer = setTimeout(loopTyping, 150);
+	};
+	loopTyping();
+};
+
+function deletingEffect(words, id, i) {
+	let word = words[i].split("");
+	var loopDeleting = function() {
+		if (word.length > 0) {
+			word.pop();
+			document.getElementById(id).setAttribute('placeholder', word.join(""));
+		} else {
+			if (words.length > (i + 1)) {
+				i++;
+			} else {
+				i = 0;
+			};
+			typingEffect(words, id, i);
+			return false;
+		};
+		timer = setTimeout(loopDeleting, 90);
+	};
+	loopDeleting();
+};
