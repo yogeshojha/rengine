@@ -709,8 +709,9 @@ function get_interesting_count(scan_id){
 function get_screenshot(scan_id){
 	var port_array = [];
 	var service_array = [];
+	var tech_array = [];
 	var gridzyElement = document.querySelector('.gridzy');
-	gridzyElement.setAttribute('class', 'gridzySkinBlank');
+	gridzyElement.classList.add('gridzySkinBlank');
 	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
 	gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
 	gridzyElement.setAttribute('data-gridzy-desiredwidth', 450);
@@ -743,9 +744,12 @@ function get_screenshot(scan_id){
 			subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
 			http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
 			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
-			gridzyElement.appendChild(figure);
 			figure.appendChild(newImage);
 			figure.appendChild(figcaption);
+			gridzyElement.appendChild(figure);
+
+			// add http status to filter values
+			filter_values = 'http_' + data[subdomain]['http_status'] + ' ';
 
 			// dynamic filtering menu
 			http_status = data[subdomain]['http_status'];
@@ -757,7 +761,6 @@ function get_screenshot(scan_id){
 				http_status_select.appendChild(option);
 			}
 
-			filter_values = 'http_' + data[subdomain]['http_status'] + ' ';
 			// port services
 			ports = data[subdomain]['ports'];
 			for(var port in ports){
@@ -772,13 +775,23 @@ function get_screenshot(scan_id){
 					service_array.push(service_name);
 				}
 			}
+
+			// technology stack filtering
+
+			var tech = data[subdomain]['technology_stack'];
+			var temp_tech_array = tech.split(',');
+			for(var i = 0; i < temp_tech_array.length; i++) {
+				filter_values += 'tech_' + temp_tech_array[i].replace(/ /g,"_").toLowerCase() + ' ';
+				if (tech_array.indexOf(temp_tech_array[i]) === -1){
+					tech_array.push(temp_tech_array[i]);
+				}
+			}
+
 			figure.setAttribute('class', filter_values);
-
-
 
 		}
 
-		// add port and service to options
+		// add port and service and tech to options
 		port_array.sort((a, b) => a - b);
 		port_select = document.getElementById('ports_select_filter');
 		for(var port in port_array){
@@ -798,6 +811,16 @@ function get_screenshot(scan_id){
 				option.value = ".service_" + service_array[service];
 				option.innerHTML = service_array[service];
 				service_select.appendChild(option);
+			}
+		}
+
+		tech_select = document.getElementById('tech_select_filter');
+		for(var tech in tech_array){
+			if(!$('#tech_select_filter').find("option:contains('" + tech_array[tech] + "')").length){
+				var option = document.createElement('option');
+				option.value = ".tech_" + tech_array[tech].replace(/ /g,"_").toLowerCase();
+				option.innerHTML = tech_array[tech];
+				tech_select.appendChild(option);
 			}
 		}
 
@@ -848,8 +871,9 @@ function get_screenshot(scan_id){
 
 	//filter functionality
 	var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
-	$('#http_select_filter, #services_select_filter, #ports_select_filter').on('change', function() {
+	$('#http_select_filter, #services_select_filter, #ports_select_filter, #tech_select_filter').on('change', function() {
 		values = $(this).val();
+		console.log(values);
 		if(values.length){
 			gridzyInstance.setOptions({
 				filter: values
