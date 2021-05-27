@@ -1252,19 +1252,20 @@ $("#interesting_endpoint_accordion").click(function() {
 $("#pills-screenshot-tab").click(function() {
 	get_screenshot({{scan_history_id}});
 
-	//animate search placeholder
-	const words = ["Search by Page Title   ",
-	"Search by HTTP Status   ",
-	"Search 'Interesting'   ",
-	"Search by Subdomain Name   "]
-
-	typingEffect(words, "screenshot-search", 0);
 
 	$(".tagging").select2({
 		tags: true
 	});
 
 });
+
+//animate search placeholder
+const words = ["Search by Page Title   ",
+"Search by HTTP Status   ",
+"Search 'Interesting'   ",
+"Search by Subdomain Name   "]
+
+typingEffect(words, "screenshot-search", 0);
 
 get_subdomain_changes_values({{scan_history_id}});
 get_endpoint_changes_values({{scan_history_id}});
