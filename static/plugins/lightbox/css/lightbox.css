@@ -35,6 +35,10 @@ body.lb-disable-scrolling {
   border: 4px solid white;
 }
 
+.lightbox a {
+  height: 900px;
+}
+
 .lightbox a img {
   border: none;
 }

@@ -714,7 +714,7 @@ function get_screenshot(scan_id){
 	gridzyElement.classList.add('gridzySkinBlank');
 	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
 	gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
-	gridzyElement.setAttribute('data-gridzy-desiredwidth', 450);
+	gridzyElement.setAttribute('data-gridzy-desiredwidth', 500);
 	gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
 	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
@@ -731,15 +731,15 @@ function get_screenshot(scan_id){
 			link.setAttribute('data-title', `<a target='_blank' href='`+data[subdomain]['http_url']+`'><h3 style="color:white">`+data[subdomain]['name']+`</h3></a>`);
 			link.classList.add('img-fluid');
 			link.classList.add('rounded');
-			link.classList.add('screenshot');
+			link.classList.add('screenshot-gallery');
 			link.classList.add('mb-4');
 			link.classList.add('mt-4');
-			figure.setAttribute('data-gridzySearchText', search_field);
+			link.setAttribute('data-gridzySearchText', search_field);
 			var newImage = document.createElement('img');
 			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
 			// newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
-			newImage.setAttribute('height', 650);
-			newImage.setAttribute('width', 650);
+			newImage.setAttribute('height', 500);
+			newImage.setAttribute('width', 500);
 			newImage.setAttribute('class', 'gridzyImage');
 			var figcaption = document.createElement('figcaption');
 			figcaption.setAttribute('class', 'gridzyCaption');
@@ -754,8 +754,8 @@ function get_screenshot(scan_id){
 			subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
 			http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-right badge badge-pills badge-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
 			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
-			figure.appendChild(newImage);
 			figure.appendChild(figcaption);
+			link.appendChild(newImage);
 			link.appendChild(figure);
 			gridzyElement.appendChild(link);
 
@@ -798,7 +798,7 @@ function get_screenshot(scan_id){
 				}
 			}
 
-			figure.setAttribute('class', filter_values);
+			link.setAttribute('class', filter_values);
 
 		}
 
