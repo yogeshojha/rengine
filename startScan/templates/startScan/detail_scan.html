@@ -451,12 +451,24 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget widget-content widget-content-area br-6">
 								<div class="row">
 									<div class="col-xl-12 col-lg-12 col-sm-12">
-										<h6>Filters</h6>
-										<select class="form-control tagging" id="http_select_filter" multiple="multiple">
-											<option value="*">Everything</option>
-											<option value=".http_200">200</option>
-											<option value=".http_401">401</option>
-										</select>
+										<h6>Filter Screenshots</h6>
+										<div class="row">
+											<div class="col-xl-4 col-lg-4 col-sm-12">
+												<p>HTTP Status</p>
+												<select class="form-control tagging" id="http_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-4 col-lg-4 col-sm-12">
+												<p>Running Services</p>
+												<select class="form-control tagging" id="services_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-4 col-lg-4 col-sm-12">
+												<p>Ports</p>
+												<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
+												</select>
+											</div>
+										</div>
 									</div>
 									<div class="col-xl-12 col-lg-12 col-sm-12">
 										<div class="gridzy">

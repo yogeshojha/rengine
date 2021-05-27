@@ -707,6 +707,8 @@ function get_interesting_count(scan_id){
 
 
 function get_screenshot(scan_id){
+	var port_array = [];
+	var service_array = [];
 	var gridzyElement = document.querySelector('.gridzy');
 	gridzyElement.setAttribute('class', 'gridzySkinBlank');
 	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
@@ -723,12 +725,11 @@ function get_screenshot(scan_id){
 			search_field = `${data[subdomain]['page_title']} ${data[subdomain]['name']} ${data[subdomain]['http_status']} ${interesting_field}`;
 			figure.setAttribute('data-gridzySearchText', search_field);
 			var newImage = document.createElement('img');
-			// newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
-			newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
+			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
+			// newImage.setAttribute('data-gridzylazysrc', 'https://placeimg.com/1440/900/any?' + subdomain);
 			newImage.setAttribute('height', 650);
 			newImage.setAttribute('width', 650);
 			newImage.setAttribute('class', 'gridzyImage');
-			figure.setAttribute('class', 'http_' + data[subdomain]['http_status'])
 			var figcaption = document.createElement('figcaption');
 			figcaption.setAttribute('class', 'gridzyCaption');
 			http_status_badge = 'danger';
@@ -755,7 +756,51 @@ function get_screenshot(scan_id){
 				option.innerHTML = http_status;
 				http_status_select.appendChild(option);
 			}
+
+			filter_values = 'http_' + data[subdomain]['http_status'] + ' ';
+			// port services
+			ports = data[subdomain]['ports'];
+			for(var port in ports){
+				port_number = data[subdomain]['ports'][port].number;
+				service_name = data[subdomain]['ports'][port].service_name;
+				filter_values += 'port_' + port_number + ' ';
+				filter_values += 'service_' + service_name + ' ';
+				if (port_array.indexOf(port_number) === -1){
+					port_array.push(port_number);
+				}
+				if (service_array.indexOf(service_name) === -1){
+					service_array.push(service_name);
+				}
+			}
+			figure.setAttribute('class', filter_values);
+
+
+
 		}
+
+		// add port and service to options
+		port_array.sort((a, b) => a - b);
+		port_select = document.getElementById('ports_select_filter');
+		for(var port in port_array){
+			if(!$('#ports_select_filter').find("option:contains('" + port_array[port] + "')").length){
+				var option = document.createElement('option');
+				option.value = ".port_" + port_array[port];
+				option.innerHTML = port_array[port];
+				port_select.appendChild(option);
+			}
+		}
+
+		service_array.sort();
+		service_select = document.getElementById('services_select_filter');
+		for(var service in service_array){
+			if(!$('#services_select_filter').find("option:contains('" + service_array[service] + "')").length){
+				var option = document.createElement('option');
+				option.value = ".service_" + service_array[service];
+				option.innerHTML = service_array[service];
+				service_select.appendChild(option);
+			}
+		}
+
 	});
 
 	// search functionality
@@ -803,8 +848,8 @@ function get_screenshot(scan_id){
 
 	//filter functionality
 	var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
-	$('#http_select_filter').on('change', function() {
-		var values = $(this).val();
+	$('#http_select_filter, #services_select_filter, #ports_select_filter').on('change', function() {
+		values = $(this).val();
 		if(values.length){
 			gridzyInstance.setOptions({
 				filter: values

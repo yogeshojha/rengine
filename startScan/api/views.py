@@ -191,8 +191,6 @@ class SubdomainViewset(viewsets.ModelViewSet):
             order_col = 'page_title'
         elif _order_col == '6':
             order_col = 'ip_addresses'
-        elif _order_col == '7':
-            order_col = 'open_ports'
         elif _order_col == '8':
             order_col = 'content_length'
         elif _order_col == '10':
@@ -224,7 +222,6 @@ class SubdomainViewset(viewsets.ModelViewSet):
             Q(discovered_date__icontains=search_value) |
             Q(name__icontains=search_value) |
             Q(cname__icontains=search_value) |
-            Q(open_ports__icontains=search_value) |
             Q(http_status__icontains=search_value) |
             Q(content_length__icontains=search_value) |
             Q(page_title__icontains=search_value) |
@@ -250,8 +247,6 @@ class SubdomainViewset(viewsets.ModelViewSet):
                 qs = self.queryset.filter(subdomain__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.filter(cname__icontains=lookup_content)
-            elif 'ports' in lookup_title or 'open_ports' in lookup_title:
-                qs = self.queryset.filter(open_ports__icontains=lookup_content)
             elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.filter(ip_addresses__icontains=lookup_content)
             elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
@@ -319,9 +314,6 @@ class SubdomainViewset(viewsets.ModelViewSet):
                 qs = self.queryset.exclude(subdomain__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.exclude(cname__icontains=lookup_content)
-            elif 'ports' in lookup_title or 'open_ports' in lookup_title:
-                qs = self.queryset.exclude(
-                    open_ports__icontains=lookup_content)
             elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.exclude(
                     ip_addresses__icontains=lookup_content)
