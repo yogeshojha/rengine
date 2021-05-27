@@ -458,6 +458,7 @@ Detailed Scan Results for {{history.domain_name}}
 												<select class="form-control tagging" id="http_select_filter" multiple="multiple">
 												</select>
 											</div>
+											{% if history.port_scan %}
 											<div class="col-xl-3 col-lg-4 col-sm-12">
 												<p>Running Services</p>
 												<select class="form-control tagging" id="services_select_filter" multiple="multiple">
@@ -468,6 +469,7 @@ Detailed Scan Results for {{history.domain_name}}
 												<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
 												</select>
 											</div>
+											{% endif %}
 											<div class="col-xl-3 col-lg-4 col-sm-12">
 												<p>Technology</p>
 												<select class="form-control tagging" id="tech_select_filter" multiple="multiple">
