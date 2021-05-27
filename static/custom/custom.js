@@ -721,9 +721,19 @@ function get_screenshot(scan_id){
 
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
+			var link = document.createElement('a');
+			// return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
 			// currently lookup is supported only for http_status, page title & subdomain name,
 			interesting_field = data[subdomain]['is_interesting'] ? 'interesting' : '';
 			search_field = `${data[subdomain]['page_title']} ${data[subdomain]['name']} ${data[subdomain]['http_status']} ${interesting_field}`;
+			link.setAttribute('data-lightbox', 'screenshot-gallery')
+			link.setAttribute('href', '/media/' + data[subdomain]['screenshot_path'])
+			link.setAttribute('data-title', `<a target='_blank' href='`+data[subdomain]['http_url']+`'><h3 style="color:white">`+data[subdomain]['name']+`</h3></a>`);
+			link.classList.add('img-fluid');
+			link.classList.add('rounded');
+			link.classList.add('screenshot');
+			link.classList.add('mb-4');
+			link.classList.add('mt-4');
 			figure.setAttribute('data-gridzySearchText', search_field);
 			var newImage = document.createElement('img');
 			newImage.setAttribute('data-gridzylazysrc', '/media/' + data[subdomain]['screenshot_path']);
@@ -746,7 +756,8 @@ function get_screenshot(scan_id){
 			figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
 			figure.appendChild(newImage);
 			figure.appendChild(figcaption);
-			gridzyElement.appendChild(figure);
+			link.appendChild(figure);
+			gridzyElement.appendChild(link);
 
 			// add http status to filter values
 			filter_values = 'http_' + data[subdomain]['http_status'] + ' ';
