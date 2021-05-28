@@ -447,12 +447,19 @@ Detailed Scan Results for {{history.domain_name}}
 								<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
 							</div>
 						</div>
-						<div class="col-xl-12 col-lg-12 col-sm-12">
+						<div class="col-xl-12 col-lg-12 col-sm-12" id="screenshot-div">
 							<div class="widget widget-content widget-content-area br-6">
 								<div class="row">
 									<div class="col-xl-12 col-lg-12 col-sm-12">
-										<h6>Filter Screenshots</h6>
 										<div class="row">
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<h6>Filter Screenshots</h6>
+											</div>
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<div class="float-right">
+													<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
+												</div>
+											</div>
 											<div class="col-xl-3 col-lg-4 col-sm-12">
 												<p>HTTP Status</p>
 												<select class="form-control tagging" id="http_select_filter" multiple="multiple">

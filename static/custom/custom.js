@@ -935,3 +935,12 @@ function deletingEffect(words, id, i) {
 	};
 	loopDeleting();
 };
+
+function fullScreenDiv(id, btn){
+	let fullscreen = document.querySelector(id);
+	let button = document.querySelector(btn);
+
+	document.fullscreenElement && document.exitFullscreen() || document.querySelector(id).requestFullscreen()
+
+	fullscreen.setAttribute("style","overflow:auto");
+}
