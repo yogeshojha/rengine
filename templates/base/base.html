@@ -57,7 +57,11 @@
       <script type="text/javascript">
       Snackbar.show({
         text: '{{ message }}',
-        pos: 'top-right'
+        pos: 'top-right',
+        {% if message.tags == 'error'%}
+        actionTextColor: '#fff',
+        backgroundColor: '#e7515a'
+        {% endif %}
       });
       </script>
       {% endfor %}

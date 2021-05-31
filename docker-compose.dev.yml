@@ -25,6 +25,7 @@ services:
         volumes:
           - .:/app
           - gf_patterns:/root/.gf
+          - nuclei_templates:/root/nuclei-templates
         ports:
           - "8000:8000"
         depends_on:
@@ -45,6 +46,7 @@ services:
         volumes:
           - .:/app
           - gf_patterns:/root/.gf
+          - nuclei_templates:/root/nuclei-templates
         environment:
             - DEBUG=1
         depends_on:
@@ -67,3 +69,4 @@ networks:
 volumes:
   postgres_data:
   gf_patterns:
+  nuclei_templates:

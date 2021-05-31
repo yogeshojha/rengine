@@ -233,14 +233,31 @@ def settings(request):
     context = {}
     # check for incoming form requests
     if request.method == "POST":
-        if request.FILES['gfFileUpload']:
+        if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
-            file_path = '/root/.gf/' + gf_file.name
-            file = open(file_path, "w")
-            file.write(gf_file.read().decode("utf-8"))
-            file.close()
-            messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
+            file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
+            if file_extension != 'json':
+                messages.add_message(request, messages.ERROR, 'Invalid GF Pattern, upload only *.json extension')
+            else:
+                file_path = '/root/.gf/' + gf_file.name
+                file = open(file_path, "w")
+                file.write(gf_file.read().decode("utf-8"))
+                file.close()
+                messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
             return http.HttpResponseRedirect(reverse('settings'))
+        elif 'nucleiFileUpload' in request.FILES:
+            nuclei_file = request.FILES['nucleiFileUpload']
+            file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
+            if file_extension != 'yaml':
+                messages.add_message(request, messages.ERROR, 'Invalid Nuclei Pattern, upload only *.yaml extension')
+            else:
+                file_path = '/root/nuclei-templates/' + nuclei_file.name
+                file = open(file_path, "w")
+                file.write(nuclei_file.read().decode("utf-8"))
+                file.close()
+                messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:4]))
+            return http.HttpResponseRedirect(reverse('settings'))
+
 
     gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
     context['gf_patterns'] = sorted(gf_list.split('\n'))
