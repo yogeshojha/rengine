@@ -46,7 +46,7 @@ termcolor==1.1.0
 tldextract==3.1.0
 tqdm==4.51.0
 treelib==1.6.1
-urllib3==1.25.11
+urllib3==1.26.5
 validators==0.18.1
 vine==5.0.0
 wcwidth==0.2.5
