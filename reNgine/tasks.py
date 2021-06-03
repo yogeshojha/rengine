@@ -141,7 +141,11 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
         if VISUAL_IDENTIFICATION in yaml_configuration:
             activity_id = create_scan_activity(
                 task, "Visual Recon - Screenshot", 1)
-            grab_screenshot(task, yaml_configuration, current_scan_dir, activity_id)
+            grab_screenshot(
+                task,
+                yaml_configuration,
+                current_scan_dir,
+                activity_id)
             update_last_activity(activity_id, 2)
 
         if(task.port_scan):
@@ -211,7 +215,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     # check for all the tools and add them into string
     # if tool selected is all then make string, no need for loop
-    if 'all' in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
+    if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
         tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
     else:
         tools = ' '.join(
@@ -531,13 +535,13 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
             for host in data['pages']:
                 try:
                     sub_domain = Subdomain.objects.get(
-                    scan_history__id=task.id,
-                    name=data['pages'][host]['hostname'])
+                        scan_history__id=task.id,
+                        name=data['pages'][host]['hostname'])
                     if data['pages'][host]['hasScreenshot']:
                         sub_domain.screenshot_path = results_dir + \
-                        '/aquascreenshots/' + data['pages'][host]['screenshotPath']
+                            '/aquascreenshots/' + data['pages'][host]['screenshotPath']
                         sub_domain.http_header_path = results_dir + \
-                        '/aquascreenshots/' + data['pages'][host]['headersPath']
+                            '/aquascreenshots/' + data['pages'][host]['headersPath']
                         sub_domain.save()
                 except Exception as e:
                     continue
@@ -723,7 +727,7 @@ def fetch_endpoints(
     It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
     '''
     # check yaml settings
-    if 'all' in yaml_configuration[FETCH_URL][USES_TOOLS]:
+    if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
         tools = 'gauplus hakrawler waybackurls gospider'
     else:
         tools = ' '.join(
@@ -863,7 +867,7 @@ def fetch_endpoints(
                             endpoint.scan_history = task
                             try:
                                 _subdomain = Subdomain.objects.get(
-                                scan_history=task, name=get_subdomain_from_url(url))
+                                    scan_history=task, name=get_subdomain_from_url(url))
                                 endpoint.subdomain = _subdomain
                             except Exception as e:
                                 continue
@@ -899,49 +903,54 @@ def vulnerability_scan(
     nuclei_command = 'nuclei -json -l {} -o {}'.format(
         vulnerability_scan_input_file, vulnerability_result_path)
 
-    # check yaml settings for templates
-    if 'all' in yaml_configuration['vulnerability_scan']['template']:
-        template = '/root/nuclei-templates'
-    else:
-        if isinstance(
-                yaml_configuration['vulnerability_scan']['template'],
-                list):
-            _template = ','.join(
-                [str(element) for element in yaml_configuration['vulnerability_scan']['template']])
-            template = _template.replace(',', ' -t ')
-        else:
-            template = yaml_configuration['vulnerability_scan']['template'].replace(
-                ',', ' -t ')
+    '''
+    Nuclei Templates
+    Either custom template has to be supplied or default template, if neither has
+    been supplied then use all templates including custom templates
+    '''
 
-    # Update nuclei command with templates
-    nuclei_command = nuclei_command + ' -t ' + template
-
-    # # check yaml settings for  concurrency
-    # if yaml_configuration['vulnerability_scan']['concurrent'] > 0:
-    #     concurrent = yaml_configuration['vulnerability_scan']['concurrent']
-    # else:
-    #     concurrent = 10
-    #
-    # # Update nuclei command with concurrent
-    # nuclei_command = nuclei_command + ' -c ' + str(concurrent)
-
-    # yaml settings for severity
-    if 'severity' in yaml_configuration['vulnerability_scan']:
-        if 'all' not in yaml_configuration['vulnerability_scan']['severity']:
-            if isinstance(
-                    yaml_configuration['vulnerability_scan']['severity'],
-                    list):
-                _severity = ','.join(
-                    [str(element) for element in yaml_configuration['vulnerability_scan']['severity']])
-                severity = _severity.replace(" ", "")
+    if CUSTOM_NUCLEI_TEMPLATE in yaml_configuration[
+            VULNERABILITY_SCAN] or NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
+        # check yaml settings for templates
+        if NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
+            if ALL in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]:
+                template = '/root/nuclei-templates'
             else:
-                severity = yaml_configuration['vulnerability_scan']['severity'].replace(
-                    " ", "")
-        else:
-            severity = "critical, high, medium, low, info"
+                _template = ','.join(
+                    [str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
+                template = _template.replace(',', ' -t ')
+
+            # Update nuclei command with templates
+            nuclei_command = nuclei_command + ' -t ' + template
+
+        if CUSTOM_NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
+            # add .yaml to the custom template extensions
+            _template = ','.join(
+                [str(element) + '.yaml' for element in yaml_configuration[VULNERABILITY_SCAN][CUSTOM_NUCLEI_TEMPLATE]])
+            template = _template.replace(',', ' -t ')
+            # Update nuclei command with templates
+            nuclei_command = nuclei_command + ' -t ' + template
+    else:
+        nuclei_command = nuclei_command + ' -t /root/nuclei-templates'
+
+    # check yaml settings for  concurrency
+    if NUCLEI_CONCURRENCY in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
+            VULNERABILITY_SCAN][NUCLEI_CONCURRENCY] > 0:
+        concurrency = yaml_configuration[VULNERABILITY_SCAN][NUCLEI_CONCURRENCY]
+        # Update nuclei command with concurrent
+        nuclei_command = nuclei_command + ' -c ' + str(concurrency)
+
+    # for severity
+    if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
+        _severity = ','.join(
+            [str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]])
+        severity = _severity.replace(" ", "")
+    else:
+        severity = "critical, high, medium, low, info"
 
     # update nuclei templates before running scan
     os.system('nuclei -update-templates')
+
     for _severity in severity.split(","):
         # delete any existing vulnerability.json file
         if os.path.isfile(vulnerability_result_path):
@@ -1016,6 +1025,7 @@ def vulnerability_scan(
         except Exception as exception:
             logging.error(exception)
             update_last_activity(activity_id, 0)
+
 
 def scan_failed(task):
     task.scan_status = 0

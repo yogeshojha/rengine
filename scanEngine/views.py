@@ -2,6 +2,7 @@ import io
 import re
 import os
 import subprocess
+import glob
 
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType, Wordlist, Configuration, InterestingLookupModel
@@ -255,10 +256,12 @@ def settings(request):
                 file = open(file_path, "w")
                 file.write(nuclei_file.read().decode("utf-8"))
                 file.close()
-                messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:4]))
+                messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
             return http.HttpResponseRedirect(reverse('settings'))
 
 
     gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
+    nuclei_custom_pattern = [f for f in glob.glob("/root/nuclei-templates/*.yaml")]
+    context['nuclei_templates'] = nuclei_custom_pattern
     context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/index.html', context)

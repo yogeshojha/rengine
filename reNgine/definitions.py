@@ -15,6 +15,8 @@ AMASS_COMMAND = '/app/tools/amass enum'
 # YAML CONFIG DEFINITIONS
 ###############################################################################
 
+ALL = 'all'
+
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 PORT_SCAN = 'port_scan'
 VISUAL_IDENTIFICATION = 'visual_identification'
@@ -41,6 +43,11 @@ SCAN_TIMEOUT = 'scan_timeout'
 EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 GF_PATTERNS = 'gf_patterns'
+VULNERABILITY_SCAN = 'vulnerability_scan'
+CUSTOM_NUCLEI_TEMPLATE = 'custom_template'
+NUCLEI_TEMPLATE = 'template'
+NUCLEI_SEVERITY = 'severity'
+NUCLEI_CONCURRENCY = 'concurrency'
 
 ###############################################################################
 # Wordlist DEFINITIONS
