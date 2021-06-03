@@ -914,10 +914,10 @@ def vulnerability_scan(
         # check yaml settings for templates
         if NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
             if ALL in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]:
-                template = '/root/nuclei-templates'
+                template = NUCLEI_TEMPLATES_PATH
             else:
                 _template = ','.join(
-                    [str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
+                    [ NUCLEI_TEMPLATES_PATH + str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
                 template = _template.replace(',', ' -t ')
 
             # Update nuclei command with templates

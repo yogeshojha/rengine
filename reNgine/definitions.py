@@ -11,6 +11,7 @@ logger = logging.getLogger('django')
 ###############################################################################
 
 AMASS_COMMAND = '/app/tools/amass enum'
+NUCLEI_TEMPLATES_PATH = '/root/nuclei-templates/'
 ###############################################################################
 # YAML CONFIG DEFINITIONS
 ###############################################################################
@@ -44,8 +45,8 @@ EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 GF_PATTERNS = 'gf_patterns'
 VULNERABILITY_SCAN = 'vulnerability_scan'
-CUSTOM_NUCLEI_TEMPLATE = 'custom_template'
-NUCLEI_TEMPLATE = 'template'
+CUSTOM_NUCLEI_TEMPLATE = 'custom_templates'
+NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
 
