@@ -40,12 +40,16 @@ task for background scan
 
 
 @app.task
-def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
+def initiate_scan(
+        domain_id,
+        scan_history_id,
+        scan_type,
+        engine_type,
+        imported_subdomains=None):
     '''
     scan_type = 0 -> immediate scan, need not create scan object
     scan_type = 1 -> scheduled scan
     '''
-    print(engine_type)
     engine_object = EngineType.objects.get(pk=engine_type)
     domain = Domain.objects.get(pk=domain_id)
     if scan_type == 1:
@@ -103,6 +107,11 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
 
     results_dir = results_dir + current_scan_dir
 
+    # put all imported subdomains into txt file and also in Subdomain model
+    if imported_subdomains:
+        extract_imported_subdomain(
+            imported_subdomains, task, domain, results_dir)
+
     if yaml_configuration:
         '''
         a target in itself is a subdomain, some tool give subdomains as
@@ -125,7 +134,7 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
                 results_dir,
                 activity_id)
         else:
-            skip_subdomain_scan(task, domain)
+            skip_subdomain_scan(task, domain, results_dir)
 
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
@@ -194,13 +203,72 @@ def initiate_scan(domain_id, scan_history_id, scan_type, engine_type):
     return {"status": True}
 
 
-def skip_subdomain_scan(task, domain):
+def skip_subdomain_scan(task, domain, results_dir):
     # store default target as subdomain
-    scanned = Subdomain()
-    scanned.name = domain.domain_name
-    scanned.scan_history = task
-    scanned.target_domain = domain
-    scanned.save()
+    '''
+    If the imported subdomain already has target domain saved, we can skip this
+    '''
+    if not Subdomain.objects.filter(
+            scan_history=task,
+            name=domain.domain_name).exists():
+        scanned = Subdomain()
+        scanned.name = domain.domain_name
+        scanned.scan_history = task
+        scanned.target_domain = domain
+        scanned.save()
+
+    # Save target into target_domain.txt
+    with open('{}/target_domain.txt'.format(results_dir), 'w+') as file:
+        file.write(domain.domain_name + '\n')
+
+    file.close()
+
+    '''
+    We can have two conditions, either subdomain scan happens, or subdomain scan
+    does not happen, in either cases, because we are using import subdomain, we
+    need to collect and sort all the subdomains
+
+    Write target domain into subdomain_collection
+    '''
+
+    os.system(
+        'cat {0}/target_domain.txt > {0}/subdomain_collection.txt'.format(results_dir))
+
+    os.system(
+        'cat {0}/from_imported.txt > {0}/subdomain_collection.txt'.format(results_dir))
+
+    os.system('rm -f {}/from_imported.txt'.format(results_dir))
+
+    '''
+    Sort all Subdomains
+    '''
+    os.system(
+        'sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
+
+    os.system('rm -f {}/subdomain_collection.txt'.format(results_dir))
+
+
+def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
+    valid_imported_subdomains = [subdomain for subdomain in imported_subdomains if validators.domain(
+        subdomain) and domain.domain_name == get_domain_from_subdomain(subdomain)]
+
+    # remove any duplicate
+    valid_imported_subdomains = list(set(valid_imported_subdomains))
+
+    with open('{}/from_imported.txt'.format(results_dir), 'w+') as file:
+        for _subdomain in valid_imported_subdomains:
+            # save _subdomain to Subdomain model db
+            if not Subdomain.objects.filter(scan_history=task, name=_subdomain).exists():
+                subdomain = Subdomain()
+                subdomain.scan_history = task
+                subdomain.target_domain = domain
+                subdomain.name = _subdomain
+                subdomain.is_imported_subdomain = True
+                subdomain.save()
+                # save subdomain to file
+                file.write('{}\n'.format(_subdomain))
+
+    file.close()
 
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
@@ -370,19 +438,22 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     os.system(
         'sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
 
+    os.system('rm -f {}/subdomain_collection.txt'.format(results_dir))
+
     '''
     The final results will be stored in sorted_subdomain_collection.
     '''
     # parse the subdomain list file and store in db
     with open(subdomain_scan_results_file) as subdomain_list:
         for _subdomain in subdomain_list:
-            if(_subdomain.rstrip('\n') in excluded_subdomains):
-                continue
-            if validators.domain(_subdomain.rstrip('\n')):
+            __subdomain = _subdomain.rstrip('\n')
+            if not Subdomain.objects.filter(scan_history=task, name=__subdomain).exists(
+            ) and validators.domain(__subdomain) and __subdomain not in excluded_subdomains:
+                print('Saving {}'.format(__subdomain))
                 subdomain = Subdomain()
                 subdomain.scan_history = task
                 subdomain.target_domain = domain
-                subdomain.name = _subdomain.rstrip('\n')
+                subdomain.name = __subdomain
                 subdomain.save()
 
 
@@ -850,7 +921,6 @@ def fetch_endpoints(
                 with open(gf_output_file_path) as gf_output:
                     for line in gf_output:
                         url = line.rstrip('\n')
-                        print(repr(url))
                         try:
                             endpoint = EndPoint.objects.get(
                                 scan_history=task, http_url=url)
@@ -916,8 +986,8 @@ def vulnerability_scan(
             if ALL in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]:
                 template = NUCLEI_TEMPLATES_PATH
             else:
-                _template = ','.join(
-                    [ NUCLEI_TEMPLATES_PATH + str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
+                _template = ','.join([NUCLEI_TEMPLATES_PATH + str(element)
+                                      for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
                 template = _template.replace(',', ' -t ')
 
             # Update nuclei command with templates

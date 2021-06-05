@@ -130,3 +130,7 @@ def get_subdomain_from_url(url):
     if subdomain[0] == '.':
         subdomain = subdomain[1:]
     return subdomain
+
+def get_domain_from_subdomain(subdomain):
+    ext = tldextract.extract(subdomain)
+    return '.'.join(ext[1:3])

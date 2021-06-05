@@ -114,12 +114,14 @@ def detail_endpoint_scan(request, id=None):
 def start_scan_ui(request, host_id):
     domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
+        imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
+        imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
         # get engine type
         engine_type = request.POST['scan_mode']
         scan_history_id = create_scan_object(host_id, engine_type)
         # start the celery task
         celery_task = initiate_scan.apply_async(
-            args=(host_id, scan_history_id, 0, engine_type))
+            args=(host_id, scan_history_id, 0, engine_type, imported_subdomains))
         ScanHistory.objects.filter(
             id=scan_history_id).update(
             celery_id=celery_task.id)
