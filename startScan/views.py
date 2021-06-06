@@ -114,6 +114,7 @@ def detail_endpoint_scan(request, id=None):
 def start_scan_ui(request, host_id):
     domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
+        # get imported subdomains
         imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
         imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
         # get engine type
@@ -283,6 +284,9 @@ def stop_scan(request, id):
 def schedule_scan(request, host_id):
     domain = Domain.objects.get(id=host_id)
     if request.method == "POST":
+        # get imported subdomains
+        imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
+        imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
         # get engine type
         engine_type = int(request.POST['scan_mode'])
         engine_object = get_object_or_404(EngineType, id=engine_type)
@@ -310,20 +314,22 @@ def schedule_scan(request, host_id):
             schedule, created = IntervalSchedule.objects.get_or_create(
                 every=frequency_value,
                 period=period,)
+            _kwargs = json.dumps({'domain_id': host_id, 'scan_history_id': 0, 'scan_type': 1, 'engine_type': engine_type, 'imported_subdomains': imported_subdomains})
             PeriodicTask.objects.create(interval=schedule,
                                         name=task_name,
                                         task='reNgine.tasks.initiate_scan',
-                                        args=[host_id, 0, 1, engine_type])
+                                        kwargs=_kwargs)
         elif request.POST['scheduled_mode'] == 'clocked':
             # clocked task
             schedule_time = request.POST['scheduled_time']
             clock, created = ClockedSchedule.objects.get_or_create(
                 clocked_time=schedule_time,)
+            _kwargs = json.dumps({'domain_id': host_id, 'scan_history_id': 0, 'scan_type': 1, 'engine_type': engine_type, 'imported_subdomains': imported_subdomains})
             PeriodicTask.objects.create(clocked=clock,
                                         one_off=True,
                                         name=task_name,
                                         task='reNgine.tasks.initiate_scan',
-                                        args=[host_id, 0, 1, engine_type])
+                                        kwargs=_kwargs)
         messages.add_message(
             request,
             messages.INFO,

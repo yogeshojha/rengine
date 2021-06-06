@@ -67,7 +67,7 @@ def initiate_scan(
     task.celery_id = initiate_scan.request.id
     task.domain_name = domain
     task.scan_status = 1
-    task.scan_start_date = timezone.now()
+    task.start_scan_date = timezone.now()
     task.subdomain_discovery = True if engine_object.subdomain_discovery else False
     task.dir_file_search = True if engine_object.dir_file_search else False
     task.port_scan = True if engine_object.port_scan else False
@@ -258,7 +258,8 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     with open('{}/from_imported.txt'.format(results_dir), 'w+') as file:
         for _subdomain in valid_imported_subdomains:
             # save _subdomain to Subdomain model db
-            if not Subdomain.objects.filter(scan_history=task, name=_subdomain).exists():
+            if not Subdomain.objects.filter(
+                    scan_history=task, name=_subdomain).exists():
                 subdomain = Subdomain()
                 subdomain.scan_history = task
                 subdomain.target_domain = domain

@@ -6,7 +6,8 @@
         <div role="menu" class="collapsed" data-toggle="collapse" data-target="#accordion{{engine.id}}" aria-expanded="true" aria-controls="accordion{{engine.id}}">
           <label class="new-control new-checkbox checkbox-primary w-100 justify-content-between">
             <input type="radio" class="new-control-input" name="scan_mode" value="{{engine.id}}" required>
-            <span class="new-control-indicator"></span>{{engine.engine_name}}
+            <span class="new-control-indicator"></span>
+            <span class="ml-2">{{engine.engine_name}}</span>
           </label>
           <div class="icons">
             {% if engine.default_engine %}
