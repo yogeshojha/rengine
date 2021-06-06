@@ -30,7 +30,7 @@ Detailed Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Detailed Scan Results for {{history.domain_name}}
+Detailed Scan Results for {{history.domain.name}}
 {% endblock breadcrumb_title %}
 {% block main_content %}
 <!-- Activity Feed -->
@@ -169,10 +169,10 @@ Detailed Scan Results for {{history.domain_name}}
 								<div class="widget-heading">
 									<a href="javascript:void(0)" class="task-info">
 										<div class="usr-avatar">
-											<span>{{history.domain_name.domain_name|slice:"0:2"|upper}}</span>
+											<span>{{history.domain.name|slice:"0:2"|upper}}</span>
 										</div>
 										<div class="w-title">
-											<h6>Scan Information for <span class="badge badge-info">{{history.domain_name.domain_name}}</span></h6>
+											<h6>Scan Information for <span class="badge badge-info">{{history.domain.name}}</span></h6>
 										</div>
 									</a>
 								</div>
@@ -246,7 +246,7 @@ Detailed Scan Results for {{history.domain_name}}
 						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
-									<h6 class="">{{ip_addresses|length}} Discovered IP Addresses</h6>
+									<h6 class=""><span class='badge outline-badge-dark'>{{ip_addresses|length}}</span> Discovered IP Addresses</h6>
 									<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
 								</div>
 								<div class="widget-content">
@@ -265,7 +265,7 @@ Detailed Scan Results for {{history.domain_name}}
 						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
-									<h6 class="">{{ports.count}} Unique Discovered Ports</small></h6>
+									<h6 class=""><span class='badge outline-badge-dark'>{{ports.count}}</span> Unique Discovered Ports</small></h6>
 									<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
 								</div>
 								<div class="widget-content">
@@ -303,7 +303,10 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class=""><div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div><span class="badge badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes</h6>
+									<h6 class="">
+										<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
+										<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
+									</h6>
 									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
 										<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
@@ -331,7 +334,10 @@ Detailed Scan Results for {{history.domain_name}}
 							<div class="widget widget-table-two">
 
 								<div class="widget-heading">
-									<h6 class=""><div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div><span class="badge badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes</h6>
+									<h6 class="">
+										<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
+										<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
+									</h6>
 									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
 									<p class='text-muted'>During this scan
 										<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>

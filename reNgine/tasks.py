@@ -65,7 +65,7 @@ def initiate_scan(
     # once the celery task starts, change the task status to Started
     task.scan_type = engine_object
     task.celery_id = initiate_scan.request.id
-    task.domain_name = domain
+    task.domain = domain
     task.scan_status = 1
     task.start_scan_date = timezone.now()
     task.subdomain_discovery = True if engine_object.subdomain_discovery else False
@@ -80,7 +80,7 @@ def initiate_scan(
     os.chdir(results_dir)
 
     try:
-        current_scan_dir = domain.domain_name + '_' + \
+        current_scan_dir = domain.name + '_' + \
             str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
     except Exception as exception:
@@ -122,7 +122,7 @@ def initiate_scan(
         initial_subdomain_file = '/target_domain.txt' if task.subdomain_discovery else '/sorted_subdomain_collection.txt'
 
         subdomain_file = open(results_dir + initial_subdomain_file, "w")
-        subdomain_file.write(domain.domain_name + "\n")
+        subdomain_file.write(domain.name + "\n")
         subdomain_file.close()
 
         if(task.subdomain_discovery):
@@ -138,12 +138,10 @@ def initiate_scan(
 
         update_last_activity(activity_id, 2)
         activity_id = create_scan_activity(task, "HTTP Crawler", 1)
-        alive_file_location = results_dir + '/alive.txt'
         http_crawler(
             task,
             domain,
             results_dir,
-            alive_file_location,
             activity_id)
         update_last_activity(activity_id, 2)
 
@@ -210,16 +208,16 @@ def skip_subdomain_scan(task, domain, results_dir):
     '''
     if not Subdomain.objects.filter(
             scan_history=task,
-            name=domain.domain_name).exists():
+            name=domain.name).exists():
         scanned = Subdomain()
-        scanned.name = domain.domain_name
+        scanned.name = domain.name
         scanned.scan_history = task
         scanned.target_domain = domain
         scanned.save()
 
     # Save target into target_domain.txt
     with open('{}/target_domain.txt'.format(results_dir), 'w+') as file:
-        file.write(domain.domain_name + '\n')
+        file.write(domain.name + '\n')
 
     file.close()
 
@@ -250,7 +248,7 @@ def skip_subdomain_scan(task, domain, results_dir):
 
 def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     valid_imported_subdomains = [subdomain for subdomain in imported_subdomains if validators.domain(
-        subdomain) and domain.domain_name == get_domain_from_subdomain(subdomain)]
+        subdomain) and domain.name == get_domain_from_subdomain(subdomain)]
 
     # remove any duplicate
     valid_imported_subdomains = list(set(valid_imported_subdomains))
@@ -320,7 +318,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         if 'amass-passive' in tools:
             amass_command = AMASS_COMMAND + \
                 ' -passive -d {} -o {}/from_amass.txt'.format(
-                    domain.domain_name, results_dir)
+                    domain.name, results_dir)
             if amass_config_path:
                 amass_command = amass_command + \
                     ' -config {}'.format(settings.TOOL_LOCATION +
@@ -333,7 +331,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         if 'amass-active' in tools:
             amass_command = AMASS_COMMAND + \
                 ' -active -d {} -o {}/from_amass_active.txt'.format(
-                    domain.domain_name, results_dir)
+                    domain.name, results_dir)
 
             if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                 wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
@@ -356,7 +354,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     if 'assetfinder' in tools:
         assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
-            domain.domain_name, results_dir)
+            domain.name, results_dir)
 
         # Run Assetfinder
         logging.info(assetfinder_command)
@@ -364,7 +362,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     if 'sublist3r' in tools:
         sublist3r_command = 'python3 /app/tools/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
-            domain.domain_name, threads, results_dir)
+            domain.name, threads, results_dir)
 
         # Run sublist3r
         logging.info(sublist3r_command)
@@ -372,7 +370,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     if 'subfinder' in tools:
         subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
-            domain.domain_name, threads, results_dir)
+            domain.name, threads, results_dir)
 
         # Check for Subfinder config files
         if SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
@@ -398,20 +396,20 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     if 'oneforall' in tools:
         oneforall_command = 'python3 /app/tools/OneForAll/oneforall.py --target {} run'.format(
-            domain.domain_name, results_dir)
+            domain.name, results_dir)
 
         # Run OneForAll
         logging.info(oneforall_command)
         os.system(oneforall_command)
 
         extract_subdomain = "cut -d',' -f6 /app/tools/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
-            domain.domain_name, results_dir)
+            domain.name, results_dir)
 
         os.system(extract_subdomain)
 
         # remove the results from oneforall directory
         os.system(
-            'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.domain_name))
+            'rm -rf /app/tools/OneForAll/results/{}.*'.format(domain.name))
 
     '''
     All tools have gathered the list of subdomains with filename
@@ -458,12 +456,13 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 subdomain.save()
 
 
-def http_crawler(task, domain, results_dir, alive_file_location, activity_id):
+def http_crawler(task, domain, results_dir, activity_id):
     '''
     This function is runs right after subdomain gathering, and gathers important
     like page title, http status, etc
     HTTP Crawler runs by default
     '''
+    alive_file_location = results_dir + '/alive.txt'
     httpx_results_file = results_dir + '/httpx.json'
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
@@ -810,7 +809,7 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.domain_name)
+    domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.name)
 
     if 'deep' in scan_type:
         # performs deep url gathering for all the subdomains present -
@@ -822,7 +821,7 @@ def fetch_endpoints(
         os.system(
             settings.TOOL_LOCATION +
             'get_urls.sh %s %s %s %s %s' %
-            (domain.domain_name,
+            (domain.name,
              results_dir,
              scan_type,
              domain_regex,

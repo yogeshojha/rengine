@@ -735,11 +735,11 @@ function get_endpoint_changes_values(scan_id){
 function get_interesting_count(scan_id){
 	$.getJSON(`../api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
 		$('#interesting_subdomain_count_badge').empty();
-		$('#interesting_subdomain_count_badge').html(`<span class="badge badge-danger">${data.length}</span>`);
+		$('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
 	});
 	$.getJSON(`../api/listInterestingEndpoints/?scan_id=${scan_id}&no_page`, function(data) {
 		$('#interesting_endpoint_count_badge').empty();
-		$('#interesting_endpoint_count_badge').html(`<span class="badge badge-danger">${data.length}</span>`);
+		$('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
 	});
 }
 

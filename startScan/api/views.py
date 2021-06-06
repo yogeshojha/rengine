@@ -46,8 +46,8 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         changes = req.query_params.get('changes')
-        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
-        scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id).filter(scan_status=2)
+        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
+        scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id).filter(scan_status=2)
         if scan_history.count() > 1:
             last_scan = scan_history.order_by('-start_scan_date')[1]
             scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
@@ -83,8 +83,8 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
         scan_id = req.query_params.get('scan_id')
         changes = req.query_params.get('changes')
 
-        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain_name.id
-        scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(fetch_url=True).filter(id__lte=scan_id).filter(scan_status=2)
+        domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
+        scan_history = ScanHistory.objects.filter(domain=domain_id).filter(fetch_url=True).filter(id__lte=scan_id).filter(scan_status=2)
         if scan_history.count() > 1:
             last_scan = scan_history.order_by('-start_scan_date')[1]
             scanned_host_q1 = EndPoint.objects.filter(scan_history__id=scan_id).values('http_url')
@@ -165,7 +165,7 @@ class SubdomainViewset(viewsets.ModelViewSet):
         url_query = req.query_params.get('query_param')
         if url_query:
             self.queryset = Subdomain.objects.filter(
-                Q(target_domain__domain_name=url_query))
+                Q(target_domain__name=url_query))
         elif scan_id:
             self.queryset = Subdomain.objects.filter(
                 scan_history__id=scan_id)
@@ -352,12 +352,12 @@ class EndPointViewSet(viewsets.ModelViewSet):
             if url_query.isnumeric():
                 self.queryset = EndPoint.objects.filter(
                     Q(
-                        scan_history__domain_name__domain_name=url_query) | Q(
+                        scan_history__domain__name=url_query) | Q(
                         http_url=url_query) | Q(
                         id=url_query))
             else:
                 self.queryset = EndPoint.objects.filter(
-                    Q(scan_history__domain_name__domain_name=url_query) | Q(http_url=url_query))
+                    Q(scan_history__domain__name=url_query) | Q(http_url=url_query))
         elif scan_history:
             self.queryset = EndPoint.objects.filter(scan_history__id=scan_history)
 
@@ -516,12 +516,12 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             if url_query.isnumeric():
                 self.queryset = Vulnerability.objects.filter(
                     Q(
-                        scan_history__domain_name__domain_name=url_query) | Q(
+                        scan_history__domain__name=url_query) | Q(
                         name=url_query) | Q(
                         id=url_query))
             else:
                 self.queryset = Vulnerability.objects.filter(
-                    Q(scan_history__domain_name__domain_name=url_query) | Q(name=url_query))
+                    Q(scan_history__domain__name=url_query) | Q(name=url_query))
         elif vulnerability_of:
             self.queryset = Vulnerability.objects.filter(
                 scan_history__id=vulnerability_of)

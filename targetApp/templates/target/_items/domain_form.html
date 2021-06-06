@@ -12,16 +12,16 @@
       <div class="form-row">
         <div class="col-md-6 mb-4">
           <label for="domainName">Domain name</label>
-          {{ form.domain_name }}
+          {{ form.name }}
           {% if form.errors %}
           <div class="invalid-feedback" style="display: block;">
-            {{ form.errors.domain_name|striptags }}
+            {{ form.errors.name|striptags }}
           </div>
           {% endif %}
         </div>
         <div class="col-md-6 mb-4">
           <label for="domainDescription">Description</label>
-          {{ form.domain_description }}
+          {{ form.description }}
         </div>
       </div>
       <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">{{button_title}}</button>

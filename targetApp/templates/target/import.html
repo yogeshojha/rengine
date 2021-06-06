@@ -24,22 +24,22 @@ Import Targets
     </div>
   </div>
   <div class="widget-content widget-content-area animated-underline-content">
-    <ul class="nav nav-tabs  mb-3" id="animateLine" role="tablist">
+    <ul class="nav nav-tabs mb-3" id="animateLine" role="tablist">
       <li class="nav-item">
-        <a class="nav-link active" id="animated-underline-home-tab" data-toggle="tab" href="#animated-underline-text" role="tab" aria-controls="animated-underline-home" aria-selected="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-home"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg> .txt import</a>
+        <a class="nav-link active" id="animated-underline-txt-tab" data-toggle="tab" href="#animated-underline-text" role="tab" aria-controls="animated-underline-text" aria-selected="true"> Import from Text File</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" id="animated-underline-profile-tab" data-toggle="tab" href="#animated-underline-csv" role="tab" aria-controls="animated-underline-profile" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> .csv import</a>
+        <a class="nav-link" id="animated-underline-csv-tab" data-toggle="tab" href="#animated-underline-csv" role="tab" aria-controls="animated-underline-csv" aria-selected="false"> Import from CSV</a>
       </li>
     </ul>
 
     <div class="tab-content" id="animateLineContent-4">
-      <div class="tab-pane fade show active" id="animated-underline-text" role="tabpanel" aria-labelledby="animated-underline-home-tab">
+      <div class="tab-pane fade show active" id="animated-underline-text" role="tabpanel" aria-labelledby="animated-underline-txt-tab">
         <div class="mb-4">
           <p class="text-warning">
             *Your txt file must have list of domains seperated by new line.
             <br><br>
-            By default all domains imported from txt will have no description. If you choose to import multiple domains with description, you should go for csv import.
+            By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended.
           </p>
           <form method="post" enctype="multipart/form-data">
             <div class="custom-file">
@@ -51,7 +51,7 @@ Import Targets
           </form>
         </div>
       </div>
-      <div class="tab-pane fade" id="animated-underline-csv" role="tabpanel" aria-labelledby="animated-underline-profile-tab">
+      <div class="tab-pane fade" id="animated-underline-csv" role="tabpanel" aria-labelledby="animated-underline-csv-tab">
         <div class="mb-4">
           <p class="text-warning">
             *Your csv file must be in the format of <strong>domain, description</strong> seperated by new line.

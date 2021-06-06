@@ -72,7 +72,7 @@ Dashboard
 			</div>
 			<br>
 			<p class="w-title"><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
-			<a href="{% url 'all_vulns' %}">View all subdomains</a>
+			<a href="{% url 'all_vulns' %}">View all Vulnerabilities</a>
 		</div>
 	</div>
 </div>
@@ -106,8 +106,8 @@ Dashboard
 							</thead>
 							<tbody>
 								{% for item in most_vulnerable_target %}
-								<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain_name}}';" style="cursor: pointer;">
-									<td>{{item.domain_name}}</td>
+								<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='start_scan/detail/vuln?query={{item.domain.name}}';" style="cursor: pointer;">
+									<td>{{item.name}}</td>
 									<td class="text-center">
 										<div class="progress br-30">
 											<div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
@@ -185,7 +185,7 @@ Dashboard
 					">
 					<div class="t-dot" data-original-title="" title=""></div>
 					<div class="t-text">
-						<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain_name.domain_name}}</p>
+						<p><b>{{item.title}} {% if item.status == 2 %} {% if item.title != 'Scan Completed' %} completed {% endif %}{% elif item.status == 1 %} initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} aborted {% endif %} {% endif %}</b>for {{item.scan_of.domain.name}}</p>
 						<p class="t-time">{{item.time|naturaltime}}</p>
 					</div>
 				</div>
@@ -283,7 +283,7 @@ Dashboard
 								</div>
 								<div class="w-summary-details">
 									<div class="w-summary-info">
-										<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
+										<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
 											{% if item.scan_status == -1 %}
 											<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
@@ -330,7 +330,7 @@ Dashboard
 								</div>
 								<div class="w-summary-details">
 									<div class="w-summary-info">
-										<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
+										<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
 											<span class="badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
 										</p>
@@ -370,7 +370,7 @@ Dashboard
 							</div>
 							<div class="w-summary-details">
 								<div class="w-summary-info">
-									<h6>{{item.domain_name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
+									<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 									<p class="summary-average">
 										{% if item.scan_status == -1 %}
 										<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>

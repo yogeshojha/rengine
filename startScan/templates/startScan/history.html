@@ -50,14 +50,14 @@ Scan History
 					{% for scan_history in scan_history.all %}
 					<tr>
 						<td class="checkbox-column"> {{ scan_history.id }} </td>
-						<td class="">{{ scan_history.domain_name }}</td>
+						<td class="">{{ scan_history.domain.name }}</td>
 						<td class="text-center">
 							<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan_history.get_subdomain_count}}</span>
 							<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan_history.get_endpoint_count}}</span>
 							<span class="badge badge-pills badge-danger bs-tooltip" title="{{scan_history.get_critical_vulnerability_count}} Critical, {{scan_history.get_high_vulnerability_count}} High, {{scan_history.get_medium_vulnerability_count}} Medium Vulnerabilities">{{scan_history.get_vulnerability_count}}</span>
 						</td>
 						<td class="text-center">{{ scan_history.scan_type }}</td>
-						<td class="text-center">{{ scan_history.last_scan_date }}</td>
+						<td class="text-center">{{ scan_history.start_scan_date }}</td>
 						<td class="text-center">
 							{% if scan_history.scan_status == -1 %}
 							<span class="shadow-none badge tbadge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
@@ -115,7 +115,7 @@ Scan History
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
 							</a>
 							{% endif %}
-							<a onclick="delete_scan({{ scan_history.id }})" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scan {{ scan_history.domain_name }}">
+							<a onclick="delete_scan({{ scan_history.id }})" href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scan {{ scan_history.domain.name }}">
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
 									<circle cx="12" cy="12" r="10"></circle>
 									<line x1="15" y1="9" x2="9" y2="15"></line>

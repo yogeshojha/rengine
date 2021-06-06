@@ -13,7 +13,7 @@ from django.http import JsonResponse
 class ScanHistory(models.Model):
     start_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
-    domain_name = models.ForeignKey(Domain, on_delete=models.CASCADE)
+    domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
     subdomain_discovery = models.BooleanField(null=True, default=False)
@@ -26,7 +26,7 @@ class ScanHistory(models.Model):
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
-        return self.domain_name.domain_name
+        return self.domain.name
 
     def get_subdomain_count(self):
         return Subdomain.objects.filter(scan_history__id=self.id).count()

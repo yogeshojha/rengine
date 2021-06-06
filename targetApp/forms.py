@@ -4,7 +4,7 @@ from reNgine.validators import validate_domain
 
 
 class AddTargetForm(forms.Form):
-    domain_name = forms.CharField(
+    name = forms.CharField(
         validators=[validate_domain],
         required=True,
         widget=forms.TextInput(
@@ -14,7 +14,7 @@ class AddTargetForm(forms.Form):
                 "placeholder": "example.com"
             }
         ))
-    domain_description = forms.CharField(
+    description = forms.CharField(
         required=False,
         widget=forms.TextInput(
             attrs={
@@ -23,9 +23,9 @@ class AddTargetForm(forms.Form):
             }
         ))
 
-    def clean_domain_name(self):
-        data = self.cleaned_data['domain_name']
-        if Domain.objects.filter(domain_name=data).count() > 0:
+    def clean_name(self):
+        data = self.cleaned_data['name']
+        if Domain.objects.filter(name=data).count() > 0:
             raise forms.ValidationError("{} target/domain already exists".format(data))
         return data
 
@@ -33,8 +33,8 @@ class AddTargetForm(forms.Form):
 class UpdateTargetForm(forms.ModelForm):
     class Meta:
         model = Domain
-        fields = ['domain_name', 'domain_description']
-    domain_name = forms.CharField(
+        fields = ['name', 'description']
+    name = forms.CharField(
         validators=[validate_domain],
         required=True,
         disabled=True,
@@ -44,7 +44,7 @@ class UpdateTargetForm(forms.ModelForm):
                 "id": "domainName",
             }
         ))
-    domain_description = forms.CharField(
+    description = forms.CharField(
         required=False,
         widget=forms.TextInput(
             attrs={
@@ -53,6 +53,6 @@ class UpdateTargetForm(forms.ModelForm):
             }
         ))
 
-    def set_value(self, domain_value, domain_description_value):
-        self.initial['domain_name'] = domain_value
-        self.initial['domain_description'] = domain_description_value
+    def set_value(self, domain_value, description_value):
+        self.initial['name'] = domain_value
+        self.initial['description'] = description_value

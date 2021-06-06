@@ -37,7 +37,7 @@ def add_target_form(request):
                 request,
                 messages.INFO,
                 'Target domain ' +
-                form.cleaned_data['domain_name'] +
+                form.cleaned_data['name'] +
                 ' added successfully')
             return http.HttpResponseRedirect(reverse('list_target'))
     context = {
@@ -59,9 +59,9 @@ def import_targets(request):
                 txt_content = txt_file.read().decode('UTF-8')
                 io_string = io.StringIO(txt_content)
                 for target in io_string:
-                    if validators.domain(target):
+                    if not Domain.objects.filter(name=_subdomain).exists() and validators.domain(target):
                         Domain.objects.create(
-                            domain_name=target.rstrip("\n"),
+                            name=target.rstrip("\n"),
                             insert_date=timezone.now())
                         target_count += 1
                 if target_count:
@@ -85,8 +85,8 @@ def import_targets(request):
                 for column in csv.reader(io_string, delimiter=','):
                     if validators.domain(column[0]):
                         Domain.objects.create(
-                            domain_name=column[0],
-                            domain_description=column[1],
+                            name=column[0],
+                            description=column[1],
                             insert_date=timezone.now())
                         target_count += 1
                 if target_count:
@@ -120,7 +120,7 @@ def delete_target(request, id):
             'rm -rf ' +
             settings.TOOL_LOCATION +
             'scan_results/' +
-            obj.domain_name + '*')
+            obj.name + '*')
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
@@ -163,7 +163,7 @@ def update_target_form(request, id):
                 'Domain edited successfully')
             return http.HttpResponseRedirect(reverse('list_target'))
     else:
-        form.set_value(domain.domain_name, domain.domain_description)
+        form.set_value(domain.name, domain.description)
     context = {
         'list_target_li': 'active',
         'target_data_active': 'true',
@@ -177,10 +177,10 @@ def target_summary(request, id):
     target = get_object_or_404(Domain, id=id)
     context['target'] = target
     context['scan_count'] = ScanHistory.objects.filter(
-        domain_name_id=id).count()
+        domai_id=id).count()
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = ScanHistory.objects.filter(
-        domain_name_id=id, start_scan_date__gte=last_week).count()
+        domain_id=id, start_scan_date__gte=last_week).count()
     subdomain_count = Subdomain.objects.filter(
         target_domain__id=id).values('name').distinct().count()
     endpoint_count = EndPoint.objects.filter(
@@ -190,10 +190,10 @@ def target_summary(request, id):
     context['subdomain_count'] = subdomain_count
     context['endpoint_count'] = endpoint_count
     context['vulnerability_count'] = vulnerability_count
-    if ScanHistory.objects.filter(domain_name=id).filter(
+    if ScanHistory.objects.filter(domain=id).filter(
             scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
         print('ok')
-        last_scan = ScanHistory.objects.filter(domain_name=id).filter(
+        last_scan = ScanHistory.objects.filter(domain=id).filter(
             scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-start_scan_date')
 
         scanned_host_q1 = Subdomain.objects.filter(
@@ -206,10 +206,10 @@ def target_summary(request, id):
         context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
 
     if ScanHistory.objects.filter(
-            domain_name=id).filter(
+            domain=id).filter(
             scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
-        last_scan = ScanHistory.objects.filter(domain_name=id).filter(
+        last_scan = ScanHistory.objects.filter(domain=id).filter(
             scan_type__fetch_url=True).filter(scan_status=2).order_by('-start_scan_date')
 
         endpoint_q1 = EndPoint.objects.filter(
@@ -222,7 +222,7 @@ def target_summary(request, id):
         context['removed_urls'] = endpoint_q1.difference(endpoint_q2)
 
     context['recent_scans'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-start_scan_date')[:3]
+        domain=id).order_by('-start_scan_date')[:3]
     context['info_count'] = Vulnerability.objects.filter(
         target_domain=id).filter(severity=0).count()
     context['low_count'] = Vulnerability.objects.filter(
@@ -238,5 +238,5 @@ def target_summary(request, id):
     context['interesting_subdomain'] = get_interesting_subdomains(target=id)
     context['interesting_endpoint'] = get_interesting_endpoint(target=id)
     context['scan_history'] = ScanHistory.objects.filter(
-        domain_name=id).order_by('-start_scan_date')
+        domain=id).order_by('-start_scan_date')
     return render(request, 'target/summary.html', context)

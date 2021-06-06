@@ -68,8 +68,8 @@ def detail_scan(request, id=None):
 
         domain_id = ScanHistory.objects.filter(id=id)
         if domain_id:
-            domain_id = domain_id[0].domain_name.id
-            scan_history = ScanHistory.objects.filter(domain_name=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
+            domain_id = domain_id[0].domain.id
+            scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
             if scan_history.count() > 1:
                 last_scan = scan_history.order_by('-start_scan_date')[1]
                 context['last_scan'] = last_scan
@@ -130,7 +130,7 @@ def start_scan_ui(request, host_id):
             request,
             messages.INFO,
             'Scan Started for ' +
-            domain.domain_name)
+            domain.name)
         return HttpResponseRedirect(reverse('scan_history'))
     engine = EngineType.objects.order_by('id')
     custom_engine_count = EngineType.objects.filter(
@@ -173,7 +173,7 @@ def start_multiple_scan(request):
             for key, value in request.POST.items():
                 if key != "style-2_length" and key != "csrfmiddlewaretoken":
                     domain = get_object_or_404(Domain, id=value)
-                    list_of_domain_name.append(domain.domain_name)
+                    list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
             domain_text = ", ".join(list_of_domain_name)
             domain_ids = ",".join(list_of_domain_id)
@@ -197,7 +197,7 @@ def export_subdomains(request, scan_id):
         response_body = response_body + name.name + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="subdomains_' + \
-        domain_results.domain_name.domain_name + '_' + \
+        domain_results.domain.name + '_' + \
         str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
@@ -210,7 +210,7 @@ def export_endpoints(request, scan_id):
         response_body = response_body + endpoint.http_url + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="endpoints_' + \
-        domain_results.domain_name.domain_name + '_' + \
+        domain_results.domain.name + '_' + \
         str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
@@ -224,7 +224,7 @@ def export_urls(request, scan_id):
             response_body = response_body + url.http_url + "\n"
     response = HttpResponse(response_body, content_type='text/plain')
     response['Content-Disposition'] = 'attachment; filename="urls_' + \
-        domain_results.domain_name.domain_name + '_' + \
+        domain_results.domain.name + '_' + \
         str(domain_results.start_scan_date.date()) + '.txt"'
     return response
 
@@ -232,7 +232,7 @@ def export_urls(request, scan_id):
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
-        delete_dir = obj.domain_name.domain_name + '_' + \
+        delete_dir = obj.domain.name + '_' + \
             str(datetime.datetime.strftime(obj.start_scan_date, '%Y_%m_%d_%H_%M_%S'))
         delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
         os.system('rm -rf ' + delete_path)
@@ -291,7 +291,7 @@ def schedule_scan(request, host_id):
         engine_type = int(request.POST['scan_mode'])
         engine_object = get_object_or_404(EngineType, id=engine_type)
         task_name = engine_object.engine_name + ' for ' + \
-            domain.domain_name + \
+            domain.name + \
             ':' + \
             str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         if request.POST['scheduled_mode'] == 'periodic':
@@ -334,7 +334,7 @@ def schedule_scan(request, host_id):
             request,
             messages.INFO,
             'Scan Scheduled for ' +
-            domain.domain_name)
+            domain.name)
         return HttpResponseRedirect(reverse('scheduled_scan_view'))
     engine = EngineType.objects
     custom_engine_count = EngineType.objects.filter(
@@ -410,7 +410,7 @@ def create_scan_object(host_id, engine_type):
     domain = Domain.objects.get(pk=host_id)
     task = ScanHistory()
     task.scan_status = -1
-    task.domain_name = domain
+    task.domain = domain
     task.scan_type = engine_object
     task.start_scan_date = current_scan_time
     task.save()
