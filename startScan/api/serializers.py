@@ -9,12 +9,19 @@ class SubdomainChangesSerializer(serializers.ModelSerializer):
 
     change = serializers.SerializerMethodField('get_change')
 
+    is_interesting = serializers.SerializerMethodField('get_is_interesting')
+
     class Meta:
         model = Subdomain
         fields = '__all__'
 
     def get_change(self, Subdomain):
         return Subdomain.change
+
+    def get_is_interesting(self, Subdomain):
+        return get_interesting_subdomains(
+            Subdomain.scan_history.id).filter(
+            name=Subdomain.name).exists()
 
 
 class EndPointChangesSerializer(serializers.ModelSerializer):

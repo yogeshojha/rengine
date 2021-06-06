@@ -508,19 +508,48 @@ function get_subdomain_changes(scan_history_id){
 		"ajax": `/start_scan/api/listSubdomainChanges/?scan_id=${scan_history_id}&format=datatables`,
 		"order": [[ 3, "desc" ]],
 		"columns": [
-			{'data': 'http_url'},
+			{'data': 'name'},
 			{'data': 'page_title'},
 			{'data': 'http_status'},
 			{'data': 'content_length'},
 			{'data': 'change'},
+			{'data': 'http_url'},
+			{'data': 'is_cdn'},
+			{'data': 'is_interesting'},
 		],
 		"bInfo": false,
 		"columnDefs": [
-			{"className": "text-center", "targets": [ 2 ]},
+			{
+				"targets": [ 5, 6, 7 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{"className": "text-center", "targets": [ 2, 4 ]},
 			{
 				"render": function ( data, type, row ) {
-					var url = split(data, 70);
-					return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+					badges = '';
+					cdn_badge = '';
+					tech_badge = '';
+					interesting_badge = '';
+					if (row['is_cdn'])
+					{
+						cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
+					}
+					if(row['is_interesting'])
+					{
+						interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+					}
+					if(cdn_badge || interesting_badge)
+					{
+						badges = cdn_badge + interesting_badge + '</br>';
+					}
+					if (row['http_url']) {
+						if (row['cname']) {
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+						}
+						return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`;
+					}
+					return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
 				},
 				"targets": 0
 			},
@@ -541,6 +570,15 @@ function get_subdomain_changes(scan_history_id){
 					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
 				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return `<span class='text-center' style="display:block; text-align:center; margin:0 auto;">${data}</span>`;
+					}
+					return "";
+				},
+				"targets": 3,
 			},
 			{
 				"render": function ( data, type, row ) {
