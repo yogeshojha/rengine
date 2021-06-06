@@ -10,8 +10,12 @@ urlpatterns = [
         name='targetIndex'),
     path(
         'add/',
-        views.add_target_form,
-        name='add_target_form'),
+        views.add_target,
+        name='add_target'),
+    path(
+        'add/bulk/',
+        views.add_bulk_targets,
+        name='add_targets_bulk'),
     path(
         'import/',
         views.import_targets,

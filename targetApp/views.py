@@ -26,7 +26,7 @@ def index(request):
     return render(request, 'target/index.html')
 
 
-def add_target_form(request):
+def add_target(request):
     form = AddTargetForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
@@ -45,6 +45,13 @@ def add_target_form(request):
         "target_data_active": "true",
         'form': form}
     return render(request, 'target/add.html', context)
+
+
+def add_bulk_targets(request):
+    context = {
+        "add_targets_li": "active",
+        "target_data_active": "true",}
+    return render(request, 'target/bulk_add_targets.html', context)
 
 
 def import_targets(request):

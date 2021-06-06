@@ -33,17 +33,22 @@
         </a>
         <ul class="submenu list-unstyled collapse show" id="app" data-parent="#accordionExample" style="">
           <li class="{{ add_target_li }}">
-            <a href="{% url 'add_target_form' %}"> Add Target </a>
+            <a href="{% url 'add_target' %}"> Add Target </a>
           </li>
         </ul>
         <ul class="submenu list-unstyled collapse show" id="app" data-parent="#accordionExample" style="">
-          <li class="{{ list_target_li }}">
-            <a href="{% url 'list_target' %}"> List Targets </a>
+          <li class="{{ add_targets_li }}">
+            <a href="{% url 'add_targets_bulk' %}"> Add Targets(Bulk) </a>
           </li>
         </ul>
         <ul class="submenu list-unstyled collapse show" id="app" data-parent="#accordionExample" style="">
           <li class="{{ import_target_li }}">
             <a href="{% url 'import_targets' %}"> Import Targets </a>
+          </li>
+        </ul>
+        <ul class="submenu list-unstyled collapse show" id="app" data-parent="#accordionExample" style="">
+          <li class="{{ list_target_li }}">
+            <a href="{% url 'list_target' %}"> List Targets </a>
           </li>
         </ul>
       </li>
