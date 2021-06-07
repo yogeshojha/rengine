@@ -55,7 +55,7 @@ List all Target for Recon
             <tr>
               <td class="checkbox-column"> {{ domain.id }} </td>
               <td>{{ domain.name }}</td>
-              <td>{{ domain.description }}</td>
+              <td>{% if domain.description %}{{domain.description}}{% endif %}</td>
               <td>{{ domain.insert_date }}</td>
               {% if domain.start_scan_date %}
               <td class="text-center">{{domain.start_scan_date}}</td>

@@ -23,11 +23,18 @@ Add Targets in Bulk
     </div>
   </div>
   <div class="widget-content widget-content-area animated-underline-content">
-    <div class="form-group mb-4">
-      <label for="importSubdomainFormControlTextarea">Seperate the targets using new line. If the subdomain already exists, it will be skipped.</label>
-      <textarea class="form-control" id="addTargets" rows="7" spellcheck="false" name="addTargets" placeholder="example.com"></textarea>
-      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit" id="addTargetButton">Add 0 Targets</button>
-    </div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group mb-4">
+        <label for="importSubdomainFormControlTextarea">Seperate the targets using new line. If the subdomain already exists, it will be skipped.</label>
+        <textarea class="form-control" id="addTargets" rows="7" spellcheck="false" name="addTargets" placeholder="example.com"></textarea>
+      </div>
+      <div class="form-group mb-4">
+        <label for="targetDescription">Target Description (Optional)</label>
+        <input type="text" class="form-control" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+      </div>
+      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit" id="addTargetButton">Add 0 Target</button>
+    </form>
   </div>
 </div>
 {% endblock main_content %}

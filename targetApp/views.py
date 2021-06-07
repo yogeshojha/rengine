@@ -50,7 +50,30 @@ def add_target(request):
 def add_bulk_targets(request):
     context = {
         "add_targets_li": "active",
-        "target_data_active": "true",}
+        "target_data_active": "true", }
+    if request.method == "POST":
+        bulk_targets = [target.rstrip()
+                        for target in request.POST['addTargets'].split('\n')]
+        bulk_targets = [target for target in bulk_targets if target]
+        description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
+        target_count = 0
+        for target in bulk_targets:
+            if not Domain.objects.filter(
+                    name=target).exists() and validators.domain(target):
+                Domain.objects.create(
+                    name=target.rstrip("\n"),
+                    description=description,
+                    insert_date=timezone.now())
+                target_count += 1
+        if target_count:
+            messages.add_message(request, messages.SUCCESS, str(
+                target_count) + ' targets added successfully!')
+            return http.HttpResponseRedirect(reverse('list_target'))
+        else:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                'Oops! Could not import any targets, either targets already exists or is not a valid target.')
     return render(request, 'target/bulk_add_targets.html', context)
 
 
@@ -66,7 +89,8 @@ def import_targets(request):
                 txt_content = txt_file.read().decode('UTF-8')
                 io_string = io.StringIO(txt_content)
                 for target in io_string:
-                    if not Domain.objects.filter(name=_subdomain).exists() and validators.domain(target):
+                    if not Domain.objects.filter(
+                            name=target.rstrip("\n")).exists() and validators.domain(target):
                         Domain.objects.create(
                             name=target.rstrip("\n"),
                             insert_date=timezone.now())
@@ -90,7 +114,9 @@ def import_targets(request):
                 csv_content = csv_file.read().decode('UTF-8')
                 io_string = io.StringIO(csv_content)
                 for column in csv.reader(io_string, delimiter=','):
-                    if validators.domain(column[0]):
+                    if not Domain.objects.filter(
+                            name=column[0]).exists() and validators.domain(
+                            column[0]):
                         Domain.objects.create(
                             name=column[0],
                             description=column[1],
@@ -197,11 +223,15 @@ def target_summary(request, id):
     context['subdomain_count'] = subdomain_count
     context['endpoint_count'] = endpoint_count
     context['vulnerability_count'] = vulnerability_count
-    if ScanHistory.objects.filter(domain=id).filter(
-            scan_type__subdomain_discovery=True).filter(scan_status=2).count() > 1:
+    if ScanHistory.objects.filter(
+        domain=id).filter(
+        scan_type__subdomain_discovery=True).filter(
+            scan_status=2).count() > 1:
         print('ok')
-        last_scan = ScanHistory.objects.filter(domain=id).filter(
-            scan_type__subdomain_discovery=True).filter(scan_status=2).order_by('-start_scan_date')
+        last_scan = ScanHistory.objects.filter(
+            domain=id).filter(
+            scan_type__subdomain_discovery=True).filter(
+            scan_status=2).order_by('-start_scan_date')
 
         scanned_host_q1 = Subdomain.objects.filter(
             target_domain__id=id).exclude(
@@ -210,14 +240,17 @@ def target_summary(request, id):
             scan_history__id=last_scan[0].id).values('name')
 
         context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
-        context['removed_subdomains'] = scanned_host_q1.difference(scanned_host_q2)
+        context['removed_subdomains'] = scanned_host_q1.difference(
+            scanned_host_q2)
 
     if ScanHistory.objects.filter(
             domain=id).filter(
             scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
 
-        last_scan = ScanHistory.objects.filter(domain=id).filter(
-            scan_type__fetch_url=True).filter(scan_status=2).order_by('-start_scan_date')
+        last_scan = ScanHistory.objects.filter(
+            domain=id).filter(
+            scan_type__fetch_url=True).filter(
+            scan_status=2).order_by('-start_scan_date')
 
         endpoint_q1 = EndPoint.objects.filter(
             target_domain__id=id).exclude(
