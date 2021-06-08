@@ -239,6 +239,22 @@ function parse_comma_values_into_span(data, color, outline=null)
 	return data_with_span;
 }
 
+function parse_technology(data, color, outline=null)
+{
+	if(outline)
+	{
+		var badge = `<span class='badge badge-pill outline-badge-`+color+` m-1'>`;
+	}
+	else {
+		var badge = `<span class='badge badge-pill badge-`+color+` m-1'>`;
+	}
+	var data_with_span ="";
+	for (var key in data){
+			data_with_span += badge + data[key]['name'] + "</span>";
+	}
+	return data_with_span;
+}
+
 // span values function will seperate the values by comma and put badge around it
 function parse_ip(data, cdn){
 	if (cdn)

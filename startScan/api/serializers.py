@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
+from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability, Technology
 
 from reNgine.common_func import *
 
@@ -50,6 +50,11 @@ class InterestingEndPointSerializer(serializers.ModelSerializer):
         fields = ['http_url']
 
 
+class TechnologySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Technology
+        fields = '__all__'
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
@@ -62,6 +67,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     critical_count = serializers.SerializerMethodField('get_critical_count')
     ports = serializers.SerializerMethodField('get_ports')
     ip_addresses = serializers.SerializerMethodField('get_ip_addressess')
+    technologies = TechnologySerializer(many=True)
 
     class Meta:
         model = Subdomain

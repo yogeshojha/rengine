@@ -100,11 +100,11 @@ class Subdomain(models.Model):
     is_cdn = models.BooleanField(null=True, default=False)
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True, blank=True)
-    technology_stack = models.CharField(max_length=1500, null=True, blank=True)
     response_time = models.FloatField(null=True, blank=True)
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000, blank=True, null=True)
+    technologies = models.ManyToManyField('Technology')
 
     def __str__(self):
         return str(self.name)
@@ -175,13 +175,11 @@ class EndPoint(models.Model):
     http_status = models.IntegerField(default=0)
     content_type = models.CharField(max_length=100, null=True, blank=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
-    technology_stack = models.CharField(max_length=1500, null=True, blank=True)
     response_time = models.FloatField(null=True, blank=True)
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     is_default = models.BooleanField(null=True, blank=True, default=False)
-    ip_addresses = models.CharField(max_length=1500, null=True, blank=True)
-    host_ip = models.CharField(max_length=300, null=True, blank=True)
     matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
+    technologies = models.ManyToManyField('Technology')
 
     def __str__(self):
         return self.http_url
@@ -268,3 +266,10 @@ class Port(models.Model):
 
     def __str__(self):
         return str(self.service_name)
+
+
+class Technology(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return str(self.name)

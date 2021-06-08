@@ -27,6 +27,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+</style>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -281,6 +282,18 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
+						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span class='badge outline-badge-dark'>{{technology|length}}</span> Discovered Unique Technologies</h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										{{technologies}}
+									</div>
+								</div>
+							</div>
+						</div>
 						<div class="modal fade" id="detailScanModal" tabindex="-1" role="dialog" aria-labelledby="detailScanModalLabel" aria-hidden="true">
 							<div class="modal-dialog modal-lg" role="document">
 								<div class="modal-content">
@@ -447,7 +460,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
-					<div class="tab-pane fade active" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
+					<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
 						<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
 							<div class="w-100">
 								<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
@@ -612,7 +625,7 @@ $("#pills-subdomain-tab").click(function() {
 			{'data': 'content_length', 'searchable': false},
 			{'data': 'screenshot_path', 'searchable': false},
 			{'data': 'response_time'},
-			{'data': 'technology_stack'},
+			{'data': 'technologies'},
 			{'data': 'checked'},
 			{'data': 'http_url'},
 			{'data': 'is_cdn'},
@@ -684,8 +697,8 @@ $("#pills-subdomain-tab").click(function() {
 					cdn_badge = '';
 					tech_badge = '';
 					interesting_badge = '';
-					if (row['technology_stack']){
-						tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+					if (row['technologies']){
+						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
 					}
 					if (row['is_cdn'])
 					{
@@ -701,7 +714,7 @@ $("#pills-subdomain-tab").click(function() {
 					}
 					if (row['http_url']) {
 						if (row['cname']) {
-							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>` + tech_badge;
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
 						}
 						return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 					}
@@ -1293,6 +1306,7 @@ $("#pills-{{pattern}}-tab").click(function() {
 });
 {% endfor %}
 {% endif %}
+
 </script>
 
 {% endblock page_level_script %}

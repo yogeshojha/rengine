@@ -101,9 +101,9 @@ def initiate_scan(
     '''
     Add GF patterns name to db for dynamic URLs menu
     '''
-    task.used_gf_patterns = ','.join(
-        pattern for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]) if engine_object.fetch_url else None
-    task.save()
+    if engine_object.fetch_url and GF_PATTERNS in yaml_configuration[FETCH_URL]:
+        task.used_gf_patterns = ','.join(pattern for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS])
+        task.save()
 
     results_dir = results_dir + current_scan_dir
 
@@ -509,11 +509,6 @@ def http_crawler(task, domain, results_dir, activity_id):
                 if 'webserver' in json_st:
                     endpoint.webserver = json_st['webserver']
                     subdomain.webserver = json_st['webserver']
-                if 'technologies' in json_st:
-                    endpoint.technology_stack = ','.join(
-                        json_st['technologies'])
-                    subdomain.technology_stack = ','.join(
-                        json_st['technologies'])
                 if 'response-time' in json_st:
                     response_time = float(
                         ''.join(
@@ -527,11 +522,21 @@ def http_crawler(task, domain, results_dir, activity_id):
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     subdomain.cname = cname_list
-                endpoint.discovered_date = timezone.now()
-                subdomain.discovered_date = timezone.now()
+                discovered_date = timezone.now()
+                endpoint.discovered_date = discovered_date
+                subdomain.discovered_date = discovered_date
                 endpoint.is_default = True
                 endpoint.save()
                 subdomain.save()
+                if 'technologies' in json_st:
+                    for _tech in json_st['technologies']:
+                        if Technology.objects.filter(name=_tech).exists():
+                            tech = Technology.objects.get(name=_tech)
+                        else:
+                            tech = Technology(name=_tech)
+                            tech.save()
+                        subdomain.technologies.add(tech)
+                        endpoint.technologies.add(tech)
                 if 'a' in json_st:
                     for _ip in json_st['a']:
                         ip = IPAddress()
@@ -889,9 +894,6 @@ def fetch_endpoints(
                     endpoint.content_type = json_st['content-type']
                 if 'status-code' in json_st:
                     endpoint.http_status = json_st['status-code']
-                if 'technologies' in json_st:
-                    endpoint.technology_stack = ','.join(
-                        json_st['technologies'])
                 if 'response-time' in json_st:
                     response_time = float(
                         ''.join(
@@ -899,6 +901,13 @@ def fetch_endpoints(
                     if json_st['response-time'][-2:] == 'ms':
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
+                if 'technologies' in json_st:
+                    for _tech in json_st['technologies']:
+                        tech = Technology()
+                        tech.name = _tech
+                        tech.save()
+                        subdomain.technologies.add(tech)
+                        endpoint.technologies.add(tech)
                 if 'a' in json_st:
                     ip_list = ','.join(json_st['a'])
                     endpoint.ip_address = ip_list

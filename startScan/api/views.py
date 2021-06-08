@@ -155,7 +155,7 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
 
 
 class SubdomainViewset(viewsets.ModelViewSet):
-    queryset = Subdomain.objects.all()
+    queryset = Subdomain.objects.none()
     serializer_class = SubdomainSerializer
 
     def get_queryset(self):
@@ -164,11 +164,9 @@ class SubdomainViewset(viewsets.ModelViewSet):
 
         url_query = req.query_params.get('query_param')
         if url_query:
-            self.queryset = Subdomain.objects.filter(
-                Q(target_domain__name=url_query))
+            self.queryset = Subdomain.objects.filter(Q(target_domain__name=url_query)).distinct()
         elif scan_id:
-            self.queryset = Subdomain.objects.filter(
-                scan_history__id=scan_id)
+            self.queryset = Subdomain.objects.filter(scan_history__id=scan_id).distinct()
         return self.queryset
 
     def filter_queryset(self, qs):
@@ -229,7 +227,7 @@ class SubdomainViewset(viewsets.ModelViewSet):
             Q(is_cdn__icontains=search_value) |
             Q(screenshot_path__icontains=search_value) |
             Q(http_header_path__icontains=search_value) |
-            Q(technology_stack__icontains=search_value) |
+            Q(technologies__name__icontains=search_value) |
             Q(directory_json__icontains=search_value) |
             Q(checked__icontains=search_value) |
             Q(discovered_date__icontains=search_value))
@@ -249,9 +247,9 @@ class SubdomainViewset(viewsets.ModelViewSet):
                 qs = self.queryset.filter(cname__icontains=lookup_content)
             elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.filter(ip_addresses__icontains=lookup_content)
-            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
+            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technologies' in lookup_title:
                 qs = self.queryset.filter(
-                    technology_stack__icontains=lookup_content)
+                    technologies__name__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -317,9 +315,9 @@ class SubdomainViewset(viewsets.ModelViewSet):
             elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
                 qs = self.queryset.exclude(
                     ip_addresses__icontains=lookup_content)
-            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technology_stack' in lookup_title:
+            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technologies' in lookup_title:
                 qs = self.queryset.exclude(
-                    technology_stack__icontains=lookup_content)
+                    technologies__name__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -387,7 +385,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
         elif _order_col == '5':
             order_col = 'content_length'
         elif _order_col == '6':
-            order_col = 'technology_stack'
+            order_col = 'technologies'
         elif _order_col == '7':
             order_col = 'webserver'
         elif _order_col == '8':

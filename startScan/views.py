@@ -66,6 +66,9 @@ def detail_scan(request, id=None):
         context['critical_count'] = critical_count
         context['scan_history_active'] = 'true'
 
+        # get all unique tech
+        
+
         domain_id = ScanHistory.objects.filter(id=id)
         if domain_id:
             domain_id = domain_id[0].domain.id

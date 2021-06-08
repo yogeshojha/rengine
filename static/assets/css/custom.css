@@ -323,3 +323,12 @@ div.dataTables_wrapper div.dataTables_filter {
     min-width: 0;
     min-height: 0;
 }
+
+
+.anychart-credits-logo {
+  display: none;
+}
+
+.anychart-credits-text{
+  display: none;
+}
