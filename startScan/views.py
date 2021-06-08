@@ -77,9 +77,6 @@ def detail_scan(request, id=None):
                 last_scan = scan_history.order_by('-start_scan_date')[1]
                 context['last_scan'] = last_scan
 
-        # context['ip_addresses'] = IPAddress.objects.filter(scan_history=id).values_list('address', 'is_cdn').distinct().order_by()
-        context['ports'] = Port.objects.filter(scan_history=id).values_list('number', 'service_name', 'description', 'is_uncommon').distinct().order_by('number')
-
     # badge count for gfs
     if history.used_gf_patterns:
         count_gf = {}

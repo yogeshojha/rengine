@@ -749,6 +749,33 @@ function get_endpoint_changes_values(scan_id){
 }
 
 function get_interesting_count(scan_id){
+	$.getJSON(`../api/listIps/?scan_id=${scan_id}&no_page`, function(data) {
+		var ip_array = Array()
+		var cdn_ip_array = Array()
+		$('#ip-address-count').empty();
+		for (var val in data){
+			for(var ip in data[val]['ip_addresses']){
+				if ($.inArray(data[val]['ip_addresses'][ip]['address'], ip_array) == -1 && $.inArray(data[val]['ip_addresses'][ip]['address'], cdn_ip_array) == -1) {
+					var ip_addr = data[val]['ip_addresses'][ip]['address'];
+					if (data[val]['ip_addresses'][ip]['is_cdn']) {
+						badge_color = 'warning'
+						cdn_ip_array.push(ip_addr);
+					}
+					else{
+						badge_color = 'info'
+						ip_array.push(ip_addr);
+					}
+					$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('${ip_addr}, ${scan_id}')">${ip_addr}</span>`);
+				}
+			}
+		}
+		$('#ip-address-count').html(`<span class="badge outline-badge-dark">${ip_array.length+cdn_ip_array.length}</span>`);
+		$('#ip-address-summary').html(`(${cdn_ip_array.length} CDN IPs)</span>`);
+		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+	});
+}
+
+function get_ip_address(scan_id){
 	$.getJSON(`../api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
 		$('#interesting_subdomain_count_badge').empty();
 		$('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
@@ -758,7 +785,6 @@ function get_interesting_count(scan_id){
 		$('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
 	});
 }
-
 
 function get_screenshot(scan_id){
 	var port_array = [];

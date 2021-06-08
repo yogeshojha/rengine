@@ -61,6 +61,14 @@ class IpSerializer(serializers.ModelSerializer):
         model = Ip
         fields = '__all__'
 
+
+class IpSubdomainSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subdomain
+        fields = ['name', 'ip_addresses']
+        depth = 1
+
 class SubdomainSerializer(serializers.ModelSerializer):
 
     is_interesting = serializers.SerializerMethodField('get_is_interesting')

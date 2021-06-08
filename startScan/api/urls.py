@@ -22,6 +22,8 @@ router.register(r'listSubdomainChanges', SubdomainChangesViewSet)
 
 router.register(r'listEndPointChanges', EndPointChangesViewSet)
 
+router.register(r'listIps', IpAddressViewSet)
+
 urlpatterns = [
     url('^', include(router.urls)),
 

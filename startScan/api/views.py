@@ -13,6 +13,27 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
+class IpAddressViewSet(viewsets.ModelViewSet):
+    queryset = Subdomain.objects.none()
+    serializer_class = IpSubdomainSerializer
+
+    def get_queryset(self):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+
+        if scan_id:
+            self.queryset = Subdomain.objects.filter(scan_history__id=scan_id).exclude(ip_addresses__isnull=True).distinct()
+        else:
+            self.serializer_class = IpSerializer
+            self.queryset = Ip.objects.all()
+        return self.queryset
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        return self.paginator.paginate_queryset(queryset, self.request, view=self)
+
+
 class ListSubdomainsViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
     serializer_class = SubdomainSerializer

@@ -247,18 +247,13 @@ Detailed Scan Results for {{history.domain.name}}
 						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
-									<h6 class=""><span class='badge outline-badge-dark'>{{ip_addresses|length}}</span> Discovered IP Addresses</h6>
+									<h6 class=""><span id="ip-address-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> IP Addresses <small id="ip-address-summary"></small></h6>
 									<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
 								</div>
 								<div class="widget-content">
 									<div class="mt-container mx-auto">
-										{% for ip in ip_addresses %}
-										{% if ip.1 %}
-										<span class='badge outline-badge-warning badge-pills m-1 bs-tooltip' title="CDN IP Address" data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
-										{% else %}
-										<span class='badge outline-badge-info badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('{{ip.0}}', {{history.id}})">{{ip.0}}</span>
-										{% endif %}
-										{% endfor %}
+										<div id="ip-address">
+										</div>
 									</div>
 								</div>
 							</div>
@@ -1293,6 +1288,8 @@ get_subdomain_changes_values({{scan_history_id}});
 get_endpoint_changes_values({{scan_history_id}});
 
 get_interesting_count({{scan_history_id}});
+
+get_ip_address({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns
