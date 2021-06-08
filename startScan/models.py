@@ -104,7 +104,8 @@ class Subdomain(models.Model):
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000, blank=True, null=True)
-    technologies = models.ManyToManyField('Technology')
+    technologies = models.ManyToManyField('Technology', related_name='technologies')
+    ip_addresses = models.ManyToManyField('Ip', related_name='ip')
 
     def __str__(self):
         return str(self.name)
@@ -151,14 +152,6 @@ class Subdomain(models.Model):
             scan_history=self.scan_history).filter(
             subdomain__name=self.name).count()
 
-    @property
-    def get_ports(self):
-        return Port.objects.filter(scan_history=self.scan_history).filter(subdomain__name=self.name).values()
-
-    @property
-    def get_ip_addressess(self):
-        return IPAddress.objects.filter(scan_history=self.scan_history).filter(subdomain__name=self.name).values()
-
 
 class EndPoint(models.Model):
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
@@ -179,7 +172,7 @@ class EndPoint(models.Model):
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     is_default = models.BooleanField(null=True, blank=True, default=False)
     matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
-    technologies = models.ManyToManyField('Technology')
+    technologies = models.ManyToManyField('Technology', related_name='technology')
 
     def __str__(self):
         return self.http_url
@@ -229,19 +222,10 @@ class ScanActivity(models.Model):
         return str(self.title)
 
 
-class IPAddress(models.Model):
-    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
-    subdomain = models.ForeignKey(
-        Subdomain,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True)
+class Ip(models.Model):
     address = models.CharField(max_length=100, blank=True, null=True)
-    is_host = models.BooleanField(default=False)
     is_cdn = models.BooleanField(default=False)
-
+    
     def __str__(self):
         return str(self.address)
 
@@ -255,7 +239,7 @@ class Port(models.Model):
         null=True,
         blank=True)
     ip = models.ForeignKey(
-        IPAddress,
+        Ip,
         on_delete=models.CASCADE,
         null=True,
         blank=True)

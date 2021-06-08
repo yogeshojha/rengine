@@ -446,7 +446,6 @@ Detailed Scan Results for {{history.domain.name}}
 											<th>Technology</th>
 											<th>Checked</th>
 											<th>HTTP URL</th>
-											<th>IS CDN</th>
 											<th>CNAME</th>
 											<th>is_interesting</th>
 											<th>Info</th>
@@ -628,7 +627,6 @@ $("#pills-subdomain-tab").click(function() {
 			{'data': 'technologies'},
 			{'data': 'checked'},
 			{'data': 'http_url'},
-			{'data': 'is_cdn'},
 			{'data': 'cname'},
 			{'data': 'is_interesting'},
 			{'data': 'info_count'},
@@ -640,12 +638,12 @@ $("#pills-subdomain-tab").click(function() {
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 			{
-				"targets": [ 12, 15, 16, 17, 18, 19, 20, 21],
+				"targets": [ 12, 14, 15, 16, 17, 18, 19, 20],
 				"visible": false,
 				"searchable": false,
 			},
 			{
-				"targets": [ 11, 13, 14 ],
+				"targets": [ 11, 13 ],
 				"visible": false,
 				"searchable": true,
 			},
@@ -694,24 +692,18 @@ $("#pills-subdomain-tab").click(function() {
 			{
 				"render": function ( data, type, row ) {
 					badges = '';
-					cdn_badge = '';
 					tech_badge = '';
 					interesting_badge = '';
 					if (row['technologies']){
 						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
 					}
-					if (row['is_cdn'])
-					{
-						cdn_badge = "<span class='m-1 badge badge-pills badge-warning'>CDN</span>"
-					}
 					if(row['is_interesting'])
 					{
 						interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
 					}
-					if(cdn_badge || interesting_badge)
-					{
-						badges = cdn_badge + interesting_badge + '</br>';
-					}
+
+					badges =   interesting_badge + '</br>';
+
 					if (row['http_url']) {
 						if (row['cname']) {
 							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
@@ -781,8 +773,12 @@ $("#pills-subdomain-tab").click(function() {
 					if (data)
 					{
 						Object.entries(data).forEach(([key, value]) => {
-							badge_color = value.is_cdn ? 'warning' : 'info';
-							ip_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color}'>${value.address}</span>`
+							if (value['is_cdn']) {
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning' title="CDN IP Address">${value.address}</span>`
+							}
+							else{
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-info'>${value.address}</span>`
+							}
 						});
 						return ip_badge;
 					}

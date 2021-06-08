@@ -517,8 +517,6 @@ def http_crawler(task, domain, results_dir, activity_id):
                         response_time = response_time / 1000
                     endpoint.response_time = response_time
                     subdomain.response_time = response_time
-                if 'cdn' in json_st:
-                    subdomain.is_cdn = json_st['cdn']
                 if 'cnames' in json_st:
                     cname_list = ','.join(json_st['cnames'])
                     subdomain.cname = cname_list
@@ -539,16 +537,15 @@ def http_crawler(task, domain, results_dir, activity_id):
                         endpoint.technologies.add(tech)
                 if 'a' in json_st:
                     for _ip in json_st['a']:
-                        ip = IPAddress()
-                        ip.scan_history = task
-                        ip.target_domain = domain
-                        ip.subdomain = subdomain
-                        ip.address = _ip
-                        if 'host' in json_st and json_st['host'] == _ip:
-                            ip.is_host = True
-                        if 'cdn' in json_st:
-                            ip.is_cdn = json_st['cdn']
-                        ip.save()
+                        if Ip.objects.filter(address=_ip).exists():
+                            ip = Ip.objects.get(address=_ip)
+                        else:
+                            ip = Ip(address=_ip)
+                            if 'cdn' in json_st:
+                                ip.is_cdn = json_st['cdn']
+                            ip.save()
+                        subdomain.ip_addresses.add(ip)
+                # see if to ignore 404 or 5xx
                 alive_file.write(json_st['url'] + '\n')
             except Exception as exception:
                 logging.error(exception)
