@@ -1,3 +1,5 @@
+import json
+
 from startScan.api.serializers import *
 from scanEngine.models import InterestingLookupModel
 from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
@@ -5,12 +7,28 @@ from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
 from reNgine.common_func import *
 
 from django.db.models import Q
-from django.db.models import CharField, Value
+from django.db.models import CharField, Value, Count
+from django.core import serializers
+
 
 from rest_framework import viewsets
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
+
+class ListTechnologies(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            tech = Technology.objects.filter(technologies__in=Subdomain.objects.filter(scan_history__id=scan_id)).annotate(count=Count('name'))
+            serializer = TechnologyCountSerializer(tech, many=True)
+            return Response({"technologies": serializer.data})
+        else:
+            all_tech = Technology.objects.all()
+            serializer = TechnologySerializer(all_tech, many=True)
+            return Response({"technologies": serializer.data})
 
 
 class IpAddressViewSet(viewsets.ModelViewSet):

@@ -26,7 +26,7 @@ router.register(r'listIps', IpAddressViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
-
+    path('listTechnologies', ListTechnologies.as_view(), name='listTechnologies'),
 ]
 
 urlpatterns += router.urls

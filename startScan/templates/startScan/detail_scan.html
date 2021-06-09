@@ -797,17 +797,6 @@ $("#pills-subdomain-tab").click(function() {
 						}
 						return port_badge;
 					}
-					// if (row['ip_addresses'])
-					// {
-					// 	console.log(row['ip_addresses']);
-					// 	return row['ip_addresses']['ports'];
-					// 	// Object.entries(data).forEach(([key, value]) => {
-					// 	// 	if(value){
-					// 	// 		badge_color = value.is_uncommon ? 'danger' : 'info';
-					// 	// 		port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${value.number}/${value.service_name}</span>`
-					// 	// 	}
-					// 	// });
-					// }
 					return "";
 				},
 				"targets": 7,
@@ -1301,7 +1290,7 @@ get_endpoint_changes_values({{scan_history_id}});
 
 get_interesting_count({{scan_history_id}});
 
-get_ip_address({{scan_history_id}});
+get_ip_and_port({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

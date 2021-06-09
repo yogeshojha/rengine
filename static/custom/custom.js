@@ -251,7 +251,7 @@ function parse_technology(data, color, outline=null)
 	}
 	var data_with_span ="";
 	for (var key in data){
-			data_with_span += badge + data[key]['name'] + "</span>";
+		data_with_span += badge + data[key]['name'] + "</span>";
 	}
 	return data_with_span;
 }
@@ -749,12 +749,13 @@ function get_endpoint_changes_values(scan_id){
 	});
 }
 
-function get_ip_address(scan_id){
+function get_ip_and_port(scan_id){
 	$.getJSON(`../api/listIps/?scan_id=${scan_id}&no_page`, function(data) {
 		var ip_array = Array()
 		var cdn_ip_array = Array()
 		$('#ip-address-count').empty();
 		for (var val in data){
+			// gather ip
 			for(var ip in data[val]['ip_addresses']){
 				if ($.inArray(data[val]['ip_addresses'][ip]['address'], ip_array) == -1 && $.inArray(data[val]['ip_addresses'][ip]['address'], cdn_ip_array) == -1) {
 					var ip_addr = data[val]['ip_addresses'][ip]['address'];
@@ -769,6 +770,8 @@ function get_ip_address(scan_id){
 					$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('${ip_addr}, ${scan_id}')">${ip_addr}</span>`);
 				}
 			}
+
+
 		}
 		$('#ip-address-count').html(`<span class="badge outline-badge-dark">${ip_array.length+cdn_ip_array.length}</span>`);
 		$('#ip-address-summary').html(`(${cdn_ip_array.length} CDN IPs)</span>`);
