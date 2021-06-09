@@ -749,32 +749,40 @@ function get_endpoint_changes_values(scan_id){
 	});
 }
 
-function get_ip_and_port(scan_id){
-	$.getJSON(`../api/listIps/?scan_id=${scan_id}&no_page`, function(data) {
-		var ip_array = Array()
-		var cdn_ip_array = Array()
+function get_ips(scan_id){
+	$.getJSON(`../api/listIPs/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#ip-address-count').empty();
-		for (var val in data){
-			// gather ip
-			for(var ip in data[val]['ip_addresses']){
-				if ($.inArray(data[val]['ip_addresses'][ip]['address'], ip_array) == -1 && $.inArray(data[val]['ip_addresses'][ip]['address'], cdn_ip_array) == -1) {
-					var ip_addr = data[val]['ip_addresses'][ip]['address'];
-					if (data[val]['ip_addresses'][ip]['is_cdn']) {
-						badge_color = 'warning'
-						cdn_ip_array.push(ip_addr);
-					}
-					else{
-						badge_color = 'info'
-						ip_array.push(ip_addr);
-					}
-					$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="modal" data-target="#detailScanModal" onclick="get_ports_for_ip('${ip_addr}, ${scan_id}')">${ip_addr}</span>`);
-				}
-			}
-
-
+		for (var val in data['ips']){
+			ip = data['ips'][val]
+			badge_color = ip['is_cdn'] ? 'warning' : 'info';
+			$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${ip['ports'].length} Ports Open.">${ip['address']}</span>`);
 		}
-		$('#ip-address-count').html(`<span class="badge outline-badge-dark">${ip_array.length+cdn_ip_array.length}</span>`);
-		$('#ip-address-summary').html(`(${cdn_ip_array.length} CDN IPs)</span>`);
+		$('#ip-address-count').html(`<span class="badge outline-badge-dark">${data['ips'].length}</span>`);
+		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+	});
+}
+
+function get_technologies(scan_id){
+	$.getJSON(`../api/listTechnologies/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#technologies-count').empty();
+		for (var val in data['technologies']){
+			tech = data['technologies'][val]
+			$("#technologies").append(`<span class='badge outline-badge-info badge-pills m-1' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology.">${tech['name']}</span>`);
+		}
+		$('#technologies-count').html(`<span class="badge outline-badge-dark">${data['technologies'].length}</span>`);
+		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+	});
+}
+
+function get_ports(scan_id){
+	$.getJSON(`../api/listPorts/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#ports-count').empty();
+		for (var val in data['ports']){
+			port = data['ports'][val]
+			badge_color = port['is_uncommon'] ? 'danger' : 'info';
+			$("#ports").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${port['description']}">${port['number']}/${port['service_name']}</span>`);
+		}
+		$('#ports-count').html(`<span class="badge outline-badge-dark">${data['ports'].length}</span>`);
 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
 	});
 }

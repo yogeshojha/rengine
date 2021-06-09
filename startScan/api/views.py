@@ -17,18 +17,47 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
 
-class ListTechnologies(APIView):
+
+class ListTechnology(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
-            tech = Technology.objects.filter(technologies__in=Subdomain.objects.filter(scan_history__id=scan_id)).annotate(count=Count('name'))
+            tech = Technology.objects.filter(technologies__in=Subdomain.objects.filter(scan_history__id=scan_id)).annotate(count=Count('name')).order_by('-count')
             serializer = TechnologyCountSerializer(tech, many=True)
             return Response({"technologies": serializer.data})
         else:
-            all_tech = Technology.objects.all()
-            serializer = TechnologySerializer(all_tech, many=True)
+            tech = Technology.objects.filter(technologies__in=Subdomain.objects.all()).annotate(count=Count('name')).order_by('-count')
+            serializer = TechnologyCountSerializer(tech, many=True)
             return Response({"technologies": serializer.data})
+
+
+class ListPorts(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            port = Port.objects.filter(ports__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=scan_id))).distinct()
+            serializer = PortSerializer(port, many=True)
+            return Response({"ports": serializer.data})
+        else:
+            port = Port.objects.filter(ports__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.all())).distinct()
+            serializer = PortSerializer(port, many=True)
+            return Response({"ports": serializer.data})
+
+
+class ListIPs(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            ips = IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=scan_id)).distinct()
+            serializer = IpSerializer(ips, many=True)
+            return Response({"ips": serializer.data})
+        else:
+            ips = IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.all()).distinct()
+            serializer = IpSerializer(ips, many=True)
+            return Response({"ips": serializer.data})
 
 
 class IpAddressViewSet(viewsets.ModelViewSet):

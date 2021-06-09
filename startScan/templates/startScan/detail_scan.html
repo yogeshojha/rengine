@@ -261,18 +261,13 @@ Detailed Scan Results for {{history.domain.name}}
 						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
-									<h6 class=""><span class='badge outline-badge-dark'>{{ports.count}}</span> Unique Discovered Ports</small></h6>
+									<h6 class=""><span id="ports-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Ports </h6>
 									<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
 								</div>
 								<div class="widget-content">
 									<div class="mt-container mx-auto">
-										{% if not history.port_scan %}
-										<span class='text-muted'>Port Scan has not been initiated, please initiate port scan to discover unique and uncommon ports.</span>
-										{% else %}
-										{% for port in  ports %}
-										<span class='m-1 badge badge-pills outline-badge-{% if port.3 %}danger{%else%}info{% endif %} bs-tooltip' title='{% if port.3 %}Uncommon Port-{{port.2}}{%else%}{{port.2}}{% endif %}' data-toggle="modal" data-target="#detailScanModal" onclick="get_ips_from_port('{{port.0}}', {{history.id}})">{{port.0}}/{{port.1}}</span>
-										{% endfor %}
-										{% endif %}
+										<div id="ports">
+										</div>
 									</div>
 								</div>
 							</div>
@@ -280,11 +275,12 @@ Detailed Scan Results for {{history.domain.name}}
 						<div class="col-xl-4 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
-									<h6 class=""><span class='badge outline-badge-dark'>{{technology|length}}</span> Discovered Unique Technologies</h6>
+									<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
 								</div>
 								<div class="widget-content">
 									<div class="mt-container mx-auto">
-										{{technologies}}
+										<div id="technologies">
+										</div>
 									</div>
 								</div>
 							</div>
@@ -1290,7 +1286,11 @@ get_endpoint_changes_values({{scan_history_id}});
 
 get_interesting_count({{scan_history_id}});
 
-get_ip_and_port({{scan_history_id}});
+get_ips({{scan_history_id}});
+
+get_technologies({{scan_history_id}});
+
+get_ports({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

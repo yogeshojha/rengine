@@ -231,7 +231,7 @@ class Technology(models.Model):
 class IpAddress(models.Model):
     address = models.CharField(max_length=100, blank=True, null=True)
     is_cdn = models.BooleanField(default=False)
-    ports = models.ManyToManyField('Port', related_name='port')
+    ports = models.ManyToManyField('Port', related_name='ports')
 
     def __str__(self):
         return str(self.address)
