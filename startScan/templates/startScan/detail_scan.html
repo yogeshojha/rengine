@@ -285,21 +285,6 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="modal fade" id="detailScanModal" tabindex="-1" role="dialog" aria-labelledby="detailScanModalLabel" aria-hidden="true">
-							<div class="modal-dialog modal-lg" role="document">
-								<div class="modal-content">
-									<div class="modal-header">
-										<h5 class="modal-title" id="detailScanModalLabel"></h5>
-										<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-											<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-										</button>
-									</div>
-									<div class="modal-body">
-										<p class="modal-text" id="detailScanModalContent"></p>
-									</div>
-								</div>
-							</div>
-						</div>
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							{% include 'base/_items/interesting_recon.html' %}
 						</div>
@@ -569,6 +554,54 @@ Detailed Scan Results for {{history.domain.name}}
 		</div>
 	</div>
 </div>
+{# modal #}
+
+<div class="modal fade" id="tabsModal" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="tabsModalLabel">Detail for IP: <span id="ip-address-modal-title"></span></h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+					<li class="nav-item">
+						<a class="nav-link active" id="open-ports-tab" data-toggle="tab" href="#modal-open-ports" role="tab" aria-controls="home" aria-selected="true"><span id="modal-open-ports-count"></span>Open Ports</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" id="subdomain-tab" data-toggle="tab" href="#modal-subdomain" role="tab" aria-controls="profile" aria-selected="false"><span id="modal-subdomain-count"></span>Subdomains</a>
+					</li>
+				</ul>
+				<div class="tab-content" id="myTabContent">
+					<div class="tab-pane fade show active" id="modal-open-ports" role="tabpanel" aria-labelledby="open-ports-tab">
+						<div class="modal-text">
+							<div id="open-port-spinner">
+								{% include "base/_items/center_spinner.html" %}
+							</div>
+							<ul id="modal-open-port-text">
+							</ul>
+						</div>
+					</div>
+					<div class="tab-pane fade" id="modal-subdomain" role="tabpanel" aria-labelledby="subdomain-tab">
+						<div class="modal-text">
+							<div id="subdomain-spinner">
+								{% include "base/_items/center_spinner.html" %}
+							</div>
+							<p>Subdomains associated with ip address:</p>
+							<ul id="modal-subdomain-text">
+							</ul>
+						</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
 {% endblock main_content %}
 
 
@@ -787,8 +820,8 @@ $("#pills-subdomain-tab").click(function() {
 							for (port in ports){
 								port_obj = data[ip]['ports'][port]
 								badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
-									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-									port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${port_obj['number']}/${port_obj['service_name']}</span>`
+								title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${port_obj['number']}/${port_obj['service_name']}</span>`
 							}
 						}
 						return port_badge;

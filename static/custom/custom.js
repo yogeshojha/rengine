@@ -506,7 +506,6 @@ function get_interesting_endpoint(scan_history_id){
 	});
 }
 
-
 function get_subdomain_changes(scan_history_id){
 	$('#table-subdomain-changes').DataTable({
 		"oLanguage": {
@@ -755,11 +754,45 @@ function get_ips(scan_id){
 		for (var val in data['ips']){
 			ip = data['ips'][val]
 			badge_color = ip['is_cdn'] ? 'warning' : 'info';
-			$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${ip['ports'].length} Ports Open.">${ip['address']}</span>`);
+			$("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', ${scan_id})">${ip['address']}</span>`);
+			// $("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="modal" data-target="#tabsModal">${ip['address']}</span>`);
 		}
 		$('#ip-address-count').html(`<span class="badge outline-badge-dark">${data['ips'].length}</span>`);
 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
 	});
+}
+
+function get_ip_details(ip_address, scan_id){
+	$('#tabsModal').modal('show');
+	$('#ip-address-modal-title').html(ip_address);
+	$.getJSON(`../api/listPorts/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
+		$('#open-port-spinner').empty();
+		$('#modal-open-port-text').empty();
+		$('#modal-open-ports-count').html(`<b>${data['ports'].length}</b>&nbsp;&nbsp;`);
+		for (port in data['ports']){
+			port_obj = data['ports'][port];
+			badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
+			$("#modal-open-port-text").append(`<li>${port_obj['description']} <b class="text-${badge_color}">(${port_obj['number']}/${port_obj['service_name']})</b></li>`)
+		}
+	});
+
+	// query subdomains
+	$.getJSON(`../api/querySubdomains/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
+		$('#subdomain-spinner').empty();
+		$('#modal-subdomain-text').empty();
+		$('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
+		for (subdomain in data['subdomains']){
+			subdomain_obj = data['subdomains'][subdomain];
+
+			if (subdomain_obj['http_url']) {
+				$("#modal-subdomain-text").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank">${subdomain_obj['name']}</a></li>`)
+			}
+			else {
+				$("#modal-subdomain-text").append(`<li>${subdomain_obj['name']}</li>`)
+			}
+		}
+	});
+
 }
 
 function get_technologies(scan_id){
