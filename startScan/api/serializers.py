@@ -56,9 +56,18 @@ class TechnologySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class IpSerializer(serializers.ModelSerializer):
+class PortSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Ip
+        model = Port
+        fields = '__all__'
+
+
+class IpSerializer(serializers.ModelSerializer):
+
+    ports = PortSerializer(many=True)
+
+    class Meta:
+        model = IpAddress
         fields = '__all__'
 
 
@@ -79,7 +88,6 @@ class SubdomainSerializer(serializers.ModelSerializer):
     medium_count = serializers.SerializerMethodField('get_medium_count')
     high_count = serializers.SerializerMethodField('get_high_count')
     critical_count = serializers.SerializerMethodField('get_critical_count')
-    # ports = serializers.SerializerMethodField('get_ports')
     ip_addresses = IpSerializer(many=True)
     technologies = TechnologySerializer(many=True)
 

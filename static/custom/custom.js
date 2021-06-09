@@ -112,6 +112,7 @@ function get_ips_from_port(port_number, history_id){
 }
 
 function get_ports_for_ip(ip, history_id){
+	console.log(ip, history_id);
 	document.getElementById("detailScanModalLabel").innerHTML='Open Ports identified for ' + ip;
 	var port_badge = '';
 	fetch('../ip/ports/'+ip+'/'+history_id+'/')
@@ -748,7 +749,7 @@ function get_endpoint_changes_values(scan_id){
 	});
 }
 
-function get_interesting_count(scan_id){
+function get_ip_address(scan_id){
 	$.getJSON(`../api/listIps/?scan_id=${scan_id}&no_page`, function(data) {
 		var ip_array = Array()
 		var cdn_ip_array = Array()
@@ -775,7 +776,7 @@ function get_interesting_count(scan_id){
 	});
 }
 
-function get_ip_address(scan_id){
+function get_interesting_count(scan_id){
 	$.getJSON(`../api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
 		$('#interesting_subdomain_count_badge').empty();
 		$('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);

@@ -537,16 +537,18 @@ def http_crawler(task, domain, results_dir, activity_id):
                         endpoint.technologies.add(tech)
                 if 'a' in json_st:
                     for _ip in json_st['a']:
-                        if Ip.objects.filter(address=_ip).exists():
-                            ip = Ip.objects.get(address=_ip)
+                        if IpAddress.objects.filter(address=_ip).exists():
+                            ip = IpAddress.objects.get(address=_ip)
                         else:
-                            ip = Ip(address=_ip)
+                            ip = IpAddress(address=_ip)
                             if 'cdn' in json_st:
                                 ip.is_cdn = json_st['cdn']
                             ip.save()
                         subdomain.ip_addresses.add(ip)
                 # see if to ignore 404 or 5xx
                 alive_file.write(json_st['url'] + '\n')
+                subdomain.save()
+                endpoint.save()
             except Exception as exception:
                 logging.error(exception)
                 update_last_activity(activity_id, 0)
@@ -673,49 +675,31 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         port_json_result = open(port_results_file, 'r')
         lines = port_json_result.readlines()
         for line in lines:
-            try:
-                json_st = json.loads(line.strip())
-                port = Port()
-                port.scan_history = task
-                port.target_domain = domain
-                sub_domain = Subdomain.objects.get(
-                    scan_history=task, name=json_st['host'])
-                port.subdomain = sub_domain
-                port_number = json_st['port']
-                port.number = port_number
-                if port_number in UNCOMMON_WEB_PORTS:
-                    port.is_uncommon = True
+            json_st = json.loads(line.strip())
+            port_number = json_st['port']
+            ip_address = json_st['ip']
 
-                port_detail = whatportis.get_ports(str(port_number))
-                if len(port_detail):
-                    port.service_name = port_detail[0].name
-                    port.description = port_detail[0].description
-                try:
-                    if not IPAddress.objects.filter(
-                            scan_history=task).filter(
-                            subdomain=sub_domain).filter(
-                            address=json_st['ip']).exists():
-                        # create new ip
-                        ip = IPAddress()
-                        ip.scan_history = task
-                        ip.target_domain = domain
-                        ip.subdomain = sub_domain
-                        ip.address = json_st['ip']
-                        ip.is_host = False
-                        ip.is_cdn = False
-                        ip.save()
-                    ip_address = IPAddress.objects.get(
-                        scan_history=task, subdomain=sub_domain, address=json_st['ip'])
-                    port.ip = ip_address
-                except Exception as e:
-                    logger.info(json_st['ip'])
-                    logger.info(sub_domain)
-                    logger.exception(e)
-                    continue
-                port.save()
-            except Exception as exception:
-                logger.exception(exception)
-                continue
+            # see if port already exists
+            print(port_number)
+            print(ip_address)
+            if Port.objects.filter(number__exact=port_number).exists():
+                print('Port {} already exists'.format(port_number))
+                port = Port.objects.get(number=port_number)
+            else:
+                print('Port {} does not exists'.format(port_number))
+                port = Port()
+                port.number = port_number
+            if port_number in UNCOMMON_WEB_PORTS:
+                port.is_uncommon = True
+            port_detail = whatportis.get_ports(str(port_number))
+            if len(port_detail):
+                port.service_name = port_detail[0].name
+                port.description = port_detail[0].description
+            port.save()
+            if IpAddress.objects.filter(address=json_st['ip']).exists():
+                ip = IpAddress.objects.get(address=json_st['ip'])
+                ip.ports.add(port)
+                ip.save()
     except BaseException as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
@@ -909,6 +893,7 @@ def fetch_endpoints(
                     ip_list = ','.join(json_st['a'])
                     endpoint.ip_address = ip_list
                     endpoint.discovered_date = timezone.now()
+                subdomain.save()
                 endpoint.save()
     except Exception as exception:
         logging.error(exception)

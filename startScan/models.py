@@ -105,7 +105,7 @@ class Subdomain(models.Model):
     content_length = models.IntegerField(default=0)
     page_title = models.CharField(max_length=1000, blank=True, null=True)
     technologies = models.ManyToManyField('Technology', related_name='technologies')
-    ip_addresses = models.ManyToManyField('Ip', related_name='ip')
+    ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses')
 
     def __str__(self):
         return str(self.name)
@@ -221,28 +221,23 @@ class ScanActivity(models.Model):
     def __str__(self):
         return str(self.title)
 
+class Technology(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
 
-class Ip(models.Model):
+    def __str__(self):
+        return str(self.name)
+
+
+class IpAddress(models.Model):
     address = models.CharField(max_length=100, blank=True, null=True)
     is_cdn = models.BooleanField(default=False)
-    
+    ports = models.ManyToManyField('Port', related_name='port')
+
     def __str__(self):
         return str(self.address)
 
+
 class Port(models.Model):
-    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-    target_domain = models.ForeignKey(
-        Domain, on_delete=models.CASCADE, null=True, blank=True)
-    subdomain = models.ForeignKey(
-        Subdomain,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True)
-    ip = models.ForeignKey(
-        Ip,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True)
     number = models.IntegerField(default=0)
     service_name = models.CharField(max_length=100, blank=True, null=True)
     description = models.CharField(max_length=1000, blank=True, null=True)
@@ -250,10 +245,3 @@ class Port(models.Model):
 
     def __str__(self):
         return str(self.service_name)
-
-
-class Technology(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-
-    def __str__(self):
-        return str(self.name)

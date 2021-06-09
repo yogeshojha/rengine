@@ -15,7 +15,7 @@ Start Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Start Scan for {{domain.domain.name}}
+Start Scan for {{domain.name}}
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -23,7 +23,7 @@ Start Scan for {{domain.domain.name}}
   <div class="widget-header">
     <div class="row">
       <div class="col-12">
-        <h4>Initiating scan for <b>{{domain.domain.name}}</b></h4>
+        <h4>Initiating scan for <b>{{domain.name}}</b></h4>
       </div>
     </div>
   </div>
@@ -61,9 +61,9 @@ Start Scan for {{domain.domain.name}}
         <h3>Import Subdomains</h3>
         <div class="">
           <div class="form-group mb-4">
-            <label for="importSubdomainFormControlTextarea"><b class="text-info">Import Subdomains(Optional)</b></br>You can import subdomains for <b>{{domain.domain.name}}</b> using your private recon tools.</label>
+            <label for="importSubdomainFormControlTextarea"><b class="text-info">Import Subdomains(Optional)</b></br>You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</label>
           </br>
-          <label for="importSubdomainFormControlTextarea">Seperate the subdomains using new line. If the subdomain does not belong to <b>{{domain.domain.name}}</b> it will be skipped.</label>
+          <label for="importSubdomainFormControlTextarea">Seperate the subdomains using new line. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</label>
           <textarea class="form-control" id="importSubdomainFormControlTextarea" rows="7" spellcheck="false" name="importSubdomainTextArea"></textarea>
         </div>
       </div>
