@@ -448,7 +448,6 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
             __subdomain = _subdomain.rstrip('\n')
             if not Subdomain.objects.filter(scan_history=task, name=__subdomain).exists(
             ) and validators.domain(__subdomain) and __subdomain not in excluded_subdomains:
-                print('Saving {}'.format(__subdomain))
                 subdomain = Subdomain()
                 subdomain.scan_history = task
                 subdomain.target_domain = domain
@@ -680,13 +679,9 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
             ip_address = json_st['ip']
 
             # see if port already exists
-            print(port_number)
-            print(ip_address)
             if Port.objects.filter(number__exact=port_number).exists():
-                print('Port {} already exists'.format(port_number))
                 port = Port.objects.get(number=port_number)
             else:
-                print('Port {} does not exists'.format(port_number))
                 port = Port()
                 port.number = port_number
             if port_number in UNCOMMON_WEB_PORTS:

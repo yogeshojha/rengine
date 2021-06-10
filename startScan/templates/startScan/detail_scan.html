@@ -555,52 +555,7 @@ Detailed Scan Results for {{history.domain.name}}
 	</div>
 </div>
 {# modal #}
-
-<div class="modal fade" id="tabsModal" tabindex="-1" role="dialog" aria-labelledby="tabsModalLabel" aria-hidden="true">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="tabsModalLabel">Detail for IP: <span id="ip-address-modal-title"></span></h5>
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-			</div>
-			<div class="modal-body">
-				<ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-					<li class="nav-item">
-						<a class="nav-link active" id="open-ports-tab" data-toggle="tab" href="#modal-open-ports" role="tab" aria-controls="home" aria-selected="true"><span id="modal-open-ports-count"></span>Open Ports</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" id="subdomain-tab" data-toggle="tab" href="#modal-subdomain" role="tab" aria-controls="profile" aria-selected="false"><span id="modal-subdomain-count"></span>Subdomains</a>
-					</li>
-				</ul>
-				<div class="tab-content" id="myTabContent">
-					<div class="tab-pane fade show active" id="modal-open-ports" role="tabpanel" aria-labelledby="open-ports-tab">
-						<div class="modal-text">
-							<div id="open-port-spinner">
-								{% include "base/_items/center_spinner.html" %}
-							</div>
-							<ul id="modal-open-port-text">
-							</ul>
-						</div>
-					</div>
-					<div class="tab-pane fade" id="modal-subdomain" role="tabpanel" aria-labelledby="subdomain-tab">
-						<div class="modal-text">
-							<div id="subdomain-spinner">
-								{% include "base/_items/center_spinner.html" %}
-							</div>
-							<p>Subdomains associated with ip address:</p>
-							<ul id="modal-subdomain-text">
-							</ul>
-						</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-
-
+{% include 'base/_items/tab_modal.html' %}
 
 {% endblock main_content %}
 

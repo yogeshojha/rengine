@@ -763,8 +763,23 @@ function get_ips(scan_id){
 }
 
 function get_ip_details(ip_address, scan_id){
+	// render tab modal
+	$('#tab-modal-title').html('Details for IP: ' + ip_address);
+	// add tab modal title
+	$('#modal-tabs').empty();
+	$('#modal-tabs').append(`<li class="nav-item"><a class="nav-link active" id="open-ports-tab" data-toggle="tab" href="#modal-open-ports" role="tab" aria-controls="home" aria-selected="true"><span id="modal-open-ports-count"></span>Open Ports</a></li>`);
+	$('#modal-tabs').append(`<li class="nav-item"><a class="nav-link" id="subdomain-tab" data-toggle="tab" href="#modal-subdomain" role="tab" aria-controls="profile" aria-selected="false"><span id="modal-subdomain-count"></span>Subdomains</a></li>`)
+	// add content area
+	$('#modal-tab-content').empty();
+	$('#modal-tab-content').append(`<div class="tab-pane fade show active" id="modal-open-ports" role="tabpanel" aria-labelledby="open-ports-tab"></div>`);
+	$('#modal-open-ports').append(`<div class="modal-text" id="modal-text-open-port"></div>`);
+	$('#modal-text-open-port').append(`<ul id="modal-open-port-text"></ul>`);
+
+	$('#modal-tab-content').append(`<div class="tab-pane fade" id="modal-subdomain" role="tabpanel" aria-labelledby="subdomain-tab">`);
+	$('#modal-subdomain').append(`<div class="modal-text" id="modal-text-subdomain"></div>`);
+	$('#modal-text-subdomain').append(`<ul id="modal-subdomain-text"></ul>`);
+
 	$('#tabsModal').modal('show');
-	$('#ip-address-modal-title').html(ip_address);
 	$.getJSON(`../api/listPorts/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
 		$('#open-port-spinner').empty();
 		$('#modal-open-port-text').empty();
