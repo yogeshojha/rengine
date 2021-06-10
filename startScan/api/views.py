@@ -71,9 +71,16 @@ class ListSubdomains(APIView):
         scan_id = req.query_params.get('scan_id')
         ip_address = req.query_params.get('ip_address')
         port = req.query_params.get('port')
+        tech = req.query_params.get('tech')
         if scan_id and ip_address:
             subdomain = Subdomain.objects.filter(
                 ip_addresses__address=ip_address).filter(
+                scan_history__id=scan_id)
+            serializer = SubdomainSerializer(subdomain, many=True)
+            return Response({"subdomains": serializer.data})
+        elif scan_id and tech:
+            subdomain = Subdomain.objects.filter(
+                technologies__name=tech).filter(
                 scan_history__id=scan_id)
             serializer = SubdomainSerializer(subdomain, many=True)
             return Response({"subdomains": serializer.data})
