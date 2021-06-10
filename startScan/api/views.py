@@ -70,8 +70,19 @@ class ListSubdomains(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         ip_address = req.query_params.get('ip_address')
+        port = req.query_params.get('port')
         if scan_id and ip_address:
-            subdomain = Subdomain.objects.filter(ip_addresses__address=ip_address).filter(scan_history__id=scan_id)
+            subdomain = Subdomain.objects.filter(
+                ip_addresses__address=ip_address).filter(
+                scan_history__id=scan_id)
+            serializer = SubdomainSerializer(subdomain, many=True)
+            return Response({"subdomains": serializer.data})
+        elif scan_id and port:
+            subdomain = Subdomain.objects.filter(
+                ip_addresses__in=IpAddress.objects.filter(
+                    ports__in=Port.objects.filter(
+                        number=port))).filter(
+                scan_history=scan_id)
             serializer = SubdomainSerializer(subdomain, many=True)
             return Response({"subdomains": serializer.data})
 
@@ -80,7 +91,16 @@ class ListIPs(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
-        if scan_id:
+        port = req.query_params.get('port')
+        if scan_id and port:
+            ips = IpAddress.objects.filter(
+                ip_addresses__in=Subdomain.objects.filter(
+                    scan_history__id=scan_id)).filter(
+                ports__in=Port.objects.filter(
+                    number=port)).distinct()
+            serializer = IpSerializer(ips, many=True)
+            return Response({"ips": serializer.data})
+        elif scan_id:
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
                     scan_history__id=scan_id)).distinct()

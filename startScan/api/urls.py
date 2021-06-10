@@ -26,9 +26,9 @@ router.register(r'listIps', IpAddressViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
-    path('listTechnologies/', ListTechnology.as_view(), name='listTechnologies'),
-    path('listPorts/', ListPorts.as_view(), name='listPorts'),
-    path('listIPs/', ListIPs.as_view(), name='listIPs'),
+    path('queryTechnologies/', ListTechnology.as_view(), name='listTechnologies'),
+    path('queryPorts/', ListPorts.as_view(), name='listPorts'),
+    path('queryIps/', ListIPs.as_view(), name='listIPs'),
     path('querySubdomains/', ListSubdomains.as_view(), name='querySubdomains'),
 ]
 

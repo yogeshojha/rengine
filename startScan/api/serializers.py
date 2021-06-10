@@ -86,6 +86,7 @@ class IpSubdomainSerializer(serializers.ModelSerializer):
 
 class SubdomainSerializer(serializers.ModelSerializer):
 
+    is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
     endpoint_count = serializers.SerializerMethodField('get_endpoint_count')
     info_count = serializers.SerializerMethodField('get_info_count')
