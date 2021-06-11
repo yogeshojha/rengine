@@ -674,7 +674,7 @@ $("#pills-subdomain-tab").click(function() {
 					tech_badge = '';
 					interesting_badge = '';
 					if (row['technologies']){
-						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
+						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id={{scan_history_id}});
 					}
 					if(row['is_interesting'])
 					{
@@ -753,10 +753,10 @@ $("#pills-subdomain-tab").click(function() {
 					{
 						Object.entries(data).forEach(([key, value]) => {
 							if (value['is_cdn']) {
-								ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning' title="CDN IP Address">${value.address}</span>`
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
 							}
 							else{
-								ip_badge += `<span class='m-1 badge badge-pills outline-badge-info'>${value.address}</span>`
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
 							}
 						});
 						return ip_badge;
@@ -776,7 +776,7 @@ $("#pills-subdomain-tab").click(function() {
 								port_obj = data[ip]['ports'][port]
 								badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
 								title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip' title='${title}'>${port_obj['number']}/${port_obj['service_name']}</span>`
+								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
 							}
 						}
 						return port_badge;

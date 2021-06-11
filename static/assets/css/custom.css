@@ -332,3 +332,7 @@ div.dataTables_wrapper div.dataTables_filter {
 .anychart-credits-text{
   display: none;
 }
+
+.badge-link{
+  cursor: pointer;
+}

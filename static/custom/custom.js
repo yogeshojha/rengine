@@ -240,18 +240,23 @@ function parse_comma_values_into_span(data, color, outline=null)
 	return data_with_span;
 }
 
-function parse_technology(data, color, outline=null)
+function parse_technology(data, color, outline=null, scan_id=null)
 {
 	if(outline)
 	{
-		var badge = `<span class='badge badge-pill outline-badge-`+color+` m-1'>`;
+		var badge = `<span class='badge-link badge badge-pill outline-badge-`+color+` m-1'`;
 	}
 	else {
-		var badge = `<span class='badge badge-pill badge-`+color+` m-1'>`;
+		var badge = `<span class='badge-link badge badge-pill badge-`+color+` m-1'`;
 	}
 	var data_with_span ="";
 	for (var key in data){
-		data_with_span += badge + data[key]['name'] + "</span>";
+		if (scan_id){
+			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
+		}
+		else{
+			data_with_span += badge + ">" + data[key]['name'] + "</span>";
+		}
 	}
 	return data_with_span;
 }
@@ -404,7 +409,7 @@ function get_interesting_subdomains(scan_history_id){
 			{'data': 'http_status'},
 			{'data': 'content_length'},
 			{'data': 'http_url'},
-			{'data': 'technology_stack'},
+			{'data': 'technologies'},
 		],
 		"columnDefs": [
 			{
@@ -421,8 +426,8 @@ function get_interesting_subdomains(scan_history_id){
 			{
 				"render": function ( data, type, row ) {
 					tech_badge = '';
-					if (row['technology_stack']){
-						tech_badge = `</br>` + parse_comma_values_into_span(row['technology_stack'], "info", outline=true);
+					if (row['technologies']){
+						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id=null);
 					}
 					if (row['http_url']) {
 						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
@@ -764,7 +769,7 @@ function get_ips(scan_id){
 
 function get_ip_details(ip_address, scan_id){
 	// render tab modal
-	$('#tab-modal-title').html('Details for IP: ' + ip_address);
+	$('#tab-modal-title').html('Details for IP: <b>' + ip_address + '</b>');
 	// add tab modal title
 	$('#modal-tabs').empty();
 	$('#modal-tabs').append(`<li class="nav-item"><a class="nav-link active" id="open-ports-tab" data-toggle="tab" href="#modal-open-ports" role="tab" aria-controls="home" aria-selected="true"><span id="modal-open-ports-count"></span>Open Ports</a></li>`);
@@ -798,19 +803,21 @@ function get_ip_details(ip_address, scan_id){
 		$('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
 		for (subdomain in data['subdomains']){
 			subdomain_obj = data['subdomains'][subdomain];
+			badge_color = subdomain_obj['http_status'] == 404 ? 'danger' : '';
 			if (subdomain_obj['http_url']) {
-				$("#modal-subdomain-text").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank">${subdomain_obj['name']}</a></li>`)
+				$("#modal-subdomain-text").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank" class="text-${badge_color}">${subdomain_obj['name']}</a></li>`)
 			}
 			else {
-				$("#modal-subdomain-text").append(`<li>${subdomain_obj['name']}</li>`)
+				$("#modal-subdomain-text").append(`<li class="text-${badge_color}">${subdomain_obj['name']}</li>`)
 			}
 		}
+		$('#modal-text-subdomain').append(`<span class="float-right text-danger">*Subdomains highlighted are 404 HTTP Status</span>`);
 	});
 }
 
 function get_port_details(port, scan_id){
 	// render tab modal
-	$('#tab-modal-title').html('Details for Port: ' + port);
+	$('#tab-modal-title').html('Details for Port: <b>' + port + '</b>');
 	// add tab modal title
 	$('#modal-tabs').empty();
 	$('#modal-tabs').append(`<li class="nav-item"><a class="nav-link active" id="ip-tab" data-toggle="tab" href="#modal-ip" role="tab" aria-controls="home" aria-selected="true"><span id="modal-ip-count"></span>IP Address</a></li>`);
@@ -832,9 +839,10 @@ function get_port_details(port, scan_id){
 		$('#modal-ip-count').html(`<b>${data['ips'].length}</b>&nbsp;&nbsp;`);
 		for (ip in data['ips']){
 			ip_obj = data['ips'][ip];
-			text_color = ip_obj['cdn'] ? 'warning' : '';
+			text_color = ip_obj['is_cdn'] ? 'warning' : '';
 			$("#modal-ip-text").append(`<li class='text-${text_color}'>${ip_obj['address']}</li>`)
 		}
+		$('#modal-text-ip').append(`<span class="float-right text-warning">*IP Address highlighted are CDN IP Address</span>`);
 	});
 
 	// query subdomains
@@ -844,35 +852,38 @@ function get_port_details(port, scan_id){
 		$('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
 		for (subdomain in data['subdomains']){
 			subdomain_obj = data['subdomains'][subdomain];
-
+			badge_color = subdomain_obj['http_status'] == 404 ? 'danger' : '';
 			if (subdomain_obj['http_url']) {
-				$("#modal-subdomain-text").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank">${subdomain_obj['name']}</a></li>`)
+				$("#modal-subdomain-text").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank" class="text-${badge_color}">${subdomain_obj['name']}</a></li>`)
 			}
 			else {
-				$("#modal-subdomain-text").append(`<li>${subdomain_obj['name']}</li>`)
+				$("#modal-subdomain-text").append(`<li class="text-${badge_color}">${subdomain_obj['name']}</li>`);
 			}
 		}
+		$('#modal-text-subdomain').append(`<span class="float-right text-danger">*Subdomains highlighted are 404 HTTP Status</span>`);
 	});
 }
 
 function get_tech_details(tech, scan_id){
 	// render tab modal
-	$('.modal-title').html('Details for Technology: ' + tech);
+	$('.modal-title').html('Details for Technology: <b>' + tech + '</b>');
 	$('#exampleModal').modal('show');
 	$('.modal-text').empty();
 	// query subdomains
 	$.getJSON(`../api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`, function(data) {
-		$('.modal-text').append(`${data['subdomains'].length} Subdomains using ${tech}`);
-		$('.modal-text').append(`<ul id="subdomain-ul"></ul>`);
+		$('#modal-text-content').append(`${data['subdomains'].length} Subdomains using ${tech}`);
+		$('#modal-text-content').append(`<ul id="subdomain-modal-ul"></ul>`);
 		for (subdomain in data['subdomains']){
 			subdomain_obj = data['subdomains'][subdomain];
+			badge_color = subdomain_obj['http_status'] == 404 ? 'danger' : '';
 			if (subdomain_obj['http_url']) {
-				$("#subdomain-ul").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank">${subdomain_obj['name']}</a></li>`)
+				$("#subdomain-modal-ul").append(`<li><a href='${subdomain_obj['http_url']}' target="_blank" class="text-${badge_color}">${subdomain_obj['name']}</a></li>`);
 			}
 			else {
-				$("#subdomain-ul").append(`<li>${subdomain_obj['name']}</li>`)
+				$("#subdomain-modal-ul").append(`<li class="text-${badge_color}">${subdomain_obj['name']}</li>`);
 			}
 		}
+		$('#modal-text-content').append(`<span class="float-right text-danger">*Subdomains highlighted are 404 HTTP Status</span>`);
 	});
 }
 
