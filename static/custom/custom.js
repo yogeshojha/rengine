@@ -927,6 +927,7 @@ function get_screenshot(scan_id){
 	var port_array = [];
 	var service_array = [];
 	var tech_array = [];
+	var ip_array = [];
 	var gridzyElement = document.querySelector('.gridzy');
 	gridzyElement.classList.add('gridzySkinBlank');
 	gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
@@ -935,6 +936,7 @@ function get_screenshot(scan_id){
 	gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
 	var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
 	$.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
+		console.log(data);
 
 		for (var subdomain in data) {
 			var figure = document.createElement('figure');
@@ -989,36 +991,44 @@ function get_screenshot(scan_id){
 				http_status_select.appendChild(option);
 			}
 
-			// port services
-			ports = data[subdomain]['ports'];
-			for(var port in ports){
-				port_number = data[subdomain]['ports'][port].number;
-				service_name = data[subdomain]['ports'][port].service_name;
-				filter_values += 'port_' + port_number + ' ';
-				filter_values += 'service_' + service_name + ' ';
-				if (port_array.indexOf(port_number) === -1){
-					port_array.push(port_number);
-				}
-				if (service_array.indexOf(service_name) === -1){
-					service_array.push(service_name);
+			// ip, port and services filtering
+			ips = data[subdomain]['ip_addresses']
+			for(var ip in ips){
+				ip_address = ips[ip]['address'];
+				filter_values += 'ip_' + ip_address + ' ';
+				if (ip_array.indexOf(ip_address) === -1){
+			    ip_array.push(ip_address);
+			  }
+
+				ports = ips[ip]['ports'];
+				for(var port in ports){
+					port_number = ips[ip]['ports'][port]['number'];
+					service_name = ips[ip]['ports'][port]['service_name'];
+
+					filter_values += 'port_' + port_number + ' ';
+					if (port_array.indexOf(port_number) === -1){
+				    port_array.push(port_number);
+				  }
+
+					filter_values += 'service_' + service_name + ' ';
+					if (service_array.indexOf(service_name) === -1){
+				    service_array.push(service_name);
+				  }
 				}
 			}
 
 			// technology stack filtering
-
-			var tech = data[subdomain]['technology_stack'];
-			if (tech) {
-				var temp_tech_array = tech.split(',');
-				for(var i = 0; i < temp_tech_array.length; i++) {
-					filter_values += 'tech_' + temp_tech_array[i].replace(/ /g,"_").toLowerCase() + ' ';
-					if (tech_array.indexOf(temp_tech_array[i]) === -1){
-						tech_array.push(temp_tech_array[i]);
-					}
+			technology = data[subdomain]['technologies'];
+			for(var tech in technology){
+				tech_name = technology[tech]['name']
+				filter_values += 'tech_' + tech_name.replace(/ /g,"_").toLowerCase() + ' ';
+				if (tech_array.indexOf(tech_name) === -1){
+					tech_array.push(tech_name);
 				}
+
 			}
 
 			link.setAttribute('class', filter_values);
-
 		}
 
 		// add port and service and tech to options
@@ -1030,6 +1040,17 @@ function get_screenshot(scan_id){
 				option.value = ".port_" + port_array[port];
 				option.innerHTML = port_array[port];
 				port_select.appendChild(option);
+			}
+		}
+
+		// add ip to select
+		ip_select = document.getElementById('ips_select_filter');
+		for(var ip in ip_array){
+			if(!$('#ips_select_filter').find("option:contains('" + ip_array[ip] + "')").length){
+				var option = document.createElement('option');
+				option.value = ".ip_" + ip_array[ip];
+				option.innerHTML = ip_array[ip];
+				ip_select.appendChild(option);
 			}
 		}
 
