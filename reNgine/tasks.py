@@ -7,6 +7,7 @@ import requests
 import logging
 import whatportis
 
+from dotted_dict import DottedDict
 from celery import shared_task
 from discord_webhook import DiscordWebhook
 from reNgine.celery import app
@@ -209,11 +210,13 @@ def skip_subdomain_scan(task, domain, results_dir):
     if not Subdomain.objects.filter(
             scan_history=task,
             name=domain.name).exists():
-        scanned = Subdomain()
-        scanned.name = domain.name
-        scanned.scan_history = task
-        scanned.target_domain = domain
-        scanned.save()
+
+        subdomain_dict = DottedDict({
+            'name': domain.name,
+            'scan_history': task,
+            'target_domain': domain
+        })
+        save_subdomain(subdomain_dict)
 
     # Save target into target_domain.txt
     with open('{}/target_domain.txt'.format(results_dir), 'w+') as file:
@@ -254,18 +257,20 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     valid_imported_subdomains = list(set(valid_imported_subdomains))
 
     with open('{}/from_imported.txt'.format(results_dir), 'w+') as file:
-        for _subdomain in valid_imported_subdomains:
+        for subdomain_name in valid_imported_subdomains:
             # save _subdomain to Subdomain model db
             if not Subdomain.objects.filter(
-                    scan_history=task, name=_subdomain).exists():
-                subdomain = Subdomain()
-                subdomain.scan_history = task
-                subdomain.target_domain = domain
-                subdomain.name = _subdomain
-                subdomain.is_imported_subdomain = True
-                subdomain.save()
+                    scan_history=task, name=subdomain_name).exists():
+
+                subdomain_dict = DottedDict({
+                    'scan_history': task,
+                    'target_domain': domain,
+                    'name': subdomain_name,
+                    'is_imported_subdomain': True
+                })
+                save_subdomain(subdomain_dict)
                 # save subdomain to file
-                file.write('{}\n'.format(_subdomain))
+                file.write('{}\n'.format(subdomain_name))
 
     file.close()
 
@@ -448,12 +453,12 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
             __subdomain = _subdomain.rstrip('\n')
             if not Subdomain.objects.filter(scan_history=task, name=__subdomain).exists(
             ) and validators.domain(__subdomain) and __subdomain not in excluded_subdomains:
-                subdomain = Subdomain()
-                subdomain.scan_history = task
-                subdomain.target_domain = domain
-                subdomain.name = __subdomain
-                subdomain.save()
-
+                subdomain_dict = DottedDict({
+                    'scan_history': task,
+                    'target_domain': domain,
+                    'name': __subdomain,
+                })
+                save_subdomain(subdomain_dict)
 
 def http_crawler(task, domain, results_dir, activity_id):
     '''
@@ -819,6 +824,43 @@ def fetch_endpoints(
             'rm {0}/all_urls.txt && mv {0}/temp_urls.txt {0}/all_urls.txt'.format(results_dir))
 
     '''
+    Store all the endpoints and then run the httpx
+    '''
+
+    try:
+        endpoint_final_url = results_dir + '/all_urls.txt'
+        if os.path.isfile(endpoint_final_url):
+            with open(endpoint_final_url) as endpoint_list:
+                for url in endpoint_list:
+                    _url = url.rstrip('\n')
+                    if not Endpoint.objects.filter(scan_history=task, http_url=_url).exists():
+                        endpoint = Endpoint()
+                        endpoint.scan_history = task
+                        endpoint.target_domain = domain
+                        endpoint.http_url = _url
+                        _subdomain = get_subdomain_from_url(http_url)
+                        if Subdomain.objects.filter(scan_history=task).filter(name=_subdomain).exists():
+                            subdomain = Subdomain.objects.get(scan_history=task, name=_subdomain)
+                        else:
+                            '''
+                            gau or gosppider can gather interesting endpoints which
+                            when parsed can give subdomains that were not existent from
+                            subdomain scan. so storing them
+                            '''
+                            logger.error('Subdomain {} not found, adding...'.format(_subdomain))
+                            subdomain_dict = DottedDict({
+                                'scan_history': task,
+                                'target_domain': domain,
+                                'name': _subdomain,
+                            })
+                            subdomain = save_subdomain(subdomain_dict)
+                        endpoint.subdomain = subdomain
+                        endpoint.save()
+    except Exception as e:
+        logger.error(e)
+
+    '''
+    TODO:
     Go spider & waybackurls accumulates a lot of urls, which is good but nuclei
     takes forever to scan even a simple website, so we will do http probing
     and filter HTTP status 404, this way we can reduce the number of Non Existent
@@ -832,69 +874,19 @@ def fetch_endpoints(
         lines = urls_json_result.readlines()
         for line in lines:
             json_st = json.loads(line.strip())
-            if not EndPoint.objects.filter(
-                    scan_history=task).filter(
-                    http_url=json_st['url']).count():
+            http_url = json_st['url']
+            if EndPoint.objects.filter(scan_history=task).filter(http_url=http_url).exists():
+                endpoint = EndPoint.objects.get(scan_history=task, http_url=http_url)
+            else:
                 endpoint = EndPoint()
                 endpoint.scan_history = task
                 endpoint.target_domain = domain
-                endpoint.http_url = json_st['url']
-                # extract the subdomain from url and map to Subdomain Model
-                _subdomain = get_subdomain_from_url(json_st['url'])
-                try:
-                    subdomain = Subdomain.objects.get(
-                        scan_history=task, name=_subdomain)
-                except Exception as exception:
-                    '''
-                    gau or gosppider can gather interesting endpoints which
-                    when parsed can give subdomains that were not existent from
-                    subdomain scan. so storing them
-                    '''
-                    logger.error(json_st['url'])
-                    logger.error(
-                        'Subdomain {} not found, adding...'.format(_subdomain))
-                    subdomain = Subdomain()
-                    subdomain.name = _subdomain
-                    subdomain.target_domain = domain
-                    subdomain.scan_history = task
-                    subdomain.save()
-                finally:
-                    endpoint.subdomain = subdomain
-                if 'title' in json_st:
-                    endpoint.page_title = json_st['title']
-                if 'webserver' in json_st:
-                    endpoint.webserver = json_st['webserver']
-                if 'content-length' in json_st:
-                    endpoint.content_length = json_st['content-length']
-                if 'content-type' in json_st:
-                    endpoint.content_type = json_st['content-type']
-                if 'status-code' in json_st:
-                    endpoint.http_status = json_st['status-code']
-                if 'response-time' in json_st:
-                    response_time = float(
-                        ''.join(
-                            ch for ch in json_st['response-time'] if not ch.isalpha()))
-                    if json_st['response-time'][-2:] == 'ms':
-                        response_time = response_time / 1000
-                    endpoint.response_time = response_time
-                if 'technologies' in json_st:
-                    for _tech in json_st['technologies']:
-                        tech = Technology()
-                        tech.name = _tech
-                        tech.save()
-                        subdomain.technologies.add(tech)
-                        endpoint.technologies.add(tech)
-                if 'a' in json_st:
-                    ip_list = ','.join(json_st['a'])
-                    endpoint.ip_address = ip_list
-                    endpoint.discovered_date = timezone.now()
-                subdomain.save()
-                endpoint.save()
+
     except Exception as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
-    # once endpoint is saved, run gf patterns
+    # once endpoint is saved, run gf patterns TODO: run threads
     if GF_PATTERNS in yaml_configuration[FETCH_URL]:
         for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
             logger.info('Running GF for {}'.format(pattern))
@@ -1112,6 +1104,34 @@ def delete_scan_data(results_dir):
     os.system('find {} -name "*.html" -type f -delete'.format(results_dir))
     os.system('find {} -name "*.json" -type f -delete'.format(results_dir))
 
+
+def save_subdomain(subdomain_dict):
+    subdomain = Subdomain()
+    subdomain.discovered_date = timezone.now()
+    subdomain.target_domain = subdomain_dict.get('target_domain')
+    subdomain.scan_history = subdomain_dict.get('scan_history')
+    subdomain.name = subdomain_dict.get('name')
+    subdomain.is_imported_subdomain = subdomain_dict.get('is_imported_subdomain')
+    subdomain.http_url = subdomain_dict.get('http_url')
+    subdomain.screenshot_path = subdomain_dict.get('screenshot_path')
+    subdomain.http_header_path = subdomain_dict.get('http_header_path')
+    subdomain.cname = subdomain_dict.get('cname')
+    subdomain.is_cdn = subdomain_dict.get('is_cdn')
+    subdomain.content_type = subdomain_dict.get('content_type')
+    subdomain.webserver = subdomain_dict.get('webserver')
+    subdomain.page_title = subdomain_dict.get('page_title')
+
+    if 'http_status' in subdomain_dict:
+        subdomain.http_status = subdomain_dict.get('http_status')
+
+    if 'response_time' in subdomain_dict:
+        subdomain.response_time = subdomain_dict.get('response_time')
+
+    if 'content_length' in subdomain_dict:
+        subdomain.content_length = subdomain_dict.get('content_length')
+
+    subdomain.save()
+    return subdomain
 
 @app.task(bind=True)
 def test_task(self):

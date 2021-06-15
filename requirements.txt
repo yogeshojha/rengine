@@ -57,3 +57,4 @@ validators==0.18.2
 vine==5.0.0
 wcwidth==0.2.5
 whatportis==0.8.1
+dotted-dict
