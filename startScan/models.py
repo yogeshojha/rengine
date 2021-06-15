@@ -163,9 +163,9 @@ class EndPoint(models.Model):
         null=True,
         blank=True)
     http_url = models.CharField(max_length=5000)
-    content_length = models.IntegerField(default=0)
-    page_title = models.CharField(max_length=1000)
-    http_status = models.IntegerField(default=0)
+    content_length = models.IntegerField(default=0, null=True, blank=True)
+    page_title = models.CharField(max_length=1000, null=True, blank=True)
+    http_status = models.IntegerField(default=0, null=True, blank=True)
     content_type = models.CharField(max_length=100, null=True, blank=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
     response_time = models.FloatField(null=True, blank=True)
