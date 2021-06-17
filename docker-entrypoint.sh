@@ -11,16 +11,16 @@ then
     echo "PostgreSQL started"
 fi
 
-python manage.py migrate
-python manage.py collectstatic --no-input --clear
+python3 manage.py migrate
+python3 manage.py collectstatic --no-input --clear
 
 # Load default engine types
-python manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
+python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
 #Load Default keywords
-python manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
+python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
 
 # update whatportis
-yes | whatportis --update
+# yes | whatportis --update
 
 # install gf patterns
 if [ ! -d "~/Gf-Patterns" ];

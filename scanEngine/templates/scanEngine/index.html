@@ -36,13 +36,14 @@ All Engines
   </div>
   <div class="widget-content widget-content-area">
     <div class="toggle-list">
-      <div class="row">
+      <!-- <div class="row">
         <a class="btn toggle-vis mb-2 ml-2" data-column="1">Subdomain Discovery</a>
+        <a class="btn toggle-vis mb-2 ml-2" data-column="1">OSINT</a>
         <a class="btn toggle-vis mb-2 ml-2" data-column="2">Port Scan</a>
         <a class="btn toggle-vis mb-2 ml-2" data-column="3">Directory & Files Discovery</a>
         <a class="btn toggle-vis mb-2 ml-2" data-column="5">Fetch URLs</a>
         <a class="btn toggle-vis mb-2 ml-2" data-column="6">Vulnerability Scan</a>
-      </div>
+      </div> -->
     </div>
     <div class="table-responsive mb-4">
       <table id="show-hide-col" class="table table-hover" style="width:100%">
@@ -50,6 +51,7 @@ All Engines
           <tr>
             <th>Engine Name</th>
             <th>Subdomain Discovery</th>
+            <th>OSINT</th>
             <th>Port Scan</th>
             <th>Directory & Files Discovery</th>
             <th>Fetch URLs</th>
@@ -63,6 +65,13 @@ All Engines
             <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.engine_name}}</span></td>
             <td>
               {% if engine_type.subdomain_discovery %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td>
+              {% if engine_type.osint %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}

@@ -21,6 +21,7 @@ class ScanHistory(models.Model):
     port_scan = models.BooleanField(null=True, default=False)
     fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)
+    osint = models.BooleanField(null=True, default=False)
     stop_scan_date = models.DateTimeField(null=True)
     used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 
@@ -245,3 +246,24 @@ class Port(models.Model):
 
     def __str__(self):
         return str(self.service_name)
+
+
+class MetaFinderDocument(models.Model):
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    target_domain = models.ForeignKey(
+        Domain, on_delete=models.CASCADE, null=True, blank=True)
+    subdomain = models.ForeignKey(
+        Subdomain,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True)
+    name = models.CharField(max_length=1000, null=True, blank=True)
+    url = models.CharField(max_length=5000, null=True, blank=True)
+    title = models.CharField(max_length=1000, null=True, blank=True)
+    author = models.CharField(max_length=1000, null=True, blank=True)
+    producer = models.CharField(max_length=1000, null=True, blank=True)
+    creator = models.CharField(max_length=1000, null=True, blank=True)
+    os = models.CharField(max_length=1000, null=True, blank=True)
+    http_status = models.IntegerField(default=0, null=True, blank=True)
+    creation_date = models.CharField(max_length=1000, blank=True, null=True)
+    modified_date = models.CharField(max_length=1000, blank=True, null=True)

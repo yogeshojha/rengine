@@ -26,7 +26,7 @@
         <table>
           <tr>
             <td>
-              <p style="margin-right:1%">Subdomain Discovery</>
+              <p class="mr-2 mt-1">Subdomain Discovery</>
               </td>
               <td>
                 {% if engine.subdomain_discovery %}
@@ -39,7 +39,20 @@
           </tr>
           <tr>
             <td>
-              <p style="margin-right:1%">Port Scan</p>
+              <p class="mr-2 mt-1">OSINT</>
+              </td>
+              <td>
+                {% if engine.osint %}
+                {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <p class="mr-2 mt-1">Port Scan</p>
             </td>
             <td>
               {% if engine.port_scan %}
@@ -51,7 +64,7 @@
           </tr>
           <tr>
             <td>
-              <p style="margin-right:1%">Directory and Files Search</p>
+              <p class="mr-2 mt-1">Directory and Files Search</p>
             </td>
             <td>
               {% if engine.dir_file_search %}
@@ -63,7 +76,7 @@
           </tr>
           <tr>
             <td>
-              <p style="margin-right:1%">Fetch Endpoints(URLs)</p>
+              <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
             </td>
             <td>
               {% if engine.fetch_url %}
@@ -75,7 +88,7 @@
           </tr>
           <tr>
             <td>
-              <p style="margin-right:1%">Vulnerability Scan</p>
+              <p class="mr-2 mt-1">Vulnerability Scan</p>
             </td>
             <td>
               {% if engine.vulnerability_scan %}

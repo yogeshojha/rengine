@@ -1,5 +1,5 @@
 # Base image
-FROM python:3-alpine
+FROM ubuntu:20.04
 
 # Labels and Credits
 LABEL \
@@ -7,24 +7,36 @@ LABEL \
     author="Yogesh Ojha <yogesh.ojha11@gmail.com>" \
     description="reNgine is a automated pipeline of recon process, useful for information gathering during web application penetration testing."
 
+# Environment Variables
+ENV DEBIAN_FRONTEND="noninteractive" \
+    DATABASE="postgres"
+
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-RUN apk update \
-    && apk add --virtual build-deps gcc python3-dev musl-dev \
-    && apk add postgresql-dev chromium git netcat-openbsd build-base \
-    && pip install psycopg2 \
-    && apk del build-deps \
-    && apk add libpcap-dev
+# Install essentials
+RUN apt update -y && apt install -y  --no-install-recommends \
+    build-essential \
+    chromium-browser \
+    postgresql \
+    libpq-dev \
+    gcc \
+    libpq-dev \
+    netcat \
+    wget \
+    git \
+    libpcap-dev \
+    python3-dev \
+    python3-pip
 
 
 # Download and install go 1.14
-COPY --from=golang:1.14-alpine /usr/local/go/ /usr/local/go/
+RUN wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
+RUN tar -xvf go1.14.linux-amd64.tar.gz
+RUN mv go /usr/local
 
-# Environment vars
-ENV DATABASE="postgres"
+# ENV for Go
 ENV GOROOT="/usr/local/go"
-ENV GOPATH="/root/go"
 ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
 
@@ -43,10 +55,10 @@ RUN GO111MODULE=on go get -u github.com/jaeles-project/gospider
 RUN GO111MODULE=on go get -u github.com/tomnomnom/gf
 RUN go get -u github.com/tomnomnom/gf
 
-
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt
+RUN pip3 install --upgrade setuptools pip && \
+    pip3 install -r /tmp/requirements.txt
 
 COPY ./tools/OneForAll/requirements.txt /tmp/requirements_oneforall.txt
 RUN pip3 install -r /tmp/requirements_oneforall.txt

@@ -8,7 +8,7 @@
   <table>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Subdomain Discovery</h6>
+        <h6 class="mr-1">Subdomain Discovery</h6>
         <span class="preview">(Selected by Default)</span>
       </td>
       <td>
@@ -20,7 +20,19 @@
     </tr>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Port Scan</h6>
+        <h6 class="mr-1 mt-3">OSINT <span class="badge badge-danger"> New </span> </h6>
+        <span class="preview text-danger">(Recommended)</span>
+      </td>
+      <td>
+        <label class="switch s-icons s-outline s-outline-info">
+          {{form.osint}}
+          <span class="slider round"></span>
+        </label>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <h6 class="mr-1 mt-3">Port Scan</h6>
       </td>
       <td>
         <label class="switch s-icons s-outline s-outline-info">
@@ -31,7 +43,7 @@
     </tr>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Directory and Files Search</h6>
+        <h6 class="mr-1 mt-3">Directory and Files Search</h6>
       </td>
       <td>
         <label class="switch s-icons s-outline s-outline-info">
@@ -42,7 +54,7 @@
     </tr>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Fetch All Endpoints(URLs)</h6>
+        <h6 class="mr-1 mt-3">Fetch All Endpoints(URLs)</h6>
         <span class="preview">(Open Threat Exchange, Wayback Machine <br>Common Crawl)</span>
       </td>
       <td>
@@ -54,11 +66,10 @@
     </tr>
     <tr>
       <td>
-        <h6 style="margin-right:1%">Vulnerability Scanner&nbsp;&nbsp;&nbsp;</h6>
+        <h6 class="mr-1 mt-3">Vulnerability Scanner&nbsp;&nbsp;&nbsp;</h6>
         <span class="preview">Scan for low hanging CVE and vulnerabilities.</span>
         <br>
         <span class="text-info">
-          <span class="badge badge-danger"> New </span>
           For better Vulnerability Scan results, please turn on the <b>Fetch Endpoints</b>.
           <br>reNgine will use nuclei to find vulnerabilities on those endpoints as well.
           <br><span class="text-danger">This will also increase the scan time exponentially but much better results.</span>
@@ -79,7 +90,7 @@
 </p>
 <h4>reNgine YAML Documentation</h4>
 To learn more about YAML config visit the official documentation at <a href="https://rengine.wiki/pentester/scan_engine/" class="text-info" target="_blank">https://rengine.wiki/pentester/scan_engine/</a>
-<p class="mt-2 text-danger">
+<p class="mt-3 text-danger">
   Note: Invalid YAML configuration may crash scans.
   <br>
   <span class="text-uppercase">Please, do not modify the configuration if you are not sure what you are doing.</span>

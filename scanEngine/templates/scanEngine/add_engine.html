@@ -1,3 +1,4 @@
+<!-- DO NOT AUTO INDENT THIS FILE DUE TO PRELOADED YAML CONF -->
 {% extends 'base/base.html' %}
 {% load static %}
 
@@ -50,58 +51,42 @@ Add new engine
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
-<script typetext/javascript">
-	$(document).ready(function() {
-		$('.ace_editor').attr('id','editor');
-		var editor = ace.edit("editor");
-		editor.setValue(`dir_file_search:
-		extensions:
-		- php
-		- asp
-		- aspx
-		- txt
-		- conf
-		- db
-		- sql
-		- json
-		recursive: false
-		recursive_level: 1
-		thread: 100
-		wordlist: default
-		fetch_url:
-		intensity: normal
-		uses_tool:
-		- gau
-		- hakrawler
-		port_scan:
-		ports:
-		- top-100
-		rate: 100
-		subdomain_discovery:
-		thread: 10
-		uses_tool:
-		- amass-passive
-		- subfinder
-		- sublist3r
-		- assetfinder
-		- oneforall
-		visual_identification:
-		http_timeout: 3000
-		port: xlarge
-		scan_timeout: 100
-		screenshot_timeout: 30000
-		thread: 2
-		vulnerability_scan:
-		concurrent: 10
-		severity:
-		- critical
-		- high
-		- medium
-		- low
-		- info
-		template:
-		- all`);
-		editor.clearSelection();
-	});
+<script type="text/javascript">
+$(document).ready(function() {
+	$('.ace_text-input').attr('id','editor');
+	document.getElementById("editor").innerHTML = `subdomain_discovery:
+    uses_tools: [ subfinder, sublist3r, assetfinder ]
+    thread: 10
+
+visual_identification:
+    http_timeout: 3000
+    port: xlarge
+    scan_timeout: 100
+    screenshot_timeout: 30000
+    thread: 2
+
+osint:
+    uses_tools: [ metafinder ]
+
+port_scan:
+    ports: [ top-100 ]
+    rate: 100
+
+dir_file_search:
+    extensions: [ php, asp, aspx, txt, conf, db, sql, json ]
+    recursive: false
+    recursive_level: 1
+    thread: 100
+    wordlist: default
+
+fetch_url:
+    intensity: normal
+    uses_tools: [ gau, hakrawler ]
+
+vulnerability_scan:
+    concurrent: 10
+    severity: [ critical, high, medium, low ]
+    template: [ all ]`;
+});
 </script>
 {% endblock page_level_script %}

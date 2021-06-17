@@ -23,11 +23,14 @@ class AddEngineForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={}))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={}))
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
     vulnerability_scan = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
+    osint = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
     yaml_configuration = forms.CharField(widget=AceWidget(
@@ -37,15 +40,8 @@ class AddEngineForm(forms.ModelForm):
         height="450px",
         tabsize=4,
         fontsize=13,
-        toolbar=True,))
-    interesting_subdomain_lookup = forms.CharField(
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control",
-                "id": "interesting_subdomain_lookup",
-                "placeholder": "Interesting Subdomains",
-            }))
+        toolbar=True,
+        attrs={"id": "editor", "value": "ok"}))
 
 
 class UpdateEngineForm(forms.ModelForm):
@@ -74,6 +70,9 @@ class UpdateEngineForm(forms.ModelForm):
     vulnerability_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
+    osint = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput())
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -82,14 +81,6 @@ class UpdateEngineForm(forms.ModelForm):
         tabsize=4,
         fontsize=13,
         toolbar=True,))
-    interesting_subdomain_lookup = forms.CharField(
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control",
-                "id": "interesting_subdomain_lookup",
-                "placeholder": "Interesting Subdomains",
-            }))
 
     def set_value(self, engine):
         self.initial['engine_name'] = engine.engine_name
@@ -99,6 +90,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
+        self.initial['osint'] = engine.osint
 
 
 class AddWordlistForm(forms.Form):

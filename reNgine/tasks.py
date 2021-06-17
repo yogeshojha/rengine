@@ -5,8 +5,9 @@ import json
 import validators
 import requests
 import logging
-import whatportis
+# import whatportis
 
+import metafinder.extractor as metadata_extractor
 from dotted_dict import DottedDict
 from celery import shared_task
 from discord_webhook import DiscordWebhook
@@ -73,6 +74,7 @@ def initiate_scan(
     task.dir_file_search = True if engine_object.dir_file_search else False
     task.port_scan = True if engine_object.port_scan else False
     task.fetch_url = True if engine_object.fetch_url else False
+    task.osint = True if engine_object.osint else False
     task.vulnerability_scan = True if engine_object.vulnerability_scan else False
     task.save()
 
@@ -160,6 +162,11 @@ def initiate_scan(
         if(task.port_scan):
             activity_id = create_scan_activity(task, "Port Scanning", 1)
             port_scanning(task, domain, yaml_configuration, results_dir)
+            update_last_activity(activity_id, 2)
+
+        if(task.osint):
+            activity_id = create_scan_activity(task, "OSINT Running", 1)
+            perform_osint(task, domain, yaml_configuration, results_dir)
             update_last_activity(activity_id, 2)
 
         if(task.dir_file_search):
@@ -1206,6 +1213,63 @@ def save_endpoint(endpoint_dict):
         'is_default') if 'is_default' in endpoint_dict else False
 
     endpoint.save()
+
+def perform_osint(task, domain, yaml_configuration, results_dir):
+    if 'metafinder' in yaml_configuration[OSINT][USES_TOOLS]:
+        if INTENSITY in yaml_configuration[OSINT]:
+            osint_intensity = yaml_configuration[OSINT][INTENSITY]
+        else:
+            osint_intensity = 'normal'
+
+        if METAFINDER_DOCUMENTS_LIMIT in yaml_configuration[OSINT]:
+            documents_limit = yaml_configuration[OSINT][METAFINDER_DOCUMENTS_LIMIT]
+        else:
+            documents_limit = 50
+
+        if osint_intensity == 'normal':
+            meta_dict = DottedDict({
+                'osint_target': domain.name,
+                'domain': domain,
+                'scan_id': task,
+                'documents_limit': documents_limit
+            })
+            get_and_save_meta_info(meta_dict)
+
+
+def get_and_save_meta_info(meta_dict):
+    result = metadata_extractor.extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
+    results = results.get_metadata()
+    for meta in results:
+        meta_finder_document = MetaFinderDocument()
+        meta_finder_document.subdomain = meta_dict.osint_target
+        meta_finder_document.target_domain = meta_dict.domain
+        meta_finder_document.scan_history = meta_dict.scan_id
+
+        item = DottedDict(results[meta])
+        meta_finder_document.http_url = item.url
+        meta_finder_document.name = meta
+        meta_finder_document.http_status = item.status_code
+
+        metadata = results[meta]['metadata']
+        for data in metadata:
+            if 'Producer' in metadata[data]:
+                meta_finder_document.producer = metadata[data]['Producer']
+            if 'Creator' in metadata[data]:
+                meta_finder_document.creator = metadata[data]['Creator']
+            if 'CreationDate' in metadata[data]:
+                meta_finder_document.creation_date = metadata[data]['CreationDate']
+            if 'ModDate' in metadata[data]:
+                meta_finder_document.modified_date = metadata[data]['ModDate']
+            if 'Author' in metadata[data]:
+                meta_finder_document.author = metadata[data]['Author']
+            if 'Title' in metadata[data]:
+                meta_finder_document.title = metadata[data]['Title']
+            if 'OSInfo' in metadata[data]:
+                meta_finder_document.os = metadata[data]['OSInfo']
+
+        meta_finder_document.save()
+
+
 
 
 @app.task(bind=True)

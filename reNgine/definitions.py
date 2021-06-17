@@ -25,7 +25,7 @@ DIR_FILE_SEARCH = 'dir_file_search'
 FETCH_URL = 'fetch_url'
 INTENSITY = 'intensity'
 
-USES_TOOLS = 'uses_tool'
+USES_TOOLS = 'uses_tools'
 THREAD = 'thread'
 AMASS_WORDLIST = 'amass_wordlist'
 AMASS_CONFIG = 'amass_config'
@@ -49,6 +49,8 @@ CUSTOM_NUCLEI_TEMPLATE = 'custom_templates'
 NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
+OSINT = 'osint'
+METAFINDER_DOCUMENTS_LIMIT = 'metafinder_documents_limit'
 
 ###############################################################################
 # Wordlist DEFINITIONS
