@@ -1234,42 +1234,54 @@ def perform_osint(task, domain, yaml_configuration, results_dir):
                 'documents_limit': documents_limit
             })
             get_and_save_meta_info(meta_dict)
+        elif osint_intensity == 'deep':
+            # get all subdomains in scan_id
+            subdomains = Subdomain.objects.filter(scan_history=task)
+            for subdomain in subdomains:
+                meta_dict = DottedDict({
+                    'osint_target': subdomain.name,
+                    'domain': domain,
+                    'scan_id': task,
+                    'documents_limit': documents_limit
+                })
+                get_and_save_meta_info(meta_dict)
 
 
 def get_and_save_meta_info(meta_dict):
+    logger.info('Getting METADATA for {}'.format(meta_dict.osint_target))
     result = metadata_extractor.extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
-    results = result.get_metadata()
-    print(results)
-    for meta in results:
-        meta_finder_document = MetaFinderDocument()
-        subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
-        meta_finder_document.subdomain = subdomain
-        meta_finder_document.target_domain = meta_dict.domain
-        meta_finder_document.scan_history = meta_dict.scan_id
+    if result:
+        results = result.get_metadata()
+        for meta in results:
+            meta_finder_document = MetaFinderDocument()
+            subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
+            meta_finder_document.subdomain = subdomain
+            meta_finder_document.target_domain = meta_dict.domain
+            meta_finder_document.scan_history = meta_dict.scan_id
 
-        item = DottedDict(results[meta])
-        meta_finder_document.http_url = item.url
-        meta_finder_document.name = meta
-        meta_finder_document.http_status = item.status_code
+            item = DottedDict(results[meta])
+            meta_finder_document.http_url = item.url
+            meta_finder_document.name = meta
+            meta_finder_document.http_status = item.status_code
 
-        metadata = results[meta]['metadata']
-        for data in metadata:
-            if 'Producer' in metadata and metadata['Producer']:
-                meta_finder_document.producer = metadata['Producer'].rstrip('\x00')
-            if 'Creator' in metadata and metadata['Creator']:
-                meta_finder_document.creator = metadata['Creator'].rstrip('\x00')
-            if 'CreationDate' in metadata and metadata['CreationDate']:
-                meta_finder_document.creation_date = metadata['CreationDate'].rstrip('\x00')
-            if 'ModDate' in metadata and metadata['ModDate']:
-                meta_finder_document.modified_date = metadata['ModDate'].rstrip('\x00')
-            if 'Author' in metadata and metadata['Author']:
-                meta_finder_document.author = metadata['Author'].rstrip('\x00')
-            if 'Title' in metadata and metadata['Title']:
-                meta_finder_document.title = metadata['Title'].rstrip('\x00')
-            if 'OSInfo' in metadata and metadata['OSInfo']:
-                meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
+            metadata = results[meta]['metadata']
+            for data in metadata:
+                if 'Producer' in metadata and metadata['Producer']:
+                    meta_finder_document.producer = metadata['Producer'].rstrip('\x00')
+                if 'Creator' in metadata and metadata['Creator']:
+                    meta_finder_document.creator = metadata['Creator'].rstrip('\x00')
+                if 'CreationDate' in metadata and metadata['CreationDate']:
+                    meta_finder_document.creation_date = metadata['CreationDate'].rstrip('\x00')
+                if 'ModDate' in metadata and metadata['ModDate']:
+                    meta_finder_document.modified_date = metadata['ModDate'].rstrip('\x00')
+                if 'Author' in metadata and metadata['Author']:
+                    meta_finder_document.author = metadata['Author'].rstrip('\x00')
+                if 'Title' in metadata and metadata['Title']:
+                    meta_finder_document.title = metadata['Title'].rstrip('\x00')
+                if 'OSInfo' in metadata and metadata['OSInfo']:
+                    meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
 
-        meta_finder_document.save()
+            meta_finder_document.save()
 
 
 
