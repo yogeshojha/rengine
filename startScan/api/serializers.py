@@ -43,6 +43,20 @@ class InterestingSubdomainSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
+class MetafinderDocumentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = MetaFinderDocument
+        fields = '__all__'
+
+
+class MetafinderUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = MetaFinderDocument
+        fields = ['author']
+
+
 class InterestingEndPointSerializer(serializers.ModelSerializer):
 
     class Meta:

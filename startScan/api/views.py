@@ -94,6 +94,15 @@ class ListSubdomains(APIView):
             return Response({"subdomains": serializer.data})
 
 
+class ListOsintUsers(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).exclude(author__isnull=True).values('author').distinct()
+            serializer = MetafinderUserSerializer(documents, many=True)
+            return Response({"users": serializer.data})
+
 class ListIPs(APIView):
     def get(self, request, format=None):
         req = self.request

@@ -272,7 +272,7 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-5 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
 									<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
@@ -280,6 +280,19 @@ Detailed Scan Results for {{history.domain.name}}
 								<div class="widget-content">
 									<div class="mt-container mx-auto">
 										<div id="technologies">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="osint-users-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> OSINT: Users Identified </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="osint-users">
 										</div>
 									</div>
 								</div>
@@ -1282,6 +1295,8 @@ get_interesting_count({{scan_history_id}});
 get_ips({{scan_history_id}});
 
 get_technologies({{scan_history_id}});
+
+get_osint_users({{scan_history_id}});
 
 get_ports({{scan_history_id}});
 

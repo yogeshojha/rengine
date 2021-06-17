@@ -30,6 +30,7 @@ urlpatterns = [
     path('queryPorts/', ListPorts.as_view(), name='listPorts'),
     path('queryIps/', ListIPs.as_view(), name='listIPs'),
     path('querySubdomains/', ListSubdomains.as_view(), name='querySubdomains'),
+    path('queryOsintUsers/', ListOsintUsers.as_view(), name='querySubdomains'),
 ]
 
 urlpatterns += router.urls

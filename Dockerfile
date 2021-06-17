@@ -40,6 +40,10 @@ ENV GOROOT="/usr/local/go"
 ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
 
+ENV GOPATH=$HOME/go
+ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
+
+
 # Download Go packages
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
 

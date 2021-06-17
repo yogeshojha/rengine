@@ -899,6 +899,21 @@ function get_technologies(scan_id){
 	});
 }
 
+function get_osint_users(scan_id){
+	$.getJSON(`../api/queryOsintUsers/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#osint-users-count').empty();
+		for (var val in data['users']){
+			user = data['users'][val]
+			$("#osint-users").append(`<span class='badge outline-badge-info badge-pills m-1'>${user['author']}</span>`);
+		}
+		$('#osint-users-count').html(`<span class="badge outline-badge-dark">${data['users'].length}</span>`);
+		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+	}).fail(function(){
+		$('#osint-users-count').empty();
+		$("#osint-users").append(`<p>No Users discovered.</p>`);
+	});
+}
+
 function get_ports(scan_id){
 	$.getJSON(`../api/queryPorts/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#ports-count').empty();
