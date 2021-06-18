@@ -48,6 +48,7 @@ class MetafinderDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = MetaFinderDocument
         fields = '__all__'
+        depth = 1
 
 
 class MetafinderUserSerializer(serializers.ModelSerializer):

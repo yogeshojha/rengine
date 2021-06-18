@@ -1012,8 +1012,8 @@ function get_screenshot(scan_id){
 				ip_address = ips[ip]['address'];
 				filter_values += 'ip_' + ip_address + ' ';
 				if (ip_array.indexOf(ip_address) === -1){
-			    ip_array.push(ip_address);
-			  }
+					ip_array.push(ip_address);
+				}
 
 				ports = ips[ip]['ports'];
 				for(var port in ports){
@@ -1022,13 +1022,13 @@ function get_screenshot(scan_id){
 
 					filter_values += 'port_' + port_number + ' ';
 					if (port_array.indexOf(port_number) === -1){
-				    port_array.push(port_number);
-				  }
+						port_array.push(port_number);
+					}
 
 					filter_values += 'service_' + service_name + ' ';
 					if (service_array.indexOf(service_name) === -1){
-				    service_array.push(service_name);
-				  }
+						service_array.push(service_name);
+					}
 				}
 			}
 
@@ -1196,4 +1196,39 @@ function fullScreenDiv(id, btn){
 	document.fullscreenElement && document.exitFullscreen() || document.querySelector(id).requestFullscreen()
 
 	fullscreen.setAttribute("style","overflow:auto");
+}
+
+function get_randid(){
+	return '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function get_metadata(scan_id){
+	$.getJSON(`../api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#metadata-count').empty();
+		for (var val in data['metadata']){
+			doc = data['metadata'][val];
+			rand_id = get_randid();
+			$('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
+			file_name = `<a href=${doc['url']} target="_blank" class="text-info">${truncate(doc['name'], 30)}</a>`;
+			subdomain = `<span class='text-muted'>${doc['subdomain']['name']}</span>`;
+			$(`#${rand_id}`).append(`<td class="td-content">${file_name}</br>${subdomain}</td>`);
+			if (doc['author']){
+				$(`#${rand_id}`).append(`<td class="td-content text-center">${doc['author']}</td>`);
+			}
+			else{
+				$(`#${rand_id}`).append('<td></td>')
+			}
+			if (doc['producer'] || doc['creator'] || doc['os']) {
+				metadata = ''
+				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : ''
+				metadata += doc['creator'] ? '/' + doc['creator'] : ''
+				metadata += doc['os'] ? '<br> <span class=text-warning> OS: ' + doc['os'] + '</span>': ''
+				$(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
+			}
+			else{
+				$(`#${rand_id}`).append('<td></td>')
+			}
+		}
+		$('#metadata-count').html(`<span class="badge outline-badge-dark">${data['metadata'].length}</span>`);
+	});
 }

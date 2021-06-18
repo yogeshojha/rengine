@@ -103,6 +103,17 @@ class ListOsintUsers(APIView):
             serializer = MetafinderUserSerializer(documents, many=True)
             return Response({"users": serializer.data})
 
+
+class ListMetadata(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            documents = MetaFinderDocument.objects.filter(scan_history__id=scan_id).distinct()
+            serializer = MetafinderDocumentSerializer(documents, many=True)
+            return Response({"metadata": serializer.data})
+
+
 class ListIPs(APIView):
     def get(self, request, format=None):
         req = self.request

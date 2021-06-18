@@ -1260,7 +1260,7 @@ def get_and_save_meta_info(meta_dict):
             meta_finder_document.scan_history = meta_dict.scan_id
 
             item = DottedDict(results[meta])
-            meta_finder_document.http_url = item.url
+            meta_finder_document.url = item.url
             meta_finder_document.name = meta
             meta_finder_document.http_status = item.status_code
 
