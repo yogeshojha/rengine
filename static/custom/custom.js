@@ -1205,6 +1205,7 @@ function get_randid(){
 function get_metadata(scan_id){
 	$.getJSON(`../api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#metadata-count').empty();
+		$('#metadata-table-body').empty();
 		for (var val in data['metadata']){
 			doc = data['metadata'][val];
 			rand_id = get_randid();
@@ -1237,6 +1238,7 @@ function get_metadata(scan_id){
 function get_emails(scan_id){
 	$.getJSON(`../api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#emails-count').empty();
+		$('#email-table-body').empty();
 		for (var val in data['emails']){
 			email = data['emails'][val];
 			rand_id = get_randid();
@@ -1251,6 +1253,7 @@ function get_emails(scan_id){
 function get_employees(scan_id){
 	$.getJSON(`../api/queryEmployees/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#employees-count').empty();
+		$('#employees-table-body').empty();
 		for (var val in data['employees']){
 			emp = data['employees'][val];
 			rand_id = get_randid();

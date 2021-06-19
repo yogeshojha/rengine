@@ -1296,6 +1296,7 @@ def get_and_save_employees(scan_history, results_dir):
                     designation = ""
                 employee, _ = Employee.objects.get_or_create(name=name, designation=designation)
                 scan_history.employees.add(employee)
+        driver.quit()
 
 
         print(tabledata)
