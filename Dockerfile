@@ -17,7 +17,6 @@ ENV PYTHONUNBUFFERED 1
 # Install essentials
 RUN apt update -y && apt install -y  --no-install-recommends \
     build-essential \
-    chromium-browser \
     postgresql \
     libpq-dev \
     gcc \
@@ -28,7 +27,6 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     libpcap-dev \
     python3-dev \
     python3-pip
-
 
 # Download and install go 1.14
 RUN wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
@@ -42,7 +40,6 @@ ENV PATH="${PATH}:${GOPATH}/bin"
 
 ENV GOPATH=$HOME/go
 ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
-
 
 # Download Go packages
 RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
@@ -74,9 +71,15 @@ WORKDIR /app
 # Copy source code
 COPY . /app/
 
+# RUN git clone https://github.com/FortyNorthSecurity/EyeWitness /app/tools/Eyewitness
+RUN /app/tools/Eyewitness/Python/setup/setup.sh
+
+# RUN git clone https://github.com/laramies/theHarvester /app/tools/theHarvester
+RUN pip3 install -r /app/tools/theHarvester/requirements/base.txt
+
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
-RUN chmod +x /app/tools/takeover.sh
+RUN chmod +x /app/tools/get_linkedin_emp.sh
 
 # run entrypoint.sh
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
