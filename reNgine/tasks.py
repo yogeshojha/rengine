@@ -5,9 +5,11 @@ import json
 import validators
 import requests
 import logging
+import metafinder.extractor as metadata_extractor
 # import whatportis
 
-import metafinder.extractor as metadata_extractor
+
+from emailfinder.extractor import *
 from dotted_dict import DottedDict
 from celery import shared_task
 from discord_webhook import DiscordWebhook
@@ -164,10 +166,14 @@ def initiate_scan(
             port_scanning(task, domain, yaml_configuration, results_dir)
             update_last_activity(activity_id, 2)
 
-        if(task.osint):
-            activity_id = create_scan_activity(task, "OSINT Running", 1)
-            perform_osint(task, domain, yaml_configuration, results_dir)
-            update_last_activity(activity_id, 2)
+        try:
+            if(task.osint):
+                activity_id = create_scan_activity(task, "OSINT Running", 1)
+                perform_osint(task, domain, yaml_configuration, results_dir)
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
 
         if(task.dir_file_search):
             activity_id = create_scan_activity(task, "Directory Search", 1)
@@ -1215,14 +1221,14 @@ def save_endpoint(endpoint_dict):
     endpoint.save()
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
-    if 'metafinder' in yaml_configuration[OSINT][USES_TOOLS]:
+    if 'metainfo' in yaml_configuration[OSINT][OSINT_DISCOVER]:
         if INTENSITY in yaml_configuration[OSINT]:
             osint_intensity = yaml_configuration[OSINT][INTENSITY]
         else:
             osint_intensity = 'normal'
 
-        if METAFINDER_DOCUMENTS_LIMIT in yaml_configuration[OSINT]:
-            documents_limit = yaml_configuration[OSINT][METAFINDER_DOCUMENTS_LIMIT]
+        if OSINT_DOCUMENTS_LIMIT in yaml_configuration[OSINT]:
+            documents_limit = yaml_configuration[OSINT][OSINT_DOCUMENTS_LIMIT]
         else:
             documents_limit = 50
 
@@ -1245,6 +1251,24 @@ def perform_osint(task, domain, yaml_configuration, results_dir):
                     'documents_limit': documents_limit
                 })
                 get_and_save_meta_info(meta_dict)
+
+    if 'emails' in yaml_configuration[OSINT][OSINT_DISCOVER]:
+        get_and_save_emails(task)
+
+
+def get_and_save_emails(scan_history):
+
+    # get email address
+    logger.info('OSINT: Getting emails from Google')
+    email_from_google = get_emails_from_google(scan_history.domain.name)
+
+    # TODO: bing and baidu are experiencing error ATM, will add later
+
+    emails = list(set(email_from_google))
+
+    for _email in emails:
+        email, _ = Email.objects.get_or_create(address=_email)
+        scan_history.emails.add(email)
 
 
 def get_and_save_meta_info(meta_dict):

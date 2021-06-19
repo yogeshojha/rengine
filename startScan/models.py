@@ -25,6 +25,9 @@ class ScanHistory(models.Model):
     stop_scan_date = models.DateTimeField(null=True)
     used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 
+    # osint is directly linked to scan history and not subdomains
+    emails = models.ManyToManyField('Email', related_name='emails')
+
     def __str__(self):
         # debug purpose remove scan type and id in prod
         return self.domain.name
@@ -267,3 +270,7 @@ class MetaFinderDocument(models.Model):
     http_status = models.IntegerField(default=0, null=True, blank=True)
     creation_date = models.CharField(max_length=1000, blank=True, null=True)
     modified_date = models.CharField(max_length=1000, blank=True, null=True)
+
+
+class Email(models.Model):
+    address = models.CharField(max_length=200, blank=True, null=True)

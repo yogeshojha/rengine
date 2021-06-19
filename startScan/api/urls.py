@@ -32,6 +32,7 @@ urlpatterns = [
     path('querySubdomains/', ListSubdomains.as_view(), name='querySubdomains'),
     path('queryOsintUsers/', ListOsintUsers.as_view(), name='queryOsintUsers'),
     path('queryMetadata/', ListMetadata.as_view(), name='queryMetadata'),
+    path('queryEmails/', ListEmails.as_view(), name='queryEmails'),
 ]
 
 urlpatterns += router.urls

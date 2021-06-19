@@ -37,6 +37,17 @@ class ListTechnology(APIView):
             return Response({"technologies": serializer.data})
 
 
+class ListEmails(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            tech = Email.objects.filter(
+                emails__in=ScanHistory.objects.filter(id=scan_id))
+            serializer = EmailSerializer(tech, many=True)
+            return Response({"emails": serializer.data})
+
+
 class ListPorts(APIView):
     def get(self, request, format=None):
         req = self.request

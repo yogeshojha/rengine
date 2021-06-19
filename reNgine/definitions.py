@@ -50,7 +50,8 @@ NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
 OSINT = 'osint'
-METAFINDER_DOCUMENTS_LIMIT = 'metafinder_documents_limit'
+OSINT_DOCUMENTS_LIMIT = 'documents_limit'
+OSINT_DISCOVER = 'discover'
 
 ###############################################################################
 # Wordlist DEFINITIONS

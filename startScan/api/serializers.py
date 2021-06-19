@@ -43,6 +43,13 @@ class InterestingSubdomainSerializer(serializers.ModelSerializer):
         fields = ['name']
 
 
+class EmailSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Email
+        fields = '__all__'
+
+
 class MetafinderDocumentSerializer(serializers.ModelSerializer):
 
     class Meta:

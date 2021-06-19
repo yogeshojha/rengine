@@ -1232,3 +1232,17 @@ function get_metadata(scan_id){
 		$('#metadata-count').html(`<span class="badge outline-badge-dark">${data['metadata'].length}</span>`);
 	});
 }
+
+
+function get_emails(scan_id){
+	$.getJSON(`../api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#emails-count').empty();
+		for (var val in data['emails']){
+			email = data['emails'][val];
+			rand_id = get_randid();
+			$('#email-table-body').append(`<tr id=${rand_id}></tr>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${email['address']}</td>`);
+		}
+		$('#emails-count').html(`<span class="badge outline-badge-dark">${data['emails'].length}</span>`);
+	});
+}

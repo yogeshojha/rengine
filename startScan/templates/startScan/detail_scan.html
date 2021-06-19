@@ -582,8 +582,7 @@ Detailed Scan Results for {{history.domain.name}}
 												</a>
 
 												<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
-													<a class="dropdown-item" href="javascript:void(0);">View All</a>
-													<a class="dropdown-item" href="javascript:void(0);">Mark as Read</a>
+													<a class="dropdown-item" href="javascript:void(0);">Copy all document URLs to clipboard</a>
 												</div>
 											</div>
 										</div>
@@ -604,6 +603,45 @@ Detailed Scan Results for {{history.domain.name}}
 														</tr>
 													</thead>
 													<tbody id="metadata-table-body">
+													</tbody>
+												</table>
+											</div>
+											<div class="ps__rail-x" style="left: 0px; bottom: -21px;"><div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div></div><div class="ps__rail-y" style="top: 21px; height: 332px; right: 0px;"><div class="ps__thumb-y" tabindex="0" style="top: 16px; height: 256px;"></div></div></div>
+											<div class="w-shadow-bottom"></div>
+										</div>
+									</div>
+								</div>
+							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+
+									<div class="widget-heading">
+										<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses</h6>
+
+										<div class="task-action">
+											<div class="dropdown">
+												<a class="dropdown-toggle" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+													<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+												</a>
+												<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+													<a class="dropdown-item" href="javascript:void(0);">Copy all email addresses to clipboard</a>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="widget-content">
+
+										<div class="w-shadow-top"></div>
+
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Email Address</div></th>
+														</tr>
+													</thead>
+													<tbody id="email-table-body">
 													</tbody>
 												</table>
 											</div>
@@ -1350,6 +1388,7 @@ get_ports({{scan_history_id}});
 
 // osint
 get_metadata({{scan_history_id}});
+get_emails({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns
