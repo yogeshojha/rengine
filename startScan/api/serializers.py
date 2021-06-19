@@ -49,6 +49,11 @@ class EmailSerializer(serializers.ModelSerializer):
         model = Email
         fields = '__all__'
 
+class EmployeeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = '__all__'
+
 
 class MetafinderDocumentSerializer(serializers.ModelSerializer):
 

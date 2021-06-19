@@ -9,6 +9,8 @@ import metafinder.extractor as metadata_extractor
 # import whatportis
 
 
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium import webdriver
 from emailfinder.extractor import *
 from dotted_dict import DottedDict
 from celery import shared_task
@@ -1221,7 +1223,13 @@ def save_endpoint(endpoint_dict):
     endpoint.save()
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
-    if 'metainfo' in yaml_configuration[OSINT][OSINT_DISCOVER]:
+    if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
+        osint_lookup = 'emails metainfo employees'
+    else:
+        osint_lookup = ' '.join(
+            str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DISCOVER])
+
+    if 'metainfo' in osint_lookup:
         if INTENSITY in yaml_configuration[OSINT]:
             osint_intensity = yaml_configuration[OSINT][INTENSITY]
         else:
@@ -1252,8 +1260,45 @@ def perform_osint(task, domain, yaml_configuration, results_dir):
                 })
                 get_and_save_meta_info(meta_dict)
 
-    if 'emails' in yaml_configuration[OSINT][OSINT_DISCOVER]:
+    if 'emails' in osint_lookup:
         get_and_save_emails(task)
+
+    if 'employees' in osint_lookup:
+        get_and_save_employees(task, results_dir)
+
+def get_and_save_employees(scan_history, results_dir):
+    theHarvester_location = '/app/tools/theHarvester/theHarvester.py'
+
+    os.system(settings.TOOL_LOCATION + 'get_linkedin_emp.sh {} {}'.format(scan_history.domain.name, results_dir))
+
+    file_location = results_dir + '/theHarvester.html'
+    print(file_location)
+    if os.path.isfile(file_location):
+        logger.info('Parsing theHarvester results')
+        options = FirefoxOptions()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
+        driver.get('file://'+file_location)
+        tabledata = driver.execute_script('return tabledata')
+        # save email addresses and linkedin employees
+        for data in tabledata:
+            if data['record'] == 'email':
+                _email = data['result']
+                email, _ = Email.objects.get_or_create(address=_email)
+                scan_history.emails.add(email)
+            elif data['record'] == 'people':
+                _employee = data['result']
+                split_val = _employee.split('-')
+                name = split_val[0]
+                if len(split_val) == 2:
+                    designation = split_val[1]
+                else:
+                    designation = ""
+                employee, _ = Employee.objects.get_or_create(name=name, designation=designation)
+                scan_history.employees.add(employee)
+
+
+        print(tabledata)
 
 
 def get_and_save_emails(scan_history):

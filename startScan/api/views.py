@@ -48,6 +48,17 @@ class ListEmails(APIView):
             return Response({"emails": serializer.data})
 
 
+class ListEmployees(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            employee = Employee.objects.filter(
+                employees__in=ScanHistory.objects.filter(id=scan_id))
+            serializer = EmployeeSerializer(employee, many=True)
+            return Response({"employees": serializer.data})
+
+
 class ListPorts(APIView):
     def get(self, request, format=None):
         req = self.request

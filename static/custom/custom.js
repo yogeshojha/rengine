@@ -1246,3 +1246,19 @@ function get_emails(scan_id){
 		$('#emails-count').html(`<span class="badge outline-badge-dark">${data['emails'].length}</span>`);
 	});
 }
+
+
+function get_employees(scan_id){
+	$.getJSON(`../api/queryEmployees/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#employees-count').empty();
+		for (var val in data['employees']){
+			emp = data['employees'][val];
+			rand_id = get_randid();
+			console.log(emp);
+			$('#employees-table-body').append(`<tr id=${rand_id}></tr>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${emp['name']}</td>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${emp['designation']}</td>`);
+		}
+		$('#employees-count').html(`<span class="badge outline-badge-dark">${data['employees'].length}</span>`);
+	});
+}
