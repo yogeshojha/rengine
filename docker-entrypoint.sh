@@ -31,4 +31,17 @@ then
   mv ~/Gf-Patterns/*.json ~/.gf
 fi
 
+# clone eyewitness
+if [ ! -d "/app/tools/Eyewitness" ]
+then
+    git clone https://github.com/FortyNorthSecurity/EyeWitness /app/tools/Eyewitness
+fi
+
+# clone theHarvester
+if [ ! -d "/app/tools/theHarvester" ]
+then
+    git clone https://github.com/laramies/theHarvester /app/tools/theHarvester
+    python3 -m pip install -r /app/tools/theHarvester/requirements/base.txt
+fi
+
 exec "$@"

@@ -17,21 +17,34 @@ ENV PYTHONUNBUFFERED 1
 # Install essentials
 RUN apt update -y && apt install -y  --no-install-recommends \
     build-essential \
-    postgresql \
-    libpq-dev \
+    cmake \
+    firefox \
     gcc \
-    libpq-dev \
-    netcat \
-    wget \
     git \
+    libpq-dev \
+    libpq-dev \
     libpcap-dev \
+    netcat \
+    postgresql \
+    python3 \
     python3-dev \
-    python3-pip
+    python3-pip \
+    python3-netaddr \
+    wget \
+    x11-utils \
+    xvfb
 
 # Download and install go 1.14
 RUN wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
 RUN tar -xvf go1.14.linux-amd64.tar.gz
+RUN rm go1.14.linux-amd64.tar.gz
 RUN mv go /usr/local
+
+# Download geckodriver
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.26.0/geckodriver-v0.26.0-linux64.tar.gz
+RUN tar -xvf geckodriver-v0.26.0-linux64.tar.gz
+RUN rm geckodriver-v0.26.0-linux64.tar.gz
+RUN mv geckodriver /usr/bin
 
 # ENV for Go
 ENV GOROOT="/usr/local/go"
@@ -70,12 +83,6 @@ WORKDIR /app
 
 # Copy source code
 COPY . /app/
-
-# RUN git clone https://github.com/FortyNorthSecurity/EyeWitness /app/tools/Eyewitness
-RUN /app/tools/Eyewitness/Python/setup/setup.sh
-
-# RUN git clone https://github.com/laramies/theHarvester /app/tools/theHarvester
-RUN pip3 install -r /app/tools/theHarvester/requirements/base.txt
 
 RUN chmod +x /app/tools/get_dirs.sh
 RUN chmod +x /app/tools/get_urls.sh
