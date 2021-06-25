@@ -18,8 +18,7 @@ services:
 
   web:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./web
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
@@ -28,7 +27,9 @@ services:
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
     volumes:
-      - .:/app
+      - ./web:/usr/src/app
+      - github_repos:/usr/src/github
+      - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
     ports:
@@ -36,17 +37,20 @@ services:
     depends_on:
       - db
       - redis
+      - celery
+      - celery-beat
     networks:
       - rengine_network
 
   celery:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./web
     restart: always
     command: "celery -A reNgine worker -l INFO"
     volumes:
-      - .:/app
+      - ./web:/usr/src/app
+      - github_repos:/usr/src/github
+      - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
     environment:
@@ -54,7 +58,16 @@ services:
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
     depends_on:
-      - web
+      - redis
+    networks:
+      - rengine_network
+
+  celery-beat:
+    build: ./web
+    command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      - DEBUG=1
+    depends_on:
       - redis
     networks:
       - rengine_network
@@ -65,21 +78,11 @@ services:
     networks:
       - rengine_network
 
-  celery-beat:
-    build: .
-    command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    environment:
-      - DEBUG=1
-    depends_on:
-      - redis
-    networks:
-      - rengine_network
-    volumes:
-      - .:/app
-
 networks:
   rengine_network:
 volumes:
   postgres_data:
   gf_patterns:
   nuclei_templates:
+  github_repos:
+  scan_results:
