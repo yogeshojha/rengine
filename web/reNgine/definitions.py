@@ -10,7 +10,6 @@ logger = logging.getLogger('django')
 # TOOLS DEFINITIONS
 ###############################################################################
 
-AMASS_COMMAND = '/usr/src/app/tools/amass enum'
 NUCLEI_TEMPLATES_PATH = '/root/nuclei-templates/'
 ###############################################################################
 # YAML CONFIG DEFINITIONS

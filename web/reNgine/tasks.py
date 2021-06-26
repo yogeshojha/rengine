@@ -6,7 +6,7 @@ import validators
 import requests
 import logging
 import metafinder.extractor as metadata_extractor
-# import whatportis
+import whatportis
 
 
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -337,8 +337,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 pass
 
         if 'amass-passive' in tools:
-            amass_command = AMASS_COMMAND + \
-                ' -passive -d {} -o {}/from_amass.txt'.format(
+            amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
                     domain.name, results_dir)
             if amass_config_path:
                 amass_command = amass_command + \
@@ -350,8 +349,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
             os.system(amass_command)
 
         if 'amass-active' in tools:
-            amass_command = AMASS_COMMAND + \
-                ' -active -d {} -o {}/from_amass_active.txt'.format(
+            amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
                     domain.name, results_dir)
 
             if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
