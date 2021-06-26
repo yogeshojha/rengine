@@ -25,9 +25,9 @@ services:
   celery:
     build:
       context: ./web
-    entrypoint: /usr/src/app/docker-entrypoint.sh
     restart: always
-    command: "celery -A reNgine worker -l INFO"
+    entrypoint: /usr/src/app/waitfor-db.sh
+    command: celery -A reNgine worker -l INFO
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -41,11 +41,13 @@ services:
     depends_on:
       - db
       - redis
+      - web
     networks:
       - rengine_network
 
   celery-beat:
     build: ./web
+    entrypoint: /usr/src/app/waitfor-db.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       - DEBUG=1
@@ -53,6 +55,7 @@ services:
       - db
       - redis
       - celery
+      - web
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -65,6 +68,7 @@ services:
   web:
     build:
       context: ./web
+    entrypoint: /usr/src/app/entrypoint.sh
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
@@ -82,7 +86,6 @@ services:
       - "8000:8000"
     depends_on:
       - db
-      - redis
     networks:
       - rengine_network
 

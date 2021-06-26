@@ -2,6 +2,7 @@ from django.db import models
 
 
 class EngineType(models.Model):
+    id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
     subdomain_discovery = models.BooleanField()
     dir_file_search = models.BooleanField()
@@ -28,6 +29,7 @@ class EngineType(models.Model):
 
 
 class Wordlist(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=200)
     short_name = models.CharField(max_length=50, unique=True)
     count = models.IntegerField(default=0)
@@ -37,6 +39,7 @@ class Wordlist(models.Model):
 
 
 class Configuration(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=200)
     short_name = models.CharField(max_length=50, unique=True)
     content = models.TextField()
@@ -46,6 +49,7 @@ class Configuration(models.Model):
 
 
 class InterestingLookupModel(models.Model):
+    id = models.AutoField(primary_key=True)
     keywords = models.TextField(null=True, blank=True)
     custom_type = models.BooleanField(default=False)
     title_lookup = models.BooleanField(default=True)

@@ -90,9 +90,6 @@ RUN python3 -m pip install fuzzywuzzy \
     pyvirtualdisplay \
     netaddr
 
-# copy entrypoint.sh
-COPY ./docker-entrypoint.sh /usr/src/app/docker-entrypoint.sh
-
 # Copy source code
 COPY . /usr/src/app/
 

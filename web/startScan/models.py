@@ -11,6 +11,7 @@ from django.http import JsonResponse
 
 
 class ScanHistory(models.Model):
+    id = models.AutoField(primary_key=True)
     start_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
     domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
@@ -90,6 +91,7 @@ class ScanHistory(models.Model):
 
 
 class Subdomain(models.Model):
+    id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     target_domain = models.ForeignKey(
         Domain, on_delete=models.CASCADE, null=True, blank=True)
@@ -159,6 +161,7 @@ class Subdomain(models.Model):
 
 
 class EndPoint(models.Model):
+    id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     target_domain = models.ForeignKey(
         Domain, on_delete=models.CASCADE, null=True, blank=True)
@@ -184,6 +187,7 @@ class EndPoint(models.Model):
 
 
 class Vulnerability(models.Model):
+    id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     subdomain = models.ForeignKey(
         Subdomain,
@@ -218,6 +222,7 @@ class Vulnerability(models.Model):
 
 
 class ScanActivity(models.Model):
+    id = models.AutoField(primary_key=True)
     scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     title = models.CharField(max_length=1000)
     time = models.DateTimeField()
@@ -227,6 +232,7 @@ class ScanActivity(models.Model):
         return str(self.title)
 
 class Technology(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
@@ -234,6 +240,7 @@ class Technology(models.Model):
 
 
 class IpAddress(models.Model):
+    id = models.AutoField(primary_key=True)
     address = models.CharField(max_length=100, blank=True, null=True)
     is_cdn = models.BooleanField(default=False)
     ports = models.ManyToManyField('Port', related_name='ports')
@@ -243,6 +250,7 @@ class IpAddress(models.Model):
 
 
 class Port(models.Model):
+    id = models.AutoField(primary_key=True)
     number = models.IntegerField(default=0)
     service_name = models.CharField(max_length=100, blank=True, null=True)
     description = models.CharField(max_length=1000, blank=True, null=True)
@@ -253,6 +261,7 @@ class Port(models.Model):
 
 
 class MetaFinderDocument(models.Model):
+    id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     target_domain = models.ForeignKey(
         Domain, on_delete=models.CASCADE, null=True, blank=True)
@@ -274,8 +283,10 @@ class MetaFinderDocument(models.Model):
 
 
 class Email(models.Model):
+    id = models.AutoField(primary_key=True)
     address = models.CharField(max_length=200, blank=True, null=True)
 
 class Employee(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=1000, null=True, blank=True)
     designation = models.CharField(max_length=1000, null=True, blank=True)
