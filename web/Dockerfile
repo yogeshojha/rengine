@@ -35,9 +35,9 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     xvfb
 
 # Download and install go 1.14
-RUN wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
-RUN tar -xvf go1.14.linux-amd64.tar.gz
-RUN rm go1.14.linux-amd64.tar.gz
+RUN wget https://dl.google.com/go/go1.16.5.linux-amd64.tar.gz
+RUN tar -xvf go1.16.5.linux-amd64.tar.gz
+RUN rm go1.16.5.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
@@ -74,6 +74,7 @@ RUN GO111MODULE=on go get -u -v github.com/bp0lr/gauplus
 RUN GO111MODULE=on go get github.com/tomnomnom/waybackurls
 RUN GO111MODULE=on go get -u github.com/jaeles-project/gospider
 RUN GO111MODULE=on go get -u github.com/tomnomnom/gf
+RUN GO111MODULE=on go get -u github.com/OWASP/Amass/v3/...
 RUN go get -u github.com/tomnomnom/gf
 
 # Copy requirements

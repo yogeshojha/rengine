@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cat ../web/art/1.0.txt
+echo "Uninstalling reNgine"
 
 if [ "$EUID" -ne 0 ]
   then
@@ -7,9 +9,6 @@ if [ "$EUID" -ne 0 ]
   echo "Example: sudo ./uninstall.sh"
   exit
 fi
-
-cat text_art.txt
-echo "Uninstalling reNgine"
 
 echo "Stopping reNgine"
 docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1
