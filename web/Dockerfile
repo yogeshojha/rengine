@@ -81,6 +81,14 @@ COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools pip && \
     pip3 install -r /tmp/requirements.txt
 
+# install eyewitness
+
+RUN python3 -m pip install fuzzywuzzy \
+    selenium \
+    python-Levenshtein \
+    pyvirtualdisplay \
+    netaddr
+
 # copy entrypoint.sh
 COPY ./docker-entrypoint.sh /usr/src/app/docker-entrypoint.sh
 
@@ -90,6 +98,3 @@ COPY . /usr/src/app/
 RUN chmod +x /usr/src/app/tools/get_dirs.sh
 RUN chmod +x /usr/src/app/tools/get_urls.sh
 RUN chmod +x /usr/src/app/tools/get_linkedin_emp.sh
-
-# run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]

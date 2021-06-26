@@ -25,41 +25,47 @@ yes | whatportis --update
 # clone dirsearch
 if [ ! -d "/usr/src/github/dirsearch" ]
 then
+  echo "Cloning dirsearch"
   git clone https://github.com/maurosoria/dirsearch /usr/src/github/dirsearch
-  pip install -r /usr/src/github/dirsearch/requirements.txt
+  python3 -m pip install -r /usr/src/github/dirsearch/requirements.txt
 fi
 
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
 then
+  echo "Cloning Sublist3r"
   git clone https://github.com/aboul3la/Sublist3r /usr/src/github/Sublist3r
-  pip install -r /usr/src/github/Sublist3r/requirements.txt
+  python3 -m pip install -r /usr/src/github/Sublist3r/requirements.txt
 fi
 
 # clone OneForAll
 if [ ! -d "/usr/src/github/OneForAll" ]
 then
+  echo "Cloning OneForAll"
   git clone https://github.com/shmilylty/OneForAll /usr/src/github/OneForAll
-  pip install -r /usr/src/github/OneForAll/requirements.txt
+  python3 -m pip install -r /usr/src/github/OneForAll/requirements.txt
 fi
 
 # clone eyewitness
 if [ ! -d "/usr/src/github/Eyewitness" ]
 then
-    git clone https://github.com/FortyNorthSecurity/EyeWitness /usr/src/github/Eyewitness
-    # pip install -r /usr/src/github/Eyewitness/requirements.txt
+  echo "Cloning Eyewitness"
+  git clone https://github.com/FortyNorthSecurity/EyeWitness /usr/src/github/Eyewitness
+  # pip install -r /usr/src/github/Eyewitness/requirements.txt
 fi
 
 # clone theHarvester
 if [ ! -d "/usr/src/github/theHarvester" ]
 then
-    git clone https://github.com/laramies/theHarvester /usr/src/github/theHarvester
-    python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
+  echo "Cloning theHarvester"
+  git clone https://github.com/laramies/theHarvester /usr/src/github/theHarvester
+  python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
 fi
 
 # install gf patterns
 if [ ! -d "/root/Gf-Patterns" ];
 then
+  echo "Installing GF Patterns"
   mkdir ~/.gf
   cp -r $GOPATH/src/github.com/tomnomnom/gf/examples/*.json ~/.gf
   git clone https://github.com/1ndianl33t/Gf-Patterns ~/Gf-Patterns
