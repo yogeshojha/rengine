@@ -1309,9 +1309,9 @@ def dorking(scan_history, yaml_configuration):
         ]
         dork = ''
         for website in lookup_websites:
-            dork = 'site:' + website + ' | ' + dork
+            dork = dork + ' | ' + 'site:' + website
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=False
@@ -1330,9 +1330,9 @@ def dorking(scan_history, yaml_configuration):
         ]
         dork = ''
         for website in social_websites:
-            dork = 'site:' + website + ' | ' + dork
+            dork = dork + ' | ' + 'site:' + website
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=False
@@ -1346,9 +1346,9 @@ def dorking(scan_history, yaml_configuration):
         ]
         dork = ''
         for website in project_websites:
-            dork = 'site:' + website + ' | ' + dork
+            dork = dork + ' | ' + 'site:' + website
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=False
@@ -1363,9 +1363,9 @@ def dorking(scan_history, yaml_configuration):
         ]
         dork = ''
         for website in code_websites:
-            dork = 'site:' + website + ' | ' + dork
+            dork = dork + ' | ' + 'site:' + website
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=False
@@ -1388,9 +1388,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for extension in config_file_ext:
-            dork = 'ext:' + extension + ' | ' + dork
+            dork = dork + ' | ' + 'ext:' + extension
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1415,9 +1415,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for lookup in inurl_lookup:
-            dork = 'inurl:' + lookup + ' | ' + dork
+            dork = dork + ' | ' + 'inurl:' + lookup
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1433,9 +1433,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for website in cloud_websites:
-            dork = 'site:' + website + ' | ' + dork
+            dork = dork + ' | ' + 'site:' + website
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=False
@@ -1451,9 +1451,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for word in error_words:
-            dork = word + ' | ' + dork
+            dork = dork + ' | ' + word
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1477,9 +1477,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for extension in docs_file_ext:
-            dork = 'ext:' + extension + ' | ' + dork
+            dork = dork + ' | ' + 'ext:' + extension
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1495,9 +1495,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for extension in struts_file_ext:
-            dork = 'ext:' + extension + ' | ' + dork
+            dork = dork + ' | ' + 'ext:' + extension
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1514,9 +1514,9 @@ def dorking(scan_history, yaml_configuration):
 
         dork = ''
         for extension in db_file_ext:
-            dork = 'ext:' + extension + ' | ' + dork
+            dork = dork + ' | ' + 'ext:' + extension
         get_and_save_dork_results(
-            dork,
+            dork[3:],
             dork_type,
             scan_history,
             in_target=True
@@ -1546,11 +1546,13 @@ def dorking(scan_history, yaml_configuration):
 def get_and_save_dork_results(dork, type, scan_history, in_target=False):
     degoogle_obj = degoogle.dg()
     if in_target:
-        degoogle_obj.query = dork + "site:" + scan_history.domain.name
+        query = dork + " site:" + scan_history.domain.name
     else:
-        degoogle_obj.query = dork + " \"{}\"".format(scan_history.domain.name)
+        query = dork + " \"{}\"".format(scan_history.domain.name)
+    logger.info(query)
+    degoogle_obj.query = query
     results = degoogle_obj.run()
-    print(results)
+    logger.info(results)
     for result in results:
         dork, _ = Dork.objects.get_or_create(
             type=type,
