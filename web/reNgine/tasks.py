@@ -1222,8 +1222,15 @@ def save_endpoint(endpoint_dict):
     endpoint.save()
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
+    if 'discover' in yaml_configuration[OSINT]:
+        osint_discovery(task, domain, yaml_configuration, results_dir)
+
+    if 'dork' in yaml_configuration[OSINT]:
+        dorking(task, yaml_configuration)
+
+def osint_discovery(task, domain, yaml_configuration, results_dir):
     if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
-        osint_lookup = 'emails metainfo employees dork'
+        osint_lookup = 'emails metainfo employees'
     else:
         osint_lookup = ' '.join(
             str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DISCOVER])
@@ -1259,31 +1266,294 @@ def perform_osint(task, domain, yaml_configuration, results_dir):
                 })
                 get_and_save_meta_info(meta_dict)
 
-    if 'dork' in osint_lookup:
-        dorking(task)
-
     if 'emails' in osint_lookup:
         get_and_save_emails(task)
 
     if 'employees' in osint_lookup:
         get_and_save_employees(task, results_dir)
 
-def dorking(scan_history):
+def dorking(scan_history, yaml_configuration):
     # Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
     # look in stackoverflow
-    dork_type = 'stackoverflow'
+    if ALL in yaml_configuration[OSINT][OSINT_DORK]:
+        dork_lookup = 'stackoverflow, 3rdparty, social_media, project_management, code_sharing, config_files, jenkins, cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik, git_exposed'
+    else:
+        dork_lookup = ' '.join(
+            str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DORK])
+
+    if 'stackoverflow' in dork_lookup:
+        dork = 'site:stackoverflow.com'
+        dork_type = 'stackoverflow'
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if '3rdparty' in dork_lookup:
+        # look in 3rd party sitee
+        dork_type = '3rdparty'
+        lookup_websites = [
+            'gitter.im',
+            'papaly.com',
+            'productforums.google.com',
+            'coggle.it',
+            'replt.it',
+            'ycombinator.com',
+            'libraries.io',
+            'npm.runkit.com',
+            'npmjs.com',
+            'scribd.com',
+            'gitter.im'
+        ]
+        dork = ''
+        for website in lookup_websites:
+            dork = 'site:' + website + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if 'social_media' in dork_lookup:
+        dork_type = 'Social Media'
+        social_websites = [
+            'tiktok.com',
+            'facebook.com',
+            'twitter.com',
+            'youtube.com',
+            'pinterest.com',
+            'tumblr.com',
+            'reddit.com'
+        ]
+        dork = ''
+        for website in social_websites:
+            dork = 'site:' + website + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if 'project_management' in dork_lookup:
+        dork_type = 'Project Management'
+        project_websites = [
+            'trello.com',
+            '*.atlassian.net'
+        ]
+        dork = ''
+        for website in project_websites:
+            dork = 'site:' + website + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if 'code_sharing' in dork_lookup:
+        dork_type = 'Code Sharing Sites'
+        code_websites = [
+            'github.com',
+            'gitlab.com',
+            'bitbucket.org'
+        ]
+        dork = ''
+        for website in code_websites:
+            dork = 'site:' + website + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if 'config_files' in dork_lookup:
+        dork_type = 'Config Files'
+        config_file_ext = [
+            'env',
+            'xml',
+            'conf',
+            'cnf',
+            'inf',
+            'rdp',
+            'ora',
+            'txt',
+            'cfg',
+            'ini'
+        ]
+
+        dork = ''
+        for extension in config_file_ext:
+            dork = 'ext:' + extension + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'jenkins' in dork_lookup:
+        dork_type = 'Jenkins'
+        dork = 'intitle:\"Dashboard [Jenkins]\"'
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'wordpress_files' in dork_lookup:
+        dork_type = 'Wordpress Files'
+        inurl_lookup = [
+            'wp-content',
+            'wp-includes'
+        ]
+
+        dork = ''
+        for lookup in inurl_lookup:
+            dork = 'inurl:' + lookup + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'cloud_buckets' in dork_lookup:
+        dork_type = 'Cloud Buckets'
+        cloud_websites = [
+            '.s3.amazonaws.com',
+            'storage.googleapis.com',
+            'amazonaws.com'
+        ]
+
+        dork = ''
+        for website in cloud_websites:
+            dork = 'site:' + website + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=False
+        )
+
+    if 'php_error' in dork_lookup:
+        dork_type = 'PHP Error'
+        error_words = [
+            '\"PHP Parse error\"',
+            '\"PHP Warning\"',
+            '\"PHP Error\"'
+        ]
+
+        dork = ''
+        for word in error_words:
+            dork = word + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'exposed_documents' in dork_lookup:
+        dork_type = 'Exposed Documents'
+        docs_file_ext = [
+            'doc',
+            'docx',
+            'odt',
+            'pdf',
+            'rtf',
+            'sxw',
+            'psw',
+            'ppt',
+            'pptx',
+            'pps',
+            'csv'
+        ]
+
+        dork = ''
+        for extension in docs_file_ext:
+            dork = 'ext:' + extension + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'struts_rce' in dork_lookup:
+        dork_type = 'Apache Struts RCE'
+        struts_file_ext = [
+            'action',
+            'struts',
+            'do'
+        ]
+
+        dork = ''
+        for extension in struts_file_ext:
+            dork = 'ext:' + extension + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'db_files' in dork_lookup:
+        dork_type = 'Database Files'
+        db_file_ext = [
+            'sql',
+            'db',
+            'dbf',
+            'mdb'
+        ]
+
+        dork = ''
+        for extension in db_file_ext:
+            dork = 'ext:' + extension + ' | ' + dork
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'traefik' in dork_lookup:
+        dork = 'intitle:traefik inurl:8080/dashboard'
+        dork_type = 'Traefik'
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
+
+    if 'git_exposed' in dork_lookup:
+        dork = 'inurl:\"/.git\"'
+        dork_type = '.git Exposed'
+        get_and_save_dork_results(
+            dork,
+            dork_type,
+            scan_history,
+            in_target=True
+        )
 
 
-    dork_type = 'site:gitter.im | site:papaly.com | site:productforums.google.com | site:coggle.it | site:replt.it | site:ycombinator.com | site:libraries.io | site:npm.runkit.com | site:npmjs.com | site:scribd.com | site:gitter.im | site:papaly.com | site:productforums.google.com | site:coggle.it | site:replt.it | site:ycombinator.com | site:libraries.io | site:npm.runkit.com | site:npmjs.com | site:scribd.com'
-
-
-def get_and_save_dork_results(dork, type, scan_history):
+def get_and_save_dork_results(dork, type, scan_history, in_target=False):
     degoogle_obj = degoogle.dg()
-    degoogle_obj.query = dork + " \"${scan_history.domain.name}\""
+    if in_target:
+        degoogle_obj.query = dork + "site:" + scan_history.domain.name
+    else:
+        degoogle_obj.query = dork + " \"{}\"".format(scan_history.domain.name)
     results = degoogle_obj.run()
+    print(results)
     for result in results:
         dork, _ = Dork.objects.get_or_create(
-            type=dork_type,
+            type=type,
             description=result['desc'],
             url=result['url']
         )

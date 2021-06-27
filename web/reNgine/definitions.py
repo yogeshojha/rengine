@@ -51,6 +51,7 @@ NUCLEI_CONCURRENCY = 'concurrency'
 OSINT = 'osint'
 OSINT_DOCUMENTS_LIMIT = 'documents_limit'
 OSINT_DISCOVER = 'discover'
+OSINT_DORK = 'dork'
 
 ###############################################################################
 # Wordlist DEFINITIONS
