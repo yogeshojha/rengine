@@ -25,6 +25,7 @@ from django.shortcuts import get_object_or_404
 
 from celery import shared_task
 from datetime import datetime
+from degoogle import degoogle
 
 from django.conf import settings
 from django.utils import timezone, dateformat
@@ -1222,7 +1223,7 @@ def save_endpoint(endpoint_dict):
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
     if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
-        osint_lookup = 'emails metainfo employees'
+        osint_lookup = 'emails metainfo employees dork'
     else:
         osint_lookup = ' '.join(
             str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DISCOVER])
@@ -1258,11 +1259,35 @@ def perform_osint(task, domain, yaml_configuration, results_dir):
                 })
                 get_and_save_meta_info(meta_dict)
 
+    if 'dork' in osint_lookup:
+        dorking(task)
+
     if 'emails' in osint_lookup:
         get_and_save_emails(task)
 
     if 'employees' in osint_lookup:
         get_and_save_employees(task, results_dir)
+
+def dorking(scan_history):
+    # Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
+    # look in stackoverflow
+    dork_type = 'stackoverflow'
+
+
+    dork_type = 'site:gitter.im | site:papaly.com | site:productforums.google.com | site:coggle.it | site:replt.it | site:ycombinator.com | site:libraries.io | site:npm.runkit.com | site:npmjs.com | site:scribd.com | site:gitter.im | site:papaly.com | site:productforums.google.com | site:coggle.it | site:replt.it | site:ycombinator.com | site:libraries.io | site:npm.runkit.com | site:npmjs.com | site:scribd.com'
+
+
+def get_and_save_dork_results(dork, type, scan_history):
+    degoogle_obj = degoogle.dg()
+    degoogle_obj.query = dork + " \"${scan_history.domain.name}\""
+    results = degoogle_obj.run()
+    for result in results:
+        dork, _ = Dork.objects.get_or_create(
+            type=dork_type,
+            description=result['desc'],
+            url=result['url']
+        )
+        scan_history.dorks.add(dork)
 
 def get_and_save_employees(scan_history, results_dir):
     theHarvester_location = '/usr/src/github/theHarvester/theHarvester.py'

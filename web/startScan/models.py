@@ -29,6 +29,7 @@ class ScanHistory(models.Model):
     # osint is directly linked to scan history and not subdomains
     emails = models.ManyToManyField('Email', related_name='emails')
     employees = models.ManyToManyField('Employee', related_name='employees')
+    dorks = models.ManyToManyField('Dork', related_name='dorks')
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
@@ -290,3 +291,10 @@ class Employee(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=1000, null=True, blank=True)
     designation = models.CharField(max_length=1000, null=True, blank=True)
+
+
+class Dork(models.Model):
+    id = models.AutoField(primary_key=True)
+    type = models.CharField(max_length=500, null=True, blank=True)
+    description = models.CharField(max_length=1500, null=True, blank=True)
+    url = models.CharField(max_length=1500, null=True, blank=True)
