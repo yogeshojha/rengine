@@ -48,6 +48,17 @@ class ListEmails(APIView):
             return Response({"emails": serializer.data})
 
 
+class ListDorks(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            tech = Dork.objects.filter(
+                dorks__in=ScanHistory.objects.filter(id=scan_id))
+            serializer = DorkSerializer(tech, many=True)
+            return Response({"dorks": serializer.data})
+
+
 class ListEmployees(APIView):
     def get(self, request, format=None):
         req = self.request

@@ -1257,11 +1257,27 @@ function get_employees(scan_id){
 		for (var val in data['employees']){
 			emp = data['employees'][val];
 			rand_id = get_randid();
-			console.log(emp);
 			$('#employees-table-body').append(`<tr id=${rand_id}></tr>`);
 			$(`#${rand_id}`).append(`<td class="td-content">${emp['name']}</td>`);
 			$(`#${rand_id}`).append(`<td class="td-content">${emp['designation']}</td>`);
 		}
 		$('#employees-count').html(`<span class="badge outline-badge-dark">${data['employees'].length}</span>`);
+	});
+}
+
+
+function get_dorks(scan_id){
+	$.getJSON(`../api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#dorks-count').empty();
+		$('#dorks-table-body').empty();
+		for (var val in data['dorks']){
+			dork = data['dorks'][val];
+			rand_id = get_randid();
+			$('#dorks-table-body').append(`<tr id=${rand_id}></tr>`);
+			$(`#${rand_id}`).append(`<td class="td-content text-center">${dork['type']}</td>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${truncate(dork['description'], 120)}</td>`);
+			$(`#${rand_id}`).append(`<td class="td-content"><a href="${dork['url']}" target="_blank" class="text-info">${truncate(dork['url'], 60)}</a></td>`);
+		}
+		$('#dorks-count').html(`<span class="badge outline-badge-dark">${data['dorks'].length}</span>`);
 	});
 }
