@@ -133,7 +133,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'tools/scan_results')
+MEDIA_ROOT = os.path.join(BASE_DIR, '/usr/src/scan_results')
 MEDIA_URL = '/media/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100000000
 FILE_UPLOAD_PERMISSIONS = 0o644

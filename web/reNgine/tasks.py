@@ -2,6 +2,7 @@ import os
 import traceback
 import yaml
 import json
+import csv
 import validators
 import requests
 import logging
@@ -312,10 +313,10 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
     logging.info(tools)
 
-    # check for thread, by default 10
+    # check for THREADS, by default 10
     threads = 10
-    if THREAD in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-        _threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREAD]
+    if THREADS in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+        _threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREADS]
         if _threads > 0:
             threads = _threads
 
@@ -579,70 +580,58 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for taking screenshots
     '''
-    # after subdomain discovery run aquatone for visual identification
-    output_aquatone_path = results_dir + '/aquascreenshots'
-
+    output_screenshots_path = results_dir + '/screenshots'
+    result_csv_path = results_dir + '/screenshots/Requests.csv'
     alive_subdomains_path = results_dir + '/alive.txt'
 
-    if PORT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_port = yaml_configuration[VISUAL_IDENTIFICATION][PORT]
-        # check if scan port is valid otherwise proceed with default xlarge
-        # port
-        if scan_port not in ['small', 'medium', 'large', 'xlarge']:
-            scan_port = 'xlarge'
-    else:
-        scan_port = 'xlarge'
+    eyewitness_command = 'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py'
 
-    if THREAD in yaml_configuration[VISUAL_IDENTIFICATION] and yaml_configuration[VISUAL_IDENTIFICATION][THREAD] > 0:
-        threads = yaml_configuration[VISUAL_IDENTIFICATION][THREAD]
-    else:
-        threads = 10
+    eyewitness_command += ' -f {} -d {} --no-prompt'.format(
+        alive_subdomains_path,
+        output_screenshots_path
+    )
 
-    if HTTP_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        http_timeout = yaml_configuration[VISUAL_IDENTIFICATION][HTTP_TIMEOUT]
-    else:
-        http_timeout = 3000  # Default Timeout for HTTP
+    if TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION] \
+        and yaml_configuration[VISUAL_IDENTIFICATION][TIMEOUT] > 0:
+        eyewitness_command += ' --timeout {}'.format(
+            yaml_configuration[VISUAL_IDENTIFICATION][TIMEOUT]
+        )
 
-    if SCREENSHOT_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        screenshot_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCREENSHOT_TIMEOUT]
-    else:
-        screenshot_timeout = 30000  # Default Timeout for Screenshot
+    if THREADS in yaml_configuration[VISUAL_IDENTIFICATION] \
+        and yaml_configuration[VISUAL_IDENTIFICATION][THREADS] > 0:
+            eyewitness_command += ' --threads {}'.format(
+                yaml_configuration[VISUAL_IDENTIFICATION][THREADS]
+            )
 
-    if SCAN_TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION]:
-        scan_timeout = yaml_configuration[VISUAL_IDENTIFICATION][SCAN_TIMEOUT]
-    else:
-        scan_timeout = 100  # Default Timeout for Scan
+    logger.info(eyewitness_command)
 
-    aquatone_command = 'cat {} | /usr/src/github/aquatone --threads {} -ports {} -out {} -http-timeout {} -scan-timeout {} -screenshot-timeout {}'.format(
-        alive_subdomains_path, threads, scan_port, output_aquatone_path, http_timeout, scan_timeout, screenshot_timeout)
+    os.system(eyewitness_command)
 
-    logging.info(aquatone_command)
-    os.system(aquatone_command)
-    # os.system('chmod -R 607 /usr/src/scan_results/*')
-    aqua_json_path = output_aquatone_path + '/aquatone_session.json'
-
-    try:
-        if os.path.isfile(aqua_json_path):
-            logger.info('Gathering aquatone results')
-            with open(aqua_json_path, 'r') as json_file:
-                data = json.load(json_file)
-
-            for host in data['pages']:
-                try:
-                    sub_domain = Subdomain.objects.get(
+    if os.path.isfile(result_csv_path):
+        logger.info('Gathering Eyewitness results')
+        with open(result_csv_path, 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[3] == 'Successful' \
+                    and Subdomain.objects.filter(
+                        scan_history__id=task.id).filter(name=row[2]).exists():
+                    subdomain = Subdomain.objects.get(
                         scan_history__id=task.id,
-                        name=data['pages'][host]['hostname'])
-                    if data['pages'][host]['hasScreenshot']:
-                        sub_domain.screenshot_path = results_dir + \
-                            '/aquascreenshots/' + data['pages'][host]['screenshotPath']
-                        sub_domain.http_header_path = results_dir + \
-                            '/aquascreenshots/' + data['pages'][host]['headersPath']
-                        sub_domain.save()
-                except Exception as e:
-                    continue
-    except Exception as exception:
-        logging.error(exception)
-        update_last_activity(activity_id, 0)
+                        name=row[2]
+                    )
+                    subdomain.screenshot_path = row[4].replace(
+                        '/usr/src/scan_results/',
+                        ''
+                    )
+                    subdomain.save()
+
+    # remove all db, html extra files in screenshot results
+    os.system('rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(
+        output_screenshots_path,
+    ))
+    os.system('rm -rf {0}/source'.format(
+        output_screenshots_path,
+    ))
 
 
 def port_scanning(task, domain, yaml_configuration, results_dir):
@@ -747,8 +736,9 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
         extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
     # Threads
-    if THREAD in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][THREAD] > 0:
-        threads = yaml_configuration[DIR_FILE_SEARCH][THREAD]
+    if THREADS in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][THREADS] > 0:
+        threads = yaml_configuration[DIR_FILE_SEARCH][THREADS]
     else:
         threads = 10
 
