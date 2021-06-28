@@ -39,6 +39,19 @@
           </tr>
           <tr>
             <td>
+              <p class="mr-2 mt-1">Screenshot</>
+              </td>
+              <td>
+                {% if engine.screenshot %}
+                {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
               <p class="mr-2 mt-1">OSINT</>
               </td>
               <td>
