@@ -1,0 +1,35 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Settings & API Keys
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+Settings
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>reNgine Specific Settings</h4>
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
+{% endblock page_level_script %}

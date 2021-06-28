@@ -18,6 +18,7 @@ from django.core.files.storage import default_storage
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
     context = {
+            'engine_ul_show': 'show',
             'engine_li': 'active',
             'scan_engine_nav_active': 'true',
             'engine_type': engine_type, }
@@ -203,6 +204,7 @@ def interesting_lookup(request):
     context = {}
     context['scan_engine_nav_active'] = 'true'
     context['interesting_lookup_li'] = 'active'
+    context['engine_ul_show'] = 'show'
     form = InterestingLookupForm()
     if InterestingLookupModel.objects.filter(custom_type=True).exists():
         lookup_keywords = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0]
@@ -230,7 +232,7 @@ def interesting_lookup(request):
     context['default_lookup'] = InterestingLookupModel.objects.filter(id=1)
     return render(request, 'scanEngine/lookup.html', context)
 
-def settings(request):
+def tool_specific_settings(request):
     context = {}
     # check for incoming form requests
     if request.method == "POST":
@@ -259,9 +261,19 @@ def settings(request):
                 messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
             return http.HttpResponseRedirect(reverse('settings'))
 
-
+    context['settings_nav_active'] = 'true'
+    context['tool_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
     gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
     nuclei_custom_pattern = [f for f in glob.glob("/root/nuclei-templates/*.yaml")]
     context['nuclei_templates'] = nuclei_custom_pattern
     context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/index.html', context)
+
+def rengine_settings(request):
+    context = {}
+    context['settings_nav_active'] = 'true'
+    context['rengine_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/rengine.html', context)

@@ -53,7 +53,11 @@ urlpatterns = [
         views.interesting_lookup,
         name='interesting_lookup'),
     path(
-        'settings',
-        views.settings,
-        name='settings'),
+        'tool_settings',
+        views.tool_specific_settings,
+        name='tool_settings'),
+    path(
+        'rengine_settings',
+        views.rengine_settings,
+        name='rengine_settings'),
 ]
