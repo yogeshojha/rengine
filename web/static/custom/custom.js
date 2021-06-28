@@ -1281,3 +1281,32 @@ function get_dorks(scan_id){
 		$('#dorks-count').html(`<span class="badge outline-badge-dark">${data['dorks'].length}</span>`);
 	});
 }
+
+
+function get_dork_summary(scan_id){
+	$.getJSON(`../api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
+		$('#dork-category-count').empty();
+		for (var val in data['dorks']){
+			dork = data['dorks'][val]
+			$("#osint-dork").append(`<span class='badge outline-badge-info badge-pills m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
+		}
+		$('#dork-category-count').html(`<span class="badge outline-badge-dark">${data['dorks'].length}</span>`);
+		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+	});
+}
+
+
+function get_dork_details(dork_type, scan_id){
+	// render tab modal
+	$('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
+	$('#exampleModal').modal('show');
+	$('.modal-text').empty();
+	$.getJSON(`../api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
+		$('#modal-text-content').append(`<b>${data['dorks'].length} results found in this dork category.</b>`);
+		$('#modal-text-content').append(`<ul id="dork-detail-modal-ul"></ul>`);
+		for (dork in data['dorks']){
+			dork_obj = data['dorks'][dork];
+			$("#dork-detail-modal-ul").append(`<li><a href="${dork_obj['url']}" target="_blank" class="text-info">${dork_obj['description']}</a></li>`);
+		}
+	});
+}

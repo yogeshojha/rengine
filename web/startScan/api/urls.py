@@ -35,6 +35,7 @@ urlpatterns = [
     path('queryEmails/', ListEmails.as_view(), name='queryEmails'),
     path('queryEmployees/', ListEmployees.as_view(), name='queryEmployees'),
     path('queryDorks/', ListDorks.as_view(), name='queryDorks'),
+    path('queryDorkTypes/', ListDorkTypes.as_view(), name='queryDorkTypes'),
 ]
 
 urlpatterns += router.urls

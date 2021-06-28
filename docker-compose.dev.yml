@@ -66,7 +66,6 @@ services:
     build:
       context: ./web
     entrypoint: /usr/src/app/entrypoint.sh
-    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:

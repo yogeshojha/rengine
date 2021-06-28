@@ -90,6 +90,11 @@ class TechnologyCountSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
+class DorkCountSerializer(serializers.Serializer):
+    count = serializers.CharField()
+    type = serializers.CharField()
+
+
 class TechnologySerializer(serializers.ModelSerializer):
     class Meta:
         model = Technology

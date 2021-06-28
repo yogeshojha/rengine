@@ -163,7 +163,7 @@ Detailed Scan Results for {{history.domain.name}}
 				</li>
 			</ul>
 			<div class="tab-content" id="pills-tabContent">
-				<div class="tab-pane fade" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+				<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
 					<div class="row">
 						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-five widget-progress">
@@ -285,7 +285,7 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-3 col-lg-3 col-md-4 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
 									<h6 class=""><span id="osint-users-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> OSINT: Users Identified </h6>
@@ -293,6 +293,19 @@ Detailed Scan Results for {{history.domain.name}}
 								<div class="widget-content">
 									<div class="mt-container mx-auto">
 										<div id="osint-users">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="osint-dork">
 										</div>
 									</div>
 								</div>
@@ -567,7 +580,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
-					<div class="tab-pane fade show active" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
+					<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
 						<div class="row">
 							<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
 								<div class="widget widget-activity-five">
@@ -1398,7 +1411,6 @@ Detailed Scan Results for {{history.domain.name}}
 
 	});
 
-	get_dorks({{scan_history_id}});
 
 	// get osint
 	$("#pills-osint-tab").click(function() {
@@ -1406,6 +1418,7 @@ Detailed Scan Results for {{history.domain.name}}
 		get_metadata({{scan_history_id}});
 		get_emails({{scan_history_id}});
 		get_employees({{scan_history_id}});
+		get_dorks({{scan_history_id}});
 	});
 
 	//animate search placeholder
@@ -1428,6 +1441,8 @@ Detailed Scan Results for {{history.domain.name}}
 	get_osint_users({{scan_history_id}});
 
 	get_ports({{scan_history_id}});
+
+	get_dork_summary({{scan_history_id}});
 
 	{% if history.fetch_url and history.used_gf_patterns %}
 	// gf patterns

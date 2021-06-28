@@ -37,6 +37,24 @@ class ListTechnology(APIView):
             return Response({"technologies": serializer.data})
 
 
+class ListDorkTypes(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            dork = Dork.objects.filter(
+                dorks__in=ScanHistory.objects.filter(id=scan_id)
+            ).values('type').annotate(count=Count('type')).order_by('-count')
+            serializer = DorkCountSerializer(dork, many=True)
+            return Response({"dorks": serializer.data})
+        else:
+            dork = Dork.objects.filter(
+                dorks__in=ScanHistory.objects.all()
+            ).values('type').annotate(count=Count('type')).order_by('-count')
+            serializer = DorkCountSerializer(dork, many=True)
+            return Response({"dorks": serializer.data})
+
+
 class ListEmails(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -52,11 +70,17 @@ class ListDorks(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        type = req.query_params.get('type')
         if scan_id:
-            tech = Dork.objects.filter(
+            dork = Dork.objects.filter(
                 dorks__in=ScanHistory.objects.filter(id=scan_id))
-            serializer = DorkSerializer(tech, many=True)
-            return Response({"dorks": serializer.data})
+        else:
+            dork = Dork.objects.filter(
+                dorks__in=ScanHistory.objects.all())
+        if scan_id and type:
+            dork = dork.filter(type=type)
+        serializer = DorkSerializer(dork, many=True)
+        return Response({"dorks": serializer.data})
 
 
 class ListEmployees(APIView):
