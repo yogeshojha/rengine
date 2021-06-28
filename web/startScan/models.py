@@ -14,6 +14,7 @@ class ScanHistory(models.Model):
     id = models.AutoField(primary_key=True)
     start_scan_date = models.DateTimeField()
     scan_status = models.IntegerField()
+    results_dir = models.CharField(max_length=100, blank=True)
     domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
@@ -23,6 +24,7 @@ class ScanHistory(models.Model):
     fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)
     osint = models.BooleanField(null=True, default=False)
+    screenshot = models.BooleanField(null=True, default=True)
     stop_scan_date = models.DateTimeField(null=True)
     used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 

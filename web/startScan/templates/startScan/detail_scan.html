@@ -127,9 +127,11 @@ Detailed Scan Results for {{history.domain.name}}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
 				</li>
+				{% if history.screenshot %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-screenshot-tab" data-toggle="pill" href="#pills-screenshot" role="tab" aria-controls="pills-screenshot" aria-selected="false">Screenshots</a>
 				</li>
+				{% endif %}
 				{% if history.dir_file_search %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
@@ -158,9 +160,11 @@ Detailed Scan Results for {{history.domain.name}}
 					<a class="nav-link" id="pills-vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
 				</li>
 				{% endif %}
+				{% if history.osint %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
 				</li>
+				{% endif %}
 			</ul>
 			<div class="tab-content" id="pills-tabContent">
 				<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
@@ -940,7 +944,7 @@ Detailed Scan Results for {{history.domain.name}}
 					"render": function ( data, type, row ) {
 						if (data){
 							//return lightbox with caption as http link
-							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot"></a>`;
+							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
 						}
 						return "";
 					},

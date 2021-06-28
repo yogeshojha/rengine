@@ -10,6 +10,7 @@ class EngineType(models.Model):
     fetch_url = models.BooleanField()
     vulnerability_scan = models.BooleanField(null=True, default=False)
     osint = models.BooleanField(null=True, default=False)
+    screenshot = models.BooleanField(null=True, default=True)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 
@@ -23,7 +24,8 @@ class EngineType(models.Model):
             self.port_scan,
             self.fetch_url,
             self.vulnerability_scan,
-            self.osint
+            self.osint,
+            self.screenshot
             ]
         return sum(bool(item) for item in engine_list)
 

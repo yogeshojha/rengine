@@ -51,6 +51,7 @@ All Engines
           <tr>
             <th>Engine Name</th>
             <th>Subdomain Discovery</th>
+            <th>Screenshot</th>
             <th>OSINT</th>
             <th>Port Scan</th>
             <th>Directory & Files Discovery</th>
@@ -65,6 +66,13 @@ All Engines
             <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.engine_name}}</span></td>
             <td>
               {% if engine_type.subdomain_discovery %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td>
+              {% if engine_type.screenshot %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}

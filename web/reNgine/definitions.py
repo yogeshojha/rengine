@@ -19,7 +19,7 @@ ALL = 'all'
 
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 PORT_SCAN = 'port_scan'
-VISUAL_IDENTIFICATION = 'visual_identification'
+EYEWITNESS = 'eyewitness'
 DIR_FILE_SEARCH = 'dir_file_search'
 FETCH_URL = 'fetch_url'
 INTENSITY = 'intensity'

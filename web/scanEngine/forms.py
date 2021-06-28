@@ -18,6 +18,9 @@ class AddEngineForm(forms.ModelForm):
     subdomain_discovery = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"checked": ""}))
+    screenshot = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={"checked": ""}))
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={}))
@@ -58,6 +61,9 @@ class UpdateEngineForm(forms.ModelForm):
     subdomain_discovery = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
+    screenshot = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput())
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput())
@@ -91,6 +97,7 @@ class UpdateEngineForm(forms.ModelForm):
         self.initial['yaml_configuration'] = engine.yaml_configuration
         self.initial['vulnerability_scan'] = engine.vulnerability_scan
         self.initial['osint'] = engine.osint
+        self.initial['screenshot'] = engine.screenshot
 
 
 class AddWordlistForm(forms.Form):

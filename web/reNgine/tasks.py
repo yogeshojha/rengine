@@ -81,6 +81,7 @@ def initiate_scan(
     task.port_scan = True if engine_object.port_scan else False
     task.fetch_url = True if engine_object.fetch_url else False
     task.osint = True if engine_object.osint else False
+    task.screenshot = True if engine_object.screenshot else False
     task.vulnerability_scan = True if engine_object.vulnerability_scan else False
     task.save()
 
@@ -92,6 +93,8 @@ def initiate_scan(
         current_scan_dir = domain.name + '_' + \
             str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         os.mkdir(current_scan_dir)
+        task.results_dir = current_scan_dir
+        task.save()
     except Exception as exception:
         logger.error(exception)
         scan_failed(task)
@@ -155,23 +158,31 @@ def initiate_scan(
             activity_id)
         update_last_activity(activity_id, 2)
 
-        if VISUAL_IDENTIFICATION in yaml_configuration:
-            activity_id = create_scan_activity(
-                task, "Visual Recon - Screenshot", 1)
-            grab_screenshot(
-                task,
-                yaml_configuration,
-                current_scan_dir,
-                activity_id)
-            update_last_activity(activity_id, 2)
-
-        if(task.port_scan):
-            activity_id = create_scan_activity(task, "Port Scanning", 1)
-            port_scanning(task, domain, yaml_configuration, results_dir)
-            update_last_activity(activity_id, 2)
+        try:
+            if task.screenshot:
+                activity_id = create_scan_activity(
+                    task, "Visual Recon - Screenshot", 1)
+                grab_screenshot(
+                    task,
+                    yaml_configuration,
+                    current_scan_dir,
+                    activity_id)
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
 
         try:
-            if(task.osint):
+            if(task.port_scan):
+                activity_id = create_scan_activity(task, "Port Scanning", 1)
+                port_scanning(task, domain, yaml_configuration, results_dir)
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
+
+        try:
+            if task.osint:
                 activity_id = create_scan_activity(task, "OSINT Running", 1)
                 perform_osint(task, domain, yaml_configuration, results_dir)
                 update_last_activity(activity_id, 2)
@@ -179,30 +190,48 @@ def initiate_scan(
             logger.error(e)
             update_last_activity(activity_id, 0)
 
-        if(task.dir_file_search):
-            activity_id = create_scan_activity(task, "Directory Search", 1)
-            directory_brute(task, yaml_configuration, results_dir, activity_id)
-            update_last_activity(activity_id, 2)
 
-        if(task.fetch_url):
-            activity_id = create_scan_activity(task, "Fetching endpoints", 1)
-            fetch_endpoints(
-                task,
-                domain,
-                yaml_configuration,
-                results_dir,
-                activity_id)
-            update_last_activity(activity_id, 2)
+        try:
+            if task.dir_file_search:
+                activity_id = create_scan_activity(task, "Directory Search", 1)
+                directory_brute(
+                    task,
+                    yaml_configuration,
+                    results_dir,
+                    activity_id
+                )
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
 
-        if(task.vulnerability_scan):
-            activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
-            vulnerability_scan(
-                task,
-                domain,
-                yaml_configuration,
-                results_dir,
-                activity_id)
-            update_last_activity(activity_id, 2)
+        try:
+            if task.fetch_url:
+                activity_id = create_scan_activity(task, "Fetching endpoints", 1)
+                fetch_endpoints(
+                    task,
+                    domain,
+                    yaml_configuration,
+                    results_dir,
+                    activity_id)
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
+
+        try:
+            if task.vulnerability_scan:
+                activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
+                vulnerability_scan(
+                    task,
+                    domain,
+                    yaml_configuration,
+                    results_dir,
+                    activity_id)
+                update_last_activity(activity_id, 2)
+        except Exception as e:
+            logger.error(e)
+            update_last_activity(activity_id, 0)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
 
@@ -591,16 +620,18 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
         output_screenshots_path
     )
 
-    if TIMEOUT in yaml_configuration[VISUAL_IDENTIFICATION] \
-        and yaml_configuration[VISUAL_IDENTIFICATION][TIMEOUT] > 0:
+    if EYEWITNESS in yaml_configuration \
+        and TIMEOUT in yaml_configuration[EYEWITNESS] \
+        and yaml_configuration[EYEWITNESS][TIMEOUT] > 0:
         eyewitness_command += ' --timeout {}'.format(
-            yaml_configuration[VISUAL_IDENTIFICATION][TIMEOUT]
+            yaml_configuration[EYEWITNESS][TIMEOUT]
         )
 
-    if THREADS in yaml_configuration[VISUAL_IDENTIFICATION] \
-        and yaml_configuration[VISUAL_IDENTIFICATION][THREADS] > 0:
+    if EYEWITNESS in yaml_configuration \
+        and THREADS in yaml_configuration[EYEWITNESS] \
+        and yaml_configuration[EYEWITNESS][THREADS] > 0:
             eyewitness_command += ' --threads {}'.format(
-                yaml_configuration[VISUAL_IDENTIFICATION][THREADS]
+                yaml_configuration[EYEWITNESS][THREADS]
             )
 
     logger.info(eyewitness_command)
