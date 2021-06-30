@@ -88,4 +88,12 @@ urlpatterns = [
         'start/multiple/',
         views.start_multiple_scan,
         name='start_multiple_scan'),
+    path(
+        'delete/scan_results/',
+        views.delete_all_scan_results,
+        name='delete_all_scan_results'),
+    path(
+        'delete/screenshots/',
+        views.delete_all_screenshots,
+        name='delete_all_screenshots'),
 ]

@@ -1310,3 +1310,77 @@ function get_dork_details(dork_type, scan_id){
 		}
 	});
 }
+
+
+function delete_all_scan_results()
+{
+	const delAPI = "../start_scan/delete/scan_results/";
+	swal.queue([{
+		title: 'Are you sure you want to delete all scan results?',
+		text: "You won't be able to revert this!",
+		type: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Delete',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(delAPI, {
+				method: 'POST',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+			})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function(data) {
+				// TODO Look for better way
+				return location.reload();
+			})
+			.catch(function() {
+				swal.insertQueueStep({
+					type: 'error',
+					title: 'Oops! Unable to delete Delete scan results!'
+				})
+			})
+		}
+	}])
+}
+
+
+function delete_all_screenshots()
+{
+	const delAPI = "../start_scan/delete/screenshots/";
+	swal.queue([{
+		title: 'Are you sure you want to delete all Screenshots?',
+		text: "You won't be able to revert this!",
+		type: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Delete',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(delAPI, {
+				method: 'POST',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+			})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function(data) {
+				// TODO Look for better way
+				return location.reload();
+			})
+			.catch(function() {
+				swal.insertQueueStep({
+					type: 'error',
+					title: 'Oops! Unable to delete Empty Screenshots!'
+				})
+			})
+		}
+	}])
+}

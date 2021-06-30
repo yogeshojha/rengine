@@ -407,3 +407,24 @@ def create_scan_object(host_id, engine_type):
     domain.start_scan_date = current_scan_time
     domain.save()
     return task.id
+
+
+def delete_all_scan_results(request):
+    if request.method == 'POST':
+        ScanHistory.objects.all().delete()
+        messageData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'All Scan History successfully deleted!')
+    return JsonResponse(messageData)
+
+def delete_all_screenshots(request):
+    if request.method == 'POST':
+        os.system('rm -rf /usr/src/scan_results/*')
+        messageData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Screenshots successfully deleted!')
+    return JsonResponse(messageData)

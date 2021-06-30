@@ -3,6 +3,7 @@ import re
 import os
 import subprocess
 import glob
+import shutil
 
 from django.shortcuts import render, get_object_or_404
 from scanEngine.models import EngineType, Wordlist, Configuration, InterestingLookupModel
@@ -275,5 +276,12 @@ def rengine_settings(request):
     context['settings_nav_active'] = 'true'
     context['rengine_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
+    total, used, _ = shutil.disk_usage("/")
+    total = total // (2**30)
+    used = used // (2**30)
+    context['total'] = total
+    context['used'] = used
+    context['free'] = total-used
+    context['consumed_percent'] = int(100 * float(used)/float(total))
 
     return render(request, 'scanEngine/settings/rengine.html', context)
