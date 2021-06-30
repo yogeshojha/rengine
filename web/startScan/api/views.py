@@ -16,13 +16,13 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
-class MitchData(APIView):
+class VisualiseData(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         if scan_id:
             mitch_data = ScanHistory.objects.filter(id=scan_id)
-            serializer = MitchDataSerializer(mitch_data, many=True)
+            serializer = VisualiseDataSerializer(mitch_data, many=True)
             return Response(serializer.data)
         else:
             return Response()

@@ -1,54 +1,81 @@
 from rest_framework import serializers
-
 from startScan.models import *
-
 from reNgine.common_func import *
 
 
-class MitchSubdomainSerializer(serializers.ModelSerializer):
+class VisualisePortSerializer(serializers.ModelSerializer):
 
-    title = serializers.ReadOnlyField(default='Subdomain')
+    name = serializers.SerializerMethodField('get_name')
 
-    description = serializers.SerializerMethodField('get_description')
+    class Meta:
+        model = Port
+        fields = [
+            'name'
+        ]
+
+    def get_name(self, port):
+        return str(port.number) + "/" + port.service_name
+
+class VisualiseIpSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField('get_name')
+    children = serializers.SerializerMethodField('get_children')
+
+    class Meta:
+        model = IpAddress
+        fields = [
+            'name',
+            'children'
+        ]
+
+    def get_name(self, Ip):
+        return Ip.address
+
+    def get_children(self, ip):
+        port = Port.objects.filter(ports__in=IpAddress.objects.filter(address=ip))
+        serializer = VisualisePortSerializer(port, many=True)
+        return serializer.data
+
+class VisualiseSubdomainSerializer(serializers.ModelSerializer):
+
+    children = serializers.SerializerMethodField('get_children')
 
     class Meta:
         model = Subdomain
         fields = [
-            'id',
-            'title',
-            'description'
+            'name',
+            'children',
+            'http_url'
         ]
 
-    def get_description(self, Subdomain):
-        return Subdomain.name
+    def get_children(self, subdomain):
+        subdomain = Subdomain.objects.filter(
+            scan_history=self.context.get('scan_history')).filter(name=subdomain)
+        ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
+        serializer = VisualiseIpSerializer(ips, many=True)
+        return serializer.data
 
 
-class MitchDataSerializer(serializers.ModelSerializer):
+class VisualiseDataSerializer(serializers.ModelSerializer):
 
-    title = serializers.ReadOnlyField(default='Target')
-    type = serializers.ReadOnlyField(default='Root')
-
-    description = serializers.SerializerMethodField('get_description')
+    name = serializers.SerializerMethodField('get_name')
     children = serializers.SerializerMethodField('get_children')
 
     class Meta:
         model = ScanHistory
         fields = [
-            'id',
-            'title',
-            'type',
-            'description',
+            'name',
             'children',
         ]
 
-    def get_description(self, ScanHistory):
+    def get_name(self, ScanHistory):
         return ScanHistory.domain.name
 
     def get_children(self, ScanHistory):
         subdomain = Subdomain.objects.filter(scan_history=ScanHistory)
-        serializer = MitchSubdomainSerializer(subdomain, many=True)
-        print(serializer)
+        serializer = VisualiseSubdomainSerializer(subdomain, many=True, context={'scan_history': ScanHistory})
         return serializer.data
+
 
 
 class SubdomainChangesSerializer(serializers.ModelSerializer):

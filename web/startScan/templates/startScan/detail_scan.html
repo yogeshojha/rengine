@@ -27,7 +27,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
-<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/d3.v3.min.js"></script>
 </style>
 {% endblock custom_js_css_link %}
 
@@ -712,7 +712,7 @@ Detailed Scan Results for {{history.domain.name}}
 						<div class="row">
 							<div class="col-xl-12 col-lg-12 col-sm-12">
 								<div class="widget widget-content widget-content-area br-6">
-									<section id="visualisation" style="max-width: 900px;">
+									<div id="visualisation">
 									</section>
 								</div>
 							</div>

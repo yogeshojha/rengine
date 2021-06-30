@@ -1,6 +1,3 @@
-$.getJSON(`../api/queryAllScanResultMitch/?scan_id=119&format=json`, function(data) {
-});
-
 var margin = {top: 20, right: 120, bottom: 20, left: 120},
     width = 960 - margin.right - margin.left,
     height = 800 - margin.top - margin.bottom;
@@ -15,16 +12,16 @@ var tree = d3.layout.tree()
 var diagonal = d3.svg.diagonal()
     .projection(function(d) { return [d.y, d.x]; });
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("#visualisation").append("svg")
     .attr("width", width + margin.right + margin.left)
     .attr("height", height + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("flare.json", function(error, flare) {
+d3.json("../api/queryAllScanResultVisualise/?scan_id=5&format=json", function(error, data) {
   if (error) throw error;
 
-  root = flare;
+  root = data[0];
   root.x0 = height / 2;
   root.y0 = 0;
 
@@ -35,7 +32,6 @@ d3.json("flare.json", function(error, flare) {
       d.children = null;
     }
   }
-
   root.children.forEach(collapse);
   update(root);
 });
