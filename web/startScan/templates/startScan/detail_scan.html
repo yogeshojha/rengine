@@ -27,6 +27,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+<script src="//d3js.org/d3.v3.min.js"></script>
 </style>
 {% endblock custom_js_css_link %}
 
@@ -165,9 +166,12 @@ Detailed Scan Results for {{history.domain.name}}
 					<a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
 				</li>
 				{% endif %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-visualize-tab" data-toggle="pill" href="#pills-visualize" role="tab" aria-controls="pills-visualize" aria-selected="false">Visualization</a>
+				</li>
 			</ul>
 			<div class="tab-content" id="pills-tabContent">
-				<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+				<div class="tab-pane fade" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
 					<div class="row">
 						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-five widget-progress">
@@ -704,758 +708,770 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					<div class="tab-pane fade show active" id="pills-visualize" role="tabpanel" aria-labelledby="pills-visualize-tab">
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-sm-12">
+								<div class="widget widget-content widget-content-area br-6">
+									<section id="visualisation" style="max-width: 900px;">
+									</section>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-	{# modal #}
-	{% include 'base/_items/tab_modal.html' %}
+</div>
+{# modal #}
+{% include 'base/_items/tab_modal.html' %}
 
-	{% endblock main_content %}
+{% endblock main_content %}
 
 
-	{% block page_level_script %}
-	<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
-	<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-	<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-	<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
-	<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-	<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
-	<script src="{% static 'custom/custom.js' %}"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'custom/mitch.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
 
-	<script type="text/javascript">
-	// Collapse Sidebar
-	collapse_sidebar();
+<script type="text/javascript">
+// Collapse Sidebar
+collapse_sidebar();
 
-	$("#pills-subdomain-tab").click(function() {
-		$('#subdomain_scan_results').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Filter Subdomains...",
-				"sLengthMenu": "Results :  _MENU_",
+$("#pills-subdomain-tab").click(function() {
+	$('#subdomain_scan_results').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Filter Subdomains...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"order": [[ 8, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'endpoint_count'},
+			{'data': 'vulnerability_count'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'ip_addresses'},
+			{'data': 'ip_addresses'},
+			{'data': 'content_length', 'searchable': false},
+			{'data': 'screenshot_path', 'searchable': false},
+			{'data': 'response_time'},
+			{'data': 'technologies'},
+			{'data': 'checked'},
+			{'data': 'http_url'},
+			{'data': 'cname'},
+			{'data': 'is_interesting'},
+			{'data': 'info_count'},
+			{'data': 'low_count'},
+			{'data': 'medium_count'},
+			{'data': 'high_count'},
+			{'data': 'critical_count'},
+		],
+		"columnDefs": [
+			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
+			{
+				"targets": [ 12, 14, 15, 16, 17, 18, 19, 20],
+				"visible": false,
+				"searchable": false,
 			},
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-			"order": [[ 8, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'endpoint_count'},
-				{'data': 'vulnerability_count'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'ip_addresses'},
-				{'data': 'ip_addresses'},
-				{'data': 'content_length', 'searchable': false},
-				{'data': 'screenshot_path', 'searchable': false},
-				{'data': 'response_time'},
-				{'data': 'technologies'},
-				{'data': 'checked'},
-				{'data': 'http_url'},
-				{'data': 'cname'},
-				{'data': 'is_interesting'},
-				{'data': 'info_count'},
-				{'data': 'low_count'},
-				{'data': 'medium_count'},
-				{'data': 'high_count'},
-				{'data': 'critical_count'},
-			],
-			"columnDefs": [
-				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
-				{
-					"targets": [ 12, 14, 15, 16, 17, 18, 19, 20],
-					"visible": false,
-					"searchable": false,
+			{
+				"targets": [ 11, 13 ],
+				"visible": false,
+				"searchable": true,
+			},
+			// hide any columns if scan is not initiated
+			{% if not history.port_scan %}
+			{
+				"targets": [ 7 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{% if not history.vulnerability_scan %}
+			{
+				"targets": [ 3 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{% if not history.fetch_url %}
+			{
+				"targets": [ 2 ],
+				"visible": false,
+				"searchable": false,
+			},
+			{% endif %}
+			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+			// checkbox
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
 				},
-				{
-					"targets": [ 11, 13 ],
-					"visible": false,
-					"searchable": true,
-				},
-				// hide any columns if scan is not initiated
-				{% if not history.port_scan %}
-				{
-					"targets": [ 7 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{% if not history.vulnerability_scan %}
-				{
-					"targets": [ 3 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{% if not history.fetch_url %}
-				{
-					"targets": [ 2 ],
-					"visible": false,
-					"searchable": false,
-				},
-				{% endif %}
-				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
-				// checkbox
-				{
-					"render": function ( data, type, row ) {
-						if(row['checked']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
+				"targets": 0,
+			},
+			// subdomain Name
+			{
+				"render": function ( data, type, row ) {
+					badges = '';
+					tech_badge = '';
+					interesting_badge = '';
+					if (row['technologies']){
+						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id={{scan_history_id}});
+					}
+					if(row['is_interesting'])
+					{
+						interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+					}
+
+					badges =   interesting_badge + '</br>';
+
+					if (row['http_url']) {
+						if (row['cname']) {
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
 						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
+						return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+					}
+					return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 				},
-				// subdomain Name
-				{
-					"render": function ( data, type, row ) {
-						badges = '';
-						tech_badge = '';
+				"targets": 1
+			},
+			// endpoint count
+			{
+				"render": function ( data, type, row ) {
+					if (data)
+					{
+						return `<span class='badge badge-pills badge-info'>${data}</span>`;
+					}
+					return 0;
+				},
+				"targets": 2,
+			},
+			// vulnerability_count
+			{
+				"render": function ( data, type, row ) {
+					info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerabilities">${row['info_count']}</span>`;
+					low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerabilities">${row['low_count']}</span>`;
+					medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerabilities">${row['medium_count']}</span>`;
+					high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerabilities">${row['high_count']}</span>`;
+					critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerabilities">${row['critical_count']}</span>`;
+					return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
+				},
+				"targets": 3,
+			},
+			// http_status
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+					}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
+						return "";
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+				},
+				"targets": 4,
+			},
+			// page title
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 5,
+			},
+			// ip address
+			{
+				"render": function ( data, type, row ) {
+					ip_badge = ''
+					if (data)
+					{
+						Object.entries(data).forEach(([key, value]) => {
+							if (value['is_cdn']) {
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+							}
+							else{
+								ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+							}
+						});
+						return ip_badge;
+					}
+					return "";
+				},
+				"targets": 6,
+			},
+			// open ports
+			{
+				"render": function ( data, type, row ) {
+					port_badge = ''
+					if (data){
+						for (ip in data){
+							ports = data[ip]['ports']
+							for (port in ports){
+								port_obj = data[ip]['ports'][port]
+								badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
+								title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+								port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
+							}
+						}
+						return port_badge;
+					}
+					return "";
+				},
+				"targets": 7,
+			},
+			// screenshot
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						//return lightbox with caption as http link
+						return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+					}
+					return "";
+				},
+				"targets": 9,
+			},
+			// response_time
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return get_response_time_text(data);
+					}
+					return "";
+				},
+				"targets": 10,
+			},
+		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			// get screenshot size from localStorage
+			var elements = document.getElementsByClassName("screenshot");
+			screenshot_size = localStorage.getItem('screenshotSize');
+			if (screenshot_size){
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", screenshot_size);
+					elements[index].setAttribute("width", screenshot_size);
+				}
+			}
+			else{
+				for (index = 0; index < elements.length; ++index) {
+					elements[index].setAttribute("height", "200px");
+					elements[index].setAttribute("width", "200px");
+				}
+			}
+		},
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+	});
+});
+
+{% if history.dir_file_search %}
+$("#pills-directories-tab").click(function() {
+	var history_table = $('#directories-table').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Filter Subdomains...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"order": [[ 5, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'http_status'},
+			{'data': 'page_title'},
+			{'data': 'directory_json'},
+			{'data': 'http_url'},
+			{'data': 'is_interesting'},
+			{'data': 'checked'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 5, 6, 7],
+				"visible": false,
+				"searchable": false,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if(row['checked']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (row['http_url']) {
 						interesting_badge = '';
-						if (row['technologies']){
-							tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id={{scan_history_id}});
-						}
 						if(row['is_interesting'])
 						{
-							interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+							interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
 						}
-
-						badges =   interesting_badge + '</br>';
-
-						if (row['http_url']) {
-							if (row['cname']) {
-								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
-							}
-							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-						}
-						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-					},
-					"targets": 1
-				},
-				// endpoint count
-				{
-					"render": function ( data, type, row ) {
-						if (data)
-						{
-							return `<span class='badge badge-pills badge-info'>${data}</span>`;
-						}
-						return 0;
-					},
-					"targets": 2,
-				},
-				// vulnerability_count
-				{
-					"render": function ( data, type, row ) {
-						info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip' title="Informational Vulnerabilities">${row['info_count']}</span>`;
-						low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip' title=" Low Severity Vulnerabilities">${row['low_count']}</span>`;
-						medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip' title="Medium Severity Vulnerabilities">${row['medium_count']}</span>`;
-						high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip' title="High Severity Vulnerabilities">${row['high_count']}</span>`;
-						critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip' title="Critical Vulnerabilities">${row['critical_count']}</span>`;
-						return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
-					},
-					"targets": 3,
-				},
-				// http_status
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 4,
-				},
-				// page title
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return htmlEncode(data);
-						}
-						return "";
-					},
-					"targets": 5,
-				},
-				// ip address
-				{
-					"render": function ( data, type, row ) {
-						ip_badge = ''
-						if (data)
-						{
-							Object.entries(data).forEach(([key, value]) => {
-								if (value['is_cdn']) {
-									ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
-								}
-								else{
-									ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
-								}
-							});
-							return ip_badge;
-						}
-						return "";
-					},
-					"targets": 6,
-				},
-				// open ports
-				{
-					"render": function ( data, type, row ) {
-						port_badge = ''
-						if (data){
-							for (ip in data){
-								ports = data[ip]['ports']
-								for (port in ports){
-									port_obj = data[ip]['ports'][port]
-									badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
-									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-									port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
-								}
-							}
-							return port_badge;
-						}
-						return "";
-					},
-					"targets": 7,
-				},
-				// screenshot
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							//return lightbox with caption as http link
-							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
-						}
-						return "";
-					},
-					"targets": 9,
-				},
-				// response_time
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return get_response_time_text(data);
-						}
-						return "";
-					},
-					"targets": 10,
-				},
-			],
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				// get screenshot size from localStorage
-				var elements = document.getElementsByClassName("screenshot");
-				screenshot_size = localStorage.getItem('screenshotSize');
-				if (screenshot_size){
-					for (index = 0; index < elements.length; ++index) {
-						elements[index].setAttribute("height", screenshot_size);
-						elements[index].setAttribute("width", screenshot_size);
+						return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
 					}
-				}
-				else{
-					for (index = 0; index < elements.length; ++index) {
-						elements[index].setAttribute("height", "200px");
-						elements[index].setAttribute("width", "200px");
+					return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
+				},
+				"targets": 1
+			},
+			{
+				"render": function ( data, type, row ) {
+					// display badge based on http status
+					// green for http status 2XX, orange for 3XX and warning for everything else
+					if (data >= 200 && data < 300) {
+						return "<span class='badge badge-pills badge-success'>"+data+"</span>";
 					}
-				}
-			},
-			'createdRow': function( row, data, dataIndex ) {
-				if (data['checked']){
-					$(row).addClass('table-secondary text-strike');
-				}
-			},
-		});
-	});
-
-	{% if history.dir_file_search %}
-	$("#pills-directories-tab").click(function() {
-		var history_table = $('#directories-table').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Filter Subdomains...",
-				"sLengthMenu": "Results :  _MENU_",
-			},
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-			"order": [[ 5, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'directory_json'},
-				{'data': 'http_url'},
-				{'data': 'is_interesting'},
-				{'data': 'checked'},
-			],
-			"columnDefs": [
-				{
-					"targets": [ 5, 6, 7],
-					"visible": false,
-					"searchable": false,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if(row['checked']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (row['http_url']) {
-							interesting_badge = '';
-							if(row['is_interesting'])
-							{
-								interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
-							}
-							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
-						}
-						return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
-					},
-					"targets": 1
-				},
-				{
-					"render": function ( data, type, row ) {
-						// display badge based on http status
-						// green for http status 2XX, orange for 3XX and warning for everything else
-						if (data >= 200 && data < 300) {
-							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-						}
-						else if (data >= 300 && data < 400) {
-							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-						}
-						else if (data == 0){
-							// datatable throws error when no data is returned
-							return "";
-						}
-						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-					},
-					"targets": 2,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return htmlEncode(data);
-						}
+					else if (data >= 300 && data < 400) {
+						return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+					}
+					else if (data == 0){
+						// datatable throws error when no data is returned
 						return "";
-					},
-					"targets": 3,
+					}
+					return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 				},
-				{
-					"render": function ( data, type, row ) {
-						if (data) {
-							data = JSON.parse(data);
-							main_url = Object.keys(data)[0];
-							var json_obj = data[main_url];
-							var html_treeview = `<ul class="file-tree">`;
-							for(var i = 0; i < json_obj.length; i++)
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return htmlEncode(data);
+					}
+					return "";
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data) {
+						data = JSON.parse(data);
+						main_url = Object.keys(data)[0];
+						var json_obj = data[main_url];
+						var html_treeview = `<ul class="file-tree">`;
+						for(var i = 0; i < json_obj.length; i++)
+						{
+							if(json_obj[i].status==200)
 							{
-								if(json_obj[i].status==200)
-								{
-									var path = json_obj[i].path;
-									var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
-									// id path has / the its a directory else consider as file
-									if (path.substr(path.length - 1) == '/') {
-										html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-									}
-									else {
-										html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-									}
+								var path = json_obj[i].path;
+								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
+								// id path has / the its a directory else consider as file
+								if (path.substr(path.length - 1) == '/') {
+									html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+								}
+								else {
+									html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 								}
 							}
-							html_treeview += `</ul>`;
-							return html_treeview;
 						}
-						return '';
-					},
-					"targets": 4,
+						html_treeview += `</ul>`;
+						return html_treeview;
+					}
+					return '';
 				},
-			],
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
+				"targets": 4,
 			},
-			initComplete: function( settings, json ) {
-				var script = document.createElement("script");
-				script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
-				script.type = "text/javascript";
-				document.getElementsByTagName("head")[0].appendChild(script);
-			},
-			'createdRow': function( row, data, dataIndex ) {
-				if (data['checked']){
-					$(row).addClass('table-secondary text-strike');
-				}
-			},
-			"rowCallback": function( row, data, index ) {
-				if (!data["directory_json"]) {
-					$(row).hide();
-				}
-			},
-		});
-	});
-	{% endif %}
-
-	{% if history.vulnerability_scan %}
-	$("#pills-vulnerabilities-tab").click(function() {
-		$('#vulnerability_results').DataTable({
-			"destroy": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
-			},
-			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-			"<'row'<'col'tr>>" +
-			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 20,
-			'serverSide': true,
-			"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-			"order": [[ 2, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'severity'},
-				{'data': 'http_url'},
-				{'data': 'extracted_results'},
-				{'data': 'open_status'},
-				{'data': 'matcher_name'},
-				{'data': 'discovered_date'},
-				{'data': 'tags'},
-				{'data': 'description'},
-				{'data': 'reference'},
-			],
-			"columnDefs": [
-				{
-					"targets": [ 6, 7, 8, 9, 10 ],
-					"visible": false,
-					"searchable": true,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if(row['open_status']){
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-						else{
-							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
-							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-							</label>`;
-						}
-					},
-					"targets": 0,
-				},
-				{
-					"render": function ( data, type, row ) {
-						var tags_span ="";
-						switch (row['severity']) {
-							case 'Info':
-							color = 'info'
-							break;
-							case 'Low':
-							color = 'low'
-							break;
-							case 'Medium':
-							color = 'warning'
-							break;
-							case 'High':
-							color = 'danger'
-							break;
-							case 'Critical':
-							color = 'critical'
-							break;
-							default:
-						}
-						if (row['tags']) {
-							var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-							row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-								tags_span+=badge + split_vals + "</span>";
-							});
-						}
-						return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
-					},
-					"targets": 1,
-				},
-				{
-					"render": function ( data, type, row ) {
-						switch (data) {
-							case 'Info':
-							return "<span class='badge badge-info'>Info</span>";
-							break;
-							case 'Low':
-							return "<span class='badge badge-low'>Low</span>";
-							break;
-							case 'Medium':
-							return "<span class='badge badge-warning'>Medium</span>";
-							break;
-							case 'High':
-							return "<span class='badge badge-danger'>High</span>";
-							break;
-							case 'Critical':
-							return "<span class='badge badge-critical'>Critical</span>";
-							break;
-							default:
-							return "";
-						}
-					},
-					"targets": 2,
-				},
-
-				{
-					"render": function ( data, type, row ) {
-						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-					},
-					"targets": 3,
-				},
-				{
-					"render": function ( data, type, row ) {
-						extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-						matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-						description = row['description'] ? row['description'] + `</br>` : "";
-						reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
-						return extracted_results + matcher_name + description + reference;
-					},
-					"targets": 4,
-				},
-				{
-					"render": function ( data, type, row ) {
-						if (data){
-							return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
-						}
-						else{
-							return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
-						}
-					},
-					"targets": 5,
-				},
-			],
-			drawCallback: function () {
-				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-				$('.dataTables_wrapper table').removeClass('table-striped');
-			},
-			createdRow: function( row, data, dataIndex ) {
-				if (!data['open_status']){
-					$(row).addClass('table-secondary text-strike');
-				}
-			},
-		});
-	});
-	{% endif %}
-
-	// apex charts for vulnerability summary
-	var options = {
-		chart: {
-			type: 'donut',
-			width: 355
+		],
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
 		},
-		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-		dataLabels: {
-			enabled: false
+		initComplete: function( settings, json ) {
+			var script = document.createElement("script");
+			script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
+			script.type = "text/javascript";
+			document.getElementsByTagName("head")[0].appendChild(script);
 		},
-		legend: {
-			position: 'bottom',
-			horizontalAlign: 'center',
-			fontSize: '14px',
-			markers: {
-				width: 10,
-				height: 10,
-			},
-			itemMargin: {
-				horizontal: 0,
-				vertical: 8
+		'createdRow': function( row, data, dataIndex ) {
+			if (data['checked']){
+				$(row).addClass('table-secondary text-strike');
 			}
 		},
-		plotOptions: {
-			pie: {
-				donut: {
-					size: '65%',
-					background: 'transparent',
-					labels: {
+		"rowCallback": function( row, data, index ) {
+			if (!data["directory_json"]) {
+				$(row).hide();
+			}
+		},
+	});
+});
+{% endif %}
+
+{% if history.vulnerability_scan %}
+$("#pills-vulnerabilities-tab").click(function() {
+	$('#vulnerability_results').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+		"order": [[ 2, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'severity'},
+			{'data': 'http_url'},
+			{'data': 'extracted_results'},
+			{'data': 'open_status'},
+			{'data': 'matcher_name'},
+			{'data': 'discovered_date'},
+			{'data': 'tags'},
+			{'data': 'description'},
+			{'data': 'reference'},
+		],
+		"columnDefs": [
+			{
+				"targets": [ 6, 7, 8, 9, 10 ],
+				"visible": false,
+				"searchable": true,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if(row['open_status']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					var tags_span ="";
+					switch (row['severity']) {
+						case 'Info':
+						color = 'info'
+						break;
+						case 'Low':
+						color = 'low'
+						break;
+						case 'Medium':
+						color = 'warning'
+						break;
+						case 'High':
+						color = 'danger'
+						break;
+						case 'Critical':
+						color = 'critical'
+						break;
+						default:
+					}
+					if (row['tags']) {
+						var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+							tags_span+=badge + split_vals + "</span>";
+						});
+					}
+					return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
+				},
+				"targets": 1,
+			},
+			{
+				"render": function ( data, type, row ) {
+					switch (data) {
+						case 'Info':
+						return "<span class='badge badge-info'>Info</span>";
+						break;
+						case 'Low':
+						return "<span class='badge badge-low'>Low</span>";
+						break;
+						case 'Medium':
+						return "<span class='badge badge-warning'>Medium</span>";
+						break;
+						case 'High':
+						return "<span class='badge badge-danger'>High</span>";
+						break;
+						case 'Critical':
+						return "<span class='badge badge-critical'>Critical</span>";
+						break;
+						default:
+						return "";
+					}
+				},
+				"targets": 2,
+			},
+
+			{
+				"render": function ( data, type, row ) {
+					return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+					matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+					description = row['description'] ? row['description'] + `</br>` : "";
+					reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+					return extracted_results + matcher_name + description + reference;
+				},
+				"targets": 4,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
+					}
+					else{
+						return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
+					}
+				},
+				"targets": 5,
+			},
+		],
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+		},
+		createdRow: function( row, data, dataIndex ) {
+			if (!data['open_status']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+	});
+});
+{% endif %}
+
+// apex charts for vulnerability summary
+var options = {
+	chart: {
+		type: 'donut',
+		width: 355
+	},
+	colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+	dataLabels: {
+		enabled: false
+	},
+	legend: {
+		position: 'bottom',
+		horizontalAlign: 'center',
+		fontSize: '14px',
+		markers: {
+			width: 10,
+			height: 10,
+		},
+		itemMargin: {
+			horizontal: 0,
+			vertical: 8
+		}
+	},
+	plotOptions: {
+		pie: {
+			donut: {
+				size: '65%',
+				background: 'transparent',
+				labels: {
+					show: true,
+					name: {
 						show: true,
-						name: {
-							show: true,
-							fontSize: '29px',
-							fontFamily: 'Nunito, sans-serif',
-							color: undefined,
-							offsetY: -10
-						},
-						value: {
-							show: true,
-							fontSize: '26px',
-							fontFamily: 'Nunito, sans-serif',
-							color: '20',
-							offsetY: 16,
-							formatter: function (val) {
-								return val
-							}
-						},
-						total: {
-							show: true,
-							showAlways: true,
-							label: 'Total',
-							color: '#888ea8',
-							formatter: function (w) {
-								return w.globals.seriesTotals.reduce( function(a, b) {
-									return a + b
-								}, 0)
-							}
+						fontSize: '29px',
+						fontFamily: 'Nunito, sans-serif',
+						color: undefined,
+						offsetY: -10
+					},
+					value: {
+						show: true,
+						fontSize: '26px',
+						fontFamily: 'Nunito, sans-serif',
+						color: '20',
+						offsetY: 16,
+						formatter: function (val) {
+							return val
+						}
+					},
+					total: {
+						show: true,
+						showAlways: true,
+						label: 'Total',
+						color: '#888ea8',
+						formatter: function (w) {
+							return w.globals.seriesTotals.reduce( function(a, b) {
+								return a + b
+							}, 0)
 						}
 					}
 				}
 			}
-		},
-		stroke: {
-			show: true,
-			width: 25,
-		},
-		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
-	}
-
-	var chart = new ApexCharts(
-		document.querySelector("#vulnerability-chart"),
-		options
-	);
-
-	chart.render();
-
-	//to remove the image element if there is no screenshot captured
-	function removeImageElement(element)
-	{
-		element.parentElement.remove();
-	}
-
-	function subdomain_status_change(checkbox, id)
-	{
-		if (checkbox.checked) {
-			checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 		}
-		else {
-			checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
-			checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
-		}
-		change_subdomain_status(id);
+	},
+	stroke: {
+		show: true,
+		width: 25,
+	},
+	series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+	labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
+}
+
+var chart = new ApexCharts(
+	document.querySelector("#vulnerability-chart"),
+	options
+);
+
+chart.render();
+
+//to remove the image element if there is no screenshot captured
+function removeImageElement(element)
+{
+	element.parentElement.remove();
+}
+
+function subdomain_status_change(checkbox, id)
+{
+	if (checkbox.checked) {
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 	}
+	else {
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+	}
+	change_subdomain_status(id);
+}
 
-	// default get urls
-	$("#pills-endpoints-tab").click(function() {
-		get_endpoints({{scan_history_id}}, null);
+// default get urls
+$("#pills-endpoints-tab").click(function() {
+	get_endpoints({{scan_history_id}}, null);
+});
+
+// get interesting subdomain
+$("#interesting_subdomain_accordion").click(function() {
+	get_interesting_subdomains({{scan_history_id}});
+});
+
+// get interesting endpoint
+$("#interesting_endpoint_accordion").click(function() {
+	get_interesting_endpoint({{scan_history_id}});
+});
+
+// get screenshots
+$("#pills-screenshot-tab").click(function() {
+	get_screenshot({{scan_history_id}});
+
+
+	$(".tagging").select2({
+		tags: true
 	});
 
-	// get interesting subdomain
-	$("#interesting_subdomain_accordion").click(function() {
-		get_interesting_subdomains({{scan_history_id}});
-	});
-
-	// get interesting endpoint
-	$("#interesting_endpoint_accordion").click(function() {
-		get_interesting_endpoint({{scan_history_id}});
-	});
-
-	// get screenshots
-	$("#pills-screenshot-tab").click(function() {
-		get_screenshot({{scan_history_id}});
+});
 
 
-		$(".tagging").select2({
-			tags: true
-		});
+// get osint
+$("#pills-osint-tab").click(function() {
+	// osint
+	get_metadata({{scan_history_id}});
+	get_emails({{scan_history_id}});
+	get_employees({{scan_history_id}});
+	get_dorks({{scan_history_id}});
+});
 
-	});
+//animate search placeholder
+const words = ["Search by Page Title   ",
+"Search by HTTP Status   ",
+"Search 'Interesting'   ",
+"Search by Subdomain Name   "]
 
+typingEffect(words, "screenshot-search", 0);
 
-	// get osint
-	$("#pills-osint-tab").click(function() {
-		// osint
-		get_metadata({{scan_history_id}});
-		get_emails({{scan_history_id}});
-		get_employees({{scan_history_id}});
-		get_dorks({{scan_history_id}});
-	});
+get_subdomain_changes_values({{scan_history_id}});
+get_endpoint_changes_values({{scan_history_id}});
 
-	//animate search placeholder
-	const words = ["Search by Page Title   ",
-	"Search by HTTP Status   ",
-	"Search 'Interesting'   ",
-	"Search by Subdomain Name   "]
+get_interesting_count({{scan_history_id}});
 
-	typingEffect(words, "screenshot-search", 0);
+get_ips({{scan_history_id}});
 
-	get_subdomain_changes_values({{scan_history_id}});
-	get_endpoint_changes_values({{scan_history_id}});
+get_technologies({{scan_history_id}});
 
-	get_interesting_count({{scan_history_id}});
+get_osint_users({{scan_history_id}});
 
-	get_ips({{scan_history_id}});
+get_ports({{scan_history_id}});
 
-	get_technologies({{scan_history_id}});
+get_dork_summary({{scan_history_id}});
 
-	get_osint_users({{scan_history_id}});
-
-	get_ports({{scan_history_id}});
-
-	get_dork_summary({{scan_history_id}});
-
-	{% if history.fetch_url and history.used_gf_patterns %}
-	// gf patterns
-	{% for pattern in history.used_gf_patterns|split:"," %}
-	$("#pills-{{pattern}}-tab").click(function() {
-		get_endpoints({{scan_history_id}}, '{{pattern}}');
-	});
-	{% endfor %}
-	{% endif %}
+{% if history.fetch_url and history.used_gf_patterns %}
+// gf patterns
+{% for pattern in history.used_gf_patterns|split:"," %}
+$("#pills-{{pattern}}-tab").click(function() {
+	get_endpoints({{scan_history_id}}, '{{pattern}}');
+});
+{% endfor %}
+{% endif %}
 
 </script>
 

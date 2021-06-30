@@ -5,6 +5,52 @@ from startScan.models import *
 from reNgine.common_func import *
 
 
+class MitchSubdomainSerializer(serializers.ModelSerializer):
+
+    title = serializers.ReadOnlyField(default='Subdomain')
+
+    description = serializers.SerializerMethodField('get_description')
+
+    class Meta:
+        model = Subdomain
+        fields = [
+            'id',
+            'title',
+            'description'
+        ]
+
+    def get_description(self, Subdomain):
+        return Subdomain.name
+
+
+class MitchDataSerializer(serializers.ModelSerializer):
+
+    title = serializers.ReadOnlyField(default='Target')
+    type = serializers.ReadOnlyField(default='Root')
+
+    description = serializers.SerializerMethodField('get_description')
+    children = serializers.SerializerMethodField('get_children')
+
+    class Meta:
+        model = ScanHistory
+        fields = [
+            'id',
+            'title',
+            'type',
+            'description',
+            'children',
+        ]
+
+    def get_description(self, ScanHistory):
+        return ScanHistory.domain.name
+
+    def get_children(self, ScanHistory):
+        subdomain = Subdomain.objects.filter(scan_history=ScanHistory)
+        serializer = MitchSubdomainSerializer(subdomain, many=True)
+        print(serializer)
+        return serializer.data
+
+
 class SubdomainChangesSerializer(serializers.ModelSerializer):
 
     change = serializers.SerializerMethodField('get_change')

@@ -9,14 +9,23 @@ from reNgine.common_func import *
 from django.db.models import Q
 from django.db.models import CharField, Value, Count
 from django.core import serializers
-
-
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
 
+
+class MitchData(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        if scan_id:
+            mitch_data = ScanHistory.objects.filter(id=scan_id)
+            serializer = MitchDataSerializer(mitch_data, many=True)
+            return Response(serializer.data)
+        else:
+            return Response()
 
 class ListTechnology(APIView):
     def get(self, request, format=None):
