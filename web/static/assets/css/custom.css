@@ -340,6 +340,7 @@ div.dataTables_wrapper div.dataTables_filter {
 
 .node {
   cursor: pointer;
+  size: 10px;
 }
 
 .node circle {
@@ -349,7 +350,7 @@ div.dataTables_wrapper div.dataTables_filter {
 }
 
 .node text {
-  font: 10px sans-serif;
+  font: 13px sans-serif;
 }
 
 .link {

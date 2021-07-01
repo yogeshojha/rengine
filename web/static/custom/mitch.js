@@ -1,5 +1,5 @@
-var margin = {top: 20, right: 120, bottom: 20, left: 120},
-    width = 960 - margin.right - margin.left,
+var margin = {top: 20, right: 120, bottom: 20, left: 150},
+    width = '100%',
     height = 800 - margin.top - margin.bottom;
 
 var i = 0,
@@ -18,7 +18,7 @@ var svg = d3.select("#visualisation").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("../api/queryAllScanResultVisualise/?scan_id=5&format=json", function(error, data) {
+d3.json("../api/queryAllScanResultVisualise/?scan_id=120&format=json", function(error, data) {
   if (error) throw error;
 
   root = data[0];
@@ -74,7 +74,7 @@ function update(source) {
       .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
   nodeUpdate.select("circle")
-      .attr("r", 4.5)
+      .attr("r", 7)
       .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
 
   nodeUpdate.select("text")

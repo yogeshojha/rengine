@@ -16,6 +16,7 @@ class VisualisePortSerializer(serializers.ModelSerializer):
     def get_name(self, port):
         return str(port.number) + "/" + port.service_name
 
+
 class VisualiseIpSerializer(serializers.ModelSerializer):
 
     name = serializers.SerializerMethodField('get_name')
@@ -36,6 +37,21 @@ class VisualiseIpSerializer(serializers.ModelSerializer):
         serializer = VisualisePortSerializer(port, many=True)
         return serializer.data
 
+
+class VisualiseEndpointSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField('get_name')
+
+    class Meta:
+        model = EndPoint
+        fields = [
+            'name'
+        ]
+
+    def get_name(self, endpoint):
+        return endpoint.http_url
+
+
 class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
     children = serializers.SerializerMethodField('get_children')
@@ -44,17 +60,24 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
         model = Subdomain
         fields = [
             'name',
-            'children',
-            'http_url'
+            'children'
         ]
 
-    def get_children(self, subdomain):
+    def get_children(self, subdomain_name):
         subdomain = Subdomain.objects.filter(
-            scan_history=self.context.get('scan_history')).filter(name=subdomain)
+            scan_history=self.context.get('scan_history')).filter(name=subdomain_name)
         ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
-        serializer = VisualiseIpSerializer(ips, many=True)
-        return serializer.data
+        ip_serializer = VisualiseIpSerializer(ips, many=True)
 
+        endpoint = EndPoint.objects.filter(
+            scan_history=self.context.get('scan_history')).filter(subdomain__name=subdomain_name)
+        endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
+
+        return [
+                {'name': 'IPs', 'children': ip_serializer.data},
+                {'name': 'Endpoints', 'children': endpoint_serializer.data},
+                {'name': 'Screenshot', 'children': []}
+            ]
 
 class VisualiseDataSerializer(serializers.ModelSerializer):
 
@@ -74,7 +97,10 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
     def get_children(self, ScanHistory):
         subdomain = Subdomain.objects.filter(scan_history=ScanHistory)
         serializer = VisualiseSubdomainSerializer(subdomain, many=True, context={'scan_history': ScanHistory})
-        return serializer.data
+        return [
+                {'name': 'Subdomains', 'children': serializer.data},
+                {'name': 'OSINT', 'children': []}
+            ]
 
 
 
