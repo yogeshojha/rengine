@@ -2,6 +2,8 @@ from rest_framework import serializers
 from startScan.models import *
 from reNgine.common_func import *
 
+from django.db.models import F, JSONField, Value
+
 
 class VisualisePortSerializer(serializers.ModelSerializer):
 
@@ -33,7 +35,9 @@ class VisualiseIpSerializer(serializers.ModelSerializer):
         return Ip.address
 
     def get_children(self, ip):
-        port = Port.objects.filter(ports__in=IpAddress.objects.filter(address=ip))
+        port = Port.objects.filter(
+            ports__in=IpAddress.objects.filter(
+                address=ip))
         serializer = VisualisePortSerializer(port, many=True)
         return serializer.data
 
@@ -65,19 +69,50 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
     def get_children(self, subdomain_name):
         subdomain = Subdomain.objects.filter(
-            scan_history=self.context.get('scan_history')).filter(name=subdomain_name)
+            scan_history=self.context.get('scan_history')).filter(
+            name=subdomain_name)
         ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
         ip_serializer = VisualiseIpSerializer(ips, many=True)
 
         endpoint = EndPoint.objects.filter(
-            scan_history=self.context.get('scan_history')).filter(subdomain__name=subdomain_name)
+            scan_history=self.context.get('scan_history')).filter(
+            subdomain__name=subdomain_name)
         endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
         return [
-                {'name': 'IPs', 'children': ip_serializer.data},
-                {'name': 'Endpoints', 'children': endpoint_serializer.data},
-                {'name': 'Screenshot', 'children': []}
-            ]
+            {'name': 'IPs', 'children': ip_serializer.data},
+            {'name': 'Endpoints', 'children': endpoint_serializer.data},
+            {'name': 'Screenshot', 'children': []}
+        ]
+
+
+class VisualiseEmailSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField('get_name')
+
+    class Meta:
+        model = Email
+        fields = [
+            'name'
+        ]
+
+    def get_name(self, Email):
+        return Email.address
+
+
+class VisualiseEmployeeSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField('get_name')
+
+    class Meta:
+        model = Employee
+        fields = [
+            'name'
+        ]
+
+    def get_name(self, employee):
+        return employee.name + '/' + employee.designation
+
 
 class VisualiseDataSerializer(serializers.ModelSerializer):
 
@@ -91,17 +126,52 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
             'children',
         ]
 
-    def get_name(self, ScanHistory):
-        return ScanHistory.domain.name
+    def get_name(self, scan_history):
+        return scan_history.domain.name
 
-    def get_children(self, ScanHistory):
-        subdomain = Subdomain.objects.filter(scan_history=ScanHistory)
-        serializer = VisualiseSubdomainSerializer(subdomain, many=True, context={'scan_history': ScanHistory})
+    def get_children(self, history):
+        scan_history = ScanHistory.objects.filter(id=history.id)
+
+        subdomain = Subdomain.objects.filter(scan_history=history)
+        serializer = VisualiseSubdomainSerializer(
+            subdomain, many=True, context={
+                'scan_history': history})
+
+        email = Email.objects.filter(emails__in=scan_history)
+        email_serializer = VisualiseEmailSerializer(email, many=True)
+
+        employee = Employee.objects.filter(employees__in=scan_history)
+        employee_serializer = VisualiseEmployeeSerializer(employee, many=True)
+
+        metainfo = MetaFinderDocument.objects.filter(
+            scan_history__id=history.id)
+
         return [
-                {'name': 'Subdomains', 'children': serializer.data},
-                {'name': 'OSINT', 'children': []}
-            ]
-
+            {'name': 'Subdomains', 'children': serializer.data},
+            {'name': 'OSINT', 'children': [
+                {'name': 'Emails', 'children': email_serializer.data},
+                {'name': 'Employees', 'children': employee_serializer.data},
+                {'name': 'Dorks', 'children': []},
+                {'name': 'Meta Information', 'children': [
+                    {
+                        'name': 'Usernames',
+                        'children': metainfo.annotate(
+                            name=F('author')).values('name').distinct().annotate(
+                            children=Value([], output_field=JSONField())).filter(
+                                author__isnull=False
+                            ),
+                    },
+                    {
+                        'name': 'Softwares',
+                        'children': metainfo.annotate(
+                            name=F('producer')).values('name').distinct().annotate(
+                            children=Value([], output_field=JSONField())).filter(
+                                producer__isnull=False
+                            ),
+                    }
+                ]},
+            ]}
+        ]
 
 
 class SubdomainChangesSerializer(serializers.ModelSerializer):

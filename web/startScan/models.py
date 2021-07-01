@@ -273,7 +273,7 @@ class MetaFinderDocument(models.Model):
         on_delete=models.CASCADE,
         null=True,
         blank=True)
-    name = models.CharField(max_length=1000, null=True, blank=True)
+    doc_name = models.CharField(max_length=1000, null=True, blank=True)
     url = models.CharField(max_length=5000, null=True, blank=True)
     title = models.CharField(max_length=1000, null=True, blank=True)
     author = models.CharField(max_length=1000, null=True, blank=True)

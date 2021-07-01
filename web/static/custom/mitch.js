@@ -18,7 +18,7 @@ var svg = d3.select("#visualisation").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("../api/queryAllScanResultVisualise/?scan_id=120&format=json", function(error, data) {
+d3.json("../api/queryAllScanResultVisualise/?scan_id=125&format=json", function(error, data) {
   if (error) throw error;
 
   root = data[0];
@@ -65,7 +65,9 @@ function update(source) {
       .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
       .attr("dy", ".35em")
       .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-      .text(function(d) { return d.name; })
+      .text(function(d) {
+        return d.name;
+       })
       .style("fill-opacity", 1e-6);
 
   // Transition nodes to their new position.
