@@ -7,31 +7,31 @@ from django.db.models import F, JSONField, Value
 
 class VisualisePortSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Port
         fields = [
-            'name'
+            'description'
         ]
 
-    def get_name(self, port):
+    def get_description(self, port):
         return str(port.number) + "/" + port.service_name
 
 
 class VisualiseIpSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
     children = serializers.SerializerMethodField('get_children')
 
     class Meta:
         model = IpAddress
         fields = [
-            'name',
+            'description',
             'children'
         ]
 
-    def get_name(self, Ip):
+    def get_description(self, Ip):
         return Ip.address
 
     def get_children(self, ip):
@@ -59,13 +59,17 @@ class VisualiseEndpointSerializer(serializers.ModelSerializer):
 class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
     children = serializers.SerializerMethodField('get_children')
+    description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Subdomain
         fields = [
-            'name',
+            'description',
             'children'
         ]
+
+    def get_description(self, scan_history):
+        return scan_history.name
 
     def get_children(self, subdomain_name):
         subdomain = Subdomain.objects.filter(
@@ -80,23 +84,23 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
         endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
         return [
-            {'name': 'IPs', 'children': ip_serializer.data},
-            {'name': 'Endpoints', 'children': endpoint_serializer.data},
-            {'name': 'Screenshot', 'children': []}
+            {'description': 'IPs', 'children': ip_serializer.data},
+            {'description': 'Endpoints', 'children': endpoint_serializer.data},
+            {'description': 'Screenshot', 'children': []}
         ]
 
 
 class VisualiseEmailSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Email
         fields = [
-            'name'
+            'description'
         ]
 
-    def get_name(self, Email):
+    def get_description(self, Email):
         return Email.address
 
 
@@ -109,8 +113,7 @@ class VisualiseDorkSerializer(serializers.ModelSerializer):
         model = Dork
         fields = [
             'name',
-            'description',
-            'url'
+            'description'
         ]
 
     def get_name(self, dork):
@@ -140,17 +143,19 @@ class VisualiseEmployeeSerializer(serializers.ModelSerializer):
 
 class VisualiseDataSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    title = serializers.ReadOnlyField(default='Target')
+    description = serializers.SerializerMethodField('get_description')
     children = serializers.SerializerMethodField('get_children')
 
     class Meta:
         model = ScanHistory
         fields = [
-            'name',
+            'description',
+            'title',
             'children',
         ]
 
-    def get_name(self, scan_history):
+    def get_description(self, scan_history):
         return scan_history.domain.name
 
     def get_children(self, history):
@@ -174,14 +179,14 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
             scan_history__id=history.id)
 
         return [
-            {'name': 'Subdomains', 'children': serializer.data},
-            {'name': 'OSINT', 'children': [
-                {'name': 'Emails', 'children': email_serializer.data},
-                {'name': 'Employees', 'children': employee_serializer.data},
-                {'name': 'Dorks', 'children': dork_serializer.data},
-                {'name': 'Meta Information', 'children': [
+            {'description': 'Subdomains', 'children': serializer.data},
+            {'description': 'OSINT', 'children': [
+                {'description': 'Emails', 'children': email_serializer.data},
+                {'description': 'Employees', 'children': employee_serializer.data},
+                {'description': 'Dorks', 'children': dork_serializer.data},
+                {'description': 'Meta Information', 'children': [
                     {
-                        'name': 'Usernames',
+                        'description': 'Usernames',
                         'children': metainfo.annotate(
                             name=F('author')).values('name').distinct().annotate(
                             children=Value([], output_field=JSONField())).filter(
@@ -189,7 +194,7 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
                             ),
                     },
                     {
-                        'name': 'Softwares',
+                        'description': 'Softwares',
                         'children': metainfo.annotate(
                             name=F('producer')).values('name').distinct().annotate(
                             children=Value([], output_field=JSONField())).filter(
@@ -197,7 +202,7 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
                             ),
                     },
                     {
-                        'name': 'OS',
+                        'description': 'OS',
                         'children': metainfo.annotate(
                             name=F('os')).values('name').distinct().annotate(
                             children=Value([], output_field=JSONField())).filter(
