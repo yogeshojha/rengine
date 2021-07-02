@@ -100,9 +100,30 @@ class VisualiseEmailSerializer(serializers.ModelSerializer):
         return Email.address
 
 
+class VisualiseDorkSerializer(serializers.ModelSerializer):
+
+    name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
+
+    class Meta:
+        model = Dork
+        fields = [
+            'name',
+            'description',
+            'url'
+        ]
+
+    def get_name(self, dork):
+        return dork.type
+
+    def get_description(self, dork):
+        return dork.description
+
+
 class VisualiseEmployeeSerializer(serializers.ModelSerializer):
 
     name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Employee
@@ -111,7 +132,10 @@ class VisualiseEmployeeSerializer(serializers.ModelSerializer):
         ]
 
     def get_name(self, employee):
-        return employee.name + '/' + employee.designation
+        return employee.name
+
+    def get_description(self, employee):
+        return employee.designation
 
 
 class VisualiseDataSerializer(serializers.ModelSerializer):
@@ -140,6 +164,9 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
         email = Email.objects.filter(emails__in=scan_history)
         email_serializer = VisualiseEmailSerializer(email, many=True)
 
+        dork = Dork.objects.filter(dorks__in=scan_history)
+        dork_serializer = VisualiseDorkSerializer(dork, many=True)
+
         employee = Employee.objects.filter(employees__in=scan_history)
         employee_serializer = VisualiseEmployeeSerializer(employee, many=True)
 
@@ -151,7 +178,7 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
             {'name': 'OSINT', 'children': [
                 {'name': 'Emails', 'children': email_serializer.data},
                 {'name': 'Employees', 'children': employee_serializer.data},
-                {'name': 'Dorks', 'children': []},
+                {'name': 'Dorks', 'children': dork_serializer.data},
                 {'name': 'Meta Information', 'children': [
                     {
                         'name': 'Usernames',
@@ -167,6 +194,14 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
                             name=F('producer')).values('name').distinct().annotate(
                             children=Value([], output_field=JSONField())).filter(
                                 producer__isnull=False
+                            ),
+                    },
+                    {
+                        'name': 'OS',
+                        'children': metainfo.annotate(
+                            name=F('os')).values('name').distinct().annotate(
+                            children=Value([], output_field=JSONField())).filter(
+                                os__isnull=False
                             ),
                     }
                 ]},

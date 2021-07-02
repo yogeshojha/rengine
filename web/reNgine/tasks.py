@@ -1583,9 +1583,15 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
         scan_history.dorks.add(dork)
 
 def get_and_save_employees(scan_history, results_dir):
-    theHarvester_location = '/usr/src/github/theHarvester/theHarvester.py'
+    theHarvester_location = '/usr/src/github/theHarvester'
 
-    os.system(settings.TOOL_LOCATION + 'get_linkedin_emp.sh {} {}'.format(scan_history.domain.name, results_dir))
+
+
+    os.system('cd {} && python3 theHarvester.py -d {} -b all -f {}/theHarvester.html'.format(
+        theHarvester_location,
+        scan_history.domain.name,
+        results_dir
+    ))
 
     file_location = results_dir + '/theHarvester.html'
     print(file_location)

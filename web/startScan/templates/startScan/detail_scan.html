@@ -27,8 +27,9 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
-<script src="https://d3js.org/d3.v3.min.js"></script>
-</style>
+<script src="https://cdn.jsdelivr.net/gh/deltoss/d3-mitch-tree@1.0.2/dist/js/d3-mitch-tree.min.js"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree-theme-default.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -713,7 +714,7 @@ Detailed Scan Results for {{history.domain.name}}
 							<div class="col-xl-12 col-lg-12 col-sm-12">
 								<div class="widget widget-content widget-content-area br-6">
 									<div id="visualisation">
-									</section>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -1463,6 +1464,8 @@ get_osint_users({{scan_history_id}});
 get_ports({{scan_history_id}});
 
 get_dork_summary({{scan_history_id}});
+
+visualise_scan_results({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

@@ -95,4 +95,3 @@ COPY . /usr/src/app/
 
 RUN chmod +x /usr/src/app/tools/get_dirs.sh
 RUN chmod +x /usr/src/app/tools/get_urls.sh
-RUN chmod +x /usr/src/app/tools/get_linkedin_emp.sh
