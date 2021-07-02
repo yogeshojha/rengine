@@ -428,3 +428,12 @@ def delete_all_screenshots(request):
             messages.INFO,
             'Screenshots successfully deleted!')
     return JsonResponse(messageData)
+
+
+def visualise(request, id):
+    scan_history = ScanHistory.objects.get(id=id)
+    context = {
+        'scan_id': id,
+        'scan_history': scan_history,
+    }
+    return render(request, 'startScan/visualise.html', context)

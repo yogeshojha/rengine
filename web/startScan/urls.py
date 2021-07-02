@@ -28,6 +28,10 @@ urlpatterns = [
         views.detail_vuln_scan,
         name='all_vulns'),
     path(
+        'visualise/<int:id>',
+        views.visualise,
+        name='visualise'),
+    path(
         'detail/endpoint/<int:id>',
         views.detail_endpoint_scan,
         name='detail_endpoint_scan'),

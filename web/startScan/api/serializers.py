@@ -60,16 +60,23 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
     children = serializers.SerializerMethodField('get_children')
     description = serializers.SerializerMethodField('get_description')
+    title = serializers.SerializerMethodField('get_title')
 
     class Meta:
         model = Subdomain
         fields = [
             'description',
-            'children'
+            'children',
+            'http_status',
+            'title',
         ]
 
-    def get_description(self, scan_history):
-        return scan_history.name
+    def get_description(self, subdomain):
+        return subdomain.name
+
+    def get_title(self, subdomain):
+        if get_interesting_subdomains(subdomain.scan_history.id).filter(name=subdomain.name).exists():
+            return "Interesting"
 
     def get_children(self, subdomain_name):
         subdomain = Subdomain.objects.filter(

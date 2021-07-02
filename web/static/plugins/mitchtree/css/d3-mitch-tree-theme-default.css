@@ -5,13 +5,6 @@
 }
 
 .mitch-d3-tree.boxed-tree.default .node {
-  /*
-					Do NOT do any font related CSS that
-					would affect dimensions here, as
-					D3Plus TextBox won't take them
-					into account when performing
-					various operations such as ellipsis.
-				*/
 }
 
 .mitch-d3-tree.boxed-tree.default .node.collapsed .body-group .body-box {
@@ -41,29 +34,23 @@
   fill: white;
 }
 
-.mitch-d3-tree.circle-tree.default .link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 2px;
+.danger-box .body-group .body-box{
+  stroke: #e7515a !important;
+  fill: #e7515a !important;
 }
 
-.mitch-d3-tree.circle-tree.default .node.collapsed circle {
-  fill: lightsteelblue;
+.success-box .body-group .body-box{
+  stroke: #1abc9c !important;
+  fill: #1abc9c !important;
 }
 
-.mitch-d3-tree.circle-tree.default .node.selected circle {
-  stroke: #00A2A3;
-  stroke-width: 2.5px;
+.warning-box .body-group .body-box{
+  stroke: #e2a03f !important;
+  fill: #e2a03f !important;
 }
 
-.mitch-d3-tree.circle-tree.default .node circle {
-  fill: #fff;
-  stroke: steelblue;
-  stroke-width: 3px;
+.title-group .d3plus-textBox text{
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  font-family: sans-serif !important;
 }
-
-.mitch-d3-tree.circle-tree.default .node text {
-  font: 12px sans-serif;
-}
-
-/*# sourceMappingURL=d3-mitch-tree-theme-default.css.map */

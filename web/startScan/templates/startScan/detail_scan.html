@@ -27,9 +27,6 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
-<script src="https://cdn.jsdelivr.net/gh/deltoss/d3-mitch-tree@1.0.2/dist/js/d3-mitch-tree.min.js"></script>
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree-theme-default.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -709,19 +706,6 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
-					<div class="tab-pane fade show active" id="pills-visualize" role="tabpanel" aria-labelledby="pills-visualize-tab">
-						<div class="row" id="visualize-div">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<div class="float-right">
-										<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="" onclick="fullScreenDiv('#visualize-div', '#fullscreenButton')" id="fullscreenButton" data-original-title="Toggle Full Screen"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
-									</div>
-									<div id="visualisation" style="border: 1px black solid; max-width: auto;">
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
@@ -729,9 +713,7 @@ Detailed Scan Results for {{history.domain.name}}
 </div>
 {# modal #}
 {% include 'base/_items/tab_modal.html' %}
-
 {% endblock main_content %}
-
 
 {% block page_level_script %}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
@@ -742,7 +724,6 @@ Detailed Scan Results for {{history.domain.name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'custom/mitch.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
 
 <script type="text/javascript">
