@@ -26,7 +26,9 @@ Visualise Recon Results for {{scan_history.domain.name}}
 {% endblock main_content %}
 
 {% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
+collapse_sidebar();
 $.getJSON(`../api/queryAllScanResultVisualise/?scan_id={{scan_id}}&format=json`, function(data) {
   data = data[0];
   var treePlugin = new d3.mitchTree.boxedTree();
@@ -60,6 +62,11 @@ $.getJSON(`../api/queryAllScanResultVisualise/?scan_id={{scan_id}}&format=json`,
   .back()
   treePlugin.initialize();
   treePlugin.getZoomListener().scaleTo(treePlugin.getSvg(), 1);
+  treePlugin.on("nodeClick", function(event) {
+    if (event.data.http_url) {
+      window.open(event.data.http_url, '_blank').focus();
+    }
+  });
   treePlugin.update = function(nodeDataItem){
     // Call the original update method
     this.__proto__.update.call(this, nodeDataItem);

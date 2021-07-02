@@ -44,15 +44,16 @@ class VisualiseIpSerializer(serializers.ModelSerializer):
 
 class VisualiseEndpointSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = EndPoint
         fields = [
-            'name'
+            'description',
+            'http_url'
         ]
 
-    def get_name(self, endpoint):
+    def get_description(self, endpoint):
         return endpoint.http_url
 
 
@@ -90,11 +91,12 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
             subdomain__name=subdomain_name)
         endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
-        return [
-            {'description': 'IPs', 'children': ip_serializer.data},
-            {'description': 'Endpoints', 'children': endpoint_serializer.data},
-            {'description': 'Screenshot', 'children': []}
-        ]
+        return_data = []
+        if ip_serializer.data:
+            return_data.append({'description': 'IPs', 'children': ip_serializer.data})
+        if endpoint_serializer.data:
+            return_data.append({'description': 'Endpoints', 'children': endpoint_serializer.data})
+        return return_data
 
 
 class VisualiseEmailSerializer(serializers.ModelSerializer):
@@ -169,7 +171,7 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
         scan_history = ScanHistory.objects.filter(id=history.id)
 
         subdomain = Subdomain.objects.filter(scan_history=history)
-        serializer = VisualiseSubdomainSerializer(
+        subdomain_serializer = VisualiseSubdomainSerializer(
             subdomain, many=True, context={
                 'scan_history': history})
 
@@ -185,40 +187,23 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
         metainfo = MetaFinderDocument.objects.filter(
             scan_history__id=history.id)
 
-        return [
-            {'description': 'Subdomains', 'children': serializer.data},
-            {'description': 'OSINT', 'children': [
-                {'description': 'Emails', 'children': email_serializer.data},
-                {'description': 'Employees', 'children': employee_serializer.data},
-                {'description': 'Dorks', 'children': dork_serializer.data},
-                {'description': 'Meta Information', 'children': [
-                    {
-                        'description': 'Usernames',
-                        'children': metainfo.annotate(
-                            name=F('author')).values('name').distinct().annotate(
-                            children=Value([], output_field=JSONField())).filter(
-                                author__isnull=False
-                            ),
-                    },
-                    {
-                        'description': 'Softwares',
-                        'children': metainfo.annotate(
-                            name=F('producer')).values('name').distinct().annotate(
-                            children=Value([], output_field=JSONField())).filter(
-                                producer__isnull=False
-                            ),
-                    },
-                    {
-                        'description': 'OS',
-                        'children': metainfo.annotate(
-                            name=F('os')).values('name').distinct().annotate(
-                            children=Value([], output_field=JSONField())).filter(
-                                os__isnull=False
-                            ),
-                    }
-                ]},
-            ]}
-        ]
+        return_data = []
+
+        if subdomain_serializer.data:
+            return_data.append({'description': 'Subdomains', 'children': subdomain_serializer.data})
+
+        if email_serializer.data or employee_serializer.data or dork_serializer.data:
+            osint_data = []
+            if email_serializer.data:
+                osint_data.append({'description': 'Emails', 'children': email_serializer.data})
+            if employee_serializer.data:
+                osint_data.append({'description': 'Employees', 'children': employee_serializer.data})
+            if dork_serializer.data:
+                osint_data.append({'description': 'Dorks', 'children': dork_serializer.data})
+
+            return_data.append({'description':'OSINT', 'children': osint_data})
+
+        return return_data
 
 
 class SubdomainChangesSerializer(serializers.ModelSerializer):
