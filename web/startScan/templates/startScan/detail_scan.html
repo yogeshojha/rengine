@@ -103,7 +103,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</span>
 						</p>
 						<p class="w-title">Vulnerabilities Discovered</p>
-						{% if history.scan_type.vulnerability_scan %}
+						{% if history.vulnerability_scan %}
 						<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
 						<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
 						<br>
@@ -386,7 +386,7 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						{% if history.scan_type.vulnerability_scan %}
+						{% if history.vulnerability_scan %}
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-activity-four">
 								<div class="widget-heading">
