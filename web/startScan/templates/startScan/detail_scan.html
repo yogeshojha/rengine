@@ -19,6 +19,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/search.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
@@ -705,20 +706,36 @@ Detailed Scan Results for {{history.domain.name}}
 										</div>
 									</div>
 									<div class="tab-pane fade show active" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
-										<div class="widget-content widget-content-area">
-											<div class="row">
-												<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-													<div class="mx-5 mt-3 mb-5 outer-div" id="visualisation-loader">
-														<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
-														<br>
-														<h5 class="text-center mt-3">Loading Visualization...</h5>
+										<div class="row">
+											<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+												<div class="statbox widget box box-shadow">
+													<div class="widget-header">
+														<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+															<h4>Recon Visualization</h4>
+															<hr>
+															<div class="outer-div" id="visualisation-loader">
+																<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
+																<br>
+																<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
+															</div>
+															<div class="">
+																<div class="n-chk">
+																	<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
+																		<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
+																		<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes</span>
+																	</label>
+																</div>
+															</div>
+														</div>
 													</div>
-													<div id="visualisation" style="height: 900px; ">
-													</div>
-													<div class="float-right m-3">
-														<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
-														<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
-														<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
+													<div class="widget-content">
+														<div id="visualisation" style="height: 800px; ">
+														</div>
+														<div class="float-right m-3">
+															<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+															<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+															<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
+														</div>
 													</div>
 												</div>
 											</div>
