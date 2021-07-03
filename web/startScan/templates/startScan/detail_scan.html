@@ -470,6 +470,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% if history.screenshot %}
 					<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
 						<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
 							<div class="w-100">
@@ -526,6 +527,8 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% endif %}
+					{% if history.dir_file_search %}
 					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
@@ -546,6 +549,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% endif %}
 					<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
@@ -568,6 +572,7 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% if history.vulnerability_scan %}
 					<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
@@ -589,6 +594,8 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% endif %}
+					{% if history.osint %}
 					<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
 						<div class="row">
 							<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
@@ -611,123 +618,116 @@ Detailed Scan Results for {{history.domain.name}}
 													</tbody>
 												</table>
 											</div>
-											<div class="ps__rail-x" style="left: 0px; bottom: -21px;"><div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div></div><div class="ps__rail-y" style="top: 21px; height: 332px; right: 0px;"><div class="ps__thumb-y" tabindex="0" style="top: 16px; height: 256px;"></div></div></div>
-											<div class="w-shadow-bottom"></div>
 										</div>
 									</div>
 								</div>
-								<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses</h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Email Address</div></th>
-															</tr>
-														</thead>
-														<tbody id="email-table-body">
-														</tbody>
-													</table>
-												</div>
-												<div class="ps__rail-x" style="left: 0px; bottom: -21px;"><div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div></div><div class="ps__rail-y" style="top: 21px; height: 332px; right: 0px;"><div class="ps__thumb-y" tabindex="0" style="top: 16px; height: 256px;"></div></div></div>
-												<div class="w-shadow-bottom"></div>
+							</div>
+							<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Email Address</div></th>
+														</tr>
+													</thead>
+													<tbody id="email-table-body">
+													</tbody>
+												</table>
 											</div>
 										</div>
 									</div>
-									<div class="col-xl-6 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
-										<div class="widget widget-activity-five">
-											<div class="widget-heading">
-												<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
-											</div>
-											<div class="widget-content">
-												<div class="w-shadow-top"></div>
-												<div class="mt-container mx-auto ps ps--active-y">
-													<div class="table-responsive">
-														<table class="table">
-															<thead>
-																<tr>
-																	<th><div class="th-content">Document</div></th>
-																	<th><div class="th-content text-center">User</div></th>
-																	<th><div class="th-content text-center">Metadata</div></th>
-																</tr>
-															</thead>
-															<tbody id="metadata-table-body">
-															</tbody>
-														</table>
-													</div>
-													<div class="ps__rail-x" style="left: 0px; bottom: -21px;"><div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div></div><div class="ps__rail-y" style="top: 21px; height: 332px; right: 0px;"><div class="ps__thumb-y" tabindex="0" style="top: 16px; height: 256px;"></div></div></div>
-													<div class="w-shadow-bottom"></div>
-												</div>
-											</div>
-										</div>
-										<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-											<div class="widget widget-activity-five">
-												<div class="widget-heading">
-													<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
-												</div>
-												<div class="widget-content">
-													<div class="w-shadow-top"></div>
-													<div class="mt-container mx-auto ps ps--active-y">
-														<div class="table-responsive">
-															<table class="table">
-																<thead>
-																	<tr>
-																		<th><div class="th-content text-center">Dork Type</div></th>
-																		<th><div class="th-content text-center">Description</div></th>
-																		<th><div class="th-content">URL</div></th>
-																	</tr>
-																</thead>
-																<tbody id="dorks-table-body">
-																</tbody>
-															</table>
-														</div>
-														<div class="ps__rail-x" style="left: 0px; bottom: -21px;"><div class="ps__thumb-x" tabindex="0" style="left: 0px; width: 0px;"></div></div><div class="ps__rail-y" style="top: 21px; height: 332px; right: 0px;"><div class="ps__thumb-y" tabindex="0" style="top: 16px; height: 256px;"></div></div></div>
-														<div class="w-shadow-bottom"></div>
-													</div>
-												</div>
+								</div>
+							</div>
+							<div class="col-xl-6 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Document</div></th>
+															<th><div class="th-content text-center">User</div></th>
+															<th><div class="th-content text-center">Metadata</div></th>
+														</tr>
+													</thead>
+													<tbody id="metadata-table-body">
+													</tbody>
+												</table>
 											</div>
 										</div>
 									</div>
-									<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
-										<div class="row">
-											<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-												<div class="statbox widget box box-shadow">
-													<div class="widget-header">
-														<div class="col-xl-12 col-md-12 col-sm-12 col-12">
-															<div id="visualisation-filter" style="display:none">
-																<div class="n-chk">
-																	<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
-																		<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
-																		<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
-																		</span>
-																	</label>
-																</div>
-															</div>
-															<hr>
-															<div class="outer-div" id="visualisation-loader">
-																<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
-																<br>
-																<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
-															</div>
-														</div>
-													</div>
-													<div class="widget-content">
-														<div id="visualisation" style="height: 800px; ">
-														</div>
-														<div class="float-right m-3">
-															<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
-															<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
-															<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
-														</div>
-													</div>
+								</div>
+							</div>
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content text-center">Dork Type</div></th>
+															<th><div class="th-content text-center">Description</div></th>
+															<th><div class="th-content">URL</div></th>
+														</tr>
+													</thead>
+													<tbody id="dorks-table-body">
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="statbox widget box box-shadow">
+									<div class="widget-header">
+										<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+											<div id="visualisation-filter" style="display:none">
+												<div class="n-chk">
+													<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
+														<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
+														<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
+														</span>
+													</label>
 												</div>
 											</div>
+											<hr>
+											<div class="outer-div" id="visualisation-loader">
+												<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
+												<br>
+												<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
+											</div>
+										</div>
+									</div>
+									<div class="widget-content">
+										<div id="visualisation" style="height: 800px; ">
+										</div>
+										<div class="float-right m-3">
+											<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+											<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+											<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
 										</div>
 									</div>
 								</div>
