@@ -168,11 +168,11 @@ Detailed Scan Results for {{history.domain.name}}
 				</li>
 				{% endif %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-visualize-tab" data-toggle="pill" href="#pills-visualize" role="tab" aria-controls="pills-visualize" aria-selected="false">Visualization</a>
+					<a class="nav-link" id="pills-visualisation-tab" data-toggle="pill" href="#pills-visualisation" role="tab" aria-controls="pills-visualisation" aria-selected="false">Visualization</a>
 				</li>
 			</ul>
 			<div class="tab-content" id="pills-tabContent">
-				<div class="tab-pane fade" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+				<div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
 					<div class="row">
 						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-five widget-progress">
@@ -593,15 +593,11 @@ Detailed Scan Results for {{history.domain.name}}
 						<div class="row">
 							<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
 								<div class="widget widget-activity-five">
-
 									<div class="widget-heading">
 										<h6 class=""><span id="employees-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Employees/People associated with {{history.domain.name}}</h6>
 									</div>
-
 									<div class="widget-content">
-
 										<div class="w-shadow-top"></div>
-
 										<div class="mt-container mx-auto ps ps--active-y">
 											<div class="table-responsive">
 												<table class="table">
@@ -622,15 +618,11 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 								<div class="col-xl-3 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
 									<div class="widget widget-activity-five">
-
 										<div class="widget-heading">
 											<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses</h6>
 										</div>
-
 										<div class="widget-content">
-
 											<div class="w-shadow-top"></div>
-
 											<div class="mt-container mx-auto ps ps--active-y">
 												<div class="table-responsive">
 													<table class="table">
@@ -653,11 +645,8 @@ Detailed Scan Results for {{history.domain.name}}
 											<div class="widget-heading">
 												<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
 											</div>
-
 											<div class="widget-content">
-
 												<div class="w-shadow-top"></div>
-
 												<div class="mt-container mx-auto ps ps--active-y">
 													<div class="table-responsive">
 														<table class="table">
@@ -705,19 +694,18 @@ Detailed Scan Results for {{history.domain.name}}
 											</div>
 										</div>
 									</div>
-									<div class="tab-pane fade show active" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
+									<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
 										<div class="row">
 											<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 												<div class="statbox widget box box-shadow">
 													<div class="widget-header">
 														<div class="col-xl-12 col-md-12 col-sm-12 col-12">
-															<h4>Recon Visualization</h4>
 															<div id="visualisation-filter" style="display:none">
-																<hr>
 																<div class="n-chk">
 																	<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
 																		<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
-																		<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes</span>
+																		<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
+																		</span>
 																	</label>
 																</div>
 															</div>
@@ -1449,12 +1437,16 @@ $("#interesting_endpoint_accordion").click(function() {
 // get screenshots
 $("#pills-screenshot-tab").click(function() {
 	get_screenshot({{scan_history_id}});
-
-
 	$(".tagging").select2({
 		tags: true
 	});
+	//animate search placeholder
+	const words = ["Search by Page Title   ",
+	"Search by HTTP Status   ",
+	"Search 'Interesting'   ",
+	"Search by Subdomain Name   "]
 
+	typingEffect(words, "screenshot-search", 0);
 });
 
 
@@ -1467,13 +1459,9 @@ $("#pills-osint-tab").click(function() {
 	get_dorks({{scan_history_id}});
 });
 
-//animate search placeholder
-const words = ["Search by Page Title   ",
-"Search by HTTP Status   ",
-"Search 'Interesting'   ",
-"Search by Subdomain Name   "]
-
-typingEffect(words, "screenshot-search", 0);
+$("#pills-visualisation-tab").click(function() {
+	visualise_scan_results({{scan_history_id}});
+});
 
 get_subdomain_changes_values({{scan_history_id}});
 get_endpoint_changes_values({{scan_history_id}});
@@ -1489,8 +1477,6 @@ get_osint_users({{scan_history_id}});
 get_ports({{scan_history_id}});
 
 get_dork_summary({{scan_history_id}});
-
-visualise_scan_results({{scan_history_id}});
 
 {% if history.fetch_url and history.used_gf_patterns %}
 // gf patterns

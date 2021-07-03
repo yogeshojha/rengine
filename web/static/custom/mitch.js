@@ -60,11 +60,13 @@ function visualise_scan_results(scan_id)
 
     checkbox.addEventListener('change', function() {
       if (this.checked) {
+        console.log("Expanding nodes");
         var nodes = treePlugin.getNodes();
         nodes.forEach(function(node, index, arr) {
           treePlugin.expand(node);
         });
         treePlugin.update(treePlugin.getRoot());
+        console.log("Expanded nodes");
       } else {
         var nodes = treePlugin.getNodes();
         nodes.forEach(function(node, index, arr) {
