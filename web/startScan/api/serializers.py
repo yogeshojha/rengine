@@ -96,6 +96,8 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
             return_data.append({'description': 'IPs', 'children': ip_serializer.data})
         if endpoint_serializer.data:
             return_data.append({'description': 'Endpoints', 'children': endpoint_serializer.data})
+        if subdomain_name.screenshot_path:
+            return_data.append({'description': 'Screenshot', 'screenshot_path': subdomain_name.screenshot_path})
         return return_data
 
 

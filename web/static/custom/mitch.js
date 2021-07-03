@@ -40,6 +40,12 @@ function visualise_scan_results(scan_id)
       if (event.data.http_url) {
         window.open(event.data.http_url, '_blank').focus();
       }
+      else if (event.data.screenshot_path){
+        $('#exampleModal').modal('show');
+        $('.modal-text').empty();
+        $('#modal-text-content').append(`<div id="modal-screenshot"></div>`);
+        load_image_from_url('/media/' + event.data.screenshot_path, "modal-screenshot")
+      }
     });
     treePlugin.update = function(nodeDataItem){
       // Call the original update method

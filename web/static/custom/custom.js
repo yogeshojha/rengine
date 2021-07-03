@@ -1384,3 +1384,11 @@ function delete_all_screenshots()
 		}
 	}])
 }
+
+
+function load_image_from_url(src, append_to_id){
+	img = document.createElement('img');
+	img.src = src;
+	img.style.width = '100%';
+	document.getElementById(append_to_id).appendChild(img);
+}
