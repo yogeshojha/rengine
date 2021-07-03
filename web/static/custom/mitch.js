@@ -3,6 +3,7 @@ function visualise_scan_results(scan_id)
 {
   $.getJSON(`../api/queryAllScanResultVisualise/?scan_id=${scan_id}&format=json`, function(data) {
     $('#visualisation-loader').empty();
+    $('#visualisation-filter').show();
     data = data[0];
     var treePlugin = new d3.mitchTree.boxedTree();
     treePlugin
