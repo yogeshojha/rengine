@@ -27,6 +27,9 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/gh/deltoss/d3-mitch-tree@1.0.2/dist/js/d3-mitch-tree.min.js"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree-theme-default.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -702,6 +705,21 @@ Detailed Scan Results for {{history.domain.name}}
 											</div>
 										</div>
 									</div>
+									<div class="tab-pane fade show active" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
+										<div class="widget-content widget-content-area">
+											<div class="row">
+												<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+													<div class="mx-5 mt-3 mb-5 outer-div" id="visualisation-loader">
+														<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
+														<br>
+														<h5 class="text-center mt-3">Loading Visualization...</h5>
+													</div>
+													<div id="visualisation" style="height: 900px; ">
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -724,6 +742,7 @@ Detailed Scan Results for {{history.domain.name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'custom/mitch.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
 
 <script type="text/javascript">

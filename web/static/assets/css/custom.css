@@ -342,37 +342,38 @@ div.dataTables_wrapper div.dataTables_filter {
     cursor: pointer;
   }
 
-  .overlay{
-      background-color:#EEE;
-  }
+.overlay{
+    background-color:#EEE;
+}
 
-  .node circle {
-    fill: #fff;
-    stroke: steelblue;
-    stroke-width: 1.5px;
-  }
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
 
-  .node text {
-    font-size:10px;
-    font-family:sans-serif;
-  }
+.node text {
+  font-size:10px;
+  font-family:sans-serif;
+}
 
-  .link {
-    fill: none;
-    stroke: #ccc;
-    stroke-width: 1.5px;
-  }
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
 
-  .templink {
-    fill: none;
-    stroke: red;
-    stroke-width: 3px;
-  }
+.templink {
+  fill: none;
+  stroke: red;
+  stroke-width: 3px;
+}
 
-  .ghostCircle.show{
-      display:block;
-  }
+.outer-div {
+  width: 100%;
+  text-align: center;
+}
 
-  .ghostCircle, .activeDrag .ghostCircle{
-       display: none;
-  }
+.inner-div {
+  display: inline-block;
+}

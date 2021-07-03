@@ -115,39 +115,42 @@ class VisualiseEmailSerializer(serializers.ModelSerializer):
 
 class VisualiseDorkSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
+    title = serializers.SerializerMethodField('get_title')
     description = serializers.SerializerMethodField('get_description')
+    http_url = serializers.SerializerMethodField('get_http_url')
 
     class Meta:
         model = Dork
         fields = [
-            'name',
-            'description'
+            'title',
+            'description',
+            'http_url'
         ]
 
-    def get_name(self, dork):
+    def get_title(self, dork):
         return dork.type
 
     def get_description(self, dork):
         return dork.description
 
+    def get_http_url(self, dork):
+        return dork.url
+
 
 class VisualiseEmployeeSerializer(serializers.ModelSerializer):
 
-    name = serializers.SerializerMethodField('get_name')
     description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Employee
         fields = [
-            'name'
+            'description'
         ]
 
-    def get_name(self, employee):
-        return employee.name
-
     def get_description(self, employee):
-        return employee.designation
+        if employee.designation:
+            return employee.name + '--' + employee.designation
+        return employee.name
 
 
 class VisualiseDataSerializer(serializers.ModelSerializer):
@@ -192,7 +195,7 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
         if subdomain_serializer.data:
             return_data.append({'description': 'Subdomains', 'children': subdomain_serializer.data})
 
-        if email_serializer.data or employee_serializer.data or dork_serializer.data:
+        if email_serializer.data or employee_serializer.data or dork_serializer.data or metainfo:
             osint_data = []
             if email_serializer.data:
                 osint_data.append({'description': 'Emails', 'children': email_serializer.data})
@@ -200,6 +203,41 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
                 osint_data.append({'description': 'Employees', 'children': employee_serializer.data})
             if dork_serializer.data:
                 osint_data.append({'description': 'Dorks', 'children': dork_serializer.data})
+
+            if metainfo:
+                metainfo_data = []
+                usernames = metainfo.annotate(
+                    description=F('author')
+                ).values('description').distinct().annotate(
+                    children=Value(
+                        [], output_field=JSONField())
+                    ).filter(author__isnull=False)
+
+                if usernames:
+                    metainfo_data.append({'description': 'Usernames', 'children': usernames})
+
+                software = metainfo.annotate(
+                    description=F('producer')
+                ).values('description').distinct().annotate(
+                    children=Value(
+                        [], output_field=JSONField())
+                    ).filter(producer__isnull=False)
+
+                if software:
+                    metainfo_data.append({'description': 'Software', 'children': software})
+
+                os = metainfo.annotate(
+                    description=F('os')
+                ).values('description').distinct().annotate(
+                    children=Value(
+                        [], output_field=JSONField())
+                    ).filter(os__isnull=False)
+
+                if os:
+                    metainfo_data.append({'description': 'OS', 'children': os})
+
+            if metainfo:
+                osint_data.append({'description':'Metainfo', 'children': metainfo_data})
 
             return_data.append({'description':'OSINT', 'children': osint_data})
 
