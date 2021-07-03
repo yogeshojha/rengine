@@ -19,6 +19,20 @@ class VisualisePortSerializer(serializers.ModelSerializer):
         return str(port.number) + "/" + port.service_name
 
 
+class VisualiseTechnologySerializer(serializers.ModelSerializer):
+
+    description = serializers.SerializerMethodField('get_description')
+
+    class Meta:
+        model = Technology
+        fields = [
+            'description'
+        ]
+
+    def get_description(self, tech):
+        return tech.name
+
+
 class VisualiseIpSerializer(serializers.ModelSerializer):
 
     description = serializers.SerializerMethodField('get_description')
@@ -83,6 +97,7 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
         subdomain = Subdomain.objects.filter(
             scan_history=self.context.get('scan_history')).filter(
             name=subdomain_name)
+
         ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
         ip_serializer = VisualiseIpSerializer(ips, many=True)
 
@@ -91,11 +106,16 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
             subdomain__name=subdomain_name)
         endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
+        technologies = Technology.objects.filter(technologies__in=subdomain)
+        tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
+
         return_data = []
         if ip_serializer.data:
             return_data.append({'description': 'IPs', 'children': ip_serializer.data})
         if endpoint_serializer.data:
             return_data.append({'description': 'Endpoints', 'children': endpoint_serializer.data})
+        if tech_serializer.data:
+            return_data.append({'description': 'Technologies', 'children': tech_serializer.data})
         if subdomain_name.screenshot_path:
             return_data.append({'description': 'Screenshot', 'screenshot_path': subdomain_name.screenshot_path})
         return return_data

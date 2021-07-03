@@ -54,6 +54,9 @@ function visualise_scan_results(scan_id)
     }
 
     updateTreeClasses(treePlugin);
+  }).fail(function(){
+    $('#visualisation-loader').empty();
+    $("#visualisation-loader").append(`<h5 class="text-danger">Sorry, could not visualize.</h5>`);
   });
 
   function updateTreeClasses(treePlugin)
