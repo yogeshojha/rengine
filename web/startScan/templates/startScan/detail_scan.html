@@ -10,7 +10,6 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
@@ -24,12 +23,12 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/gh/deltoss/d3-mitch-tree@1.0.2/dist/js/d3-mitch-tree.min.js"></script>
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/mitchtree/css/d3-mitch-tree-theme-default.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -715,6 +714,11 @@ Detailed Scan Results for {{history.domain.name}}
 														<h5 class="text-center mt-3">Loading Visualization...</h5>
 													</div>
 													<div id="visualisation" style="height: 900px; ">
+													</div>
+													<div class="float-right m-3">
+														<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+														<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+														<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
 													</div>
 												</div>
 											</div>

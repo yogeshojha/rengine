@@ -39,6 +39,21 @@
   fill: #e7515a !important;
 }
 
+.critical-box .body-group .body-box{
+  stroke: #AA2C00 !important;
+  fill: #AA2C00 !important;
+}
+
+.low-box .body-group .body-box{
+  stroke: #FFD600 !important;
+  fill: #FFD600 !important;
+}
+
+.info-box .body-group .body-box{
+  stroke: #2196f3 !important;
+  fill: #2196f3 !important;
+}
+
 .success-box .body-group .body-box{
   stroke: #1abc9c !important;
   fill: #1abc9c !important;
@@ -50,7 +65,5 @@
 }
 
 .title-group .d3plus-textBox text{
-  font-size: 13px !important;
-  font-weight: 400 !important;
-  font-family: sans-serif !important;
+  font-size: 10px !important;
 }

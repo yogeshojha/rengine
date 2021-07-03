@@ -5,18 +5,40 @@ from reNgine.common_func import *
 from django.db.models import F, JSONField, Value
 
 
-class VisualisePortSerializer(serializers.ModelSerializer):
+class VisualiseVulnerabilitySerializer(serializers.ModelSerializer):
 
     description = serializers.SerializerMethodField('get_description')
 
     class Meta:
+        model = Vulnerability
+        fields = [
+            'description',
+            'http_url'
+        ]
+
+    def get_description(self, vulnerability):
+        return vulnerability.name
+
+
+class VisualisePortSerializer(serializers.ModelSerializer):
+
+    description = serializers.SerializerMethodField('get_description')
+    title = serializers.SerializerMethodField('get_title')
+
+    class Meta:
         model = Port
         fields = [
-            'description'
+            'description',
+            'is_uncommon',
+            'title',
         ]
 
     def get_description(self, port):
         return str(port.number) + "/" + port.service_name
+
+    def get_title(self, port):
+        if port.is_uncommon:
+            return "Uncommon Port"
 
 
 class VisualiseTechnologySerializer(serializers.ModelSerializer):
@@ -109,15 +131,91 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
         technologies = Technology.objects.filter(technologies__in=subdomain)
         tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
 
+        vulnerability = Vulnerability.objects.filter(
+            scan_history=self.context.get('scan_history')
+        ).filter(subdomain=subdomain_name)
+
         return_data = []
         if ip_serializer.data:
-            return_data.append({'description': 'IPs', 'children': ip_serializer.data})
+            return_data.append({
+                'description': 'IPs',
+                'children': ip_serializer.data
+            })
         if endpoint_serializer.data:
-            return_data.append({'description': 'Endpoints', 'children': endpoint_serializer.data})
+            return_data.append({
+                'description': 'Endpoints',
+                'children': endpoint_serializer.data
+            })
         if tech_serializer.data:
-            return_data.append({'description': 'Technologies', 'children': tech_serializer.data})
+            return_data.append({
+                'description': 'Technologies',
+                'children': tech_serializer.data
+            })
+
+        if vulnerability:
+            vulnerability_data = []
+            critical = vulnerability.filter(severity=4)
+            if critical:
+                critical_serializer = VisualiseVulnerabilitySerializer(
+                    critical,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'Critical',
+                    'children': critical_serializer.data
+                })
+            high = vulnerability.filter(severity=3)
+            if high:
+                high_serializer = VisualiseVulnerabilitySerializer(
+                    high,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'High',
+                    'children': high_serializer.data
+                })
+            medium = vulnerability.filter(severity=2)
+            if medium:
+                medium_serializer = VisualiseVulnerabilitySerializer(
+                    medium,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'Medium',
+                    'children': medium_serializer.data
+                })
+            low = vulnerability.filter(severity=1)
+            if low:
+                low_serializer = VisualiseVulnerabilitySerializer(
+                    low,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'Low',
+                    'children': low_serializer.data
+                })
+            info = vulnerability.filter(severity=0)
+            if info:
+                info_serializer = VisualiseVulnerabilitySerializer(
+                    info,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'Informational',
+                    'children': info_serializer.data
+                })
+
+            if vulnerability_data:
+                return_data.append({
+                    'description': 'Vulnerabilities',
+                    'children': vulnerability_data
+                })
+
         if subdomain_name.screenshot_path:
-            return_data.append({'description': 'Screenshot', 'screenshot_path': subdomain_name.screenshot_path})
+            return_data.append({
+                'description': 'Screenshot',
+                'screenshot_path': subdomain_name.screenshot_path
+            })
         return return_data
 
 
