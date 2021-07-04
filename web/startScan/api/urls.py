@@ -36,7 +36,10 @@ urlpatterns = [
     path('queryEmployees/', ListEmployees.as_view(), name='queryEmployees'),
     path('queryDorks/', ListDorks.as_view(), name='queryDorks'),
     path('queryDorkTypes/', ListDorkTypes.as_view(), name='queryDorkTypes'),
+    path('queryDorkTypes/', ListDorkTypes.as_view(), name='queryDorkTypes'),
     path('queryAllScanResultVisualise/', VisualiseData.as_view(), name='queryAllScanResultVisualise'),
+    path('queryVulnerabilities/', ListVulnerability.as_view(), name='queryVulnerabilities'),
+    path('queryEndpoints/', ListEndpoints.as_view(), name='queryEndpoints'),
 ]
 
 urlpatterns += router.urls

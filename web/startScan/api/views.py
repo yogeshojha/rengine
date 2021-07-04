@@ -16,6 +16,40 @@ from rest_framework import status
 from rest_framework.decorators import api_view, action
 
 
+class ListVulnerability(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        severity = req.query_params.get('severity')
+        subdomain_name = req.query_params.get('subdomain_name')
+
+        vulnerability = Vulnerability.objects.filter(scan_history__id=scan_id)
+
+        if severity:
+            vulnerability = vulnerability.filter(severity=severity)
+
+        if subdomain_name:
+            vulnerability = vulnerability.filter(subdomain__name=subdomain_name)
+
+        vulnerability_serializer = VulnerabilitySerializer(vulnerability, many=True)
+        return Response({'vulnerabilities': vulnerability_serializer.data})
+
+
+class ListEndpoints(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_id = req.query_params.get('scan_id')
+        subdomain_name = req.query_params.get('subdomain_name')
+
+        endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+
+        if subdomain_name:
+            endpoints = endpoints.filter(subdomain__name=subdomain_name)
+
+        endpoints_serializer = EndpointSerializer(endpoints, many=True)
+        return Response({'endpoints': endpoints_serializer.data})
+
+
 class VisualiseData(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -26,6 +60,7 @@ class VisualiseData(APIView):
             return Response(serializer.data)
         else:
             return Response()
+
 
 class ListTechnology(APIView):
     def get(self, request, format=None):
