@@ -1,11 +1,5 @@
 import json
 
-from startScan.api.serializers import *
-from scanEngine.models import InterestingLookupModel
-from startScan.models import Subdomain, ScanHistory, EndPoint, Vulnerability
-
-from reNgine.common_func import *
-
 from django.db.models import Q
 from django.db.models import CharField, Value, Count
 from django.core import serializers
@@ -14,6 +8,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view, action
+
+from reNgine.common_func import *
+
+from startScan.api.serializers import *
+from scanEngine.models import *
+from startScan.models import *
+from targetApp.models import *
+
+class ListTargetsWithoutOrganization(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        targets = Domain.objects.exclude(domains__in=Organization.objects.all())
+        targets_serializer = OrganizationTargetsSerializer(targets, many=True)
+        return Response({'targets': targets_serializer.data})
 
 
 class ListVulnerability(APIView):

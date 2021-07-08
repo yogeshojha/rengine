@@ -9,9 +9,13 @@ urlpatterns = [
         views.index,
         name='targetIndex'),
     path(
-        'add/',
+        'add/target',
         views.add_target,
         name='add_target'),
+    path(
+        'add/organization',
+        views.add_organization,
+        name='add_organization'),
     path(
         'add/bulk/',
         views.add_bulk_targets,
@@ -25,9 +29,13 @@ urlpatterns = [
         views.update_target_form,
         name='update_target_form'),
     path(
-        'list/',
+        'list/target',
         views.list_target,
         name='list_target'),
+    path(
+        'list/organization',
+        views.list_organization,
+        name='list_organization'),
     path(
         'delete/<int:id>',
         views.delete_target,

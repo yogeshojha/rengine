@@ -5,6 +5,15 @@ from reNgine.common_func import *
 from django.db.models import F, JSONField, Value
 
 
+class OrganizationTargetsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Vulnerability
+        fields = [
+            'name'
+        ]
+
+
 class VisualiseVulnerabilitySerializer(serializers.ModelSerializer):
 
     description = serializers.SerializerMethodField('get_description')

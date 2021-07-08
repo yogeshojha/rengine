@@ -30,6 +30,32 @@ class AddTargetForm(forms.Form):
         return data
 
 
+class AddOrganizationForm(forms.Form):
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "organizationName",
+                "placeholder": "Organization"
+            }
+        ))
+    description = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "organizationDescription",
+            }
+        ))
+
+    def clean_name(self):
+        data = self.cleaned_data['name']
+        if Organization.objects.filter(name=data).count() > 0:
+            raise forms.ValidationError("{} Organization already exists".format(data))
+        return data
+
+
 class UpdateTargetForm(forms.ModelForm):
     class Meta:
         model = Domain

@@ -8,17 +8,18 @@ from operator import and_, or_
 from functools import reduce
 from django import http
 from django.shortcuts import render, get_object_or_404
-from .models import Domain
-from startScan.models import ScanHistory, EndPoint, Subdomain, Vulnerability, ScanActivity
-from scanEngine.models import InterestingLookupModel
 from django.contrib import messages
-from targetApp.forms import AddTargetForm, UpdateTargetForm
 from django.utils import timezone
 from django.urls import reverse
 from django.conf import settings
 from django.db.models import Count, Q
 
+from targetApp.models import *
+from startScan.models import *
+from scanEngine.models import *
+from targetApp.forms import *
 from reNgine.common_func import *
+
 
 
 def index(request):
@@ -146,6 +147,38 @@ def list_target(request):
     return render(request, 'target/list.html', context)
 
 
+def add_organization(request):
+    form = AddOrganizationForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            Domain.objects.create(
+                **form.cleaned_data,
+                insert_date=timezone.now())
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Target domain ' +
+                form.cleaned_data['name'] +
+                ' added successfully')
+            return http.HttpResponseRedirect(reverse('list_target'))
+    context = {
+        "add_organization_li": "active",
+        "organization_data_active": "true",
+        'form': form}
+    return render(request, 'organization/add.html', context)
+
+
+def list_organization(request):
+    organizations = Organization.objects.all().order_by('-insert_date')
+    print(organizations[0].get_domains())
+    context = {
+        'list_organization_li': 'active',
+        'organization_data_active': 'true',
+        'organizations': organizations
+    }
+    return render(request, 'organization/list.html', context)
+
+
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
@@ -210,7 +243,7 @@ def target_summary(request, id):
     target = get_object_or_404(Domain, id=id)
     context['target'] = target
     context['scan_count'] = ScanHistory.objects.filter(
-        domai_id=id).count()
+        domain_id=id).count()
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = ScanHistory.objects.filter(
         domain_id=id, start_scan_date__gte=last_week).count()

@@ -21,7 +21,6 @@ from startScan.models import *
 from targetApp.models import Domain
 from scanEngine.models import EngineType
 from django.conf import settings
-from django.utils import timezone, dateformat
 from django.shortcuts import get_object_or_404
 
 from celery import shared_task
