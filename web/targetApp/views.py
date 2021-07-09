@@ -150,17 +150,22 @@ def list_target(request):
 def add_organization(request):
     form = AddOrganizationForm(request.POST or None)
     if request.method == "POST":
+        print(form.errors)
         if form.is_valid():
-            Domain.objects.create(
-                **form.cleaned_data,
+            organization = Organization.objects.create(
+                name=form.cleaned_data['name'],
+                description=form.cleaned_data['description'],
                 insert_date=timezone.now())
+            for domain_id in request.POST.getlist("domains"):
+                domain = Domain.objects.get(id=domain_id)
+                organization.domains.add(domain)
             messages.add_message(
                 request,
                 messages.INFO,
-                'Target domain ' +
+                'Organization ' +
                 form.cleaned_data['name'] +
                 ' added successfully')
-            return http.HttpResponseRedirect(reverse('list_target'))
+            return http.HttpResponseRedirect(reverse('list_organization'))
     context = {
         "add_organization_li": "active",
         "organization_data_active": "true",

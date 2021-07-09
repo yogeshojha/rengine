@@ -21,7 +21,7 @@ class ListTargetsWithoutOrganization(APIView):
         req = self.request
         targets = Domain.objects.exclude(domains__in=Organization.objects.all())
         targets_serializer = OrganizationTargetsSerializer(targets, many=True)
-        return Response({'targets': targets_serializer.data})
+        return Response({'domains': targets_serializer.data})
 
 
 class ListVulnerability(APIView):

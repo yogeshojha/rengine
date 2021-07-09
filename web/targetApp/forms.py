@@ -1,7 +1,6 @@
 from django import forms
-from .models import Domain
+from .models import *
 from reNgine.validators import validate_domain
-
 
 class AddTargetForm(forms.Form):
     name = forms.CharField(
@@ -31,15 +30,20 @@ class AddTargetForm(forms.Form):
 
 
 class AddOrganizationForm(forms.Form):
+    def __init__(self, *args, **kwargs):
+        super(AddOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['domains'].choices = [(domain.id, domain.name) for domain in Domain.objects.all()]
+
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
                 "id": "organizationName",
-                "placeholder": "Organization"
+                "placeholder": "Organization Name"
             }
         ))
+
     description = forms.CharField(
         required=False,
         widget=forms.TextInput(
@@ -48,6 +52,17 @@ class AddOrganizationForm(forms.Form):
                 "id": "organizationDescription",
             }
         ))
+
+    domains = forms.ChoiceField(
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control tagging",
+                "multiple": "multiple",
+                "id": "domains",
+            }
+        )
+    )
 
     def clean_name(self):
         data = self.cleaned_data['name']
