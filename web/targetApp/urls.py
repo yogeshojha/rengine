@@ -37,9 +37,13 @@ urlpatterns = [
         views.list_organization,
         name='list_organization'),
     path(
-        'delete/<int:id>',
+        'delete/target/<int:id>',
         views.delete_target,
-        name='delete_target_url'),
+        name='delete_target'),
+    path(
+        'delete/organization/<int:id>',
+        views.delete_organization,
+        name='delete_organization'),
     path(
         'delete/multiple',
         views.delete_targets,

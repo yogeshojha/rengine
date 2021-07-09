@@ -184,6 +184,24 @@ def list_organization(request):
     return render(request, 'organization/list.html', context)
 
 
+def delete_organization(request, id):
+    if request.method == "POST":
+        obj = get_object_or_404(Organization, id=id)
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Organization successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Oops! Organization could not be deleted!')
+    return http.JsonResponse(responseData)
+
+
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
@@ -202,7 +220,7 @@ def delete_target(request, id):
         responseData = {'status': 'false'}
         messages.add_message(
             request,
-            messages.INFO,
+            messages.ERROR,
             'Oops! Domain could not be deleted!')
     return http.JsonResponse(responseData)
 
