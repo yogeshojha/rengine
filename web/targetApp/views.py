@@ -13,6 +13,7 @@ from django.utils import timezone
 from django.urls import reverse
 from django.conf import settings
 from django.db.models import Count, Q
+from django.utils.safestring import mark_safe
 
 from targetApp.models import *
 from startScan.models import *
@@ -147,61 +148,6 @@ def list_target(request):
     return render(request, 'target/list.html', context)
 
 
-def add_organization(request):
-    form = AddOrganizationForm(request.POST or None)
-    if request.method == "POST":
-        print(form.errors)
-        if form.is_valid():
-            organization = Organization.objects.create(
-                name=form.cleaned_data['name'],
-                description=form.cleaned_data['description'],
-                insert_date=timezone.now())
-            for domain_id in request.POST.getlist("domains"):
-                domain = Domain.objects.get(id=domain_id)
-                organization.domains.add(domain)
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Organization ' +
-                form.cleaned_data['name'] +
-                ' added successfully')
-            return http.HttpResponseRedirect(reverse('list_organization'))
-    context = {
-        "add_organization_li": "active",
-        "organization_data_active": "true",
-        'form': form}
-    return render(request, 'organization/add.html', context)
-
-
-def list_organization(request):
-    organizations = Organization.objects.all().order_by('-insert_date')
-    print(organizations[0].get_domains())
-    context = {
-        'list_organization_li': 'active',
-        'organization_data_active': 'true',
-        'organizations': organizations
-    }
-    return render(request, 'organization/list.html', context)
-
-
-def delete_organization(request, id):
-    if request.method == "POST":
-        obj = get_object_or_404(Organization, id=id)
-        obj.delete()
-        responseData = {'status': 'true'}
-        messages.add_message(
-            request,
-            messages.INFO,
-            'Organization successfully deleted!')
-    else:
-        responseData = {'status': 'false'}
-        messages.add_message(
-            request,
-            messages.ERROR,
-            'Oops! Organization could not be deleted!')
-    return http.JsonResponse(responseData)
-
-
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
@@ -239,7 +185,7 @@ def delete_targets(request):
     return http.HttpResponseRedirect(reverse('list_target'))
 
 
-def update_target_form(request, id):
+def update_target(request, id):
     domain = get_object_or_404(Domain, id=id)
     form = UpdateTargetForm()
     if request.method == "POST":
@@ -249,7 +195,7 @@ def update_target_form(request, id):
             messages.add_message(
                 request,
                 messages.INFO,
-                'Domain edited successfully')
+                'Domain {} modified!'.format(domain.name))
             return http.HttpResponseRedirect(reverse('list_target'))
     else:
         form.set_value(domain.name, domain.description)
@@ -259,7 +205,6 @@ def update_target_form(request, id):
         "domain": domain,
         "form": form}
     return render(request, 'target/update.html', context)
-
 
 def target_summary(request, id):
     context = {}
@@ -283,7 +228,6 @@ def target_summary(request, id):
         domain=id).filter(
         scan_type__subdomain_discovery=True).filter(
             scan_status=2).count() > 1:
-        print('ok')
         last_scan = ScanHistory.objects.filter(
             domain=id).filter(
             scan_type__subdomain_discovery=True).filter(
@@ -336,3 +280,88 @@ def target_summary(request, id):
     context['scan_history'] = ScanHistory.objects.filter(
         domain=id).order_by('-start_scan_date')
     return render(request, 'target/summary.html', context)
+
+def add_organization(request):
+    form = AddOrganizationForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            organization = Organization.objects.create(
+                name=form.cleaned_data['name'],
+                description=form.cleaned_data['description'],
+                insert_date=timezone.now())
+            for domain_id in request.POST.getlist("domains"):
+                domain = Domain.objects.get(id=domain_id)
+                organization.domains.add(domain)
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Organization ' +
+                form.cleaned_data['name'] +
+                ' added successfully')
+            return http.HttpResponseRedirect(reverse('list_organization'))
+    context = {
+        "add_organization_li": "active",
+        "organization_data_active": "true",
+        'form': form}
+    return render(request, 'organization/add.html', context)
+
+def list_organization(request):
+    organizations = Organization.objects.all().order_by('-insert_date')
+    context = {
+        'list_organization_li': 'active',
+        'organization_data_active': 'true',
+        'organizations': organizations
+    }
+    return render(request, 'organization/list.html', context)
+
+def delete_organization(request, id):
+    if request.method == "POST":
+        obj = get_object_or_404(Organization, id=id)
+        obj.delete()
+        responseData = {'status': 'true'}
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Organization successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Oops! Organization could not be deleted!')
+    return http.JsonResponse(responseData)
+
+def update_organization(request, id):
+    organization = get_object_or_404(Organization, id=id)
+    form = UpdateOrganizationForm()
+    if request.method == "POST":
+        form = UpdateOrganizationForm(request.POST, instance=organization)
+        if form.is_valid():
+            organization_obj = Organization.objects.filter(
+                id=id
+            )
+            organization_obj.update(
+                name=form.cleaned_data['name'],
+                description=form.cleaned_data['description'],
+            )
+            Organization.domains.through.objects.filter(id=id).delete()
+            for domain_id in request.POST.getlist("domains"):
+                domain = Domain.objects.get(id=domain_id)
+                organization.domains.add(domain)
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Organization {} modified!'.format(organization.name))
+            return http.HttpResponseRedirect(reverse('list_organization'))
+    else:
+        domain_list = organization.get_domains().values_list('id', flat=True)
+        domain_list = [str(id) for id in domain_list]
+        form.set_value(organization.name, organization.description)
+    context = {
+        'list_organization_li': 'active',
+        'organization_data_active': 'true',
+        "organization": organization,
+        "domain_list": mark_safe(domain_list),
+        "form": form
+    }
+    return render(request, 'organization/update.html', context)

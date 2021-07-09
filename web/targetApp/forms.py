@@ -97,3 +97,46 @@ class UpdateTargetForm(forms.ModelForm):
     def set_value(self, domain_value, description_value):
         self.initial['name'] = domain_value
         self.initial['description'] = description_value
+
+
+class UpdateOrganizationForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(UpdateOrganizationForm, self).__init__(*args, **kwargs)
+        self.fields['domains'].choices = [(domain.id, domain.name) for domain in Domain.objects.all()]
+
+    class Meta:
+        model = Organization
+        fields = ['name', 'description']
+
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "organizationName",
+            }
+        ))
+
+    description = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "organizationDescription",
+            }
+        ))
+
+    domains = forms.ChoiceField(
+        required=True,
+        widget=forms.Select(
+            attrs={
+                "class": "form-control tagging",
+                "multiple": "multiple",
+                "id": "domains",
+            }
+        )
+    )
+
+    def set_value(self, organization_value, description_value):
+        self.initial['name'] = organization_value
+        self.initial['description'] = description_value

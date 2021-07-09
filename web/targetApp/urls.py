@@ -25,9 +25,13 @@ urlpatterns = [
         views.import_targets,
         name='import_targets'),
     path(
-        'update/<int:id>',
-        views.update_target_form,
-        name='update_target_form'),
+        'update/target/<int:id>',
+        views.update_target,
+        name='update_target'),
+    path(
+        'update/organization/<int:id>',
+        views.update_organization,
+        name='update_organization'),
     path(
         'list/target',
         views.list_target,
