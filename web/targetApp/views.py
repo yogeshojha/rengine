@@ -284,6 +284,7 @@ def target_summary(request, id):
 def add_organization(request):
     form = AddOrganizationForm(request.POST or None)
     if request.method == "POST":
+        print(form.errors)
         if form.is_valid():
             organization = Organization.objects.create(
                 name=form.cleaned_data['name'],
@@ -302,7 +303,8 @@ def add_organization(request):
     context = {
         "add_organization_li": "active",
         "organization_data_active": "true",
-        'form': form}
+        "form": form
+    }
     return render(request, 'organization/add.html', context)
 
 def list_organization(request):

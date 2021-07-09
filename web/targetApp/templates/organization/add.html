@@ -47,8 +47,15 @@ Add Organization
       <div class="col-md-12 mb-4">
         <label for="targets">Select Targets</label>
         {{form.domains}}
+        {% if form.errors.domains %}
+        <div class="invalid-feedback text-danger" style="display: block;">
+          <p class="text-danger">
+            {{ form.errors.domains|striptags }}
+          </p>
+        </div>
+        {% endif %}
       </div>
-      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Add Organization</button>
+      <button class="btn btn-primary submit-fn mt-2 float-right" disabled="true" type="submit">Add Organization</button>
     </form>
   </div>
 </div>
@@ -62,6 +69,16 @@ Add Organization
 <script type="text/javascript">
 $(".tagging").select2({
   tags: true,
+});
+$('select').select2({closeOnSelect: false}).on("change", function(e) {
+  var counter = $(".select2-selection__choice").length;
+  if (counter) {
+    $(':input[type="submit"]').prop('disabled', false);
+  }
+  else{
+    $(':input[type="submit"]').prop('disabled', true);
+  }
+
 });
 </script>
 {% endblock page_level_script %}

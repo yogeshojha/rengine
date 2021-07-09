@@ -45,6 +45,11 @@ Update Organization
       <div class="col-md-12 mb-4">
         <label for="targets">Select Targets</label>
         {{form.domains}}
+        {% if form.errors %}
+        <div class="invalid-feedback" style="display: block;">
+          {{ form.errors.name|striptags }}
+        </div>
+        {% endif %}
       </div>
       <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Organization</button>
     </form>
