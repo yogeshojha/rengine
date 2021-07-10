@@ -27,7 +27,7 @@ Start Scaning Organization
     </div>
   </div>
   <div class="widget-content widget-content-area">
-    <h6>Domains/Targets associated with organization <b>{{organization.name}}:</b></h6>
+    <h6><span class="badge outline-badge-dark">{{ domain_list|length }}</span>&nbsp;&nbsp;Domains/Targets associated with organization <b>{{organization.name}}:</b></h6>
     {% for domain in domain_list %}
           <span class="badge badge-info m-1">{{domain.name}}</span>
     {% endfor %}

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-Schedule Scan
+Schedule Scan for Organization
 {% endblock title %}
 
 
@@ -19,7 +19,7 @@ Schedule Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Schedule Scan for {{domain.name}}
+Schedule Scan for {{organization.name}}
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -27,11 +27,17 @@ Schedule Scan for {{domain.name}}
   <div class="widget-header">
     <div class="row">
       <div class="col-12">
-        <h4>Schedule scan for <b>{{domain.name}}</b></h4>
+        <h4>Schedule scan for organization <b>{{organization.name}}</b></h4>
       </div>
     </div>
   </div>
   <div class="widget-content widget-content-area">
+    <h6><span class="badge outline-badge-dark">{{ domain_list|length }}</span>&nbsp;&nbsp;Domains/Targets associated with organization <b>{{organization.name}}:</b></h6>
+    {% for domain in domain_list %}
+          <span class="badge badge-info m-1">{{domain.name}}</span>
+    {% endfor %}
+    <div class="mb-4">
+    </div>
     <form method="POST" id="start-scan-form">
       {% csrf_token %}
       <div id="example-basic">
@@ -104,15 +110,6 @@ Schedule Scan for {{domain.name}}
             </div>
           </div>
         </div>
-        <h3>Import Subdomains</h3>
-        <div class="">
-          <div class="form-group mb-4">
-            <label for="importSubdomainFormControlTextarea"><b class="text-info">Import Subdomains(Optional)</b></br>You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</label>
-          </br>
-          <label for="importSubdomainFormControlTextarea">Seperate the subdomains using new line. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</label>
-          <textarea class="form-control" id="importSubdomainFormControlTextarea" rows="7" spellcheck="false" name="importSubdomainTextArea"></textarea>
-        </div>
-      </div>
     </div>
   </form>
 </div>

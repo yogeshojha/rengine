@@ -476,3 +476,85 @@ def start_organization_scan(request, id):
         'domain_list': domain_list,
         'custom_engine_count': custom_engine_count}
     return render(request, 'organization/start_scan.html', context)
+
+def schedule_organization_scan(request, id):
+    organization =Organization.objects.get(id=id)
+    if request.method == "POST":
+        # get engine type
+        engine_type = int(request.POST['scan_mode'])
+        engine_object = get_object_or_404(EngineType, id=engine_type)
+        for domain in organization.get_domains():
+            task_name = engine_object.engine_name + ' for ' + \
+                domain.name + \
+                ':' + \
+                str(datetime.datetime.strftime(
+                    timezone.now(),
+                    '%Y_%m_%d_%H_%M_%S'
+                ))
+            if request.POST['scheduled_mode'] == 'periodic':
+                # periodic task
+                frequency_value = int(request.POST['frequency'])
+                frequency_type = request.POST['frequency_type']
+                if frequency_type == 'minutes':
+                    period = IntervalSchedule.MINUTES
+                elif frequency_type == 'hours':
+                    period = IntervalSchedule.HOURS
+                elif frequency_type == 'days':
+                    period = IntervalSchedule.DAYS
+                elif frequency_type == 'weeks':
+                    period = IntervalSchedule.DAYS
+                    frequency_value *= 7
+                elif frequency_type == 'months':
+                    period = IntervalSchedule.DAYS
+                    frequency_value *= 30
+
+                schedule, created = IntervalSchedule.objects.get_or_create(
+                    every=frequency_value,
+                    period=period,)
+                _kwargs = json.dumps({'domain_id': domain.id,
+                        'scan_history_id': 0,
+                        'scan_type': 1,
+                        'engine_type': engine_type,
+                        'imported_subdomains': None
+                })
+                PeriodicTask.objects.create(interval=schedule,
+                    name=task_name,
+                    task='reNgine.tasks.initiate_scan',
+                    kwargs=_kwargs
+                )
+            elif request.POST['scheduled_mode'] == 'clocked':
+                # clocked task
+                schedule_time = request.POST['scheduled_time']
+                clock, created = ClockedSchedule.objects.get_or_create(
+                    clocked_time=schedule_time,)
+                _kwargs = json.dumps({'domain_id': domain.id,
+                    'scan_history_id': 0,
+                    'scan_type': 1,
+                    'engine_type': engine_type,
+                    'imported_subdomains': None}
+                )
+                PeriodicTask.objects.create(clocked=clock,
+                    one_off=True,
+                    name=task_name,
+                    task='reNgine.tasks.initiate_scan',
+                    kwargs=_kwargs
+                )
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scan Started for {} domains in organization {}'.format(
+                len(organization.get_domains()),
+                organization.name
+            )
+        )
+        return HttpResponseRedirect(reverse('scheduled_scan_view'))
+    engine = EngineType.objects
+    custom_engine_count = EngineType.objects.filter(
+        default_engine=False).count()
+    context = {
+        'scan_history_active': 'true',
+        'organization': organization,
+        'domain_list': organization.get_domains(),
+        'engines': engine,
+        'custom_engine_count': custom_engine_count}
+    return render(request, 'organization/schedule_scan_ui.html', context)
