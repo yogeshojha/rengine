@@ -54,7 +54,7 @@ Organizations
             <td class="text-center">{{ organization.insert_date }}</td>
             <td class="text-center" class="text-center"><a href="{% url 'target_summary' organization.id %}" class="btn btn-outline-primary">View</a></td>
             <td class="text-center">
-              <a href="#" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan Entire Organization">
+              <a href="{% url 'start_organization_scan' organization.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan Entire Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                 </svg>

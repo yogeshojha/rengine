@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core import serializers
 
 from startScan.models import *
-from targetApp.models import Domain
+from targetApp.models import *
 from scanEngine.models import EngineType, Configuration
 from reNgine.tasks import initiate_scan, create_scan_activity
 from reNgine.celery import app
@@ -100,18 +100,18 @@ def detail_endpoint_scan(request, id=None):
     return render(request, 'startScan/detail_endpoint_scan.html', context)
 
 
-def start_scan_ui(request, host_id):
-    domain = get_object_or_404(Domain, id=host_id)
+def start_scan_ui(request, domain_id):
+    domain = get_object_or_404(Domain, id=domain_id)
     if request.method == "POST":
         # get imported subdomains
         imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
         imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
         # get engine type
         engine_type = request.POST['scan_mode']
-        scan_history_id = create_scan_object(host_id, engine_type)
+        scan_history_id = create_scan_object(domain_id, engine_type)
         # start the celery task
         celery_task = initiate_scan.apply_async(
-            args=(host_id, scan_history_id, 0, engine_type, imported_subdomains))
+            args=(domain_id, scan_history_id, 0, engine_type, imported_subdomains))
         ScanHistory.objects.filter(
             id=scan_history_id).update(
             celery_id=celery_task.id)
@@ -176,7 +176,6 @@ def start_multiple_scan(request):
         'domain_ids': domain_ids,
         'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_multiple_scan_ui.html', context)
-
 
 def export_subdomains(request, scan_id):
     subdomain_list = Subdomain.objects.filter(scan_history__id=scan_id)
@@ -437,3 +436,43 @@ def visualise(request, id):
         'scan_history': scan_history,
     }
     return render(request, 'startScan/visualise.html', context)
+
+def start_organization_scan(request, id):
+    organization = get_object_or_404(Organization, id=id)
+    if request.method == "POST":
+        # get engine type
+        engine_type = request.POST['scan_mode']
+        for domain in organization.get_domains():
+            scan_history_id = create_scan_object(domain.id, engine_type)
+            # start the celery task
+            celery_task = initiate_scan.apply_async(
+                args=(domain.id,
+                    scan_history_id,
+                    0,
+                    engine_type,
+                    None
+                ))
+            ScanHistory.objects.filter(
+                id=scan_history_id).update(
+                celery_id=celery_task.id)
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Scan Started for {} domains in organization {}'.format(
+                len(organization.get_domains()),
+                organization.name
+            )
+        )
+        return HttpResponseRedirect(reverse('scan_history'))
+    engine = EngineType.objects.order_by('id')
+    custom_engine_count = EngineType.objects.filter(
+        default_engine=False).count()
+    domain_list = organization.get_domains()
+    context = {
+        'organization_data_active': 'true',
+        'list_organization_li': 'active',
+        'organization': organization,
+        'engines': engine,
+        'domain_list': domain_list,
+        'custom_engine_count': custom_engine_count}
+    return render(request, 'organization/start_scan.html', context)
