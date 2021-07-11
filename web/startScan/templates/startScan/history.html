@@ -36,10 +36,10 @@ Scan History
 				<thead>
 					<tr>
 						<th class="text-center">Serial</th>
-						<th class="">Target Name</th>
+						<th class="">Domain Name</th>
 						<th class="text-center">Scan Summary</th>
 						<th class="text-center">Scan Type</th>
-						<th class="text-center">Last Scanned On</th>
+						<th class="text-center">Scanned On</th>
 						<th class="text-center">Status</th>
 						<th class="">Progress</th>
 						<th class="text-center">Result</th>
@@ -50,7 +50,15 @@ Scan History
 					{% for scan_history in scan_history.all %}
 					<tr>
 						<td class="checkbox-column"> {{ scan_history.id }} </td>
-						<td class="">{{ scan_history.domain.name }}</td>
+						<td class="">
+							{{ scan_history.domain.name }}
+							{% if scan_history.domain.get_organization %}
+								<br>
+								{% for organization in scan_history.domain.get_organization %}
+								<span class="badge outline-badge-dark m-1 bs-tooltip" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+								{% endfor %}
+							{% endif %}
+						</td>
 						<td class="text-center">
 							<span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan_history.get_subdomain_count}}</span>
 							<span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan_history.get_endpoint_count}}</span>
@@ -160,9 +168,9 @@ c1 = $('#style-2').DataTable({
 	},
 	"lengthMenu": [10, 20, 50, 100, 500, 1000],
 	"pageLength": 10,
-	"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-	"<'row'<'col'tr>>" +
-	"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+	"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+        "<'table-responsive'tr>" +
+        "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 });
 multiCheck(c1);
 </script>

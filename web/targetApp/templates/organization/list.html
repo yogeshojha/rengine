@@ -49,7 +49,7 @@ Organizations
           {% for organization in organizations.all %}
           <tr>
             <td class="checkbox-column"> {{ organization.id }} </td>
-            <td class="text-center">{{ organization.name }}</td>
+            <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
             <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}}, '{{organization.name}}')">{{organization.get_domains.count}}</span></td>
             <td class="text-center">{{ organization.insert_date }}</td>
@@ -111,9 +111,9 @@ table = $('#style-2').DataTable({
     "sSearchPlaceholder": "Search...",
     "sLengthMenu": "Results :  _MENU_",
   },
-  "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-  "<'row'<'col'tr>>" +
-  "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+  "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+        "<'table-responsive'tr>" +
+        "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
   "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
   "pageLength": 10
 });
