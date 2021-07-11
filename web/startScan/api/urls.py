@@ -41,6 +41,7 @@ urlpatterns = [
     path('queryVulnerabilities/', ListVulnerability.as_view(), name='queryVulnerabilities'),
     path('queryEndpoints/', ListEndpoints.as_view(), name='queryEndpoints'),
     path('queryTargetsWithoutOrganization/', ListTargetsWithoutOrganization.as_view(), name='queryTargetsWithoutOrganization'),
+    path('queryTargetsInOrganization/', ListTargetsInOrganization.as_view(), name='queryTargetsInOrganization'),
 ]
 
 urlpatterns += router.urls

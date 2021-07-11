@@ -15,6 +15,7 @@ Organizations
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/custom.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -50,7 +51,7 @@ Organizations
             <td class="checkbox-column"> {{ organization.id }} </td>
             <td class="text-center">{{ organization.name }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
-            <td class="text-center">{{organization.get_domains.count}}</td>
+            <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}}, '{{organization.name}}')">{{organization.get_domains.count}}</span></td>
             <td class="text-center">{{ organization.insert_date }}</td>
             <td class="text-center" class="text-center"><a href="{% url 'target_summary' organization.id %}" class="btn btn-outline-primary">View</a></td>
             <td class="text-center">
@@ -82,6 +83,8 @@ Organizations
     </div>
   </div>
 </div>
+{# modal #}
+{% include 'base/_items/tab_modal.html' %}
 {% endblock main_content %}
 
 
@@ -117,6 +120,24 @@ table = $('#style-2').DataTable({
 multiCheck(table);
 
 
+function get_target_modal(organization_id, organization_name){
+  $('.modal-title').html(`<b>Targets in Organization ${organization_name}</b>`);
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $.getJSON(`../../start_scan/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
+    $('#modal-loader').empty();
+    $('#modal-text-content').append(`<h6>${data['domains'].length} targets in organization <span class='badge badge-primary'>${organization_name}</span></h6>`);
+    $('#modal-text-content').append(`<ul id="target-detail-modal-ul"></ul>`);
+    for (domain in data['domains']){
+      domain_obj = data['domains'][domain];
+      $("#target-detail-modal-ul").append(`<li>${domain_obj['name']}</li>`);
+    }
+  }).fail(function(){
+    $('#modal-loader').empty();
+    $("#modal-text-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
+  });
+}
 
 </script>
 {% endblock page_level_script %}

@@ -7,7 +7,7 @@ class Organization(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=300, unique=True)
     description = models.TextField(blank=True, null=True)
-    insert_date = models.DateTimeField(default=timezone.now())
+    insert_date = models.DateTimeField()
     domains = models.ManyToManyField('Domain', related_name='domains')
 
     def __str__(self):

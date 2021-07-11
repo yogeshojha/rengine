@@ -16,6 +16,16 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
+
+class ListTargetsInOrganization(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        organization_id = req.query_params.get('organization_id')
+        targets = Domain.objects.filter(domains__in=Organization.objects.filter(id=organization_id))
+        targets_serializer = OrganizationTargetsSerializer(targets, many=True)
+        return Response({'domains': targets_serializer.data})
+
+
 class ListTargetsWithoutOrganization(APIView):
     def get(self, request, format=None):
         req = self.request
