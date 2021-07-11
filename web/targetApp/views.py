@@ -337,16 +337,20 @@ def update_organization(request, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
     if request.method == "POST":
+        print(request.POST.getlist("domains"))
         form = UpdateOrganizationForm(request.POST, instance=organization)
         if form.is_valid():
             organization_obj = Organization.objects.filter(
                 id=id
             )
+
+            for domain in organization.get_domains():
+                organization.domains.remove(domain)
+
             organization_obj.update(
                 name=form.cleaned_data['name'],
                 description=form.cleaned_data['description'],
             )
-            Organization.domains.through.objects.filter(id=id).delete()
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
                 organization.domains.add(domain)
