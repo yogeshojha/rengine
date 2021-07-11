@@ -250,6 +250,12 @@ Detailed Scan Results for {{history.domain.name}}
 											{% endif %}
 										</div>
 									</div>
+									{% if  history.domain.get_organization %}
+									Organization:
+									{% endif %}
+									{% for organization in history.domain.get_organization %}
+										<span class="badge outline-badge-dark m-1 bs-tooltip" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+									{% endfor %}
 								</div>
 							</div>
 						</div>

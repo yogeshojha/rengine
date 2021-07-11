@@ -42,7 +42,8 @@ List all Target for Recon
           <thead>
             <tr>
               <th class="checkbox-column">Serial Number</th>
-              <th>Domain Name</th>
+              <th class="text-center">Domain Name</th>
+              <th class="text-center">Organization</th>
               <th>Description</th>
               <th>Added on</th>
               <th class="text-center">Last Scanned</th>
@@ -54,7 +55,18 @@ List all Target for Recon
             {% for domain in domains.all %}
             <tr>
               <td class="checkbox-column"> {{ domain.id }} </td>
-              <td>{{ domain.name }}</td>
+              <td>
+                <b>{{ domain.name }}</b>
+                {% if domain.get_recent_scan_id %}
+                <br>
+                <a href="{% url 'detail_scan' domain.get_recent_scan_id %}" class="text-info">Recent Scan</a>
+                {% endif %}
+              </td>
+              <td class="">
+                {% for organization in domain.get_organization %}
+                  <span class="badge outline-badge-dark m-1 bs-tooltip" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+                {% endfor %}
+              </td>
               <td>{% if domain.description %}{{domain.description}}{% endif %}</td>
               <td>{{ domain.insert_date }}</td>
               {% if domain.start_scan_date %}
