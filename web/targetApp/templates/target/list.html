@@ -44,7 +44,7 @@ List all Target for Recon
           <p class="text-muted">Filter by Organization</p>
           <select class="form-control" id="filterByOrganization">
           </select>
-          <a href="#" class="text-info float-right mt-3">Reset Filters</a>
+          <a href="#" class="text-info float-right mt-3" id="resetFilters">Reset Filters</a>
         </div>
       </div>
       <a class="btn btn-outline-danger mb-2 float-right disabled" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
@@ -193,6 +193,15 @@ $(document).ready(function(){
     table.search(this.value).draw();
     Snackbar.show({
       text: `Filtering by organization ${this.value}`,
+      pos: 'top-center'
+    });
+  }, false);
+
+  var reset_filter = document.getElementById('resetFilters');
+  reset_filter.addEventListener('click', function() {
+    table.search("").draw();
+    Snackbar.show({
+      text: `Filters Reset`,
       pos: 'top-center'
     });
   }, false);

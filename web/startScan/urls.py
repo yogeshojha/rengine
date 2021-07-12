@@ -40,7 +40,7 @@ urlpatterns = [
         views.detail_endpoint_scan,
         name='all_endpoints'),
     path(
-        'start/<int:host_id>',
+        'start/<int:domain_id>',
         views.start_scan_ui,
         name='start_scan'),
     path(
