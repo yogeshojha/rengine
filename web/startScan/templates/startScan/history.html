@@ -246,30 +246,11 @@ $(document).ready(function(){
         option.innerHTML = scan_type_array[engine];
         select.appendChild(option);
       }
-
-      // populate Scan Status
-      var selectedData = table.cells(rows, 5).data();
-      var scan_status_array = [];
-      for (var i = 0; i < selectedData.length; i++) {
-        col1_data = selectedData[i];
-        regex = /<span.*>(.*?)<\/span>/g;
-        value = regex.exec(col1_data);
-        scan_status_array.push(value[1]);
-      }
-
-      scan_status_array = Array.from(new Set(scan_status_array));
-      for (scan_status in scan_status_array) {
-        select = document.getElementById('filterByScanStatus');
-        var option = document.createElement('option');
-        option.value = scan_status_array[scan_status];
-        option.innerHTML = scan_status_array[scan_status];
-        select.appendChild(option);
-      }
     }
   });
   multiCheck(table);
 
-  // filter
+  // filter organization populate
   $.getJSON(`../../start_scan/api/listOrganizations?&format=json`, function(data) {
     data = data['organizations']
     for (organization in data) {
@@ -282,6 +263,16 @@ $(document).ready(function(){
     }
   }).fail(function(){
   });
+
+  // filtering for scan status
+  var status_types = ['Pending', 'Scanning', 'Aborted', 'Successful', 'Failed'];
+  for (status in status_types) {
+    select = document.getElementById('filterByScanStatus');
+    var option = document.createElement('option');
+    option.value = status_types[status];
+    option.innerHTML = status_types[status];
+    select.appendChild(option);
+  }
 
   var filter = document.getElementById('filterByOrganization');
   filter.addEventListener('change', function() {
@@ -331,6 +322,18 @@ $(document).ready(function(){
   engine_filter.addEventListener('change', function() {
     table.search(this.value).draw();
     document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Scan Engine: ${this.value}
+    <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+    </span>`;
+    Snackbar.show({
+      text: `Filtering by Engine ${this.value}`,
+      pos: 'top-center'
+    });
+  }, false);
+
+  var target_filter = document.getElementById('filterByTarget');
+  target_filter.addEventListener('change', function() {
+    table.search(this.value).draw();
+    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Target/Domain: ${this.value}
     <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
     </span>`;
     Snackbar.show({

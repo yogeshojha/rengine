@@ -160,7 +160,8 @@ def start_multiple_scan(request):
             list_of_domain_name = []
             list_of_domain_id = []
             for key, value in request.POST.items():
-                if key != "style-2_length" and key != "csrfmiddlewaretoken":
+                print(value)
+                if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
                     domain = get_object_or_404(Domain, id=value)
                     list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
