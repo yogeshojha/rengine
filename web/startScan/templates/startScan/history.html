@@ -15,6 +15,7 @@ Scan history
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/custom.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -36,25 +37,34 @@ Scan History
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         &nbsp;&nbsp;Filter
       </a>
-      <div class="dropdown-menu dropdown-menu-left mt-2" aria-labelledby="filterMenu" style="will-change: transform; width: 30%">
+      <div class="dropdown-menu dropdown-menu-left mt-2" aria-labelledby="filterMenu" style="will-change: transform; width: 35%">
         <div class="p-2">
           <h5 class="mb-2">Filters</h5>
           <div class="mt-2">
-            <span class="text-muted">Filter by Organization</span>
+            <span class="text-dark">Filter by Organization</span>
             <select class="form-control" id="filterByOrganization">
             </select>
           </div>
           <div class="mt-2">
-            <span class="text-muted mt-1">Filter by Scan Type</span>
+            <span class="text-dark">Filter by Targets</span>
+            <select class="form-control" id="filterByTarget">
+            </select>
+          </div>
+          <div class="mt-2">
+            <span class="text-dark mt-1">Filter by Scan Type</span>
             <select class="form-control" id="filterByScanType">
             </select>
           </div>
           <div class="mt-2">
-            <span class="text-muted">Filter by Scan Status</span>
+            <span class="text-dark">Filter by Scan Status</span>
             <select class="form-control" id="filterByScanStatus">
             </select>
           </div>
           <a href="#" class="text-info float-right mt-3" id="resetFilters">Reset Filters</a>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div id="filteringText">
         </div>
       </div>
     </div>
@@ -95,17 +105,17 @@ Scan History
             <td class="text-center">{{ scan_history.start_scan_date }}</td>
             <td class="text-center">
               {% if scan_history.scan_status == -1 %}
-              <span class="shadow-none badge tbadge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
+              <span class="shadow-none badge badge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
               {% elif scan_history.scan_status == 0 %}
-              <span class="shadow-none badge tbadge-danger">Failed</span>
+              <span class="shadow-none badge badge-danger">Failed</span>
               {% elif scan_history.scan_status == 1 %}
-              <span class="shadow-none badge tbadge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+              <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
               {% elif scan_history.scan_status == 2 %}
-              <span class="shadow-none badge tbadge-success">Successful</span>
+              <span class="shadow-none badge badge-success">Successful</span>
               {% elif scan_history.scan_status == 3 %}
-              <span class="shadow-none badge tbadge-danger">Aborted</span>
+              <span class="shadow-none badge badge-danger">Aborted</span>
               {% else %}
-              <span class="shadow-none badge tbadge-danger">Unknown</span>
+              <span class="shadow-none badge badge-danger">Unknown</span>
               {% endif %}
             </td>
             <td class="text-center">
@@ -198,12 +208,70 @@ $(document).ready(function(){
     "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
     "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+    "initComplete": function(settings, json) {
+      table = settings.oInstance.api();
+      var rows = table.rows({selected:true}).indexes();
+
+      // populate filter menu from datatables
+      // populate targets
+      var selectedData = table.cells(rows, 1).data();
+      var target_array = [];
+      for (var i = 0; i < selectedData.length; i++) {
+        col1_data = selectedData[i];
+        domain_name = col1_data.match(/([^\n]+)/g)[0];
+        target_array.push(domain_name);
+      }
+      target_array = Array.from(new Set(target_array));
+      for (target in target_array) {
+        select = document.getElementById('filterByTarget');
+        var option = document.createElement('option');
+        option.value = target_array[target];
+        option.innerHTML = target_array[target];
+        select.appendChild(option);
+      }
+
+      // populate Scan Type
+      var selectedData = table.cells(rows, 3).data();
+      var scan_type_array = [];
+      for (var i = 0; i < selectedData.length; i++) {
+        col1_data = selectedData[i];
+        scan_type_array.push(col1_data);
+      }
+
+      scan_type_array = Array.from(new Set(scan_type_array));
+      for (engine in scan_type_array) {
+        select = document.getElementById('filterByScanType');
+        var option = document.createElement('option');
+        option.value = scan_type_array[engine];
+        option.innerHTML = scan_type_array[engine];
+        select.appendChild(option);
+      }
+
+      // populate Scan Status
+      var selectedData = table.cells(rows, 5).data();
+      var scan_status_array = [];
+      for (var i = 0; i < selectedData.length; i++) {
+        col1_data = selectedData[i];
+        regex = /<span.*>(.*?)<\/span>/g;
+        value = regex.exec(col1_data);
+        scan_status_array.push(value[1]);
+      }
+
+      scan_status_array = Array.from(new Set(scan_status_array));
+      for (scan_status in scan_status_array) {
+        select = document.getElementById('filterByScanStatus');
+        var option = document.createElement('option');
+        option.value = scan_status_array[scan_status];
+        option.innerHTML = scan_status_array[scan_status];
+        select.appendChild(option);
+      }
+    }
   });
   multiCheck(table);
 
   // filter
   $.getJSON(`../../start_scan/api/listOrganizations?&format=json`, function(data) {
-    data = data['results']
+    data = data['organizations']
     for (organization in data) {
       name = data[organization]['name'];
       select = document.getElementById('filterByOrganization');
@@ -215,19 +283,13 @@ $(document).ready(function(){
   }).fail(function(){
   });
 
-  // filtering for scan status
-  var status_types = ['Pending', 'Scanning', 'Aborted', 'Successful', 'Failed'];
-  for (status in status_types) {
-    select = document.getElementById('filterByScanStatus');
-    var option = document.createElement('option');
-    option.value = status_types[status];
-    option.innerHTML = status_types[status];
-    select.appendChild(option);
-  }
-
   var filter = document.getElementById('filterByOrganization');
   filter.addEventListener('change', function() {
     table.search(this.value).draw();
+    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Organization: ${this.value}
+    <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+    </span>`;
+    $('.bs-tooltip').tooltip();
     Snackbar.show({
       text: `Filtering by organization ${this.value}`,
       pos: 'top-center'
@@ -237,8 +299,42 @@ $(document).ready(function(){
   var status_filter = document.getElementById('filterByScanStatus');
   status_filter.addEventListener('change', function() {
     table.search(this.value).draw();
+    switch (this.value) {
+      case 'Pending':
+      badge_color = 'warning';
+      break;
+      case 'Scanning':
+      badge_color = 'info';
+      break;
+      case 'Aborted':
+      badge_color = 'danger';
+      break;
+      case 'Failed':
+      badge_color = 'danger';
+      break;
+      case 'Successful':
+      badge_color = 'success';
+      break;
+      default:
+      badge_color = 'primary'
+    }
+    document.getElementById('filteringText').innerHTML = `<span class="badge badge-${badge_color}">Scan Status: ${this.value}
+    <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+    </span>`;
     Snackbar.show({
       text: `Filtering by scan status ${this.value}`,
+      pos: 'top-center'
+    });
+  }, false);
+
+  var engine_filter = document.getElementById('filterByScanType');
+  engine_filter.addEventListener('change', function() {
+    table.search(this.value).draw();
+    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Scan Engine: ${this.value}
+    <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+    </span>`;
+    Snackbar.show({
+      text: `Filtering by Engine ${this.value}`,
       pos: 'top-center'
     });
   }, false);
@@ -246,15 +342,19 @@ $(document).ready(function(){
   // reset filtering
   var reset_filter = document.getElementById('resetFilters');
   reset_filter.addEventListener('click', function() {
-    table.search("").draw();
-    Snackbar.show({
-      text: `Filters Reset`,
-      pos: 'top-center'
-    });
+    resetFilters(table);
   }, false);
 
-
-
 });
+
+function resetFilters(table_obj) {
+  table_obj.search("").draw();
+  Snackbar.show({
+    text: `Filters Reset`,
+    pos: 'top-center'
+  });
+  document.getElementById('filteringText').innerHTML = '';
+}
+
 </script>
 {% endblock page_level_script %}
