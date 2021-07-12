@@ -26,3 +26,4 @@ selenium==3.141.0
 tldextract==3.1.0
 validators==0.18.2
 whatportis==0.8.2
+drf-yasg
