@@ -17,6 +17,21 @@ from startScan.models import *
 from targetApp.models import *
 
 
+class OrganizationViewSet(viewsets.ModelViewSet):
+    queryset = Organization.objects.none()
+    serializer_class = OrganizationSerializer
+
+    def get_queryset(self):
+        req = self.request
+        self.queryset = Organization.objects.all()
+        return self.queryset
+
+    def paginate_queryset(self, queryset, view=None):
+        if 'no_page' in self.request.query_params:
+            return None
+        return self.paginator.paginate_queryset(
+            queryset, self.request, view=self)
+
 class ListTargetsInOrganization(APIView):
     def get(self, request, format=None):
         req = self.request

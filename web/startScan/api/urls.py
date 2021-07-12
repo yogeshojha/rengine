@@ -24,6 +24,8 @@ router.register(r'listEndPointChanges', EndPointChangesViewSet)
 
 router.register(r'listIps', IpAddressViewSet)
 
+router.register(r'listOrganizations', OrganizationViewSet)
+
 urlpatterns = [
     url('^', include(router.urls)),
     path('queryTechnologies/', ListTechnology.as_view(), name='listTechnologies'),

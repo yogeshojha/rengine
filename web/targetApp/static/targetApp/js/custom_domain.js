@@ -92,21 +92,25 @@ function deleteMultipleTargets() {
 
 function toggleMultipleTargetButton() {
   if (checkedCount() > 0) {
-    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'visible';
+    $("#scan_multiple_button").removeClass("disabled");
+    $("#delete_multiple_button").removeClass("disabled");
   }
   else
   {
-    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'hidden';
+    $("#scan_multiple_button").addClass("disabled");
+    $("#delete_multiple_button").addClass("disabled");
   }
 }
 
 function mainCheckBoxSelected() {
   var input = document.querySelector('#head_checkbox');
   if (input.checked) {
-    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'visible';
+    $("#scan_multiple_button").removeClass("disabled");
+    $("#delete_multiple_button").removeClass("disabled");
   }
   else
  {
-    document.getElementsByClassName('multiple_targets_button')[0].style.visibility = 'hidden';
+   $("#scan_multiple_button").addClass("disabled");
+   $("#delete_multiple_button").addClass("disabled");
   }
 }
