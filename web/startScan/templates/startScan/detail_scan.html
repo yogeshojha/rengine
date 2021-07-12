@@ -778,7 +778,7 @@ $("#pills-subdomain-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"ajax": '/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
 		"order": [[ 8, "desc" ]],
 		"columns": [
 			{'data': 'id'},
@@ -1041,7 +1041,7 @@ $("#pills-directories-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		"ajax": '/start_scan/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+		"ajax": '/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
 		"order": [[ 5, "desc" ]],
 		"columns": [
 			{'data': 'id'},
@@ -1194,7 +1194,7 @@ $("#pills-vulnerabilities-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+		"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
 		"order": [[ 2, "desc" ]],
 		"columns": [
 			{'data': 'id'},

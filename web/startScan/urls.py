@@ -52,11 +52,6 @@ urlpatterns = [
         views.schedule_organization_scan,
         name='schedule_organization_scan'),
     path(
-        'api/',
-        include(
-            'startScan.api.urls',
-            'scan_host_api')),
-    path(
         'export/subdomains/<int:scan_id>',
         views.export_subdomains,
         name='export_subdomains'),

@@ -179,7 +179,7 @@ $(document).ready(function(){
   });
 
   // filter organization populate
-  $.getJSON(`../../start_scan/api/listOrganizations?&format=json`, function(data) {
+  $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
     data = data['organizations']
     for (organization in data) {
       name = data[organization]['name'];

@@ -102,7 +102,7 @@ function parse_ip(data, cdn){
 }
 
 function get_endpoints(scan_history_id, gf_tags){
-  var lookup_url = `/start_scan/api/listEndpoints/?scan_history=${scan_history_id}&format=datatables`;
+  var lookup_url = `/api/listEndpoints/?scan_history=${scan_history_id}&format=datatables`;
   if (gf_tags){
     lookup_url += `&gf_tag=${gf_tags}`
   }
@@ -225,7 +225,7 @@ function get_interesting_subdomains(scan_history_id){
     "bInfo": false,
     "stripeClasses": [],
     'serverSide': true,
-    "ajax": `/start_scan/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`,
+    "ajax": `/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`,
     "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'name'},
@@ -296,7 +296,7 @@ function get_interesting_endpoint(scan_history_id){
     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     'serverSide': true,
     "bInfo": false,
-    "ajax": `/start_scan/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`,
+    "ajax": `/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`,
     "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'http_url'},
@@ -350,7 +350,7 @@ function get_subdomain_changes(scan_history_id){
     "destroy": true,
     "stripeClasses": [],
     'serverSide': true,
-    "ajax": `/start_scan/api/listSubdomainChanges/?scan_id=${scan_history_id}&format=datatables`,
+    "ajax": `/api/listSubdomainChanges/?scan_id=${scan_history_id}&format=datatables`,
     "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'name'},
@@ -455,7 +455,7 @@ function get_endpoint_changes(scan_history_id){
     "destroy": true,
     "stripeClasses": [],
     'serverSide': true,
-    "ajax": `/start_scan/api/listEndPointChanges/?scan_id=${scan_history_id}&format=datatables`,
+    "ajax": `/api/listEndPointChanges/?scan_id=${scan_history_id}&format=datatables`,
     "order": [[ 3, "desc" ]],
     "columns": [
       {'data': 'http_url'},
@@ -509,7 +509,7 @@ function get_endpoint_changes(scan_history_id){
 
 function get_subdomain_changes_values(scan_id){
   // Subdomain Changes
-  $.getJSON(`../api/listSubdomainChanges/?scan_id=${scan_id}&no_page`, function(data) {
+  $.getJSON(`/api/listSubdomainChanges/?scan_id=${scan_id}&no_page`, function(data) {
     if (!data.length){
       $("#subdomain-changes-div").remove();
       return;
@@ -544,7 +544,7 @@ function get_subdomain_changes_values(scan_id){
 
 function get_endpoint_changes_values(scan_id){
   // Endpoint Changes
-  $.getJSON(`../api/listEndPointChanges/?scan_id=${scan_id}&no_page`, function(data) {
+  $.getJSON(`/api/listEndPointChanges/?scan_id=${scan_id}&no_page`, function(data) {
     if (!data.length){
       $("#endpoint-changes-div").remove();
       return;
@@ -578,7 +578,7 @@ function get_endpoint_changes_values(scan_id){
 }
 
 function get_ips(scan_id){
-  $.getJSON(`../api/queryIps/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryIps/?scan_id=${scan_id}&format=json`, function(data) {
     $('#ip-address-count').empty();
     for (var val in data['ips']){
       ip = data['ips'][val]
@@ -612,7 +612,7 @@ function get_ip_details(ip_address, scan_id){
   $('#modal-subdomain').append(`<div class="modal-text" id="modal-text-subdomain"></div>`);
   $('#modal-text-subdomain').append(`<ul id="modal-subdomain-text"></ul>`);
 
-  $.getJSON(`../api/queryPorts/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
+  $.getJSON(`/api/queryPorts/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
     $('#modal-open-port-text').empty();
     $('#modal-open-port-text').append(`<p> IP Addresses ${ip_address} has ${data['ports'].length} Open Ports`);
     $('#modal-open-ports-count').html(`<b>${data['ports'].length}</b>&nbsp;&nbsp;`);
@@ -625,7 +625,7 @@ function get_ip_details(ip_address, scan_id){
   });
 
   // query subdomains
-  $.getJSON(`../api/querySubdomains/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
+  $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
     $('#modal-subdomain-text').empty();
     $('#modal-subdomain-text').append(`<p>${data['subdomains'].length} Subdomains have Port ${port} Open`);
     $('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
@@ -677,7 +677,7 @@ function get_port_details(port, scan_id){
   $('#modal-text-subdomain').append(`<ul id="modal-subdomain-text"></ul>`);
 
   $('#tabsModal').modal('show');
-  $.getJSON(`../api/queryIps/?scan_id=${scan_id}&port=${port}&format=json`, function(data) {
+  $.getJSON(`/api/queryIps/?scan_id=${scan_id}&port=${port}&format=json`, function(data) {
     $('#modal-ip-text').empty();
     $('#modal-ip-text').append(`<p>${data['ips'].length} IP Addresses have Port ${port} Open`);
     $('#modal-ip-count').html(`<b>${data['ips'].length}</b>&nbsp;&nbsp;`);
@@ -691,7 +691,7 @@ function get_port_details(port, scan_id){
   });
 
   // query subdomains
-  $.getJSON(`../api/querySubdomains/?scan_id=${scan_id}&port=${port}&format=json`, function(data) {
+  $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&port=${port}&format=json`, function(data) {
     $('#modal-subdomain-text').empty();
     $('#modal-subdomain-text').append(`<p>${data['subdomains'].length} Subdomains have Port ${port} Open`);
     $('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
@@ -728,7 +728,7 @@ function get_tech_details(tech, scan_id){
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   // query subdomains
-  $.getJSON(`../api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`, function(data) {
+  $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`, function(data) {
     $('#modal-text-content').empty();
     $('#modal-text-content').append(`${data['subdomains'].length} Subdomains using ${tech}`);
     for (subdomain in data['subdomains']){
@@ -758,7 +758,7 @@ function get_tech_details(tech, scan_id){
 }
 
 function get_technologies(scan_id){
-  $.getJSON(`../api/queryTechnologies/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryTechnologies/?scan_id=${scan_id}&format=json`, function(data) {
     $('#technologies-count').empty();
     for (var val in data['technologies']){
       tech = data['technologies'][val]
@@ -770,7 +770,7 @@ function get_technologies(scan_id){
 }
 
 function get_osint_users(scan_id){
-  $.getJSON(`../api/queryOsintUsers/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryOsintUsers/?scan_id=${scan_id}&format=json`, function(data) {
     $('#osint-users-count').empty();
     for (var val in data['users']){
       user = data['users'][val]
@@ -785,7 +785,7 @@ function get_osint_users(scan_id){
 }
 
 function get_ports(scan_id){
-  $.getJSON(`../api/queryPorts/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryPorts/?scan_id=${scan_id}&format=json`, function(data) {
     $('#ports-count').empty();
     for (var val in data['ports']){
       port = data['ports'][val]
@@ -798,11 +798,11 @@ function get_ports(scan_id){
 }
 
 function get_interesting_count(scan_id){
-  $.getJSON(`../api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
+  $.getJSON(`/api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
     $('#interesting_subdomain_count_badge').empty();
     $('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
   });
-  $.getJSON(`../api/listInterestingEndpoints/?scan_id=${scan_id}&no_page`, function(data) {
+  $.getJSON(`/api/listInterestingEndpoints/?scan_id=${scan_id}&no_page`, function(data) {
     $('#interesting_endpoint_count_badge').empty();
     $('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
   });
@@ -820,7 +820,7 @@ function get_screenshot(scan_id){
   gridzyElement.setAttribute('data-gridzy-desiredwidth', 500);
   gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
   var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
-  $.getJSON(`../api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
+  $.getJSON(`/api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
     console.log(data);
 
     for (var subdomain in data) {
@@ -1024,7 +1024,7 @@ function get_screenshot(scan_id){
 }
 
 function get_metadata(scan_id){
-  $.getJSON(`../api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
     $('#metadata-count').empty();
     $('#metadata-table-body').empty();
     for (var val in data['metadata']){
@@ -1057,7 +1057,7 @@ function get_metadata(scan_id){
 
 
 function get_emails(scan_id){
-  $.getJSON(`../api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
     $('#emails-count').empty();
     $('#email-table-body').empty();
     for (var val in data['emails']){
@@ -1072,7 +1072,7 @@ function get_emails(scan_id){
 
 
 function get_employees(scan_id){
-  $.getJSON(`../api/queryEmployees/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryEmployees/?scan_id=${scan_id}&format=json`, function(data) {
     $('#employees-count').empty();
     $('#employees-table-body').empty();
     for (var val in data['employees']){
@@ -1088,7 +1088,7 @@ function get_employees(scan_id){
 
 
 function get_dorks(scan_id){
-  $.getJSON(`../api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
     $('#dorks-count').empty();
     $('#dorks-table-body').empty();
     for (var val in data['dorks']){
@@ -1105,7 +1105,7 @@ function get_dorks(scan_id){
 
 
 function get_dork_summary(scan_id){
-  $.getJSON(`../api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
     $('#dork-category-count').empty();
     for (var val in data['dorks']){
       dork = data['dorks'][val]
@@ -1122,7 +1122,7 @@ function get_dork_details(dork_type, scan_id){
   $('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
-  $.getJSON(`../api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
+  $.getJSON(`/api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
     $('#modal-text-content').append(`<b>${data['dorks'].length} results found in this dork category.</b>`);
     $('#modal-text-content').append(`<ul id="dork-detail-modal-ul"></ul>`);
     for (dork in data['dorks']){
@@ -1157,7 +1157,7 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`../api/queryVulnerabilities/?scan_id=${scan_id}&severity=${severity}&subdomain_name=${subdomain_name}&format=json`, function(data) {
+  $.getJSON(`/api/queryVulnerabilities/?scan_id=${scan_id}&severity=${severity}&subdomain_name=${subdomain_name}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-text-content').append(`<h6>${data['vulnerabilities'].length} vulnerabilities found in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
     $('#modal-text-content').append(`<ul id="vulnerabilities-detail-modal-ul"></ul>`);
@@ -1189,7 +1189,7 @@ function get_endpoint_modal(scan_id, subdomain_name){
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`../api/queryEndpoints/?scan_id=${scan_id}&subdomain_name=${subdomain_name}&format=json`, function(data) {
+  $.getJSON(`/api/queryEndpoints/?scan_id=${scan_id}&subdomain_name=${subdomain_name}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-text-content').append(`<h6>${data['endpoints'].length} endpoints discovered in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
     $('#modal-text-content').append(`<ul id="endpoints-detail-modal-ul"></ul>`);

@@ -90,12 +90,12 @@ $(document).ready(function() {
 		'fixedHeader': true,
 		'order': [2, 'desc'],
 		{% if scan_history_id %}
-		"ajax": '/start_scan/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+		"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
 		{% else %}
 		{% if request.GET.query %}
-		"ajax": '/start_scan/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
 		{% else %}
-		"ajax": '/start_scan/api/listVulnerability/?scan_history=&format=datatables',
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables',
 		{% endif %}
 		{% endif %}
 		"columns": [

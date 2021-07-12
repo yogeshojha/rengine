@@ -11,7 +11,7 @@ from rest_framework.decorators import api_view, action
 
 from reNgine.common_func import *
 
-from startScan.api.serializers import *
+from .serializers import *
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *

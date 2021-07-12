@@ -125,7 +125,7 @@ function get_target_modal(organization_id, organization_name){
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`../../start_scan/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
+  $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-text-content').append(`<h6>${data['domains'].length} targets in organization <span class='badge badge-primary'>${organization_name}</span></h6>`);
     $('#modal-text-content').append(`<ul id="target-detail-modal-ul"></ul>`);
