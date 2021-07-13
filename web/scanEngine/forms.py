@@ -362,3 +362,39 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_subdomain_changes_notif'] = True
 
         self.initial['send_scan_output_file'] = True
+
+
+class ProxyForm(forms.ModelForm):
+    class Meta:
+        model = Proxy
+        fields = '__all__'
+
+    use_proxy = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "use_proxy",
+            }))
+
+    proxies = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "id": "proxies",
+                "rows": "10",
+                "spellcheck": "false",
+                "placeholder": "http://username:password@proxyip.com:port",
+            }))
+
+    def set_value(self, key):
+        self.initial['use_proxy'] = key.use_proxy
+        self.initial['proxies'] = key.proxies
+
+        if not key.use_proxy:
+            self.fields['proxies'].widget.attrs['readonly'] = True
+
+    def set_initial(self):
+        self.initial['use_proxy'] = False
+        self.fields['proxies'].widget.attrs['readonly'] = True

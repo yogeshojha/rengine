@@ -64,4 +64,8 @@ urlpatterns = [
         'notification_settings',
         views.notification_settings,
         name='notification_settings'),
+    path(
+        'proxy_settings',
+        views.proxy_settings,
+        name='proxy_settings'),
 ]

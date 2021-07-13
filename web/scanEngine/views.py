@@ -269,7 +269,7 @@ def tool_specific_settings(request):
     nuclei_custom_pattern = [f for f in glob.glob("/root/nuclei-templates/*.yaml")]
     context['nuclei_templates'] = nuclei_custom_pattern
     context['gf_patterns'] = sorted(gf_list.split('\n'))
-    return render(request, 'scanEngine/settings/index.html', context)
+    return render(request, 'scanEngine/settings/tool.html', context)
 
 def rengine_settings(request):
     context = {}
@@ -294,6 +294,7 @@ def notification_settings(request):
     notification = None
     if Notification.objects.all().exists():
         notification = Notification.objects.all()[0]
+        form.set_value(notification)
     else:
         form.set_initial()
 
@@ -313,8 +314,6 @@ def notification_settings(request):
                 messages.INFO,
                 'Notification Settings updated successfully and test message was sent.')
             return http.HttpResponseRedirect(reverse('notification_settings'))
-    if notification:
-        form.set_value(notification)
 
     context['settings_nav_active'] = 'true'
     context['notification_settings_li'] = 'active'
@@ -322,3 +321,36 @@ def notification_settings(request):
     context['form'] = form
 
     return render(request, 'scanEngine/settings/notification.html', context)
+
+def proxy_settings(request):
+    context = {}
+    form = ProxyForm()
+    context['form'] = form
+
+    proxy = None
+    if Proxy.objects.all().exists():
+        proxy = Proxy.objects.all()[0]
+        form.set_value(proxy)
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if proxy:
+            form = ProxyForm(request.POST, instance=proxy)
+        else:
+            form = ProxyForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Proxies updated.')
+            return http.HttpResponseRedirect(reverse('proxy_settings'))
+
+
+    context['settings_nav_active'] = 'true'
+    context['proxy_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/proxy.html', context)

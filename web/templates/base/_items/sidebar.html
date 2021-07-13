@@ -136,6 +136,9 @@
         </div>
       </a>
       <ul class="submenu list-unstyled collapse {{settings_ul_show}}" id="settings" data-parent="#settings" style="">
+        <li class="{{ proxy_settings_li }}">
+          <a href="{% url 'proxy_settings' %}"> Proxies </a>
+        </li>
         <li class="{{ tool_settings_li }}">
           <a href="{% url 'tool_settings' %}"> Tool Settings </a>
         </li>

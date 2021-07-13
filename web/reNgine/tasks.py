@@ -252,7 +252,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    # delete_scan_data(results_dir)
+    delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -528,17 +528,15 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         newly_added_subdomain = get_new_added_subdomain(task.id, domain.id)
         if newly_added_subdomain:
             message = "**{} New Subdomains Discovered on domain {}**".format(newly_added_subdomain.count(), domain.name)
-        for subdomain in newly_added_subdomain:
-            message += "\n• {}".format(subdomain.name)
-        if newly_added_subdomain:
+            for subdomain in newly_added_subdomain:
+                message += "\n• {}".format(subdomain.name)
             send_notification(message)
 
         removed_subdomain = get_removed_subdomain(task.id, domain.id)
         if removed_subdomain:
             message = "**{} Subdomains are no longer available on domain {}**".format(removed_subdomain.count(), domain.name)
-        for subdomain in removed_subdomain:
-            message += "\n• {}".format(subdomain.name)
-        if removed_subdomain:
+            for subdomain in removed_subdomain:
+                message += "\n• {}".format(subdomain.name)
             send_notification(message)
 
     # check for interesting subdomains and send notif if any
@@ -547,9 +545,8 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         print(interesting_subdomain)
         if interesting_subdomain:
             message = "**{} Interesting Subdomains Found on domain {}**".format(interesting_subdomain.count(), domain.name)
-        for subdomain in interesting_subdomain:
-            message += "\n• {}".format(subdomain.name)
-        if interesting_subdomain:
+            for subdomain in interesting_subdomain:
+                message += "\n• {}".format(subdomain.name)
             send_notification(message)
 
 
@@ -604,10 +601,17 @@ def http_crawler(task, domain, results_dir, activity_id):
     httpx_results_file = results_dir + '/httpx.json'
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+    httpx_command = 'httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
 
-    httpx_command = 'cat {} | httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -json -o {}'.format(
-        subdomain_scan_results_file, httpx_results_file)
+    proxy = get_random_proxy()
+    if proxy:
+        httpx_command += ' --http-proxy {}'.format(proxy)
 
+    httpx_command += ' -json -o {}'.format(
+        httpx_results_file
+    )
+    httpx_command = 'cat {} | {}'.format(subdomain_scan_results_file, httpx_command)
+    print(httpx_command)
     os.system(httpx_command)
 
     # alive subdomains from httpx
@@ -881,7 +885,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
     # check the yaml settings
     if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
         extensions = ','.join(
-            str(port) for port in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+            str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
     else:
         extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
 
@@ -893,7 +897,13 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         threads = 10
 
     for subdomain in alive_subdomains:
-        # /app/tools/dirsearch/db/dicc.txt
+        # delete any existing dirs.json
+        if os.path.isfile(dirs_results):
+            os.system('rm -rf {}'.format(dirs_results))
+        dirsearch_command = 'python3 /app/tools/dirsearch/dirsearch.py'
+
+        dirsearch_command += ' -u {}'.format(subdomain.http_url)
+
         if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
             not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
                 'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
@@ -902,17 +912,34 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
             wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
                 yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
-        dirsearch_command = settings.TOOL_LOCATION + 'get_dirs.sh {} {} {}'.format(
-            subdomain.http_url, wordlist_location, dirs_results)
-        dirsearch_command = dirsearch_command + \
-            ' {} {}'.format(extensions, threads)
+        dirsearch_command += ' -w {}'.format(wordlist_location)
+
+        dirsearch_command += ' -json-report {}'.format(dirs_results)
+
+        dirsearch_command += ' -e {}'.format(extensions)
+
+        dirsearch_command += ' -t {}'.format(threads)
+
+        dirsearch_command += ' --random-agent'
+
+        if EXCLUDE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
+            exclude_extensions = ','.join(
+                str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_EXTENSIONS])
+            dirsearch_command += ' -X {}'.format(exclude_extensions)
 
         # check if recursive strategy is set to on
         if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
-            dirsearch_command = dirsearch_command + \
-                ' {}'.format(
-                    yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
+            dirsearch_command += ' -r'
 
+        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
+            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
+
+        # proxy
+        proxy = get_random_proxy()
+        if proxy:
+            dirsearch_command += ' --proxy {}'.format(proxy)
+
+        print(dirsearch_command)
         os.system(dirsearch_command)
 
         try:
@@ -1039,7 +1066,13 @@ def fetch_endpoints(
     '''
     logger.info('HTTP Probing on collected endpoints')
 
-    os.system('httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -o {0}/final_httpx_urls.json'.format(results_dir))
+    httpx_command = 'httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir)
+
+    proxy = get_random_proxy()
+    if proxy:
+        httpx_command += ' --http-proxy {}'.format(proxy)
+
+    os.system(httpx_command)
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
@@ -1230,6 +1263,10 @@ def vulnerability_scan(
             os.system('rm {}'.format(vulnerability_result_path))
         # run nuclei
         final_nuclei_command = nuclei_command + ' -severity ' + _severity
+        proxy = get_random_proxy()
+        if proxy:
+            final_nuclei_command += ' --proxy-url {}'.format(proxy)
+
         logger.info(final_nuclei_command)
 
         os.system(final_nuclei_command)
@@ -1762,6 +1799,15 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 def get_and_save_employees(scan_history, results_dir):
     theHarvester_location = '/usr/src/github/theHarvester'
 
+    # update proxies.yaml
+    if Proxy.objects.all().exists():
+        proxy = Proxy.objects.all()[0]
+        if proxy.use_proxy:
+            proxy_list = proxy.proxies.splitlines()
+            yaml_data = [{'http' : proxy_list}]
+
+            with open(theHarvester_location + '/proxies.yaml', 'w') as file:
+                documents = yaml.dump(yaml_data, file)
 
 
     os.system('cd {} && python3 theHarvester.py -d {} -b all -f {}/theHarvester.html'.format(
@@ -1851,9 +1897,6 @@ def get_and_save_meta_info(meta_dict):
                     meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
 
             meta_finder_document.save()
-
-
-
 
 @app.task(bind=True)
 def test_task(self):

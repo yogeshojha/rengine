@@ -1,7 +1,8 @@
 import os
 import json
-import tldextract
+import random
 import requests
+import tldextract
 from threading import Thread
 
 from discord_webhook import DiscordWebhook
@@ -199,3 +200,11 @@ def send_notification(message):
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
+
+def get_random_proxy():
+    if Proxy.objects.all().exists():
+        proxy = Proxy.objects.all()[0]
+        if proxy.use_proxy:
+            proxy_name = random.choice(proxy.proxies.splitlines())
+            return proxy_name
+    return False
