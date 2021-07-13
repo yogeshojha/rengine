@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # delete any existing dirs.json
 rm $3

@@ -1,6 +1,4 @@
-#!/bin/sh
-
-echo $@
+#!/bin/bash
 
 if [[ $3 == "deep" ]] ; then
   for i in "$@" ; do
