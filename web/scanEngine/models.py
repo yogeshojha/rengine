@@ -57,3 +57,20 @@ class InterestingLookupModel(models.Model):
     title_lookup = models.BooleanField(default=True)
     url_lookup = models.BooleanField(default=True)
     condition_200_http_lookup = models.BooleanField(default=False)
+
+
+class NotificationModel(models.Model):
+    id = models.AutoField(primary_key=True)
+    send_to_slack = models.BooleanField(default=False)
+    send_to_discord = models.BooleanField(default=False)
+    send_to_telegram = models.BooleanField(default=False)
+
+    slack_hook_url = models.CharField(max_length=200, null=True, blank=True)
+    discord_hook_url = models.CharField(max_length=200, null=True, blank=True)
+    telegram_bot_token = models.CharField(max_length=100, null=True, blank=True)
+    telegram_bot_chat_id = models.CharField(max_length=100, null=True, blank=True)
+
+    send_scan_status_notif = models.BooleanField(default=False)
+    send_interesting_notif = models.BooleanField(default=False)
+    send_vuln_notif = models.BooleanField(default=False)
+    send_new_subdomain_notif = models.BooleanField(default=False)
