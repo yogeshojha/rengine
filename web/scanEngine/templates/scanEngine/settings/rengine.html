@@ -55,7 +55,12 @@ reNgine Settings
       </div>
 
       <div class="form-group row mb-4">
-        <label for="discord_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Discord</label>
+        <label for="discord_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">
+          Discord
+          <br>
+          <span class="">(Recommended)</span>
+          <span class="text-info bs-popover badge-link" data-container="body" data-trigger="hover" data-content="Discord allows you to upload discovered subdomains as text file. It is then easier to pass this recon result/text file to any other recon tools.">Why?</span>
+        </label>
         <div class="col-xl-10 col-lg-9 col-sm-10">
           <div class="input-group mb-4">
             <div class="input-group-prepend">
@@ -147,7 +152,9 @@ reNgine Settings
           <label class="col-form-label col-xl-3 col-sm-3 col-sm-2 pt-0">
             Upload Scan Results
             <br>
-            <span class="text-info">Recommended</span>
+            <span>(Recommended)</span>
+            <br>
+            <span class="text-info bs-popover badge-link" data-container="body" data-trigger="hover" data-content="If you want the list of discovered subdomains, list of endpoints etc, as a text file, then selecting this option will upload the recon result to your discord channel. But, You must have discord web hook setup.">Why?</span>
           </label>
           <div class="col-xl-9 col-lg-9 col-sm-10">
             <div class="form-check pl-0 mt-1">

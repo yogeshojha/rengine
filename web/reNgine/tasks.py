@@ -527,7 +527,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     if notification and notification[0].send_subdomain_changes_notif:
         newly_added_subdomain = get_new_added_subdomain(task.id, domain.id)
         if newly_added_subdomain:
-            message = "**{} New Subdomains Discovered on target {}**".format(newly_added_subdomain.count(), domain.name)
+            message = "**{} New Subdomains Discovered on domain {}**".format(newly_added_subdomain.count(), domain.name)
         for subdomain in newly_added_subdomain:
             message += "\n• {}".format(subdomain.name)
         if newly_added_subdomain:
@@ -535,7 +535,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
 
         removed_subdomain = get_removed_subdomain(task.id, domain.id)
         if removed_subdomain:
-            message = "**{} Subdomains are no longer available on target {}**".format(removed_subdomain.count(), domain.name)
+            message = "**{} Subdomains are no longer available on domain {}**".format(removed_subdomain.count(), domain.name)
         for subdomain in removed_subdomain:
             message += "\n• {}".format(subdomain.name)
         if removed_subdomain:
@@ -546,7 +546,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         interesting_subdomain = get_interesting_subdomains(task.id, domain.id)
         print(interesting_subdomain)
         if interesting_subdomain:
-            message = "**{} Interesting Subdomains Found!**".format(interesting_subdomain.count())
+            message = "**{} Interesting Subdomains Found on domain {}**".format(interesting_subdomain.count(), domain.name)
         for subdomain in interesting_subdomain:
             message += "\n• {}".format(subdomain.name)
         if interesting_subdomain:
