@@ -60,4 +60,8 @@ urlpatterns = [
         'rengine_settings',
         views.rengine_settings,
         name='rengine_settings'),
+    path(
+        'notification_settings',
+        views.notification_settings,
+        name='notification_settings'),
 ]

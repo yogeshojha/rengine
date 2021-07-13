@@ -139,8 +139,9 @@
         <li class="{{ tool_settings_li }}">
           <a href="{% url 'tool_settings' %}"> Tool Settings </a>
         </li>
-      </ul>
-      <ul class="submenu list-unstyled collapse {{settings_ul_show}}" id="settings" data-parent="#settings" style="">
+        <li class="{{ notification_settings_li }}">
+          <a href="{% url 'notification_settings' %}"> Notification Settings </a>
+        </li>
         <li class="{{ rengine_settings_li }}">
           <a href="{% url 'rengine_settings' %}"> reNgine Settings </a>
         </li>

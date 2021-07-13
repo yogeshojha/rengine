@@ -273,6 +273,23 @@ def tool_specific_settings(request):
 
 def rengine_settings(request):
     context = {}
+
+    total, used, _ = shutil.disk_usage("/")
+    total = total // (2**30)
+    used = used // (2**30)
+    context['total'] = total
+    context['used'] = used
+    context['free'] = total-used
+    context['consumed_percent'] = int(100 * float(used)/float(total))
+
+    context['settings_nav_active'] = 'true'
+    context['rengine_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/rengine.html', context)
+
+def notification_settings(request):
+    context = {}
     form = NotificationForm()
     notification = None
     if Notification.objects.all().exists():
@@ -295,20 +312,13 @@ def rengine_settings(request):
                 request,
                 messages.INFO,
                 'Notification Settings updated successfully and test message was sent.')
-            return http.HttpResponseRedirect(reverse('rengine_settings'))
+            return http.HttpResponseRedirect(reverse('notification_settings'))
     if notification:
         form.set_value(notification)
 
     context['settings_nav_active'] = 'true'
-    context['rengine_settings_li'] = 'active'
+    context['notification_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
-    total, used, _ = shutil.disk_usage("/")
-    total = total // (2**30)
-    used = used // (2**30)
-    context['total'] = total
-    context['used'] = used
-    context['free'] = total-used
-    context['consumed_percent'] = int(100 * float(used)/float(total))
     context['form'] = form
 
-    return render(request, 'scanEngine/settings/rengine.html', context)
+    return render(request, 'scanEngine/settings/notification.html', context)
