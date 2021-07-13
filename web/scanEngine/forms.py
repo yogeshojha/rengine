@@ -1,5 +1,5 @@
 from django import forms
-from scanEngine.models import EngineType, Configuration, InterestingLookupModel
+from scanEngine.models import *
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
 
@@ -209,3 +209,144 @@ class InterestingLookupForm(forms.ModelForm):
         self.initial['title_lookup'] = True
         self.initial['url_lookup'] = True
         self.initial['condition_200_http_lookup'] = False
+
+
+class NotificationForm(forms.ModelForm):
+    class Meta:
+        model = NotificationModel
+        fields = '__all__'
+
+    send_to_slack = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "slack_checkbox",
+            }))
+
+    slack_hook_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "slack_hook_url",
+                "placeholder": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
+            }))
+
+    send_to_discord = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "discord_checkbox",
+            }))
+
+    discord_hook_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "discord_hook_url",
+                "placeholder": "https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+            }))
+
+    send_to_telegram = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "telegram_checkbox",
+            }))
+
+    telegram_bot_token = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "telegram_bot_token",
+                "placeholder": "Bot Token",
+            }))
+
+    telegram_bot_chat_id = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "telegram_bot_chat_id",
+                "placeholder": "Bot Chat ID",
+            }))
+
+    send_scan_status_notif = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "custom-control-input",
+                "id": "send_scan_status_notif",
+            }))
+
+    send_interesting_notif = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "custom-control-input",
+                "id": "send_interesting_notif",
+            }))
+
+
+    send_vuln_notif = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "custom-control-input",
+                "id": "send_vuln_notif",
+            }))
+
+
+    send_new_subdomain_notif = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "custom-control-input",
+                "id": "send_new_subdomain_notif",
+            }))
+
+
+    def set_value(self, key):
+        self.initial['send_to_slack'] = key.send_to_slack
+        self.initial['send_to_discord'] = key.send_to_discord
+        self.initial['send_to_telegram'] = key.send_to_telegram
+
+        self.initial['slack_hook_url'] = key.slack_hook_url
+        self.initial['discord_hook_url'] = key.discord_hook_url
+        self.initial['telegram_bot_token'] = key.telegram_bot_token
+        self.initial['telegram_bot_chat_id'] = key.telegram_bot_chat_id
+
+        self.initial['send_scan_status_notif'] = key.send_scan_status_notif
+        self.initial['send_interesting_notif'] = key.send_interesting_notif
+        self.initial['send_vuln_notif'] = key.send_vuln_notif
+        self.initial['send_new_subdomain_notif'] = key.send_new_subdomain_notif
+
+        if not key.send_to_slack:
+            self.fields['slack_hook_url'].widget.attrs['disabled'] = True
+        if not key.send_to_discord:
+            self.fields['discord_hook_url'].widget.attrs['disabled'] = True
+        if not key.send_to_telegram:
+            self.fields['telegram_bot_token'].widget.attrs['disabled'] = True
+            self.fields['telegram_bot_chat_id'].widget.attrs['disabled'] = True
+
+
+    def set_initial(self):
+        self.initial['send_to_slack'] = False
+        self.initial['send_to_discord'] = False
+        self.initial['send_to_telegram'] = False
+
+        self.fields['slack_hook_url'].widget.attrs['disabled'] = True
+        self.fields['discord_hook_url'].widget.attrs['disabled'] = True
+        self.fields['telegram_bot_token'].widget.attrs['disabled'] = True
+        self.fields['telegram_bot_chat_id'].widget.attrs['disabled'] = True
+
+
+        self.initial['send_scan_status_notif'] = True
+        self.initial['send_interesting_notif'] = True
+        self.initial['send_vuln_notif'] = True
+        self.initial['send_new_subdomain_notif'] = True

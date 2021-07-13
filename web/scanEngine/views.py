@@ -6,8 +6,8 @@ import glob
 import shutil
 
 from django.shortcuts import render, get_object_or_404
-from scanEngine.models import EngineType, Wordlist, Configuration, InterestingLookupModel
-from scanEngine.forms import AddEngineForm, UpdateEngineForm, AddWordlistForm, InterestingLookupForm
+from scanEngine.models import *
+from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from django.contrib import messages
 from django import http
@@ -19,10 +19,10 @@ from django.core.files.storage import default_storage
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
     context = {
-            'engine_ul_show': 'show',
-            'engine_li': 'active',
-            'scan_engine_nav_active': 'true',
-            'engine_type': engine_type, }
+        'engine_ul_show': 'show',
+        'engine_li': 'active',
+        'scan_engine_nav_active': 'true',
+        'engine_type': engine_type, }
     return render(request, 'scanEngine/index.html', context)
 
 
@@ -33,9 +33,9 @@ def add_engine(request):
         if form.is_valid():
             form.save()
             messages.add_message(
-                                request,
-                                messages.INFO,
-                                'Scan Engine Added successfully')
+                request,
+                messages.INFO,
+                'Scan Engine Added successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     context = {
             'scan_engine_nav_active':
@@ -49,15 +49,15 @@ def delete_engine(request, id):
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Engine successfully deleted!')
+            request,
+            messages.INFO,
+            'Engine successfully deleted!')
     else:
         responseData = {'status': 'false'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Oops! Engine could not be deleted!')
+            request,
+            messages.ERROR,
+            'Oops! Engine could not be deleted!')
     return http.JsonResponse(responseData)
 
 
@@ -69,9 +69,9 @@ def update_engine(request, id):
         if form.is_valid():
             form.save()
             messages.add_message(
-                                request,
-                                messages.INFO,
-                                'Engine edited successfully')
+                request,
+                messages.INFO,
+                'Engine edited successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     else:
         form.set_value(engine)
@@ -99,19 +99,19 @@ def add_wordlist(request):
                 wordlist_content = txt_file.read().decode('UTF-8')
                 wordlist_path = '/app/tools/wordlist/'
                 wordlist_file = open(
-                                    wordlist_path +
-                                    form.cleaned_data['short_name'] + '.txt',
-                                    'w')
+                    wordlist_path +
+                    form.cleaned_data['short_name'] + '.txt',
+                    'w')
                 wordlist_file.write(wordlist_content)
                 Wordlist.objects.create(
-                                        name=form.cleaned_data['name'],
-                                        short_name=form.cleaned_data['short_name'],
-                                        count=wordlist_content.count('\n'))
+                    name=form.cleaned_data['name'],
+                    short_name=form.cleaned_data['short_name'],
+                    count=wordlist_content.count('\n'))
                 messages.add_message(
-                                    request,
-                                    messages.INFO,
-                                    'Wordlist ' + form.cleaned_data['name'] +
-                                    ' added successfully')
+                    request,
+                    messages.INFO,
+                    'Wordlist ' + form.cleaned_data['name'] +
+                    ' added successfully')
                 return http.HttpResponseRedirect(reverse('wordlist_list'))
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
@@ -128,15 +128,15 @@ def delete_wordlist(request, id):
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Wordlist successfully deleted!')
+            request,
+            messages.INFO,
+            'Wordlist successfully deleted!')
     else:
         responseData = {'status': 'false'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Oops! Wordlist could not be deleted!')
+            request,
+            messages.ERROR,
+            'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
 
 
@@ -155,9 +155,9 @@ def add_configuration(request):
         if form.is_valid():
             form.save()
             messages.add_message(
-                                request,
-                                messages.INFO,
-                                'Configuration added successfully')
+                request,
+                messages.INFO,
+                'Configuration added successfully')
             return http.HttpResponseRedirect(reverse('configuration_list'))
     context['form'] = form
     return render(request, 'scanEngine/configuration/add.html', context)
@@ -169,15 +169,15 @@ def delete_configuration(request, id):
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Configuration successfully deleted!')
+            request,
+            messages.INFO,
+            'Configuration successfully deleted!')
     else:
         responseData = {'status': 'false'}
         messages.add_message(
-                            request,
-                            messages.INFO,
-                            'Oops! Configuration could not be deleted!')
+                request,
+                messages.ERROR,
+                'Oops! Configuration could not be deleted!')
     return http.JsonResponse(responseData)
 
 
@@ -189,9 +189,9 @@ def update_configuration(request, id):
         if form.is_valid():
             form.save()
             messages.add_message(
-                                request,
-                                messages.INFO,
-                                'Configuration edited successfully')
+                request,
+                messages.INFO,
+                'Configuration edited successfully')
             return http.HttpResponseRedirect(reverse('configuration_list'))
     else:
         form.set_value(configuration)
@@ -221,9 +221,9 @@ def interesting_lookup(request):
             print(form.cleaned_data)
             form.save()
             messages.add_message(
-                                request,
-                                messages.INFO,
-                                'Lookup Keywords updated successfully')
+                request,
+                messages.INFO,
+                'Lookup Keywords updated successfully')
             return http.HttpResponseRedirect(reverse('interesting_lookup'))
 
     if lookup_keywords:
@@ -273,6 +273,29 @@ def tool_specific_settings(request):
 
 def rengine_settings(request):
     context = {}
+    form = NotificationForm()
+    notification = None
+    if NotificationModel.objects.all().exists():
+        notification = NotificationModel.objects.all()[0]
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if notification:
+            form = NotificationForm(request.POST, instance=notification)
+        else:
+            form = NotificationForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Notification Settings updated successfully')
+            return http.HttpResponseRedirect(reverse('rengine_settings'))
+    if notification:
+        form.set_value(notification)
+
     context['settings_nav_active'] = 'true'
     context['rengine_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
@@ -283,5 +306,6 @@ def rengine_settings(request):
     context['used'] = used
     context['free'] = total-used
     context['consumed_percent'] = int(100 * float(used)/float(total))
+    context['form'] = form
 
     return render(request, 'scanEngine/settings/rengine.html', context)
