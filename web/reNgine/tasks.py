@@ -88,6 +88,11 @@ def initiate_scan(
     results_dir = '/usr/src/scan_results/'
     os.chdir(results_dir)
 
+    notification = Notification.objects.all()
+
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
+
     try:
         current_scan_dir = domain.name + '_' + \
             str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
@@ -130,7 +135,6 @@ def initiate_scan(
         www.yogeshojha.com but url and everything else resolves to yogeshojha.com
         In that case, we would already need to store target itself as subdomain
         '''
-
         initial_subdomain_file = '/target_domain.txt' if task.subdomain_discovery else '/sorted_subdomain_collection.txt'
 
         subdomain_file = open(results_dir + initial_subdomain_file, "w")
@@ -163,6 +167,7 @@ def initiate_scan(
                     task, "Visual Recon - Screenshot", 1)
                 grab_screenshot(
                     task,
+                    domain,
                     yaml_configuration,
                     current_scan_dir,
                     activity_id)
@@ -195,6 +200,7 @@ def initiate_scan(
                 activity_id = create_scan_activity(task, "Directory Search", 1)
                 directory_brute(
                     task,
+                    domain,
                     yaml_configuration,
                     results_dir,
                     activity_id
@@ -325,6 +331,10 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for performing subdomain enumeration
     '''
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Subdomain Gathering for target {} has been started'.format(domain.name))
+
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
     # Excluded subdomains
     excluded_subdomains = ''
@@ -504,6 +514,12 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
                 })
                 save_subdomain(subdomain_dict)
 
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        subdomains_count = Subdomain.objects.filter(scan_history=task).count()
+        send_notification('Subdomain Gathering for target {} has been completed and has discovered *{}* subdomains.'.format(domain.name, subdomains_count))
+    if notification and notification[0].send_scan_output_file:
+        send_files_to_discord(results_dir + '/sorted_subdomain_collection.txt')
 
 def http_crawler(task, domain, results_dir, activity_id):
     '''
@@ -511,6 +527,10 @@ def http_crawler(task, domain, results_dir, activity_id):
     like page title, http status, etc
     HTTP Crawler runs by default
     '''
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('HTTP Crawler for target {} has been initiated.'.format(domain.name))
+
     alive_file_location = results_dir + '/alive.txt'
     httpx_results_file = results_dir + '/httpx.json'
 
@@ -603,11 +623,21 @@ def http_crawler(task, domain, results_dir, activity_id):
                 update_last_activity(activity_id, 0)
     alive_file.close()
 
+    if notification and notification[0].send_scan_status_notif:
+        alive_count = Subdomain.objects.filter(
+            scan_history__id=task.id).values('name').distinct().filter(
+            http_status__exact=200).count()
+        send_notification('HTTP Crawler for target {} has been completed.\n\n {} subdomains were alive (http status 200).'.format(domain.name, alive_count))
 
-def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
+
+def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for taking screenshots
     '''
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine is currently gathering screenshots for {}'.format(domain.name))
+
     output_screenshots_path = results_dir + '/screenshots'
     result_csv_path = results_dir + '/screenshots/Requests.csv'
     alive_subdomains_path = results_dir + '/alive.txt'
@@ -663,11 +693,18 @@ def grab_screenshot(task, yaml_configuration, results_dir, activity_id):
         output_screenshots_path,
     ))
 
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine has finished gathering screenshots for {}'.format(domain.name))
+
 
 def port_scanning(task, domain, yaml_configuration, results_dir):
     '''
     This function is responsible for running the port scan
     '''
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Port Scan initiated for {}'.format(domain.name))
+
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
     port_results_file = results_dir + '/ports.json'
 
@@ -739,6 +776,16 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
+    if notification and notification[0].send_scan_status_notif:
+        port_count = Port.objects.filter(
+            ports__in=IpAddress.objects.filter(
+                ip_addresses__in=Subdomain.objects.filter(
+                    scan_history__id=task.id))).distinct().count()
+        send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain.name, port_count))
+
+    if notification and notification[0].send_scan_output_file:
+        send_files_to_discord(results_dir + '/ports.json')
+
 
 def check_waf():
     '''
@@ -747,12 +794,16 @@ def check_waf():
     pass
 
 
-def directory_brute(task, yaml_configuration, results_dir, activity_id):
+def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     This function is responsible for performing directory scan
     '''
     # scan directories for all the alive subdomain with http status >
     # 200
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
+
     alive_subdomains = Subdomain.objects.filter(
         scan_history__id=task.id).exclude(
         http_url='')
@@ -807,6 +858,9 @@ def directory_brute(task, yaml_configuration, results_dir, activity_id):
             logging.error(exception)
             update_last_activity(activity_id, 0)
 
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Directory Bruteforce has been completed for {}.'.format(domain.name))
+
 
 def fetch_endpoints(
         task,
@@ -819,6 +873,10 @@ def fetch_endpoints(
     and run HTTP probe
     It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
     '''
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine is currently gathering endpoints for {}.'.format(domain.name))
+
     # check yaml settings
     if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
         tools = 'gauplus hakrawler waybackurls gospider'
@@ -837,17 +895,18 @@ def fetch_endpoints(
         # performs deep url gathering for all the subdomains present -
         # RECOMMENDED
         os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' %
-                  ("None", results_dir, scan_type, domain_regex, tools))
+            ("None", results_dir, scan_type, domain_regex, tools))
     else:
         # perform url gathering only for main domain - USE only for quick scan
         os.system(
             settings.TOOL_LOCATION +
-            'get_urls.sh %s %s %s %s %s' %
-            (domain.name,
-             results_dir,
-             scan_type,
-             domain_regex,
-             tools))
+            'get_urls.sh %s %s %s %s %s' % (
+                domain.name,
+                results_dir,
+                scan_type,
+                domain_regex,
+                tools
+            ))
 
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
         ignore_extension = '|'.join(
@@ -868,8 +927,7 @@ def fetch_endpoints(
             with open(endpoint_final_url) as endpoint_list:
                 for url in endpoint_list:
                     http_url = url.rstrip('\n')
-                    if not EndPoint.objects.filter(
-                            scan_history=task, http_url=http_url).exists():
+                    if not EndPoint.objects.filter(scan_history=task, http_url=http_url).exists():
                         _subdomain = get_subdomain_from_url(http_url)
                         if Subdomain.objects.filter(
                                 scan_history=task).filter(
@@ -899,6 +957,9 @@ def fetch_endpoints(
                         save_endpoint(endpoint_dict)
     except Exception as e:
         logger.error(e)
+
+    if notification and notification[0].send_scan_output_file:
+        send_files_to_discord(results_dir + '/all_urls.txt')
 
     '''
     TODO:
@@ -966,6 +1027,18 @@ def fetch_endpoints(
         logging.error(exception)
         update_last_activity(activity_id, 0)
 
+    if notification and notification[0].send_scan_status_notif:
+        endpoint_count = EndPoint.objects.filter(
+            scan_history__id=task.id).values('http_url').distinct().count()
+        endpoint_alive_count = EndPoint.objects.filter(
+                scan_history__id=task.id, http_status__exact=200).values('http_url').distinct().count()
+        send_notification('reNgine has finished gathering endpoints for {} and has discovered *{}* unique endpoints.\n\n{} of those endpoints reported HTTP status 200.'.format(
+            domain.name,
+            endpoint_count,
+            endpoint_alive_count
+        ))
+
+
     # once endpoint is saved, run gf patterns TODO: run threads
     if GF_PATTERNS in yaml_configuration[FETCH_URL]:
         for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
@@ -1010,6 +1083,9 @@ def vulnerability_scan(
         yaml_configuration,
         results_dir,
         activity_id):
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
     '''
     This function will run nuclei as a vulnerability scanner
     ----
@@ -1108,7 +1184,7 @@ def vulnerability_scan(
                                 scan_history=task, target_domain=domain, http_url=host)
                             vulnerability.endpoint = endpoint
                         except Exception as exception:
-                            pass
+                            logger.error(exception)
                         if 'name' in json_st['info']:
                             vulnerability.name = json_st['info']['name']
                         if 'severity' in json_st['info']:
@@ -1146,6 +1222,13 @@ def vulnerability_scan(
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
+                        if notification and notification[0].send_vuln_notif:
+                            message = "*Alert: Vulnerability Identified*"
+                            message += "\n\n"
+                            message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
+                            message += "\nVulnerability Name: {}".format(json_st['info']['name'])
+                            message += "\nVulnerable URL: {}".format(json_st['host'])
+                            send_notification(message)
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
                         continue
@@ -1153,6 +1236,32 @@ def vulnerability_scan(
         except Exception as exception:
             logging.error(exception)
             update_last_activity(activity_id, 0)
+
+    if notification and notification[0].send_scan_status_notif:
+        info_count = Vulnerability.objects.filter(
+            scan_history__id=task.id, severity=0).count()
+        low_count = Vulnerability.objects.filter(
+            scan_history__id=task.id, severity=1).count()
+        medium_count = Vulnerability.objects.filter(
+            scan_history__id=task.id, severity=2).count()
+        high_count = Vulnerability.objects.filter(
+            scan_history__id=task.id, severity=3).count()
+        critical_count = Vulnerability.objects.filter(
+            scan_history__id=task.id, severity=4).count()
+        vulnerability_count = info + low_count + medium_count + high_count + critical_count
+
+        message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
+            domain.name,
+            vulnerability_count
+        )
+        message += '\n\n*Vulnerability Stats:*'
+        message += '\nCritical: {}'.format(critical_count)
+        message += '\nHigh: {}'.format(high_count)
+        message += '\nMedium: {}'.format(medium_count)
+        message += '\nLow: {}'.format(low_count)
+        message += '\nInfo: {}'.format(info_count)
+
+        send_notification(message)
 
 
 def scan_failed(task):

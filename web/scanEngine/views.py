@@ -14,7 +14,7 @@ from django import http
 from django.urls import reverse
 from django.conf import settings
 from django.core.files.storage import default_storage
-
+from reNgine.common_func import *
 
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
@@ -275,8 +275,8 @@ def rengine_settings(request):
     context = {}
     form = NotificationForm()
     notification = None
-    if NotificationModel.objects.all().exists():
-        notification = NotificationModel.objects.all()[0]
+    if Notification.objects.all().exists():
+        notification = Notification.objects.all()[0]
     else:
         form.set_initial()
 
@@ -288,10 +288,13 @@ def rengine_settings(request):
 
         if form.is_valid():
             form.save()
+            send_slack_message('*reNgine*\nCongratulations! your notification services are working.')
+            send_telegram_message('*reNgine*\nCongratulations! your notification services are working.')
+            send_discord_message('**reNgine**\nCongratulations! your notification services are working.')
             messages.add_message(
                 request,
                 messages.INFO,
-                'Notification Settings updated successfully')
+                'Notification Settings updated successfully and test message was sent.')
             return http.HttpResponseRedirect(reverse('rengine_settings'))
     if notification:
         form.set_value(notification)

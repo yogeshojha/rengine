@@ -213,7 +213,7 @@ class InterestingLookupForm(forms.ModelForm):
 
 class NotificationForm(forms.ModelForm):
     class Meta:
-        model = NotificationModel
+        model = Notification
         fields = '__all__'
 
     send_to_slack = forms.BooleanField(
@@ -311,6 +311,15 @@ class NotificationForm(forms.ModelForm):
             }))
 
 
+    send_scan_output_file = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "custom-control-input",
+                "id": "send_scan_output_file",
+            }))
+
+
     def set_value(self, key):
         self.initial['send_to_slack'] = key.send_to_slack
         self.initial['send_to_discord'] = key.send_to_discord
@@ -325,6 +334,8 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_interesting_notif'] = key.send_interesting_notif
         self.initial['send_vuln_notif'] = key.send_vuln_notif
         self.initial['send_new_subdomain_notif'] = key.send_new_subdomain_notif
+
+        self.initial['send_scan_output_file'] = key.send_scan_output_file
 
         if not key.send_to_slack:
             self.fields['slack_hook_url'].widget.attrs['disabled'] = True
@@ -345,8 +356,9 @@ class NotificationForm(forms.ModelForm):
         self.fields['telegram_bot_token'].widget.attrs['disabled'] = True
         self.fields['telegram_bot_chat_id'].widget.attrs['disabled'] = True
 
-
         self.initial['send_scan_status_notif'] = True
         self.initial['send_interesting_notif'] = True
         self.initial['send_vuln_notif'] = True
         self.initial['send_new_subdomain_notif'] = True
+
+        self.initial['send_scan_output_file'] = True

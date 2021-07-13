@@ -123,6 +123,8 @@ reNgine Settings
               <div class="custom-control custom-checkbox checkbox-info">
                 {{form.send_vuln_notif}}
                 <label class="custom-control-label text-dark" for="send_vuln_notif">Vulnerabilities Found</label>
+                <br>
+                <span class="text-muted">*Informational Vulnerabilities will not be notified.</span>
               </div>
             </div>
             <div class="form-check pl-0 mt-1">
@@ -134,11 +136,37 @@ reNgine Settings
           </div>
         </div>
       </fieldset>
+      <fieldset class="form-group mb-4">
+        <div class="row">
+          <label class="col-form-label col-xl-3 col-sm-3 col-sm-2 pt-0">
+            Upload Scan Results
+            <br>
+            <span class="text-info">Recommended</span>
+          </label>
+          <div class="col-xl-9 col-lg-9 col-sm-10">
+            <div class="form-check pl-0 mt-1">
+              <div class="custom-control custom-checkbox checkbox-info">
+                {{form.send_scan_output_file}}
+                <label class="custom-control-label text-dark" for="send_scan_status_notif">
+                  Send Scan Output (e.g. Subdomain gathered file)
+                  <br>
+                  <span class="text-info">Only discord is supported!</span>
+                  <br>
+                  <span class="text-muted">
+                    (This lets you upload scan results like list of subdomains to your discord)
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
       <div class="form-group row">
         <div class="col-sm-12">
-          <button type="submit" class="btn btn-primary mt-3 float-right">Save Notification Settings</button>
+          <button type="submit" class="btn btn-primary mt-3 float-right">Save & Test Notification</button>
         </div>
       </div>
+      <p class="text-muted float-right">*Once saved, a test message will be sent to all the enabled services.</p>
     </form>
   </div>
 </div>
