@@ -7,10 +7,6 @@ reNgine Settings
 
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
-<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
@@ -187,40 +183,37 @@ reNgine Settings
 
 
 {% block page_level_script %}
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function(){
   var slack_checkbox = document.getElementById("slack_checkbox");
   slack_checkbox.addEventListener('change', function() {
     if (this.checked) {
-      document.getElementById("slack_hook_url").disabled = false;
+      document.getElementById("slack_hook_url").readOnly = false;
     }
     else{
-      document.getElementById("slack_hook_url").disabled = true;
+      document.getElementById("slack_hook_url").readOnly = true;
     }
   });
 
   var discord_checkbox = document.getElementById("discord_checkbox");
   discord_checkbox.addEventListener('change', function() {
     if (this.checked) {
-      document.getElementById("discord_hook_url").disabled = false;
+      document.getElementById("discord_hook_url").readOnly = false;
     }
     else{
-      document.getElementById("discord_hook_url").disabled = true;
+      document.getElementById("discord_hook_url").readOnly = true;
     }
   });
 
   var telegram_checkbox = document.getElementById("telegram_checkbox");
   telegram_checkbox.addEventListener('change', function() {
     if (this.checked) {
-      document.getElementById("telegram_bot_token").disabled = false;
-      document.getElementById("telegram_bot_chat_id").disabled = false;
+      document.getElementById("telegram_bot_token").readOnly = false;
+      document.getElementById("telegram_bot_chat_id").readOnly = false;
     }
     else{
-      document.getElementById("telegram_bot_token").disabled = true;
-      document.getElementById("telegram_bot_chat_id").disabled = true;
+      document.getElementById("telegram_bot_token").readOnly = true;
+      document.getElementById("telegram_bot_chat_id").readOnly = true;
     }
   });
 });

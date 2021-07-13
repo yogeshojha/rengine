@@ -338,12 +338,12 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_scan_output_file'] = key.send_scan_output_file
 
         if not key.send_to_slack:
-            self.fields['slack_hook_url'].widget.attrs['disabled'] = True
+            self.fields['slack_hook_url'].widget.attrs['readonly'] = True
         if not key.send_to_discord:
-            self.fields['discord_hook_url'].widget.attrs['disabled'] = True
+            self.fields['discord_hook_url'].widget.attrs['readonly'] = True
         if not key.send_to_telegram:
-            self.fields['telegram_bot_token'].widget.attrs['disabled'] = True
-            self.fields['telegram_bot_chat_id'].widget.attrs['disabled'] = True
+            self.fields['telegram_bot_token'].widget.attrs['readonly'] = True
+            self.fields['telegram_bot_chat_id'].widget.attrs['readonly'] = True
 
 
     def set_initial(self):
@@ -351,10 +351,10 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_to_discord'] = False
         self.initial['send_to_telegram'] = False
 
-        self.fields['slack_hook_url'].widget.attrs['disabled'] = True
-        self.fields['discord_hook_url'].widget.attrs['disabled'] = True
-        self.fields['telegram_bot_token'].widget.attrs['disabled'] = True
-        self.fields['telegram_bot_chat_id'].widget.attrs['disabled'] = True
+        self.fields['slack_hook_url'].widget.attrs['readonly'] = True
+        self.fields['discord_hook_url'].widget.attrs['readonly'] = True
+        self.fields['telegram_bot_token'].widget.attrs['readonly'] = True
+        self.fields['telegram_bot_chat_id'].widget.attrs['readonly'] = True
 
         self.initial['send_scan_status_notif'] = True
         self.initial['send_interesting_notif'] = True
