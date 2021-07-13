@@ -239,6 +239,8 @@ def initiate_scan(
             update_last_activity(activity_id, 0)
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('*Scan Completed*\nreNgine has finished performing recon on target {}.'.format(domain.name))
 
     '''
     Once the scan is completed, save the status to successful
@@ -520,6 +522,73 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('Subdomain Gathering for target {} has been completed and has discovered *{}* subdomains.'.format(domain.name, subdomains_count))
     if notification and notification[0].send_scan_output_file:
         send_files_to_discord(results_dir + '/sorted_subdomain_collection.txt')
+
+    # check for any subdomain changes and send notif if any
+    if notification and notification[0].send_subdomain_changes_notif:
+        newly_added_subdomain = get_new_added_subdomain(task.id, domain.id)
+        if newly_added_subdomain:
+            message = "**{} New Subdomains Discovered on target {}**".format(newly_added_subdomain.count(), domain.name)
+        for subdomain in newly_added_subdomain:
+            message += "\n• {}".format(subdomain.name)
+        if newly_added_subdomain:
+            send_notification(message)
+
+        removed_subdomain = get_removed_subdomain(task.id, domain.id)
+        if removed_subdomain:
+            message = "**{} Subdomains are no longer available on target {}**".format(removed_subdomain.count(), domain.name)
+        for subdomain in removed_subdomain:
+            message += "\n• {}".format(subdomain.name)
+        if removed_subdomain:
+            send_notification(message)
+
+    # check for interesting subdomains and send notif if any
+    if notification and notification[0].send_interesting_notif:
+        interesting_subdomain = get_interesting_subdomains(task.id, domain.id)
+        print(interesting_subdomain)
+        if interesting_subdomain:
+            message = "**{} Interesting Subdomains Found!**".format(interesting_subdomain.count())
+        for subdomain in interesting_subdomain:
+            message += "\n• {}".format(subdomain.name)
+        if interesting_subdomain:
+            send_notification(message)
+
+
+def get_new_added_subdomain(scan_id, domain_id):
+    scan_history = ScanHistory.objects.filter(
+        domain=domain_id).filter(
+            subdomain_discovery=True).filter(
+                id__lte=scan_id)
+    if scan_history.count() > 1:
+        last_scan = scan_history.order_by('-start_scan_date')[1]
+        scanned_host_q1 = Subdomain.objects.filter(
+            scan_history__id=scan_id).values('name')
+        scanned_host_q2 = Subdomain.objects.filter(
+            scan_history__id=last_scan.id).values('name')
+        added_subdomain = scanned_host_q1.difference(scanned_host_q2)
+
+        return Subdomain.objects.filter(
+            scan_history=scan_id).filter(
+                name__in=added_subdomain)
+
+def get_removed_subdomain(scan_id, domain_id):
+    scan_history = ScanHistory.objects.filter(
+        domain=domain_id).filter(
+            subdomain_discovery=True).filter(
+                id__lte=scan_id)
+    if scan_history.count() > 1:
+        last_scan = scan_history.order_by('-start_scan_date')[1]
+        scanned_host_q1 = Subdomain.objects.filter(
+            scan_history__id=scan_id).values('name')
+        scanned_host_q2 = Subdomain.objects.filter(
+            scan_history__id=last_scan.id).values('name')
+        removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
+
+        print()
+
+        return Subdomain.objects.filter(
+            scan_history=last_scan).filter(
+                name__in=removed_subdomains)
+
 
 def http_crawler(task, domain, results_dir, activity_id):
     '''

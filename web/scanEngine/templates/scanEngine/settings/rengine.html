@@ -116,7 +116,7 @@ reNgine Settings
             <div class="form-check pl-0 mt-1">
               <div class="custom-control custom-checkbox checkbox-info">
                 {{form.send_interesting_notif}}
-                <label class="custom-control-label text-dark" for="send_interesting_notif">Interesting Subdomains Found</label>
+                <label class="custom-control-label text-dark" for="send_interesting_notif">Interesting Subdomains</label>
               </div>
             </div>
             <div class="form-check pl-0 mt-1">
@@ -129,8 +129,14 @@ reNgine Settings
             </div>
             <div class="form-check pl-0 mt-1">
               <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_new_subdomain_notif}}
-                <label class="custom-control-label text-dark" for="send_new_subdomain_notif">New Subdomains Discovered</label>
+                {{form.send_subdomain_changes_notif}}
+                <label class="custom-control-label text-dark" for="send_new_subdomain_notif">
+                  Subdomain Changes
+                  <br>
+                  <span class="text-muted">
+                    (e.g. when new Subdomains are discovered or subdomains are no longer available)
+                  </span>
+                </label>
               </div>
             </div>
           </div>

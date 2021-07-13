@@ -73,6 +73,6 @@ class Notification(models.Model):
     send_scan_status_notif = models.BooleanField(default=True)
     send_interesting_notif = models.BooleanField(default=True)
     send_vuln_notif = models.BooleanField(default=True)
-    send_new_subdomain_notif = models.BooleanField(default=True)
+    send_subdomain_changes_notif = models.BooleanField(default=True)
 
     send_scan_output_file = models.BooleanField(default=True)

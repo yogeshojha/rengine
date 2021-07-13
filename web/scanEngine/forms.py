@@ -302,12 +302,12 @@ class NotificationForm(forms.ModelForm):
             }))
 
 
-    send_new_subdomain_notif = forms.BooleanField(
+    send_subdomain_changes_notif = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
             attrs={
                 "class": "custom-control-input",
-                "id": "send_new_subdomain_notif",
+                "id": "send_subdomain_changes_notif",
             }))
 
 
@@ -333,7 +333,7 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_scan_status_notif'] = key.send_scan_status_notif
         self.initial['send_interesting_notif'] = key.send_interesting_notif
         self.initial['send_vuln_notif'] = key.send_vuln_notif
-        self.initial['send_new_subdomain_notif'] = key.send_new_subdomain_notif
+        self.initial['send_subdomain_changes_notif'] = key.send_subdomain_changes_notif
 
         self.initial['send_scan_output_file'] = key.send_scan_output_file
 
@@ -359,6 +359,6 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_scan_status_notif'] = True
         self.initial['send_interesting_notif'] = True
         self.initial['send_vuln_notif'] = True
-        self.initial['send_new_subdomain_notif'] = True
+        self.initial['send_subdomain_changes_notif'] = True
 
         self.initial['send_scan_output_file'] = True
