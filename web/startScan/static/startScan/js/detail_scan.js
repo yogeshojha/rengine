@@ -1031,7 +1031,13 @@ function get_metadata(scan_id){
       doc = data['metadata'][val];
       rand_id = get_randid();
       $('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
-      file_name = `<a href=${doc['url']} target="_blank" class="text-info">${truncate(doc['doc_name'], 30)}</a>`;
+      console.log(doc['doc_name'])
+      if (doc['doc_name']) {
+        file_name = `<a href=${doc['url']} target="_blank" class="text-info">${truncate(doc['doc_name'], 30)}</a>`;
+      }
+      else{
+        file_name = ''
+      }
       subdomain = `<span class='text-muted'>${doc['subdomain']['doc_name']}</span>`;
       $(`#${rand_id}`).append(`<td class="td-content">${file_name}</br>${subdomain}</td>`);
       if (doc['author']){

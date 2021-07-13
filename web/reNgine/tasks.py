@@ -900,21 +900,21 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         # delete any existing dirs.json
         if os.path.isfile(dirs_results):
             os.system('rm -rf {}'.format(dirs_results))
-        dirsearch_command = 'python3 /app/tools/dirsearch/dirsearch.py'
+        dirsearch_command = 'python3 /usr/src/github/dirsearch/dirsearch.py'
 
         dirsearch_command += ' -u {}'.format(subdomain.http_url)
 
         if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
             not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
                 'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
-            wordlist_location = settings.TOOL_LOCATION + 'dirsearch/db/dicc.txt'
+            wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
         else:
             wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
                 yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
         dirsearch_command += ' -w {}'.format(wordlist_location)
 
-        dirsearch_command += ' -json-report {}'.format(dirs_results)
+        dirsearch_command += ' --format json -o {}'.format(dirs_results)
 
         dirsearch_command += ' -e {}'.format(extensions)
 
@@ -1780,6 +1780,11 @@ def dorking(scan_history, yaml_configuration):
 
 def get_and_save_dork_results(dork, type, scan_history, in_target=False):
     degoogle_obj = degoogle.dg()
+    proxy = get_random_proxy()
+    if proxy:
+        os.environ['https_proxy'] = proxy
+        os.environ['HTTPS_PROXY'] = proxy
+
     if in_target:
         query = dork + " site:" + scan_history.domain.name
     else:
@@ -1804,7 +1809,7 @@ def get_and_save_employees(scan_history, results_dir):
         proxy = Proxy.objects.all()[0]
         if proxy.use_proxy:
             proxy_list = proxy.proxies.splitlines()
-            yaml_data = [{'http' : proxy_list}]
+            yaml_data = {'http' : proxy_list}
 
             with open(theHarvester_location + '/proxies.yaml', 'w') as file:
                 documents = yaml.dump(yaml_data, file)
@@ -1818,6 +1823,10 @@ def get_and_save_employees(scan_history, results_dir):
 
     file_location = results_dir + '/theHarvester.html'
     print(file_location)
+    # delete proxy environ var
+    del os.environ['https_proxy']
+    del os.environ['HTTPS_PROXY']
+    
     if os.path.isfile(file_location):
         logger.info('Parsing theHarvester results')
         options = FirefoxOptions()
@@ -1851,6 +1860,10 @@ def get_and_save_emails(scan_history):
 
     # get email address
     logger.info('OSINT: Getting emails from Google')
+    proxy = get_random_proxy()
+    if proxy:
+        os.environ['https_proxy'] = proxy
+        os.environ['HTTPS_PROXY'] = proxy
     email_from_google = get_emails_from_google(scan_history.domain.name)
 
     # TODO: bing and baidu are experiencing error ATM, will add later
@@ -1864,6 +1877,10 @@ def get_and_save_emails(scan_history):
 
 def get_and_save_meta_info(meta_dict):
     logger.info('Getting METADATA for {}'.format(meta_dict.osint_target))
+    proxy = get_random_proxy()
+    if proxy:
+        os.environ['https_proxy'] = proxy
+        os.environ['HTTPS_PROXY'] = proxy
     result = metadata_extractor.extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
     if result:
         results = result.get_metadata()
