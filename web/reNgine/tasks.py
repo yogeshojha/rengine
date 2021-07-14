@@ -1457,11 +1457,18 @@ def save_endpoint(endpoint_dict):
     endpoint.save()
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine has initiated OSINT on target {}'.format(domain.name))
+
     if 'discover' in yaml_configuration[OSINT]:
         osint_discovery(task, domain, yaml_configuration, results_dir)
 
     if 'dork' in yaml_configuration[OSINT]:
         dorking(task, yaml_configuration)
+
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('reNgine has completed performing OSINT on target {}'.format(domain.name))
 
 def osint_discovery(task, domain, yaml_configuration, results_dir):
     if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
