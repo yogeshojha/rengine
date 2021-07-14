@@ -1826,7 +1826,7 @@ def get_and_save_employees(scan_history, results_dir):
     # delete proxy environ var
     del os.environ['https_proxy']
     del os.environ['HTTPS_PROXY']
-    
+
     if os.path.isfile(file_location):
         logger.info('Parsing theHarvester results')
         options = FirefoxOptions()
@@ -1893,7 +1893,7 @@ def get_and_save_meta_info(meta_dict):
 
             item = DottedDict(results[meta])
             meta_finder_document.url = item.url
-            meta_finder_document.name = meta
+            meta_finder_document.doc_name = meta
             meta_finder_document.http_status = item.status_code
 
             metadata = results[meta]['metadata']

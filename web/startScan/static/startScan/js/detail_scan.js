@@ -1031,14 +1031,13 @@ function get_metadata(scan_id){
       doc = data['metadata'][val];
       rand_id = get_randid();
       $('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
-      console.log(doc['doc_name'])
       if (doc['doc_name']) {
         file_name = `<a href=${doc['url']} target="_blank" class="text-info">${truncate(doc['doc_name'], 30)}</a>`;
       }
       else{
         file_name = ''
       }
-      subdomain = `<span class='text-muted'>${doc['subdomain']['doc_name']}</span>`;
+      subdomain = `<span class='text-muted bs-tooltip' title='Subdomain'>${doc['subdomain']['name']}</span>`;
       $(`#${rand_id}`).append(`<td class="td-content">${file_name}</br>${subdomain}</td>`);
       if (doc['author']){
         $(`#${rand_id}`).append(`<td class="td-content text-center">${doc['author']}</td>`);
@@ -1050,7 +1049,7 @@ function get_metadata(scan_id){
         metadata = ''
         metadata += doc['producer'] ? 'Software: ' + doc['producer'] : ''
         metadata += doc['creator'] ? '/' + doc['creator'] : ''
-        metadata += doc['os'] ? '<br> <span class=text-warning> OS: ' + doc['os'] + '</span>': ''
+        metadata += doc['os'] ? `<br> <span class='badge badge-danger'> OS: ` + doc['os'] + '</span>': ''
         $(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
       }
       else{
@@ -1058,6 +1057,7 @@ function get_metadata(scan_id){
       }
     }
     $('#metadata-count').html(`<span class="badge outline-badge-dark">${data['metadata'].length}</span>`);
+    $('.bs-tooltip').tooltip();
   });
 }
 
