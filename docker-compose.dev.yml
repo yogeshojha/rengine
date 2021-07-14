@@ -26,7 +26,7 @@ services:
       context: ./web
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
-    command: celery -A reNgine worker -l INFO
+    command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker -l INFO
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
