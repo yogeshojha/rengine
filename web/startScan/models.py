@@ -288,6 +288,7 @@ class MetaFinderDocument(models.Model):
 class Email(models.Model):
     id = models.AutoField(primary_key=True)
     address = models.CharField(max_length=200, blank=True, null=True)
+    password = models.CharField(max_length=200, blank=True, null=True)
 
 class Employee(models.Model):
     id = models.AutoField(primary_key=True)
