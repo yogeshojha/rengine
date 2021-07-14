@@ -1926,7 +1926,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 
         for cred in creds:
             if cred['username'] != 'donate':
-                email_id = cred['username'] + cred['domain']
+                email_id = "{}@{}".format(cred['username'], cred['domain'])
 
                 email_obj, _ = Email.objects.get_or_create(
                     address=email_id,

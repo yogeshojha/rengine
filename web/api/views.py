@@ -139,7 +139,7 @@ class ListEmails(APIView):
         scan_id = req.query_params.get('scan_id')
         if scan_id:
             tech = Email.objects.filter(
-                emails__in=ScanHistory.objects.filter(id=scan_id))
+                emails__in=ScanHistory.objects.filter(id=scan_id)).order_by('password')
             serializer = EmailSerializer(tech, many=True)
             return Response({"emails": serializer.data})
 

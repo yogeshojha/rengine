@@ -1073,6 +1073,7 @@ function get_metadata(scan_id){
 
 
 function get_emails(scan_id){
+  var exposed_count = 0;
   $.getJSON(`/api/queryEmails/?scan_id=${scan_id}&format=json`, function(data) {
     $('#emails-count').empty();
     $('#email-table-body').empty();
@@ -1081,8 +1082,15 @@ function get_emails(scan_id){
       rand_id = get_randid();
       $('#email-table-body').append(`<tr id=${rand_id}></tr>`);
       $(`#${rand_id}`).append(`<td class="td-content">${email['address']}</td>`);
+      if (email['password']) {
+        $(`#${rand_id}`).append(`<td class="td-content"><span class="badge outline-badge-danger">${email['password']}</span></td>`);
+        exposed_count++;
+      }
     }
     $('#emails-count').html(`<span class="badge outline-badge-dark">${data['emails'].length}</span>`);
+    if (exposed_count > 0 ) {
+      $('#exposed_summary').html(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> <span class="badge outline-badge-danger">${exposed_count}</span> Exposed Credentials`);
+    }
   });
 }
 
