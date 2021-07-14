@@ -1024,6 +1024,16 @@ function get_screenshot(scan_id){
 }
 
 function get_metadata(scan_id){
+  // populate categories
+  $.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
+    for (var val in data['dorks']){
+      dork = data['dorks'][val]
+      $("#osint-categories-badge").append(`<span class='badge outline-badge-info badge-pills ml-1 mr-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
+    }
+    $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+  });
+
+  // populate detail table
   $.getJSON(`/api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
     $('#metadata-count').empty();
     $('#metadata-table-body').empty();
