@@ -206,5 +206,6 @@ def get_random_proxy():
         proxy = Proxy.objects.all()[0]
         if proxy.use_proxy:
             proxy_name = random.choice(proxy.proxies.splitlines())
+            print('Using proxy: ' + proxy_name)
             return proxy_name
     return False

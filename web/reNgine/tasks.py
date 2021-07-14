@@ -8,6 +8,7 @@ import requests
 import logging
 import metafinder.extractor as metadata_extractor
 import whatportis
+import subprocess
 
 
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
@@ -252,7 +253,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    delete_scan_data(results_dir)
+    # delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -1509,7 +1510,8 @@ def osint_discovery(task, domain, yaml_configuration, results_dir):
                 get_and_save_meta_info(meta_dict)
 
     if 'emails' in osint_lookup:
-        get_and_save_emails(task)
+        get_and_save_emails(task, results_dir)
+        get_and_save_leaked_credentials(task, results_dir)
 
     if 'employees' in osint_lookup:
         get_and_save_employees(task, results_dir)
@@ -1863,35 +1865,77 @@ def get_and_save_employees(scan_history, results_dir):
         print(tabledata)
 
 
-def get_and_save_emails(scan_history):
+def get_and_save_emails(scan_history, results_dir):
+    leak_target_path = '{}/creds_target.txt'.format(results_dir)
 
     # get email address
-    logger.info('OSINT: Getting emails from Google')
     proxy = get_random_proxy()
     if proxy:
         os.environ['https_proxy'] = proxy
         os.environ['HTTPS_PROXY'] = proxy
-    email_from_google = get_emails_from_google(scan_history.domain.name)
 
-    # TODO: bing and baidu are experiencing error ATM, will add later
+    emails = []
 
-    emails = list(set(email_from_google))
+    try:
+        logger.info('OSINT: Getting emails from Google')
+        email_from_google = get_emails_from_google(scan_history.domain.name)
+        logger.info('OSINT: Getting emails from Bing')
+        email_from_bing = get_emails_from_bing(scan_history.domain.name)
+        logger.info('OSINT: Getting emails from Baidu')
+        email_from_baidu = get_emails_from_baidu(scan_history.domain.name)
+        emails = list(set(email_from_google + email_from_bing + email_from_baidu))
+        logger.info(emails)
+    except Exception as e:
+        logger.error(e)
+
+    leak_target_file = open(leak_target_path, 'w')
 
     for _email in emails:
         email, _ = Email.objects.get_or_create(address=_email)
         scan_history.emails.add(email)
+        leak_target_file.write('{}\n'.format(_email))
 
+    # fill leak_target_file with possible email address
+    leak_target_file.write('%@{}\n'.format(scan_history.domain.name))
+    leak_target_file.write('%@%.{}\n'.format(scan_history.domain.name))
 
-def get_and_save_leaked_credentials(scan_history):
-    leak_target_file = ''
+    leak_target_file.write('%.%@{}\n'.format(scan_history.domain.name))
+    leak_target_file.write('%.%@%.{}\n'.format(scan_history.domain.name))
+
+    leak_target_file.write('%_%@{}\n'.format(scan_history.domain.name))
+    leak_target_file.write('%_%@%.{}\n'.format(scan_history.domain.name))
+
+    leak_target_file.close()
+
+def get_and_save_leaked_credentials(scan_history, results_dir):
+    logger.info('OSINT: Getting leaked credentials...')
+
+    leak_target_file = '{}/creds_target.txt'.format(results_dir)
     leak_output_file = '{}/pwndb.json'.format(results_dir)
 
-    pwndb_command = 'python3 /usr/src/github/pwndp/pwndb.py --output json'
+    pwndb_command = 'python3 /usr/src/github/pwndb/pwndb.py --proxy tor:9150 --output json --list {}'.format(
+        leak_target_file
+    )
 
-    pwndb_command += ' >
-    os.system(pwndb_command)
+    pwndb_output = subprocess.getoutput(pwndb_command)
 
-    file = open('data.json',)
+    print(pwndb_output)
+
+    try:
+        creds = json.loads(pwndb_output)
+
+        for cred in creds:
+            if cred['username'] != 'donate':
+                email_id = cred['username'] + cred['domain']
+
+                email_obj, _ = Email.objects.get_or_create(
+                    address=email_id,
+                )
+                email_obj.password = cred['password']
+                email_obj.save()
+                scan_history.emails.add(email_obj)
+    except Exception as e:
+        logger.error(e)
 
 
 def get_and_save_meta_info(meta_dict):
