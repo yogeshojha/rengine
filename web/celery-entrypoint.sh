@@ -63,8 +63,14 @@ then
   echo "Cloning theHarvester"
   git clone https://github.com/laramies/theHarvester /usr/src/github/theHarvester
 fi
-
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
+
+# clone pwndb
+if [ ! -d "/usr/src/github/pwndb" ]
+then
+  echo "Cloning pwndb"
+  git clone https://github.com/davidtavarez/pwndb /usr/src/github/pwndb
+fi
 
 # install gf patterns
 if [ ! -d "/root/Gf-Patterns" ];
@@ -75,6 +81,8 @@ then
   git clone https://github.com/1ndianl33t/Gf-Patterns ~/Gf-Patterns
   mv ~/Gf-Patterns/*.json ~/.gf
 fi
+
+https://github.com/davidtavarez/pwndb
 
 # store scan_results
 if [ ! -d "/usr/src/scan_results" ]

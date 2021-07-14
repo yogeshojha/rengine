@@ -21,7 +21,6 @@ services:
     hostname: redis
     networks:
       - rengine_network
-
   celery:
     build:
       context: ./web
@@ -86,6 +85,14 @@ services:
       - celery-beat
     networks:
       - rengine_network
+
+  tor:
+    image: peterdavehello/tor-socks-proxy
+    restart: always
+    networks:
+      - rengine_network
+    depends_on:
+      - web
 
 networks:
   rengine_network:
