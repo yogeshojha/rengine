@@ -1882,6 +1882,18 @@ def get_and_save_emails(scan_history):
         scan_history.emails.add(email)
 
 
+def get_and_save_leaked_credentials(scan_history):
+    leak_target_file = ''
+    leak_output_file = '{}/pwndb.json'.format(results_dir)
+
+    pwndb_command = 'python3 /usr/src/github/pwndp/pwndb.py --output json'
+
+    pwndb_command += ' >
+    os.system(pwndb_command)
+
+    file = open('data.json',)
+
+
 def get_and_save_meta_info(meta_dict):
     logger.info('Getting METADATA for {}'.format(meta_dict.osint_target))
     proxy = get_random_proxy()
