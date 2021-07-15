@@ -108,12 +108,14 @@ function get_endpoints(scan_history_id, gf_tags){
   }
   $('#endpoint_results').DataTable({
     "destroy": true,
+    "processing": true,
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
@@ -210,14 +212,20 @@ function get_endpoints(scan_history_id, gf_tags){
 
 
 function get_interesting_subdomains(scan_history_id){
-  $('#interesting_subdomains').DataTable({
+  var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
+    "drawCallback": function(settings, start, end, max, total, pre) {
+      $('#interesting_subdomain_count_badge').empty();
+      $('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
+    },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
+    "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
@@ -284,13 +292,19 @@ function get_interesting_subdomains(scan_history_id){
 
 function get_interesting_endpoint(scan_history_id){
   $('#interesting_endpoints').DataTable({
+    "drawCallback": function(settings, start, end, max, total, pre) {
+      $('#interesting_endpoint_count_badge').empty();
+      $('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
+    },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
+    "processing":true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
@@ -337,13 +351,24 @@ function get_interesting_endpoint(scan_history_id){
 
 function get_subdomain_changes(scan_history_id){
   $('#table-subdomain-changes').DataTable({
+    "drawCallback": function(settings, start, end, max, total, pre) {
+      if (this.fnSettings().fnRecordsTotal() > 0) {
+        $("#subdomain_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
+      }
+      else{
+        $("#subdomain-changes-div").remove();
+      }
+      $("#subdomain-changes-loader").remove();
+    },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
+    "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
@@ -442,13 +467,24 @@ function get_subdomain_changes(scan_history_id){
 
 function get_endpoint_changes(scan_history_id){
   $('#table-endpoint-changes').DataTable({
+    "drawCallback": function(settings, start, end, max, total, pre) {
+      if (this.fnSettings().fnRecordsTotal() > 0) {
+        $("#endpoint_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
+      }
+      else{
+        $("#endpoint-changes-div").remove();
+      }
+      $("#endpoint-changes-loader").remove();
+    },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
+    "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
     "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
@@ -504,76 +540,6 @@ function get_endpoint_changes(scan_history_id){
         "targets": 4,
       },
     ],
-  });
-}
-
-function get_subdomain_changes_values(scan_id){
-  // Subdomain Changes
-  $.getJSON(`/api/listSubdomainChanges/?scan_id=${scan_id}&no_page`, function(data) {
-    if (!data.length){
-      $("#subdomain-changes-div").remove();
-      return;
-    }
-
-    added_count = 0;
-    removed_count = 0;
-    for (var val in data) {
-      if (data[val]['change'] == 'added'){
-        added_count++;
-      }
-      else if (data[val]['change'] == 'removed')
-      {
-        removed_count++;
-      }
-    }
-    if (added_count){
-      $("#subdomain-added-count").html(`${added_count} Subdomains were added`);
-      $("#added_subdomain_badge").html(`+${added_count}`);
-      $("#added_subdomain_badge").attr("data-original-title", added_count + " Subdomains were added");
-    }
-    if (removed_count){
-      $("#subdomain-removed-count").html(`${removed_count} Subdomains were removed`);
-      $("#removed_subdomain_badge").html(`-${removed_count}`);
-      $("#removed_subdomain_badge").attr("data-original-title", removed_count + " Subdomains were removed");
-    }
-    $("#subdomain_change_count").html(added_count+removed_count);
-    $("#subdomain-changes-loader").remove();
-    get_subdomain_changes(scan_id);
-  });
-}
-
-function get_endpoint_changes_values(scan_id){
-  // Endpoint Changes
-  $.getJSON(`/api/listEndPointChanges/?scan_id=${scan_id}&no_page`, function(data) {
-    if (!data.length){
-      $("#endpoint-changes-div").remove();
-      return;
-    }
-
-    added_count = 0;
-    removed_count = 0;
-    for (var val in data) {
-      if (data[val]['change'] == 'added'){
-        added_count++;
-      }
-      else if (data[val]['change'] == 'removed')
-      {
-        removed_count++;
-      }
-    }
-    if (added_count){
-      $("#endpoint-added-count").html(`${added_count} Endpoints were added`);
-      $("#added_endpoint_badge").html(`+${added_count}`);
-      $("#added_endpoint_badge").attr("data-original-title", added_count + " Endpoints were added");
-    }
-    if (removed_count){
-      $("#endpoint-removed-count").html(`${removed_count} Endpoints were removed`);
-      $("#removed_endpoint_badge").html(`-${removed_count}`);
-      $("#removed_endpoint_badge").attr("data-original-title", removed_count + " Endpoints were added");
-    }
-    $("#endpoint_change_count").html(added_count+removed_count);
-    $("#endpoint-changes-loader").remove();
-    get_endpoint_changes(scan_id);
   });
 }
 
@@ -798,17 +764,6 @@ function get_ports(scan_id){
     }
     $('#ports-count').html(`<span class="badge outline-badge-dark">${data['ports'].length}</span>`);
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
-  });
-}
-
-function get_interesting_count(scan_id){
-  $.getJSON(`/api/listInterestingSubdomains/?scan_id=${scan_id}&no_page`, function(data) {
-    $('#interesting_subdomain_count_badge').empty();
-    $('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
-  });
-  $.getJSON(`/api/listInterestingEndpoints/?scan_id=${scan_id}&no_page`, function(data) {
-    $('#interesting_endpoint_count_badge').empty();
-    $('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${data.length}</span>`);
   });
 }
 
@@ -1244,16 +1199,16 @@ function get_endpoint_modal(scan_id, subdomain_name){
 function get_http_badge(http_status){
   switch (true) {
     case (http_status >= 400):
-      badge_color = 'danger'
-      break;
+    badge_color = 'danger'
+    break;
     case (http_status >= 300):
-      badge_color = 'warning'
-      break;
+    badge_color = 'warning'
+    break;
     case (http_status >= 200):
-      badge_color = 'success'
-      break;
+    badge_color = 'success'
+    break;
     default:
-      badge_color = 'danger'
+    badge_color = 'danger'
   }
   if (http_status) {
     badge = `<span class="badge badge-pills badge-${badge_color} m-1 bs-tooltip" data-placement="top" title="HTTP Status">${http_status}</span>`;

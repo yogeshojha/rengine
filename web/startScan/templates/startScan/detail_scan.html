@@ -465,73 +465,73 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 						{% endif %}
-					<div class="row">
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-							{% include 'base/_items/interesting_recon.html' %}
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+								{% include 'base/_items/interesting_recon.html' %}
+							</div>
 						</div>
-					</div>
-					<div class="row">
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
-							<div class="widget widget-table-two">
-								<div class="widget-heading">
-									<h6 class="">
-										<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
-										<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
-									</h6>
-									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
-									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
-										<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
-									</p>
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
+								<div class="widget widget-table-two">
+									<div class="widget-heading">
+										<h6 class="">
+											<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
+											<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
+										</h6>
+										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
+										<p class='text-muted'>During this scan
+											<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
+											<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
+										</p>
+									</div>
+									<div class="widget-content">
+										<div class="table-responsive">
+											<table class="table" id="table-subdomain-changes">
+												<thead>
+													<tr>
+														<th><div class="th-content">Subdomain</div></th>
+														<th><div class="th-content">Page Title</div></th>
+														<th><div class="th-content">Status</div></th>
+														<th><div class="th-content">Content Length</div></th>
+														<th><div class="th-content">Change</div></th>
+													</tr>
+												</thead>
+											</table>
+										</div>
+									</div>
 								</div>
-								<div class="widget-content">
-									<div class="table-responsive">
-										<table class="table" id="table-subdomain-changes">
-											<thead>
-												<tr>
-													<th><div class="th-content">Subdomain</div></th>
-													<th><div class="th-content">Page Title</div></th>
-													<th><div class="th-content">Status</div></th>
-													<th><div class="th-content">Content Length</div></th>
-													<th><div class="th-content">Change</div></th>
-												</tr>
-											</thead>
-										</table>
+							</div>
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
+								<div class="widget widget-table-two">
+									<div class="widget-heading">
+										<h6 class="">
+											<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
+											<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
+										</h6>
+										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
+										<p class='text-muted'>During this scan
+											<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
+											<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
+										</p>
+									</div>
+									<div class="widget-content">
+										<div class="table-responsive">
+											<table class="table" id="table-endpoint-changes">
+												<thead>
+													<tr>
+														<th><div class="th-content">URL</div></th>
+														<th><div class="th-content">Page Title</div></th>
+														<th><div class="th-content">Status</div></th>
+														<th><div class="th-content">Content Length</div></th>
+														<th><div class="th-content">Change</div></th>
+													</tr>
+												</thead>
+											</table>
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
-							<div class="widget widget-table-two">
-								<div class="widget-heading">
-									<h6 class="">
-										<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
-										<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
-									</h6>
-									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
-									<p class='text-muted'>During this scan
-										<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
-										<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
-									</p>
-								</div>
-								<div class="widget-content">
-									<div class="table-responsive">
-										<table class="table" id="table-endpoint-changes">
-											<thead>
-												<tr>
-													<th><div class="th-content">URL</div></th>
-													<th><div class="th-content">Page Title</div></th>
-													<th><div class="th-content">Status</div></th>
-													<th><div class="th-content">Content Length</div></th>
-													<th><div class="th-content">Change</div></th>
-												</tr>
-											</thead>
-										</table>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
 					</div>
 					<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
@@ -861,12 +861,14 @@ Detailed Scan Results for {{history.domain.name}}
 	$("#pills-subdomain-tab").click(function() {
 		$('#subdomain_scan_results').DataTable({
 			"destroy": true,
+			"processing": true,
 			"oLanguage": {
 				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 				"sInfo": "Showing page _PAGE_ of _PAGES_",
 				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
 				"sSearchPlaceholder": "Filter Subdomains...",
 				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
 			},
 			"stripeClasses": [],
 			"lengthMenu": [20, 50, 100, 500, 1000],
@@ -1130,7 +1132,9 @@ Detailed Scan Results for {{history.domain.name}}
 				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
 				"sSearchPlaceholder": "Filter Subdomains...",
 				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
 			},
+			"processing": true,
 			"stripeClasses": [],
 			"lengthMenu": [20, 50, 100, 500, 1000],
 			"pageLength": 20,
@@ -1280,7 +1284,9 @@ Detailed Scan Results for {{history.domain.name}}
 				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
 				"sSearchPlaceholder": "Search...",
 				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
 			},
+			"processing": true,
 			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
 			"<'row'<'col'tr>>" +
 			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
@@ -1523,15 +1529,15 @@ Detailed Scan Results for {{history.domain.name}}
 		get_endpoints({{scan_history_id}}, null);
 	});
 
-	// get interesting subdomain
-	$("#interesting_subdomain_accordion").click(function() {
-		get_interesting_subdomains({{scan_history_id}});
-	});
+	//get subdomain changes
+	get_subdomain_changes({{scan_history_id}});
+	get_endpoint_changes({{scan_history_id}});
 
+	// get interesting subdomain
+	get_interesting_subdomains({{scan_history_id}});
 	// get interesting endpoint
-	$("#interesting_endpoint_accordion").click(function() {
-		get_interesting_endpoint({{scan_history_id}});
-	});
+	get_interesting_endpoint({{scan_history_id}});
+
 
 	// get screenshots
 	$("#pills-screenshot-tab").click(function() {
@@ -1562,11 +1568,6 @@ Detailed Scan Results for {{history.domain.name}}
 		visualise_scan_results({{scan_history_id}});
 	});
 
-	get_subdomain_changes_values({{scan_history_id}});
-	get_endpoint_changes_values({{scan_history_id}});
-
-	get_interesting_count({{scan_history_id}});
-
 	get_ips({{scan_history_id}});
 
 	get_technologies({{scan_history_id}});
@@ -1586,6 +1587,6 @@ Detailed Scan Results for {{history.domain.name}}
 	{% endfor %}
 	{% endif %}
 
-</script>
+	</script>
 
-{% endblock page_level_script %}
+	{% endblock page_level_script %}
