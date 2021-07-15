@@ -105,17 +105,17 @@ Scan History
             <td class="text-center">{{ scan_history.start_scan_date }}</td>
             <td class="text-center">
               {% if scan_history.scan_status == -1 %}
-              <span class="shadow-none badge badge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
+              <span class="text-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
               {% elif scan_history.scan_status == 0 %}
-              <span class="shadow-none badge badge-danger">Failed</span>
+              <span class="text-danger">Failed</span>
               {% elif scan_history.scan_status == 1 %}
-              <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+              <span class="text-info">{% include 'base/_items/progress_spin.html' %}In Progress</span>
               {% elif scan_history.scan_status == 2 %}
-              <span class="shadow-none badge badge-success">Successful</span>
+              <span class="text-success">Successful</span>
               {% elif scan_history.scan_status == 3 %}
-              <span class="shadow-none badge badge-danger">Aborted</span>
+              <span class="text-danger">Aborted</span>
               {% else %}
-              <span class="shadow-none badge badge-danger">Unknown</span>
+              <span class="text-danger">Unknown</span>
               {% endif %}
             </td>
             <td class="text-center">

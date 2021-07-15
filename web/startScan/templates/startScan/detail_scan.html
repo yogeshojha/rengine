@@ -145,7 +145,9 @@ Detailed Scan Results for {{history.domain.name}}
 								<br>
 							</div>
 						</div>
-						<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+					</div>
+					<div class="row">
+						<div class="col-xl-5 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-five widget-progress">
 								<div class="widget-heading">
 									<a href="javascript:void(0)" class="task-info">
@@ -153,7 +155,8 @@ Detailed Scan Results for {{history.domain.name}}
 											<span>{{history.domain.name|slice:"0:2"|upper}}</span>
 										</div>
 										<div class="w-title">
-											<h6>Scan Information for <span class="badge badge-info">{{history.domain.name}}</span></h6>
+											<h6>Scan Information for <span class="badge badge-info">{{history.domain.name}}</span>
+											</h6>
 										</div>
 									</a>
 								</div>
@@ -167,7 +170,7 @@ Detailed Scan Results for {{history.domain.name}}
 												{% elif history.scan_status == 0 %}
 												<h6 class="badge badge-danger">Failed</h6>
 												{% elif history.scan_status == 1 %}
-												<h6 class="badge badge-info">Scanning</h6>
+												<h6 class="badge badge-info">In Progress</h6> <small class="text-info"> >> {{scan_activity.0}}</small>
 												{% elif history.scan_status == 2 %}
 												<h6 class="badge badge-success">Completed</h6>
 												{% elif history.scan_status == 3 %}
@@ -222,7 +225,7 @@ Detailed Scan Results for {{history.domain.name}}
 										</div>
 									</div>
 									{% if  history.domain.get_organization %}
-									Organization:
+									Tagged to organization:
 									{% endif %}
 									{% for organization in history.domain.get_organization %}
 									<span class="badge outline-badge-dark m-1 bs-tooltip" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
@@ -230,7 +233,7 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-5 col-lg-3 col-md-12 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-activity-four activity-log" style="height: 250px;">
 								<div class="widget-heading">
 									<h6 class="">Scan Timeline</h6>
@@ -260,7 +263,7 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-timeline-log">
 								<div class="widget-heading">
 									<h6 class="">Recent Scans</h6>
@@ -295,7 +298,7 @@ Detailed Scan Results for {{history.domain.name}}
 															<div class="t-uppercontent">
 																<h5>
 																	{% if history.id == scan.id %}
-																	Current Scan:
+																	<span class="badge outline-badge-primary text-primary">Current Scan</span>
 																	{% endif %}{{scan.start_scan_date|naturaltime}} :
 																	{% if scan.scan_status == -1 %}
 																	<span class="text-warning">[Pending]</span>
@@ -313,483 +316,491 @@ Detailed Scan Results for {{history.domain.name}}
 																</h5>
 															</div>
 															<p>Scan Engine: {{scan.scan_type.engine_name}}</p>
-															<p>{{scan.get_subdomain_count}} Subdomains Discovered</p>
+															<p class="text-primary"><b>{{scan.get_subdomain_count}}</b> Subdomains Discovered</p>
 														</div>
+														{% if history.id == scan.id %}
 													</a>
-												</div>
-												{% endfor %}
-											</div>
-										</div>
-										<div class="w-shadow-bottom"></div>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="row">
-							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="ip-address-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> IP Addresses <small id="ip-address-summary"></small></h6>
-										<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="ip-address">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="ports-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Ports </h6>
-										<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="ports">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="technologies">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-6 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="osint-dork">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-								{% include 'base/_items/interesting_recon.html' %}
-							</div>
-							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
-								<div class="widget widget-table-two">
-									<div class="widget-heading">
-										<h6 class="">
-											<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
-											<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
-										</h6>
-										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
-										<p class='text-muted'>During this scan
-											<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
-											<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
-										</p>
-									</div>
-									<div class="widget-content">
-										<div class="table-responsive">
-											<table class="table" id="table-subdomain-changes">
-												<thead>
-													<tr>
-														<th><div class="th-content">Subdomain</div></th>
-														<th><div class="th-content">Page Title</div></th>
-														<th><div class="th-content">Status</div></th>
-														<th><div class="th-content">Content Length</div></th>
-														<th><div class="th-content">Change</div></th>
-													</tr>
-												</thead>
-											</table>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
-								<div class="widget widget-table-two">
-									<div class="widget-heading">
-										<h6 class="">
-											<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
-											<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
-										</h6>
-										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
-										<p class='text-muted'>During this scan
-											<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
-											<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
-										</p>
-									</div>
-
-									<div class="widget-content">
-										<div class="table-responsive">
-											<table class="table" id="table-endpoint-changes">
-												<thead>
-													<tr>
-														<th><div class="th-content">URL</div></th>
-														<th><div class="th-content">Page Title</div></th>
-														<th><div class="th-content">Status</div></th>
-														<th><div class="th-content">Content Length</div></th>
-														<th><div class="th-content">Change</div></th>
-													</tr>
-												</thead>
-											</table>
-										</div>
-									</div>
-								</div>
-							</div>
-							{% if history.vulnerability_scan %}
-							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-activity-four">
-									<div class="widget-heading">
-										<h6 class="">Vulnerability Scan Summary</h6>
-									</div>
-									<div class="widget-content">
-										<div class="row">
-											<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
-												<div id="vulnerability-chart" class=""></div>
-											</div>
-											<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
-												<div class="table-responsive mt-container mx-auto">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Vulnerability</div></th>
-																<th><div class="th-content">Severity</div></th>
-																<th><div class="th-content">Vulnerable URL</div></th>
-															</tr>
-														</thead>
-														<tbody>
-															{% for vulnerability in vulnerability_list  %}
-															<tr>
-																<td>{{vulnerability.name}}</td>
-																<td>{% if vulnerability.severity == 0 %}
-																	<span class='badge badge-info'>Info</span>
-																	{% elif vulnerability.severity == 1 %}
-																	<span class='badge badge-low'>Low</span>
-																	{% elif vulnerability.severity == 2 %}
-																	<span class='badge badge-warning'>Medium</span>
-																	{% elif vulnerability.severity == 3 %}
-																	<span class='badge badge-danger'>High</span>
-																	{% elif vulnerability.severity == 4 %}
-																	<span class='badge badge-critical'>Critical</span>
-																	{% endif %}</td>
-																	<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
-																</tr>
-																{% endfor %}
-															</tbody>
-														</table>
-													</div>
-													<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								{% endif %}
-							</div>
-						</div>
-						<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
-								<div class="widget widget-content widget-content-area br-6">
-									<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Subdomain</th>
-												<th class="text-center">Endpoints</th>
-												<th class="text-center">Vulnerabilities</th>
-												<th>Status</th>
-												<th class="text-center">Title</th>
-												<th>IP Address</th>
-												<th>Ports</th>
-												<th>Content Length</th>
-												<th>Screenshot</th>
-												<th>Response Time</th>
-												<th>Technology</th>
-												<th>Checked</th>
-												<th>HTTP URL</th>
-												<th>CNAME</th>
-												<th>is_interesting</th>
-												<th>Info</th>
-												<th>Low</th>
-												<th>Medium</th>
-												<th>High</th>
-												<th>Critical</th>
-											</tr>
-										</thead>
-									</table>
-								</div>
-							</div>
-						</div>
-						{% if history.screenshot %}
-						<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
-							<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
-								<div class="w-100">
-									<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
-								</div>
-							</div>
-							<div class="col-xl-12 col-lg-12 col-sm-12" id="screenshot-div">
-								<div class="widget widget-content widget-content-area br-6">
-									<div class="row">
-										<div class="col-xl-12 col-lg-12 col-sm-12">
-											<div class="row">
-												<div class="col-xl-6 col-lg-6 col-sm-6">
-													<h6>Filter Screenshots</h6>
-												</div>
-												<div class="col-xl-6 col-lg-6 col-sm-6">
-													<div class="float-right">
-														<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
-													</div>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>HTTP Status</p>
-													<select class="form-control tagging" id="http_select_filter" multiple="multiple">
-													</select>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>IP Address</p>
-													<select class="form-control tagging" id="ips_select_filter" multiple="multiple">
-													</select>
-												</div>
-												{% if history.port_scan %}
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Running Services</p>
-													<select class="form-control tagging" id="services_select_filter" multiple="multiple">
-													</select>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Ports</p>
-													<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
-													</select>
-												</div>
+													{% else %}
+												</a>
 												{% endif %}
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Technology</p>
-													<select class="form-control tagging" id="tech_select_filter" multiple="multiple">
-													</select>
-												</div>
 											</div>
+											{% endfor %}
 										</div>
-										<div class="col-xl-12 col-lg-12 col-sm-12">
-											<div class="gridzy">
-											</div>
+									</div>
+									<div class="w-shadow-bottom"></div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="ip-address-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> IP Addresses <small id="ip-address-summary"></small></h6>
+									<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="ip-address">
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-						{% endif %}
-						{% if history.dir_file_search %}
-						<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table id="directories-table" class="table dt-table-hover" style="width:100%">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Subdomain</th>
-												<th>Status</th>
-												<th>Page Title</th>
-												<th>Directories</th>
-												<th>HTTP URL</th>
-												<th>Is Intereting</th>
-												<th>Checked</th>
-											</tr>
-										</thead>
-									</table>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="ports-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Ports </h6>
+									<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="ports">
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
-						{% endif %}
-						<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-										<thead>
-											<tr>
-												<th>HTTP URL</th>
-												<th>Status</th>
-												<th>Page Title</th>
-												<th>Tags</th>
-												<th>Content Type</th>
-												<th>Content Length</th>
-												<th>Technology</th>
-												<th>Webserver</th>
-												<th>Response time</th>
-												<th>Default URL</th>
-											</tr>
-										</thead>
-									</table>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="technologies">
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
+					</div>
+					<div class="row">
+						<div class="col-xl-6 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="osint-dork">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							{% include 'base/_items/interesting_recon.html' %}
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
+							<div class="widget widget-table-two">
+								<div class="widget-heading">
+									<h6 class="">
+										<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
+										<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
+									</h6>
+									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
+									<p class='text-muted'>During this scan
+										<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
+										<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
+									</p>
+								</div>
+								<div class="widget-content">
+									<div class="table-responsive">
+										<table class="table" id="table-subdomain-changes">
+											<thead>
+												<tr>
+													<th><div class="th-content">Subdomain</div></th>
+													<th><div class="th-content">Page Title</div></th>
+													<th><div class="th-content">Status</div></th>
+													<th><div class="th-content">Content Length</div></th>
+													<th><div class="th-content">Change</div></th>
+												</tr>
+											</thead>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
+							<div class="widget widget-table-two">
+								<div class="widget-heading">
+									<h6 class="">
+										<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
+										<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
+									</h6>
+									<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
+									<p class='text-muted'>During this scan
+										<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
+										<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
+									</p>
+								</div>
+								<div class="widget-content">
+									<div class="table-responsive">
+										<table class="table" id="table-endpoint-changes">
+											<thead>
+												<tr>
+													<th><div class="th-content">URL</div></th>
+													<th><div class="th-content">Page Title</div></th>
+													<th><div class="th-content">Status</div></th>
+													<th><div class="th-content">Content Length</div></th>
+													<th><div class="th-content">Change</div></th>
+												</tr>
+											</thead>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
 						{% if history.vulnerability_scan %}
-						<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Title</th>
-												<th>Severity</th>
-												<th>Vulnerable URL</th>
-												<th>Detail</th>
-												<th>Status</th>
-												<th>Matcher Name</th>
-												<th>Tags</th>
-												<th>Reference</th>
-											</tr>
-										</thead>
-									</table>
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-activity-four">
+								<div class="widget-heading">
+									<h6 class="">Vulnerability Scan Summary</h6>
 								</div>
-							</div>
-						</div>
-						{% endif %}
-						{% if history.osint %}
-						<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
-							<div class="row">
-								<div class="col-xl-5 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="employees-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Employees/People associated with {{history.domain.name}}</h6>
+								<div class="widget-content">
+									<div class="row">
+										<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+											<div id="vulnerability-chart" class=""></div>
 										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Employee Name</div></th>
-																<th><div class="th-content">Designation</div></th>
+										<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+											<div class="table-responsive mt-container mx-auto">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Vulnerability</div></th>
+															<th><div class="th-content">Severity</div></th>
+															<th><div class="th-content">Vulnerable URL</div></th>
+														</tr>
+													</thead>
+													<tbody>
+														{% for vulnerability in vulnerability_list  %}
+														<tr>
+															<td>{{vulnerability.name}}</td>
+															<td>{% if vulnerability.severity == 0 %}
+																<span class='badge badge-info'>Info</span>
+																{% elif vulnerability.severity == 1 %}
+																<span class='badge badge-low'>Low</span>
+																{% elif vulnerability.severity == 2 %}
+																<span class='badge badge-warning'>Medium</span>
+																{% elif vulnerability.severity == 3 %}
+																<span class='badge badge-danger'>High</span>
+																{% elif vulnerability.severity == 4 %}
+																<span class='badge badge-critical'>Critical</span>
+																{% endif %}</td>
+																<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
 															</tr>
-														</thead>
-														<tbody id="employees-table-body">
+															{% endfor %}
 														</tbody>
 													</table>
 												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-7 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses <span id="exposed_summary" class="text-danger"></span></h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Email Address</div></th>
-																<th><div class="th-content">Esposed Credentials</div></th>
-															</tr>
-														</thead>
-														<tbody id="email-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Document</div></th>
-																<th><div class="th-content text-center">User</div></th>
-																<th><div class="th-content text-center">Metadata</div></th>
-															</tr>
-														</thead>
-														<tbody id="metadata-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div id="osint-categories-badge" class="mt-3 mb-3">
-											</div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content text-center">Dork Type</div></th>
-																<th><div class="th-content text-center">Description</div></th>
-																<th><div class="th-content">URL</div></th>
-															</tr>
-														</thead>
-														<tbody id="dorks-table-body">
-														</tbody>
-													</table>
-												</div>
+												<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
+							{% endif %}
 						</div>
-						{% endif %}
-						<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
-							<div class="row">
-								<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="statbox widget box box-shadow">
-										<div class="widget-header">
-											<div class="col-xl-12 col-md-12 col-sm-12 col-12">
-												<div id="visualisation-filter" style="display:none">
-													<div class="n-chk">
-														<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
-															<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
-															<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
-															</span>
-														</label>
-													</div>
+					</div>
+					<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th class="text-center">Endpoints</th>
+											<th class="text-center">Vulnerabilities</th>
+											<th>Status</th>
+											<th class="text-center">Title</th>
+											<th>IP Address</th>
+											<th>Ports</th>
+											<th>Content Length</th>
+											<th>Screenshot</th>
+											<th>Response Time</th>
+											<th>Technology</th>
+											<th>Checked</th>
+											<th>HTTP URL</th>
+											<th>CNAME</th>
+											<th>is_interesting</th>
+											<th>Info</th>
+											<th>Low</th>
+											<th>Medium</th>
+											<th>High</th>
+											<th>Critical</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% if history.screenshot %}
+					<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
+						<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
+							<div class="w-100">
+								<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
+							</div>
+						</div>
+						<div class="col-xl-12 col-lg-12 col-sm-12" id="screenshot-div">
+							<div class="widget widget-content widget-content-area br-6">
+								<div class="row">
+									<div class="col-xl-12 col-lg-12 col-sm-12">
+										<div class="row">
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<h6>Filter Screenshots</h6>
+											</div>
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<div class="float-right">
+													<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
 												</div>
-												<hr>
-												<div class="outer-div" id="visualisation-loader">
-													<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
-													<br>
-													<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
-												</div>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>HTTP Status</p>
+												<select class="form-control tagging" id="http_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>IP Address</p>
+												<select class="form-control tagging" id="ips_select_filter" multiple="multiple">
+												</select>
+											</div>
+											{% if history.port_scan %}
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Running Services</p>
+												<select class="form-control tagging" id="services_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Ports</p>
+												<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
+												</select>
+											</div>
+											{% endif %}
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Technology</p>
+												<select class="form-control tagging" id="tech_select_filter" multiple="multiple">
+												</select>
 											</div>
 										</div>
-										<div class="widget-content">
-											<div id="visualisation" style="height: 800px; ">
+									</div>
+									<div class="col-xl-12 col-lg-12 col-sm-12">
+										<div class="gridzy">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.dir_file_search %}
+					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="directories-table" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Directories</th>
+											<th>HTTP URL</th>
+											<th>Is Intereting</th>
+											<th>Checked</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+									<thead>
+										<tr>
+											<th>HTTP URL</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Tags</th>
+											<th>Content Type</th>
+											<th>Content Length</th>
+											<th>Technology</th>
+											<th>Webserver</th>
+											<th>Response time</th>
+											<th>Default URL</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% if history.vulnerability_scan %}
+					<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Title</th>
+											<th>Severity</th>
+											<th>Vulnerable URL</th>
+											<th>Detail</th>
+											<th>Status</th>
+											<th>Matcher Name</th>
+											<th>Tags</th>
+											<th>Reference</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.osint %}
+					<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
+						<div class="row">
+							<div class="col-xl-5 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="employees-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Employees/People associated with {{history.domain.name}}</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Employee Name</div></th>
+															<th><div class="th-content">Designation</div></th>
+														</tr>
+													</thead>
+													<tbody id="employees-table-body">
+													</tbody>
+												</table>
 											</div>
-											<div class="float-right m-3">
-												<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
-												<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
-												<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-7 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses <span id="exposed_summary" class="text-danger"></span></h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Email Address</div></th>
+															<th><div class="th-content">Esposed Credentials</div></th>
+														</tr>
+													</thead>
+													<tbody id="email-table-body">
+													</tbody>
+												</table>
 											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Document</div></th>
+															<th><div class="th-content text-center">User</div></th>
+															<th><div class="th-content text-center">Metadata</div></th>
+														</tr>
+													</thead>
+													<tbody id="metadata-table-body">
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div id="osint-categories-badge" class="mt-3 mb-3">
+										</div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content text-center">Dork Type</div></th>
+															<th><div class="th-content text-center">Description</div></th>
+															<th><div class="th-content">URL</div></th>
+														</tr>
+													</thead>
+													<tbody id="dorks-table-body">
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="statbox widget box box-shadow">
+									<div class="widget-header">
+										<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+											<div id="visualisation-filter" style="display:none">
+												<div class="n-chk">
+													<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
+														<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
+														<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
+														</span>
+													</label>
+												</div>
+											</div>
+											<hr>
+											<div class="outer-div" id="visualisation-loader">
+												<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
+												<br>
+												<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
+											</div>
+										</div>
+									</div>
+									<div class="widget-content">
+										<div id="visualisation" style="height: 800px; ">
+										</div>
+										<div class="float-right m-3">
+											<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+											<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+											<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
 										</div>
 									</div>
 								</div>

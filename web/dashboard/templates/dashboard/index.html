@@ -285,18 +285,14 @@ Dashboard
 									<div class="w-summary-info">
 										<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
-											{% if item.scan_status == -1 %}
-											<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
-											{% elif item.scan_status == 0 %}
-											<span class="badge badge-danger">Failed</span>
-											{% elif item.scan_status == 1 %}
-											<span class="badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+											{% if item.scan_status == 0 %}
+											<span class="text-danger">Failed</span>
 											{% elif item.scan_status == 2 %}
-											<span class="badge badge-success">Successful</span>
+											<span class="text-success"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg> Successful</span>
 											{% elif item.scan_status == 3 %}
-											<span class="badge badge-danger">Aborted</span>
+											<span class="text-danger">Aborted</span>
 											{% else %}
-											<span class="badge badge-danger">Unknown</span>
+											<span class="text-danger">Unknown</span>
 											{% endif %}
 										</p>
 									</div>
@@ -332,7 +328,7 @@ Dashboard
 									<div class="w-summary-info">
 										<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 										<p class="summary-average">
-											<span class="badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
+											<span class="text-info">{% include 'base/_items/progress_spin.html' %}In Progress</span>
 										</p>
 									</div>
 									<div class="t-rate">
@@ -372,19 +368,7 @@ Dashboard
 								<div class="w-summary-info">
 									<h6>{{item.domain.name}}<br><small>{{item.start_scan_date|naturaltime}}</small></h6>
 									<p class="summary-average">
-										{% if item.scan_status == -1 %}
-										<span class="badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
-										{% elif item.scan_status == 0 %}
-										<span class="badge badge-danger">Failed</span>
-										{% elif item.scan_status == 1 %}
-										<span class="badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-										{% elif item.scan_status == 2 %}
-										<span class="badge badge-success">Successful</span>
-										{% elif item.scan_status == 3 %}
-										<span class="badge badge-danger">Aborted</span>
-										{% else %}
-										<span class="badge badge-danger">Unknown</span>
-										{% endif %}
+										<span class="text-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
 									</p>
 								</div>
 							</div>
