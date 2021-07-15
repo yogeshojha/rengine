@@ -371,3 +371,7 @@ def update_organization(request, id):
         "form": form
     }
     return render(request, 'organization/update.html', context)
+
+def recon_note(request):
+    context = {}
+    return render(request, 'note/index.html', context)

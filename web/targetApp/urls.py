@@ -56,4 +56,8 @@ urlpatterns = [
         'summary/<int:id>',
         views.target_summary,
         name='target_summary'),
+    path(
+        'note/',
+        views.recon_note,
+        name='recon_note'),
 ]

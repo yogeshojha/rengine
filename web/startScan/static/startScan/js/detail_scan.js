@@ -1150,7 +1150,9 @@ function get_dork_details(dork_type, scan_id){
   $('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
+    $('#modal-loader').empty();
     $('#modal-text-content').append(`<b>${data['dorks'].length} results found in this dork category.</b>`);
     $('#modal-text-content').append(`<ul id="dork-detail-modal-ul"></ul>`);
     for (dork in data['dorks']){
