@@ -66,6 +66,17 @@ def detail_scan(request, id=None):
         context['critical_count'] = critical_count
         context['scan_history_active'] = 'true'
 
+        emails = Email.objects.filter(
+            emails__in=ScanHistory.objects.filter(
+                id=id))
+
+        context['exposed_count'] = emails.exclude(password__isnull=True).count()
+
+        context['email_count'] = emails.count()
+
+        context['employees_count'] = Employee.objects.filter(
+            employees__in=ScanHistory.objects.filter(id=id)).count()
+
         domain_id = ScanHistory.objects.filter(id=id)
 
         context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:5]

@@ -201,8 +201,8 @@
 .widget.widget-one .w-chart .w-chart-section.purple-card {
   background-color: #f3effc; }
 
-.widget.widget-one .w-chart .w-chart-section.dark-card {
-  background-color: #1b2e4b; }
+.widget.widget-one .w-chart .w-chart-section.info-card {
+  background-color: #e7f7ff; }
 
 .widget.widget-one .w-chart .w-chart-section.info-card .w-title, .widget.widget-one .w-chart .w-chart-section.warning-card .w-stats, .widget.widget-one .w-chart .w-chart-section.warning-card a {
   color: #2196f3; }
@@ -216,8 +216,8 @@
 .widget.widget-one .w-chart .w-chart-section.danger-card .w-title, .widget.widget-one .w-chart .w-chart-section.danger-card .w-stats, .widget.widget-one .w-chart .w-chart-section.danger-card a {
   color: #e7515a; }
 
-.widget.widget-one .w-chart .w-chart-section.dark-card .w-title, .widget.widget-one .w-chart .w-chart-section.dark-card .w-stats, .widget.widget-one .w-chart .w-chart-section.dark-card a {
-    color: #fff; }
+.widget.widget-one .w-chart .w-chart-section.info-card .w-title, .widget.widget-one .w-chart .w-chart-section.info-card .w-stats, .widget.widget-one .w-chart .w-chart-section.info-card a {
+    color: #2196f3; }
 
 .widget-three .widget-content .summary-list.summary-success {
   background: #ddf5f0; }

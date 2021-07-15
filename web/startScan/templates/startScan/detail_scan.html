@@ -141,6 +141,28 @@ Detailed Scan Results for {{history.domain.name}}
 											{% endif %}
 										</div>
 									</div>
+									<div class="w-chart-section info-card">
+										<div class="w-detail">
+											<p class="w-stats">OSINT
+												<span class="float-right">
+												</span>
+											</p>
+											{% if history.osint %}
+											{% if exposed_count %}
+											<p class="w-title">{{exposed_count}} Exposed Credentials</p>
+											{% endif %}
+											{% if email_count %}
+											<p class="w-title text-muted">{{email_count}} Email Address Discovered</p>
+											{% endif %}
+											{% if employees_count %}
+											<p class="w-title text-muted">{{employees_count}} Employees Found</p>
+											{% endif %}
+											<br>
+											{% else %}
+											<small class="text-muted">OSINT hasn't been performed.</small>
+											{% endif %}
+										</div>
+									</div>
 								</div>
 								<br>
 							</div>
