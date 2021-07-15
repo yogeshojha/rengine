@@ -159,6 +159,8 @@ Detailed Scan Results for {{history.domain.name}}
 											</h6>
 										</div>
 									</a>
+									<div class="w-icon float-right">
+									</div>
 								</div>
 								<div class="widget-content">
 									<div class="row">
@@ -373,8 +375,9 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% if history.osint %}
 					<div class="row">
-						<div class="col-xl-6 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-ip">
 								<div class="widget-heading">
 									<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
@@ -388,6 +391,58 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
+					{% endif %}
+					{% if history.vulnerability_scan %}
+					<div class="row">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-activity-four">
+								<div class="widget-heading">
+									<h6 class="">Vulnerability Scan Summary</h6>
+								</div>
+								<div class="widget-content">
+									<div class="row">
+										<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+											<div id="vulnerability-chart" class=""></div>
+										</div>
+										<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+											<div class="table-responsive mt-container mx-auto">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Vulnerability</div></th>
+															<th><div class="th-content">Severity</div></th>
+															<th><div class="th-content">Vulnerable URL</div></th>
+														</tr>
+													</thead>
+													<tbody>
+														{% for vulnerability in vulnerability_list  %}
+														<tr>
+															<td>{{vulnerability.name}}</td>
+															<td>{% if vulnerability.severity == 0 %}
+																<span class='badge badge-info'>Info</span>
+																{% elif vulnerability.severity == 1 %}
+																<span class='badge badge-low'>Low</span>
+																{% elif vulnerability.severity == 2 %}
+																<span class='badge badge-warning'>Medium</span>
+																{% elif vulnerability.severity == 3 %}
+																<span class='badge badge-danger'>High</span>
+																{% elif vulnerability.severity == 4 %}
+																<span class='badge badge-critical'>Critical</span>
+																{% endif %}</td>
+																<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+															</tr>
+															{% endfor %}
+														</tbody>
+													</table>
+												</div>
+												<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						{% endif %}
 					<div class="row">
 						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
 							{% include 'base/_items/interesting_recon.html' %}
@@ -455,57 +510,6 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 					</div>
-					<div class="row">
-						{% if history.vulnerability_scan %}
-						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-							<div class="widget widget-activity-four">
-								<div class="widget-heading">
-									<h6 class="">Vulnerability Scan Summary</h6>
-								</div>
-								<div class="widget-content">
-									<div class="row">
-										<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
-											<div id="vulnerability-chart" class=""></div>
-										</div>
-										<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
-											<div class="table-responsive mt-container mx-auto">
-												<table class="table">
-													<thead>
-														<tr>
-															<th><div class="th-content">Vulnerability</div></th>
-															<th><div class="th-content">Severity</div></th>
-															<th><div class="th-content">Vulnerable URL</div></th>
-														</tr>
-													</thead>
-													<tbody>
-														{% for vulnerability in vulnerability_list  %}
-														<tr>
-															<td>{{vulnerability.name}}</td>
-															<td>{% if vulnerability.severity == 0 %}
-																<span class='badge badge-info'>Info</span>
-																{% elif vulnerability.severity == 1 %}
-																<span class='badge badge-low'>Low</span>
-																{% elif vulnerability.severity == 2 %}
-																<span class='badge badge-warning'>Medium</span>
-																{% elif vulnerability.severity == 3 %}
-																<span class='badge badge-danger'>High</span>
-																{% elif vulnerability.severity == 4 %}
-																<span class='badge badge-critical'>Critical</span>
-																{% endif %}</td>
-																<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
-															</tr>
-															{% endfor %}
-														</tbody>
-													</table>
-												</div>
-												<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							{% endif %}
-						</div>
 					</div>
 					<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">

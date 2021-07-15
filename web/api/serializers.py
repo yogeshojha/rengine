@@ -245,17 +245,25 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
 
 class VisualiseEmailSerializer(serializers.ModelSerializer):
-
+    title = serializers.SerializerMethodField('get_title')
     description = serializers.SerializerMethodField('get_description')
 
     class Meta:
         model = Email
         fields = [
-            'description'
+            'description',
+            'password',
+            'title'
         ]
 
-    def get_description(self, Email):
-        return Email.address
+    def get_description(self, email):
+        if email.password:
+            return email.address + " > " + email.password
+        return email.address
+
+    def get_title(self, email):
+        if email.password:
+            return "Exposed Creds"
 
 
 class VisualiseDorkSerializer(serializers.ModelSerializer):

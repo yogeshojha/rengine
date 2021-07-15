@@ -627,7 +627,7 @@ function get_ip_details(ip_address, scan_id){
   // query subdomains
   $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`, function(data) {
     $('#modal-subdomain-text').empty();
-    $('#modal-subdomain-text').append(`<p>${data['subdomains'].length} Subdomains have Port ${port} Open`);
+    $('#modal-subdomain-text').append(`<p>${data['subdomains'].length} Subdomains are associated with IP ${ip_address}`);
     $('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
     for (subdomain in data['subdomains']){
       subdomain_obj = data['subdomains'][subdomain];
@@ -727,8 +727,10 @@ function get_tech_details(tech, scan_id){
   $('.modal-title').html('Details for Technology: <b>' + tech + '</b>');
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`, function(data) {
+    $('#modal-loader').empty();
     $('#modal-text-content').empty();
     $('#modal-text-content').append(`${data['subdomains'].length} Subdomains using ${tech}`);
     for (subdomain in data['subdomains']){
@@ -754,6 +756,8 @@ function get_tech_details(tech, scan_id){
     }
     $("#modal-text-content").append(`<span class="float-right text-danger">*Subdomains highlighted are 40X HTTP Status</span>`);
     $("#subdomain-modal-loader").remove();
+  }).fail(function(){
+    $('#modal-loader').empty();
   });
 }
 

@@ -89,7 +89,7 @@ function updateTreeClasses(treePlugin)
     bg_class = '';
     var depthClass = "depth-" + data.depth;
     var existingClasses = this.getAttribute('class');
-    if (data.data.http_status >= 400 || data.data.is_uncommon || data.data.description == 'High') {
+    if (data.data.http_status >= 400 || data.data.is_uncommon || data.data.description == 'High' || data.data.title == 'Exposed Creds') {
       bg_class = " danger-box "
     }
     else if (data.data.http_status > 200 && data.data.http_status < 400 || data.data.description == 'Medium') {
