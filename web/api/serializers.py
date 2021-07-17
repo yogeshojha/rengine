@@ -59,7 +59,7 @@ class VisualisePortSerializer(serializers.ModelSerializer):
         ]
 
     def get_description(self, port):
-        return str(port.number) + "/" + port.service_name
+        return str(port.number) + "/" + str(port.service_name)
 
     def get_title(self, port):
         if port.is_uncommon:

@@ -352,6 +352,7 @@ function get_interesting_endpoint(scan_history_id){
 function get_subdomain_changes(scan_history_id){
   $('#table-subdomain-changes').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
+      console.log(this.fnSettings().aoColumns[4])
       if (this.fnSettings().fnRecordsTotal() > 0) {
         $("#subdomain_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
       }

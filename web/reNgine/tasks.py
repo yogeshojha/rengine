@@ -991,10 +991,12 @@ def fetch_endpoints(
     if 'deep' in scan_type:
         # performs deep url gathering for all the subdomains present -
         # RECOMMENDED
+        logger.info('Deep URLS Fetch')
         os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' %
             ("None", results_dir, scan_type, domain_regex, tools))
     else:
         # perform url gathering only for main domain - USE only for quick scan
+        logger.info('Non Deep URLS Fetch')
         os.system(
             settings.TOOL_LOCATION +
             'get_urls.sh %s %s %s %s %s' % (
@@ -1083,9 +1085,27 @@ def fetch_endpoints(
             json_st = json.loads(line.strip())
             http_url = json_st['url']
             _subdomain = get_subdomain_from_url(http_url)
+
+            if Subdomain.objects.filter(
+                    scan_history=task).filter(
+                    name=_subdomain).exists():
+                logger.info('Subdomain for endpoint found')
+                subdomain_obj = Subdomain.objects.get(
+                    scan_history=task, name=_subdomain)
+            else:
+                logger.error(
+                    'Subdomain {} not found, adding...'.format(_subdomain))
+                subdomain_dict = DottedDict({
+                    'scan_history': task,
+                    'target_domain': domain,
+                    'name': _subdomain,
+                })
+                subdomain_obj = save_subdomain(subdomain_dict)
+
             if EndPoint.objects.filter(
                     scan_history=task).filter(
                     http_url=http_url).exists():
+
                 endpoint = EndPoint.objects.get(
                     scan_history=task, http_url=http_url)
             else:
@@ -1094,7 +1114,7 @@ def fetch_endpoints(
                     'scan_history': task,
                     'target_domain': domain,
                     'http_url': http_url,
-                    'subdomain': _subdomain
+                    'subdomain': subdomain_obj
                 })
                 endpoint = save_endpoint(endpoint_dict)
 
@@ -1436,26 +1456,19 @@ def save_endpoint(endpoint_dict):
     endpoint = EndPoint()
     endpoint.discovered_date = timezone.now()
     endpoint.scan_history = endpoint_dict.get('scan_history')
-    endpoint.target_domain = endpoint_dict.get('target_domain')
-    endpoint.subdomain = endpoint_dict.get('subdomain')
+    endpoint.target_domain = endpoint_dict.get('target_domain') if 'target_domain' in endpoint_dict else None
+    endpoint.subdomain = endpoint_dict.get('subdomain') if 'target_domain' in endpoint_dict else None
     endpoint.http_url = endpoint_dict.get('http_url')
-    endpoint.page_title = endpoint_dict.get('page_title')
-    endpoint.webserver = endpoint_dict.get('webserver')
-    endpoint.content_type = endpoint_dict.get('content_type')
-
-    if 'response_time' in endpoint_dict:
-        endpoint.response_time = endpoint_dict.get('response_time')
-
-    if 'http_status' in endpoint_dict:
-        endpoint.http_status = endpoint_dict.get('http_status')
-
-    if 'content_length' in endpoint_dict:
-        endpoint.content_length = endpoint_dict.get('content_length')
-
-    endpoint.is_default = endpoint_dict.get(
-        'is_default') if 'is_default' in endpoint_dict else False
-
+    endpoint.page_title = endpoint_dict.get('page_title') if 'page_title' in endpoint_dict else None
+    endpoint.content_type = endpoint_dict.get('content_type') if 'content_type' in endpoint_dict else None
+    endpoint.webserver = endpoint_dict.get('webserver') if 'webserver' in endpoint_dict else None
+    endpoint.response_time = endpoint_dict.get('response_time') if 'response_time' in endpoint_dict else 0
+    endpoint.http_status = endpoint_dict.get('http_status') if 'http_status' in endpoint_dict else 0
+    endpoint.content_length = endpoint_dict.get('content_length') if 'content_length' in endpoint_dict else 0
+    endpoint.is_default = endpoint_dict.get('is_default') if 'is_default' in endpoint_dict else False
     endpoint.save()
+
+    return endpoint
 
 def perform_osint(task, domain, yaml_configuration, results_dir):
     notification = Notification.objects.all()

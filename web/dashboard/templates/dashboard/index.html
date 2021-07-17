@@ -227,8 +227,7 @@ Dashboard
 					<div class="t-text">
 						<p>
 							<a href='start_scan/detail/vuln?query={{item.id}}' class="text-muted">Discovered {{item.name}} on
-								<br>
-								{{item.host}}
+								{{item.subdomain.name}}
 							</a>
 						</p>
 						{% if item.severity == 0 %}

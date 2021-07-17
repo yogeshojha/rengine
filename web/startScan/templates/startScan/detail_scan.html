@@ -100,8 +100,8 @@ Detailed Scan Results for {{history.domain.name}}
 										<div class="w-detail">
 											<p class="w-stats">{{subdomain_count|intcomma}}
 												<span class="float-right">
-													<span class="badge badge-pills badge-success bs-tooltip m-1" id="added_subdomain_badge"></span>
-													<span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_subdomain_badge"></span>
+													<span class="badge badge-pills badge-success bs-tooltip m-1" id="added_subdomain_badge" title="Subdomains Added">+{{added_subdomain_count}}</span>
+													<span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_subdomain_badge" title="Subdomains Removed">-{{removed_subdomain_count}}</span>
 												</span>
 											</p>
 											<p class="w-title">Subdomains Discovered</p>
