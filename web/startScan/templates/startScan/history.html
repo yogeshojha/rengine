@@ -274,8 +274,8 @@ $(document).ready(function(){
     select.appendChild(option);
   }
 
-  var filter = document.getElementById('filterByOrganization');
-  filter.addEventListener('change', function() {
+  var org_filter = document.getElementById('filterByOrganization');
+  org_filter.addEventListener('change', function() {
     table.search(this.value).draw();
     document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Organization: ${this.value}
     <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>

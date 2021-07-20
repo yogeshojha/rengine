@@ -777,12 +777,12 @@ function get_screenshot(scan_id){
   gridzyElement.classList.add('gridzySkinBlank');
   gridzyElement.setAttribute('data-gridzy-layout', 'waterfall');
   gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
-  gridzyElement.setAttribute('data-gridzy-desiredwidth', 500);
+  gridzyElement.setAttribute('data-gridzy-desiredwidth', 350);
   gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
   var interesting_badge = `<span class="m-1 float-right badge badge-pills badge-danger">Interesting</span>`;
   $.getJSON(`/api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
-    console.log(data);
-
+    $("#screenshot-loader").remove();
+    $("#filter-screenshot").show();
     for (var subdomain in data) {
       var figure = document.createElement('figure');
       var link = document.createElement('a');
@@ -877,14 +877,16 @@ function get_screenshot(scan_id){
     }
 
     // add port and service and tech to options
-    port_array.sort((a, b) => a - b);
     port_select = document.getElementById('ports_select_filter');
-    for(var port in port_array){
-      if(!$('#ports_select_filter').find("option:contains('" + port_array[port] + "')").length){
-        var option = document.createElement('option');
-        option.value = ".port_" + port_array[port];
-        option.innerHTML = port_array[port];
-        port_select.appendChild(option);
+    if (port_select) {
+      port_array.sort((a, b) => a - b);
+      for(var port in port_array){
+        if(!$('#ports_select_filter').find("option:contains('" + port_array[port] + "')").length){
+          var option = document.createElement('option');
+          option.value = ".port_" + port_array[port];
+          option.innerHTML = port_array[port];
+          port_select.appendChild(option);
+        }
       }
     }
 
@@ -901,12 +903,14 @@ function get_screenshot(scan_id){
 
     service_array.sort();
     service_select = document.getElementById('services_select_filter');
-    for(var service in service_array){
-      if(!$('#services_select_filter').find("option:contains('" + service_array[service] + "')").length){
-        var option = document.createElement('option');
-        option.value = ".service_" + service_array[service];
-        option.innerHTML = service_array[service];
-        service_select.appendChild(option);
+    if (service_select) {
+      for(var service in service_array){
+        if(!$('#services_select_filter').find("option:contains('" + service_array[service] + "')").length){
+          var option = document.createElement('option');
+          option.value = ".service_" + service_array[service];
+          option.innerHTML = service_array[service];
+          service_select.appendChild(option);
+        }
       }
     }
 

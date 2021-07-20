@@ -1089,12 +1089,9 @@ def fetch_endpoints(
             if Subdomain.objects.filter(
                     scan_history=task).filter(
                     name=_subdomain).exists():
-                logger.info('Subdomain for endpoint found')
                 subdomain_obj = Subdomain.objects.get(
                     scan_history=task, name=_subdomain)
             else:
-                logger.error(
-                    'Subdomain {} not found, adding...'.format(_subdomain))
                 subdomain_dict = DottedDict({
                     'scan_history': task,
                     'target_domain': domain,
