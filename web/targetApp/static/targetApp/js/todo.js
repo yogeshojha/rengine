@@ -107,6 +107,9 @@ $('#addTask').on('click', function(event) {
   const ps = new PerfectScrollbar('.todo-box-scroll', {
     suppressScrollX : true
   });
+
+  populateScanHistory();
+
 });
 const ps = new PerfectScrollbar('.todo-box-scroll', {
   suppressScrollX : true
@@ -143,55 +146,18 @@ function importantDropdown() {
   });
 }
 
-function priorityDropdown() {
-  $('.priority-dropdown .dropdown-menu .dropdown-item').on('click', function(event) {
-
-    var getClass = $(this).attr('class').split(' ')[1];
-    var getDropdownClass = $(this).parents('.p-dropdown').children('.dropdown-toggle').attr('class').split(' ')[1];
-    $(this).parents('.p-dropdown').children('.dropdown-toggle').removeClass(getDropdownClass);
-
-    $(this).parents('.p-dropdown').children('.dropdown-toggle').addClass(getClass);
-  })
-}
-
-function editDropdown() {
-  $('.action-dropdown .dropdown-menu .edit.dropdown-item').click(function() {
-
-    event.preventDefault();
-
-    var $_outerThis = $(this);
-
-    $('.add-tsk').hide();
-    $('.edit-tsk').show();
-
-    var $_taskTitle = $_outerThis.parents('.todo-item').children().find('.todo-heading').text();
-    var $_taskText = $_outerThis.parents('.todo-item').children().find('.todo-text').text();
-
-    $('#task').val($_taskTitle);
-    $('#taskdescription').val($_taskText);
-
-    $('.edit-tsk').off('click').on('click', function(event) {
-      var $_innerThis = $(this);
-      var $_task = document.getElementById('task').value;
-      var $_taskDescription = document.getElementById('taskdescription').value;
-      var $_taskDescriptionText = document.getElementById('taskdescription').value;
-      var $_taskEditedTitle = $_outerThis.parents('.todo-item').children().find('.todo-heading').html($_task);
-      var $_taskEditedText = $_outerThis.parents('.todo-item').children().find('.todo-text').html($_taskDescriptionText);
-      $('#addTaskModal').modal('hide');
-    })
-    $('#addTaskModal').modal('show');
-  })
-}
-
 function todoItem() {
   $('.todo-item .todo-content').on('click', function(event) {
     event.preventDefault();
 
     var $_taskTitle = $(this).find('.todo-heading').text();
+
+    var $_taskTarget = $(this).find('.target').text();
+
     var $todoDescription = $(this).find('.todo-text').text();
 
     $('.task-heading').text($_taskTitle);
-    $('.task-text').html($todoDescription);
+    $('.task-text').html(`<span class="text-success">${$_taskTarget}</span><br>` + $todoDescription);
 
     $('#todoShowListItem').modal('show');
   });
@@ -210,8 +176,6 @@ var $btns = $('.list-actions').click(function() {
 
 checkCheckbox();
 importantDropdown();
-priorityDropdown();
-editDropdown();
 todoItem();
 
 $(".add-tsk").click(function(){
@@ -219,6 +183,20 @@ $(".add-tsk").click(function(){
   var $_task = document.getElementById('task').value;
 
   var $_taskDescriptionText = document.getElementById('taskdescription').value;
+
+  var $_taskScanHistory = $("#scanHistoryIDropdown option:selected").text();
+
+  var $_taskSubdomain = $("#subdomainDropdown option:selected").text();
+
+  var $_targetText = '';
+
+  if ($_taskScanHistory != 'Choose Scan History...') {
+    $_targetText = $_taskScanHistory;
+  }
+
+  if ($_taskSubdomain != 'Choose Subdomain...') {
+    $_targetText += ' Subdomain : ' + $_taskSubdomain;
+  }
 
   $html = '<div class="todo-item all-list">'+
   '<div class="todo-item-inner">'+
@@ -231,6 +209,7 @@ $(".add-tsk").click(function(){
 
   '<div class="todo-content">'+
   '<h5 class="todo-heading">'+$_task+'</h5>'+
+  '<p class="target">'+$_targetText+'</h5>'+
   "<p class='todo-text' >"+$_taskDescriptionText+"</p>"+
   '</div>'+
 
@@ -257,8 +236,6 @@ $(".add-tsk").click(function(){
   $("#ct").prepend($html);
   $('#addTaskModal').modal('hide');
   checkCheckbox();
-  editDropdown();
-  priorityDropdown();
   todoItem();
   importantDropdown();
   new dynamicBadgeNotification('allList');
@@ -269,3 +246,17 @@ $('.tab-title .nav-pills a.nav-link').on('click', function(event) {
   $(this).parents('.mail-box-container').find('.tab-title').removeClass('mail-menu-show')
   $(this).parents('.mail-box-container').find('.mail-overlay').removeClass('mail-overlay-show')
 })
+
+
+function populateScanHistory() {
+  scan_history_select = document.getElementById('scanHistoryIDropdown');
+  $.getJSON(`/api/listScanHistory?format=json`, function(data) {
+    for (var history in data['scan_histories']){
+      history_object = data['scan_histories'][history];
+      var option = document.createElement('option');
+      option.value = history_object['id'];
+      option.innerHTML = history_object['domain']['name'] + ' - Scanned ' + moment.utc(history_object['start_scan_date']).fromNow();
+      scan_history_select.appendChild(option);
+    }
+  });
+}

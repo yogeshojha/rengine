@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)

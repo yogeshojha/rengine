@@ -10,6 +10,7 @@ Recon Todo
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/apps/todolist.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -69,7 +70,7 @@ Recon Todo
 
               <div class="todo-content">
                 <h5 class="todo-heading">Perform Directory Bruteforce</h5>
-                <p class="target">Target: example.com</p>
+                <p class="target">Domain: example.com, Scanned 2 hours ago, Subdomain: hello.ns.hackerone.com</p>
                 <p class="todo-text">Need to identify documentation page, use xyz wordlist and start dir bruteforce.</p>
               </div>
 
@@ -80,7 +81,6 @@ Recon Todo
                   </a>
 
                   <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-13">
-                    <a class="edit dropdown-item" href="javascript:void(0);">Edit</a>
                     <a class="important dropdown-item" href="javascript:void(0);">Mark Important</a>
                     <a class="dropdown-item delete" href="javascript:void(0);">Delete</a>
                   </div>
@@ -108,7 +108,7 @@ Recon Todo
   </div>
   <!-- Modal -->
   <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
       <div class="modal-content">
         <div class="modal-body">
           <div class="compose-box">
@@ -131,11 +131,25 @@ Recon Todo
                     <div class="d-flex mail-to mb-4">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
                       <div class="w-100">
-                        Select Scan History
-                        <select class="form-control  basic" id="scanHistoryId">
-                          {% for history in scan_history %}
-                            <option value="{{history.0}}">{{history.2}} - {{history.1|naturaltime}}</option>
-                          {% endfor %}
+                        Select Scan History (Optional)
+                        <select class="placeholder js-states form-control" id="scanHistoryIDropdown">
+                          <option>Choose Scan History...</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="d-flex mail-to mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                      <div class="w-100">
+                        Select Subdomain (Optional)
+                        <br>
+                        <span id="selectedSubdomainCount"></span>
+                        <select class="placeholder js-states form-control" id="subdomainDropdown">
+                          <option>Choose Subdomain...</option>
                         </select>
                       </div>
                     </div>
@@ -145,7 +159,7 @@ Recon Todo
                 <div class="d-flex  mail-subject mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                   <div class="w-100">
-                    <textarea class="form-control" id="taskdescription" rows="5" spellcheck="false" placeholder="Task Description"></textarea>
+                    <textarea class="form-control" id="taskdescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
                   </div>
                 </div>
               </form>
@@ -166,4 +180,31 @@ Recon Todo
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 <script src="{% static 'targetApp/js/todo.js' %}"></script>
+<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+$('#scanHistoryIDropdown').select2({
+  dropdownParent: $('#addTaskModal')
+});
+
+$('#subdomainDropdown').select2({
+  dropdownParent: $('#addTaskModal')
+});
+
+$('#scanHistoryIDropdown').on('change', function() {
+  $('#subdomainDropdown').find('option:not(:first)').remove();
+  subdomain_dropdown = document.getElementById('subdomainDropdown');
+  $.getJSON(`/api/querySubdomains?scan_id=${this.value}&no_lookup_interesting&format=json`, function(data) {
+    document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains in selected history for domain ' + $("#scanHistoryIDropdown option:selected").text().split('-')[0];
+    for (var subdomain in data['subdomains']){
+      subdomain_obj = data['subdomains'][subdomain];
+      var option = document.createElement('option');
+      option.value = subdomain_obj['id'];
+      option.innerHTML = subdomain_obj['name'];
+      subdomain_dropdown.appendChild(option);
+    }
+  });
+});
+
+</script>
 {% endblock page_level_script %}

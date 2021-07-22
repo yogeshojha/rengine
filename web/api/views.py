@@ -17,6 +17,14 @@ from startScan.models import *
 from targetApp.models import *
 
 
+class ListScanHistory(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        scan_history = ScanHistory.objects.all().order_by('-start_scan_date')
+        scan_history = ScanHistorySerializer(scan_history, many=True)
+        return Response({'scan_histories': scan_history.data})
+
+
 class ListEngines(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -207,27 +215,25 @@ class ListSubdomains(APIView):
         ip_address = req.query_params.get('ip_address')
         port = req.query_params.get('port')
         tech = req.query_params.get('tech')
-        if scan_id and ip_address:
-            subdomain = Subdomain.objects.filter(
-                ip_addresses__address=ip_address).filter(
-                scan_history__id=scan_id)
-            serializer = SubdomainSerializer(subdomain, many=True)
-            return Response({"subdomains": serializer.data})
-        elif scan_id and tech:
-            subdomain = Subdomain.objects.filter(
-                technologies__name=tech).filter(
-                scan_history__id=scan_id)
-            serializer = SubdomainSerializer(subdomain, many=True)
-            return Response({"subdomains": serializer.data})
-        elif scan_id and port:
-            subdomain = Subdomain.objects.filter(
+        subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id)
+
+        if ip_address:
+            subdomain_query = subdomain_query.filter(ip_addresses__address=ip_address)
+
+        if tech:
+            subdomain_query = subdomain_query.filter(technologies__name=tech)
+
+        if port:
+            subdomain_query = subdomain_query.filter(
                 ip_addresses__in=IpAddress.objects.filter(
                     ports__in=Port.objects.filter(
-                        number=port))).filter(
-                scan_history=scan_id)
-            serializer = SubdomainSerializer(subdomain, many=True)
-            return Response({"subdomains": serializer.data})
+                        number=port)))
 
+        if 'no_lookup_interesting' in req.query_params:
+            serializer = OnlySubdomainNameSerializer(subdomain_query, many=True)
+        else:
+            serializer = SubdomainSerializer(subdomain_query, many=True)
+        return Response({"subdomains": serializer.data})
 
 class ListOsintUsers(APIView):
     def get(self, request, format=None):
@@ -299,7 +305,7 @@ class IpAddressViewSet(viewsets.ModelViewSet):
             queryset, self.request, view=self)
 
 
-class ListSubdomainsViewSet(viewsets.ModelViewSet):
+class SubdomainsViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
     serializer_class = SubdomainSerializer
 
@@ -500,7 +506,7 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
             queryset, self.request, view=self)
 
 
-class SubdomainViewset(viewsets.ModelViewSet):
+class SubdomainDatatableViewSet(viewsets.ModelViewSet):
     queryset = Subdomain.objects.none()
     serializer_class = SubdomainSerializer
 

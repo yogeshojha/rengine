@@ -6,9 +6,9 @@ from .views import *
 app_name = 'api'
 router = routers.DefaultRouter()
 
-router.register(r'scanHistory', SubdomainViewset)
+router.register(r'listDatatableSubdomain', SubdomainDatatableViewSet)
 
-router.register(r'listSubdomains', ListSubdomainsViewSet)
+router.register(r'listSubdomains', SubdomainsViewSet)
 
 router.register(r'listEndpoints', EndPointViewSet)
 
@@ -44,6 +44,7 @@ urlpatterns = [
     path('queryTargetsInOrganization/', ListTargetsInOrganization.as_view(), name='queryTargetsInOrganization'),
     path('listOrganizations/', ListOrganizations.as_view(), name='listOrganizations'),
     path('listEngines/', ListEngines.as_view(), name='listEngines'),
+    path('listScanHistory/', ListScanHistory.as_view(), name='listScanHistory'),
 ]
 
 urlpatterns += router.urls

@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'targetApp.apps.TargetappConfig',
     'scanEngine.apps.ScanengineConfig',
     'startScan.apps.StartscanConfig',
+    'recon_note.apps.ReconNoteConfig',
     'django_ace',
     'django_celery_beat',
     'mathfilters',

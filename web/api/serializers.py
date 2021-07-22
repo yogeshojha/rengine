@@ -7,6 +7,19 @@ from scanEngine.models import *
 from django.db.models import F, JSONField, Value
 
 
+class OnlySubdomainNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subdomain
+        fields = ['name', 'id']
+
+
+class ScanHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ScanHistory
+        fields = '__all__'
+        depth = 1
+
+
 class OrganizationSerializer(serializers.ModelSerializer):
 
     class Meta:
