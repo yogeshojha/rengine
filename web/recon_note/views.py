@@ -55,3 +55,12 @@ def flip_important_status(request):
         note.save()
 
     return JsonResponse({'status': True})
+
+def delete_note(request):
+    if request.method == "POST":
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        TodoNote.objects.filter(id=body['id']).delete()
+
+    return JsonResponse({'status': True})

@@ -20,4 +20,8 @@ urlpatterns = [
         'flip_important_status',
         views.flip_important_status,
         name='flip_important_status'),
+    path(
+        'delete_note',
+        views.delete_note,
+        name='delete_note'),
 ]

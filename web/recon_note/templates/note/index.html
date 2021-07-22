@@ -11,6 +11,9 @@ Recon Todo
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/apps/todolist.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -152,6 +155,8 @@ Recon Todo
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
 $('#scanHistoryIDropdown').select2({
@@ -233,7 +238,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
 
     <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-${note_obj['id']}">
     <a class="important dropdown-item" href="javascript:void(0);" id="importantdropdown_${note_obj['id']}">Toggle Important</a>
-    <a class="dropdown-item delete" href="javascript:void(0);">Delete</a>
+    <a class="dropdown-item delete" href="javascript:void(0);" id="deletedropdown_${note_obj['id']}">Delete</a>
     </div>
     </div>
     </div>

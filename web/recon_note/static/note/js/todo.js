@@ -67,6 +67,7 @@ function populateTodofunction(){
   checkCheckbox();
   importantDropdown();
   todoItem();
+  deleteDropdown();
 
   $(".add-tsk").click(function(){
 
@@ -128,6 +129,7 @@ function populateTodofunction(){
     checkCheckbox();
     todoItem();
     importantDropdown();
+    deleteDropdown();
     new dynamicBadgeNotification('allList');
     $(".list-actions#all-list").trigger('click');
 
@@ -233,6 +235,65 @@ function dynamicBadgeNotification( setTodoCategoryCount ) {
   }
 }
 
+function deleteDropdown() {
+  $('.action-dropdown .dropdown-menu .delete.dropdown-item').click(function() {
+    var id = this.id.split('_')[1];
+    var main_this = this;
+    swal.queue([{
+      title: 'Are you sure you want to delete this Recon Note?',
+      text: "You won't be able to revert this!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch('delete_note', {
+          method: 'POST',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          },
+          body: JSON.stringify({
+            'id': parseInt(id),
+          })
+        })
+        .then(function (response) {
+          if(!$(main_this).parents('.todo-item').hasClass('todo-task-trash')) {
+            var getTodoParent = $(main_this).parents('.todo-item');
+            var getTodoClass = getTodoParent.attr('class');
+
+            var getFirstClass = getTodoClass.split(' ')[1];
+            var getSecondClass = getTodoClass.split(' ')[2];
+            var getThirdClass = getTodoClass.split(' ')[3];
+
+            if (getFirstClass === 'all-list') {
+              getTodoParent.removeClass(getFirstClass);
+            }
+            if (getSecondClass === 'todo-task-done' || getSecondClass === 'todo-task-important') {
+              getTodoParent.removeClass(getSecondClass);
+            }
+            if (getThirdClass === 'todo-task-done' || getThirdClass === 'todo-task-important') {
+              getTodoParent.removeClass(getThirdClass);
+            }
+            $(main_this).parents('.todo-item').addClass('todo-task-trash');
+          } else if($(main_this).parents('.todo-item').hasClass('todo-task-trash')) {
+            $(main_this).parents('.todo-item').removeClass('todo-task-trash');
+          }
+          new dynamicBadgeNotification('allList');
+          new dynamicBadgeNotification('completedList');
+          new dynamicBadgeNotification('importantList');
+        })
+        .catch(function() {
+          swal.insertQueueStep({
+            type: 'error',
+            title: 'Oops! Unable to delete todo!'
+          })
+        })
+      }
+    }]);
+  });
+}
 function checkCheckbox() {
   $('.todo-item input[type="checkbox"]').click(function() {
     if ($(this).is(":checked")) {
