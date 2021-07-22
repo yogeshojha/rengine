@@ -371,10 +371,3 @@ def update_organization(request, id):
         "form": form
     }
     return render(request, 'organization/update.html', context)
-
-def recon_note(request):
-    context = {}
-    scan_history = ScanHistory.objects.all().values_list('id', 'start_scan_date', 'domain__name')
-    context['recon_note_active'] = 'true'
-    context['scan_history'] = scan_history
-    return render(request, 'note/index.html', context)

@@ -58,36 +58,6 @@ Recon Todo
       <div class="todo-box">
 
         <div id="ct" class="todo-box-scroll">
-
-          <div class="todo-item all-list">
-            <div class="todo-item-inner">
-              <div class="n-chk text-center">
-                <label class="new-control new-checkbox checkbox-primary">
-                  <input type="checkbox" class="new-control-input inbox-chkbox">
-                  <span class="new-control-indicator"></span>
-                </label>
-              </div>
-
-              <div class="todo-content">
-                <h5 class="todo-heading">Perform Directory Bruteforce</h5>
-                <p class="target">Domain: example.com, Scanned 2 hours ago, Subdomain: hello.ns.hackerone.com</p>
-                <p class="todo-text">Need to identify documentation page, use xyz wordlist and start dir bruteforce.</p>
-              </div>
-
-              <div class="action-dropdown custom-dropdown-icon">
-                <div class="dropdown">
-                  <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-13" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                  </a>
-
-                  <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-13">
-                    <a class="important dropdown-item" href="javascript:void(0);">Mark Important</a>
-                    <a class="dropdown-item delete" href="javascript:void(0);">Delete</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         <div class="modal fade" id="todoShowListItem" tabindex="-1" role="dialog" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered" role="document">
@@ -178,9 +148,10 @@ Recon Todo
 
 
 {% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
-<script src="{% static 'targetApp/js/todo.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script src="{% static 'note/js/todo.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
 $('#scanHistoryIDropdown').select2({
@@ -206,5 +177,69 @@ $('#scanHistoryIDropdown').on('change', function() {
   });
 });
 
+$.getJSON(`/api/listTodoNotes?format=json`, function(data) {
+  for (var note in data['notes']){
+    var note_obj = data['notes'][note];
+
+    var todo_item = document.createElement("div");
+    todo_item.classList.add("todo-item");
+    todo_item.classList.add("all-list");
+
+    var target_text = '';
+
+    if (note_obj['domain_name']) {
+      target_text += 'Domain: ' + note_obj['domain_name'] + ', Scanned ' + moment.utc(note_obj['scan_started_time']).fromNow();
+    }
+
+    if (note_obj['subdomain_name']) {
+      target_text += '<br>Subdomain: ' + note_obj['subdomain_name'];
+    }
+
+    var checkbox_rand_id = get_randid();
+
+    var html = `<div class="todo-item-inner">
+    <div class="n-chk text-center">
+    <label class="new-control new-checkbox checkbox-primary">
+    <input type="checkbox" class="new-control-input inbox-chkbox" id="${checkbox_rand_id}">
+    <span class="new-control-indicator"></span>
+    </label>
+    </div>
+
+    <div class="todo-content">
+    <h5 class="todo-heading">${note_obj['title']}</h5>
+    <p class="target">${target_text}</p>
+    <p class="todo-text">${note_obj['description']}</p>
+    </div>
+
+    <div class="action-dropdown custom-dropdown-icon">
+    <div class="dropdown">
+    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-${note_obj['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+    </a>
+
+    <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-${note_obj['id']}">
+    <a class="important dropdown-item" href="javascript:void(0);">Mark Important</a>
+    <a class="dropdown-item delete" href="javascript:void(0);">Delete</a>
+    </div>
+    </div>
+    </div>
+    </div>`;
+
+    todo_item.innerHTML = html;
+
+    document.getElementById('ct').appendChild(todo_item);
+
+    if (note_obj['is_done']) {
+      todo_item.classList.add("todo-task-done");
+      document.getElementById(checkbox_rand_id).checked = true;
+    }
+
+    if (note_obj['is_important']) {
+      todo_item.classList.add("todo-task-important");
+    }
+
+  };
+  populateTodofunction();
+});
 </script>
 {% endblock page_level_script %}

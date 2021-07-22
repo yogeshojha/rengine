@@ -3,8 +3,32 @@ from startScan.models import *
 from reNgine.common_func import *
 from targetApp.models import *
 from scanEngine.models import *
+from recon_note.models import *
 
 from django.db.models import F, JSONField, Value
+
+
+class ReconNoteSerializer(serializers.ModelSerializer):
+
+    domain_name = serializers.SerializerMethodField('get_domain_name')
+    subdomain_name = serializers.SerializerMethodField('get_subdomain_name')
+    scan_started_time = serializers.SerializerMethodField('get_scan_started_time')
+
+    class Meta:
+        model = TodoNote
+        fields = '__all__'
+
+    def get_domain_name(self, note):
+        if note.scan_history:
+            return note.scan_history.domain.name
+
+    def get_subdomain_name(self, note):
+        if note.subdomain:
+            return note.subdomain.name
+
+    def get_scan_started_time(self, note):
+        if note.scan_history:
+            return note.scan_history.start_scan_date
 
 
 class OnlySubdomainNameSerializer(serializers.ModelSerializer):

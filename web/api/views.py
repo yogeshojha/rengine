@@ -15,6 +15,15 @@ from .serializers import *
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
+from recon_note.models import *
+
+
+class ListTodoNotes(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        notes = TodoNote.objects.all()
+        notes = ReconNoteSerializer(notes, many=True)
+        return Response({'notes': notes.data})
 
 
 class ListScanHistory(APIView):

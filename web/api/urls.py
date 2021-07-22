@@ -26,25 +26,86 @@ router.register(r'listIps', IpAddressViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
-    path('queryTechnologies/', ListTechnology.as_view(), name='listTechnologies'),
-    path('queryPorts/', ListPorts.as_view(), name='listPorts'),
-    path('queryIps/', ListIPs.as_view(), name='listIPs'),
-    path('querySubdomains/', ListSubdomains.as_view(), name='querySubdomains'),
-    path('queryOsintUsers/', ListOsintUsers.as_view(), name='queryOsintUsers'),
-    path('queryMetadata/', ListMetadata.as_view(), name='queryMetadata'),
-    path('queryEmails/', ListEmails.as_view(), name='queryEmails'),
-    path('queryEmployees/', ListEmployees.as_view(), name='queryEmployees'),
-    path('queryDorks/', ListDorks.as_view(), name='queryDorks'),
-    path('queryDorkTypes/', ListDorkTypes.as_view(), name='queryDorkTypes'),
-    path('queryDorkTypes/', ListDorkTypes.as_view(), name='queryDorkTypes'),
-    path('queryAllScanResultVisualise/', VisualiseData.as_view(), name='queryAllScanResultVisualise'),
-    path('queryVulnerabilities/', ListVulnerability.as_view(), name='queryVulnerabilities'),
-    path('queryEndpoints/', ListEndpoints.as_view(), name='queryEndpoints'),
-    path('queryTargetsWithoutOrganization/', ListTargetsWithoutOrganization.as_view(), name='queryTargetsWithoutOrganization'),
-    path('queryTargetsInOrganization/', ListTargetsInOrganization.as_view(), name='queryTargetsInOrganization'),
-    path('listOrganizations/', ListOrganizations.as_view(), name='listOrganizations'),
-    path('listEngines/', ListEngines.as_view(), name='listEngines'),
-    path('listScanHistory/', ListScanHistory.as_view(), name='listScanHistory'),
+    path(
+        'queryTechnologies/',
+        ListTechnology.as_view(),
+        name='listTechnologies'),
+    path(
+        'queryPorts/',
+        ListPorts.as_view(),
+        name='listPorts'),
+    path(
+        'queryIps/',
+        ListIPs.as_view(),
+        name='listIPs'),
+    path(
+        'querySubdomains/',
+        ListSubdomains.as_view(),
+        name='querySubdomains'),
+    path(
+        'queryOsintUsers/',
+        ListOsintUsers.as_view(),
+        name='queryOsintUsers'),
+    path(
+        'queryMetadata/',
+        ListMetadata.as_view(),
+        name='queryMetadata'),
+    path(
+        'queryEmails/',
+        ListEmails.as_view(),
+        name='queryEmails'),
+    path(
+        'queryEmployees/',
+        ListEmployees.as_view(),
+        name='queryEmployees'),
+    path(
+        'queryDorks/',
+        ListDorks.as_view(),
+        name='queryDorks'),
+    path(
+        'queryDorkTypes/',
+        ListDorkTypes.as_view(),
+        name='queryDorkTypes'),
+    path(
+        'queryDorkTypes/',
+        ListDorkTypes.as_view(),
+        name='queryDorkTypes'),
+    path(
+        'queryAllScanResultVisualise/',
+        VisualiseData.as_view(),
+        name='queryAllScanResultVisualise'),
+    path(
+        'queryVulnerabilities/',
+        ListVulnerability.as_view(),
+        name='queryVulnerabilities'),
+    path(
+        'queryEndpoints/',
+        ListEndpoints.as_view(),
+        name='queryEndpoints'),
+    path(
+        'queryTargetsWithoutOrganization/',
+        ListTargetsWithoutOrganization.as_view(),
+        name='queryTargetsWithoutOrganization'),
+    path(
+        'queryTargetsInOrganization/',
+        ListTargetsInOrganization.as_view(),
+        name='queryTargetsInOrganization'),
+    path(
+        'listOrganizations/',
+        ListOrganizations.as_view(),
+        name='listOrganizations'),
+    path(
+        'listEngines/',
+        ListEngines.as_view(),
+        name='listEngines'),
+    path(
+        'listScanHistory/',
+        ListScanHistory.as_view(),
+        name='listScanHistory'),
+    path(
+        'listTodoNotes/',
+        ListTodoNotes.as_view(),
+        name='listTodoNotes'),
 ]
 
 urlpatterns += router.urls
