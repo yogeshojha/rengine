@@ -12,23 +12,13 @@ from scanEngine.models import *
 from startScan.models import Subdomain, EndPoint
 
 
-def get_lookup_keywords():
-    default_lookup_keywords = [
-        key.strip() for key in InterestingLookupModel.objects.get(
-            id=1).keywords.split(',')]
-    custom_lookup_keywords = []
-    if InterestingLookupModel.objects.filter(custom_type=True):
-        custom_lookup_keywords = [
-            key.strip() for key in InterestingLookupModel.objects.filter(
-                custom_type=True).order_by('-id')[0].keywords.split(',')]
-    lookup_keywords = default_lookup_keywords + custom_lookup_keywords
-    # remove empty strings from list, if any
-    lookup_keywords = list(filter(None, lookup_keywords))
 
-    return lookup_keywords
+def get_lookup_keywords() -> list:
+    return InterestingLookupModel.get_interesting_keywords()
 
 
 def get_interesting_subdomains(scan_history=None, target=None):
+    # TODO: making this process more efficient
     lookup_keywords = get_lookup_keywords()
 
     subdomain_lookup_query = Q()

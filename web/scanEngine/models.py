@@ -1,5 +1,5 @@
 from django.db import models
-
+from django.contrib.admin.utils import flatten
 
 class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
@@ -57,6 +57,20 @@ class InterestingLookupModel(models.Model):
     title_lookup = models.BooleanField(default=True)
     url_lookup = models.BooleanField(default=True)
     condition_200_http_lookup = models.BooleanField(default=False)
+
+    @classmethod
+    def get_interesting_keywords(cls)->list:
+        return cls.lookup_keywords
+    
+    @classmethod
+    def set_interesting_keywords(cls) -> None:
+        keywords_list = cls.objects.values_list(
+        'keywords', flat=True)
+
+        # split and flatten
+        lookup_keywords = flatten([key.split(',') for key in keywords_list])
+        # remove empty strings from list, if any
+        cls.lookup_keywords = list(filter(None, lookup_keywords))
 
 
 class Notification(models.Model):
