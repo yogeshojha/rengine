@@ -21,7 +21,7 @@ from recon_note.models import *
 class ListTodoNotes(APIView):
     def get(self, request, format=None):
         req = self.request
-        notes = TodoNote.objects.all()
+        notes = TodoNote.objects.all().order_by('-id')
         notes = ReconNoteSerializer(notes, many=True)
         return Response({'notes': notes.data})
 

@@ -130,6 +130,30 @@ function populateTodofunction(){
     importantDropdown();
     new dynamicBadgeNotification('allList');
     $(".list-actions#all-list").trigger('click');
+
+    data = {
+      'title': $_task,
+      'description': $_taskDescriptionText
+    }
+
+    if ($("#scanHistoryIDropdown").val() && $("#scanHistoryIDropdown").val() != 'Choose Scan History...') {
+      data['scan_history'] = parseInt($("#scanHistoryIDropdown").val());
+    }
+
+    if ($("#subdomainDropdown").val() != 'Choose Subdomain...') {
+      data['subdomain'] = parseInt($("#subdomainDropdown").val());
+    }
+
+
+    fetch('add_note', {
+      method: 'post',
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json())
+    .then(res => console.log(res));
+
   });
 
   $('.tab-title .nav-pills a.nav-link').on('click', function(event) {
