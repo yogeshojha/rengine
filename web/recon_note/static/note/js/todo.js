@@ -242,6 +242,16 @@ function checkCheckbox() {
       $(this).parents('.todo-item').removeClass('todo-task-done');
     }
     new dynamicBadgeNotification('completedList');
+    fetch('flip_todo_status', {
+      method: 'post',
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify({
+        'id': parseInt(this.id.split('_')[1]),
+      })
+    }).then(res => res.json())
+    .then(res => console.log(res));
   });
 }
 

@@ -195,12 +195,10 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
       target_text += '<br>Subdomain: ' + note_obj['subdomain_name'];
     }
 
-    var checkbox_rand_id = get_randid();
-
     var html = `<div class="todo-item-inner">
     <div class="n-chk text-center">
     <label class="new-control new-checkbox checkbox-primary">
-    <input type="checkbox" class="new-control-input inbox-chkbox" id="${checkbox_rand_id}">
+    <input type="checkbox" class="new-control-input inbox-chkbox" id="checkbox_${note_obj['id']}">
     <span class="new-control-indicator"></span>
     </label>
     </div>
@@ -231,7 +229,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
 
     if (note_obj['is_done']) {
       todo_item.classList.add("todo-task-done");
-      document.getElementById(checkbox_rand_id).checked = true;
+      document.getElementById('checkbox_'+note_obj['id']).checked = true;
     }
 
     if (note_obj['is_important']) {

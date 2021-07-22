@@ -33,3 +33,15 @@ def add_note(request):
         note.save()
 
     return JsonResponse({'status': True})
+
+
+def flip_todo_status(request):
+    if request.method == "POST":
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
+
+        note = TodoNote.objects.get(id=body['id'])
+        note.is_done = not note.is_done
+        note.save()
+
+    return JsonResponse({'status': True})
