@@ -195,6 +195,20 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
       target_text += '<br>Subdomain: ' + note_obj['subdomain_name'];
     }
 
+    var is_important_badge = '';
+
+    if (note_obj['is_important']) {
+      is_important_badge = `<div class="priority-dropdown custom-dropdown-icon" id="important-badge-${note_obj['id']}">
+      <div class="dropdown p-dropdown">
+      <span class="text-danger bs-tooltip" title="Important Task">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+      </span>
+      </div>
+      </div>`;
+    }
+
+    var badges = is_important_badge;
+
     var html = `<div class="todo-item-inner">
     <div class="n-chk text-center">
     <label class="new-control new-checkbox checkbox-primary">
@@ -209,6 +223,8 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     <p class="todo-text">${note_obj['description']}</p>
     </div>
 
+    ${badges}
+
     <div class="action-dropdown custom-dropdown-icon">
     <div class="dropdown">
     <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-${note_obj['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
@@ -216,7 +232,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     </a>
 
     <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-${note_obj['id']}">
-    <a class="important dropdown-item" href="javascript:void(0);">Mark Important</a>
+    <a class="important dropdown-item" href="javascript:void(0);" id="importantdropdown_${note_obj['id']}">Toggle Important</a>
     <a class="dropdown-item delete" href="javascript:void(0);">Delete</a>
     </div>
     </div>
@@ -238,6 +254,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
 
   };
   populateTodofunction();
+  $('.bs-tooltip').tooltip();
 });
 </script>
 {% endblock page_level_script %}

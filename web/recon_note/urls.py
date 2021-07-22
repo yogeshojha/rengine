@@ -16,4 +16,8 @@ urlpatterns = [
         'flip_todo_status',
         views.flip_todo_status,
         name='flip_todo_status'),
+    path(
+        'flip_important_status',
+        views.flip_important_status,
+        name='flip_important_status'),
 ]

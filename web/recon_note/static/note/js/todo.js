@@ -257,16 +257,42 @@ function checkCheckbox() {
 
 function importantDropdown() {
   $('.important').click(function() {
+    badge_id = this.id.split('_')[1];
     if(!$(this).parents('.todo-item').hasClass('todo-task-important')){
       $(this).parents('.todo-item').addClass('todo-task-important');
-      $(this).html('Back to List');
+
+      var is_important_badge = document.createElement("div");
+      is_important_badge.classList.add("priority-dropdown");
+      is_important_badge.classList.add("custom-dropdown-icon");
+      is_important_badge.id = 'important-badge-' + this.id.split('_')[1];
+
+      badge = `
+      <div class="dropdown p-dropdown">
+      <span class="text-danger bs-tooltip" title="Important Task">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+      </span>
+      </div>`
+
+      is_important_badge.innerHTML = badge;
+
+      $(this).parents('.todo-item').find('.todo-content').after(is_important_badge);
     }
     else if($(this).parents('.todo-item').hasClass('todo-task-important')){
       $(this).parents('.todo-item').removeClass('todo-task-important');
-      $(this).html('Important');
       $(".list-actions#all-list").trigger('click');
+      $("#important-badge-"+badge_id).empty();
     }
     new dynamicBadgeNotification('importantList');
+    fetch('flip_important_status', {
+      method: 'post',
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify({
+        'id': parseInt(this.id.split('_')[1]),
+      })
+    }).then(res => res.json())
+    .then(res => console.log(res));
   });
 }
 
