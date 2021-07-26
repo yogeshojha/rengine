@@ -1220,3 +1220,28 @@ function get_http_badge(http_status){
     return badge
   }
 }
+
+
+function get_recon_notes(scan_id){
+  $.getJSON(`/api/listTodoNotes/?scan_id=${scan_id}&format=json`, function(data) {
+    $('#tasks-count').empty();
+    $('#recon-task-list').empty();
+    rand_id = get_randid();
+    for (var val in data['notes']){
+      note = data['notes'][val];
+      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
+      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
+    }
+    for (var val in data['notes']){
+      note = data['notes'][val];
+      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
+      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
+    }
+    for (var val in data['notes']){
+      note = data['notes'][val];
+      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
+      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
+    }
+    $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
+  });
+}

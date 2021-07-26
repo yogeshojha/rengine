@@ -112,10 +112,8 @@ function populateTodofunction(){
 
     '<div class="dropdown-menu" aria-labelledby="dropdownMenuLink-4">'+
     '<a class="dropdown-item edit" href="javascript:void(0);">Edit</a>'+
-    '<a class="important dropdown-item" href="javascript:void(0);">Important</a>'+
+    '<a class="important dropdown-item" href="javascript:void(0);">Toggle Important</a>'+
     '<a class="dropdown-item delete" href="javascript:void(0);">Delete</a>'+
-    '<a class="dropdown-item permanent-delete" href="javascript:void(0);">Permanent Delete</a>'+
-    '<a class="dropdown-item revive" href="javascript:void(0);">Revive Task</a>'+
     '</div>'+
     '</div>'+
     '</div>'+
