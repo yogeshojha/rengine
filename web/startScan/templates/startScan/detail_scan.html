@@ -376,496 +376,551 @@ Detailed Scan Results for {{history.domain.name}}
 								<div class="widget-heading">
 									<h6 class="">
 										<span id="tasks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span>
-										Recon Note/Todo</h6>
+										Recon Note/Todo
+										<span class="text-info float-right bs-tooltip" title="Add Recon Todo" onclick="add_recon_todo_scan_history({{history.id}})">
+											<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+										</span>
+									</h6>
+								</div>
+								<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+										<div class="modal-content">
+											<div class="modal-body">
+												<div class="compose-box">
+													<div class="compose-content" id="addTaskModalTitle">
+														<h5 class="">Add Recon Todo</h5>
+														<form>
+															<input type="hidden" name="scan_history" value="{{history.id}}" id="scan_history_input_val">
+															<div class="row">
+																<div class="col-md-12">
+																	<div class="d-flex mail-to mb-4">
+																		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+																		<div class="w-100">
+																			<input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+																		</div>
+																	</div>
+																</div>
+															</div>
+
+															<div class="row">
+																<div class="col-md-12">
+																	<div class="d-flex mail-to mb-4">
+																		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+																		<div class="w-100">
+																			Select Subdomain (Optional)
+																			<br>
+																			<span id="selectedSubdomainCount"></span>
+																			<select class="placeholder js-states form-control" id="todoSubdomainDropdown">
+																				<option>Choose Subdomain...</option>
+																			</select>
+																		</div>
+																	</div>
+																</div>
+															</div>
+
+															<div class="d-flex  mail-subject mb-4">
+																<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+																<div class="w-100">
+																	<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
+																</div>
+															</div>
+														</form>
+													</div>
+												</div>
+											</div>
+											<div class="modal-footer">
+												<button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="widget-content">
+									<div class="w-shadow-top"></div>
+									<div class="mt-container mx-auto">
+										<div id="recon-task-list">
+										</div>
+									</div>
+									<div class="w-shadow-bottom"></div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="ip-address-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> IP Addresses <small id="ip-address-summary"></small></h6>
+									<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="ip-address">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="ports-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Ports </h6>
+									<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="ports">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="technologies">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% if history.osint %}
+					<div class="row">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-ip">
+								<div class="widget-heading">
+									<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
+								</div>
+								<div class="widget-content">
+									<div class="mt-container mx-auto">
+										<div id="osint-dork">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.vulnerability_scan %}
+					<div class="row">
+						<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-activity-four">
+								<div class="widget-heading">
+									<h6 class="">Vulnerability Scan Summary</h6>
+								</div>
+								<div class="widget-content">
+									<div class="row">
+										<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+											<div id="vulnerability-chart" class=""></div>
+										</div>
+										<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+											<div class="table-responsive mt-container mx-auto">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Vulnerability</div></th>
+															<th><div class="th-content">Severity</div></th>
+															<th><div class="th-content">Vulnerable URL</div></th>
+														</tr>
+													</thead>
+													<tbody>
+														{% for vulnerability in vulnerability_list  %}
+														<tr>
+															<td>{{vulnerability.name}}</td>
+															<td>{% if vulnerability.severity == 0 %}
+																<span class='badge badge-info'>Info</span>
+																{% elif vulnerability.severity == 1 %}
+																<span class='badge badge-low'>Low</span>
+																{% elif vulnerability.severity == 2 %}
+																<span class='badge badge-warning'>Medium</span>
+																{% elif vulnerability.severity == 3 %}
+																<span class='badge badge-danger'>High</span>
+																{% elif vulnerability.severity == 4 %}
+																<span class='badge badge-critical'>Critical</span>
+																{% endif %}</td>
+																<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+															</tr>
+															{% endfor %}
+														</tbody>
+													</table>
+												</div>
+												<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						{% endif %}
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+								{% include 'base/_items/interesting_recon.html' %}
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
+								<div class="widget widget-table-two">
+									<div class="widget-heading">
+										<h6 class="">
+											<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
+											<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
+										</h6>
+										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
+										<p class='text-muted'>During this scan
+											<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
+											<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
+										</p>
+									</div>
+									<div class="widget-content">
+										<div class="table-responsive">
+											<table class="table" id="table-subdomain-changes">
+												<thead>
+													<tr>
+														<th><div class="th-content">Subdomain</div></th>
+														<th><div class="th-content">Page Title</div></th>
+														<th><div class="th-content">Status</div></th>
+														<th><div class="th-content">Content Length</div></th>
+														<th><div class="th-content">Change</div></th>
+													</tr>
+												</thead>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
+								<div class="widget widget-table-two">
+									<div class="widget-heading">
+										<h6 class="">
+											<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
+											<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
+										</h6>
+										<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
+										<p class='text-muted'>During this scan
+											<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
+											<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
+										</p>
+									</div>
+									<div class="widget-content">
+										<div class="table-responsive">
+											<table class="table" id="table-endpoint-changes">
+												<thead>
+													<tr>
+														<th><div class="th-content">URL</div></th>
+														<th><div class="th-content">Page Title</div></th>
+														<th><div class="th-content">Status</div></th>
+														<th><div class="th-content">Content Length</div></th>
+														<th><div class="th-content">Change</div></th>
+													</tr>
+												</thead>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th class="text-center">Endpoints</th>
+											<th class="text-center">Vulnerabilities</th>
+											<th>Status</th>
+											<th class="text-center">Title</th>
+											<th>IP Address</th>
+											<th>Ports</th>
+											<th>Content Length</th>
+											<th>Screenshot</th>
+											<th>Response Time</th>
+											<th>Technology</th>
+											<th>Checked</th>
+											<th>HTTP URL</th>
+											<th>CNAME</th>
+											<th>is_interesting</th>
+											<th>Info</th>
+											<th>Low</th>
+											<th>Medium</th>
+											<th>High</th>
+											<th>Critical</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% if history.screenshot %}
+					<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
+						<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
+							<div class="w-100">
+								<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
+							</div>
+						</div>
+						<div class="col-xl-12 col-lg-12 col-sm-12" id="screenshot-div">
+							<div class="widget widget-content widget-content-area br-6">
+								<div class="row">
+									<div class="col-xl-12 col-lg-12 col-sm-12">
+										<div class="outer-div" id="screenshot-loader">
+											<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
+											<br>
+											<h5 class="text-center mt-3">Loading Screenshots...</h5>
+										</div>
+										<div class="row" id="filter-screenshot" style="display: none;">
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<h6>Filter Screenshots</h6>
+											</div>
+											<div class="col-xl-6 col-lg-6 col-sm-6">
+												<div class="float-right">
+													<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
+												</div>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>HTTP Status</p>
+												<select class="form-control tagging" id="http_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>IP Address</p>
+												<select class="form-control tagging" id="ips_select_filter" multiple="multiple">
+												</select>
+											</div>
+											{% if history.port_scan %}
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Running Services</p>
+												<select class="form-control tagging" id="services_select_filter" multiple="multiple">
+												</select>
+											</div>
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Ports</p>
+												<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
+												</select>
+											</div>
+											{% endif %}
+											<div class="col-xl-2 col-lg-4 col-sm-12">
+												<p>Technology</p>
+												<select class="form-control tagging" id="tech_select_filter" multiple="multiple">
+												</select>
+											</div>
+										</div>
+									</div>
+									<div class="col-xl-12 col-lg-12 col-sm-12">
+										<div class="gridzy">
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.dir_file_search %}
+					<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table id="directories-table" class="table dt-table-hover" style="width:100%">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Subdomain</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Directories</th>
+											<th>HTTP URL</th>
+											<th>Is Intereting</th>
+											<th>Checked</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+									<thead>
+										<tr>
+											<th>HTTP URL</th>
+											<th>Status</th>
+											<th>Page Title</th>
+											<th>Tags</th>
+											<th>Content Type</th>
+											<th>Content Length</th>
+											<th>Technology</th>
+											<th>Webserver</th>
+											<th>Response time</th>
+											<th>Default URL</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% if history.vulnerability_scan %}
+					<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
+						<div class="col-xl-12 col-lg-12 col-sm-12">
+							<div class="widget widget-content widget-content-area br-6">
+								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+									<thead>
+										<tr>
+											<th class="checkbox-column">Status</th>
+											<th>Title</th>
+											<th>Severity</th>
+											<th>Vulnerable URL</th>
+											<th>Detail</th>
+											<th>Status</th>
+											<th>Matcher Name</th>
+											<th>Tags</th>
+											<th>Reference</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.osint %}
+					<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
+						<div class="row">
+							<div class="col-xl-5 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="employees-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Employees/People associated with {{history.domain.name}}</h6>
 									</div>
 									<div class="widget-content">
 										<div class="w-shadow-top"></div>
-										<div class="mt-container mx-auto">
-											<div id="recon-task-list">
-											</div>
-										</div>
-										<div class="w-shadow-bottom"></div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="ip-address-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> IP Addresses <small id="ip-address-summary"></small></h6>
-										<small class="text-warning">*IP Addresses highlighted with yellow are CDN IP</small>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="ip-address">
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Employee Name</div></th>
+															<th><div class="th-content">Designation</div></th>
+														</tr>
+													</thead>
+													<tbody id="employees-table-body">
+													</tbody>
+												</table>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
-							<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
+							<div class="col-xl-7 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
 									<div class="widget-heading">
-										<h6 class=""><span id="ports-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Ports </h6>
-										<small class="text-danger">*Ports highlighted with red are uncommon Ports.</small>
+										<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses <span id="exposed_summary" class="text-danger"></span></h6>
 									</div>
 									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="ports">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Email Address</div></th>
+															<th><div class="th-content">Esposed Credentials</div></th>
+														</tr>
+													</thead>
+													<tbody id="email-table-body">
+													</tbody>
+												</table>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
-							<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
+							<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
 									<div class="widget-heading">
-										<h6 class=""><span id="technologies-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Technologies </h6>
+										<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
 									</div>
 									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="technologies">
+										<div class="w-shadow-top"></div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content">Document</div></th>
+															<th><div class="th-content text-center">User</div></th>
+															<th><div class="th-content text-center">Metadata</div></th>
+														</tr>
+													</thead>
+													<tbody id="metadata-table-body">
+													</tbody>
+												</table>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
+								<div class="widget widget-activity-five">
+									<div class="widget-heading">
+										<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
+									</div>
+									<div class="widget-content">
+										<div class="w-shadow-top"></div>
+										<div id="osint-categories-badge" class="mt-3 mb-3">
+										</div>
+										<div class="mt-container mx-auto ps ps--active-y">
+											<div class="table-responsive">
+												<table class="table">
+													<thead>
+														<tr>
+															<th><div class="th-content text-center">Dork Type</div></th>
+															<th><div class="th-content text-center">Description</div></th>
+															<th><div class="th-content">URL</div></th>
+														</tr>
+													</thead>
+													<tbody id="dorks-table-body">
+													</tbody>
+												</table>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-						{% if history.osint %}
+					</div>
+					{% endif %}
+					<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
 						<div class="row">
 							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-ip">
-									<div class="widget-heading">
-										<h6 class=""><span id="dork-category-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Categories </h6>
-									</div>
-									<div class="widget-content">
-										<div class="mt-container mx-auto">
-											<div id="osint-dork">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						{% endif %}
-						{% if history.vulnerability_scan %}
-						<div class="row">
-							<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-								<div class="widget widget-activity-four">
-									<div class="widget-heading">
-										<h6 class="">Vulnerability Scan Summary</h6>
-									</div>
-									<div class="widget-content">
-										<div class="row">
-											<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
-												<div id="vulnerability-chart" class=""></div>
-											</div>
-											<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
-												<div class="table-responsive mt-container mx-auto">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Vulnerability</div></th>
-																<th><div class="th-content">Severity</div></th>
-																<th><div class="th-content">Vulnerable URL</div></th>
-															</tr>
-														</thead>
-														<tbody>
-															{% for vulnerability in vulnerability_list  %}
-															<tr>
-																<td>{{vulnerability.name}}</td>
-																<td>{% if vulnerability.severity == 0 %}
-																	<span class='badge badge-info'>Info</span>
-																	{% elif vulnerability.severity == 1 %}
-																	<span class='badge badge-low'>Low</span>
-																	{% elif vulnerability.severity == 2 %}
-																	<span class='badge badge-warning'>Medium</span>
-																	{% elif vulnerability.severity == 3 %}
-																	<span class='badge badge-danger'>High</span>
-																	{% elif vulnerability.severity == 4 %}
-																	<span class='badge badge-critical'>Critical</span>
-																	{% endif %}</td>
-																	<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
-																</tr>
-																{% endfor %}
-															</tbody>
-														</table>
-													</div>
-													<small class="text-muted float-right">*Vulnerability list sorted by severity</small>
+								<div class="statbox widget box box-shadow">
+									<div class="widget-header">
+										<div class="col-xl-12 col-md-12 col-sm-12 col-12">
+											<div id="visualisation-filter" style="display:none">
+												<div class="n-chk">
+													<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
+														<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
+														<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
+														</span>
+													</label>
 												</div>
 											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							{% endif %}
-							<div class="row">
-								<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-									{% include 'base/_items/interesting_recon.html' %}
-								</div>
-							</div>
-							<div class="row">
-								<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="subdomain-changes-div">
-									<div class="widget widget-table-two">
-										<div class="widget-heading">
-											<h6 class="">
-												<div class="spinner-border text-danger align-self-center loader-sm" id="subdomain-changes-loader">Loading...</div>
-												<span class="badge outline-badge-danger" id="subdomain_change_count"></span>&nbsp;&nbsp;Subdomain Changes
-											</h6>
-											<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_subdomain_count}} subdomains were discovered during the last scan, while this scan discovered {{history.get_subdomain_count}} Subdomains"><small>{{last_scan.start_scan_date}}</small></a></p>
-											<p class='text-muted'>During this scan
-												<span class="badge badge-success badge-pills m-1" id="subdomain-added-count"></span>
-												<span class="badge badge-danger badge-pills m-1" id="subdomain-removed-count"></span>
-											</p>
-										</div>
-										<div class="widget-content">
-											<div class="table-responsive">
-												<table class="table" id="table-subdomain-changes">
-													<thead>
-														<tr>
-															<th><div class="th-content">Subdomain</div></th>
-															<th><div class="th-content">Page Title</div></th>
-															<th><div class="th-content">Status</div></th>
-															<th><div class="th-content">Content Length</div></th>
-															<th><div class="th-content">Change</div></th>
-														</tr>
-													</thead>
-												</table>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing" id="endpoint-changes-div">
-									<div class="widget widget-table-two">
-										<div class="widget-heading">
-											<h6 class="">
-												<div class="spinner-border text-danger align-self-center loader-sm" id="endpoint-changes-loader">Loading...</div>
-												<span class="badge outline-badge-danger" id="endpoint_change_count"></span>&nbsp;&nbsp;Endpoint Changes
-											</h6>
-											<p class='text-muted'>Comparing against the scan performed on <a href="{{last_scan.id}}" class="badge badge-pills badge-info bs-tooltip" title="{{last_scan.get_endpoint_count}} endpoints were discovered during the last scan, while this scan discovered {{history.get_endpoint_count}} Endpoints."><small>{{last_scan.start_scan_date}}</small></a></p>
-											<p class='text-muted'>During this scan
-												<span class="badge badge-success badge-pills m-1" id="endpoint-added-count"></span>
-												<span class="badge badge-danger badge-pills m-1" id="endpoint-removed-count"></span>
-											</p>
-										</div>
-										<div class="widget-content">
-											<div class="table-responsive">
-												<table class="table" id="table-endpoint-changes">
-													<thead>
-														<tr>
-															<th><div class="th-content">URL</div></th>
-															<th><div class="th-content">Page Title</div></th>
-															<th><div class="th-content">Status</div></th>
-															<th><div class="th-content">Content Length</div></th>
-															<th><div class="th-content">Change</div></th>
-														</tr>
-													</thead>
-												</table>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						<div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
-								<div class="widget widget-content widget-content-area br-6">
-									<table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Subdomain</th>
-												<th class="text-center">Endpoints</th>
-												<th class="text-center">Vulnerabilities</th>
-												<th>Status</th>
-												<th class="text-center">Title</th>
-												<th>IP Address</th>
-												<th>Ports</th>
-												<th>Content Length</th>
-												<th>Screenshot</th>
-												<th>Response Time</th>
-												<th>Technology</th>
-												<th>Checked</th>
-												<th>HTTP URL</th>
-												<th>CNAME</th>
-												<th>is_interesting</th>
-												<th>Info</th>
-												<th>Low</th>
-												<th>Medium</th>
-												<th>High</th>
-												<th>Critical</th>
-											</tr>
-										</thead>
-									</table>
-								</div>
-							</div>
-						</div>
-						{% if history.screenshot %}
-						<div class="tab-pane fade" id="pills-screenshot" role="tabpanel" aria-labelledby="pills-screenshot-tab">
-							<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
-								<div class="w-100">
-									<input type="text" class="w-100 form-control product-search br-30" id="screenshot-search" placeholder="">
-								</div>
-							</div>
-							<div class="col-xl-12 col-lg-12 col-sm-12" id="screenshot-div">
-								<div class="widget widget-content widget-content-area br-6">
-									<div class="row">
-										<div class="col-xl-12 col-lg-12 col-sm-12">
-											<div class="outer-div" id="screenshot-loader">
+											<hr>
+											<div class="outer-div" id="visualisation-loader">
 												<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
 												<br>
-												<h5 class="text-center mt-3">Loading Screenshots...</h5>
-											</div>
-											<div class="row" id="filter-screenshot" style="display: none;">
-												<div class="col-xl-6 col-lg-6 col-sm-6">
-													<h6>Filter Screenshots</h6>
-												</div>
-												<div class="col-xl-6 col-lg-6 col-sm-6">
-													<div class="float-right">
-														<button class="btn btn-dark mb-2 mr-2 rounded-circle bs-tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg></button>
-													</div>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>HTTP Status</p>
-													<select class="form-control tagging" id="http_select_filter" multiple="multiple">
-													</select>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>IP Address</p>
-													<select class="form-control tagging" id="ips_select_filter" multiple="multiple">
-													</select>
-												</div>
-												{% if history.port_scan %}
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Running Services</p>
-													<select class="form-control tagging" id="services_select_filter" multiple="multiple">
-													</select>
-												</div>
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Ports</p>
-													<select class="form-control tagging" id="ports_select_filter" multiple="multiple">
-													</select>
-												</div>
-												{% endif %}
-												<div class="col-xl-2 col-lg-4 col-sm-12">
-													<p>Technology</p>
-													<select class="form-control tagging" id="tech_select_filter" multiple="multiple">
-													</select>
-												</div>
-											</div>
-										</div>
-										<div class="col-xl-12 col-lg-12 col-sm-12">
-											<div class="gridzy">
+												<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
 											</div>
 										</div>
 									</div>
-								</div>
-							</div>
-						</div>
-						{% endif %}
-						{% if history.dir_file_search %}
-						<div class="tab-pane fade" id="pills-directories" role="tabpanel" aria-labelledby="pills-directories-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table id="directories-table" class="table dt-table-hover" style="width:100%">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Subdomain</th>
-												<th>Status</th>
-												<th>Page Title</th>
-												<th>Directories</th>
-												<th>HTTP URL</th>
-												<th>Is Intereting</th>
-												<th>Checked</th>
-											</tr>
-										</thead>
-									</table>
-								</div>
-							</div>
-						</div>
-						{% endif %}
-						<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-										<thead>
-											<tr>
-												<th>HTTP URL</th>
-												<th>Status</th>
-												<th>Page Title</th>
-												<th>Tags</th>
-												<th>Content Type</th>
-												<th>Content Length</th>
-												<th>Technology</th>
-												<th>Webserver</th>
-												<th>Response time</th>
-												<th>Default URL</th>
-											</tr>
-										</thead>
-									</table>
-								</div>
-							</div>
-						</div>
-						{% if history.vulnerability_scan %}
-						<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Title</th>
-												<th>Severity</th>
-												<th>Vulnerable URL</th>
-												<th>Detail</th>
-												<th>Status</th>
-												<th>Matcher Name</th>
-												<th>Tags</th>
-												<th>Reference</th>
-											</tr>
-										</thead>
-									</table>
-								</div>
-							</div>
-						</div>
-						{% endif %}
-						{% if history.osint %}
-						<div class="tab-pane fade" id="pills-osint" role="tabpanel" aria-labelledby="pills-osint-tab">
-							<div class="row">
-								<div class="col-xl-5 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="employees-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Employees/People associated with {{history.domain.name}}</h6>
+									<div class="widget-content">
+										<div id="visualisation" style="height: 800px; ">
 										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Employee Name</div></th>
-																<th><div class="th-content">Designation</div></th>
-															</tr>
-														</thead>
-														<tbody id="employees-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-7 col-lg-2 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="emails-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Email addresses <span id="exposed_summary" class="text-danger"></span></h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Email Address</div></th>
-																<th><div class="th-content">Esposed Credentials</div></th>
-															</tr>
-														</thead>
-														<tbody id="email-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="metadata-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Discovered Metadata</h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content">Document</div></th>
-																<th><div class="th-content text-center">User</div></th>
-																<th><div class="th-content text-center">Metadata</div></th>
-															</tr>
-														</thead>
-														<tbody id="metadata-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="widget widget-activity-five">
-										<div class="widget-heading">
-											<h6 class=""><span id="dorks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span> Dork Data</h6>
-										</div>
-										<div class="widget-content">
-											<div class="w-shadow-top"></div>
-											<div id="osint-categories-badge" class="mt-3 mb-3">
-											</div>
-											<div class="mt-container mx-auto ps ps--active-y">
-												<div class="table-responsive">
-													<table class="table">
-														<thead>
-															<tr>
-																<th><div class="th-content text-center">Dork Type</div></th>
-																<th><div class="th-content text-center">Description</div></th>
-																<th><div class="th-content">URL</div></th>
-															</tr>
-														</thead>
-														<tbody id="dorks-table-body">
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-						{% endif %}
-						<div class="tab-pane fade" id="pills-visualisation" role="tabpanel" aria-labelledby="pills-visualisation-tab">
-							<div class="row">
-								<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-									<div class="statbox widget box box-shadow">
-										<div class="widget-header">
-											<div class="col-xl-12 col-md-12 col-sm-12 col-12">
-												<div id="visualisation-filter" style="display:none">
-													<div class="n-chk">
-														<label class="new-control new-checkbox new-checkbox-rounded new-checkbox-text checkbox-info">
-															<input type="checkbox" class="new-control-input" name="expand-nodes-checkbox">
-															<span class="new-control-indicator"></span><span class="new-chk-content">&nbsp; &nbsp; Expand all nodes
-															</span>
-														</label>
-													</div>
-												</div>
-												<hr>
-												<div class="outer-div" id="visualisation-loader">
-													<div class="spinner-border text-info align-self-center inner-div">Loading...</div>
-													<br>
-													<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
-												</div>
-											</div>
-										</div>
-										<div class="widget-content">
-											<div id="visualisation" style="height: 800px; ">
-											</div>
-											<div class="float-right m-3">
-												<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
-												<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
-												<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
-											</div>
+										<div class="float-right m-3">
+											<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+											<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+											<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
 										</div>
 									</div>
 								</div>
@@ -875,758 +930,763 @@ Detailed Scan Results for {{history.domain.name}}
 				</div>
 			</div>
 		</div>
-		{# modal #}
-		{% include 'base/_items/tab_modal.html' %}
-		{% endblock main_content %}
+	</div>
+	{# modal #}
+	{% include 'base/_items/tab_modal.html' %}
+	{% endblock main_content %}
 
-		{% block page_level_script %}
-		<script src="{% static 'note/js/todo.js' %}"></script>
-		<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-		<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
-		<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-		<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-		<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
-		<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-		<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
-		<script src="{% static 'custom/custom.js' %}"></script>
-		<script src="{% static 'custom/mitch.js' %}"></script>
-		<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+	{% block page_level_script %}
+	<script src="{% static 'note/js/todo.js' %}"></script>
+	<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+	<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+	<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+	<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+	<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+	<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+	<script src="{% static 'custom/custom.js' %}"></script>
+	<script src="{% static 'custom/mitch.js' %}"></script>
+	<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
 
-		<script type="text/javascript">
-		// Collapse Sidebar
-		collapse_sidebar();
+	<script type="text/javascript">
+	// Collapse Sidebar
+	collapse_sidebar();
 
-		$("#pills-subdomain-tab").click(function() {
-			$('#subdomain_scan_results').DataTable({
-				"destroy": true,
-				"processing": true,
-				"oLanguage": {
-					"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-					"sInfo": "Showing page _PAGE_ of _PAGES_",
-					"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-					"sSearchPlaceholder": "Filter Subdomains...",
-					"sLengthMenu": "Results :  _MENU_",
-					"sProcessing": "Processing... Please wait..."
+	$('#todoSubdomainDropdown').select2({
+	  dropdownParent: $('#addTaskModal')
+	});
+
+	$("#pills-subdomain-tab").click(function() {
+		$('#subdomain_scan_results').DataTable({
+			"destroy": true,
+			"processing": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Filter Subdomains...",
+				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
+			},
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables',
+			"order": [[ 8, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'endpoint_count'},
+				{'data': 'vulnerability_count'},
+				{'data': 'http_status'},
+				{'data': 'page_title'},
+				{'data': 'ip_addresses'},
+				{'data': 'ip_addresses'},
+				{'data': 'content_length', 'searchable': false},
+				{'data': 'screenshot_path', 'searchable': false},
+				{'data': 'response_time'},
+				{'data': 'technologies'},
+				{'data': 'checked'},
+				{'data': 'http_url'},
+				{'data': 'cname'},
+				{'data': 'is_interesting'},
+				{'data': 'info_count'},
+				{'data': 'low_count'},
+				{'data': 'medium_count'},
+				{'data': 'high_count'},
+				{'data': 'critical_count'},
+			],
+			"columnDefs": [
+				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
+				{
+					"targets": [ 12, 14, 15, 16, 17, 18, 19, 20],
+					"visible": false,
+					"searchable": false,
 				},
-				"stripeClasses": [],
-				"lengthMenu": [20, 50, 100, 500, 1000],
-				"pageLength": 20,
-				'serverSide': true,
-				"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables',
-				"order": [[ 8, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'name'},
-					{'data': 'endpoint_count'},
-					{'data': 'vulnerability_count'},
-					{'data': 'http_status'},
-					{'data': 'page_title'},
-					{'data': 'ip_addresses'},
-					{'data': 'ip_addresses'},
-					{'data': 'content_length', 'searchable': false},
-					{'data': 'screenshot_path', 'searchable': false},
-					{'data': 'response_time'},
-					{'data': 'technologies'},
-					{'data': 'checked'},
-					{'data': 'http_url'},
-					{'data': 'cname'},
-					{'data': 'is_interesting'},
-					{'data': 'info_count'},
-					{'data': 'low_count'},
-					{'data': 'medium_count'},
-					{'data': 'high_count'},
-					{'data': 'critical_count'},
-				],
-				"columnDefs": [
-					{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
-					{
-						"targets": [ 12, 14, 15, 16, 17, 18, 19, 20],
-						"visible": false,
-						"searchable": false,
+				{
+					"targets": [ 11, 13 ],
+					"visible": false,
+					"searchable": true,
+				},
+				// hide any columns if scan is not initiated
+				{% if not history.port_scan %}
+				{
+					"targets": [ 7 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{% if not history.vulnerability_scan %}
+				{
+					"targets": [ 3 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{% if not history.fetch_url %}
+				{
+					"targets": [ 2 ],
+					"visible": false,
+					"searchable": false,
+				},
+				{% endif %}
+				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+				// checkbox
+				{
+					"render": function ( data, type, row ) {
+						if(row['checked']){
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
+						else{
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
 					},
-					{
-						"targets": [ 11, 13 ],
-						"visible": false,
-						"searchable": true,
-					},
-					// hide any columns if scan is not initiated
-					{% if not history.port_scan %}
-					{
-						"targets": [ 7 ],
-						"visible": false,
-						"searchable": false,
-					},
-					{% endif %}
-					{% if not history.vulnerability_scan %}
-					{
-						"targets": [ 3 ],
-						"visible": false,
-						"searchable": false,
-					},
-					{% endif %}
-					{% if not history.fetch_url %}
-					{
-						"targets": [ 2 ],
-						"visible": false,
-						"searchable": false,
-					},
-					{% endif %}
-					{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
-					// checkbox
-					{
-						"render": function ( data, type, row ) {
-							if(row['checked']){
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
+					"targets": 0,
+				},
+				// subdomain Name
+				{
+					"render": function ( data, type, row ) {
+						badges = '';
+						tech_badge = '';
+						interesting_badge = '';
+						if (row['technologies']){
+							tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id={{scan_history_id}});
+						}
+						if(row['is_interesting'])
+						{
+							interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+						}
+
+						badges =   interesting_badge + '</br>';
+
+						if (row['http_url']) {
+							if (row['cname']) {
+								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
 							}
-							else{
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
-							}
-						},
-						"targets": 0,
+							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+						}
+						return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
 					},
-					// subdomain Name
-					{
-						"render": function ( data, type, row ) {
-							badges = '';
-							tech_badge = '';
+					"targets": 1
+				},
+				// endpoint count
+				{
+					"render": function ( data, type, row ) {
+						if (data)
+						{
+							return `<span class="badge badge-pills badge-info badge-link" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${data}</span>`;
+						}
+						return 0;
+					},
+					"targets": 2,
+				},
+				// vulnerability_count
+				{
+					"render": function ( data, type, row ) {
+						info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
+						low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
+						medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
+						high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
+						critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
+						return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
+					},
+					"targets": 3,
+				},
+				// http_status
+				{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+						}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+					},
+					"targets": 4,
+				},
+				// page title
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return htmlEncode(data);
+						}
+						return "";
+					},
+					"targets": 5,
+				},
+				// ip address
+				{
+					"render": function ( data, type, row ) {
+						ip_badge = ''
+						if (data)
+						{
+							Object.entries(data).forEach(([key, value]) => {
+								if (value['is_cdn']) {
+									ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+								}
+								else{
+									ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+								}
+							});
+							return ip_badge;
+						}
+						return "";
+					},
+					"targets": 6,
+				},
+				// open ports
+				{
+					"render": function ( data, type, row ) {
+						port_badge = ''
+						if (data){
+							for (ip in data){
+								ports = data[ip]['ports']
+								for (port in ports){
+									port_obj = data[ip]['ports'][port]
+									badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
+									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+									port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
+								}
+							}
+							return port_badge;
+						}
+						return "";
+					},
+					"targets": 7,
+				},
+				// screenshot
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							//return lightbox with caption as http link
+							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+						}
+						return "";
+					},
+					"targets": 9,
+				},
+				// response_time
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return get_response_time_text(data);
+						}
+						return "";
+					},
+					"targets": 10,
+				},
+			],
+			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+			"<'row'<'col'tr>>" +
+			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+			drawCallback: function () {
+				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				// get screenshot size from localStorage
+				var elements = document.getElementsByClassName("screenshot");
+				screenshot_size = localStorage.getItem('screenshotSize');
+				if (screenshot_size){
+					for (index = 0; index < elements.length; ++index) {
+						elements[index].setAttribute("height", screenshot_size);
+						elements[index].setAttribute("width", screenshot_size);
+					}
+				}
+				else{
+					for (index = 0; index < elements.length; ++index) {
+						elements[index].setAttribute("height", "200px");
+						elements[index].setAttribute("width", "200px");
+					}
+				}
+			},
+			'createdRow': function( row, data, dataIndex ) {
+				if (data['checked']){
+					$(row).addClass('table-secondary text-strike');
+				}
+			},
+		});
+	});
+
+	{% if history.dir_file_search %}
+	$("#pills-directories-tab").click(function() {
+		var history_table = $('#directories-table').DataTable({
+			"destroy": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Filter Subdomains...",
+				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
+			},
+			"processing": true,
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
+			"order": [[ 5, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'http_status'},
+				{'data': 'page_title'},
+				{'data': 'directory_json'},
+				{'data': 'http_url'},
+				{'data': 'is_interesting'},
+				{'data': 'checked'},
+			],
+			"columnDefs": [
+				{
+					"targets": [ 5, 6, 7],
+					"visible": false,
+					"searchable": false,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if(row['checked']){
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
+						else{
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
+					},
+					"targets": 0,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (row['http_url']) {
 							interesting_badge = '';
-							if (row['technologies']){
-								tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id={{scan_history_id}});
-							}
 							if(row['is_interesting'])
 							{
-								interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+								interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
 							}
-
-							badges =   interesting_badge + '</br>';
-
-							if (row['http_url']) {
-								if (row['cname']) {
-									return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge;
-								}
-								return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-							}
-							return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
-						},
-						"targets": 1
-					},
-					// endpoint count
-					{
-						"render": function ( data, type, row ) {
-							if (data)
-							{
-								return `<span class="badge badge-pills badge-info badge-link" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${data}</span>`;
-							}
-							return 0;
-						},
-						"targets": 2,
-					},
-					// vulnerability_count
-					{
-						"render": function ( data, type, row ) {
-							info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
-							low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
-							medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
-							high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
-							critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
-							return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
-						},
-						"targets": 3,
-					},
-					// http_status
-					{
-						"render": function ( data, type, row ) {
-							// display badge based on http status
-							// green for http status 2XX, orange for 3XX and warning for everything else
-							if (data >= 200 && data < 300) {
-								return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-							}
-							else if (data >= 300 && data < 400) {
-								return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-							}
-							else if (data == 0){
-								// datatable throws error when no data is returned
-								return "";
-							}
-							return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-						},
-						"targets": 4,
-					},
-					// page title
-					{
-						"render": function ( data, type, row ) {
-							if (data){
-								return htmlEncode(data);
-							}
-							return "";
-						},
-						"targets": 5,
-					},
-					// ip address
-					{
-						"render": function ( data, type, row ) {
-							ip_badge = ''
-							if (data)
-							{
-								Object.entries(data).forEach(([key, value]) => {
-									if (value['is_cdn']) {
-										ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
-									}
-									else{
-										ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
-									}
-								});
-								return ip_badge;
-							}
-							return "";
-						},
-						"targets": 6,
-					},
-					// open ports
-					{
-						"render": function ( data, type, row ) {
-							port_badge = ''
-							if (data){
-								for (ip in data){
-									ports = data[ip]['ports']
-									for (port in ports){
-										port_obj = data[ip]['ports'][port]
-										badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
-										title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-										port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
-									}
-								}
-								return port_badge;
-							}
-							return "";
-						},
-						"targets": 7,
-					},
-					// screenshot
-					{
-						"render": function ( data, type, row ) {
-							if (data){
-								//return lightbox with caption as http link
-								return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
-							}
-							return "";
-						},
-						"targets": 9,
-					},
-					// response_time
-					{
-						"render": function ( data, type, row ) {
-							if (data){
-								return get_response_time_text(data);
-							}
-							return "";
-						},
-						"targets": 10,
-					},
-				],
-				"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-				"<'row'<'col'tr>>" +
-				"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-				drawCallback: function () {
-					$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-					// get screenshot size from localStorage
-					var elements = document.getElementsByClassName("screenshot");
-					screenshot_size = localStorage.getItem('screenshotSize');
-					if (screenshot_size){
-						for (index = 0; index < elements.length; ++index) {
-							elements[index].setAttribute("height", screenshot_size);
-							elements[index].setAttribute("width", screenshot_size);
+							return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
 						}
-					}
-					else{
-						for (index = 0; index < elements.length; ++index) {
-							elements[index].setAttribute("height", "200px");
-							elements[index].setAttribute("width", "200px");
+						return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
+					},
+					"targets": 1
+				},
+				{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge badge-pills badge-success'>"+data+"</span>";
 						}
-					}
-				},
-				'createdRow': function( row, data, dataIndex ) {
-					if (data['checked']){
-						$(row).addClass('table-secondary text-strike');
-					}
-				},
-			});
-		});
-
-		{% if history.dir_file_search %}
-		$("#pills-directories-tab").click(function() {
-			var history_table = $('#directories-table').DataTable({
-				"destroy": true,
-				"oLanguage": {
-					"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-					"sInfo": "Showing page _PAGE_ of _PAGES_",
-					"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-					"sSearchPlaceholder": "Filter Subdomains...",
-					"sLengthMenu": "Results :  _MENU_",
-					"sProcessing": "Processing... Please wait..."
-				},
-				"processing": true,
-				"stripeClasses": [],
-				"lengthMenu": [20, 50, 100, 500, 1000],
-				"pageLength": 20,
-				'serverSide': true,
-				"ajax": '/api/scanHistory/?scan_id={{scan_history_id}}&format=datatables',
-				"order": [[ 5, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'name'},
-					{'data': 'http_status'},
-					{'data': 'page_title'},
-					{'data': 'directory_json'},
-					{'data': 'http_url'},
-					{'data': 'is_interesting'},
-					{'data': 'checked'},
-				],
-				"columnDefs": [
-					{
-						"targets": [ 5, 6, 7],
-						"visible": false,
-						"searchable": false,
-					},
-					{
-						"render": function ( data, type, row ) {
-							if(row['checked']){
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="subdomain_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
-							}
-							else{
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="subdomain_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
-							}
-						},
-						"targets": 0,
-					},
-					{
-						"render": function ( data, type, row ) {
-							if (row['http_url']) {
-								interesting_badge = '';
-								if(row['is_interesting'])
-								{
-									interesting_badge = "&nbsp;<span class='badge badge-pills badge-danger'>Interesting</span>&nbsp;"
-								}
-								return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
-							}
-							return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + interesting_badge;
-						},
-						"targets": 1
-					},
-					{
-						"render": function ( data, type, row ) {
-							// display badge based on http status
-							// green for http status 2XX, orange for 3XX and warning for everything else
-							if (data >= 200 && data < 300) {
-								return "<span class='badge badge-pills badge-success'>"+data+"</span>";
-							}
-							else if (data >= 300 && data < 400) {
-								return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
-							}
-							else if (data == 0){
-								// datatable throws error when no data is returned
-								return "";
-							}
-							return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
-						},
-						"targets": 2,
-					},
-					{
-						"render": function ( data, type, row ) {
-							if (data){
-								return htmlEncode(data);
-							}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
 							return "";
-						},
-						"targets": 3,
+						}
+						return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
 					},
-					{
-						"render": function ( data, type, row ) {
-							if (data) {
-								data = JSON.parse(data);
-								main_url = Object.keys(data)[0];
-								var json_obj = data[main_url];
-								var html_treeview = `<ul class="file-tree">`;
-								for(var i = 0; i < json_obj.length; i++)
+					"targets": 2,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return htmlEncode(data);
+						}
+						return "";
+					},
+					"targets": 3,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data) {
+							data = JSON.parse(data);
+							main_url = Object.keys(data)[0];
+							var json_obj = data[main_url];
+							var html_treeview = `<ul class="file-tree">`;
+							for(var i = 0; i < json_obj.length; i++)
+							{
+								if(json_obj[i].status==200)
 								{
-									if(json_obj[i].status==200)
-									{
-										var path = json_obj[i].path;
-										var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
-										// id path has / the its a directory else consider as file
-										if (path.substr(path.length - 1) == '/') {
-											html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-										}
-										else {
-											html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
-										}
+									var path = json_obj[i].path;
+									var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
+									// id path has / the its a directory else consider as file
+									if (path.substr(path.length - 1) == '/') {
+										html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+									}
+									else {
+										html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 									}
 								}
-								html_treeview += `</ul>`;
-								return html_treeview;
 							}
-							return '';
-						},
-						"targets": 4,
+							html_treeview += `</ul>`;
+							return html_treeview;
+						}
+						return '';
 					},
-				],
-				"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-				"<'row'<'col'tr>>" +
-				"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-				drawCallback: function () {
-					$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-					$('.dataTables_wrapper table').removeClass('table-striped');
-					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-					$('.dataTables_wrapper table').removeClass('table-striped');
+					"targets": 4,
 				},
-				initComplete: function( settings, json ) {
-					var script = document.createElement("script");
-					script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
-					script.type = "text/javascript";
-					document.getElementsByTagName("head")[0].appendChild(script);
-				},
-				'createdRow': function( row, data, dataIndex ) {
-					if (data['checked']){
-						$(row).addClass('table-secondary text-strike');
-					}
-				},
-				"rowCallback": function( row, data, index ) {
-					if (!data["directory_json"]) {
-						$(row).hide();
-					}
-				},
-			});
-		});
-		{% endif %}
-
-		{% if history.vulnerability_scan %}
-		$("#pills-vulnerabilities-tab").click(function() {
-			$('#vulnerability_results').DataTable({
-				"destroy": true,
-				"oLanguage": {
-					"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-					"sInfo": "Showing page _PAGE_ of _PAGES_",
-					"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-					"sSearchPlaceholder": "Search...",
-					"sLengthMenu": "Results :  _MENU_",
-					"sProcessing": "Processing... Please wait..."
-				},
-				"processing": true,
-				"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-				"<'row'<'col'tr>>" +
-				"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-				"stripeClasses": [],
-				"lengthMenu": [20, 50, 100, 500, 1000],
-				"pageLength": 20,
-				'serverSide': true,
-				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-				"order": [[ 2, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'name'},
-					{'data': 'severity'},
-					{'data': 'http_url'},
-					{'data': 'extracted_results'},
-					{'data': 'open_status'},
-					{'data': 'matcher_name'},
-					{'data': 'discovered_date'},
-					{'data': 'tags'},
-					{'data': 'description'},
-					{'data': 'reference'},
-				],
-				"columnDefs": [
-					{
-						"targets": [ 6, 7, 8, 9, 10 ],
-						"visible": false,
-						"searchable": true,
-					},
-					{
-						"render": function ( data, type, row ) {
-							if(row['open_status']){
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
-							}
-							else{
-								return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-								<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
-								<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-								</label>`;
-							}
-						},
-						"targets": 0,
-					},
-					{
-						"render": function ( data, type, row ) {
-							var tags_span ="";
-							switch (row['severity']) {
-								case 'Info':
-								color = 'info'
-								break;
-								case 'Low':
-								color = 'low'
-								break;
-								case 'Medium':
-								color = 'warning'
-								break;
-								case 'High':
-								color = 'danger'
-								break;
-								case 'Critical':
-								color = 'critical'
-								break;
-								default:
-							}
-							if (row['tags']) {
-								var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-								row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-									tags_span+=badge + split_vals + "</span>";
-								});
-							}
-							return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
-						},
-						"targets": 1,
-					},
-					{
-						"render": function ( data, type, row ) {
-							switch (data) {
-								case 'Info':
-								return "<span class='badge badge-info'>Info</span>";
-								break;
-								case 'Low':
-								return "<span class='badge badge-low'>Low</span>";
-								break;
-								case 'Medium':
-								return "<span class='badge badge-warning'>Medium</span>";
-								break;
-								case 'High':
-								return "<span class='badge badge-danger'>High</span>";
-								break;
-								case 'Critical':
-								return "<span class='badge badge-critical'>Critical</span>";
-								break;
-								default:
-								return "";
-							}
-						},
-						"targets": 2,
-					},
-
-					{
-						"render": function ( data, type, row ) {
-							return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-						},
-						"targets": 3,
-					},
-					{
-						"render": function ( data, type, row ) {
-							extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-							matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-							description = row['description'] ? row['description'] + `</br>` : "";
-							reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
-							return extracted_results + matcher_name + description + reference;
-						},
-						"targets": 4,
-					},
-					{
-						"render": function ( data, type, row ) {
-							if (data){
-								return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
-							}
-							else{
-								return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
-							}
-						},
-						"targets": 5,
-					},
-				],
-				drawCallback: function () {
-					$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-					$('.dataTables_wrapper table').removeClass('table-striped');
-				},
-				createdRow: function( row, data, dataIndex ) {
-					if (!data['open_status']){
-						$(row).addClass('table-secondary text-strike');
-					}
-				},
-			});
-		});
-		{% endif %}
-
-		// apex charts for vulnerability summary
-		var options = {
-			chart: {
-				type: 'donut',
-				width: 355
+			],
+			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+			"<'row'<'col'tr>>" +
+			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+			drawCallback: function () {
+				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.dataTables_wrapper table').removeClass('table-striped');
+				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.dataTables_wrapper table').removeClass('table-striped');
 			},
-			colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-			dataLabels: {
-				enabled: false
+			initComplete: function( settings, json ) {
+				var script = document.createElement("script");
+				script.src = "/staticfiles/plugins/treeview/custom-jstree.js";
+				script.type = "text/javascript";
+				document.getElementsByTagName("head")[0].appendChild(script);
 			},
-			legend: {
-				position: 'bottom',
-				horizontalAlign: 'center',
-				fontSize: '14px',
-				markers: {
-					width: 10,
-					height: 10,
-				},
-				itemMargin: {
-					horizontal: 0,
-					vertical: 8
+			'createdRow': function( row, data, dataIndex ) {
+				if (data['checked']){
+					$(row).addClass('table-secondary text-strike');
 				}
 			},
-			plotOptions: {
-				pie: {
-					donut: {
-						size: '65%',
-						background: 'transparent',
-						labels: {
+			"rowCallback": function( row, data, index ) {
+				if (!data["directory_json"]) {
+					$(row).hide();
+				}
+			},
+		});
+	});
+	{% endif %}
+
+	{% if history.vulnerability_scan %}
+	$("#pills-vulnerabilities-tab").click(function() {
+		$('#vulnerability_results').DataTable({
+			"destroy": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Processing... Please wait..."
+			},
+			"processing": true,
+			"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+			"<'row'<'col'tr>>" +
+			"<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+			"order": [[ 2, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'severity'},
+				{'data': 'http_url'},
+				{'data': 'extracted_results'},
+				{'data': 'open_status'},
+				{'data': 'matcher_name'},
+				{'data': 'discovered_date'},
+				{'data': 'tags'},
+				{'data': 'description'},
+				{'data': 'reference'},
+			],
+			"columnDefs": [
+				{
+					"targets": [ 6, 7, 8, 9, 10 ],
+					"visible": false,
+					"searchable": true,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if(row['open_status']){
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
+						else{
+							return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+							<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
+							<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+							</label>`;
+						}
+					},
+					"targets": 0,
+				},
+				{
+					"render": function ( data, type, row ) {
+						var tags_span ="";
+						switch (row['severity']) {
+							case 'Info':
+							color = 'info'
+							break;
+							case 'Low':
+							color = 'low'
+							break;
+							case 'Medium':
+							color = 'warning'
+							break;
+							case 'High':
+							color = 'danger'
+							break;
+							case 'Critical':
+							color = 'critical'
+							break;
+							default:
+						}
+						if (row['tags']) {
+							var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+							row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+								tags_span+=badge + split_vals + "</span>";
+							});
+						}
+						return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
+					},
+					"targets": 1,
+				},
+				{
+					"render": function ( data, type, row ) {
+						switch (data) {
+							case 'Info':
+							return "<span class='badge badge-info'>Info</span>";
+							break;
+							case 'Low':
+							return "<span class='badge badge-low'>Low</span>";
+							break;
+							case 'Medium':
+							return "<span class='badge badge-warning'>Medium</span>";
+							break;
+							case 'High':
+							return "<span class='badge badge-danger'>High</span>";
+							break;
+							case 'Critical':
+							return "<span class='badge badge-critical'>Critical</span>";
+							break;
+							default:
+							return "";
+						}
+					},
+					"targets": 2,
+				},
+
+				{
+					"render": function ( data, type, row ) {
+						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+					},
+					"targets": 3,
+				},
+				{
+					"render": function ( data, type, row ) {
+						extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+						matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+						description = row['description'] ? row['description'] + `</br>` : "";
+						reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+						return extracted_results + matcher_name + description + reference;
+					},
+					"targets": 4,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
+						}
+						else{
+							return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
+						}
+					},
+					"targets": 5,
+				},
+			],
+			drawCallback: function () {
+				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.dataTables_wrapper table').removeClass('table-striped');
+			},
+			createdRow: function( row, data, dataIndex ) {
+				if (!data['open_status']){
+					$(row).addClass('table-secondary text-strike');
+				}
+			},
+		});
+	});
+	{% endif %}
+
+	// apex charts for vulnerability summary
+	var options = {
+		chart: {
+			type: 'donut',
+			width: 355
+		},
+		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			position: 'bottom',
+			horizontalAlign: 'center',
+			fontSize: '14px',
+			markers: {
+				width: 10,
+				height: 10,
+			},
+			itemMargin: {
+				horizontal: 0,
+				vertical: 8
+			}
+		},
+		plotOptions: {
+			pie: {
+				donut: {
+					size: '65%',
+					background: 'transparent',
+					labels: {
+						show: true,
+						name: {
 							show: true,
-							name: {
-								show: true,
-								fontSize: '29px',
-								fontFamily: 'Nunito, sans-serif',
-								color: undefined,
-								offsetY: -10
-							},
-							value: {
-								show: true,
-								fontSize: '26px',
-								fontFamily: 'Nunito, sans-serif',
-								color: '20',
-								offsetY: 16,
-								formatter: function (val) {
-									return val
-								}
-							},
-							total: {
-								show: true,
-								showAlways: true,
-								label: 'Total',
-								color: '#888ea8',
-								formatter: function (w) {
-									return w.globals.seriesTotals.reduce( function(a, b) {
-										return a + b
-									}, 0)
-								}
+							fontSize: '29px',
+							fontFamily: 'Nunito, sans-serif',
+							color: undefined,
+							offsetY: -10
+						},
+						value: {
+							show: true,
+							fontSize: '26px',
+							fontFamily: 'Nunito, sans-serif',
+							color: '20',
+							offsetY: 16,
+							formatter: function (val) {
+								return val
+							}
+						},
+						total: {
+							show: true,
+							showAlways: true,
+							label: 'Total',
+							color: '#888ea8',
+							formatter: function (w) {
+								return w.globals.seriesTotals.reduce( function(a, b) {
+									return a + b
+								}, 0)
 							}
 						}
 					}
 				}
-			},
-			stroke: {
-				show: true,
-				width: 25,
-			},
-			series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-			labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
-		}
-
-		var chart = new ApexCharts(
-			document.querySelector("#vulnerability-chart"),
-			options
-		);
-
-		chart.render();
-
-		//to remove the image element if there is no screenshot captured
-		function removeImageElement(element)
-		{
-			element.parentElement.remove();
-		}
-
-		function subdomain_status_change(checkbox, id)
-		{
-			if (checkbox.checked) {
-				checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 			}
-			else {
-				checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
-				checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
-			}
-			change_subdomain_status(id);
+		},
+		stroke: {
+			show: true,
+			width: 25,
+		},
+		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+		labels: ['Critical', 'High', 'Medium', 'Low', 'Info']
+	}
+
+	var chart = new ApexCharts(
+		document.querySelector("#vulnerability-chart"),
+		options
+	);
+
+	chart.render();
+
+	//to remove the image element if there is no screenshot captured
+	function removeImageElement(element)
+	{
+		element.parentElement.remove();
+	}
+
+	function subdomain_status_change(checkbox, id)
+	{
+		if (checkbox.checked) {
+			checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
 		}
+		else {
+			checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+			checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+		}
+		change_subdomain_status(id);
+	}
 
-		// default get urls
-		$("#pills-endpoints-tab").click(function() {
-			get_endpoints({{scan_history_id}}, null);
+	// default get urls
+	$("#pills-endpoints-tab").click(function() {
+		get_endpoints({{scan_history_id}}, null);
+	});
+
+	//get subdomain changes
+	get_subdomain_changes({{scan_history_id}});
+	get_endpoint_changes({{scan_history_id}});
+
+	// get interesting subdomain
+	get_interesting_subdomains({{scan_history_id}});
+	// get interesting endpoint
+	get_interesting_endpoint({{scan_history_id}});
+
+
+	// get screenshots
+	$("#pills-screenshot-tab").click(function() {
+		get_screenshot({{scan_history_id}});
+		$(".tagging").select2({
+			tags: true
 		});
+		//animate search placeholder
+		const words = ["Search by Page Title   ",
+		"Search by HTTP Status   ",
+		"Search 'Interesting'   ",
+		"Search by Subdomain Name   "]
 
-		//get subdomain changes
-		get_subdomain_changes({{scan_history_id}});
-		get_endpoint_changes({{scan_history_id}});
-
-		// get interesting subdomain
-		get_interesting_subdomains({{scan_history_id}});
-		// get interesting endpoint
-		get_interesting_endpoint({{scan_history_id}});
-
-
-		// get screenshots
-		$("#pills-screenshot-tab").click(function() {
-			get_screenshot({{scan_history_id}});
-			$(".tagging").select2({
-				tags: true
-			});
-			//animate search placeholder
-			const words = ["Search by Page Title   ",
-			"Search by HTTP Status   ",
-			"Search 'Interesting'   ",
-			"Search by Subdomain Name   "]
-
-			typingEffect(words, "screenshot-search", 0);
-		});
+		typingEffect(words, "screenshot-search", 0);
+	});
 
 
-		// get osint
-		$("#pills-osint-tab").click(function() {
-			// osint
-			get_metadata({{scan_history_id}});
-			get_emails({{scan_history_id}});
-			get_employees({{scan_history_id}});
-			get_dorks({{scan_history_id}});
-		});
+	// get osint
+	$("#pills-osint-tab").click(function() {
+		// osint
+		get_metadata({{scan_history_id}});
+		get_emails({{scan_history_id}});
+		get_employees({{scan_history_id}});
+		get_dorks({{scan_history_id}});
+	});
 
-		$("#pills-visualisation-tab").click(function() {
-			visualise_scan_results({{scan_history_id}});
-		});
+	$("#pills-visualisation-tab").click(function() {
+		visualise_scan_results({{scan_history_id}});
+	});
 
-		get_ips({{scan_history_id}});
+	get_ips({{scan_history_id}});
 
-		get_technologies({{scan_history_id}});
+	get_technologies({{scan_history_id}});
 
-		get_osint_users({{scan_history_id}});
+	get_osint_users({{scan_history_id}});
 
-		get_ports({{scan_history_id}});
+	get_ports({{scan_history_id}});
 
-		get_dork_summary({{scan_history_id}});
+	get_dork_summary({{scan_history_id}});
 
-		get_recon_notes({{scan_history_id}});
+	get_recon_notes({{scan_history_id}});
 
-		{% if history.fetch_url and history.used_gf_patterns %}
-		// gf patterns
-		{% for pattern in history.used_gf_patterns|split:"," %}
-		$("#pills-{{pattern}}-tab").click(function() {
-			get_endpoints({{scan_history_id}}, '{{pattern}}');
-		});
-		{% endfor %}
-		{% endif %}
+	{% if history.fetch_url and history.used_gf_patterns %}
+	// gf patterns
+	{% for pattern in history.used_gf_patterns|split:"," %}
+	$("#pills-{{pattern}}-tab").click(function() {
+		get_endpoints({{scan_history_id}}, '{{pattern}}');
+	});
+	{% endfor %}
+	{% endif %}
 
 	</script>
 
