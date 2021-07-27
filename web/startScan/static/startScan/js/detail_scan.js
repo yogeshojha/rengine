@@ -1223,12 +1223,12 @@ function get_http_badge(http_status){
 
 
 function get_recon_notes(scan_id){
+  console.log('feth notes')
   $.getJSON(`/api/listTodoNotes/?scan_id=${scan_id}&format=json`, function(data) {
     $('#tasks-count').empty();
     $('#recon-task-list').empty();
     if (data['notes'].length > 0){
-      rand_id = get_randid();
-      $('#recon-task-list').append(`<div id=${rand_id}></div>`);
+      $('#recon-task-list').append(`<div id="todo_list_${scan_id}"></div>`);
       for (var val in data['notes']){
         note = data['notes'][val];
         div_id = 'todo_' + note['id'];
@@ -1236,7 +1236,7 @@ function get_recon_notes(scan_id){
         if (note['subdomain_name']) {
           subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
         }
-        $(`#${rand_id}`).append(`
+        $(`#todo_list_${scan_id}`).append(`
           <div class="badge-link custom-control custom-checkbox">
           <input type="checkbox" class="custom-control-input" name="${div_id}" id="${div_id}">
           <label for="${div_id}" class="custom-control-label text-dark"><b>${truncate(note['title'], 20)}</b></label>
@@ -1248,6 +1248,7 @@ function get_recon_notes(scan_id){
       $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
     }
     else{
+      $('#tasks-count').html(`<span class="badge outline-badge-dark">0</span>`);
       $('#recon-task-list').append(`<p>No todos or notes...</p>`);
     }
   });
@@ -1270,7 +1271,10 @@ function get_task_details(todo_id){
   });
 }
 
-function add_recon_todo_scan_history(scan_history_id){
+function add_recon_modal(scan_history_id){
+  $("#todoTitle").val('');
+  $("#todoDescription").val('');
+
   $('#addTaskModal').modal('show');
   subdomain_dropdown = document.getElementById('todoSubdomainDropdown');
   $.getJSON(`/api/querySubdomains?scan_id=${scan_history_id}&no_lookup_interesting&format=json`, function(data) {
@@ -1283,7 +1287,6 @@ function add_recon_todo_scan_history(scan_history_id){
       subdomain_dropdown.appendChild(option);
     }
   });
-
 }
 
 // listen to save todo event
@@ -1298,13 +1301,12 @@ $(".add-scan-history-todo").click(function(){
     'description': description
   }
 
-  data['scan_history'] = parseInt(document.getElementById('scan_history_input_val').value);
+  scan_id = parseInt(document.getElementById('scan_history_input_val').value);
+  data['scan_history'] = scan_id;
 
   if ($("#todoSubdomainDropdown").val() != 'Choose Subdomain...') {
     data['subdomain'] = parseInt($("#todoSubdomainDropdown").val());
   }
-
-  console.log(data);
 
   fetch('../../recon_note/add_note', {
     method: 'post',
@@ -1313,8 +1315,8 @@ $(".add-scan-history-todo").click(function(){
     },
     body: JSON.stringify(data)
   }).then(res => res.json())
-  .then(res => console.log(res));
-
+  .then(function (response) {
+    get_recon_notes(scan_id);
     $('#addTaskModal').modal('hide');
-
+  });
 });
