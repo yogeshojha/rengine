@@ -1223,7 +1223,6 @@ function get_http_badge(http_status){
 
 
 function get_recon_notes(scan_id){
-  console.log('feth notes')
   $.getJSON(`/api/listTodoNotes/?scan_id=${scan_id}&format=json`, function(data) {
     $('#tasks-count').empty();
     $('#recon-task-list').empty();
@@ -1236,87 +1235,172 @@ function get_recon_notes(scan_id){
         if (note['subdomain_name']) {
           subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
         }
+        done_strike = ''
+        checked = ''
+        if (note['is_done']) {
+          done_strike = 'text-strike';
+          checked = 'checked';
+        }
         $(`#todo_list_${scan_id}`).append(`
+          <div id="todo_parent_${note['id']}">
           <div class="badge-link custom-control custom-checkbox">
-          <input type="checkbox" class="custom-control-input" name="${div_id}" id="${div_id}">
-          <label for="${div_id}" class="custom-control-label text-dark"><b>${truncate(note['title'], 20)}</b></label>
-          <p onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(note['description'], 100)}</p>
+          <input type="checkbox" class="custom-control-input todo-item" ${checked} name="${div_id}" id="${div_id}">
+          <label for="${div_id}" class="${done_strike} custom-control-label text-dark"><b>${truncate(note['title'], 20)}</b>
+          </label>
+          <span class="float-right text-danger bs-tooltip" title="Delete Todo" onclick="delete_todo(${note['id']})">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+          </span>
+          <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(note['description'], 100)}
+          </p>
+          </div>
           </div>
           <hr/>
-        `);
+          `);
+        }
+        $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
       }
-      $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
-    }
-    else{
-      $('#tasks-count').html(`<span class="badge outline-badge-dark">0</span>`);
-      $('#recon-task-list').append(`<p>No todos or notes...</p>`);
-    }
-  });
-}
+      else{
+        $('#tasks-count').html(`<span class="badge outline-badge-dark">0</span>`);
+        $('#recon-task-list').append(`<p>No todos or notes...</p>`);
+      }
+      $('.bs-tooltip').tooltip();
+      todoCheckboxListener();
+    });
+  }
 
 
-function get_task_details(todo_id){
-  $('#exampleModal').modal('show');
-  $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
+  function get_task_details(todo_id){
+    $('#exampleModal').modal('show');
     $('.modal-text').empty();
-    note = data['notes'][0];
-    subdomain_name = '';
-    if (note['subdomain_name']) {
-      subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
-    }
-    $('.modal-title').html(`<b>${split(note['title'], 80)}</b>`);
-    $('#modal-text-content').append(`<p>${subdomain_name} ${note['description']}</p>`);
-  });
-}
-
-function add_recon_modal(scan_history_id){
-  $("#todoTitle").val('');
-  $("#todoDescription").val('');
-
-  $('#addTaskModal').modal('show');
-  subdomain_dropdown = document.getElementById('todoSubdomainDropdown');
-  $.getJSON(`/api/querySubdomains?scan_id=${scan_history_id}&no_lookup_interesting&format=json`, function(data) {
-    document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains';
-    for (var subdomain in data['subdomains']){
-      subdomain_obj = data['subdomains'][subdomain];
-      var option = document.createElement('option');
-      option.value = subdomain_obj['id'];
-      option.innerHTML = subdomain_obj['name'];
-      subdomain_dropdown.appendChild(option);
-    }
-  });
-}
-
-// listen to save todo event
-
-$(".add-scan-history-todo").click(function(){
-  var title = document.getElementById('todoTitle').value;
-
-  var description = document.getElementById('todoDescription').value;
-
-  data = {
-    'title': title,
-    'description': description
+    $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+    $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
+      $('.modal-text').empty();
+      note = data['notes'][0];
+      subdomain_name = '';
+      if (note['subdomain_name']) {
+        subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+      }
+      $('.modal-title').html(`<b>${split(note['title'], 80)}</b>`);
+      $('#modal-text-content').append(`<p>${subdomain_name} ${note['description']}</p>`);
+    });
   }
 
-  scan_id = parseInt(document.getElementById('scan_history_input_val').value);
-  data['scan_history'] = scan_id;
+  function add_recon_modal(scan_history_id){
+    $("#todoTitle").val('');
+    $("#todoDescription").val('');
 
-  if ($("#todoSubdomainDropdown").val() != 'Choose Subdomain...') {
-    data['subdomain'] = parseInt($("#todoSubdomainDropdown").val());
+    $('#addTaskModal').modal('show');
+    subdomain_dropdown = document.getElementById('todoSubdomainDropdown');
+    $.getJSON(`/api/querySubdomains?scan_id=${scan_history_id}&no_lookup_interesting&format=json`, function(data) {
+      document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains';
+      for (var subdomain in data['subdomains']){
+        subdomain_obj = data['subdomains'][subdomain];
+        var option = document.createElement('option');
+        option.value = subdomain_obj['id'];
+        option.innerHTML = subdomain_obj['name'];
+        subdomain_dropdown.appendChild(option);
+      }
+    });
   }
 
-  fetch('../../recon_note/add_note', {
-    method: 'post',
-    headers: {
-      "X-CSRFToken": getCookie("csrftoken")
-    },
-    body: JSON.stringify(data)
-  }).then(res => res.json())
-  .then(function (response) {
-    get_recon_notes(scan_id);
-    $('#addTaskModal').modal('hide');
+  // listen to save todo event
+
+  $(".add-scan-history-todo").click(function(){
+    var title = document.getElementById('todoTitle').value;
+
+    var description = document.getElementById('todoDescription').value;
+
+    data = {
+      'title': title,
+      'description': description
+    }
+
+    scan_id = parseInt(document.getElementById('scan_history_input_val').value);
+    data['scan_history'] = scan_id;
+
+    if ($("#todoSubdomainDropdown").val() != 'Choose Subdomain...') {
+      data['subdomain'] = parseInt($("#todoSubdomainDropdown").val());
+    }
+
+    fetch('../../recon_note/add_note', {
+      method: 'post',
+      headers: {
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: JSON.stringify(data)
+    }).then(res => res.json())
+    .then(function (response) {
+      Snackbar.show({
+        text: 'Todo Added.',
+        pos: 'top-right',
+        duration: 1500,
+      });
+      get_recon_notes(scan_id);
+      $('#addTaskModal').modal('hide');
+    });
   });
-});
+
+
+  function todoCheckboxListener(){
+    $('input[type="checkbox"]').click(function() {
+      console.log('clicked')
+      var note_id = parseInt(this.id.split('_')[1]);
+      console.log(note_id);
+      if ($(this).is(":checked")) {
+        $("#todo_parent_"+note_id).addClass('text-strike');
+      }
+      else if ($(this).is(":not(:checked)")) {
+        $("#todo_parent_"+note_id).removeClass('text-strike');
+      }
+      fetch('../../recon_note/flip_todo_status', {
+        method: 'post',
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({
+          'id': note_id,
+        })
+      }).then(res => res.json())
+      .then(res => console.log(res));
+    });
+  }
+
+
+  function delete_todo(todo_id){
+    scan_id = parseInt(document.getElementById('scan_history_input_val').value);
+    swal.queue([{
+      title: 'Are you sure you want to delete this Recon Todo?',
+      text: "You won't be able to revert this!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch('../../recon_note/delete_note', {
+          method: 'POST',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          },
+          body: JSON.stringify({
+            'id': parseInt(todo_id),
+          })
+        })
+        .then(function (response) {
+          Snackbar.show({
+            text: 'Recon Todo Deleted.',
+            pos: 'top-right',
+            duration: 1500,
+          });
+          get_recon_notes(scan_id);
+        })
+        .catch(function() {
+          swal.insertQueueStep({
+            type: 'error',
+            title: 'Oops! Unable to delete todo!'
+          })
+        })
+      }
+    }]);
+  }
