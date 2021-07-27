@@ -1232,11 +1232,15 @@ function get_recon_notes(scan_id){
       for (var val in data['notes']){
         note = data['notes'][val];
         div_id = 'todo_' + note['id'];
+        subdomain_name = '';
+        if (note['subdomain_name']) {
+          subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+        }
         $(`#${rand_id}`).append(`
           <div class="badge-link custom-control custom-checkbox">
           <input type="checkbox" class="custom-control-input" name="${div_id}" id="${div_id}">
           <label for="${div_id}" class="custom-control-label text-dark"><b>${truncate(note['title'], 20)}</b></label>
-          <p onclick="get_task_details(${note['id']})">${truncate(note['description'], 100)}</p>
+          <p onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(note['description'], 100)}</p>
           </div>
           <hr/>
         `);
@@ -1257,8 +1261,12 @@ function get_task_details(todo_id){
   $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
     $('.modal-text').empty();
     note = data['notes'][0];
+    subdomain_name = '';
+    if (note['subdomain_name']) {
+      subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+    }
     $('.modal-title').html(`<b>${split(note['title'], 80)}</b>`);
-    $('#modal-text-content').append(`<p>${note['description']}</p>`);
+    $('#modal-text-content').append(`<p>${subdomain_name} ${note['description']}</p>`);
   });
 }
 
