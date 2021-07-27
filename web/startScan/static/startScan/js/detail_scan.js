@@ -1227,21 +1227,32 @@ function get_recon_notes(scan_id){
     $('#tasks-count').empty();
     $('#recon-task-list').empty();
     rand_id = get_randid();
+    $('#recon-task-list').append(`<div id=${rand_id}></div>`);
     for (var val in data['notes']){
       note = data['notes'][val];
-      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
-      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
-    }
-    for (var val in data['notes']){
-      note = data['notes'][val];
-      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
-      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
-    }
-    for (var val in data['notes']){
-      note = data['notes'][val];
-      $('#recon-task-list').append(`<ul id=${rand_id}></ul>`);
-      $(`#${rand_id}`).append(`<li>${note['title']}</li>`);
+      div_id = 'todo_' + note['id'];
+      $(`#${rand_id}`).append(`
+        <div class="badge-link custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" name="${div_id}" id="${div_id}">
+        <label for="${div_id}" class="custom-control-label text-dark"><b>${truncate(note['title'], 20)}</b></label>
+        <p onclick="get_task_details(${note['id']})">${truncate(note['description'], 100)}</p>
+        </div>
+        <hr/>
+      `);
     }
     $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
+  });
+}
+
+
+function get_task_details(todo_id){
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
+    $('.modal-text').empty();
+    note = data['notes'][0];
+    $('.modal-title').html(`<b>${split(note['title'], 80)}</b>`);
+    $('#modal-text-content').append(`<p>${note['description']}</p>`);
   });
 }
