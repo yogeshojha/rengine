@@ -1299,7 +1299,7 @@ function get_task_details(todo_id){
   });
 }
 
-function add_recon_modal(scan_history_id){
+function add_todo_for_scanhistory_modal(scan_history_id){
   $("#todoTitle").val('');
   $("#todoDescription").val('');
 
@@ -1469,14 +1469,68 @@ function list_subdomain_todos(subdomain_id, subdomain_name){
       }
 
       $("#todo-modal-content-ul").append(`<li class="${is_done}">
-        ${important_badge}<b>&nbsp;${todo_obj['title']}</b>
-        <br />
-        ${todo_obj['description']}
+      ${important_badge}<b>&nbsp;${todo_obj['title']}</b>
+      <br />
+      ${todo_obj['description']}
 
-        </li>`);
+      </li>`);
     }
     $('.bs-tooltip').tooltip();
   }).fail(function(){
     $('#modal-loader').empty();
   });
+}
+
+
+function add_task_for_subdomain(subdomain_id, subdomain_name){
+  $('#todo-modal-subdomain-name').html(subdomain_name);
+  $("#subdomainTodoTitle").val('');
+  $("#subdomainTodoDescription").val('');
+
+  $('#add-todo-subdomain-submit-button').attr('onClick', `add_task_for_subdomain_handler(${subdomain_id});`);
+
+
+  $('#addSubdomainTaskModal').modal('show');
+
+}
+
+
+function add_task_for_subdomain_handler(subdomain_id){
+  var title = document.getElementById('subdomainTodoTitle').value;
+  var description = document.getElementById('subdomainTodoDescription').value;
+
+  data = {
+    'title': title,
+    'description': description
+  }
+
+  scan_id = parseInt(document.getElementById('scan_history_input_val').value);
+  data['scan_history'] = scan_id;
+  data['subdomain'] = subdomain_id;
+
+
+  console.log(data)
+
+  fetch('../../recon_note/add_note', {
+    method: 'post',
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken")
+    },
+    body: JSON.stringify(data)
+  }).then(res => res.json())
+  .then(function (response) {
+    Snackbar.show({
+      text: 'Todo Added.',
+      pos: 'top-right',
+      duration: 1500,
+    });
+    $('#subdomain_scan_results').DataTable().ajax.reload();
+    $('#addSubdomainTaskModal').modal('hide');
+  });
+
+}
+
+
+function mark_important_subdomain(subdomain_id){
+  console.log(subdomain_id);
 }

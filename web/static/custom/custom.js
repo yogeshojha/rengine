@@ -308,3 +308,10 @@ function setTooltip(btn, message) {
 	.attr('data-original-title', message)
 	.tooltip('show');
 }
+
+
+function hideTooltip(btn) {
+  setTimeout(function() {
+    $(btn).tooltip('hide');
+  }, 1000);
+}
