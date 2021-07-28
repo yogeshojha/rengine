@@ -301,3 +301,10 @@ function load_image_from_url(src, append_to_id){
 	img.style.width = '100%';
 	document.getElementById(append_to_id).appendChild(img);
 }
+
+
+function setTooltip(btn, message) {
+	$(btn).tooltip('hide')
+	.attr('data-original-title', message)
+	.tooltip('show');
+}

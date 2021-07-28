@@ -948,6 +948,7 @@ Detailed Scan Results for {{history.domain.name}}
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+<script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'custom/mitch.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
@@ -1078,17 +1079,27 @@ $("#pills-subdomain-tab").click(function() {
 					todo_badge = '';
 
 					if (row['todos_count']) {
-						todo_badge = `<span class="text-danger badge outline-badge-danger m-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+						todo_badge = `<span class="text-danger badge badge-link outline-badge-danger m-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
 					}
 
+					action_icons = `
+					<br />
+					<div class="float-right subdomain-table-action-icons mt-2">
+					<span class="m-1">
+					<a href="javascript:;" data-clipboard-action="copy" class="badge-link text-info copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}">
+					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+					</a>
+					<span class="m-1 badge-link text-success bs-tooltip" title="Add Recon Todo/Note"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>
+					</div>
+					`;
 
 					if (row['http_url']) {
 						if (row['cname']) {
-							return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge;
+							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
 						}
-						return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge + todo_badge;
+						return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
 					}
-					return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge + todo_badge;
+					return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
 				},
 				"targets": 1
 			},
@@ -1212,6 +1223,12 @@ $("#pills-subdomain-tab").click(function() {
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.bs-tooltip').tooltip();
+			var clipboard = new Clipboard('.copyable');
+			clipboard.on('success', function(e) {
+				setTooltip(e.trigger, 'Copied!');
+				hideTooltip(e.trigger);
+			});
 			// get screenshot size from localStorage
 			var elements = document.getElementsByClassName("screenshot");
 			screenshot_size = localStorage.getItem('screenshotSize');
