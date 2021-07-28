@@ -1532,5 +1532,23 @@ function add_task_for_subdomain_handler(subdomain_id){
 
 
 function mark_important_subdomain(subdomain_id){
-  console.log(subdomain_id);
+  if($("#important_subdomain_" + subdomain_id).length == 0) {
+    $("#subdomain-"+subdomain_id).prepend(`<span id="important_subdomain_${subdomain_id}" class="text-danger bs-tooltip" title="Important Subdomain">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    </span>`);
+    setTooltip("#subdomain-"+subdomain_id, 'Marked Important!');
+  }
+  else{
+    $("#important_subdomain_" + subdomain_id).remove();
+    setTooltip("#subdomain-"+subdomain_id, 'Marked Un-Important!');
+  }
+  hideTooltip("#subdomain-"+subdomain_id);
+  const subdomainImpApi = "../toggle/subdomain/important/"+subdomain_id;
+  return fetch(subdomainImpApi, {
+    method: 'POST',
+    credentials: "same-origin",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken")
+    }
+  });
 }

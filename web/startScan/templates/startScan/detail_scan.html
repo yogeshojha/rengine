@@ -652,6 +652,7 @@ Detailed Scan Results for {{history.domain.name}}
 											<th>High</th>
 											<th>Critical</th>
 											<th>Todos</th>
+											<th>Is Important</th>
 										</tr>
 									</thead>
 								</table>
@@ -1040,11 +1041,12 @@ $("#pills-subdomain-tab").click(function() {
 			{'data': 'high_count'},
 			{'data': 'critical_count'},
 			{'data': 'todos_count'},
+			{'data': 'is_important'},
 		],
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 			{
-				"targets": [ 12, 14, 15, 16, 17, 18, 19, 20, 21],
+				"targets": [ 12, 14, 15, 16, 17, 18, 19, 20, 21, 22],
 				"visible": false,
 				"searchable": false,
 			},
@@ -1117,11 +1119,15 @@ $("#pills-subdomain-tab").click(function() {
 						todo_badge = `<span class="text-danger badge badge-link outline-badge-danger m-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
 					}
 
-					important_badge = `
-					<div id="important_subdomain_${row['id']}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-					</div>
-					`;
+					important_badge = '';
+					if (row['is_important']) {
+						important_badge = `
+						<span id="important_subdomain_${row['id']}" class="text-danger bs-tooltip" title="Important Subdomain">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+						</span>
+						`;
+					}
+
 
 					action_icons = `
 					<br />
@@ -1139,11 +1145,11 @@ $("#pills-subdomain-tab").click(function() {
 
 					if (row['http_url']) {
 						if (row['cname']) {
-							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
+							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data +`</span></a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
 						}
-						return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
+						return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
 					}
-					return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
+					return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data +`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
 				},
 				"targets": 1
 			},
