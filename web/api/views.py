@@ -24,10 +24,13 @@ class ListTodoNotes(APIView):
         notes = TodoNote.objects.all().order_by('-id')
         scan_id = req.query_params.get('scan_id')
         todo_id = req.query_params.get('todo_id')
+        subdomain_id = req.query_params.get('subdomain_id')
         if scan_id:
             notes = notes.filter(scan_history__id=scan_id)
         if todo_id:
             notes = notes.filter(id=todo_id)
+        if subdomain_id:
+            notes = notes.filter(subdomain__id=subdomain_id)
         notes = ReconNoteSerializer(notes, many=True)
         return Response({'notes': notes.data})
 

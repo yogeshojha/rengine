@@ -563,35 +563,40 @@ class SubdomainSerializer(serializers.ModelSerializer):
     medium_count = serializers.SerializerMethodField('get_medium_count')
     high_count = serializers.SerializerMethodField('get_high_count')
     critical_count = serializers.SerializerMethodField('get_critical_count')
+    todos_count = serializers.SerializerMethodField('get_todos_count')
     ip_addresses = IpSerializer(many=True)
     technologies = TechnologySerializer(many=True)
+
 
     class Meta:
         model = Subdomain
         fields = '__all__'
 
-    def get_is_interesting(self, Subdomain):
+    def get_is_interesting(self, subdomain):
         return get_interesting_subdomains(
-            Subdomain.scan_history.id).filter(
-            name=Subdomain.name).exists()
+            subdomain.scan_history.id).filter(
+            name=subdomain.name).exists()
 
-    def get_endpoint_count(self, Subdomain):
-        return Subdomain.get_endpoint_count
+    def get_endpoint_count(self, subdomain):
+        return subdomain.get_endpoint_count
 
-    def get_info_count(self, Subdomain):
-        return Subdomain.get_info_count
+    def get_info_count(self, subdomain):
+        return subdomain.get_info_count
 
-    def get_low_count(self, Subdomain):
-        return Subdomain.get_low_count
+    def get_low_count(self, subdomain):
+        return subdomain.get_low_count
 
-    def get_medium_count(self, Subdomain):
-        return Subdomain.get_medium_count
+    def get_medium_count(self, subdomain):
+        return subdomain.get_medium_count
 
-    def get_high_count(self, Subdomain):
-        return Subdomain.get_high_count
+    def get_high_count(self, subdomain):
+        return subdomain.get_high_count
 
-    def get_critical_count(self, Subdomain):
-        return Subdomain.get_critical_count
+    def get_critical_count(self, subdomain):
+        return subdomain.get_critical_count
+
+    def get_todos_count(self, subdomain):
+        return len(subdomain.get_todos)
 
 
 class EndpointSerializer(serializers.ModelSerializer):

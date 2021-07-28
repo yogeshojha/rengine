@@ -1443,3 +1443,40 @@ function change_todo_priority(todo_id, imp_type){
     get_recon_notes(scan_id);
   });
 }
+
+
+function list_subdomain_todos(subdomain_id, subdomain_name){
+  $('.modal-title').html(`Todos for subdomain ${subdomain_name}`);
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  // query subdomains
+  $.getJSON(`/api/listTodoNotes/?subdomain_id=${subdomain_id}&format=json`, function(data) {
+    $('#modal-loader').empty();
+    $('#modal-text-content').empty();
+    $('#modal-text-content').append(`<ul id="todo-modal-content-ul"></ul>`);
+    for (todo in data['notes']){
+      todo_obj = data['notes'][todo];
+      important_badge = '';
+      if (todo_obj['is_important']) {
+        important_badge = `<span class="text-danger bs-tooltip" title="Important Task">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
+        </span>`;
+      }
+      is_done = '';
+      if (todo_obj['is_done']) {
+        is_done = 'text-strike'
+      }
+
+      $("#todo-modal-content-ul").append(`<li class="${is_done}">
+        ${important_badge}<b>&nbsp;${todo_obj['title']}</b>
+        <br />
+        ${todo_obj['description']}
+
+        </li>`);
+    }
+    $('.bs-tooltip').tooltip();
+  }).fail(function(){
+    $('#modal-loader').empty();
+  });
+}

@@ -1,13 +1,14 @@
 import datetime
 
 from django.db import models
-from targetApp.models import Domain
-from scanEngine.models import EngineType
 from django.db.models import JSONField
-from django.utils import timezone
-
 from django.core.serializers import serialize
 from django.http import JsonResponse
+from django.utils import timezone
+from django.apps import apps
+
+from targetApp.models import Domain
+from scanEngine.models import EngineType
 
 
 class ScanHistory(models.Model):
@@ -161,6 +162,12 @@ class Subdomain(models.Model):
         return Vulnerability.objects.filter(
             scan_history=self.scan_history).filter(
             subdomain__name=self.name).count()
+
+    @property
+    def get_todos(self):
+        TodoNote = apps.get_model('recon_note', 'TodoNote')
+        notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
+        return notes.values()
 
 
 class EndPoint(models.Model):
