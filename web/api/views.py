@@ -247,6 +247,10 @@ class ListSubdomains(APIView):
                     ports__in=Port.objects.filter(
                         number=port)))
 
+        if 'only_important' in req.query_params:
+	           subdomain_query = subdomain_query.filter(is_important=True)
+
+
         if 'no_lookup_interesting' in req.query_params:
             serializer = OnlySubdomainNameSerializer(subdomain_query, many=True)
         else:

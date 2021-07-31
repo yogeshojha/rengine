@@ -191,43 +191,7 @@ Detailed Scan Results for {{history.domain.name}}
 												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 											</a>
 											<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
-												<a class="dropdown-item" href="javascript:void(0);" data-toggle="modal" data-target="#scanTimelineModal">View Scan Timeline</a>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="modal fade" id="scanTimelineModal" tabindex="-1" role="dialog" aria-labelledby="scanTimelineModal" aria-hidden="true">
-									<div class="modal-dialog" role="document">
-										<div class="modal-content">
-											<div class="modal-header">
-												<h5 class="modal-title" id="exampleModalLabel">Scan Timeline</h5>
-												<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-													<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-												</button>
-											</div>
-											<div class="modal-body">
-												<div class="modal-text activity-log widget-activity-four">
-													<div class="mt-container mx-auto">
-														<div class="timeline-line">
-															{% for activity in scan_activity %}
-															<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
-																<div class="t-dot" data-original-title="" title="">
-																</div>
-																<div class="t-text">
-																	<p>{{activity.title}}{% if activity.status == 1 %}<span class="badge badge-warning">In Progress</span>{% endif %}</p>
-																	<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
-																		{% if activity.status == 0 %}&nbsp;Failed&nbsp;
-																		{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
-																		{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
-																		{% endif %}
-																	</span>
-																	<p class="t-time">{{activity.time|naturaltime}}</p>
-																</div>
-															</div>
-															{% endfor %}
-														</div>
-													</div>
-												</div>
+												<a class="dropdown-item" href="javascript:void(0);">View Excluded Subdomains</a>
 											</div>
 										</div>
 									</div>
@@ -306,6 +270,37 @@ Detailed Scan Results for {{history.domain.name}}
 							</div>
 						</div>
 						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-timelime-scanactivity">
+								<div class="widget-heading">
+									<h6 class="">Scan Timeline</h6>
+									<hr>
+								</div>
+								<div class="widget-content">
+									<div class="w-shadow-top"></div>
+									<div class="mt-container mx-auto">
+										<div class="timeline-line">
+											{% for activity in scan_activity %}
+											<div class="item-timeline {% if activity.status == 0 %}timeline-danger {% elif activity.status == 1 %}timeline-warning{% elif activity.status == 2 %}timeline-success{% endif %}">
+												<div class="t-dot" data-original-title="" title="">
+												</div>
+												<div class="t-text">
+													<p>{{activity.title}}{% if activity.status == 1 %}<span class="badge badge-warning">In Progress</span>{% endif %}</p>
+													<span class="badge {% if activity.status == 0 %}badge-danger {% elif activity.status == 1 %}badge-warning{% elif activity.status == 2 %}badge-success{% endif %}">
+														{% if activity.status == 0 %}&nbsp;Failed&nbsp;
+														{% elif activity.status == 1 %}&nbsp;In progress&nbsp;
+														{% elif activity.status == 2 %}&nbsp;Completed&nbsp;
+														{% endif %}
+													</span>
+													<p class="t-time">{{activity.time|naturaltime}}</p>
+												</div>
+											</div>
+											{% endfor %}
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-timeline-log">
 								<div class="widget-heading">
 									<h6 class="">Recent Scans</h6>
@@ -373,7 +368,26 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 							</div>
 						</div>
-						<div class="col-xl-4 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+						<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+							<div class="widget widget-timeline-log">
+								<div class="widget-heading">
+									<h6 class="">
+										<span id="important-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span>
+										Important Subdomains
+									</h6>
+								</div>
+								<div class="widget-content">
+									<div class="w-shadow-top"></div>
+									<div class="mt-container mx-auto">
+										<div id="important-subdomains-list">
+
+										</div>
+									</div>
+									<div class="w-shadow-bottom"></div>
+								</div>
+							</div>
+						</div>
+						<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 							<div class="widget widget-timeline-log">
 								<div class="widget-heading">
 									<h6 class="">
@@ -1274,11 +1288,6 @@ $("#pills-subdomain-tab").click(function() {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.bs-tooltip').tooltip();
-			var clipboard = new Clipboard('.copyable');
-			clipboard.on('success', function(e) {
-				setTooltip(e.trigger, 'Copied!');
-				hideTooltip(e.trigger);
-			});
 			// get screenshot size from localStorage
 			var elements = document.getElementsByClassName("screenshot");
 			screenshot_size = localStorage.getItem('screenshotSize');
@@ -1610,6 +1619,14 @@ $("#pills-vulnerabilities-tab").click(function() {
 });
 {% endif %}
 
+// clipboard
+
+var clipboard = new Clipboard('.copyable');
+clipboard.on('success', function(e) {
+	setTooltip(e.trigger, 'Copied!');
+	hideTooltip(e.trigger);
+});
+
 // apex charts for vulnerability summary
 var options = {
 	chart: {
@@ -1748,6 +1765,8 @@ $("#pills-osint-tab").click(function() {
 $("#pills-visualisation-tab").click(function() {
 	visualise_scan_results({{scan_history_id}});
 });
+
+get_important_subdomains({{scan_history_id}});
 
 get_ips({{scan_history_id}});
 
