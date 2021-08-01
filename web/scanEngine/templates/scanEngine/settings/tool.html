@@ -22,7 +22,7 @@ Settings
       <div class="widget-header">
         <div class="row">
           <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-            <h4>GF Patterns</h4>
+            <h4><a href="https://github.com/tomnomnom/gf" class="text-info" target="_blank">GF Patterns</a></h4>
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@ Settings
     <div class="widget-header">
       <div class="row">
         <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-          <h4>Nuclei</h4>
+          <h4><a href="https://github.com/projectdiscovery/nuclei" class="text-info" target="_blank">Nuclei</a></h4>
         </div>
       </div>
     </div>
@@ -71,7 +71,7 @@ Settings
       </ul>
 
       <div class="tab-content" id="animateLineContent-4">
-        <div class="tab-pane fade" id="nuclei-template" role="tabpanel" aria-labelledby="nuclei-template-tab">
+        <div class="tab-pane fade show active" id="nuclei-template" role="tabpanel" aria-labelledby="nuclei-template-tab">
           <p>
             This section lets you upload Nuclei templates. You can find more information about the <a href="https://nuclei.projectdiscovery.io/" class="text-info">Nuclei Templates here.</a><br>
             <span class="text-danger">Please note that only YAML files are supported and the name of the pattern will be the filename.</br>If the template name is <span class="badge badge-info">apache-detect.yaml</span> then <span class="badge badge-info">apache-detect</span> is to be used this in YAML configuration.</span>
@@ -97,10 +97,10 @@ Settings
             <input type="submit" class="btn btn-primary" value="Upload">
           </form>
         </div>
-        <div class="tab-pane fade show active" id="nuclei-config" role="tabpanel" aria-labelledby="nuclei-config-tab">
+        <div class="tab-pane fade" id="nuclei-config" role="tabpanel" aria-labelledby="nuclei-config-tab">
           <p>
-            This section lets you upload Nuclei config file. You can find more information about the <a href="https://github.com/projectdiscovery/nuclei" class="text-info">Nuclei config here.</a><br>
-            <span class="text-danger">Please note that only YAML files are supported.</span>
+            This section lets you upload Nuclei config file. You can find more information about the <a href="https://github.com/projectdiscovery/nuclei" class="text-info" target="_blank">Nuclei config here.</a><br>
+            <span class="text-danger">Please note that only YAML config is supported.</span>
           </p>
           <div class="form-group mb-4" id="text-area-nuclei-config">
             <form method="post" enctype="multipart/form-data" id="nuclei-config-form">
@@ -115,9 +115,36 @@ Settings
       </div>
     </div>
   </div>
-  {% endblock main_content %}
+</div>
+<div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12 layout-top-spacing">
+  <div class="statbox widget box box-shadow">
+    <div class="widget-header">
+      <div class="row">
+        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+          <h4><a href="https://github.com/projectdiscovery/subfinder" class="text-info" target="_blank">Subfinder</a></h4>
+        </div>
+      </div>
+    </div>
+    <div class="widget-content widget-content-area">
+      <p>
+        This section lets you upload Subfinder config file. You can find more information about the <a href="https://github.com/projectdiscovery/subfinder#:~:text=An%20example%20config%20file%20-" class="text-info" target="_blank">Subfinder config here.</a><br>
+        <span class="text-danger">Please note that only YAML config is supported.</span>
+      </p>
+      <div class="form-group mb-4" id="text-area-nuclei-config">
+        <form method="post" enctype="multipart/form-data" id="subfinder-config-form">
+          {% csrf_token %}
+          <label for="subfinder_config">Current Subfinder Configuration</label>
+          <br>
+          <label for="subfinder_config_text_area" class="text-info">Double click the configuration to edit.</label>
+          <textarea class="form-control" id="subfinder_config_text_area" spellcheck="false" readonly="true" name="subfinder_config_text_area"></textarea>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
 
 
-  {% block page_level_script %}
-  <script src="{% static 'scanEngine/js/custom_tools.js' %}" charset="utf-8"></script>
-  {% endblock page_level_script %}
+{% block page_level_script %}
+<script src="{% static 'scanEngine/js/custom_tools.js' %}" charset="utf-8"></script>
+{% endblock page_level_script %}
