@@ -248,7 +248,7 @@ def tool_specific_settings(request):
                 file.write(gf_file.read().decode("utf-8"))
                 file.close()
                 messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
-            return http.HttpResponseRedirect(reverse('settings'))
+            return http.HttpResponseRedirect(reverse('tool_settings'))
         elif 'nucleiFileUpload' in request.FILES:
             nuclei_file = request.FILES['nucleiFileUpload']
             file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
@@ -260,7 +260,7 @@ def tool_specific_settings(request):
                 file.write(nuclei_file.read().decode("utf-8"))
                 file.close()
                 messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
-            return http.HttpResponseRedirect(reverse('settings'))
+            return http.HttpResponseRedirect(reverse('tool_settings'))
 
     context['settings_nav_active'] = 'true'
     context['tool_settings_li'] = 'active'

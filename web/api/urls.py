@@ -106,6 +106,10 @@ urlpatterns = [
         'listTodoNotes/',
         ListTodoNotes.as_view(),
         name='listTodoNotes'),
+    path(
+        'listFileContents/',
+        ListFileContents.as_view(),
+        name='listFileContents'),
 ]
 
 urlpatterns += router.urls
