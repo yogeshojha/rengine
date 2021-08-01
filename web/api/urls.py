@@ -107,9 +107,9 @@ urlpatterns = [
         ListTodoNotes.as_view(),
         name='listTodoNotes'),
     path(
-        'listFileContents/',
-        ListFileContents.as_view(),
-        name='listFileContents'),
+        'getFileContents/',
+        GetFileContents.as_view(),
+        name='getFileContents'),
 ]
 
 urlpatterns += router.urls

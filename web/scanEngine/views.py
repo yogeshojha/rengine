@@ -237,6 +237,7 @@ def tool_specific_settings(request):
     context = {}
     # check for incoming form requests
     if request.method == "POST":
+
         if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
             file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
@@ -249,6 +250,7 @@ def tool_specific_settings(request):
                 file.close()
                 messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
             return http.HttpResponseRedirect(reverse('tool_settings'))
+
         elif 'nucleiFileUpload' in request.FILES:
             nuclei_file = request.FILES['nucleiFileUpload']
             file_extension = nuclei_file.name.split('.')[len(nuclei_file.name.split('.'))-1]
@@ -261,6 +263,11 @@ def tool_specific_settings(request):
                 file.close()
                 messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
             return http.HttpResponseRedirect(reverse('tool_settings'))
+
+        elif 'nuclei_config_text_area' in request.POST:
+            with open('/root/.config/nuclei/config.yaml', "w") as fhandle:
+                fhandle.write(request.POST.get('nuclei_config_text_area'))
+            messages.add_message(request, messages.INFO, 'Nuclei config updated!')
 
     context['settings_nav_active'] = 'true'
     context['tool_settings_li'] = 'active'

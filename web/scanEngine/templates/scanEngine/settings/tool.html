@@ -71,7 +71,7 @@ Settings
       </ul>
 
       <div class="tab-content" id="animateLineContent-4">
-        <div class="tab-pane fade show active" id="nuclei-template" role="tabpanel" aria-labelledby="nuclei-template-tab">
+        <div class="tab-pane fade" id="nuclei-template" role="tabpanel" aria-labelledby="nuclei-template-tab">
           <p>
             This section lets you upload Nuclei templates. You can find more information about the <a href="https://nuclei.projectdiscovery.io/" class="text-info">Nuclei Templates here.</a><br>
             <span class="text-danger">Please note that only YAML files are supported and the name of the pattern will be the filename.</br>If the template name is <span class="badge badge-info">apache-detect.yaml</span> then <span class="badge badge-info">apache-detect</span> is to be used this in YAML configuration.</span>
@@ -97,31 +97,20 @@ Settings
             <input type="submit" class="btn btn-primary" value="Upload">
           </form>
         </div>
-        <div class="tab-pane fade" id="nuclei-config" role="tabpanel" aria-labelledby="nuclei-config-tab">
+        <div class="tab-pane fade show active" id="nuclei-config" role="tabpanel" aria-labelledby="nuclei-config-tab">
           <p>
-            This section lets you upload Nuclei config. You can find more information about the <a href="https://nuclei.projectdiscovery.io/" class="text-info">Nuclei Templates here.</a><br>
-            <span class="text-danger">Please note that only YAML files are supported and the name of the pattern will be the filename.</br>If the template name is <span class="badge badge-info">apache-detect.yaml</span> then <span class="badge badge-info">apache-detect</span> is to be used this in YAML configuration.</span>
+            This section lets you upload Nuclei config file. You can find more information about the <a href="https://github.com/projectdiscovery/nuclei" class="text-info">Nuclei config here.</a><br>
+            <span class="text-danger">Please note that only YAML files are supported.</span>
           </p>
-          <p>
-            <h6 class="text-muted">Currently available custom Nuclei templates</h6>
-            {% for template in nuclei_templates %}
-            {% with file=template|split:"/" %}
-            <span class="badge badge-pills outline-badge-info m-1 bs-tooltip badge-link" title="View Template" onclick="load_nuclei_template('{{file.3}}')">{{file.3}}</span>
-            {% endwith %}
-            {% empty %}
-            <div class="alert alert-light-warning border-0 mb-4" role="alert">
-              <strong>No custom nuclei templates detected!</strong>
-            </div>
-            {% endfor %}
-          </p>
-          <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group mb-4 mt-3">
-              <label for="nucleiFileUpload">Upload Nuclei Template YAML</label>
-              <input type="file" class="form-control-file" name="nucleiFileUpload" accept=".yaml">
-            </div>
-            <input type="submit" class="btn btn-primary" value="Upload">
-          </form>
+          <div class="form-group mb-4" id="text-area-nuclei-config">
+            <form method="post" enctype="multipart/form-data" id="nuclei-config-form">
+              {% csrf_token %}
+              <label for="nuclei_config">Current Nuclei Configuration</label>
+              <br>
+              <label for="nuclei_config" class="text-info">Double click the configuration to edit.</label>
+              <textarea class="form-control" id="nuclei_config_text_area" spellcheck="false" readonly="true" name="nuclei_config_text_area"></textarea>
+            </form>
+          </div>
         </div>
       </div>
     </div>

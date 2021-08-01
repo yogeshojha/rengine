@@ -17,10 +17,14 @@ from startScan.models import *
 from targetApp.models import *
 from recon_note.models import *
 
-class ListFileContents(APIView):
+class GetFileContents(APIView):
     def get(self, request, format=None):
         req = self.request
         name = req.query_params.get('name')
+
+        if 'nuclei_config' in req.query_params:
+            f = open("/root/.config/nuclei/config.yaml".format(name), "r")
+            return Response({'content': f.read()})
 
         if 'gf_pattern' in req.query_params:
             f = open("/root/.gf/{}.json".format(name), "r")
@@ -31,7 +35,7 @@ class ListFileContents(APIView):
             f = open("/root/nuclei-templates/{}".format(name), "r")
             return Response({'content': f.read()})
 
-        return Response({'content': "Okay"})
+        return Response({'content': "ping-pong"})
 
 
 class ListTodoNotes(APIView):
