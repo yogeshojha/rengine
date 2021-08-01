@@ -26,6 +26,18 @@ class GetFileContents(APIView):
             f = open("/root/.config/nuclei/config.yaml".format(name), "r")
             return Response({'content': f.read()})
 
+        if 'subfinder_config' in req.query_params:
+            f = open("/root/.config/subfinder/config.yaml".format(name), "r")
+            return Response({'content': f.read()})
+
+        if 'naabu_config' in req.query_params:
+            f = open("/root/.config/naabu/naabu.conf".format(name), "r")
+            return Response({'content': f.read()})
+
+        if 'amass_config' in req.query_params:
+            f = open("/root/.config/amass.ini".format(name), "r")
+            return Response({'content': f.read()})
+
         if 'gf_pattern' in req.query_params:
             f = open("/root/.gf/{}.json".format(name), "r")
             return Response({'content': f.read()})

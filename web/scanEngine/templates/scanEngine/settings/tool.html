@@ -99,7 +99,7 @@ Settings
         </div>
         <div class="tab-pane fade" id="nuclei-config" role="tabpanel" aria-labelledby="nuclei-config-tab">
           <p>
-            This section lets you upload Nuclei config file. You can find more information about the <a href="https://github.com/projectdiscovery/nuclei" class="text-info" target="_blank">Nuclei config here.</a><br>
+            This section lets you configure Nuclei config file. You can find more information about the <a href="https://github.com/projectdiscovery/nuclei" class="text-info" target="_blank">Nuclei config here.</a><br>
             <span class="text-danger">Please note that only YAML config is supported.</span>
           </p>
           <div class="form-group mb-4" id="text-area-nuclei-config">
@@ -127,16 +127,69 @@ Settings
     </div>
     <div class="widget-content widget-content-area">
       <p>
-        This section lets you upload Subfinder config file. You can find more information about the <a href="https://github.com/projectdiscovery/subfinder#:~:text=An%20example%20config%20file%20-" class="text-info" target="_blank">Subfinder config here.</a><br>
+        This section lets you modify <a href="https://github.com/projectdiscovery/subfinder" class="text-info" target="_blank">Subfinder</a> config file. You can find more information about the <a href="https://github.com/projectdiscovery/subfinder#:~:text=An%20example%20config%20file%20-" class="text-info" target="_blank">Subfinder config here.</a><br>
         <span class="text-danger">Please note that only YAML config is supported.</span>
       </p>
-      <div class="form-group mb-4" id="text-area-nuclei-config">
+      <div class="form-group mb-4" id="text-area-subfinder-config">
         <form method="post" enctype="multipart/form-data" id="subfinder-config-form">
           {% csrf_token %}
           <label for="subfinder_config">Current Subfinder Configuration</label>
           <br>
           <label for="subfinder_config_text_area" class="text-info">Double click the configuration to edit.</label>
           <textarea class="form-control" id="subfinder_config_text_area" spellcheck="false" readonly="true" name="subfinder_config_text_area"></textarea>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12 layout-top-spacing">
+  <div class="statbox widget box box-shadow">
+    <div class="widget-header">
+      <div class="row">
+        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+          <h4><a href="https://github.com/projectdiscovery/naabu" class="text-info" target="_blank">Naabu</a></h4>
+        </div>
+      </div>
+    </div>
+    <div class="widget-content widget-content-area">
+      <p>
+        This section lets you modify <a href="https://github.com/projectdiscovery/naabu" class="text-info" target="_blank">Naabu</a> config file. You can find more information about the <a href="https://github.com/projectdiscovery/naabu#:~:text=a%20reasonable%20amount.-,Configuration%20file,-We%20have%20added" class="text-info" target="_blank">Naabu config here.</a><br>
+        <span class="text-danger">Please note that only YAML config is supported.</span>
+      </p>
+      <div class="form-group mb-4" id="text-area-naabu-config">
+        <form method="post" enctype="multipart/form-data" id="naabu-config-form">
+          {% csrf_token %}
+          <label for="naabu_config">Current Naabu Configuration</label>
+          <br>
+          <label for="naabu_config_text_area" class="text-info">Double click the configuration to edit.</label>
+          <textarea class="form-control" id="naabu_config_text_area" spellcheck="false" readonly="true" name="naabu_config_text_area"></textarea>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12 layout-top-spacing">
+  <div class="statbox widget box box-shadow">
+    <div class="widget-header">
+      <div class="row">
+        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+          <h4><a href="https://github.com/OWASP/Amass" class="text-info" target="_blank">Amass</a></h4>
+        </div>
+      </div>
+    </div>
+    <div class="widget-content widget-content-area">
+      <p>
+        This section lets you modify <a href="https://github.com/OWASP/Amass/" class="text-info" target="_blank">Amass</a> config file. You can find more information about the <a href="https://github.com/OWASP/Amass/blob/master/examples/config.ini" class="text-info" target="_blank">Amass config here.</a><br>
+        <span class="text-danger">Please note that only YAML config is supported.</span>
+      </p>
+      <div class="form-group mb-4" id="text-area-amass-config">
+        <form method="post" enctype="multipart/form-data" id="amass-config-form">
+          {% csrf_token %}
+          <label for="amass_config">Current Amass Configuration</label>
+          <br>
+          <label for="amass_config_text_area" class="text-info">Double click the configuration to edit.</label>
+          <textarea class="form-control" id="amass_config_text_area" spellcheck="false" readonly="true" name="amass_config_text_area"></textarea>
         </form>
       </div>
     </div>

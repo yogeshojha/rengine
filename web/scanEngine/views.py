@@ -268,6 +268,25 @@ def tool_specific_settings(request):
             with open('/root/.config/nuclei/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('nuclei_config_text_area'))
             messages.add_message(request, messages.INFO, 'Nuclei config updated!')
+            return http.HttpResponseRedirect(reverse('tool_settings'))
+
+        elif 'subfinder_config_text_area' in request.POST:
+            with open('/root/.config/subfinder/configg.yaml', "w") as fhandle:
+                fhandle.write(request.POST.get('subfinder_config_text_area'))
+            messages.add_message(request, messages.INFO, 'Subfinder config updated!')
+            return http.HttpResponseRedirect(reverse('tool_settings'))
+
+        elif 'naabu_config_text_area' in request.POST:
+            with open('/root/.config/naabu/naabu.conf', "w") as fhandle:
+                fhandle.write(request.POST.get('naabu_config_text_area'))
+            messages.add_message(request, messages.INFO, 'Naabu config updated!')
+            return http.HttpResponseRedirect(reverse('tool_settings'))
+
+        elif 'amass_config_text_area' in request.POST:
+            with open('/root/.config/amass.ini', "w") as fhandle:
+                fhandle.write(request.POST.get('amass_config_text_area'))
+            messages.add_message(request, messages.INFO, 'Amass config updated!')
+            return http.HttpResponseRedirect(reverse('tool_settings'))
 
     context['settings_nav_active'] = 'true'
     context['tool_settings_li'] = 'active'
