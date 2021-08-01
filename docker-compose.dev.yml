@@ -33,6 +33,7 @@ services:
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -58,6 +59,7 @@ services:
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
     networks:
       - rengine_network
 
@@ -77,6 +79,7 @@ services:
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
+      - tool_config:/root/.config
     ports:
       - "8000:8000"
     depends_on:
@@ -97,6 +100,7 @@ services:
 networks:
   rengine_network:
 volumes:
+  tool_config:
   postgres_data:
   gf_patterns:
   nuclei_templates:

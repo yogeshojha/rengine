@@ -362,31 +362,12 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
             threads = _threads
 
     if 'amass' in tools:
-        amass_config_path = None
-        if AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-            short_name = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_CONFIG]
-            try:
-                config = get_object_or_404(
-                    Configuration, short_name=short_name)
-                '''
-                if config exists in db then write the config to
-                scan location, and append in amass_command
-                '''
-                with open(results_dir + '/config.ini', 'w') as config_file:
-                    config_file.write(config.content)
-                amass_config_path = results_dir + '/config.ini'
-            except Exception as e:
-                logging.error(CONFIG_FILE_NOT_FOUND)
-                pass
-
         if 'amass-passive' in tools:
             amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
                     domain.name, results_dir)
-            if amass_config_path:
-                amass_command = amass_command + \
-                    ' -config {}'.format(settings.TOOL_LOCATION +
-                                         'scan_results/' + amass_config_path)
 
+            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                amass_command += ' -config /root/.config/amass.ini'
             # Run Amass Passive
             logging.info(amass_command)
             os.system(amass_command)
@@ -394,6 +375,9 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         if 'amass-active' in tools:
             amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
                     domain.name, results_dir)
+
+            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                amass_command += ' -config /root/.config/amass.ini'
 
             if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                 wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
@@ -434,23 +418,8 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
             domain.name, threads, results_dir)
 
-        # Check for Subfinder config files
-        if SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-            short_name = yaml_configuration[SUBDOMAIN_DISCOVERY][SUBFINDER_CONFIG]
-            try:
-                config = get_object_or_404(
-                    Configuration, short_name=short_name)
-                '''
-                if config exists in db then write the config to
-                scan location, and append in amass_command
-                '''
-                with open(results_dir + '/subfinder-config.yaml', 'w') as config_file:
-                    config_file.write(config.content)
-                subfinder_config_path = results_dir + '/subfinder-config.yaml'
-            except Exception as e:
-                pass
-            subfinder_command = subfinder_command + \
-                ' -config {}'.format(subfinder_config_path)
+        if USE_SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_SUBFINDER_CONFIG]:
+            subfinder_command += ' -config /root/.config/subfinder/config.yaml'
 
         # Run Subfinder
         logging.info(subfinder_command)
@@ -816,6 +785,9 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 yaml_configuration[PORT_SCAN][NAABU_RATE])
     else:
         naabu_command = naabu_command + ' -t 10'
+
+    if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
+        naabu_command += ' -config /root/.config/naabu/naabu.conf'
 
     # run naabu
     os.system(naabu_command)
@@ -1226,6 +1198,10 @@ def vulnerability_scan(
 
     nuclei_command = 'nuclei -json -l {} -o {}'.format(
         vulnerability_scan_input_file, vulnerability_result_path)
+
+    # check nuclei config
+    if USE_NUCLEI_CONFIG in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[VULNERABILITY_SCAN][USE_NUCLEI_CONFIG]:
+        nuclei_command += ' -config /root/.config/nuclei/config.yaml'
 
     '''
     Nuclei Templates

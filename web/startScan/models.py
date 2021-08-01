@@ -101,7 +101,7 @@ class Subdomain(models.Model):
         Domain, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=1000)
     is_imported_subdomain = models.BooleanField(default=False)
-    is_important = models.BooleanField(default=False)
+    is_important = models.BooleanField(default=False, null=True, blank=True)
     http_url = models.CharField(max_length=1000, null=True, blank=True)
     screenshot_path = models.CharField(max_length=1000, null=True, blank=True)
     http_header_path = models.CharField(max_length=1000, null=True, blank=True)
