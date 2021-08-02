@@ -24,7 +24,7 @@ from reNgine.common_func import *
 
 def scan_history(request):
     host = ScanHistory.objects.all().order_by('-start_scan_date')
-    context = {'scan_history_active': 'true', "scan_history": host}
+    context = {'scan_history_active': 'active', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
 
@@ -64,7 +64,7 @@ def detail_scan(request, id=None):
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
-        context['scan_history_active'] = 'true'
+        context['scan_history_active'] = 'active'
 
         emails = Email.objects.filter(
             emails__in=ScanHistory.objects.filter(
@@ -149,7 +149,7 @@ def start_scan_ui(request, domain_id):
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
-        'scan_history_active': 'true',
+        'scan_history_active': 'active',
         'domain': domain,
         'engines': engine,
         'custom_engine_count': custom_engine_count}
@@ -195,7 +195,7 @@ def start_multiple_scan(request):
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
-        'scan_history_active': 'true',
+        'scan_history_active': 'active',
         'engines': engine,
         'domain_list': domain_text,
         'domain_ids': domain_ids,
@@ -353,7 +353,7 @@ def schedule_scan(request, host_id):
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
-        'scan_history_active': 'true',
+        'scan_history_active': 'active',
         'domain': domain,
         'engines': engine,
         'custom_engine_count': custom_engine_count}
@@ -363,7 +363,7 @@ def schedule_scan(request, host_id):
 def scheduled_scan_view(request):
     scheduled_tasks = PeriodicTask.objects.all().exclude(name='celery.backend_cleanup')
     context = {
-        'scheduled_scan_active': 'true',
+        'scheduled_scan_active': 'active',
         'scheduled_tasks': scheduled_tasks,
     }
     return render(request, 'startScan/schedule_scan_list.html', context)
@@ -585,7 +585,7 @@ def schedule_organization_scan(request, id):
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
-        'scan_history_active': 'true',
+        'scan_history_active': 'active',
         'organization': organization,
         'domain_list': organization.get_domains(),
         'engines': engine,

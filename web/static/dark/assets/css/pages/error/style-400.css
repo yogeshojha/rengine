@@ -1,0 +1,58 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.theme-logo {
+  width: 62px;
+  height: 62px; }
+
+body.error404 {
+  color: #888ea8;
+  height: 100%;
+  font-size: 0.875rem;
+  background: #060818; }
+  body.error404 > .error-content {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px; }
+
+.error404 .mini-text {
+  font-size: 33px;
+  font-weight: 700;
+  margin-bottom: 0;
+  color: #bfc9d4; }
+
+.error404 .img-cartoon {
+  width: 170px;
+  height: 170px; }
+
+.error404 .error-number {
+  font-size: 170px;
+  color: #e0e6ed;
+  font-weight: 600;
+  margin-bottom: 5px;
+  margin-top: 15px;
+  text-shadow: 0px 5px 4px rgba(31, 45, 61, 0.101961); }
+
+.error404 .error-text {
+  font-size: 18px;
+  color: #e0e6ed;
+  font-weight: 600; }
+
+.error404 a.btn {
+  width: 134px;
+  padding: 6px;
+  font-size: 17px;
+  background-image: linear-gradient(229deg, #517281 0%, #3b5d70 27%, #4d5c82 72%, #5d647f 100%);
+  border: none;
+  letter-spacing: 2px;
+  box-shadow: none; }

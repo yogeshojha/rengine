@@ -8,7 +8,7 @@ from startScan.models import *
 
 def list_note(request):
     context = {}
-    context['recon_note_active'] = 'true'
+    context['recon_note_active'] = 'active'
     return render(request, 'note/index.html', context)
 
 

@@ -1,0 +1,221 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+html {
+  height: 100%; }
+
+body {
+  height: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  background: #060818; }
+
+.coming-soon-container {
+  display: flex; }
+
+.coming-soon-cont {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  height: 100vh; }
+  .coming-soon-cont .coming-soon-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    min-width: 311px;
+    min-height: 100%; }
+  .coming-soon-cont .coming-soon-container {
+    align-items: center;
+    display: flex;
+    flex-grow: 1;
+    padding: 30px 30px;
+    width: 100%;
+    min-height: 100%; }
+    .coming-soon-cont .coming-soon-container .coming-soon-content {
+      display: block;
+      width: 100%; }
+  .coming-soon-cont .coming-soon-content > h4 {
+    font-size: 40px;
+    margin-top: 30px;
+    font-weight: 700;
+    color: #bfc9d4;
+    margin-bottom: 0;
+    text-shadow: 0px 5px 4px rgba(31, 45, 61, 0.101961); }
+  .coming-soon-cont .coming-soon-content > p:not(.terms-conditions) {
+    font-size: 16px;
+    color: #888ea8;
+    font-weight: 700;
+    margin-bottom: 50px; }
+  .coming-soon-cont #timer {
+    display: flex; }
+    .coming-soon-cont #timer .days, .coming-soon-cont #timer .hours, .coming-soon-cont #timer .min {
+      padding: 28px 0;
+      background: #009688;
+      color: #fff;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-align: center;
+      height: 95px;
+      width: 95px;
+      margin-right: 15px; }
+    .coming-soon-cont #timer .sec {
+      padding: 28px 0;
+      background: #009688;
+      color: #fff;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 2px;
+      text-align: center;
+      height: 95px;
+      width: 95px;
+      margin-right: 15px;
+      margin-right: 0; }
+    .coming-soon-cont #timer .days .count, .coming-soon-cont #timer .days .text {
+      display: block; }
+    .coming-soon-cont #timer .hours .count, .coming-soon-cont #timer .hours .text {
+      display: block; }
+    .coming-soon-cont #timer .min .count, .coming-soon-cont #timer .min .text {
+      display: block; }
+    .coming-soon-cont #timer .sec .count, .coming-soon-cont #timer .sec .text {
+      display: block; }
+  .coming-soon-cont .coming-soon-content > h3 {
+    text-align: center;
+    font-size: 21px;
+    font-weight: 700;
+    margin-top: 75px;
+    margin-bottom: 40px;
+    color: #bfc9d4; }
+  .coming-soon-cont .coming-soon-wrap form .field-wrapper {
+    position: relative;
+    display: flex;
+    width: 100%; }
+    .coming-soon-cont .coming-soon-wrap form .field-wrapper svg {
+      position: absolute;
+      top: 11px;
+      color: #009688;
+      fill: rgba(0, 150, 136, 0.09);
+      left: 8px; }
+    .coming-soon-cont .coming-soon-wrap form .field-wrapper input {
+      padding: 10px 97px 10px 45px; }
+      .coming-soon-cont .coming-soon-wrap form .field-wrapper input::-webkit-input-placeholder, .coming-soon-cont .coming-soon-wrap form .field-wrapper input::-ms-input-placeholder, .coming-soon-cont .coming-soon-wrap form .field-wrapper input::-moz-placeholder {
+        color: #d3d3d3;
+        font-size: 14px; }
+    .coming-soon-cont .coming-soon-wrap form .field-wrapper button.btn {
+      align-self: center;
+      position: absolute;
+      right: 0;
+      padding: 10px 17px;
+      border-bottom-left-radius: 20px;
+      background: #009688;
+      border-color: #009688;
+      box-shadow: none; }
+      .coming-soon-cont .coming-soon-wrap form .field-wrapper button.btn:hover {
+        transform: none; }
+  .coming-soon-cont .social {
+    text-align: center;
+    color: #009688;
+    margin: 45px 0 0 0; }
+    .coming-soon-cont .social li {
+      margin: 0; }
+      .coming-soon-cont .social li:not(:last-child) {
+        margin-right: 10px;
+        padding-right: 10px;
+        border-right: 2px solid #3b3f5c; }
+    .coming-soon-cont .social svg {
+      color: #009688;
+      width: 20px;
+      height: 20px; }
+  .coming-soon-cont .terms-conditions {
+    max-width: 480px;
+    margin: 0 auto;
+    color: #bfc9d4;
+    font-weight: 600;
+    margin-top: 70px; }
+    .coming-soon-cont .terms-conditions a {
+      color: #009688;
+      font-weight: 700; }
+
+.coming-soon-image {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-direction: column;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  position: fixed;
+  right: 0;
+  min-height: auto;
+  height: 100vh;
+  width: 50%; }
+  .coming-soon-image .img-overlay-content {
+    height: 100%;
+    background: rgba(0, 0, 0, 0.55); }
+    .coming-soon-image .img-overlay-content p {
+      color: #fff;
+      position: absolute; }
+  .coming-soon-image .l-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #0e1726;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position-x: center;
+    background-position-y: center; }
+    .coming-soon-image .l-image .img-content {
+      display: flex;
+      justify-content: center;
+      height: 100%; }
+    .coming-soon-image .l-image img {
+      width: 577px;
+      align-self: center; }
+
+@media (max-width: 991px) {
+  .coming-soon-cont {
+    width: 100%; }
+    .coming-soon-cont .coming-soon-wrap {
+      min-width: auto; }
+  .coming-soon-image {
+    display: none; } }
+
+@media (max-width: 575px) {
+  .coming-soon-cont #timer {
+    display: flex;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+    justify-content: center; }
+    .coming-soon-cont #timer .hours:not(:last-child) {
+      margin-right: 0; }
+    .coming-soon-cont #timer .days, .coming-soon-cont #timer .hours, .coming-soon-cont #timer .min, .coming-soon-cont #timer .sec {
+      -ms-flex: 0 0 40%;
+      flex: 0 0 40%;
+      max-width: 40%;
+      margin-bottom: 15px;
+      margin-bottom: 15px;
+      padding: 14px 0;
+      height: 71px; } }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .coming-soon-cont .coming-soon-wrap {
+    width: 100%; }
+  .coming-soon-cont .coming-soon-container {
+    height: 100%; } }

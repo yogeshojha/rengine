@@ -1,0 +1,309 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.actions-btn-tooltip.tooltip {
+  opacity: 1;
+  top: -11px !important; }
+
+.actions-btn-tooltip .arrow:before {
+  border-top-color: #3b3f5c; }
+
+.actions-btn-tooltip .tooltip-inner {
+  background: #3b3f5c;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 30px;
+  box-shadow: 0px 5px 15px 1px rgba(113, 106, 202, 0.2);
+  padding: 4px 16px; }
+
+.invoice-container {
+  width: 100%; }
+
+.invoice-inbox {
+  padding: 0;
+  background-color: #0e1726;
+  box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06);
+  border-radius: 6px; }
+  .invoice-inbox .inv-number {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 0;
+    color: #888ea8; }
+  .invoice-inbox .invoice-action svg {
+    cursor: pointer;
+    font-weight: 600;
+    color: #888ea8;
+    margin-right: 6px;
+    vertical-align: middle;
+    fill: rgba(0, 23, 55, 0.08); }
+    .invoice-inbox .invoice-action svg:not(:last-child) {
+      margin-right: 15px; }
+    .invoice-inbox .invoice-action svg:hover {
+      color: #4361ee;
+      fill: rgba(27, 85, 226, 0.239216); }
+
+/*
+===================
+
+     Invoice
+
+===================
+*/
+/*    Inv head section   */
+.invoice .content-section .inv--head-section {
+  padding: 36px 35px;
+  margin-bottom: 40px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #191e3a; }
+
+.inv--customer-detail-section {
+  padding: 36px 35px;
+  padding-top: 0; }
+
+.invoice .content-section .inv--head-section h3.in-heading {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e0e6ed;
+  margin: 0;
+  margin-left: 12px; }
+
+.invoice .content-section .inv--head-section .company-logo {
+  width: 36px;
+  height: 36px; }
+
+.invoice .content-section .inv--head-section div.company-info {
+  display: flex;
+  justify-content: flex-end; }
+  .invoice .content-section .inv--head-section div.company-info svg {
+    width: 42px;
+    height: 42px;
+    margin-right: 10px;
+    color: #61b6cd;
+    fill: rgba(27, 85, 226, 0.239216); }
+
+.invoice .content-section .inv--head-section .inv-brand-name {
+  font-size: 23px;
+  font-weight: 600;
+  margin-bottom: 0;
+  align-self: center; }
+
+.invoice .content-section .inv--detail-section .inv-to {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 15px; }
+
+.invoice .content-section .inv--detail-section .inv-customer-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: #61b6cd; }
+
+.invoice .content-section .inv--detail-section .inv-detail-title {
+  font-weight: 700;
+  margin-bottom: 0;
+  font-size: 15px;
+  margin-bottom: 15px; }
+
+.invoice .content-section .inv--detail-section .inv-details {
+  font-weight: 700;
+  margin-bottom: 15px; }
+
+.invoice .content-section .inv--detail-section .inv-street-addr {
+  /* font-weight: 600; */
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: #888ea8; }
+
+.invoice .content-section .inv--detail-section .inv-email-address {
+  font-weight: 600;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: #888ea8; }
+
+.invoice .content-section .inv--detail-section .inv-list-number {
+  margin-bottom: 2px; }
+  .invoice .content-section .inv--detail-section .inv-list-number .inv-title {
+    font-weight: 400;
+    font-size: 20px; }
+  .invoice .content-section .inv--detail-section .inv-list-number .inv-number {
+    font-weight: 400;
+    font-size: 18px;
+    color: #61b6cd; }
+
+.invoice .content-section .inv--detail-section .inv-created-date, .invoice .content-section .inv--detail-section .inv-due-date {
+  margin-bottom: 2px;
+  color: #888ea8; }
+  .invoice .content-section .inv--detail-section .inv-created-date .inv-title, .invoice .content-section .inv--detail-section .inv-due-date .inv-title {
+    font-weight: 700;
+    font-size: 13px; }
+  .invoice .content-section .inv--detail-section .inv-created-date .inv-date, .invoice .content-section .inv--detail-section .inv-due-date .inv-date {
+    font-size: 13px;
+    font-weight: 600; }
+
+.invoice .content-section .inv--product-table-section {
+  padding: 30px 0; }
+  .invoice .content-section .inv--product-table-section table {
+    margin-bottom: 0; }
+  .invoice .content-section .inv--product-table-section thead tr {
+    border: none; }
+  .invoice .content-section .inv--product-table-section th {
+    padding: 9px 22px;
+    font-size: 11px !important;
+    border: none;
+    border-top: 1px solid #e0e6ed;
+    border-bottom: 1px solid #e0e6ed;
+    color: #bfc9d4 !important; }
+    .invoice .content-section .inv--product-table-section th:first-child {
+      padding-left: 35px; }
+    .invoice .content-section .inv--product-table-section th:last-child {
+      padding-right: 35px; }
+  .invoice .content-section .inv--product-table-section tr td:first-child {
+    padding-left: 35px; }
+  .invoice .content-section .inv--product-table-section tr td:last-child {
+    padding-right: 35px; }
+  .invoice .content-section .inv--product-table-section td {
+    color: #888ea8;
+    border: none;
+    padding: 10px 25px;
+    vertical-align: top !important; }
+  .invoice .content-section .inv--product-table-section tbody tr {
+    border-bottom: 1px solid #191e3a; }
+    .invoice .content-section .inv--product-table-section tbody tr:nth-of-type(even) td {
+      background-color: rgba(3, 3, 5, 0.122) !important; }
+
+.invoice .content-section .inv--payment-info {
+  font-size: 13px;
+  font-weight: 600; }
+  .invoice .content-section .inv--payment-info .inv-title {
+    color: #61b6cd;
+    font-weight: 600;
+    margin-bottom: 15px;
+    width: 65%;
+    margin-left: auto; }
+  .invoice .content-section .inv--payment-info p {
+    margin-bottom: 0;
+    display: flex;
+    width: 65%;
+    margin-left: auto;
+    justify-content: space-between; }
+  .invoice .content-section .inv--payment-info span {
+    font-weight: 500;
+    display: inline-block;
+    color: #888ea8;
+    white-space: nowrap; }
+  .invoice .content-section .inv--payment-info .inv-subtitle {
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-block;
+    color: #888ea8;
+    white-space: normal;
+    margin-right: 4px; }
+
+.invoice .content-section .inv--total-amounts {
+  padding: 0 35px;
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #191e3a; }
+  .invoice .content-section .inv--total-amounts .grand-total-title h4, .invoice .content-section .inv--total-amounts .grand-total-amount h4 {
+    position: relative;
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 0;
+    padding: 0;
+    color: #0e1726;
+    display: inline-block;
+    letter-spacing: 1px; }
+
+/*    Inv detail section    */
+/*inv-list-number*/
+/*inv-created-date*/
+/*inv-due-date*/
+/*    Inv product table section    */
+/*inv--payment-info*/
+/*inv--total-amounts*/
+/*inv--note*/
+.inv--note {
+  padding: 0 25px;
+  padding-bottom: 25px; }
+  .inv--note p {
+    margin-bottom: 0;
+    font-weight: 600;
+    color: #888ea8; }
+
+@media print {
+  body * {
+    visibility: hidden; }
+  #ct {
+    visibility: visible; }
+    #ct * {
+      visibility: visible; }
+  .doc-container {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0; } }
+
+@page {
+  size: auto;
+  margin: 0mm; }
+
+/*
+===============================
+    Invoice Actions Button
+===============================
+*/
+.invoice-actions-btn {
+  padding: 25px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+  background-color: #0e1726;
+  border-radius: 6px; }
+  .invoice-actions-btn label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #515365; }
+  .invoice-actions-btn .invoice-action-btn a {
+    -webkit-transform: none;
+    transform: none; }
+    .invoice-actions-btn .invoice-action-btn a.btn-send, .invoice-actions-btn .invoice-action-btn a.btn-print, .invoice-actions-btn .invoice-action-btn a.btn-download {
+      width: 100%;
+      margin-bottom: 20px; }
+    .invoice-actions-btn .invoice-action-btn a.btn-edit {
+      width: 100%; }
+
+/* Invoice Actions -> action-btn */
+@media (max-width: 1199px) {
+  .invoice-actions-btn {
+    margin-top: 25px; }
+    .invoice-actions-btn .invoice-action-btn a.btn-send, .invoice-actions-btn .invoice-action-btn a.btn-print, .invoice-actions-btn .invoice-action-btn a.btn-download {
+      margin-bottom: 0; } }
+
+@media (max-width: 767px) {
+  .invoice-actions-btn .invoice-action-btn a.btn-send, .invoice-actions-btn .invoice-action-btn a.btn-print {
+    margin-bottom: 20px; } }
+
+@media (max-width: 575px) {
+  .invoice .content-section .inv--payment-info .inv-title {
+    margin-top: 25px;
+    margin-left: 0;
+    margin-right: auto;
+    margin-bottom: 6px;
+    width: auto; }
+  .invoice .content-section .inv--payment-info p {
+    margin-left: 0;
+    margin-right: auto;
+    width: auto;
+    justify-content: flex-start; }
+  .invoice .content-section .inv--payment-info .inv-subtitle {
+    min-width: 140px; }
+  .invoice-actions-btn .invoice-action-btn a.btn-download {
+    margin-bottom: 20px; }
+  .invoice .content-section .inv--payment-info span {
+    white-space: normal; } }

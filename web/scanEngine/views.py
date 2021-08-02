@@ -21,7 +21,7 @@ def index(request):
     context = {
         'engine_ul_show': 'show',
         'engine_li': 'active',
-        'scan_engine_nav_active': 'true',
+        'scan_engine_nav_active': 'active',
         'engine_type': engine_type, }
     return render(request, 'scanEngine/index.html', context)
 
@@ -39,7 +39,7 @@ def add_engine(request):
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     context = {
             'scan_engine_nav_active':
-            'true', 'form': form}
+            'active', 'form': form}
     return render(request, 'scanEngine/add_engine.html', context)
 
 
@@ -77,7 +77,7 @@ def update_engine(request, id):
         form.set_value(engine)
     context = {
             'scan_engine_nav_active':
-            'true', 'form': form}
+            'active', 'form': form}
     return render(request, 'scanEngine/update_engine.html', context)
 
 
@@ -85,12 +85,12 @@ def wordlist_list(request):
     wordlists = Wordlist.objects.all().order_by('id')
     context = {
             'wordlist_nav_active':
-            'true', 'wordlists': wordlists}
+            'active', 'wordlists': wordlists}
     return render(request, 'scanEngine/wordlist/index.html', context)
 
 
 def add_wordlist(request):
-    context = {'wordlist_nav_active': 'true'}
+    context = {'wordlist_nav_active': 'active'}
     form = AddWordlistForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
         if form.is_valid() and 'upload_file' in request.FILES:
@@ -203,7 +203,7 @@ def update_configuration(request, id):
 def interesting_lookup(request):
     lookup_keywords = None
     context = {}
-    context['scan_engine_nav_active'] = 'true'
+    context['scan_engine_nav_active'] = 'active'
     context['interesting_lookup_li'] = 'active'
     context['engine_ul_show'] = 'show'
     form = InterestingLookupForm()
@@ -288,7 +288,7 @@ def tool_specific_settings(request):
             messages.add_message(request, messages.INFO, 'Amass config updated!')
             return http.HttpResponseRedirect(reverse('tool_settings'))
 
-    context['settings_nav_active'] = 'true'
+    context['settings_nav_active'] = 'active'
     context['tool_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
     gf_list = (subprocess.check_output(['gf', '-list'])).decode("utf-8")
@@ -308,7 +308,7 @@ def rengine_settings(request):
     context['free'] = total-used
     context['consumed_percent'] = int(100 * float(used)/float(total))
 
-    context['settings_nav_active'] = 'true'
+    context['settings_nav_active'] = 'active'
     context['rengine_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
 
@@ -341,7 +341,7 @@ def notification_settings(request):
                 'Notification Settings updated successfully and test message was sent.')
             return http.HttpResponseRedirect(reverse('notification_settings'))
 
-    context['settings_nav_active'] = 'true'
+    context['settings_nav_active'] = 'active'
     context['notification_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
     context['form'] = form
@@ -375,7 +375,7 @@ def proxy_settings(request):
             return http.HttpResponseRedirect(reverse('proxy_settings'))
 
 
-    context['settings_nav_active'] = 'true'
+    context['settings_nav_active'] = 'active'
     context['proxy_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
 

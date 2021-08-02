@@ -1,0 +1,265 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    ============================
+        Pagination container
+    =============================
+*/
+.paginating-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0; }
+  .paginating-container .prev svg, .paginating-container .next svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: text-bottom; }
+  .paginating-container .pagination {
+    margin-bottom: 0; }
+  .paginating-container li {
+    padding: 10px 0;
+    font-weight: 600;
+    color: #888ea8;
+    border-radius: 4px; }
+    .paginating-container li a {
+      padding: 10px 15px;
+      font-weight: 600;
+      color: #888ea8; }
+    .paginating-container li:not(:last-child) {
+      margin-right: 4px; }
+
+/*
+    Default Style
+*/
+.pagination-default li {
+  border: 2px solid #191e3a; }
+  .pagination-default li:hover {
+    border: 2px solid #009688 !important; }
+    .pagination-default li:hover a {
+      color: #009688; }
+  .pagination-default li.active {
+    border: 2px solid #009688 !important;
+    color: #009688; }
+  .pagination-default li a.active:hover, .pagination-default li.active a {
+    color: #009688; }
+
+.pagination-default .prev {
+  border: 2px solid #191e3a; }
+  .pagination-default .prev:hover {
+    border: 2px solid #009688; }
+    .pagination-default .prev:hover a, .pagination-default .prev:hover svg {
+      color: #009688; }
+
+.pagination-default .next {
+  border: 2px solid #191e3a; }
+  .pagination-default .next:hover {
+    border: 2px solid #009688; }
+    .pagination-default .next:hover a, .pagination-default .next:hover svg {
+      color: #009688; }
+
+/* 
+    Solid Style
+*/
+.pagination-solid li {
+  background-color: #191e3a; }
+  .pagination-solid li:hover a {
+    color: #009688; }
+  .pagination-solid li.active {
+    background-color: #009688 !important;
+    color: #fff; }
+  .pagination-solid li a.active:hover, .pagination-solid li.active a {
+    color: #fff; }
+
+.pagination-solid .prev {
+  background-color: #191e3a; }
+  .pagination-solid .prev:hover {
+    background-color: #009688; }
+    .pagination-solid .prev:hover a, .pagination-solid .prev:hover svg {
+      color: #fff; }
+
+.pagination-solid .next {
+  background-color: #191e3a; }
+  .pagination-solid .next:hover {
+    background-color: #009688; }
+    .pagination-solid .next:hover a, .pagination-solid .next:hover svg {
+      color: #fff; }
+
+/*    
+    ===================
+        No Spacing
+    ===================
+*/
+.pagination-no_spacing {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0; }
+  .pagination-no_spacing .prev {
+    background-color: #191e3a;
+    border-radius: 50%;
+    padding: 10px 11px;
+    margin-right: 5px; }
+    .pagination-no_spacing .prev:hover {
+      background-color: #009688; }
+      .pagination-no_spacing .prev:hover svg {
+        color: #fff; }
+  .pagination-no_spacing .next {
+    background-color: #191e3a;
+    border-radius: 50%;
+    padding: 10px 11px;
+    margin-left: 5px; }
+    .pagination-no_spacing .next:hover {
+      background-color: #009688; }
+      .pagination-no_spacing .next:hover svg {
+        color: #fff; }
+  .pagination-no_spacing .prev svg, .pagination-no_spacing .next svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: text-bottom; }
+  .pagination-no_spacing .pagination {
+    margin-bottom: 0; }
+  .pagination-no_spacing li {
+    background-color: #191e3a;
+    padding: 10px 0;
+    font-weight: 600;
+    color: #888ea8; }
+    .pagination-no_spacing li:first-child {
+      border-top-left-radius: 50px;
+      border-bottom-left-radius: 50px; }
+    .pagination-no_spacing li:last-child {
+      border-top-right-radius: 50px;
+      border-bottom-right-radius: 50px; }
+    .pagination-no_spacing li a {
+      padding: 10px 15px;
+      font-weight: 600;
+      color: #888ea8; }
+      .pagination-no_spacing li a.active {
+        background-color: #009688 !important;
+        border-radius: 6px;
+        color: #fff; }
+        .pagination-no_spacing li a.active:hover {
+          color: #fff; }
+      .pagination-no_spacing li a:hover {
+        color: #009688; }
+
+/*
+    =======================
+        Custom Pagination
+    =======================
+*/
+/*
+    Custom Solid
+*/
+.pagination-custom_solid {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0; }
+  .pagination-custom_solid .prev {
+    background-color: #191e3a;
+    border-radius: 50%;
+    padding: 10px 11px;
+    margin-right: 25px; }
+    .pagination-custom_solid .prev:hover {
+      background-color: #009688; }
+      .pagination-custom_solid .prev:hover svg {
+        color: #fff; }
+  .pagination-custom_solid .next {
+    background-color: #191e3a;
+    border-radius: 50%;
+    padding: 10px 11px;
+    margin-left: 25px; }
+    .pagination-custom_solid .next:hover {
+      background-color: #009688; }
+      .pagination-custom_solid .next:hover svg {
+        color: #fff; }
+  .pagination-custom_solid .prev svg, .pagination-custom_solid .next svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: text-bottom; }
+  .pagination-custom_solid .pagination {
+    margin-bottom: 0; }
+  .pagination-custom_solid li {
+    background-color: #191e3a;
+    padding: 10px 0;
+    font-weight: 600;
+    color: #888ea8; }
+    .pagination-custom_solid li:first-child {
+      border-top-left-radius: 50px;
+      border-bottom-left-radius: 50px; }
+    .pagination-custom_solid li:last-child {
+      border-top-right-radius: 50px;
+      border-bottom-right-radius: 50px; }
+    .pagination-custom_solid li a {
+      padding: 10px 15px;
+      font-weight: 600;
+      color: #888ea8; }
+      .pagination-custom_solid li a.active {
+        background-color: #009688 !important;
+        border-radius: 6px;
+        color: #fff; }
+        .pagination-custom_solid li a.active:hover {
+          color: #fff; }
+      .pagination-custom_solid li a:hover {
+        color: #009688; }
+
+/*
+    Custom Outline
+*/
+.pagination-custom_outline {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0; }
+  .pagination-custom_outline .prev {
+    border: 2px solid #191e3a;
+    border-radius: 50%;
+    padding: 8px 11px;
+    margin-right: 25px; }
+    .pagination-custom_outline .prev:hover {
+      border: 2px solid #009688; }
+      .pagination-custom_outline .prev:hover svg {
+        color: #009688; }
+  .pagination-custom_outline .next {
+    border: 2px solid #191e3a;
+    border-radius: 50%;
+    padding: 8px 11px;
+    margin-left: 25px; }
+    .pagination-custom_outline .next:hover {
+      border: 2px solid #009688; }
+      .pagination-custom_outline .next:hover svg {
+        color: #009688; }
+  .pagination-custom_outline .prev svg, .pagination-custom_outline .next svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom; }
+  .pagination-custom_outline .pagination {
+    margin-bottom: 0; }
+  .pagination-custom_outline li {
+    padding: 10px 0;
+    font-weight: 600;
+    color: #888ea8;
+    border: 1px solid #191e3a; }
+    .pagination-custom_outline li.active {
+      background-color: #191e3a; }
+    .pagination-custom_outline li:first-child {
+      border-top-left-radius: 50px;
+      border-bottom-left-radius: 50px; }
+    .pagination-custom_outline li:last-child {
+      border-top-right-radius: 50px;
+      border-bottom-right-radius: 50px; }
+    .pagination-custom_outline li a {
+      padding: 10px 15px;
+      font-weight: 600;
+      color: #888ea8; }
+      .pagination-custom_outline li a:hover {
+        color: #009688; }
+    .pagination-custom_outline li.active a {
+      background-color: #191e3a;
+      border: 2px solid #009688 !important;
+      border-radius: 6px;
+      color: #009688; }

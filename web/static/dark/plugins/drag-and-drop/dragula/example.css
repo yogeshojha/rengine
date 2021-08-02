@@ -1,0 +1,386 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+pre {
+  white-space: pre-wrap; }
+
+button.btn.btn-button-16.btn-sm {
+  padding: 7px 30px;
+  font-size: 13px; }
+
+sub {
+  display: block;
+  text-align: right;
+  margin-top: -10px;
+  font-size: 11px;
+  font-style: italic; }
+
+ul {
+  margin: 0;
+  padding: 0; }
+
+.header-search > form > .input-box > .search-box {
+  background-color: #77EDB0;
+  border: none;
+  line-height: 25px;
+  border-radius: 4px;
+  color: #060818;
+  margin: 0px 0;
+  display: inline;
+  width: auto; }
+
+/*
+ * note that styling gu-mirror directly is a bad practice because it's too generic.
+ * you're better off giving the draggable elements a unique class and styling that directly!
+ */
+.dragula > div, .gu-mirror {
+  margin: 10px;
+  padding: 10px;
+  transition: opacity 0.4s ease-in-out; }
+
+.dragula > div {
+  cursor: move;
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab; }
+
+.gu-mirror {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing; }
+
+.dragula .ex-moved {
+  background-color: #e74c3c; }
+
+#left-lovehandles > div, #right-lovehandles > div {
+  cursor: initial; }
+
+.image-thing {
+  margin: 20px 0;
+  display: block;
+  text-align: center; }
+
+.slack-join {
+  position: absolute;
+  font-weight: normal;
+  font-size: 14px;
+  right: 10px;
+  top: 50%;
+  margin-top: -8px;
+  line-height: 16px; }
+
+.parent.ex-1 .dragula {
+  padding: 15px; }
+  .parent.ex-1 .dragula .media {
+    background-color: #1b2e4b;
+    border-radius: 6px;
+    border: 1px solid #3b3f5c;
+    padding: 14px 26px; }
+
+body.gu-unselectable .media.el-drag-ex-1 {
+  background-color: #1b2e4b;
+  border-radius: 6px;
+  border: 1px solid #3b3f5c;
+  padding: 14px 26px; }
+
+.parent.ex-1 .dragula .media img, body.gu-unselectable .media.el-drag-ex-1 img {
+  width: 45px;
+  border-radius: 50%;
+  margin-right: 17px;
+  height: 45px; }
+
+.parent.ex-1 .dragula .media .media-body, body.gu-unselectable .media.el-drag-ex-1 .media-body {
+  align-self: center; }
+
+.parent.ex-1 .dragula .media .media-body h6, body.gu-unselectable .media.el-drag-ex-1 .media-body h6 {
+  color: #bfc9d4;
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.parent.ex-1 .dragula .media .media-body p, body.gu-unselectable .media.el-drag-ex-1 .media-body p {
+  color: #888ea8;
+  font-weight: 600;
+  margin-bottom: 0;
+  font-size: 12px; }
+
+.parent.ex-2 .dragula {
+  padding: 15px; }
+  .parent.ex-2 .dragula .media {
+    background-color: #1b2e4b;
+    border-radius: 6px;
+    border: 1px solid #3b3f5c;
+    padding: 14px 26px; }
+
+body.gu-unselectable .media.el-drag-ex-2 {
+  background-color: #1b2e4b;
+  border-radius: 6px;
+  border: 1px solid #3b3f5c;
+  padding: 14px 26px; }
+
+.parent.ex-2 .dragula .media img, body.gu-unselectable .media.el-drag-ex-2 img {
+  width: 45px;
+  border-radius: 50%;
+  margin-right: 17px;
+  height: 45px; }
+
+.parent.ex-2 .dragula .media i, body.gu-unselectable .media.el-drag-ex-2 i {
+  font-size: 19px;
+  border-radius: 20px; }
+
+.parent.ex-2 .dragula .media .media-body, body.gu-unselectable .media.el-drag-ex-2 .media-body {
+  align-self: center; }
+
+.parent.ex-2 .dragula .media .media-body h6, body.gu-unselectable .media.el-drag-ex-2 .media-body h6 {
+  color: #bfc9d4;
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.parent.ex-2 .dragula .media .media-body p, body.gu-unselectable .media.el-drag-ex-2 .media-body p {
+  color: #888ea8;
+  font-weight: 600;
+  margin-bottom: 0;
+  font-size: 12px; }
+
+.parent.ex-2 #left-events .f-icon-fill, body.gu-unselectable .media.el-drag-ex-2 .f-icon-fill {
+  display: none !important;
+  color: #e2a03f; }
+
+.parent.ex-2 #left-events .f-icon-line, body.gu-unselectable .media.el-drag-ex-2 .f-icon-line {
+  display: block !important;
+  color: #888ea8;
+  width: 17px; }
+
+.parent.ex-2 #right-events .f-icon-fill, body.gu-unselectable .media.el-drag-ex-2 .f-icon-fill {
+  display: block !important;
+  color: #e2a03f;
+  display: block !important;
+  width: 17px; }
+
+.parent.ex-2 #right-events .f-icon-line, body.gu-unselectable .media.el-drag-ex-2 .f-icon-line {
+  display: none !important;
+  color: #e2a03f; }
+
+.parent.ex-3 .dragula {
+  background-color: transparent;
+  padding: 15px; }
+  .parent.ex-3 .dragula div {
+    padding: 0;
+    margin: 0; }
+    .parent.ex-3 .dragula div.media {
+      background-color: #1b2e4b;
+      border-radius: 6px;
+      border: 1px solid #3b3f5c;
+      padding: 14px 26px;
+      margin-bottom: 10px; }
+
+body.gu-unselectable div.media.el-drag-ex-3.gu-mirror {
+  background-color: #1b2e4b;
+  border-radius: 6px;
+  border: 1px solid #3b3f5c;
+  padding: 14px 26px;
+  margin-bottom: 10px; }
+
+.parent.ex-3 .dragula .media img, body.gu-unselectable .media.el-drag-ex-3.gu-mirror img {
+  width: 45px;
+  border-radius: 10%;
+  margin-right: 17px;
+  height: 45px; }
+
+.parent.ex-3 .dragula .media .media-body, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body {
+  align-self: center; }
+
+.parent.ex-3 .dragula .media .media-body h5, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body h5 {
+  color: #bfc9d4;
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.parent.ex-3 .dragula .media .media-body h5 span.usr-commented, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body h5 span.usr-commented {
+  font-weight: 600;
+  color: #bfc9d4;
+  font-size: 14px; }
+
+.parent.ex-3 .dragula .media .media-body h5 span.comment-topic, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body h5 span.comment-topic {
+  font-weight: 600;
+  color: #2196f3;
+  font-size: 13px; }
+
+.parent.ex-3 .dragula .media .media-body p.meta-time, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body p.meta-time {
+  color: #888ea8;
+  font-weight: 600;
+  margin-bottom: 0;
+  font-size: 12px; }
+
+.parent.ex-4 .card.post .media.user-meta, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta {
+  padding: 10px; }
+
+.parent.ex-4 .card.post .media.user-meta img, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta img {
+  width: 45px;
+  border-radius: 10%;
+  margin-right: 17px;
+  height: 45px; }
+
+.parent.ex-4 .card.post .media.user-meta .media-body, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta .media-body {
+  align-self: center; }
+
+.parent.ex-4 .card.post .media.user-meta .media-body h5, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta .media-body h5 {
+  color: #bfc9d4;
+  font-weight: 600;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.parent.ex-4 .card.post .media.user-meta .media-body p, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta .media-body p {
+  color: #888ea8;
+  font-weight: 600;
+  margin-bottom: 0;
+  font-size: 12px; }
+
+.parent.ex-4 .card.post.text-post .card-body .post-content, body.gu-unselectable .card.post.text-post.el-drag-ex-4.gu-mirror .card-body .post-content {
+  padding: 20px 18px;
+  color: #888ea8 !important;
+  border-bottom: 1px solid #3b3f5c;
+  margin-bottom: 15px; }
+
+.parent.ex-4 .card.post.text-post .card-body .post-content p, body.gu-unselectable .card.post.text-post.el-drag-ex-4.gu-mirror .card-body .post-content p {
+  color: #888ea8 !important; }
+
+.parent.ex-4 .card.post div.people-liked-post ul, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror div.people-liked-post ul {
+  padding-left: 23px; }
+
+.parent.ex-4 .card.post div.people-liked-post ul li img, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror div.people-liked-post ul li img {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  border: 2px solid rgba(59, 63, 92, 0.25);
+  box-shadow: 0px 0px 15px 1px rgba(113, 106, 202, 0.3);
+  margin-left: -21px; }
+
+.parent.ex-4 .card.post div.people-liked-post .people-liked-post-name span, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror div.people-liked-post .people-liked-post-name span {
+  vertical-align: -webkit-baseline-middle;
+  font-size: 12px; }
+
+.parent.ex-4 .card.post div.people-liked-post .people-liked-post-name span a, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror div.people-liked-post .people-liked-post-name span a {
+  color: #2196f3;
+  font-weight: 600;
+  font-size: 13px; }
+
+.card.post.text-post {
+  background-color: #1b2e4b;
+  border-radius: 6px;
+  border: 1px solid #3b3f5c;
+  padding: 14px 26px; }
+  .card.post.text-post .card-body {
+    padding: 0; }
+
+/*Ex -5*/
+.parent.ex-5 .dragula div, .parent.ex-5 .dragula .gu-transit {
+  color: #fff;
+  align-self: center; }
+
+.parent.ex-5 .dragula > div, .parent.ex-5 .dragula > .gu-transit {
+  background-color: #1b2e4b;
+  border-radius: 6px;
+  border: 1px solid #3b3f5c;
+  padding: 14px 26px; }
+
+.parent.ex-5 .handle {
+  padding: 0 9px;
+  margin-right: 5px;
+  background-color: #0e1726;
+  border-radius: 2px;
+  color: #fff;
+  cursor: move; }
+
+body.gu-unselectable .handle {
+  padding: 0 9px;
+  margin-right: 5px;
+  background-color: #0e1726;
+  border-radius: 2px;
+  color: #fff;
+  cursor: move; }
+
+.parent.ex-5 .media ul, body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul {
+  position: relative;
+  margin-right: 17px; }
+
+.parent.ex-5 .media ul li.badge-notify, body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul li.badge-notify {
+  position: relative; }
+
+.parent.ex-5 .media ul li .notification, body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul li .notification {
+  position: absolute;
+  top: -30px;
+  left: -5px; }
+
+.parent.ex-5 .media ul li .notification span.badge, body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul li .notification span.badge {
+  border-radius: 50px;
+  padding: 2px 6px; }
+
+.parent.ex-5 .media ul li img, body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul li img {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  border: 2px solid rgba(59, 63, 92, 0.25);
+  box-shadow: 0px 0px 15px 1px rgba(113, 106, 202, 0.2);
+  margin-left: -26px; }
+
+.parent.ex-5 .dragula .media .media-body h5, body.gu-unselectable .media.el-drag-ex-5.gu-mirror .media-body h6 {
+  color: #000; }
+
+.parent.ex-5 .dragula .media .media-body h5, .parent.ex-5 .dragula .gu-transit .media.el-drag-ex-5.gu-mirror .media-body h5 {
+  font-weight: 600;
+  color: #bfc9d4;
+  font-size: 15px;
+  margin-top: 0;
+  margin-bottom: 0; }
+
+.parent.ex-5 .dragula .media .media-body p, .parent.ex-5 .dragula .gu-transit .media .media-body p {
+  color: #000; }
+
+@media screen and (max-width: 1199px) {
+  .parent.ex-1 .dragula .media .media-body button, body.gu-unselectable .media.el-drag-ex-1 .media-body button {
+    margin-top: 15px; } }
+
+@media screen and (max-width: 768px) {
+  .parent.ex-1 .dragula .media img, body.gu-unselectable .media.el-drag-ex-1 img {
+    margin-right: 0;
+    margin-bottom: 15px; } }
+
+@media screen and (max-width: 575px) {
+  .parent.ex-2 .dragula .media img, body.gu-unselectable .media.el-drag-ex-2 img, .parent.ex-3 .dragula .media img, body.gu-unselectable .media.el-drag-ex-3.gu-mirror img {
+    margin-bottom: 15px;
+    margin-right: 0; }
+  .parent.ex-3 .dragula .media .media-body p.meta-time, body.gu-unselectable .media.el-drag-ex-3.gu-mirror .media-body p.meta-time {
+    margin-top: 5px; }
+  .card.post.text-post {
+    padding: 14px 5px; }
+  .parent.ex-4 .card.post .media.user-meta img, body.gu-unselectable .card.post.el-drag-ex-4.gu-mirror .media.user-meta img {
+    margin-bottom: 15px;
+    margin-right: 0; }
+  .parent.ex-5 .media ul {
+    margin-bottom: 15px;
+    margin-right: 0; }
+  body.gu-unselectable .media.el-drag-ex-5.gu-mirror ul {
+    margin-bottom: 15px;
+    margin-right: 0; }
+  .parent.ex-5 .handle, body.gu-unselectable .handle {
+    display: inline-block;
+    margin-top: 15px;
+    margin-right: 0; } }
+
+@media screen and (max-width: 991px) {
+  .parent {
+    margin: 12px 0;
+    padding: 5px; } }

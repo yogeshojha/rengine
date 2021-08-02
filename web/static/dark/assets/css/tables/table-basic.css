@@ -1,0 +1,103 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.table-controls {
+  padding: 0;
+  margin: 0;
+  list-style: none; }
+  .table-controls > li {
+    display: inline-block;
+    margin: 0 2px;
+    line-height: 1; }
+    .table-controls > li > a {
+      display: inline-block; }
+      .table-controls > li > a i {
+        margin: 0;
+        color: #555;
+        font-size: 16px;
+        display: block; }
+        .table-controls > li > a i:hover {
+          text-decoration: none; }
+
+.table .progress {
+  margin-bottom: 0; }
+
+/*Table Colors*/
+.contextual-table.table > thead > tr > th, .contextual-table.table > tbody > tr > td {
+  border: none; }
+
+.table-default {
+  background-color: rgba(136, 142, 168, 0.1) !important;
+  color: #bfc9d4 !important; }
+  .table-default > td, .table-default > th {
+    background-color: rgba(136, 142, 168, 0.1) !important;
+    color: #bfc9d4 !important; }
+
+.table-primary {
+  background-color: rgba(27, 85, 226, 0.18) !important;
+  color: #bfc9d4 !important; }
+  .table-primary > td, .table-primary > th {
+    background-color: rgba(27, 85, 226, 0.18) !important;
+    color: #bfc9d4 !important; }
+
+.table-secondary {
+  background-color: rgba(92, 26, 195, 0.11) !important;
+  color: #bfc9d4 !important; }
+  .table-secondary > td, .table-secondary > th {
+    background-color: rgba(92, 26, 195, 0.11) !important;
+    color: #bfc9d4 !important; }
+
+.table-success {
+  background-color: rgba(141, 191, 66, 0.11) !important;
+  color: #bfc9d4 !important; }
+  .table-success > td, .table-success > th {
+    background-color: rgba(141, 191, 66, 0.11) !important;
+    color: #bfc9d4 !important; }
+
+.table-danger {
+  background-color: rgba(231, 81, 90, 0.11) !important;
+  color: #bfc9d4 !important; }
+  .table-danger > td, .table-danger > th {
+    background-color: rgba(231, 81, 90, 0.11) !important;
+    color: #bfc9d4 !important; }
+
+.table-warning {
+  background-color: rgba(226, 160, 63, 0.11) !important;
+  color: #bfc9d4 !important; }
+  .table-warning > td, .table-warning > th {
+    background-color: rgba(226, 160, 63, 0.11) !important;
+    color: #bfc9d4 !important; }
+
+.table-info {
+  background-color: rgba(33, 150, 243, 0.11) !important;
+  color: #bfc9d4 !important; }
+  .table-info > td, .table-info > th {
+    background-color: rgba(33, 150, 243, 0.11) !important;
+    color: #bfc9d4 !important; }
+
+.table-light {
+  background-color: transparent;
+  color: #ffffff !important; }
+  .table-light > td, .table-light > th {
+    background-color: transparent;
+    color: #ffffff !important; }
+
+.table-dark {
+  background-color: rgba(59, 63, 92, 0.56) !important;
+  background-color: rgba(14, 23, 38, 0.239216) !important;
+  background-color: rgba(27, 46, 75, 0.11) !important;
+  color: #bfc9d4 !important;
+  border-color: #fff !important; }
+  .table-dark > td, .table-dark > th {
+    background-color: rgba(59, 63, 92, 0.56) !important;
+    background-color: rgba(14, 23, 38, 0.239216) !important;
+    background-color: rgba(27, 46, 75, 0.11) !important;
+    color: #bfc9d4 !important;
+    border-color: #fff !important; }

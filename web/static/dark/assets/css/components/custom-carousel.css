@@ -1,0 +1,152 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.carousel-caption h3, .carousel-caption h5 {
+  color: #fff; }
+
+/*      style-custom-1       */
+.style-custom-1 .carousel-inner {
+  border-radius: 10px; }
+
+.style-custom-1 .carousel-item {
+  -webkit-transform-style: preserve-3d;
+  -moz-transform-style: preserve-3d;
+  transform-style: preserve-3d; }
+
+.style-custom-1 .carousel-caption {
+  position: absolute;
+  right: auto;
+  left: 44px;
+  color: #fff;
+  text-align: left;
+  width: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  bottom: initial; }
+  .style-custom-1 .carousel-caption .badge {
+    padding: 6px 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background-color: #4dcf8f;
+    color: #fff;
+    font-size: 13px;
+    margin-bottom: 35px; }
+  .style-custom-1 .carousel-caption h3 {
+    font-weight: 600;
+    color: #fff;
+    font-size: 28px;
+    letter-spacing: 2px;
+    margin-bottom: 36px; }
+  .style-custom-1 .carousel-caption .media img {
+    width: 49px;
+    height: 49px;
+    border-radius: 50%;
+    margin-right: 15px; }
+  .style-custom-1 .carousel-caption .media .media-body .user-name {
+    color: #fff;
+    font-size: 15px;
+    margin-bottom: 0; }
+  .style-custom-1 .carousel-caption .media .media-body .meta-time {
+    color: #fff;
+    font-size: 12px;
+    margin-bottom: 0; }
+    .style-custom-1 .carousel-caption .media .media-body .meta-time svg {
+      vertical-align: bottom;
+      width: 17px; }
+
+.style-custom-1 .carousel-indicators {
+  top: 45%;
+  bottom: auto;
+  display: block;
+  left: auto;
+  margin: auto;
+  right: 33px; }
+
+.style-custom-1 .carousel-control-next, .style-custom-1 .carousel-control-prev {
+  top: auto;
+  bottom: 32px;
+  background-color: transparent; }
+
+.style-custom-1 .carousel-indicators li {
+  width: 9px;
+  height: 10px;
+  border-radius: 10px;
+  border: none;
+  margin-top: 0;
+  margin-bottom: 9px; }
+  .style-custom-1 .carousel-indicators li.active {
+    height: 32px;
+    border-radius: 10px; }
+
+.style-custom-1 .carousel-control-prev {
+  right: 100px;
+  left: auto; }
+  .style-custom-1 .carousel-control-prev .carousel-control-prev-icon {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-arrow-left'%3e%3cline x1='19' y1='12' x2='5' y2='12'%3e%3c/line%3e%3cpolyline points='12 19 5 12 12 5'%3e%3c/polyline%3e%3c/svg%3e");
+    width: 26px;
+    height: 26px; }
+
+.style-custom-1 .carousel-control-next {
+  right: 40px;
+  left: auto; }
+  .style-custom-1 .carousel-control-next .carousel-control-next-icon {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-arrow-right'%3e%3cline x1='5' y1='12' x2='19' y2='12'%3e%3c/line%3e%3cpolyline points='12 5 19 12 12 19'%3e%3c/polyline%3e%3c/svg%3e");
+    width: 26px;
+    height: 26px; }
+
+/*
+	Default Style of the carousel arrows
+*/
+.carousel-control-next, .carousel-control-prev {
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50px;
+  background-color: rgba(255, 255, 255, 0.2);
+  display: -ms-flexbox;
+  -ms-flex-align: center;
+  -ms-flex-pack: center;
+  margin: auto 10px auto 10px; }
+
+/*
+	@media Query
+*/
+@media (max-width: 768px) {
+  .style-custom-1 {
+    min-height: 392px; }
+    .style-custom-1 .carousel-caption {
+      top: 8%;
+      transform: translateY(0); }
+    .style-custom-1 .carousel-indicators {
+      top: 16%; }
+    .style-custom-1 .carousel-inner {
+      min-height: 392px; }
+    .style-custom-1 .carousel-item {
+      min-height: 392px; }
+      .style-custom-1 .carousel-item img.slide-image {
+        min-height: 392px; } }
+
+@media (max-width: 575px) {
+  .style-custom-1 .carousel-caption {
+    width: 78%;
+    left: 30px; }
+  .style-custom-1 .carousel-indicators {
+    display: flex;
+    top: auto;
+    bottom: 22px;
+    right: 0;
+    left: 0; }
+    .style-custom-1 .carousel-indicators li.active {
+      width: 26px;
+      border-radius: 18px;
+      height: 10px; }
+  .style-custom-1 .carousel-control-next, .style-custom-1 .carousel-control-prev {
+    display: none; } }

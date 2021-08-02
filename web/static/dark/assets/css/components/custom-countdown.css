@@ -1,0 +1,66 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    Countdown Simple
+*/
+#cd-simple {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  #cd-simple .countdown {
+    margin-bottom: 23px; }
+  #cd-simple .clock-count-container {
+    width: 100px;
+    height: 100px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    border: 1px solid #191e3a; }
+  #cd-simple .clock-val {
+    font-size: 35px;
+    color: #25d5e4;
+    margin-bottom: 0; }
+  #cd-simple .clock-text {
+    color: #888ea8;
+    font-size: 15px;
+    margin-bottom: 0;
+    margin-top: 16px; }
+
+/*
+    Countdown Circle
+*/
+#cd-circle {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  #cd-circle .countdown {
+    margin-bottom: 23px; }
+  #cd-circle .clock-count-container {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    border: 1px solid #191e3a;
+    margin: 0 0 12px 0; }
+  #cd-circle .clock-val {
+    font-size: 25px;
+    color: #25d5e4;
+    margin-bottom: 0; }
+  #cd-circle .clock-text {
+    color: #888ea8;
+    font-size: 15px;
+    margin-bottom: 0;
+    margin-top: 16px; }

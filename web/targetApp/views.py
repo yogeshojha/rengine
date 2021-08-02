@@ -44,7 +44,7 @@ def add_target(request):
             return http.HttpResponseRedirect(reverse('list_target'))
     context = {
         "add_target_li": "active",
-        "target_data_active": "true",
+        "target_data_active": "active",
         'form': form}
     return render(request, 'target/add.html', context)
 
@@ -52,7 +52,7 @@ def add_target(request):
 def add_bulk_targets(request):
     context = {
         "add_targets_li": "active",
-        "target_data_active": "true", }
+        "target_data_active": "active", }
     if request.method == "POST":
         bulk_targets = [target.rstrip()
                         for target in request.POST['addTargets'].split('\n')]
@@ -82,7 +82,7 @@ def add_bulk_targets(request):
 def import_targets(request):
     context = {}
     context['import_target_li'] = 'active'
-    context['target_data_active'] = 'true'
+    context['target_data_active'] = 'active'
     if request.method == 'POST':
         if 'txtFile' in request.FILES:
             txt_file = request.FILES['txtFile']
@@ -143,7 +143,7 @@ def list_target(request):
     domains = Domain.objects.all().order_by('-insert_date')
     context = {
         'list_target_li': 'active',
-        'target_data_active': 'true',
+        'target_data_active': 'active',
         'domains': domains}
     return render(request, 'target/list.html', context)
 
@@ -201,7 +201,7 @@ def update_target(request, id):
         form.set_value(domain.name, domain.description)
     context = {
         'list_target_li': 'active',
-        'target_data_active': 'true',
+        'target_data_active': 'active',
         "domain": domain,
         "form": form}
     return render(request, 'target/update.html', context)
@@ -301,8 +301,7 @@ def add_organization(request):
                 ' added successfully')
             return http.HttpResponseRedirect(reverse('list_organization'))
     context = {
-        "add_organization_li": "active",
-        "organization_data_active": "true",
+        "organization_active": "active",
         "form": form
     }
     return render(request, 'organization/add.html', context)
@@ -310,8 +309,7 @@ def add_organization(request):
 def list_organization(request):
     organizations = Organization.objects.all().order_by('-insert_date')
     context = {
-        'list_organization_li': 'active',
-        'organization_data_active': 'true',
+        'organization_active': 'active',
         'organizations': organizations
     }
     return render(request, 'organization/list.html', context)

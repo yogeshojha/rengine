@@ -1,0 +1,78 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.tooltip-inner {
+  border-radius: 6px; }
+
+.tooltip .tooltip-item {
+  color: #fff;
+  padding: 0 9px; }
+
+.tooltip-section h6 {
+  color: #3b3f5c;
+  font-size: 0.875rem;
+  margin-top: 25px;
+  margin-bottom: 20px; }
+
+.tooltip .tooltip-inner {
+  background-color: #060818; }
+
+/*
+	==================
+		Colors
+	=================
+*/
+/*
+	Tooltips
+*/
+/*		Tooltip Inner 	*/
+.tooltip-primary .tooltip-inner {
+  color: #4361ee;
+  background-color: #060818; }
+
+.tooltip-success .tooltip-inner {
+  color: #1abc9c;
+  background-color: #060818; }
+
+.tooltip-info .tooltip-inner {
+  color: #2196f3;
+  background-color: #060818; }
+
+.tooltip-danger .tooltip-inner {
+  color: #e7515a;
+  background-color: #060818; }
+
+.tooltip-warning .tooltip-inner {
+  color: #e2a03f;
+  background-color: #060818; }
+
+.tooltip-secondary .tooltip-inner {
+  color: #805dca;
+  background-color: #060818; }
+
+.tooltip-dark .tooltip-inner {
+  color: #bfc9d4;
+  background-color: #060818; }
+
+/*		Tooltip arrow 		*/
+.tooltip.bs-tooltip-top .arrow:before {
+  border-top-color: #060818; }
+
+.tooltip.bs-tooltip-bottom .arrow:before {
+  border-bottom-color: #060818; }
+
+.tooltip.bs-tooltip-left .arrow:before {
+  border-left-color: #060818; }
+
+.tooltip.bs-tooltip-right .arrow:before {
+  border-right-color: #060818; }
+
+.tooltip-primary .arrow:before, .tooltip-success .arrow:before, .tooltip-info .arrow:before, .tooltip-danger .arrow:before, .tooltip-warning .arrow:before, .tooltip-secondary .arrow:before, .tooltip-dark .arrow:before {
+  border-top-color: #060818; }

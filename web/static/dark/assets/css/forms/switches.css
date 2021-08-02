@@ -1,0 +1,226 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+==================
+    Switches
+==================
+*/
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 35px;
+  height: 18px; }
+  .switch input {
+    display: none; }
+  .switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #888ea8;
+    -webkit-transition: .4s;
+    transition: .4s; }
+    .switch .slider:before {
+      position: absolute;
+      content: "";
+      background-color: white;
+      -webkit-transition: .4s;
+      -ms-transition: .4s;
+      transition: .4s;
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch input:checked + .slider:before {
+    -webkit-transform: translateX(17px);
+    -ms-transform: translateX(17px);
+    transform: translateX(17px); }
+  .switch .slider.round {
+    border-radius: 34px; }
+    .switch .slider.round:before {
+      border-radius: 50%; }
+  .switch.s-default .slider:before {
+    background-color: #d3d3d3; }
+  .switch.s-primary .slider:before {
+    background-color: #4361ee; }
+  .switch.s-success .slider:before {
+    background-color: #1abc9c; }
+  .switch.s-warning .slider:before {
+    background-color: #e2a03f; }
+  .switch.s-danger .slider:before {
+    background-color: #e7515a; }
+  .switch.s-secondary .slider:before {
+    background-color: #805dca; }
+  .switch.s-info .slider:before {
+    background-color: #2196f3; }
+  .switch.s-dark .slider:before {
+    background-color: #3b3f5c; }
+  .switch input:checked + .slider:before {
+    background-color: #fafafa; }
+  .switch.s-default input:checked + .slider {
+    background-color: #888ea8; }
+  .switch.s-default input:focus + .slider {
+    box-shadow: 0 0 1px #ebedf2; }
+  .switch.s-primary input:checked + .slider {
+    background-color: #4361ee; }
+  .switch.s-primary input:focus + .slider {
+    box-shadow: 0 0 1px #4361ee; }
+  .switch.s-success input:checked + .slider {
+    background-color: #1abc9c; }
+  .switch.s-success input:focus + .slider {
+    box-shadow: 0 0 1px #1abc9c; }
+  .switch.s-warning input:checked + .slider {
+    background-color: #e2a03f; }
+  .switch.s-warning input:focus + .slider {
+    box-shadow: 0 0 1px #e2a03f; }
+  .switch.s-danger input:checked + .slider {
+    background-color: #e7515a; }
+  .switch.s-danger input:focus + .slider {
+    box-shadow: 0 0 1px #e7515a; }
+  .switch.s-secondary input:checked + .slider {
+    background-color: #805dca; }
+  .switch.s-secondary input:focus + .slider {
+    box-shadow: 0 0 1px #805dca; }
+  .switch.s-info input:checked + .slider {
+    background-color: #2196f3; }
+  .switch.s-info input:focus + .slider {
+    box-shadow: 0 0 1px #2196f3; }
+  .switch.s-dark input:checked + .slider {
+    background-color: #3b3f5c; }
+  .switch.s-dark input:focus + .slider {
+    box-shadow: 0 0 1px #3b3f5c; }
+  .switch.s-outline .slider {
+    border: 2px solid #888ea8;
+    background-color: transparent;
+    width: 36px;
+    height: 19px; }
+    .switch.s-outline .slider:before {
+      height: 13px;
+      width: 13px; }
+  .switch.s-outline[class*="s-outline-"] .slider:before {
+    bottom: 1px;
+    left: 1px;
+    border: 2px solid #888ea8;
+    background-color: #888ea8;
+    color: #ebedf2;
+    box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.25); }
+  .switch.s-icons.s-outline-default {
+    color: #d3d3d3; }
+  .switch.s-icons.s-outline-primary {
+    color: #4361ee; }
+  .switch.s-icons.s-outline-success {
+    color: #1abc9c; }
+  .switch.s-icons.s-outline-warning {
+    color: #e2a03f; }
+  .switch.s-icons.s-outline-danger {
+    color: #e7515a; }
+  .switch.s-icons.s-outline-secondary {
+    color: #805dca; }
+  .switch.s-icons.s-outline-info {
+    color: #2196f3; }
+  .switch.s-icons.s-outline-dark {
+    color: #3b3f5c; }
+  .switch.s-outline-default input:checked + .slider {
+    border: 2px solid #888ea8; }
+    .switch.s-outline-default input:checked + .slider:before {
+      border: 2px solid #888ea8;
+      background-color: #888ea8;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.25); }
+  .switch.s-outline-default input:focus + .slider {
+    box-shadow: 0 0 1px #ebedf2; }
+  .switch.s-outline-primary input:checked + .slider {
+    border: 2px solid #4361ee; }
+    .switch.s-outline-primary input:checked + .slider:before {
+      border: 2px solid #4361ee;
+      background-color: #4361ee;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-primary input:focus + .slider {
+    box-shadow: 0 0 1px #4361ee; }
+  .switch.s-outline-success input:checked + .slider {
+    border: 2px solid #1abc9c; }
+    .switch.s-outline-success input:checked + .slider:before {
+      border: 2px solid #1abc9c;
+      background-color: #1abc9c;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-success input:focus + .slider {
+    box-shadow: 0 0 1px #1abc9c; }
+  .switch.s-outline-warning input:checked + .slider {
+    border: 2px solid #e2a03f; }
+    .switch.s-outline-warning input:checked + .slider:before {
+      border: 2px solid #e2a03f;
+      background-color: #e2a03f;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-warning input:focus + .slider {
+    box-shadow: 0 0 1px #e2a03f; }
+  .switch.s-outline-danger input:checked + .slider {
+    border: 2px solid #e7515a; }
+    .switch.s-outline-danger input:checked + .slider:before {
+      border: 2px solid #e7515a;
+      background-color: #e7515a;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-danger input:focus + .slider {
+    box-shadow: 0 0 1px #e7515a; }
+  .switch.s-outline-secondary input:checked + .slider {
+    border: 2px solid #805dca; }
+    .switch.s-outline-secondary input:checked + .slider:before {
+      border: 2px solid #805dca;
+      background-color: #805dca;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-secondary input:focus + .slider {
+    box-shadow: 0 0 1px #805dca; }
+  .switch.s-outline-info input:checked + .slider {
+    border: 2px solid #2196f3; }
+    .switch.s-outline-info input:checked + .slider:before {
+      border: 2px solid #2196f3;
+      background-color: #2196f3;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-info input:focus + .slider {
+    box-shadow: 0 0 1px #2196f3; }
+  .switch.s-outline-dark input:checked + .slider {
+    border: 2px solid #3b3f5c; }
+    .switch.s-outline-dark input:checked + .slider:before {
+      border: 2px solid #3b3f5c;
+      background-color: #3b3f5c;
+      box-shadow: 0 1px 15px 1px rgba(52, 40, 104, 0.34); }
+  .switch.s-outline-dark input:focus + .slider {
+    box-shadow: 0 0 1px #3b3f5c; }
+  .switch.s-icons {
+    width: 57px;
+    height: 30px; }
+    .switch.s-icons .slider {
+      width: 48px;
+      height: 25px; }
+      .switch.s-icons .slider:before {
+        vertical-align: sub;
+        color: #3b3f5c;
+        height: 19px;
+        width: 19px;
+        line-height: 1.3;
+        content: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%23e9ecef" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'); }
+    .switch.s-icons input:checked + .slider:before {
+      content: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg>');
+      vertical-align: sub;
+      color: #fff;
+      line-height: 1.4;
+      -webkit-transform: translateX(23px);
+      -ms-transform: translateX(23px);
+      transform: translateX(23px); }
+
+/* Hide default HTML checkbox */
+/* The slider */
+/* Rounded Slider Switches */
+/* Solid Switches*/
+/* Outline Switches */
+/*  Icons Switches */

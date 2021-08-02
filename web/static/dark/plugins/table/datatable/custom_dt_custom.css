@@ -1,0 +1,86 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.widget-content-area {
+  box-shadow: none !important;
+  border: none;
+  border-radius: 6px; }
+
+.table-hover:not(.table-dark) tbody tr td:first-child {
+  border-left: none !important;
+  border-left: none !important; }
+
+.table-hover:not(.table-dark) tbody tr:hover .new-control.new-checkbox .new-control-indicator {
+  border: 1px solid #4361ee; }
+
+/*Style. 1*/
+.style-1 .user-name {
+  font-size: 15px;
+  color: #888ea8; }
+
+.style-1 .profile-img img {
+  border-radius: 6px;
+  background-color: #3b3f5c;
+  padding: 2px;
+  width: 35px;
+  height: 35px; }
+
+/*Style. 2*/
+.style-2 .new-control.new-checkbox .new-control-indicator {
+  top: 1px; }
+
+.style-2 .user-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2a03f; }
+
+.style-2 img.profile-img {
+  background-color: #3b3f5c;
+  padding: 2px;
+  width: 35px;
+  height: 35px; }
+
+/*Style. 3*/
+.style-3 .new-control.new-checkbox .new-control-indicator {
+  top: 1px; }
+
+.style-3 .user-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e2a03f; }
+
+.style-3 img.profile-img {
+  border-radius: 6px;
+  background-color: #3b3f5c;
+  padding: 2px;
+  width: 35px;
+  height: 35px; }
+
+.style-3 .table-controls {
+  padding: 0;
+  margin-bottom: 0; }
+  .style-3 .table-controls li {
+    list-style: none;
+    display: inline; }
+    .style-3 .table-controls li svg {
+      cursor: pointer;
+      margin: 0;
+      vertical-align: middle;
+      cursor: pointer;
+      color: #515365;
+      stroke-width: 1.5;
+      width: 28px;
+      height: 28px; }
+
+.style-3.table-hover:not(.table-dark) tbody tr:hover .table-controls li svg {
+  color: #888ea8; }
+
+.style-3.table-hover:not(.table-dark) tbody tr:hover td:first-child {
+  color: #4361ee !important; }

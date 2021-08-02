@@ -1,0 +1,45 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.bootstrap-touchspin .input-group-btn-vertical {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  z-index: 11; }
+  .bootstrap-touchspin .input-group-btn-vertical > .btn {
+    position: absolute;
+    right: 0;
+    height: 50%;
+    padding: 0;
+    width: 2em;
+    text-align: center;
+    line-height: 1; }
+
+.input-group.btn-group.bootstrap-touchspin .btn {
+  padding: .375rem .75rem; }
+
+.bootstrap-touchspin .input-group-btn-vertical .bootstrap-touchspin-up {
+  border-radius: 0 4px 0 0;
+  top: 0; }
+
+.bootstrap-touchspin .input-group-btn-vertical .bootstrap-touchspin-down {
+  border-radius: 0 0 4px 0;
+  bottom: 0; }
+
+.bootstrap-touchspin .input-group-addon[class*="btn-"] .input-group-text {
+  color: #fff;
+  background-color: transparent;
+  border: none; }
+
+.btn[class*="btn-"].bootstrap-touchspin-up [class*="flaticon-"], .btn[class*="btn-"].bootstrap-touchspin-down [class*="flaticon-"] {
+  font-size: 10px; }
+
+.input-group-sm > .form-control, .input-group-sm > .input-group-prepend > .btn, .input-group-sm > .input-group-append > .btn {
+  height: auto !important; }

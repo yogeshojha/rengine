@@ -26,9 +26,15 @@ Organizations
 <div class="statbox widget box box-shadow">
   <div class="widget-header">
     <div class="row">
-      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+      <div class="col-6 mt-2">
         <h4>All Organizations</h4>
       </div>
+      <div class="col-6">
+        <div class="float-right mt-2">
+          <a href="{% url 'add_organization' %}" class="btn btn-primary mb-4">Add Organization</a>
+        </div>
+      </div>
+
     </div>
   </div>
   <div class="widget-content widget-content-area">
@@ -112,8 +118,8 @@ table = $('#style-2').DataTable({
     "sLengthMenu": "Results :  _MENU_",
   },
   "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
-        "<'table-responsive'tr>" +
-        "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+  "<'table-responsive'tr>" +
+  "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
   "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
   "pageLength": 10
 });

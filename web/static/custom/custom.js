@@ -103,19 +103,6 @@ function change_subdomain_status(id)
 	})
 }
 
-function collapse_sidebar()
-{
-	// This function collapses sidebar
-	// collapse sidebar only when screen size is > md (bootstrap), for smaller screen theme already hides the sidebar
-	if ($(window).width() > 992) {
-		$( document ).ready(function() {
-			$("html, body").addClass("sidebar-noneoverflow");
-			$("#container").addClass("sidebar-closed");
-			$("header").addClass("expand-header");
-		});
-	}
-}
-
 // truncate the long string and put ... in the end
 function truncate(source, size) {
 	return source.length > size ? source.slice(0, size - 1) + "…" : source;

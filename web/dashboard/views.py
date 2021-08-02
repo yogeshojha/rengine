@@ -116,7 +116,7 @@ def index(request):
     endpoints_in_last_week.reverse()
 
     context = {
-        'dashboard_data_active': 'true',
+        'dashboard_data_active': 'active',
         'domain_count': domain_count,
         'endpoint_count': endpoint_count,
         'scan_count': scan_count,

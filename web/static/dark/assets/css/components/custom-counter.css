@@ -1,0 +1,72 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    Simple Counter
+*/
+.simple--counter-container {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .simple--counter-container .counter-container {
+    margin-bottom: 23px; }
+    .simple--counter-container .counter-container .counter-content {
+      width: 100px;
+      height: 100px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      border: 1px solid #191e3a; }
+  .simple--counter-container .s-counter {
+    font-size: 35px;
+    color: #25d5e4;
+    margin-bottom: 0; }
+  .simple--counter-container .s-counter-text {
+    color: #888ea8;
+    font-size: 15px;
+    margin-bottom: 0;
+    margin-top: 16px; }
+
+/*
+    With Icon
+*/
+.icon--counter-container {
+  display: flex;
+  justify-content: space-around;
+  -ms-flex-wrap: wrap;
+  flex-wrap: wrap; }
+  .icon--counter-container .counter-container {
+    margin-bottom: 23px; }
+  .icon--counter-container .counter-ico {
+    color: #25d5e4;
+    font-size: 28px;
+    width: 30px;
+    height: 30px;
+    margin-bottom: 6px; }
+  .icon--counter-container .counter-content {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    border: 1px solid #191e3a;
+    margin: 0 0 12px 0; }
+  .icon--counter-container .ico-counter {
+    font-size: 25px;
+    color: #888ea8;
+    margin-bottom: 0; }
+  .icon--counter-container .ico-counter-text {
+    color: #888ea8;
+    font-size: 13px;
+    font-weight: 100;
+    letter-spacing: 1px; }

@@ -1,0 +1,28 @@
+.element-background {
+    padding: 15px;
+    border: 1px solid #191e3a;
+    border-radius: 6px;
+}
+.font-family-showcase {
+    width: 18rem;
+    border: 1px solid #191e3a;
+    border-radius: 6px;
+    background: #191e3a;
+    margin: 0 auto;
+}
+.font-family-showcase .font-family-text { padding: 20px; border-bottom: 1px solid #0e1726; }
+.font-family-showcase .font-family-text p { font-size: 40px; margin-bottom: 0; }
+.font-family-showcase .font-family-info { padding: 20px; background-color: #191e3a; }
+.font-family-showcase .font-family-info h5 { font-size: 17px; margin-bottom: 0; }
+.font-family-showcase .font-family-info a {
+    font-weight: 600;
+    font-size: 13px;
+    color: #bfc9d4;
+}
+.font-family-showcase .font-family-info .font-family-link {
+    margin-top: 30px;
+    text-align: center;
+}
+@media (max-width: 575px) {
+    .font-family-showcase { width: auto; }
+}

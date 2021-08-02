@@ -1,0 +1,327 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.ps--active-y > .ps__rail-y {
+  z-index: 20; }
+
+.modal-backdrop {
+  background-color: #515365; }
+
+#content > .container {
+  max-width: 100% !important; }
+
+.fc-view {
+  height: calc(100vh - 312px); }
+
+#calendar {
+  height: calc(100vh - 321px); }
+
+.popover {
+  border: none;
+  border-radius: 5px;
+  max-width: 338px;
+  min-width: 270px;
+  background: #060818;
+  box-shadow: none;
+  border: 1px solid #060818;
+  -webkit-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2); }
+
+.popover-primary .arrow:after, .popover-primary .arrow:before {
+  display: none;
+  border-top-color: #4361ee; }
+
+.popover-primary .popover-header {
+  background-color: #060818;
+  border-color: #060818;
+  color: #bfc9d4;
+  padding: 11px 18px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  font-size: 14px;
+  letter-spacing: 1px;
+  font-weight: 400; }
+
+.popover-primary .popover-body {
+  color: #bfc9d4;
+  min-height: 90px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 11px 18px; }
+
+.flatpickr-calendar.open {
+  display: inline-block;
+  z-index: 99999 !important; }
+
+.calendar-upper-section {
+  padding: 0;
+  margin-bottom: 40px;
+  margin-top: 5px; }
+
+.labels .label {
+  display: inline-block;
+  margin-bottom: 0;
+  position: relative;
+  padding: 0 17px;
+  font-size: 14px;
+  color: #bfc9d4;
+  cursor: pointer; }
+  .labels .label:before {
+    content: '';
+    position: absolute;
+    padding: 0;
+    background: #000;
+    border-radius: 2px;
+    left: 0px;
+    top: 5px;
+    height: 10px;
+    width: 10px; }
+  .labels .label.label-primary:before {
+    background: #4361ee; }
+  .labels .label.label-warning:before {
+    background: #e2a03f; }
+  .labels .label.label-success:before {
+    background: #1abc9c; }
+  .labels .label.label-danger:before {
+    background: #e7515a; }
+
+.new-control.new-radio > input:not(:checked) ~ span.new-control-indicator {
+  background-color: transparent !important; }
+
+.radio-primary span.new-control-indicator {
+  border: 2px solid #4361ee; }
+
+.radio-warning span.new-control-indicator {
+  border: 2px solid #e2a03f; }
+
+.radio-success span.new-control-indicator {
+  border: 2px solid #1abc9c; }
+
+.radio-danger span.new-control-indicator {
+  border: 2px solid #e7515a; }
+
+.fc-button-group {
+  border-radius: 6px; }
+
+button.fc-month-button, button.fc-agendaWeek-button, button.fc-agendaDay-button {
+  padding: 6px 10px;
+  letter-spacing: 1px;
+  color: #e0e6ed; }
+
+button.fc-prev-button, button.fc-next-button {
+  padding: 6px 10px; }
+
+button.fc-today-button {
+  border: 1px solid #1b2e4b;
+  border-radius: 6px !important;
+  padding: 6px 10px;
+  color: #fff; }
+
+.bg-primary {
+  background-color: rgba(27, 85, 226, 0.27) !important;
+  border-color: #4361ee !important;
+  color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important; }
+
+.bg-success {
+  background-color: rgba(0, 150, 136, 0.28) !important;
+  border-color: rgba(0, 150, 136, 0.28) !important;
+  color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important; }
+
+.bg-warning {
+  background-color: rgba(226, 160, 63, 0.42) !important;
+  border-color: rgba(226, 160, 63, 0.42) !important;
+  color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important; }
+
+.bg-danger {
+  background-color: rgba(231, 80, 90, 0.38) !important;
+  border-color: rgba(231, 80, 90, 0.38) !important;
+  color: #fff;
+  -webkit-box-shadow: none !important;
+  box-shadow: none !important; }
+
+a.bg-primary:hover, a.bg-success:hover, a.bg-warning:hover, a.bg-danger:hover {
+  background-color: inherit !important; }
+
+.fc-scroller {
+  height: 100% !important;
+  position: relative;
+  height: calc(100vh - 384px) !important; }
+  .fc-scroller.fc-time-grid-container {
+    height: calc(100vh - 420px) !important; }
+
+.fc-agendaWeek-view .fc-scroller.fc-time-grid-container, .fc-agendaDay-view .fc-scroller.fc-time-grid-container {
+  height: calc(100vh - 430px) !important; }
+
+/*
+    Modal
+*/
+#addEventsModal {
+  overflow-x: hidden;
+  overflow-y: auto; }
+  #addEventsModal .modal-content {
+    border: none; }
+  #addEventsModal .modal-body {
+    padding: 25px 38px; }
+    #addEventsModal .modal-body .close {
+      cursor: pointer;
+      color: #bfc9d4;
+      text-shadow: none; }
+  #addEventsModal .modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0px;
+    color: #bfc9d4; }
+  #addEventsModal form {
+    margin-top: 30px; }
+    #addEventsModal form input[readonly] {
+      background: #1b2e4b !important; }
+
+.flatpickr-calendar.arrowTop:before {
+  border-bottom-color: #0e1726 !important; }
+
+#addEventsModal form label {
+  margin-bottom: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e3e4eb; }
+
+#addEventsModal form .event-badge {
+  margin-top: 16px; }
+  #addEventsModal form .event-badge p {
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #e3e4eb; }
+
+#addEventsModal form input {
+  margin-bottom: 25px; }
+
+#addEventsModal form .form-group {
+  margin-bottom: 0; }
+
+#calendar .form-control {
+  margin-bottom: 20px;
+  color: #3b3f5c;
+  letter-spacing: 2px;
+  font-weight: 600; }
+
+input[readonly] {
+  color: #3b3f5c; }
+
+.modal-footer {
+  border-top: none;
+  padding-top: 0;
+  padding-bottom: 25px; }
+
+#addEventsModal .modal-footer .btn {
+  box-shadow: none; }
+
+#addEventsModal .modal-footer #add-e {
+  background-color: #4361ee;
+  color: #fff;
+  font-weight: 600;
+  border: 1px solid #4361ee;
+  padding: 10px 25px; }
+
+#addEventsModal .modal-footer #edit-event {
+  background-color: #009688;
+  color: #fff;
+  font-weight: 600;
+  border: 1px solid #009688;
+  padding: 10px 25px; }
+
+#addEventsModal .modal-footer [data-dismiss="modal"] {
+  background-color: #1b2e4b;
+  color: #bfc9d4;
+  font-weight: 500;
+  border: 1px solid #1b2e4b;
+  padding: 10px 25px; }
+
+td.fc-today.fc-state-highlight span {
+  background: #4361ee;
+  border-radius: 50%;
+  color: #fff;
+  display: inline-block !important;
+  font-size: 12px;
+  font-weight: 700; }
+
+.fc-day-grid-event .fc-content:before {
+  content: '';
+  height: 5px;
+  background: #000;
+  width: 5px;
+  position: absolute;
+  left: -9px;
+  top: 4px;
+  border-radius: 50%; }
+
+.fc-day-grid-event.bg-primary .fc-content:before {
+  background: #4361ee; }
+
+.fc-day-grid-event.bg-success .fc-content:before {
+  background: #1abc9c; }
+
+.fc-day-grid-event.bg-warning .fc-content:before {
+  background: #e2a03f; }
+
+.fc-day-grid-event.bg-danger .fc-content:before {
+  background: #e7515a; }
+
+.animated {
+  -webkit-animation-duration: .500s;
+  animation-duration: .500s;
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both; }
+
+@-webkit-keyframes fadeIn {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0; }
+  100% {
+    opacity: 1; } }
+
+.fadeIn {
+  -webkit-animation-name: fadeIn;
+  animation-name: fadeIn; }
+
+@media (max-width: 767px) {
+  #calendar {
+    height: auto !important; }
+    #calendar .fc-event {
+      margin: 0; }
+  .fc-scroller, .fc-agendaWeek-view .fc-scroller.fc-time-grid-container, .fc-agendaDay-view .fc-scroller.fc-time-grid-container, .fc-view {
+    height: auto !important; }
+  .fc-basic-view .fc-body .fc-row {
+    height: 120px !important; }
+  .fc-toolbar .fc-left {
+    float: none;
+    display: block;
+    width: 100%;
+    margin-bottom: 30px; }
+  .fc .fc-toolbar > * > * {
+    float: none;
+    vertical-align: bottom; }
+  .fc-toolbar .fc-right {
+    float: none;
+    margin: 0 0 30px 0; }
+  .fc-toolbar .fc-center {
+    margin: 0 0 30px 0; } }

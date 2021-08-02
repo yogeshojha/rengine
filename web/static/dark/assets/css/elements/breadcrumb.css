@@ -1,0 +1,238 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.breadcrumb {
+  background-color: transparent;
+  margin-bottom: 0; }
+
+/*
+    Breadcrumb 1
+*/
+.breadcrumb-one {
+  display: inline-block; }
+  .breadcrumb-one .breadcrumb {
+    padding: 0;
+    vertical-align: text-bottom; }
+  .breadcrumb-one .breadcrumb-item {
+    align-self: center; }
+    .breadcrumb-one .breadcrumb-item a {
+      color: #888ea8;
+      vertical-align: text-bottom; }
+      .breadcrumb-one .breadcrumb-item a svg {
+        width: 18px;
+        height: 18px;
+        vertical-align: sub;
+        fill: #1b2e4b; }
+    .breadcrumb-one .breadcrumb-item.active a {
+      color: #515365; }
+    .breadcrumb-one .breadcrumb-item span {
+      vertical-align: text-bottom; }
+    .breadcrumb-one .breadcrumb-item.active {
+      color: #d3d3d3;
+      font-weight: 600; }
+    .breadcrumb-one .breadcrumb-item + .breadcrumb-item {
+      padding: 0px; }
+      .breadcrumb-one .breadcrumb-item + .breadcrumb-item::before {
+        color: #888ea8;
+        padding: 0 6px 0 6px; }
+
+/*
+    Breadcrumb 2
+*/
+.breadcrumb-two .breadcrumb {
+  list-style: none;
+  overflow: hidden;
+  padding: 0; }
+  .breadcrumb-two .breadcrumb li {
+    float: left; }
+
+.breadcrumb-two .breadcrumb-item + .breadcrumb-item::before {
+  color: #fff; }
+
+.breadcrumb-two .breadcrumb li a {
+  color: #888ea8;
+  text-decoration: none;
+  padding: 6px 0 6px 40px;
+  background: #1b2e4b;
+  position: relative;
+  display: block;
+  float: left; }
+  .breadcrumb-two .breadcrumb li a:after {
+    content: " ";
+    display: block;
+    width: 0;
+    height: 0;
+    border-top: 50px solid transparent;
+    /* Go big on the size, and let overflow hide */
+    border-bottom: 50px solid transparent;
+    border-left: 30px solid #1b2e4b;
+    position: absolute;
+    top: 50%;
+    margin-top: -50px;
+    left: 100%;
+    z-index: 2; }
+  .breadcrumb-two .breadcrumb li a:before {
+    content: " ";
+    display: block;
+    width: 0;
+    height: 0;
+    border-top: 50px solid transparent;
+    /* Go big on the size, and let overflow hide */
+    border-bottom: 50px solid transparent;
+    border-left: 30px solid #1b2e4b;
+    position: absolute;
+    top: 50%;
+    margin-top: -50px;
+    margin-left: 1px;
+    left: 100%;
+    z-index: 1; }
+
+.breadcrumb-two .breadcrumb li:last-child a:before {
+  margin-left: -6px; }
+
+.breadcrumb-two .breadcrumb li:first-child a {
+  padding-left: 10px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px; }
+
+.breadcrumb-two .breadcrumb li.active a {
+  background: #4361ee;
+  color: #fff; }
+  .breadcrumb-two .breadcrumb li.active a:after {
+    border-left-color: #4361ee; }
+
+.breadcrumb-two .breadcrumb li:last-child a {
+  pointer-events: none;
+  cursor: default;
+  padding-left: 20px;
+  padding-right: 20px;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px; }
+  .breadcrumb-two .breadcrumb li:last-child a:after {
+    border: none; }
+
+/*
+    Breadcrumb 3
+*/
+.breadcrumb-three {
+  padding: 0;
+  background-color: transparent; }
+  .breadcrumb-three .breadcrumb {
+    padding: 0; }
+  .breadcrumb-three .breadcrumb-item {
+    color: #888ea8;
+    padding: 9px 9px;
+    background: #f1f2f3;
+    border-bottom-right-radius: 13px;
+    border-top-right-radius: 13px; }
+    .breadcrumb-three .breadcrumb-item.active {
+      color: #4361ee;
+      font-weight: 600; }
+    .breadcrumb-three .breadcrumb-item + .breadcrumb-item::before {
+      color: #515365;
+      font-weight: 700;
+      font-size: 13px;
+      content: '';
+      padding: 0px 6px;
+      vertical-align: sub; }
+
+/*
+    Breadcrumb 4
+*/
+.breadcrumb-four .breadcrumb {
+  display: inline-flex;
+  padding: 0;
+  background-color: transparent;
+  margin-bottom: 0; }
+  .breadcrumb-four .breadcrumb li {
+    position: relative;
+    font-size: 14px;
+    background: #191e3a;
+    margin-right: 20px;
+    margin-bottom: 6px;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 1px solid #191e3a;
+    -webkit-box-shadow: 0px 0px 4px 0px rgba(6, 8, 24, 0.49);
+    box-shadow: 0px 0px 4px 0px rgba(6, 8, 24, 0.49); }
+    .breadcrumb-four .breadcrumb li:last-child {
+      margin-right: 0; }
+    .breadcrumb-four .breadcrumb li:not(:first-child):before {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      height: 4px;
+      width: 4px;
+      background: #009688;
+      left: -13px;
+      top: 50%; }
+    .breadcrumb-four .breadcrumb li a {
+      color: #888ea8;
+      vertical-align: sub; }
+      .breadcrumb-four .breadcrumb li a:hover {
+        text-decoration: none;
+        color: #506690; }
+    .breadcrumb-four .breadcrumb li:not(:first-child) svg {
+      margin-right: 5px; }
+    .breadcrumb-four .breadcrumb li svg {
+      color: #888ea8;
+      vertical-align: text-bottom;
+      width: 20px; }
+    .breadcrumb-four .breadcrumb li.active a {
+      color: #009688 !important;
+      font-weight: 600; }
+    .breadcrumb-four .breadcrumb li.active svg {
+      color: #009688; }
+    .breadcrumb-four .breadcrumb li span {
+      vertical-align: text-bottom; }
+
+/*
+    Breadcrumb 5
+*/
+.breadcrumb-five .breadcrumb {
+  padding: 0;
+  background-color: transparent;
+  margin-bottom: 0; }
+  .breadcrumb-five .breadcrumb li {
+    position: relative;
+    font-size: 14px;
+    margin-right: 20px;
+    padding: 0 7px; }
+    .breadcrumb-five .breadcrumb li:last-child {
+      margin-right: 0; }
+    .breadcrumb-five .breadcrumb li:not(:first-child):before {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      height: 4px;
+      width: 4px;
+      background: #009688;
+      left: -13px;
+      top: 50%; }
+    .breadcrumb-five .breadcrumb li a {
+      color: #888ea8;
+      vertical-align: sub; }
+      .breadcrumb-five .breadcrumb li a:hover {
+        text-decoration: none;
+        color: #607d8b; }
+    .breadcrumb-five .breadcrumb li.active a {
+      color: #009688 !important;
+      font-weight: 600; }
+
+@media (max-width: 575px) {
+  .breadcrumb-two .breadcrumb li {
+    padding: 0; }
+    .breadcrumb-two .breadcrumb li a {
+      padding: 6px 10px 6px 10px;
+      margin-bottom: 5px; }
+      .breadcrumb-two .breadcrumb li a:after {
+        display: none; }
+  .breadcrumb-two .breadcrumb-item + .breadcrumb-item::before, .breadcrumb-two .breadcrumb li a:before {
+    display: none; } }

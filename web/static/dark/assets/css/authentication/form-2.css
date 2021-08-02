@@ -1,0 +1,230 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+html {
+  height: 100%; }
+
+body {
+  height: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  background-color: #0e1726; }
+
+.form-form {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  margin: 0 auto; }
+  .form-form .form-form-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    min-width: 311px;
+    min-height: 100%;
+    align-self: center;
+    width: 100%;
+    height: 100vh;
+    justify-content: center; }
+  .form-form .form-container {
+    align-items: center;
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    min-height: 100%; }
+    .form-form .form-container .form-content {
+      display: block;
+      width: 100%;
+      padding: 25px;
+      background: #060818;
+      text-align: center;
+      border-radius: 15px;
+      -webkit-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+      -moz-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2); }
+      .form-form .form-container .form-content h1 {
+        font-size: 32px;
+        color: #bfc9d4; }
+      .form-form .form-container .form-content > p {
+        font-size: 13px;
+        color: #888ea8;
+        font-weight: 600;
+        margin-bottom: 35px; }
+  .form-form .form-form-wrap .user-meta {
+    margin-bottom: 35px; }
+    .form-form .form-form-wrap .user-meta img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      margin-right: 15px;
+      border: 4px solid rgba(59, 63, 92, 0.25); }
+    .form-form .form-form-wrap .user-meta div {
+      align-self: center; }
+    .form-form .form-form-wrap .user-meta p {
+      font-size: 31px;
+      color: #bfc9d4;
+      margin-bottom: 0; }
+  .form-form .form-form-wrap h1 .brand-name {
+    color: #bfc9d4;
+    font-weight: 600; }
+  .form-form .form-form-wrap p.signup-link {
+    font-size: 14px;
+    color: #bfc9d4;
+    margin-bottom: 15px;
+    text-align: center;
+    margin-top: 50px; }
+    .form-form .form-form-wrap p.signup-link.register {
+      font-size: 13px;
+      color: #888ea8;
+      font-weight: 600;
+      margin-bottom: 25px;
+      margin-top: 0; }
+    .form-form .form-form-wrap p.signup-link.recovery {
+      margin-top: 0; }
+    .form-form .form-form-wrap p.signup-link a {
+      color: #009688;
+      border-bottom: 1px solid; }
+  .form-form .form-form-wrap form .field-wrapper {
+    width: 100%; }
+    .form-form .form-form-wrap form .field-wrapper.input {
+      padding: 11px 0px 16px 0;
+      border-bottom: none;
+      position: relative; }
+      .form-form .form-form-wrap form .field-wrapper.input:focus {
+        border: 1px solid #000; }
+    .form-form .form-form-wrap form .field-wrapper.toggle-pass p {
+      font-weight: 600;
+      color: #bfc9d4;
+      margin-bottom: 0; }
+    .form-form .form-form-wrap form .field-wrapper .logged-in-user-name {
+      font-size: 37px;
+      color: #bfc9d4; }
+    .form-form .form-form-wrap form .field-wrapper label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #bfc9d4;
+      margin-bottom: 8px; }
+    .form-form .form-form-wrap form .field-wrapper.terms_condition {
+      margin-bottom: 20px; }
+      .form-form .form-form-wrap form .field-wrapper.terms_condition label {
+        font-size: 14px;
+        color: #009688;
+        padding-left: 31px;
+        font-weight: 100; }
+      .form-form .form-form-wrap form .field-wrapper.terms_condition a {
+        color: #bfc9d4; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-user {
+      top: 53px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-lock {
+      top: 50px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-at-sign {
+      top: 47px; }
+      .form-form .form-form-wrap form .field-wrapper svg.feather-at-sign.register {
+        top: 53px; }
+    .form-form .form-form-wrap form .field-wrapper svg:not(.feather-eye) {
+      position: absolute;
+      left: 12px;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08);
+      width: 20px;
+      height: 20px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-eye {
+      position: absolute;
+      top: 49px;
+      right: 13px;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08);
+      width: 17px;
+      cursor: pointer; }
+    .form-form .form-form-wrap form .field-wrapper input {
+      display: inline-block;
+      vertical-align: middle;
+      border-radius: 6px;
+      min-width: 50px;
+      max-width: 635px;
+      width: 100%;
+      -ms-transition: all 0.2s ease-in-out 0s;
+      transition: all 0.2s ease-in-out 0s;
+      color: #009688;
+      font-weight: 600;
+      font-size: 16px;
+      padding: 13px 35px 13px 46px; }
+      .form-form .form-form-wrap form .field-wrapper input::-webkit-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-ms-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-moz-placeholder {
+        color: #d3d3d3;
+        font-size: 14px; }
+    .form-form .form-form-wrap form .field-wrapper button.btn {
+      align-self: center;
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 16px;
+      letter-spacing: 2px; }
+    .form-form .form-form-wrap form .field-wrapper a.forgot-pass-link {
+      font-weight: 600;
+      color: #888ea8;
+      display: block;
+      letter-spacing: 1px;
+      font-size: 12px;
+      margin-bottom: 8px; }
+    .form-form .form-form-wrap form .field-wrapper .n-chk .new-control-indicator {
+      top: 2px;
+      border: 1px solid #515365;
+      background-color: #515365; }
+      .form-form .form-form-wrap form .field-wrapper .n-chk .new-control-indicator:after {
+        top: 54%; }
+
+.new-control.new-checkbox.checkbox-primary > input:checked ~ span.new-control-indicator {
+  border: none; }
+
+.form-form .form-form-wrap form .division {
+  text-align: center;
+  font-size: 13px;
+  margin: 35px 0 38px 0; }
+
+.form-form .form-form-wrap form .social {
+  text-align: center; }
+  .form-form .form-form-wrap form .social a {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid #1b2e4b;
+    padding: 12px 10px;
+    width: 181px;
+    color: #888ea8; }
+    .form-form .form-form-wrap form .social a.social-fb {
+      margin-right: 15px; }
+      .form-form .form-form-wrap form .social a.social-fb svg, .form-form .form-form-wrap form .social a.social-fb .brand-name {
+        color: #2196f3; }
+
+@media (max-width: 991px) {
+  .form-form {
+    width: 100%; }
+    .form-form .form-form-wrap {
+      min-width: auto;
+      margin: 0 auto; }
+    .form-form .form-container .form-content {
+      border-radius: 15px; } }
+
+@media (max-width: 575px) {
+  .form-form .form-form-wrap form .field-wrapper.toggle-pass {
+    margin-bottom: 28px; }
+  .form-form .form-form-wrap form .social a.social-fb, .form-form .form-form-wrap form .social a.social-github {
+    margin-right: auto;
+    margin-left: auto;
+    margin-bottom: 10px;
+    display: block; } }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .form-form .form-form-wrap {
+    width: 100%; }
+  .form-form .form-container {
+    height: 100%; } }
+
+@supports (-ms-ime-align: auto) {
+  .form-form .form-form-wrap {
+    height: 100%; } }

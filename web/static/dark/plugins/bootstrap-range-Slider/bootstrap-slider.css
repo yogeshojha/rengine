@@ -1,0 +1,64 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.custom-progress.progress-up .range-count {
+  margin-bottom: 15px; }
+
+.custom-progress.progress-down .range-count {
+  margin-top: 15px; }
+
+.range-count {
+  font-weight: 700;
+  color: #3b3f5c; }
+  .range-count .range-count-number {
+    display: inline-block;
+    background: #1b2e4b;
+    padding: 3px 8px;
+    border-radius: 5px;
+    color: #009688;
+    border: 1px solid #1b2e4b; }
+  .range-count .range-count-unit {
+    color: #009688; }
+
+.custom-progress.top-right .range-count, .custom-progress.bottom-right .range-count {
+  text-align: right; }
+
+.progress-range-counter::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #009688;
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  margin-top: -4px;
+  -webkit-transition: all 0.35s ease;
+  transition: all 0.35s ease; }
+
+.progress-range-counter:active::-webkit-slider-thumb {
+  -webkit-transform: scale(1.2);
+  transform: scale(1.2); }
+
+.progress-range-counter:focus::-webkit-slider-thumb {
+  background: #009688;
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  margin-top: -4px;
+  box-shadow: none; }
+
+.progress-range-counter::-moz-range-thumb {
+  background: #009688;
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  margin-top: -4px; }
+
+input[type=range]::-webkit-slider-runnable-track, input[type=range]::-moz-range-track, input[type=range]::-ms-track {
+  background: #191e3a; }

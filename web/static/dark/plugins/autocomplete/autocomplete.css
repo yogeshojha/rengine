@@ -1,0 +1,59 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.custom-autocomplete {
+  height: 328px; }
+
+.autocomplete-suggestions {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  border: 1px solid #1b2e4b;
+  background: #1b2e4b;
+  cursor: default;
+  overflow: auto;
+  z-index: 888 !important;
+  -webkit-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+  -moz-box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
+  max-height: 228px !important; }
+
+.autocomplete-suggestion {
+  padding: 5px 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #888ea8;
+  letter-spacing: 1px; }
+
+.autocomplete-no-suggestion {
+  padding: 5px 19px; }
+
+.autocomplete-selected {
+  background: #191e3a; }
+
+.autocomplete-suggestions strong {
+  font-weight: bold;
+  color: #009688; }
+
+.autocomplete-group {
+  padding: 12px 19px;
+  font-weight: bold;
+  font-size: 16px;
+  color: #bfc9d4;
+  display: block;
+  border-bottom: 1px solid #191e3a;
+  margin-bottom: 19px;
+  border-top: 1px solid #191e3a; }
+  .autocomplete-group:not(:first-child) {
+    margin-top: 19px; }
+
+@media (max-width: 991px) {
+  .custom-autocomplete {
+    height: 450px; } }

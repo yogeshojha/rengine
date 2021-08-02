@@ -1,0 +1,386 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/* Common styles */
+.pricing {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+  -webkit-justify-content: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 auto 2em; }
+
+.pricing__item {
+  position: relative;
+  text-align: center;
+  -webkit-flex: 0 1 315px;
+  flex: 0 1 315px; }
+
+.pricing__feature-list {
+  text-align: left; }
+
+.pricing__action {
+  color: inherit;
+  border: none;
+  background: none; }
+  .pricing__action:focus {
+    outline: none; }
+
+/*
+
+    Toggle
+
+*/
+.switch.s-outline[class*="s-outline-"] .slider:before {
+  bottom: 1px;
+  left: 1px;
+  border: 2px solid #888ea8;
+  background-color: #888ea8; }
+
+.switch.s-outline .slider {
+  border: 2px solid #888ea8; }
+
+.switch.s-icons.s-outline-success {
+  color: #4361ee;
+  margin: 0 3px 0 11px; }
+
+.switch.s-icons .slider:before {
+  content: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>') !important; }
+
+.switch.s-icons input:checked + .slider:before {
+  content: url('data:image/svg+xml, <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%23fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check"><polyline points="20 6 9 17 4 12"></polyline></svg>') !important; }
+
+.switch.s-outline-success input:checked + .slider {
+  border-color: #009688; }
+  .switch.s-outline-success input:checked + .slider:before {
+    border: 2px solid #009688;
+    background-color: #009688; }
+
+.billing-cycle-radios {
+  display: block;
+  margin: 0 auto;
+  text-align: center; }
+  .billing-cycle-radios.text-align-left {
+    text-align: left; }
+  .billing-cycle-radios .radio {
+    margin-right: 20px; }
+    .billing-cycle-radios .radio:last-child {
+      margin-right: 0; }
+
+.pricing-plans-container {
+  border-radius: 4px;
+  display: flex; }
+
+.pricing-plan {
+  flex: 1;
+  padding: 35px 35px;
+  position: relative;
+  color: #3b3f5c;
+  border: 1px solid rgba(25, 30, 58, 0.541176);
+  background-color: #1b2e4b; }
+  .pricing-plan:hover {
+    box-shadow: 0px 0px 15px 1px rgba(25, 30, 58, 0.721569); }
+  .pricing-plan:first-of-type {
+    border-right: none;
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px; }
+  .pricing-plan:last-of-type {
+    border-left: none;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px; }
+  .pricing-plan h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    letter-spacing: 1px; }
+  .pricing-plan p {
+    margin: 0;
+    color: #888ea8;
+    font-size: 14px;
+    letter-spacing: 1px; }
+
+.billed-yearly-label {
+  display: none; }
+
+.billed-yearly .billed-yearly-label {
+  display: block; }
+
+.billed-yearly .billed-monthly-label {
+  display: none; }
+
+.pricing-plan-label {
+  border-radius: 4px;
+  font-size: 18px;
+  color: #888ea8;
+  text-align: center;
+  line-height: 24px;
+  padding: 15px;
+  margin: 30px 0; }
+  .pricing-plan-label strong {
+    font-size: 32px;
+    font-weight: 600;
+    color: #bfc9d4;
+    margin-right: 5px;
+    line-height: 30px; }
+
+.pricing-plan-features strong {
+  color: #e0e6ed;
+  font-weight: 600;
+  margin-bottom: 5px;
+  line-height: 24px;
+  display: inline-block;
+  letter-spacing: 1px;
+  font-size: 15px; }
+
+.pricing-plan-features ul {
+  padding: 0;
+  margin: 0; }
+  .pricing-plan-features ul li {
+    display: block;
+    margin: 0;
+    padding: 3px 0;
+    line-height: 24px;
+    color: #888ea8;
+    font-size: 13px;
+    letter-spacing: 1px; }
+
+.pricing-plan .button {
+  border: none;
+  padding: 10px; }
+
+.billed-yearly-radio.billed-yearly-switch span.txt-monthly {
+  color: #888ea8;
+  font-weight: 600; }
+
+.billed-yearly-radio span.txt-yearly {
+  color: #888ea8;
+  font-weight: 600; }
+
+.billed-yearly-radio span.txt-monthly {
+  color: #009688;
+  font-weight: 700; }
+
+.billed-yearly-radio.billed-yearly-switch span.txt-yearly {
+  color: #009688;
+  font-weight: 700; }
+
+.billed-yearly-radio span.txt-yearly span.badge {
+  visibility: hidden;
+  padding: 4px 11px;
+  background-color: #009688; }
+
+.billed-yearly-radio.billed-yearly-switch span.txt-yearly span.badge {
+  visibility: visible; }
+
+.billed-yearly-radio span.txt-monthly, .billed-yearly-radio span.txt-yearly {
+  letter-spacing: 1px; }
+
+.pricing-plan.recommended {
+  box-shadow: -1px 0 10px 0 rgba(0, 0, 0, 0.14), -3px 0 18px 0 rgba(0, 0, 0, 0.12);
+  padding: 35px;
+  margin: 6rem 0 0 0; }
+
+.pricing-plan .recommended-badge {
+  background-color: #191e3a;
+  color: #fff;
+  position: absolute;
+  width: 100%;
+  height: 59px;
+  top: -45px;
+  left: 0;
+  text-align: center;
+  border-radius: 4px 4px 0 0;
+  font-weight: 600;
+  line-height: 59px;
+  letter-spacing: 2px;
+  font-size: 16px; }
+
+.recommended .pricing-plan-label {
+  color: #e3e4eb; }
+  .recommended .pricing-plan-label strong {
+    color: #009688;
+    font-weight: 700;
+    font-size: 44px; }
+
+.pricing-plan.recommended .button {
+  color: #fff !important;
+  background-color: #191e3a !important; }
+
+@media (max-width: 767px) {
+  .pricing-plan:first-of-type {
+    border-right: 1px solid #1b2e4b;
+    border-radius: 6px; }
+  .pricing-plan:last-of-type {
+    border-left: 1px solid #1b2e4b;
+    border-radius: 6px; } }
+
+/* 
+    Pricing
+*/
+#pricingWrapper {
+  padding: 2.3rem 0 2.3rem 0; }
+  #pricingWrapper .stacked {
+    -webkit-transition: all 0.2s;
+    -moz-transition: all 0.2s;
+    transition: all 0.2s;
+    -webkit-transition-delay: 0s;
+    -moz-transition-delay: 0s;
+    transition-delay: 0s;
+    position: relative;
+    background: #1b2e4b;
+    border: 1px solid #515365; }
+    #pricingWrapper .stacked .card-header, #pricingWrapper .stacked .card-footer {
+      padding: 30px;
+      background: #1b2e4b;
+      border-bottom: 1px solid #515365;
+      color: #3b3f5c; }
+    #pricingWrapper .stacked .card-header .card-price {
+      -webkit-transition: all 0.2s;
+      -moz-transition: all 0.2s;
+      transition: all 0.2s;
+      -webkit-transition-delay: 0s;
+      -moz-transition-delay: 0s;
+      transition-delay: 0s;
+      color: #e0e6ed;
+      display: block;
+      width: 6.25rem;
+      height: 6.25rem;
+      margin-top: -30px;
+      border-radius: 0.25rem;
+      text-align: center;
+      line-height: 6.25rem;
+      font-size: 1.875rem;
+      -webkit-box-shadow: 0px 9px 20px 0px rgba(25, 30, 58, 0.35);
+      -moz-box-shadow: 0px 9px 20px 0px rgba(25, 30, 58, 0.35);
+      box-shadow: 0px 9px 20px 0px rgba(25, 30, 58, 0.35);
+      border-radius: 0.25rem;
+      border: 1px solid #515365;
+      background: #191e3a;
+      font-weight: 500; }
+    #pricingWrapper .stacked:hover .card-price {
+      -webkit-transform: translate(0, -10px);
+      -moz-transform: translate(0, -10px);
+      transform: translate(0, -10px); }
+    #pricingWrapper .stacked .card-header p {
+      font-weight: 600;
+      font-size: 15px;
+      color: #888ea8; }
+    #pricingWrapper .stacked .card-body .list-group-minimal .list-group-item {
+      margin-bottom: 12px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      font-weight: 600;
+      font-size: 14px;
+      color: #bfc9d4; }
+    #pricingWrapper .stacked .card-body a {
+      padding: 15px 10px;
+      background-color: #191e3a !important;
+      border-color: #191e3a; }
+
+/* norbu */
+.pricing--norbu .pricing__item {
+  margin: 1em;
+  color: #fff;
+  cursor: default;
+  background: #1b2e4b;
+  border-radius: 10px;
+  border: 1px solid #3b3f5c;
+  -webkit-transition: border-color 0.3s, background 0.3s;
+  transition: border-color 0.3s, background 0.3s; }
+  .pricing--norbu .pricing__item:hover {
+    color: #009688;
+    border: 1px solid #009688; }
+
+.pricing--norbu .pricing__title {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0.5em 0;
+  padding: 1em;
+  position: relative; }
+  .pricing--norbu .pricing__title::after {
+    content: '';
+    position: absolute;
+    width: 20%;
+    height: 1px;
+    background: #3b3f5c;
+    left: 40%;
+    bottom: 0; }
+
+.pricing--norbu .pricing__item:hover .pricing__title::after {
+  background: #009688; }
+
+.pricing--norbu .icon {
+  display: inline-block;
+  min-width: 2em; }
+
+.pricing--norbu .pricing__price {
+  font-size: 50px;
+  padding: 0.5em 0 0 0;
+  font-weight: 600;
+  position: relative;
+  z-index: 100; }
+
+.pricing--norbu .pricing__currency {
+  font-size: 0.5em;
+  vertical-align: super; }
+
+.pricing--norbu .pricing__period {
+  font-size: 15px;
+  padding: 1em; }
+
+.pricing--norbu .pricing__sentence {
+  padding: 1em 2em;
+  font-size: 1em;
+  margin: 0 auto 1em; }
+
+.pricing--norbu .pricing__feature-list {
+  font-size: 1.15em;
+  letter-spacing: 0;
+  padding: 2em 0;
+  list-style: none; }
+
+.pricing--norbu .pricing__feature {
+  line-height: 1.6;
+  font-size: 15px; }
+  .pricing--norbu .pricing__feature svg {
+    width: 15px;
+    height: 15px; }
+
+.pricing--norbu .pricing__action {
+  text-transform: uppercase;
+  flex: none;
+  padding: 12px 45px;
+  color: #888ea8;
+  border: solid 1px #888ea8;
+  font-weight: 600;
+  border-radius: 6px;
+  -webkit-transition: background 0.3s;
+  transition: background 0.3s; }
+
+.pricing--norbu .pricing__item:hover .pricing__action {
+  color: #e0e6ed;
+  background: #009688;
+  border: solid 1px #009688;
+  box-shadow: 0px 5px 20px 0 rgba(0, 0, 0, 0.1);
+  will-change: opacity, transform;
+  transition: all 0.3s ease-out;
+  -webkit-transition: all 0.3s ease-out; }
+
+.pricing--norbu .pricing__action:hover, .pricing--norbu .pricing__action:focus {
+  color: #eaf1ff;
+  background: #4361ee;
+  border-color: #4361ee;
+  box-shadow: 0px 5px 20px 0 rgba(0, 0, 0, 0.1);
+  will-change: opacity, transform;
+  transition: all 0.3s ease-out;
+  -webkit-transition: all 0.3s ease-out; }

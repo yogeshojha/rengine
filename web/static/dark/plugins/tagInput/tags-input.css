@@ -1,0 +1,45 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.tags-input-wrapper {
+  background: transparent;
+  padding: 10px;
+  border-radius: 4px; }
+  .tags-input-wrapper input {
+    width: 150px;
+    display: block;
+    font-weight: 400;
+    line-height: 1.5;
+    background-clip: padding-box;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    height: auto;
+    border: 1px solid #1b2e4b;
+    color: #25d5e4;
+    font-size: 15px;
+    padding: 8px 10px;
+    letter-spacing: 1px;
+    padding: .75rem 1.25rem;
+    border-radius: 6px;
+    background: #1b2e4b; }
+  .tags-input-wrapper .tag {
+    display: inline-block;
+    background-color: #4361ee;
+    color: #fff;
+    font-size: 13px;
+    border-radius: 4px;
+    padding: 4px 3px 3px 7px;
+    margin-right: 15px;
+    margin-bottom: 7px;
+    box-shadow: 0 5px 15px -2px rgba(43, 80, 237, 0.35); }
+    .tags-input-wrapper .tag a {
+      margin: 0 7px 3px;
+      display: inline-block;
+      cursor: pointer; }
