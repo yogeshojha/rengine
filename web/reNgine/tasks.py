@@ -53,7 +53,9 @@ def initiate_scan(
         scan_history_id,
         scan_type,
         engine_type,
-        imported_subdomains=None):
+        imported_subdomains=None,
+        out_of_scope_subdomains=None
+        ):
     '''
     scan_type = 0 -> immediate scan, need not create scan object
     scan_type = 1 -> scheduled scan
@@ -149,7 +151,9 @@ def initiate_scan(
                 domain,
                 yaml_configuration,
                 results_dir,
-                activity_id)
+                activity_id,
+                out_of_scope_subdomains
+                )
         else:
             skip_subdomain_scan(task, domain, results_dir)
 
@@ -330,7 +334,7 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     file.close()
 
 
-def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
+def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, out_of_scope_subdomains=None):
     '''
     This function is responsible for performing subdomain enumeration
     '''
@@ -339,10 +343,6 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('Subdomain Gathering for target {} has been started'.format(domain.name))
 
     subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-    # Excluded subdomains
-    excluded_subdomains = ''
-    if EXCLUDED_SUBDOMAINS in yaml_configuration:
-        excluded_subdomains = yaml_configuration[EXCLUDED_SUBDOMAINS]
 
     # check for all the tools and add them into string
     # if tool selected is all then make string, no need for loop
@@ -478,7 +478,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id):
         for _subdomain in subdomain_list:
             __subdomain = _subdomain.rstrip('\n')
             if not Subdomain.objects.filter(scan_history=task, name=__subdomain).exists(
-            ) and validators.domain(__subdomain) and __subdomain not in excluded_subdomains:
+            ) and validators.domain(__subdomain) and __subdomain not in out_of_scope_subdomains:
                 subdomain_dict = DottedDict({
                     'scan_history': task,
                     'target_domain': domain,
@@ -663,7 +663,6 @@ def http_crawler(task, domain, results_dir, activity_id):
                 endpoint.save()
             except Exception as exception:
                 logging.error(exception)
-                update_last_activity(activity_id, 0)
     alive_file.close()
 
     if notification and notification[0].send_scan_status_notif:

@@ -58,13 +58,20 @@ Start Scan for {{domain.name}}
             </div>
           </div>
         </div>
-        <h3>Import Subdomains</h3>
+        <h3>Import/Ignore Subdomains</h3>
         <div class="">
           <div class="form-group mb-4">
             <label for="importSubdomainFormControlTextarea"><b class="text-info">Import Subdomains(Optional)</b></br>You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</label>
           </br>
           <label for="importSubdomainFormControlTextarea">Seperate the subdomains using new line. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</label>
           <textarea class="form-control" id="importSubdomainFormControlTextarea" rows="7" spellcheck="false" name="importSubdomainTextArea"></textarea>
+        </div>
+        <div class="">
+          <div class="form-group mb-4">
+            <label for="outOfScopeSubdomainTextarea"><b class="text-warning">Out of Scope Subdomains(Optional)</b></label>
+          </br>
+          <label for="outOfScopeSubdomainTextarea">Seperate the out of scope subdomains/keywords using new line.(No regex currently supported.)</label>
+          <textarea class="form-control" id="outOfScopeSubdomainTextarea" rows="7" spellcheck="false" name="outOfScopeSubdomainTextarea"></textarea>
         </div>
       </div>
     </div>

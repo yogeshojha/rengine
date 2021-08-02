@@ -120,12 +120,22 @@ def start_scan_ui(request, domain_id):
         # get imported subdomains
         imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
         imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
+
+        out_of_scope_subdomains = [subdomain.rstrip() for subdomain in request.POST['outOfScopeSubdomainTextarea'].split('\n')]
+        out_of_scope_subdomains = [subdomain for subdomain in out_of_scope_subdomains if subdomain]
         # get engine type
         engine_type = request.POST['scan_mode']
         scan_history_id = create_scan_object(domain_id, engine_type)
         # start the celery task
         celery_task = initiate_scan.apply_async(
-            args=(domain_id, scan_history_id, 0, engine_type, imported_subdomains))
+            args=(
+                domain_id,
+                scan_history_id,
+                0,
+                engine_type,
+                imported_subdomains,
+                out_of_scope_subdomains
+                ))
         ScanHistory.objects.filter(
             id=scan_history_id).update(
             celery_id=celery_task.id)
