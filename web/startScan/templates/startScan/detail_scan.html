@@ -104,8 +104,6 @@ Detailed Scan Results for {{history.domain.name}}
 										<div class="w-detail">
 											<p class="w-stats">{{subdomain_count|intcomma}}
 												<span class="float-right">
-													<span class="badge badge-pills badge-success bs-tooltip m-1" id="added_subdomain_badge" title="Subdomains Added">+{{added_subdomain_count}}</span>
-													<span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_subdomain_badge" title="Subdomains Removed">-{{removed_subdomain_count}}</span>
 												</span>
 											</p>
 											<p class="w-title">Subdomains Discovered</p>
@@ -1033,7 +1031,7 @@ $("#pills-subdomain-tab").click(function() {
 			{'data': 'id'},
 			{'data': 'name'},
 			{'data': 'endpoint_count'},
-			{'data': 'vulnerability_count'},
+			{'data': 'endpoint_count'},
 			{'data': 'http_status'},
 			{'data': 'page_title'},
 			{'data': 'ip_addresses'},
@@ -1057,7 +1055,7 @@ $("#pills-subdomain-tab").click(function() {
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 			{
-				"targets": [ 12, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+				"targets": [ 2, 3, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22],
 				"visible": false,
 				"searchable": false,
 			},
@@ -1066,28 +1064,6 @@ $("#pills-subdomain-tab").click(function() {
 				"visible": false,
 				"searchable": true,
 			},
-			// hide any columns if scan is not initiated
-			{% if not history.port_scan %}
-			{
-				"targets": [ 7 ],
-				"visible": false,
-				"searchable": false,
-			},
-			{% endif %}
-			{% if not history.vulnerability_scan %}
-			{
-				"targets": [ 3 ],
-				"visible": false,
-				"searchable": false,
-			},
-			{% endif %}
-			{% if not history.fetch_url %}
-			{
-				"targets": [ 2 ],
-				"visible": false,
-				"searchable": false,
-			},
-			{% endif %}
 			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
 			// checkbox
 			{
@@ -1139,6 +1115,20 @@ $("#pills-subdomain-tab").click(function() {
 						`;
 					}
 
+					endpoint_count_badge = '';
+					if (row['endpoint_count']) {
+						endpoint_count_badge = `<span class="pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${row['endpoint_count']}</span>`
+					}
+
+					vuln_count_badge = '';
+					info_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
+					low_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
+					medium_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
+					high_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
+					critical_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
+					vuln_count_badge =  (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
+
+
 
 					action_icons = `
 					<br />
@@ -1156,36 +1146,13 @@ $("#pills-subdomain-tab").click(function() {
 
 					if (row['http_url']) {
 						if (row['cname']) {
-							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data +`</span></a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
+							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data  +`</span></a>`+ endpoint_count_badge + vuln_count_badge +`<br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
 						}
-						return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data+`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
+						return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data + `</span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + action_icons + `</div>`;
 					}
-					return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data +`</span></a>` + tech_badge + todo_badge + action_icons + `</div>`;
+					return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-info" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data + `</span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + action_icons + `</div>`;
 				},
 				"targets": 1
-			},
-			// endpoint count
-			{
-				"render": function ( data, type, row ) {
-					if (data)
-					{
-						return `<span class="badge badge-pills badge-info badge-link" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${data}</span>`;
-					}
-					return 0;
-				},
-				"targets": 2,
-			},
-			// vulnerability_count
-			{
-				"render": function ( data, type, row ) {
-					info_badge = `<span class='m-1 badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
-					low_badge = `<span class='m-1 badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
-					medium_badge = `<span class='m-1 badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
-					high_badge = `<span class='m-1 badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
-					critical_badge = `<span class='m-1 badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
-					return (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
-				},
-				"targets": 3,
 			},
 			// http_status
 			{
