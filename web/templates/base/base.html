@@ -18,20 +18,12 @@
   {% endblock custom_js_css_link %}
 </head>
 <body class="sidebar-noneoverflow">
-  <!-- BEGIN LOADER -->
-  <div id="load_screen"> <div class="loader"> <div class="loader-content">
-    <div class="spinner-grow align-self-center"></div>
-  </div></div></div>
-
   <!-- TOP NAVBAR BEGIN -->
   {% include 'base/_items/top_nav.html' %}
   <!-- TOP NAVBAR ENDS -->
 
   <!--  BEGIN MAIN CONTAINER  -->
   <div class="main-container" id="container">
-    <div class="overlay"></div>
-    <div class="search-overlay"></div>
-
     <!--  BEGIN CONTENT PART  -->
     <div id="content" class="main-content">
     {% if messages %}
@@ -50,7 +42,7 @@
     {% endif %}
     <div class="layout-px-spacing">
       <div class="row">
-        <div class="col-xl-12 col-lg-12 col-sm-12  layout-spacing">
+        <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
           {% block main_content %}
 
           {% endblock main_content %}

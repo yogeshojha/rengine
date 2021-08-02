@@ -74,52 +74,6 @@ var App = function() {
         }
     }
 
-    var switchFunctionality = {
-
-        onChange: function () {
-
-            var linkElement = document.querySelectorAll('link');
-            var scriptElement = document.querySelectorAll('script');
-            var switchElement = document.querySelector('.theme-shifter');
-            var loaderElement = document.querySelector('#load_screen');
-
-            switchElement.addEventListener('change', function() {
-
-                if(this.checked) {
-
-                    Cookies.deleteCookie('dark_mode');
-
-                    location.reload();
-
-                } else {
-
-                    this.checked = false;
-                    Cookies.setCookie('dark_mode', 1, 1);
-
-                    location.reload();
-                }
-
-            })
-
-        },
-        setDefaults: function() {
-
-            if (Cookies.getCookie('dark_mode') != "") {
-                var switchElement = document.querySelector('.theme-shifter');
-                var loaderElement = document.querySelector('#load_screen');
-                setTimeout( function() {
-                    loaderElement.style.display = "none";
-                    console.log('Inside app.js me')
-                }, 3000);
-                switchElement.checked = false;
-                window.scrollTo(0, 0);
-            } else {
-                console.log('no needs of else;');
-            }
-        }
-
-    }
-
     var mobileFunctions = {
         activateScroll: function() {
             const ps = new PerfectScrollbar('#topbar', {
@@ -267,11 +221,6 @@ var App = function() {
             }
 
             inBuiltfunctionality.languageDropdown();
-
-            switchFunctionality.onChange();
-
-            switchFunctionality.setDefaults();
-
         },
     }
 
