@@ -262,10 +262,15 @@ class ListSubdomains(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        target_id = req.query_params.get('target_id')
         ip_address = req.query_params.get('ip_address')
         port = req.query_params.get('port')
         tech = req.query_params.get('tech')
-        subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id)
+
+        if scan_id:
+            subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id).distinct('name')
+        elif target_id:
+            subdomain_query = Subdomain.objects.filter(target_domain__id=target_id).distinct('name')
 
         if ip_address:
             subdomain_query = subdomain_query.filter(ip_addresses__address=ip_address)

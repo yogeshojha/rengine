@@ -1,36 +1,36 @@
 function delete_target(id, domain_name) {
-    const delAPI = "../delete/target/"+id;
-    swal.queue([{
-        title: 'Are you sure you want to delete '+ domain_name +'?',
-        text: "You won't be able to revert this!",
-        type: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Delete',
-        padding: '2em',
-        showLoaderOnConfirm: true,
-        preConfirm: function() {
-          return fetch(delAPI, {
-	            method: 'POST',
-                credentials: "same-origin",
-                headers: {
-                    "X-CSRFToken": getCookie("csrftoken")
-                }
-            })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function(data) {
-                // TODO Look for better way
-               return location.reload();
-            })
-            .catch(function() {
-              swal.insertQueueStep({
-                type: 'error',
-                title: 'Oops! Unable to delete the target!'
-              })
-            })
+  const delAPI = "../delete/target/"+id;
+  swal.queue([{
+    title: 'Are you sure you want to delete '+ domain_name +'?',
+    text: "You won't be able to revert this!",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    padding: '2em',
+    showLoaderOnConfirm: true,
+    preConfirm: function() {
+      return fetch(delAPI, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken")
         }
-    }])
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function(data) {
+        // TODO Look for better way
+        return location.reload();
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to delete the target!'
+        })
+      })
+    }
+  }])
 }
 
 function checkedCount () {
@@ -74,18 +74,18 @@ function deleteMultipleTargets() {
   else {
     // atleast one target is selected
     swal.queue([{
-        title: 'Are you sure you want to delete '+ checkedCount() +' targets?',
-        text: "This action is irreversible.\nThis will also delete all the scan history and vulnerabilities related to the targets.",
-        type: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Delete',
-        padding: '2em',
-        showLoaderOnConfirm: true,
-        preConfirm: function() {
-          deleteForm = document.getElementById("multiple_targets_form");
-          deleteForm.action = "../delete/multiple";
-          deleteForm.submit();
-        }
+      title: 'Are you sure you want to delete '+ checkedCount() +' targets?',
+      text: "This action is irreversible.\nThis will also delete all the scan history and vulnerabilities related to the targets.",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        deleteForm = document.getElementById("multiple_targets_form");
+        deleteForm.action = "../delete/multiple";
+        deleteForm.submit();
+      }
     }])
   }
 }
@@ -109,8 +109,8 @@ function mainCheckBoxSelected() {
     $("#delete_multiple_button").removeClass("disabled");
   }
   else
- {
-   $("#scan_multiple_button").addClass("disabled");
-   $("#delete_multiple_button").addClass("disabled");
+  {
+    $("#scan_multiple_button").addClass("disabled");
+    $("#delete_multiple_button").addClass("disabled");
   }
 }

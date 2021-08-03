@@ -186,7 +186,13 @@ Detailed Scan Results for {{history.domain.name}}
 								</div>
 								<div class="widget-content">
 									<div class="row">
-										<div class="col-6">
+										<div class="col-3">
+											<h6 class="text-center">Scan Engine</h6>
+											<div class="text-center">
+												<span class="badge badge-info">{{history.scan_type.engine_name}}</span>
+											</div>
+										</div>
+										<div class="col-5">
 											<h6 class="text-center">Scan Status</h6>
 											<div class="text-center">
 												{% if history.scan_status == -1 %}
@@ -204,7 +210,7 @@ Detailed Scan Results for {{history.domain.name}}
 												{% endif %}
 											</div>
 										</div>
-										<div class="col-6">
+										<div class="col-4">
 											<h6 class="text-center">Scan Duration</h6>
 											{% if history.scan_status == -1 %}
 											<p class="text-center"><small class="text-center text-muted">Scan not yet started.</small></p>
@@ -254,6 +260,7 @@ Detailed Scan Results for {{history.domain.name}}
 									{% for organization in history.domain.get_organization %}
 									<span class="badge badge-pills outline-badge-dark m-1 bs-tooltip" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
 									{% endfor %}
+									<a class="float-right text-info" href="{% url 'target_summary' history.domain.id %}" target="_blank">View Target Summary</a>
 								</div>
 							</div>
 						</div>

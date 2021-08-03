@@ -175,7 +175,7 @@ Target Summary for {{target.name}}
                             {% endif %}
                           </h6>
                           <h6>
-                            {{scan.get_subdomain_count}} Subdomains Discovered
+                            {{scan.get_subdomain_count}} Subdomains, {{scan.get_endpoint_count}} Endpoints Discovered
                             <br>
                             &nbsp;
                             {% if scan.get_subdomain_change_count.0 %}
@@ -196,6 +196,24 @@ Target Summary for {{target.name}}
                 </div>
               </div>
             </div>
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+              <div class="widget widget-timeline-log">
+                <div class="widget-heading">
+                  <h6 class="">
+                    <span id="important-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span>
+                    Important Subdomains
+                  </h6>
+                </div>
+                <div class="widget-content">
+                  <div class="w-shadow-top"></div>
+                  <div class="mt-container mx-auto">
+                    <div id="important-subdomains-list">
+                    </div>
+                  </div>
+                  <div class="w-shadow-bottom"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -212,7 +230,9 @@ Target Summary for {{target.name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script type="text/javascript">
+get_important_subdomains({{target.id}})
 </script>
 
 {% endblock page_level_script %}

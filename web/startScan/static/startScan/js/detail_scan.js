@@ -1556,7 +1556,6 @@ function mark_important_subdomain(subdomain_id){
 
 function get_important_subdomains(scan_id){
   $.getJSON(`/api/querySubdomains/?scan_id=${scan_id}&only_important&no_lookup_interesting&format=json`, function(data) {
-    console.log(data);
     $('#important-count').empty();
     $('#important-subdomains-list').empty();
     if (data['subdomains'].length > 0){
@@ -1576,14 +1575,15 @@ function get_important_subdomains(scan_id){
           </p>
           </div>
           <hr />
-          `);
-        }
+          `
+        );
       }
-      else{
-        $('#important-count').html(`<span class="badge outline-badge-dark">0</span>`);
-        $('#important-subdomains-list').append(`<p>No subdomains markerd as important!</p>`);
-      }
-      $('.bs-tooltip').tooltip();
-      todoCheckboxListener();
-    });
-  }
+    }
+    else{
+      $('#important-count').html(`<span class="badge outline-badge-dark">0</span>`);
+      $('#important-subdomains-list').append(`<p>No subdomains markerd as important!</p>`);
+    }
+    $('.bs-tooltip').tooltip();
+    todoCheckboxListener();
+  });
+}
