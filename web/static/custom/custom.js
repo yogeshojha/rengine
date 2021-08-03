@@ -351,3 +351,9 @@ function parse_ip(data, cdn){
   });
   return data_with_span;
 }
+
+//to remove the image element if there is no screenshot captured
+function removeImageElement(element)
+{
+	element.parentElement.remove();
+}

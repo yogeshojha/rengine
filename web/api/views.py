@@ -576,8 +576,14 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_id = req.query_params.get('scan_id')
 
+        target_id = req.query_params.get('target_id')
+
         url_query = req.query_params.get('query_param')
-        if url_query:
+
+        if target_id:
+            self.queryset = Subdomain.objects.filter(
+                target_domain__id=target_id).distinct()
+        elif url_query:
             self.queryset = Subdomain.objects.filter(
                 Q(target_domain__name=url_query)).distinct()
         elif scan_id:
