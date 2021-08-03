@@ -215,54 +215,17 @@ def target_summary(request, id):
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = ScanHistory.objects.filter(
         domain_id=id, start_scan_date__gte=last_week).count()
-    subdomain_count = Subdomain.objects.filter(
-        target_domain__id=id).values('name').distinct().count()
-    endpoint_count = EndPoint.objects.filter(
-        target_domain__id=id).values('http_url').distinct().count()
+    subdomains = Subdomain.objects.filter(
+        target_domain__id=id).values('name').distinct()
+    endpoints = EndPoint.objects.filter(
+        target_domain__id=id).values('http_url').distinct()
     vulnerability_count = Vulnerability.objects.filter(
         target_domain__id=id).count()
-    context['subdomain_count'] = subdomain_count
-    context['endpoint_count'] = endpoint_count
-    context['vulnerability_count'] = vulnerability_count
-    if ScanHistory.objects.filter(
-        domain=id).filter(
-        scan_type__subdomain_discovery=True).filter(
-            scan_status=2).count() > 1:
-        last_scan = ScanHistory.objects.filter(
-            domain=id).filter(
-            scan_type__subdomain_discovery=True).filter(
-            scan_status=2).order_by('-start_scan_date')
+    context['subdomain_count'] = subdomains.count()
+    context['alive_count'] = subdomains.filter(http_status__exact=200).count()
+    context['endpoint_count'] = endpoints.count()
+    context['endpoint_alive_count'] = endpoints.filter(http_status__exact=200).count()
 
-        scanned_host_q1 = Subdomain.objects.filter(
-            target_domain__id=id).exclude(
-            scan_history__id=last_scan[0].id).values('name')
-        scanned_host_q2 = Subdomain.objects.filter(
-            scan_history__id=last_scan[0].id).values('name')
-
-        context['new_subdomains'] = scanned_host_q2.difference(scanned_host_q1)
-        context['removed_subdomains'] = scanned_host_q1.difference(
-            scanned_host_q2)
-
-    if ScanHistory.objects.filter(
-            domain=id).filter(
-            scan_type__fetch_url=True).filter(scan_status=2).count() > 1:
-
-        last_scan = ScanHistory.objects.filter(
-            domain=id).filter(
-            scan_type__fetch_url=True).filter(
-            scan_status=2).order_by('-start_scan_date')
-
-        endpoint_q1 = EndPoint.objects.filter(
-            target_domain__id=id).exclude(
-            scan_history__id=last_scan[0].id).values('http_url')
-        endpoint_q2 = EndPoint.objects.filter(
-            scan_history__id=last_scan[0].id).values('http_url')
-
-        context['new_urls'] = endpoint_q2.difference(endpoint_q1)
-        context['removed_urls'] = endpoint_q1.difference(endpoint_q2)
-
-    context['recent_scans'] = ScanHistory.objects.filter(
-        domain=id).order_by('-start_scan_date')[:3]
     context['info_count'] = Vulnerability.objects.filter(
         target_domain=id).filter(severity=0).count()
     context['low_count'] = Vulnerability.objects.filter(
@@ -273,12 +236,20 @@ def target_summary(request, id):
         target_domain=id).filter(severity=3).count()
     context['critical_count'] = Vulnerability.objects.filter(
         target_domain=id).filter(severity=4).count()
-    context['most_common_vulnerability'] = Vulnerability.objects.filter(target_domain=id).values(
-        "name", "severity").exclude(severity=0).annotate(count=Count('name')).order_by("-count")[:7]
-    context['interesting_subdomain'] = get_interesting_subdomains(target=id)
-    context['interesting_endpoint'] = get_interesting_endpoint(target=id)
-    context['scan_history'] = ScanHistory.objects.filter(
-        domain=id).order_by('-start_scan_date')
+
+    emails = Email.objects.filter(emails__in=ScanHistory.objects.filter(domain__id=id).distinct())
+
+    context['exposed_count'] = emails.exclude(password__isnull=True).count()
+
+    context['email_count'] = emails.count()
+
+    context['employees_count'] = Employee.objects.filter(
+        employees__in=ScanHistory.objects.filter(id=id)).count()
+
+    context['recent_scans'] = ScanHistory.objects.filter(
+        domain=id).order_by('-start_scan_date')[:4]
+
+    context['vulnerability_count'] = vulnerability_count
     return render(request, 'target/summary.html', context)
 
 def add_organization(request):

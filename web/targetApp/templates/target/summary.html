@@ -2,563 +2,217 @@
 {% load static %}
 {% load humanize %}
 {% load custom_tags %}
-{% load mathfilters %}
 {% block title %}
-Target Summary for {{target.domain.name}}
+Target Summary for {{target.name}}
 {% endblock title %}
 
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'custom/custom.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'custom/timeline.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Target Summary for {{target.name}}
+<li class="breadcrumb-item"><a href="{% url 'list_target' %}">Targets</a></li>
+<li class="breadcrumb-item active">Target Summary</li>
+<li class="breadcrumb-item active" aria-current="page">{{target.name}}</li>
 {% endblock breadcrumb_title %}
 
-
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-px-spacing">
-  <div class="row layout">
-    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-      <div class="widget widget-one_hybrid">
-        <div class="widget-heading">
-          <div class="w-icon text-info">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-globe">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-          </div>
-          &nbsp;
-          <h2 class="text-warning">{{scan_count}}</h2>
-          <h6 class="">Total Scans</h6>
-        </div>
-        <div class="widget-content">
-          <div class="icon-container">
-            <span class="icon-name"> <b>{{this_week_scan_count}}</b> Scans this week</span>
-          </div>
-          <br>
-          <a data-toggle="modal" data-target="#scanHistoryModal" class="text-info">View all Scans</a>
-          <div class="modal fade" id="scanHistoryModal" tabindex="-1" role="dialog" aria-labelledby="scanHistoryModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="scanHistoryModalLabel">Scans initiated for {{target.name}}</h5>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <div class="widget-table-two">
-                    <div class="widget-content">
-                      <div class="table-responsive">
-                        <table class="table table-striped table-bordered table-hover">
-                          <thead>
-                            <tr>
-                              <th><div class="th-content">Scan Type</div></th>
-                              <th><div class="th-content">Last Scanned on</div></th>
-                              <th><div class="th-content">Status</div></th>
-                              <th><div class="text-center">Scan Result</div></th>
-                              <th>&nbsp;</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {% for scan in scan_history %}
-                            <tr>
-                              <td>{{scan.scan_type}}</td>
-                              <td>{{scan.start_scan_date}}</td>
-                              <td class="text-center">
-                                {% if scan.scan_status == -1 %}
-                                <span class="shadow-none badge badge-warning bs-tooltip" data-placement="top" title="Waiting for other scans to complete">{% include 'base/_items/progress_spin.html' %}Pending</span>
-                                {% elif scan.scan_status == 0 %}
-                                <span class="shadow-none badge badge-danger">Failed</span>
-                                {% elif scan.scan_status == 1 %}
-                                <span class="shadow-none badge badge-primary">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-                                {% elif scan.scan_status == 2 %}
-                                <span class="shadow-none badge badge-success p-2">Successful</span>
-                                {% elif scan.scan_status == 3 %}
-                                <span class="shadow-none badge badge-danger">Aborted</span>
-                                {% else %}
-                                <span class="shadow-none badge badge-danger">Unknown</span>
-                                {% endif %}
-                              </td>
-                              <td class="text-center">
-                                <span class="badge badge-pills badge-info bs-tooltip" title="Subdomains">{{scan.get_subdomain_count}}</span>
-                                <span class="badge badge-pills badge-warning bs-tooltip" title="Endpoints">{{scan.get_endpoint_count}}</span>
-                                <span class="badge badge-pills badge-danger bs-tooltip" title="Vulnerabilities">{{scan.get_vulnerability_count}}</span>
-                              </td>
-                              <td class="text-center">
-                                <a href="{% url 'detail_scan' scan.id %}" class="text-info">View More...</a>
-                              </td>
-                            </tr>
-                            {% endfor %}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-      <div class="widget widget-one_hybrid">
-        <div class="widget-heading">
-          <div class="w-icon text-info">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-compass">
-              <circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
-            </svg>
-          </div>
-          &nbsp;
-          <h2 class="text-warning">{{subdomain_count}}</h2>
-          <h6 class="">Unique Subdomains</h6>
-        </div>
-        <div class="widget-content">
-          <div class="icon-container">
-            {% if new_subdomains.count or removed_subdomains.count %}
-            {% if new_subdomains.count %}
-            <span class="icon-name bs-tooltip text-success" title="{{new_subdomains.count}} new subdomains discovered on the last scan"> {% include 'base/_items/plus_icon.html' %} {{new_subdomains.count}}</span>
-            {% endif %}
-            {% if removed_subdomains.count %}
-            <span class="icon-name bs-tooltip text-danger" title="{{removed_subdomains.count}} subdomains were removed on the last scan"> {% include 'base/_items/minus_icon.html' %} {{removed_subdomains.count}}</span>
-            {% endif %}
-            <span class="text-warning"> Subdomains Changed</span>
-            {% else %}
-            &nbsp;
-            {% endif %}
-          </div>
-          <br>
-          <a href="javascript:window.location='../../start_scan/all/subdomains?query={{target.name}}';" class="text-info">View all Subdomains</a>
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-      <div class="widget widget-one_hybrid">
-        <div class="widget-heading">
-          <div class="w-icon text-info">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
-              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-            </svg>
-          </div>
-          <br><br>
-          <h2 class="text-warning">{{endpoint_count}}</h2>
-          <h6 class="">Unique Endpoints</h6>
-        </div>
-        <div class="widget-content">
-          <div class="icon-container">
-            {% if new_urls.count or removed_urls.count %}
-            {% if new_urls.count %}
-            <span class="icon-name bs-tooltip text-success" title="{{new_urls.count}} new endpoints discovered on the last scan"> {% include 'base/_items/plus_icon.html' %} {{new_urls.count}}</span>
-            {% endif %}
-            {% if removed_urls.count %}
-            <span class="icon-name bs-tooltip text-danger" title="{{removed_urls.count}} endpoints were removed on the last scan"> {% include 'base/_items/minus_icon.html' %} {{removed_urls.count}}</span>
-            {% endif %}
-            <span class="text-warning"> Endpoints Changed</span>
-            {% else %}
-            &nbsp;
-            {% endif %}
-          </div>
-          <a href="javascript:window.location='../../start_scan/detail/endpoint?query={{target.name}}';" class="text-info">View all Endpoints</a>
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12 mt-2">
-      <div class="widget widget-one_hybrid">
-        <div class="widget-heading">
-          <div class="w-icon text-danger">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield-off">
-              <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"></path>
-              <path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38">
-              </path>
-              <line x1="1" y1="1" x2="23" y2="23">
-              </line>
-            </svg>
-          </div>
-          <br><br>
-          <h2 class="text-danger">{{vulnerability_count}}</h2>
-          <h6 class="">Vulnerabilities</h6>
-        </div>
-        <div class="widget-content">
-          <div class="icon-container">
-            {% if vulnerability_difference > 0 %}
-            {% include 'base/_items/up_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{vulnerability_difference}} extra Vulnerabilities discovered on the last scan"> {{vulnerability_difference}} Vulnerabilities</span>
-            <br>
-            <a href="#" class="text-danger">View Changes</a>
-            {% elif vulnerability_difference < 0 %}
-            {% include 'base/_items/down_arrow.html' %}
-            <span class="icon-name bs-tooltip" title="{{vulnerability_difference|abs}} less Vulnerabilities discovered on the last scan"> {{vulnerability_difference|abs}} Vulnerabilities</span>
-            {% else %}
-            <br>
-            {% endif %}
-          </div>
-          <a href="javascript:window.location='../../start_scan/detail/vuln?query={{target.name}}';" class="text-info">View all Vulnerabilities</a>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="row layout-top-spacing">
-    <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-      <div class="widget widget-activity-four">
-        <div class="widget-heading">
-          <h6 class="">Subdomain Changes</h6>
-          <p>
-            {% if new_subdomains.count or removed_subdomains.count %}
-            During the last scan
-            {% if new_subdomains.count %}
-            <span class="badge badge-success badge-pills">{{new_subdomains.count}} Subdomains were Added</span>
-            {% endif %}
-            {% if removed_subdomains.count %}
-            <span class="badge badge-danger badge-pills">{{removed_subdomains.count}} Subdomains were Removed</span>
-            {% endif %}
-            {% else %}
-            <br>
-            {% endif %}
-          </p>
-        </div>
-        <div class="widget-content">
-          <div class="mt-container mx-auto">
-            <div class="table-responsive">
-              <table class="table table-bordered table-striped mb-4">
-                <thead>
-                  <tr>
-                    <th>Subdomain</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for subdomain in new_subdomains %}
-                  <tr>
-                    <td class="text-success">{{subdomain.subdomain}}</td>
-                    <td><span class="badge badge-success"> Added </span></td>
-                  </tr>
-                  {% endfor %}
-                  {% for subdomain in removed_subdomains %}
-                  <tr>
-                    <td class="text-danger">{{subdomain.subdomain}}</td>
-                    <td><span class="badge badge-danger"> Removed </span></td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12 layout-spacing">
-      <div class="widget widget-activity-four">
-        <div class="widget-heading">
-          <h6 class="">Endpoint Changes</h6>
-          <p>
-            {% if new_urls.count or removed_urls.count %}
-            During the last scan
-            {% if new_urls.count %}
-            <span class="badge badge-success badge-pills">{{new_urls.count}} URLs were Added</span>
-            {% endif %}
-            {% if removed_urls.count %}
-            <span class="badge badge-danger badge-pills">{{removed_urls.count}} URLs were Removed</span>
-            {% endif %}
-            {% else %}
-            <br>
-            {% endif %}
-          </p>
-        </div>
-        <div class="widget-content">
-          <div class="mt-container mx-auto">
-            <div class="table-responsive">
-              <table class="table table-bordered table-striped mb-4">
-                <thead>
-                  <tr>
-                    <th>Endpoint</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for url in new_urls %}
-                  <tr>
-                    <td><a href="{{url.http_url}}" target="_blank" class="text-success">{{url.http_url|truncatechars:100}}</a></td>
-                    <td><span class="badge badge-success"> Added </span></td>
-                  </tr>
-                  {% endfor %}
-                  {% for url in removed_urls %}
-                  <tr>
-                    <td><a href="{{url.http_url}}" target="_blank" class="text-danger">{{url.http_url|truncatechars:100}}</a></td>
-                    <td><span class="badge badge-danger"> Removed </span></td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% include 'base/_items/interesting_recon.html' %}
-  <div class="row layout">
-    {% if info_count > 0 or low_count > 0 or medium_count > 0 or high_count > 0 or critical_count > 0 %}
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
-      <div class="widget widget-chart-two">
-        <div class="widget-heading">
-          <div class="row">
-            <div class="col-6">
-              <h6 class=""><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-shield-off text-danger">
-                <path d="M19.69 14a6.9 6.9 0 0 0 .31-2V5l-8-3-3.16 1.18"></path>
-                <path d="M4.73 4.73L4 5v7c0 6 8 10 8 10a20.29 20.29 0 0 0 5.62-4.38">
-                </path>
-                <line x1="1" y1="1" x2="23" y2="23">
-                </line>
-              </svg> Vulnerability Scan Summary</h6>
-            </div>
-            <div class="col-6">
-              <span class="float-right"><a href="{% url 'all_vulns' %}" class="text-info">View all vulnerabilities</a></span>
-            </div>
-          </div>
-        </div>
-        <div class="widget-content">
-          <div class="row">
-            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
-              <h6 class="text-info text-center">Vulnerability Breakdown by Severity</h6>
-              <div id="vulnerability-chart" class=""></div>
-            </div>
-            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-              <h6 class="text-danger text-center">Most Common Vulnerabilities</h6>
-              <div class="table-responsive">
-                <table class="table table-hover table-light">
-                  <tbody>
-                    <thead>
-                      <th>Vulnerability Name</th>
-                      <th class="text-center">Count</th>
-                      <th>Severity</th>
-                    </thead>
-                    {% for item in most_common_vulnerability %}
-                    <tr onclick="window.location='start_scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
-                      <td>{{item.name}}</td>
-                      <td class="text-center">
-                        {{item.count}}
-                      </td>
-                      <td>
-                        <div class="t-rate">
-                          {% if item.severity == 0 %}
-                          <span class='badge badge-info'>Info</span>
-                          {% elif item.severity == 1 %}
-                          <span class='badge badge-low'>Low</span>
-                          {% elif item.severity == 2 %}
-                          <span class='badge badge-warning'>Medium</span>
-                          {% elif item.severity == 3 %}
-                          <span class='badge badge-danger'>High</span>
-                          {% elif item.severity == 4 %}
-                          <span class='badge badge-critical'>Critical</span>
-                          {% endif %}
-                        </div>
-                      </td>
-                    </tr>
-                    {% empty %}
-                    Not enough data
-                    {% endfor %}
-                  </tbody>
-                </table>
-                <small class="text-muted float-right mr-3">*Informational vulnerabilities are ignored.</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-  </div>
-  <div class="row layout-top-spacing mb-4">
-    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-      <div class="widget widget-table-one">
-        <div class="widget-heading">
-          <h6 class="">Recent Scans</h6>
-        </div>
-        <div class="widget-content">
-          {% for item in recent_scans %}
-          <div class="transactions-list">
-            <a href="{% url 'detail_scan' item.id %}">
-              <div class="t-item">
-                <div class="t-company-name">
-                  <div class="t-icon">
-                    <div class="icon">
-                      {% if item.scan_status == 1 %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                      {% elif item.scan_status == 2 %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                      {% else %}
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                      {% endif %}
-                    </div>
-                  </div>
-                  <div class="t-name">
-                    <h4>{{item.name}}</h4>
-                    <p class="meta-date">{{item.start_scan_date|naturaltime}}</p>
-                  </div>
+<!-- Activity Feed -->
+<!-- nav menu and contents -->
 
+<div class="row">
+  <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+    <div class="simple-pills">
+      <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item">
+          <a class="nav-link active" id="pills-summary-tab" data-toggle="pill" href="#pills-summary" role="tab" aria-controls="pills-summary" aria-selected="true">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="pills-subdomain-tab" data-toggle="pill" href="#pills-subdomain" role="tab" aria-controls="pills-subdomain" aria-selected="false">Subdomains</a>
+        </li>
+        {% if history.screenshot %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-screenshot-tab" data-toggle="pill" href="#pills-screenshot" role="tab" aria-controls="pills-screenshot" aria-selected="false">Screenshots</a>
+        </li>
+        {% endif %}
+        {% if history.dir_file_search %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">Directories</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-directories-tab" data-toggle="pill" href="#pills-directories" role="tab" aria-controls="pills-directories" aria-selected="false">URLs</a>
+        </li>
+        {% if history.vulnerability_scan %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-vulnerabilities-tab" data-toggle="pill" href="#pills-vulnerabilities" role="tab" aria-controls="pills-vulnerabilities" aria-selected="false">Vulnerabilities</a>
+        </li>
+        {% endif %}
+        {% if history.osint %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-osint-tab" data-toggle="pill" href="#pills-osint" role="tab" aria-controls="pills-osint" aria-selected="false">OSINT</a>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+          <a class="nav-link" id="pills-visualisation-tab" data-toggle="pill" href="#pills-visualisation" role="tab" aria-controls="pills-visualisation" aria-selected="false">Visualization</a>
+        </li>
+      </ul>
+      <div class="tab-content" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
+          <div class="row">
+            <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+              <div class="widget widget-one">
+                <div class="w-chart">
+                  <div class="w-chart-section primary-card">
+                    <div class="w-detail">
+                      <p class="w-stats">{{scan_count|intcomma}}
+                        <span class="float-right">
+                        </span>
+                      </p>
+                      <p class="w-title">Total Scans for Target</p>
+                      <p class="w-title text-dark">{{this_week_scan_count}} Scans this week</p>
+                      <br>
+                      <br>
+                    </div>
+                  </div>
+                  <div class="w-chart-section primary-card">
+                    <div class="w-detail">
+                      <p class="w-stats">{{subdomain_count|intcomma}}
+                        <span class="float-right">
+                        </span>
+                      </p>
+                      <p class="w-title">Subdomains Discovered</p>
+                      <p class="w-title text-success">{{alive_count}} Alive Subdomains (HTTP Status 200)</p>
+                      <br>
+                      <br>
+                    </div>
+                  </div>
+                  <div class="w-chart-section purple-card">
+                    <div class="w-detail">
+                      <p class="w-stats">{{endpoint_count|intcomma}}
+                        <span class="float-right">
+                          <span class="badge badge-pills badge-success bs-tooltip m-1" id="added_endpoint_badge"></span>
+                          <span class="badge badge-pills badge-danger bs-tooltip m-1" id="removed_endpoint_badge"></span>
+                        </span>
+                      </p>
+                      <p class="w-title">Endpoints Discovered</p>
+                      <p class="w-title text-success">{{endpoint_alive_count}} Alive Endpoints</p>
+                      <br>
+                      <br>
+                    </div>
+                  </div>
+                  <div class="w-chart-section danger-card">
+                    <div class="w-detail">
+                      <p class="w-stats">{{vulnerability_count|intcomma}}
+                        <span class="float-right">
+                        </span>
+                      </p>
+                      <p class="w-title">Vulnerabilities Discovered</p>
+                      <p class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</p>
+                      <p class="w-title text-warning">{{low_count}} Low, {{info_count}} Informational Vulnerabilities</p>
+                      <br>
+                    </div>
+                  </div>
+                  <div class="w-chart-section info-card">
+                    <div class="w-detail">
+                      <p class="w-stats">OSINT
+                        <span class="float-right">
+                        </span>
+                      </p>
+                      <p class="w-title">{{exposed_count}} Exposed Credentials</p>
+                      <p class="w-title text-muted">{{email_count}} Email Address Discovered</p>
+                      <p class="w-title text-muted">{{employees_count}} Employees Found</p>
+                      <br>
+                    </div>
+                  </div>
                 </div>
-                <div class="t-rate">
-                  {% if item.scan_status == -1 %}
-                  <span class="shadow-none badge badge-warning">{% include 'base/_items/progress_spin.html' %}Pending</span>
-                  {% elif item.scan_status == 0 %}
-                  <span class="shadow-none badge badge-danger">Failed</span>
-                  {% elif item.scan_status == 1 %}
-                  <span class="shadow-none badge badge-info">{% include 'base/_items/progress_spin.html' %}Scanning</span>
-                  {% elif item.scan_status == 2 %}
-                  <span class="shadow-none badge badge-success">Successful</span>
-                  {% elif item.scan_status == 3 %}
-                  <span class="shadow-none badge badge-danger">Aborted</span>
-                  {% else %}
-                  <span class="shadow-none badge badge-danger">Unknown</span>
-                  {% endif %}
+                <br>
+              </div>
+            </div>
+            <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+              <div class="widget widget-one">
+                <div class="widget-heading">
+                  <h6 class="">
+                    Scan Timeline
+                    <br>
+                    <br>
+                    <small>
+                      Target <span class="badge outline-badge-info">{{target.name}}</span> has been scanned <b>{{scan_count}}</b> times.
+                      <br>
+                      The most recent scan was performed on <span class="text-primary"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+                    </small>
+                  </h6>
+                </div>
+                <div class="widget-content">
+                  <div class="hori-timeline mt-4">
+                    <ul class="timelinelist-inline events">
+                      {% for scan in  recent_scans reversed %}
+                      <li class="timelinelist-inline-item event-list">
+                        <div class="px-4">
+                          <div class="event-date {% if scan.scan_status == 0 %}bg-soft-danger text-danger{% elif scan.scan_status == 1 %}bg-soft-warning text-warning{% elif scan.scan_status == 2 %}bg-soft-success text-success{% endif %}">{{scan.start_scan_date|naturaltime}}</div>
+                          <h6>
+                            {% if scan.scan_status == -1 %}
+                            <span class="text-warning">[Scan Pending]</span>
+                            {% elif scan.scan_status == 0 %}
+                            <span class="text-danger">[Scan Failed]</span>
+                            {% elif scan.scan_status == 1 %}
+                            <span class="text-info">[Currently Scanning]</span>
+                            {% elif scan.scan_status == 2 %}
+                            <span class="text-success">[Scan Completed]</span>
+                            {% elif scan.scan_status == 3 %}
+                            <span class="text-danger">[Scan Aborted]</span>
+                            {% else %}
+                            <span class="text-danger">[Unknown]</span>
+                            {% endif %}
+                          </h6>
+                          <h6>
+                            {{scan.get_subdomain_count}} Subdomains Discovered
+                            <br>
+                            &nbsp;
+                            {% if scan.get_subdomain_change_count.0 %}
+                            <span class="text-success">+{{scan.get_subdomain_change_count.0}} New Subdomains</span>
+                            {% endif %}
+                            {% if scan.get_subdomain_change_count.1 %}
+                            <span class="text-danger">-{{scan.get_subdomain_change_count.1}} Removed Subdomains</span>
+                            {% endif %}
+                          </h6>
+                          <div>
+                            <a href="{% url 'detail_scan' scan.id %}" class="btn btn-primary btn-sm" target="_blank">Scan Summary</a>
+                          </div>
+                        </div>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </a>
+            </div>
           </div>
-          {% empty %}
-          <div class="alert alert-arrow-left alert-icon-left alert-light-warning mb-4" role="alert">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-            Please wait for the scans to be completed, if any, or You may also initiate the scan
-            <a href="{% url 'list_target' %}" class='text-info'>from here.</a>
-          </strong>
         </div>
-        {% endfor %}
       </div>
     </div>
   </div>
 </div>
 {% endblock main_content %}
 
-
 {% block page_level_script %}
+<script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-<script src="{% static 'assets/js/ui-accordions.js' %}"></script>
+<script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
-<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
-
 <script type="text/javascript">
-// apex charts for vulnerability summary
-var options = {
-  chart: {
-    type: 'donut',
-    width: 380
-  },
-  colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-  dataLabels: {
-    enabled: false
-  },
-  legend: {
-    position: 'bottom',
-    horizontalAlign: 'center',
-    fontSize: '14px',
-    markers: {
-      width: 10,
-      height: 10,
-    },
-    itemMargin: {
-      horizontal: 0,
-      vertical: 8
-    }
-  },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '70%',
-        background: 'transparent',
-        labels: {
-          show: true,
-          name: {
-            show: true,
-            fontSize: '29px',
-            fontFamily: 'Nunito, sans-serif',
-            color: undefined,
-            offsetY: -10
-          },
-          value: {
-            show: true,
-            fontSize: '26px',
-            fontFamily: 'Nunito, sans-serif',
-            color: '20',
-            offsetY: 16,
-            formatter: function (val) {
-              return val
-            }
-          },
-          total: {
-            show: true,
-            showAlways: true,
-            label: 'Total',
-            color: '#888ea8',
-            formatter: function (w) {
-              return w.globals.seriesTotals.reduce( function(a, b) {
-                return a + b
-              }, 0)
-            }
-          }
-        }
-      }
-    }
-  },
-  stroke: {
-    show: true,
-    width: 25,
-  },
-  series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-  labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
-  responsive: [{
-    breakpoint: 1599,
-    options: {
-      chart: {
-        width: '350px',
-        height: '400px'
-      },
-      legend: {
-        position: 'bottom'
-      }
-    },
-    breakpoint: 1439,
-    options: {
-      chart: {
-        width: '250px',
-        height: '390px'
-      },
-      legend: {
-        position: 'bottom'
-      },
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '65%',
-          }
-        }
-      }
-    },
-  }]
-}
-var chart = new ApexCharts(
-  document.querySelector("#vulnerability-chart"),
-  options
-);
-
-chart.render();
 </script>
 
 {% endblock page_level_script %}
