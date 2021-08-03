@@ -244,8 +244,8 @@ code {
 =====================
 */
 .header-container {
-  background: #fff;
-  border-bottom: 1px solid #e0e6ed;
+  background: #060818;
+  border-bottom: 1px solid #fafafa;
   box-shadow: 0 0px 10px rgba(22, 28, 45, 0.15);
   position: fixed;
   top: 0;
@@ -266,7 +266,7 @@ code {
   .navbar .nav-logo a.navbar-brand .navbar-brand-name {
     font-weight: 100;
     letter-spacing: 0.5px;
-    color: #060818;
+    color: #fafafa;
     font-size: 22px;
     vertical-align: middle;
     padding-left: 12.8px; }
@@ -1269,7 +1269,7 @@ code {
         .topbar-nav.header nav#topbar ul.menu-categories li.menu.active {
           padding: 9px 0 9px 0; }
           .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a {
-            background: #4361ee;
+            background: #3b3f5c;
             border-radius: 6px; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu:not(:last-child) {
           margin-right: 5px; }
@@ -1304,7 +1304,7 @@ code {
             .topbar-nav.header nav#topbar ul.menu-categories li.menu > a[aria-expanded="true"] div span {
               color: #4361ee; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a[aria-expanded="true"] {
-          background: #4361ee;
+          background: #3b3f5c;
           border-radius: 6px; }
           .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a[aria-expanded="true"] svg:not(.feather-chevron-down) {
             color: #fff;
@@ -1316,21 +1316,21 @@ code {
         .topbar-nav.header nav#topbar ul.menu-categories li.menu a > div svg:not(.feather-chevron-down) {
           width: 23px;
           height: 23px;
-          color: #3b3f5c;
+          color: #fafafa;
           vertical-align: bottom;
           margin-right: 6px;
           stroke-width: 1.2px; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu a > div span {
           font-size: 14px;
           font-weight: 600;
-          color: #3b3f5c; }
+          color: #fafafa; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu > .dropdown-toggle svg.feather-chevron-down {
           display: none; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a > div svg:not(.feather-chevron-down) {
           color: #fff;
           stroke-width: 1.6px; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a > div svg.feather.feather-chevron-down {
-          color: #e0e6ed; }
+          color: #fafafa; }
         .topbar-nav.header nav#topbar ul.menu-categories li.menu.active > a > div span {
           color: #fff;
           font-weight: 600; }
@@ -1339,9 +1339,9 @@ code {
           top: 56px;
           left: 0;
           right: auto;
-          background-color: #fff;
+          background-color: #060818;
           color: #0e1726;
-          border: 1px solid #e0e6ed;
+          border: 1px solid #060818;
           text-align: left;
           margin-right: auto;
           margin-left: auto;
@@ -1364,14 +1364,13 @@ code {
             .topbar-nav.header nav#topbar ul.menu-categories li.menu .submenu li a {
               display: flex;
               justify-content: space-between;
-              color: #888ea8;
+              color: #fafafa;
               white-space: nowrap;
               align-items: center;
               transition: all 0.2s ease-in-out;
               padding: 4px 24px;
               font-size: 13px;
               font-weight: 600;
-              color: #888ea8;
               letter-spacing: 0px;
               line-height: 24px; }
             .topbar-nav.header nav#topbar ul.menu-categories li.menu .submenu li.active a {
