@@ -119,7 +119,7 @@ function get_endpoints(scan_history_id, gf_tags){
     },
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
-    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "stripeClasses": [],
     "lengthMenu": [20, 50, 100, 500, 1000],
     "pageLength": 20,
@@ -228,7 +228,7 @@ function get_interesting_subdomains(scan_history_id){
     "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
-    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "bInfo": false,
     "stripeClasses": [],
@@ -307,7 +307,7 @@ function get_interesting_endpoint(scan_history_id){
     "processing":true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
-    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     'serverSide': true,
     "bInfo": false,
     "ajax": `/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`,
@@ -372,7 +372,7 @@ function get_subdomain_changes(scan_history_id){
     "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
-    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "stripeClasses": [],
     'serverSide': true,
@@ -488,7 +488,7 @@ function get_endpoint_changes(scan_history_id){
     "processing": true,
     "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
     "<'row'<'col'tr>>" +
-    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "stripeClasses": [],
     'serverSide': true,

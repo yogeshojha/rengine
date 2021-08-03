@@ -15,6 +15,7 @@ List all targets
 <link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
 <link href="{% static 'assets/css/custom.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
 {% endblock custom_js_css_link %}
@@ -24,16 +25,16 @@ List all Target for Recon
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
+<div class="widget widget-table-two">
+  <div class="widget-heading">
     <div class="row">
       <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-        <h4>All Targets</h4>
+        <h5>All Targets</h5>
       </div>
     </div>
   </div>
-  <div class="widget-content widget-content-area">
-    <div class="m-2">
+  <div class="widget-content">
+    <div class="">
       <a class="btn btn-primary dropdown-toggle" href="#" role="button" id="filterMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         &nbsp;&nbsp;Filter
@@ -50,19 +51,19 @@ List all Target for Recon
       <a class="btn btn-outline-danger mb-2 float-right disabled" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
       <a class="btn btn-outline-info mb-2 float-right disabled" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
     </div>
-    <div class="mt-3 ml-2">
+    <div class="">
       <div id="filteringText">
       </div>
     </div>
     <form method="POST" id="multiple_targets_form" action="../../start_scan/start/multiple/">
       {% csrf_token %}
-      <div class="table-responsive mb-4">
-        <table id="list_target_table" class="table style-2  table-hover">
+      <div class="table-responsive mt-4 mb-4">
+        <table id="list_target_table" class="table">
           <thead>
             <tr>
               <th class="checkbox-column">Serial Number</th>
               <th class="text-center">Domain Name</th>
-              <th class="text-center">Organization</th>
+              <th>Organization</th>
               <th>Description</th>
               <th>Added on</th>
               <th class="text-center">Last Scanned</th>
@@ -151,9 +152,10 @@ $(document).ready(function(){
       "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
+      "sProcessing": "Processing... Please wait..."
     },
-    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
-    "<'table-responsive'tr>" +
+    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+    "<'row'<'col'tr>>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
     "pageLength": 10
