@@ -60,10 +60,10 @@ def get_interesting_subdomains(scan_history=None, target=None):
     if target:
         if subdomain_lookup_query:
             subdomain_lookup = Subdomain.objects.filter(
-                target_domain__id=target).filter(subdomain_lookup_query).distinct('name')
+                target_domain__id=target).filter(subdomain_lookup_query)
         if page_title_lookup_query:
             title_lookup = Subdomain.objects.filter(page_title_lookup_query).filter(
-                target_domain__id=target).distinct('name')
+                target_domain__id=target)
     elif scan_history:
         if subdomain_lookup_query:
             subdomain_lookup = Subdomain.objects.filter(

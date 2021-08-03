@@ -250,6 +250,10 @@ def target_summary(request, id):
         domain=id).order_by('-start_scan_date')[:4]
 
     context['vulnerability_count'] = vulnerability_count
+
+    context['vulnerability_list'] = Vulnerability.objects.filter(
+        target_domain__id=id).order_by('-severity').all()[:20]
+
     return render(request, 'target/summary.html', context)
 
 def add_organization(request):

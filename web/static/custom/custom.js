@@ -302,3 +302,52 @@ function hideTooltip(btn) {
     $(btn).tooltip('hide');
   }, 1000);
 }
+
+
+function get_response_time_text(response_time){
+  var text_color = 'danger';
+  if (response_time < 0.5){
+    text_color = 'success'
+  }
+  else if (response_time >= 0.5 && response_time < 1){
+    text_color = 'warning'
+  }
+  return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
+}
+
+function parse_technology(data, color, outline=null, scan_id=null)
+{
+  if(outline)
+  {
+    var badge = `<span class='badge-link badge badge-pill outline-badge-`+color+` m-1'`;
+  }
+  else {
+    var badge = `<span class='badge-link badge badge-pill badge-`+color+` m-1'`;
+  }
+  var data_with_span ="";
+  for (var key in data){
+    if (scan_id){
+      data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
+    }
+    else{
+      data_with_span += badge + ">" + data[key]['name'] + "</span>";
+    }
+  }
+  return data_with_span;
+}
+
+// span values function will seperate the values by comma and put badge around it
+function parse_ip(data, cdn){
+  if (cdn)
+  {
+    var badge = `<span class='badge badge-pill outline-badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
+  }
+  else{
+    var badge = `<span class='badge badge-pill outline-badge-info m-1'>`;
+  }
+  var data_with_span ="";
+  data.split(/\s*,\s*/).forEach(function(split_vals) {
+    data_with_span+=badge + split_vals + "</span>";
+  });
+  return data_with_span;
+}

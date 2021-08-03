@@ -13,6 +13,7 @@ Target Summary for {{target.name}}
 <link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
+<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'custom/timeline.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
@@ -159,7 +160,7 @@ Target Summary for {{target.name}}
                       {% for scan in  recent_scans reversed %}
                       <li class="timelinelist-inline-item event-list">
                         <div class="px-4">
-                          <div class="event-date {% if scan.scan_status == 0 %}bg-soft-danger text-danger{% elif scan.scan_status == 1 %}bg-soft-warning text-warning{% elif scan.scan_status == 2 %}bg-soft-success text-success{% endif %}">{{scan.start_scan_date|naturaltime}}</div>
+                          <div class="event-date {% if scan.scan_status == 0 %}bg-soft-danger text-danger{% elif scan.scan_status == 1 %}bg-soft-warning text-warning{% elif scan.scan_status == 2 %}bg-soft-success text-success{% elif scan.scan_status == 3 %}bg-soft-danger text-danger{% endif %}">{{scan.start_scan_date|naturaltime}}</div>
                           <h6>
                             {% if scan.scan_status == -1 %}
                             <span class="text-warning">[Scan Pending]</span>
@@ -221,70 +222,69 @@ Target Summary for {{target.name}}
                   <h6 class="">
                     <span id="tasks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span>
                     Recon Note/Todo
-                    <span class="text-info float-right bs-tooltip" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    </span>
-                  </h6>
-                </div>
-                <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
-                  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                    <div class="modal-content">
-                      <div class="modal-body">
-                        <div class="compose-box">
-                          <div class="compose-content" id="addTaskModalTitle">
-                            <h5 class="">Add Recon Todo</h5>
-                            <form>
-                              <input type="hidden" name="summary_identifier_val" value="{{target.id}}" id="summary_identifier_val">
-                              <div class="row">
-                                <div class="col-md-12">
-                                  <div class="d-flex mail-to mb-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                                    <div class="w-100">
-                                      <input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div class="row">
-                                <div class="col-md-12">
-                                  <div class="d-flex mail-to mb-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
-                                    <div class="w-100">
-                                      Select Subdomain (Optional)
-                                      <br>
-                                      <span id="selectedSubdomainCount"></span>
-                                      <select class="placeholder js-states form-control" id="todoSubdomainDropdown">
-                                        <option>Choose Subdomain...</option>
-                                      </select>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div class="d-flex  mail-subject mb-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                                <div class="w-100">
-                                  <textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
-                                </div>
-                              </div>
-                            </form>
-                          </div>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
-                      </div>
-                    </div>
+                    <!--
+                    <span class="text-info float-right bs-tooltip" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{target.id}})">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </span>-->
+                </h6>
+              </div>
+              <div class="widget-content">
+                <div class="w-shadow-top"></div>
+                <div class="mt-container mx-auto">
+                  <div id="recon-task-list">
                   </div>
                 </div>
-                <div class="widget-content">
-                  <div class="w-shadow-top"></div>
-                  <div class="mt-container mx-auto">
-                    <div id="recon-task-list">
+                <div class="w-shadow-bottom"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+            {% include 'base/_items/interesting_recon.html' %}
+          </div>
+          <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 layout-spacing">
+            <div class="widget widget-activity-four">
+              <div class="widget-heading">
+                <h6 class="">Vulnerability Scan Summary</h6>
+              </div>
+              <div class="widget-content">
+                <div class="row">
+                  <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+                    <div id="vulnerability-chart" class=""></div>
+                  </div>
+                  <div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+                    <div class="table-responsive mt-container mx-auto">
+                      <table class="table">
+                        <thead>
+                          <tr>
+                            <th><div class="th-content">Vulnerability</div></th>
+                            <th><div class="th-content">Severity</div></th>
+                            <th><div class="th-content">Vulnerable URL</div></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for vulnerability in vulnerability_list  %}
+                          <tr>
+                            <td>{{vulnerability.name}}</td>
+                            <td>{% if vulnerability.severity == 0 %}
+                              <span class='badge badge-info'>Info</span>
+                              {% elif vulnerability.severity == 1 %}
+                              <span class='badge badge-low'>Low</span>
+                              {% elif vulnerability.severity == 2 %}
+                              <span class='badge badge-warning'>Medium</span>
+                              {% elif vulnerability.severity == 3 %}
+                              <span class='badge badge-danger'>High</span>
+                              {% elif vulnerability.severity == 4 %}
+                              <span class='badge badge-critical'>Critical</span>
+                              {% endif %}</td>
+                              <td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      <small class="text-muted float-right">*Vulnerability list sorted by severity</small>
                     </div>
                   </div>
-                  <div class="w-shadow-bottom"></div>
                 </div>
               </div>
             </div>
@@ -309,6 +309,114 @@ Target Summary for {{target.name}}
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
 get_recon_notes({{target.id}})
+// apex charts for vulnerability summary
+var options = {
+  chart: {
+    type: 'donut',
+    width: 380
+  },
+  colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+  dataLabels: {
+    enabled: false
+  },
+  legend: {
+    position: 'bottom',
+    horizontalAlign: 'center',
+    fontSize: '14px',
+    markers: {
+      width: 10,
+      height: 10,
+    },
+    itemMargin: {
+      horizontal: 0,
+      vertical: 8
+    }
+  },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '70%',
+        background: 'transparent',
+        labels: {
+          show: true,
+          name: {
+            show: true,
+            fontSize: '29px',
+            fontFamily: 'Nunito, sans-serif',
+            color: undefined,
+            offsetY: -10
+          },
+          value: {
+            show: true,
+            fontSize: '26px',
+            fontFamily: 'Nunito, sans-serif',
+            color: '20',
+            offsetY: 16,
+            formatter: function (val) {
+              return val
+            }
+          },
+          total: {
+            show: true,
+            showAlways: true,
+            label: 'Total',
+            color: '#888ea8',
+            formatter: function (w) {
+              return w.globals.seriesTotals.reduce( function(a, b) {
+                return a + b
+              }, 0)
+            }
+          }
+        }
+      }
+    }
+  },
+  stroke: {
+    show: true,
+    width: 25,
+  },
+  series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+  labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+  responsive: [{
+    breakpoint: 1599,
+    options: {
+      chart: {
+        width: '350px',
+        height: '400px'
+      },
+      legend: {
+        position: 'bottom'
+      }
+    },
+    breakpoint: 1439,
+    options: {
+      chart: {
+        width: '250px',
+        height: '390px'
+      },
+      legend: {
+        position: 'bottom'
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '65%',
+          }
+        }
+      }
+    },
+  }]
+}
+var chart = new ApexCharts(
+  document.querySelector("#vulnerability-chart"),
+  options
+);
+chart.render();
+// get interesting subdomain
+get_interesting_subdomains({{target.id}});
+// get interesting endpoint
+// get_interesting_endpoint({{target.id}});
+
 </script>
 
 {% endblock page_level_script %}
