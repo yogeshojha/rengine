@@ -768,11 +768,17 @@ class EndPointViewSet(viewsets.ModelViewSet):
         req = self.request
         scan_history = req.query_params.get(
             'scan_history') if 'scan_history' in req.query_params else None
+        target_id = req.query_params.get(
+            'target_id') if 'target_id' in req.query_params else None
         gf_tag = req.query_params.get(
             'gf_tag') if 'gf_tag' in req.query_params else None
         url_query = req.query_params.get(
             'query_param') if 'query_param' in req.query_params else None
-        if url_query:
+
+        if target_id:
+            self.queryset = EndPoint.objects.filter(
+                target_domain__id=target_id)
+        elif url_query:
             if url_query.isnumeric():
                 self.queryset = EndPoint.objects.filter(
                     Q(
@@ -786,13 +792,8 @@ class EndPointViewSet(viewsets.ModelViewSet):
             self.queryset = EndPoint.objects.filter(
                 scan_history__id=scan_history)
 
-        '''
-        look for tags
-        '''
-        if gf_tag and scan_history:
-            self.queryset = EndPoint.objects.filter(
-                scan_history__id=scan_history).filter(
-                matched_gf_patterns__icontains=gf_tag)
+        if gf_tag:
+            self.queryset = self.queryset.filter(matched_gf_patterns__icontains=gf_tag)
         return self.queryset
 
     def filter_queryset(self, qs):
@@ -938,6 +939,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         req = self.request
         vulnerability_of = req.query_params.get('scan_history')
+        target_id = req.query_params.get('target_id')
         url_query = req.query_params.get('query_param')
         if url_query:
             if url_query.isnumeric():
@@ -952,6 +954,9 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         elif vulnerability_of:
             self.queryset = Vulnerability.objects.filter(
                 scan_history__id=vulnerability_of)
+        elif target_id:
+            self.queryset = Vulnerability.objects.filter(
+                target_domain__id=target_id)
         return self.queryset
 
     def filter_queryset(self, qs):
