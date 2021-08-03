@@ -183,16 +183,6 @@ Detailed Scan Results for {{history.domain.name}}
 											</h6>
 										</div>
 									</a>
-									<div class="task-action">
-										<div class="dropdown">
-											<a class="dropdown-toggle" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-											</a>
-											<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
-												<a class="dropdown-item" href="javascript:void(0);">View Excluded Subdomains</a>
-											</div>
-										</div>
-									</div>
 								</div>
 								<div class="widget-content">
 									<div class="row">
@@ -1246,8 +1236,8 @@ $("#pills-subdomain-tab").click(function() {
 			},
 		],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'row'<'col'tr>>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
@@ -1400,8 +1390,8 @@ $("#pills-directories-tab").click(function() {
 			},
 		],
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'row'<'col'tr>>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 			$('.dataTables_wrapper table').removeClass('table-striped');
@@ -1442,8 +1432,8 @@ $("#pills-vulnerabilities-tab").click(function() {
 		},
 		"processing": true,
 		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'row'<'col'tr>>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"stripeClasses": [],
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,

@@ -41,6 +41,23 @@ class ScanHistory(models.Model):
     def get_subdomain_count(self):
         return Subdomain.objects.filter(scan_history__id=self.id).count()
 
+    def get_subdomain_change_count(self):
+        last_scan = ScanHistory.objects.filter(id=self.id).filter(
+            scan_type__subdomain_discovery=True).order_by('-start_scan_date')
+
+        scanned_host_q1 = Subdomain.objects.filter(
+            target_domain__id=self.domain.id).exclude(
+                scan_history__id=last_scan[0].id).values('name')
+
+        scanned_host_q2 = Subdomain.objects.filter(
+            scan_history__id=last_scan[0].id).values('name')
+
+        new_subdomains = scanned_host_q2.difference(scanned_host_q1).count()
+        removed_subdomains = scanned_host_q1.difference(scanned_host_q2).count()
+
+        return [new_subdomains, removed_subdomains]
+
+
     def get_endpoint_count(self):
         return EndPoint.objects.filter(scan_history__id=self.id).count()
 
