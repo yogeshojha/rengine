@@ -401,7 +401,7 @@ Detailed Scan Results for {{history.domain.name}}
 													<div class="compose-content" id="addTaskModalTitle">
 														<h5 class="">Add Recon Todo</h5>
 														<form>
-															<input type="hidden" name="scan_history" value="{{history.id}}" id="scan_history_input_val">
+															<input type="hidden" name="summary_identifier" value="{{history.id}}" id="summary_identifier_val">
 															<div class="row">
 																<div class="col-md-12">
 																	<div class="d-flex mail-to mb-4">
@@ -986,6 +986,7 @@ Detailed Scan Results for {{history.domain.name}}
 
 {% block page_level_script %}
 <script src="{% static 'note/js/todo.js' %}"></script>
+<script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>

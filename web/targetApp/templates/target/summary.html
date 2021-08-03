@@ -66,6 +66,7 @@ Target Summary for {{target.name}}
           <a class="nav-link" id="pills-visualisation-tab" data-toggle="pill" href="#pills-visualisation" role="tab" aria-controls="pills-visualisation" aria-selected="false">Visualization</a>
         </li>
       </ul>
+      <input type="hidden" name="summary_identifier" value="{{target.id}}" id="summary_identifier_val">
       <div class="tab-content" id="pills-tabContent">
         <div class="tab-pane fade show active" id="pills-summary" role="tabpanel" aria-labelledby="pills-summary-tab">
           <div class="row">
@@ -214,6 +215,79 @@ Target Summary for {{target.name}}
                 </div>
               </div>
             </div>
+            <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
+              <div class="widget widget-timeline-log">
+                <div class="widget-heading">
+                  <h6 class="">
+                    <span id="tasks-count"><span class="spinner-border text-dark align-self-center loader-sm"></span></span>
+                    Recon Note/Todo
+                    <span class="text-info float-right bs-tooltip" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </span>
+                  </h6>
+                </div>
+                <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                    <div class="modal-content">
+                      <div class="modal-body">
+                        <div class="compose-box">
+                          <div class="compose-content" id="addTaskModalTitle">
+                            <h5 class="">Add Recon Todo</h5>
+                            <form>
+                              <input type="hidden" name="summary_identifier_val" value="{{target.id}}" id="summary_identifier_val">
+                              <div class="row">
+                                <div class="col-md-12">
+                                  <div class="d-flex mail-to mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                    <div class="w-100">
+                                      <input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div class="row">
+                                <div class="col-md-12">
+                                  <div class="d-flex mail-to mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                                    <div class="w-100">
+                                      Select Subdomain (Optional)
+                                      <br>
+                                      <span id="selectedSubdomainCount"></span>
+                                      <select class="placeholder js-states form-control" id="todoSubdomainDropdown">
+                                        <option>Choose Subdomain...</option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div class="d-flex  mail-subject mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                <div class="w-100">
+                                  <textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="widget-content">
+                  <div class="w-shadow-top"></div>
+                  <div class="mt-container mx-auto">
+                    <div id="recon-task-list">
+                    </div>
+                  </div>
+                  <div class="w-shadow-bottom"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -231,8 +305,10 @@ Target Summary for {{target.name}}
 <script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/target_summary.js' %}"></script>
+<script src="{% static 'custom/todo.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
+get_recon_notes({{target.id}})
 </script>
 
 {% endblock page_level_script %}
