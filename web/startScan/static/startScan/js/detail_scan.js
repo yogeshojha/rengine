@@ -503,7 +503,7 @@ function get_ips(scan_id){
     for (var val in data['ips']){
       ip = data['ips'][val]
       badge_color = ip['is_cdn'] ? 'warning' : 'info';
-      $("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', ${scan_id})">${ip['address']}</span>`);
+      $("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1 badge-link' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', ${scan_id})">${ip['address']}</span>`);
       // $("#ip-address").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="modal" data-target="#tabsModal">${ip['address']}</span>`);
     }
     $('#ip-address-count').html(`<span class="badge outline-badge-dark">${data['ips'].length}</span>`);
@@ -686,7 +686,7 @@ function get_technologies(scan_id){
     $('#technologies-count').empty();
     for (var val in data['technologies']){
       tech = data['technologies'][val]
-      $("#technologies").append(`<span class='badge outline-badge-info badge-pills m-1' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', ${scan_id})">${tech['name']}</span>`);
+      $("#technologies").append(`<span class='badge outline-badge-info badge-pills m-1 badge-link' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', ${scan_id})">${tech['name']}</span>`);
     }
     $('#technologies-count').html(`<span class="badge outline-badge-dark">${data['technologies'].length}</span>`);
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
@@ -714,7 +714,7 @@ function get_ports(scan_id){
     for (var val in data['ports']){
       port = data['ports'][val]
       badge_color = port['is_uncommon'] ? 'danger' : 'info';
-      $("#ports").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', ${scan_id})">${port['number']}/${port['service_name']}</span>`);
+      $("#ports").append(`<span class='badge outline-badge-${badge_color} badge-pills m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', ${scan_id})">${port['number']}/${port['service_name']}</span>`);
     }
     $('#ports-count').html(`<span class="badge outline-badge-dark">${data['ports'].length}</span>`);
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });

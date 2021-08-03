@@ -161,7 +161,16 @@ class ListTechnology(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
-        if scan_id:
+        target_id = req.query_params.get('target_id')
+
+        if target_id:
+            tech = Technology.objects.filter(
+                technologies__in=Subdomain.objects.filter(
+                    target_domain__id=target_id)).annotate(
+                count=Count('name')).order_by('-count')
+            serializer = TechnologyCountSerializer(tech, many=True)
+            return Response({"technologies": serializer.data})
+        elif scan_id:
             tech = Technology.objects.filter(
                 technologies__in=Subdomain.objects.filter(
                     scan_history__id=scan_id)).annotate(
@@ -237,17 +246,27 @@ class ListPorts(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        target_id = req.query_params.get('target_id')
+
         ip_address = req.query_params.get('ip_address')
-        if ip_address and scan_id:
+
+        if target_id:
             port = Port.objects.filter(
-                ports__address=ip_address).filter(
+                ports__in=IpAddress.objects.filter(
+                    ip_addresses__in=Subdomain.objects.filter(
+                        target_domain__id=target_id))).distinct()
+            serializer = PortSerializer(port, many=True)
+            return Response({"ports": serializer.data})
+        elif scan_id:
+            port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
                     ip_addresses__in=Subdomain.objects.filter(
                         scan_history__id=scan_id))).distinct()
             serializer = PortSerializer(port, many=True)
             return Response({"ports": serializer.data})
-        elif scan_id:
+        elif ip_address and scan_id:
             port = Port.objects.filter(
+                ports__address=ip_address).filter(
                 ports__in=IpAddress.objects.filter(
                     ip_addresses__in=Subdomain.objects.filter(
                         scan_history__id=scan_id))).distinct()
@@ -321,19 +340,28 @@ class ListIPs(APIView):
     def get(self, request, format=None):
         req = self.request
         scan_id = req.query_params.get('scan_id')
+        target_id = req.query_params.get('target_id')
+
         port = req.query_params.get('port')
-        if scan_id and port:
+
+        if target_id:
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
-                    scan_history__id=scan_id)).filter(
-                ports__in=Port.objects.filter(
-                    number=port)).distinct()
+                    target_domain__id=target_id)).distinct()
             serializer = IpSerializer(ips, many=True)
             return Response({"ips": serializer.data})
         elif scan_id:
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
                     scan_history__id=scan_id)).distinct()
+            serializer = IpSerializer(ips, many=True)
+            return Response({"ips": serializer.data})
+        elif scan_id and port:
+            ips = IpAddress.objects.filter(
+                ip_addresses__in=Subdomain.objects.filter(
+                    scan_history__id=scan_id)).filter(
+                ports__in=Port.objects.filter(
+                    number=port)).distinct()
             serializer = IpSerializer(ips, many=True)
             return Response({"ips": serializer.data})
         else:
