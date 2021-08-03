@@ -530,10 +530,10 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
         if 'only_subdomains' in self.request.query_params:
             self.serializer_class = InterestingSubdomainSerializer
         if scan_id:
-            interesting_subdomain = get_interesting_subdomains(scan_history=scan_id)
-            return interesting_subdomain
+            return get_interesting_subdomains(scan_history=scan_id)
         elif target_id:
-            return get_interesting_subdomains(target=target_id)
+            queryset = get_interesting_subdomains(target=target_id)
+            return queryset
         else:
             return get_interesting_subdomains()
 

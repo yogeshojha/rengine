@@ -58,25 +58,24 @@ def get_interesting_subdomains(scan_history=None, target=None):
     title_lookup = Subdomain.objects.none()
 
     if target:
+        subdomains = Subdomain.objects.filter(target_domain__id=target).distinct('name')
         if subdomain_lookup_query:
-            subdomain_lookup = Subdomain.objects.filter(
-                target_domain__id=target).filter(subdomain_lookup_query)
+            subdomain_lookup = subdomains.filter(subdomain_lookup_query)
         if page_title_lookup_query:
-            title_lookup = Subdomain.objects.filter(page_title_lookup_query).filter(
-                target_domain__id=target)
+            title_lookup = subdomains.filter(page_title_lookup_query)
     elif scan_history:
+        subdomains = Subdomain.objects.filter(scan_history__id=scan_history)
         if subdomain_lookup_query:
-            subdomain_lookup = Subdomain.objects.filter(
-                scan_history__id=scan_history).filter(subdomain_lookup_query)
+            subdomain_lookup = subdomains.filter(subdomain_lookup_query)
         if page_title_lookup_query:
-            title_lookup = Subdomain.objects.filter(
-                scan_history__id=scan_history).filter(page_title_lookup_query)
+            title_lookup = subdomains.filter(page_title_lookup_query)
     else:
         if subdomain_lookup_query:
             subdomain_lookup = Subdomain.objects.filter(subdomain_lookup_query)
         if page_title_lookup_query:
             title_lookup = Subdomain.objects.filter(page_title_lookup_query)
-    return subdomain_lookup | title_lookup
+    lookup = subdomain_lookup | title_lookup
+    return lookup
 
 
 def get_interesting_endpoint(scan_history=None, target=None):
@@ -104,19 +103,17 @@ def get_interesting_endpoint(scan_history=None, target=None):
     title_lookup = EndPoint.objects.none()
 
     if target:
+        urls = EndPoint.objects.filter(target_domain__id=target).distinct('http_url')
         if url_lookup_query:
-            url_lookup = EndPoint.objects.filter(
-                target_domain__id=target).filter(url_lookup_query).distinct('http_url')
+            url_lookup = urls.filter(url_lookup_query)
         if page_title_lookup_query:
-            title_lookup = EndPoint.objects.filter(
-                target_domain__id=target).filter(page_title_lookup_query).distinct('http_url')
+            title_lookup = urls.filter(page_title_lookup_query)
     elif scan_history:
+        urls = EndPoint.objects.filter(scan_history__id=scan_history)
         if url_lookup_query:
-            url_lookup = EndPoint.objects.filter(
-                scan_history__id=scan_history).filter(url_lookup_query)
+            url_lookup = urls.filter(url_lookup_query)
         if page_title_lookup_query:
-            title_lookup = EndPoint.objects.filter(
-                scan_history__id=scan_history).filter(page_title_lookup_query)
+            title_lookup = urls.filter(page_title_lookup_query)
 
     else:
         if url_lookup_query:
