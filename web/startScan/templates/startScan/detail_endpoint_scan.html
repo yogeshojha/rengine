@@ -15,11 +15,7 @@ Scan history - Endpoints
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-{% if scan_history_id %}
-Detailed Scan for {{history.domain.name}} - Endpoints
-{% else %}
-All Endpoints
-{% endif %}
+<li class="breadcrumb-item active" aria-current="page">Endpoints</li>
 {% endblock breadcrumb_title %}
 
 

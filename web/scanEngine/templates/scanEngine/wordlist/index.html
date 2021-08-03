@@ -19,7 +19,8 @@ Wordlist
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-All Wordlists
+<li class="breadcrumb-item"><a href="{% url 'wordlist_list' %}">Wordlist</a></li>
+<li class="breadcrumb-item active">All Worldlists</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}

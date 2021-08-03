@@ -33,22 +33,6 @@ urlpatterns = [
         views.delete_wordlist,
         name='delete_wordlist'),
     path(
-        'configuration/',
-        views.configuration_list,
-        name='configuration_list'),
-    path(
-        'configuration/add/',
-        views.add_configuration,
-        name='add_configuration'),
-    path(
-        'configuration/update/<int:id>',
-        views.update_configuration,
-        name='update_configuration'),
-    path(
-        'configuration/delete/<int:id>',
-        views.delete_configuration,
-        name='delete_configuration'),
-    path(
         'interesting/lookup/',
         views.interesting_lookup,
         name='interesting_lookup'),

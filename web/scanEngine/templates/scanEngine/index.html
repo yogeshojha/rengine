@@ -20,7 +20,8 @@ Scan Engine
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-All Engines
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' %}">Engines</a></li>
+<li class="breadcrumb-item active">All Scan Engines</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}

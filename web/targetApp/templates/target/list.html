@@ -21,7 +21,8 @@ List all targets
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-List all Target for Recon
+<li class="breadcrumb-item active"><a href="{% url 'list_target' %}">Targets</a></li>
+<li class="breadcrumb-item"><a href="#">All Targets</a></li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}

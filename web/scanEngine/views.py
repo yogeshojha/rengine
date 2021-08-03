@@ -84,13 +84,13 @@ def update_engine(request, id):
 def wordlist_list(request):
     wordlists = Wordlist.objects.all().order_by('id')
     context = {
-            'wordlist_nav_active':
+            'scan_engine_nav_active':
             'active', 'wordlists': wordlists}
     return render(request, 'scanEngine/wordlist/index.html', context)
 
 
 def add_wordlist(request):
-    context = {'wordlist_nav_active': 'active'}
+    context = {'scan_engine_nav_active': 'active'}
     form = AddWordlistForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
         if form.is_valid() and 'upload_file' in request.FILES:

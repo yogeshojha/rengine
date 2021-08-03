@@ -14,7 +14,9 @@ Start Scaning Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Start Scaning Organization
+<li class="breadcrumb-item"><a href="{% url 'list_organization' %}">Organization</a></li>
+<li class="breadcrumb-item active">Initiate Scan</li>
+<li class="breadcrumb-item active" aria-current="page">{{organization.name}}</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}

@@ -14,7 +14,8 @@ Start Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-Start Multiple Scans
+<li class="breadcrumb-item"><a href="{% url 'list_target' %}">Target</a></li>
+<li class="breadcrumb-item active">Initiate Multiple Scans</li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}

@@ -20,11 +20,7 @@ Scan history - Vulnerabilities
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-{% if scan_history_id %}
-Detailed Scan for {{history.domain.name}} - Vulnerabilities
-{% else %}
-All Vulnerabilities
-{% endif %}
+<li class="breadcrumb-item active" aria-current="page">Vulnerabilities</li>
 {% endblock breadcrumb_title %}
 
 
