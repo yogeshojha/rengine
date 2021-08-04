@@ -1449,3 +1449,50 @@ function get_important_subdomains(scan_id){
     todoCheckboxListener();
   });
 }
+
+
+function download_subdomains(scan_id, domain_name){
+  $('.modal-title').html('All Subdomains for : <b>' + domain_name + '</b>');
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  // query subdomains
+  $.getJSON(`/api/querySubdomains?format=json&no_lookup_interesting&scan_id=${scan_id}`, function(data) {
+    $('#modal-loader').empty();
+    $('#modal-text-content').empty();
+    subdomains = '';
+    $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+    for (subdomain in data['subdomains']){
+      subdomain_obj = data['subdomains'][subdomain];
+      subdomains += subdomain_obj['name'] + '\n'
+    }
+    $('#all_subdomains_text_area').append(subdomains);
+    $("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-info copyable float-right btn-md">Download Subdomains as txt</a>`);
+    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-right btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area">Copy Subdomains</a>`);
+  }).fail(function(){
+    $('#modal-loader').empty();
+  });
+}
+
+function download_interesting_subdomains(scan_id, domain_name){
+  $('.modal-title').html('Interesting Subdomains for : <b>' + domain_name + '</b>');
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  // query subdomains
+  $.getJSON(`/api/listInterestingSubdomains/?scan_id=${scan_id}&format=json&only_subdomains&no_page`, function(data) {
+    $('#modal-loader').empty();
+    $('#modal-text-content').empty();
+    subdomains = '';
+    $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+    for (subdomain in data){
+      subdomains += data[subdomain]['name'] + '\n'
+    }
+    $('#interesting_subdomains_text_area').append(subdomains);
+    $("#modal-footer").empty();
+    $("#modal-footer").append(`<a href="javascript:download('interesting_subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-info copyable float-right btn-md">Download Subdomains as txt</a>`);
+    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-right btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#interesting_subdomains_text_area">Copy Subdomains</a>`);
+  }).fail(function(){
+    $('#modal-loader').empty();
+  });
+}

@@ -37,7 +37,7 @@ urlpatterns = [
         'scanEngine/',
         include('scanEngine.urls')),
     path(
-        'start_scan/',
+        'scan/',
         include('startScan.urls')),
     path(
         'recon_note/',
