@@ -141,7 +141,14 @@ class ListEndpoints(APIView):
         if subdomain_name:
             endpoints = endpoints.filter(subdomain__name=subdomain_name)
 
-        endpoints_serializer = EndpointSerializer(endpoints, many=True)
+
+
+        if 'only_urls' in req.query_params:
+            endpoints_serializer = EndpointOnlyURLsSerializer(endpoints, many=True)
+
+        else:
+            endpoints_serializer = EndpointSerializer(endpoints, many=True)
+
         return Response({'endpoints': endpoints_serializer.data})
 
 

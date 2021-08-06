@@ -185,6 +185,19 @@ Detailed Scan
 											</h6>
 										</div>
 									</a>
+									<div class="task-action">
+										<div class="dropdown">
+											<a class="dropdown-toggle" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal text-dark"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+											</a>
+											<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+												<a class="dropdown-item" href="javascript:download_subdomains({{scan_history_id}}, '{{history.domain.name}}')">Download All Subdomains</a>
+												<a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+												<a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
+												<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
+											</div>
+										</div>
+									</div>
 								</div>
 								<div class="widget-content">
 									<div class="row">
@@ -776,22 +789,38 @@ Detailed Scan
 					<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
 						<div class="col-xl-12 col-lg-12 col-sm-12">
 							<div class="widget widget-content widget-content-area br-6">
-								<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-									<thead>
-										<tr>
-											<th>HTTP URL</th>
-											<th>Status</th>
-											<th>Page Title</th>
-											<th>Tags</th>
-											<th>Content Type</th>
-											<th>Content Length</th>
-											<th>Technology</th>
-											<th>Webserver</th>
-											<th>Response time</th>
-											<th>Default URL</th>
-										</tr>
-									</thead>
-								</table>
+								<div class="row">
+									<div class="col-12">
+										<div class="task-action float-right mb-4">
+											<div class="dropdown">
+												<a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+													<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+												</a>
+												<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+													<a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+												</div>
+											</div>
+										</div>
+									</div>
+									<div class="col-12">
+										<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+											<thead>
+												<tr>
+													<th>HTTP URL</th>
+													<th>Status</th>
+													<th>Page Title</th>
+													<th>Tags</th>
+													<th>Content Type</th>
+													<th>Content Length</th>
+													<th>Technology</th>
+													<th>Webserver</th>
+													<th>Response time</th>
+													<th>Default URL</th>
+												</tr>
+											</thead>
+										</table>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>

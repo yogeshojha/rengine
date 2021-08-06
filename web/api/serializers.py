@@ -606,6 +606,13 @@ class EndpointSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class EndpointOnlyURLsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = EndPoint
+        fields = ['http_url']
+
+
 class VulnerabilitySerializer(serializers.ModelSerializer):
 
     discovered_date = serializers.SerializerMethodField()

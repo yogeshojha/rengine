@@ -1523,3 +1523,27 @@ function download_important_subdomains(scan_id, domain_name){
     $('#modal-loader').empty();
   });
 }
+
+function download_endpoints(scan_id, domain_name){
+  $('.modal-title').html('All Endpoints for : <b>' + domain_name + '</b>');
+  $('.modal-text').empty();
+  $('#exampleModal').modal('show');
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  // query subdomains
+  $.getJSON(`/api/queryEndpoints/?format=json&only_urls&scan_id=${scan_id}`, function(data) {
+    $('#modal-loader').empty();
+    $('#modal-text-content').empty();
+    endpoints = '';
+    $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="all_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
+    for (endpoint in data['endpoints']){
+      endpoint_obj = data['endpoints'][endpoint];
+      endpoints += endpoint_obj['http_url'] + '\n'
+    }
+    $('#all_endpoints_text_area').append(endpoints);
+    $("#modal-footer").empty();
+    $("#modal-footer").append(`<a href="javascript:download('endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-info copyable float-right btn-md">Download Endpoints as txt</a>`);
+    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-right btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_endpoints_text_area">Copy Endpoints</a>`);
+  }).fail(function(){
+    $('#modal-loader').empty();
+  });
+}
