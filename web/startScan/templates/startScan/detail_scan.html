@@ -109,8 +109,8 @@ Detailed Scan
 												</span>
 											</p>
 											<p class="w-title">Subdomains Discovered</p>
-											<p class="w-title text-muted"><small><b>{{alive_count}} Alive Subdomains</b></small></p>
-											<br>
+											<p class="w-title text-success">{{alive_count}} Alive Subdomains</p>
+											<p class="w-title text-danger">{{important_count}} Subdomains marked as Important</p>
 											<br>
 										</div>
 									</div>
@@ -123,7 +123,7 @@ Detailed Scan
 												</span>
 											</p>
 											<p class="w-title">Endpoints Discovered</p>
-											<p class="w-title text-muted"><small><b>{{endpoint_alive_count}} Alive Endpoints</b></small></p>
+											<p class="w-title text-success">{{endpoint_alive_count}} Alive Endpoints</p>
 											<br>
 											<br>
 										</div>
@@ -136,12 +136,11 @@ Detailed Scan
 											</p>
 											<p class="w-title">Vulnerabilities Discovered</p>
 											{% if history.vulnerability_scan %}
-											<p class="w-title text-muted"><small><b>{{critical_count}} Critical, {{high_count}} High</b></small></p>
-											<p class="w-title text-muted"><small><b>{{medium_count}} Medium Vulnerabilities</b></small></p>
-											<br>
+											<p class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</p>
+											<p class="w-title text-warning">and {{low_count}} Low Vulnerabilities</p>
 											{% else %}
-											<small class="text-muted">Vulnerability scan hasn't been performed.</small>
-											<small class="text-muted">Please perform vulnerability scan to identify the vulnerabilities.</small>
+											<p class="text-muted">Vulnerability scan hasn't been performed.<br>
+											Please perform vulnerability scan to discover vulnerabilities.</p>
 											{% endif %}
 										</div>
 									</div>
@@ -163,7 +162,7 @@ Detailed Scan
 											{% endif %}
 											<br>
 											{% else %}
-											<small class="text-muted">OSINT hasn't been performed.</small>
+											<p class="text-muted">OSINT hasn't been performed.</p>
 											{% endif %}
 										</div>
 									</div>
