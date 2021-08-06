@@ -271,7 +271,7 @@ def tool_specific_settings(request):
             return http.HttpResponseRedirect(reverse('tool_settings'))
 
         elif 'subfinder_config_text_area' in request.POST:
-            with open('/root/.config/subfinder/configg.yaml', "w") as fhandle:
+            with open('/root/.config/subfinder/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('subfinder_config_text_area'))
             messages.add_message(request, messages.INFO, 'Subfinder config updated!')
             return http.HttpResponseRedirect(reverse('tool_settings'))

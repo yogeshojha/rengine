@@ -121,13 +121,10 @@ def detail_vuln_scan(request, id=None):
     return render(request, 'startScan/vulnerabilities.html', context)
 
 
-def detail_endpoint_scan(request, id=None):
-    if id:
-        history = get_object_or_404(ScanHistory, id=id)
-        context = {'scan_history_id': id, 'history': history}
-    else:
-        context = {}
-    return render(request, 'startScan/detail_endpoint_scan.html', context)
+def all_endpoints(request):
+    context = {}
+    context['scan_history_active'] = 'active'
+    return render(request, 'startScan/endpoints.html', context)
 
 
 def start_scan_ui(request, domain_id):

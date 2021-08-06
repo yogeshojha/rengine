@@ -36,7 +36,7 @@ Dashboard
 			</div>
 			<br>
 			<br>
-			<a href="../target/list/">View all targets</a>
+			<a href="{% url 'list_target' %}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-right"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg> View all targets</a>
 		</div>
 		<div class="w-chart-section primary-card">
 			<div class="w-detail">
@@ -48,7 +48,7 @@ Dashboard
 			</div>
 			<br>
 			<p class="w-title">Alive Subdomains: <b>{{alive_count|intcomma}}</b></p>
-			<a href="{% url 'all_subdomains' %}">View all subdomains</a>
+			<a href="{% url 'all_subdomains' %}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-right"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg> View all subdomains</a>
 		</div>
 		<div class="w-chart-section purple-card">
 			<div class="w-detail">
@@ -60,7 +60,7 @@ Dashboard
 			</div>
 			<br>
 			<p class="w-title">Alive Endpoints: <b>{{endpoint_alive_count|intcomma}}</b></p>
-			<a href="{% url 'all_endpoints' %}">View all endpoints</a>
+			<a href="{% url 'all_endpoints' %}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-right"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg> View all endpoints</a>
 		</div>
 		<div class="w-chart-section danger-card">
 			<div class="w-detail">
@@ -72,7 +72,7 @@ Dashboard
 			</div>
 			<br>
 			<p class="w-title"><b>{{critical_count}}</b> Critical, <b>{{high_count}}</b> High</p>
-			<a href="{% url 'all_vulns' %}">View all Vulnerabilities</a>
+			<a href="{% url 'all_vulns' %}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevrons-right"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg> View all Vulnerabilities</a>
 		</div>
 	</div>
 </div>

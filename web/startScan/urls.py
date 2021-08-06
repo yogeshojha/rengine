@@ -32,12 +32,8 @@ urlpatterns = [
         views.visualise,
         name='visualise'),
     path(
-        'detail/endpoint/<int:id>',
-        views.detail_endpoint_scan,
-        name='detail_endpoint_scan'),
-    path(
-        'detail/endpoint',
-        views.detail_endpoint_scan,
+        'detail/all/endpoint',
+        views.all_endpoints,
         name='all_endpoints'),
     path(
         'start/<int:domain_id>',

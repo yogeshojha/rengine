@@ -43,7 +43,12 @@ function render_ips(data)
 
 
 function get_endpoints(scan_history_id, gf_tags){
-  var lookup_url = `/api/listEndpoints/?scan_history=${scan_history_id}&format=datatables`;
+  if (scan_history_id) {
+    var lookup_url = `/api/listEndpoints/?scan_history=${scan_history_id}&format=datatables`;
+  }
+  else{
+    var lookup_url = `/api/listEndpoints/?&format=datatables`;
+  }
   if (gf_tags){
     lookup_url += `&gf_tag=${gf_tags}`
   }
@@ -66,8 +71,9 @@ function get_endpoints(scan_history_id, gf_tags){
     "pageLength": 20,
     'serverSide': true,
     "ajax": lookup_url,
-    "order": [[ 5, "desc" ]],
+    "order": [[ 6, "desc" ]],
     "columns": [
+      {'data': 'id'},
       {'data': 'http_url'},
       {'data': 'http_status'},
       {'data': 'page_title'},
@@ -81,7 +87,7 @@ function get_endpoints(scan_history_id, gf_tags){
     ],
     "columnDefs": [
       {
-        "targets": [ 9 ],
+        "targets": [ 0, 10 ],
         "visible": false,
         "searchable": false,
       },
@@ -93,9 +99,17 @@ function get_endpoints(scan_history_id, gf_tags){
           // 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
           // }
           var url = split(data, 70);
-          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+          action_icons = `
+          <div class="float-left subdomain-table-action-icons mt-2">
+          <span class="m-1">
+          <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-info copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+          </a>
+          </div>
+          `;
+          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-info'>`+ url + action_icons +"</a>";
         },
-        "targets": 0,
+        "targets": 1,
       },
       {
         "render": function ( data, type, row ) {
@@ -114,7 +128,7 @@ function get_endpoints(scan_history_id, gf_tags){
           return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
 
         },
-        "targets": 1,
+        "targets": 2,
       },
       {
         "render": function ( data, type, row ) {
@@ -123,7 +137,7 @@ function get_endpoints(scan_history_id, gf_tags){
           }
           return "";
         },
-        "targets": 6,
+        "targets": 7,
       },
       {
         "render": function ( data, type, row ) {
@@ -132,7 +146,7 @@ function get_endpoints(scan_history_id, gf_tags){
           }
           return "";
         },
-        "targets": 3,
+        "targets": 4,
       },
       {
         "render": function ( data, type, row ) {
@@ -141,12 +155,18 @@ function get_endpoints(scan_history_id, gf_tags){
           }
           return "";
         },
-        "targets": 8,
+        "targets": 9,
       },
     ],
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.dataTables_wrapper table').removeClass('table-striped');
+      $('.bs-tooltip').tooltip();
+      var clipboard = new Clipboard('.copyable');
+      clipboard.on('success', function(e) {
+        setTooltip(e.trigger, 'Copied!');
+        hideTooltip(e.trigger);
+      });
     }
   });
 }
@@ -1474,13 +1494,26 @@ function get_important_subdomains(scan_id){
 
 
 function download_subdomains(scan_id, domain_name){
-  $('.modal-title').html('All Subdomains for : <b>' + domain_name + '</b>');
+  count = `<span class="modal_count">Loading... </span>`;
+  if (scan_id) {
+    url = `/api/querySubdomains?format=json&no_lookup_interesting&scan_id=${scan_id}`;
+  }
+  else{
+    url = `/api/querySubdomains?format=json&no_lookup_interesting`;
+  }
+  if (domain_name) {
+    $('.modal-title').html(count + 'Subdomains for : <b>' + domain_name + '</b>');
+  }
+  else{
+    $('.modal-title').html(count + ' Subdomains');
+  }
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
-  $.getJSON(`/api/querySubdomains?format=json&no_lookup_interesting&scan_id=${scan_id}`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
+    $('.modal_count').html(data['subdomains'].length);
     $('#modal-text-content').empty();
     subdomains = '';
     $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
@@ -1498,13 +1531,26 @@ function download_subdomains(scan_id, domain_name){
 }
 
 function download_interesting_subdomains(scan_id, domain_name){
-  $('.modal-title').html('Interesting Subdomains for : <b>' + domain_name + '</b>');
+  count = `<span class="modal_count">Loading... </span>`;
+  if (scan_id) {
+    url = `/api/listInterestingSubdomains/?scan_id=${scan_id}&format=json&only_subdomains&no_page`;
+  }
+  else{
+    url = `/api/listInterestingSubdomains/?format=json&only_subdomains&no_page`;
+  }
+  if (domain_name) {
+    $('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');
+  }
+  else{
+    $('.modal-title').html( count + ' Interesting Subdomains');
+  }
   $('.modal-text').empty();
   $('#exampleModal').modal('show');
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
-  $.getJSON(`/api/listInterestingSubdomains/?scan_id=${scan_id}&format=json&only_subdomains&no_page`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
+    $('.modal_count').html(data.length);
     $('#modal-text-content').empty();
     subdomains = '';
     $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
@@ -1523,13 +1569,26 @@ function download_interesting_subdomains(scan_id, domain_name){
 
 
 function download_important_subdomains(scan_id, domain_name){
-  $('.modal-title').html('Subdomains marked as important for : <b>' + domain_name + '</b>');
+  count = `<span class="modal_count">Loading... </span>`;
+  if (scan_id) {
+    url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important&scan_id=${scan_id}`;
+  }
+  else{
+    url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important`;
+  }
+  if (domain_name) {
+    $('.modal-title').html(count + 'Subdomains marked as important : <b>' + domain_name + '</b>');
+  }
+  else{
+    $('.modal-title').html(count + ' Subdomains marked as important');
+  }
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
-  $.getJSON(`/api/querySubdomains?format=json&no_lookup_interesting&only_important&scan_id=${scan_id}`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
+    $('.modal_count').html(data['subdomains'].length);
     $('#modal-text-content').empty();
     subdomains = '';
     $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
@@ -1547,13 +1606,26 @@ function download_important_subdomains(scan_id, domain_name){
 }
 
 function download_endpoints(scan_id, domain_name){
-  $('.modal-title').html('All Endpoints for : <b>' + domain_name + '</b>');
+  count = `<span class="modal_count">Loading... </span>`;
+  if (scan_id) {
+    url = `/api/queryEndpoints/?format=json&only_urls&scan_id=${scan_id}`;
+  }
+  else{
+    url = `/api/queryEndpoints/?format=json&only_urls`;
+  }
+  if (domain_name) {
+    $('.modal-title').html( count + ' Endpoints for : <b>' + domain_name + '</b>');
+  }
+  else{
+    $('.modal-title').html(count + ' Endpoints');
+  }
   $('.modal-text').empty();
   $('#exampleModal').modal('show');
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
-  $.getJSON(`/api/queryEndpoints/?format=json&only_urls&scan_id=${scan_id}`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
+    $('.modal_count').html(data['endpoints'].length);
     $('#modal-text-content').empty();
     endpoints = '';
     $('#modal-text-content').append(`<textarea class="form-control clipboard copy-txt" id="all_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
@@ -1563,7 +1635,12 @@ function download_endpoints(scan_id, domain_name){
     }
     $('#all_endpoints_text_area').append(endpoints);
     $("#modal-footer").empty();
-    $("#modal-footer").append(`<a href="javascript:download('endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-info copyable float-right btn-md">Download Endpoints as txt</a>`);
+    if (domain_name) {
+      $("#modal-footer").append(`<a href="javascript:download('endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-info copyable float-right btn-md">Download Endpoints as txt</a>`);
+    }
+    else{
+      $("#modal-footer").append(`<a href="javascript:download('endpoints-all.txt', endpoints);" class="m-1 btn btn-info copyable float-right btn-md">Download Endpoints as txt</a>`);
+    }
     $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-right btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_endpoints_text_area">Copy Endpoints</a>`);
   }).fail(function(){
     $('#modal-loader').empty();
