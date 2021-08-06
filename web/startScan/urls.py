@@ -17,7 +17,7 @@ urlpatterns = [
         name='detail_scan'),
     path(
         'all/subdomains',
-        views.detail_scan,
+        views.all_subdomains,
         name='all_subdomains'),
     path(
         'detail/vuln/<int:id>',

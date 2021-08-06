@@ -330,7 +330,7 @@ function parse_technology(data, color, outline=null, scan_id=null)
       data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
     }
     else{
-      data_with_span += badge + ">" + data[key]['name'] + "</span>";
+      data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}')">` + data[key]['name'] + "</span>";
     }
   }
   return data_with_span;
@@ -370,4 +370,17 @@ function download(filename, text) {
   element.click();
 
   document.body.removeChild(element);
+}
+
+
+function vuln_status_change(checkbox, id)
+{
+  if (checkbox.checked) {
+    checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+  }
+  else {
+    checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+    checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+  }
+  change_vuln_status(id);
 }

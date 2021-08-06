@@ -254,7 +254,6 @@ class ListPorts(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         target_id = req.query_params.get('target_id')
-
         ip_address = req.query_params.get('ip_address')
 
         if target_id:
@@ -262,29 +261,21 @@ class ListPorts(APIView):
                 ports__in=IpAddress.objects.filter(
                     ip_addresses__in=Subdomain.objects.filter(
                         target_domain__id=target_id))).distinct()
-            serializer = PortSerializer(port, many=True)
-            return Response({"ports": serializer.data})
         elif scan_id:
             port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
                     ip_addresses__in=Subdomain.objects.filter(
                         scan_history__id=scan_id))).distinct()
-            serializer = PortSerializer(port, many=True)
-            return Response({"ports": serializer.data})
-        elif ip_address and scan_id:
-            port = Port.objects.filter(
-                ports__address=ip_address).filter(
-                ports__in=IpAddress.objects.filter(
-                    ip_addresses__in=Subdomain.objects.filter(
-                        scan_history__id=scan_id))).distinct()
-            serializer = PortSerializer(port, many=True)
-            return Response({"ports": serializer.data})
         else:
             port = Port.objects.filter(
                 ports__in=IpAddress.objects.filter(
                     ip_addresses__in=Subdomain.objects.all())).distinct()
-            serializer = PortSerializer(port, many=True)
-            return Response({"ports": serializer.data})
+
+        if ip_address:
+            port = port.filter(ports__address=ip_address).distinct()
+
+        serializer = PortSerializer(port, many=True)
+        return Response({"ports": serializer.data})
 
 
 class ListSubdomains(APIView):
@@ -300,6 +291,8 @@ class ListSubdomains(APIView):
             subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id).distinct('name')
         elif target_id:
             subdomain_query = Subdomain.objects.filter(target_domain__id=target_id).distinct('name')
+        else:
+            subdomain_query = Subdomain.objects.all().distinct('name')
 
         if ip_address:
             subdomain_query = subdomain_query.filter(ip_addresses__address=ip_address)
@@ -355,27 +348,22 @@ class ListIPs(APIView):
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
                     target_domain__id=target_id)).distinct()
-            serializer = IpSerializer(ips, many=True)
-            return Response({"ips": serializer.data})
         elif scan_id:
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
                     scan_history__id=scan_id)).distinct()
-            serializer = IpSerializer(ips, many=True)
-            return Response({"ips": serializer.data})
-        elif scan_id and port:
-            ips = IpAddress.objects.filter(
-                ip_addresses__in=Subdomain.objects.filter(
-                    scan_history__id=scan_id)).filter(
-                ports__in=Port.objects.filter(
-                    number=port)).distinct()
-            serializer = IpSerializer(ips, many=True)
-            return Response({"ips": serializer.data})
         else:
             ips = IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.all()).distinct()
-            serializer = IpSerializer(ips, many=True)
-            return Response({"ips": serializer.data})
+
+        if port:
+            ips = ips.filter(
+                ports__in=Port.objects.filter(
+                    number=port)).distinct()
+
+
+        serializer = IpSerializer(ips, many=True)
+        return Response({"ips": serializer.data})
 
 
 class IpAddressViewSet(viewsets.ModelViewSet):
@@ -624,6 +612,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
         elif scan_id:
             self.queryset = Subdomain.objects.filter(
                 scan_history__id=scan_id).distinct()
+        else:
+            self.queryset = Subdomain.objects.distinct()
         return self.queryset
 
     def filter_queryset(self, qs):

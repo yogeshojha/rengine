@@ -99,13 +99,26 @@ def detail_scan(request, id=None):
             context['matched_gf_count'] = count_gf
     return render(request, 'startScan/detail_scan.html', context)
 
+def all_subdomains(request):
+    context = {}
+    context['scan_history_id'] = id
+    context['subdomain_count'] = Subdomain.objects.values('name').distinct().count()
+    context['alive_count'] = Subdomain.objects.values('name').distinct().filter(
+        http_status__exact=200).count()
+    context['important_count'] = Subdomain.objects.values('name').distinct().filter(
+        is_important=True).count()
+
+    context['scan_history_active'] = 'active'
+
+    return render(request, 'startScan/subdomains.html', context)
+
 def detail_vuln_scan(request, id=None):
     if id:
         history = get_object_or_404(ScanHistory, id=id)
         context = {'scan_history_id': id, 'history': history}
     else:
         context = {'vuln_scan_active': 'true'}
-    return render(request, 'startScan/detail_vuln_scan.html', context)
+    return render(request, 'startScan/vulnerabilities.html', context)
 
 
 def detail_endpoint_scan(request, id=None):
