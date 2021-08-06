@@ -118,7 +118,10 @@ class ListVulnerability(APIView):
         severity = req.query_params.get('severity')
         subdomain_name = req.query_params.get('subdomain_name')
 
-        vulnerability = Vulnerability.objects.filter(scan_history__id=scan_id)
+        if scan_id:
+            vulnerability = Vulnerability.objects.filter(scan_history__id=scan_id)
+        else:
+            vulnerability = Vulnerability.objects.all()
 
         if severity:
             vulnerability = vulnerability.filter(severity=severity)
@@ -136,12 +139,13 @@ class ListEndpoints(APIView):
         scan_id = req.query_params.get('scan_id')
         subdomain_name = req.query_params.get('subdomain_name')
 
-        endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+        if scan_id:
+            endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+        else:
+            endpoints = EndPoint.objects.all()
 
         if subdomain_name:
             endpoints = endpoints.filter(subdomain__name=subdomain_name)
-
-
 
         if 'only_urls' in req.query_params:
             endpoints_serializer = EndpointOnlyURLsSerializer(endpoints, many=True)

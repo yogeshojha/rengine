@@ -1087,6 +1087,12 @@ function get_dork_details(dork_type, scan_id){
 
 
 function get_vulnerability_modal(scan_id, severity, subdomain_name){
+  if (scan_id) {
+    url = `/api/queryVulnerabilities/?scan_id=${scan_id}&severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+  }
+  else{
+    url = `/api/queryVulnerabilities/?severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+  }
   switch (severity) {
     case 0:
     severity_title = 'Informational'
@@ -1110,7 +1116,7 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/queryVulnerabilities/?scan_id=${scan_id}&severity=${severity}&subdomain_name=${subdomain_name}&format=json`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
     $('#modal-text-content').append(`<h6>${data['vulnerabilities'].length} vulnerabilities found in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
     $('#modal-text-content').append(`<ul id="vulnerabilities-detail-modal-ul"></ul>`);
@@ -1138,11 +1144,17 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
 
 
 function get_endpoint_modal(scan_id, subdomain_name){
+  if (scan_id) {
+    url = `/api/queryEndpoints/?scan_id=${scan_id}&subdomain_name=${subdomain_name}&format=json`
+  }
+  else{
+    url = `/api/queryEndpoints/?subdomain_name=${subdomain_name}&format=json`
+  }
   $('.modal-title').html(`<b>Endpoints Summary</b>`);
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/queryEndpoints/?scan_id=${scan_id}&subdomain_name=${subdomain_name}&format=json`, function(data) {
+  $.getJSON(url, function(data) {
     $('#modal-loader').empty();
     $('#modal-text-content').append(`<h6>${data['endpoints'].length} endpoints discovered in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
     $('#modal-text-content').append(`<ul id="endpoints-detail-modal-ul"></ul>`);
