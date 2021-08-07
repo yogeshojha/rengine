@@ -607,6 +607,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
         url_query = req.query_params.get('query_param')
 
+        ip_address = req.query_params.get('ip_address')
+
         if target_id:
             self.queryset = Subdomain.objects.filter(
                 target_domain__id=target_id).distinct()
@@ -618,6 +620,11 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
                 scan_history__id=scan_id).distinct()
         else:
             self.queryset = Subdomain.objects.distinct()
+
+        if ip_address:
+            print(ip_address)
+            self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
+
         return self.queryset
 
     def filter_queryset(self, qs):

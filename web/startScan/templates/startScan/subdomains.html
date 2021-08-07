@@ -175,7 +175,11 @@ $(document).ready(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
+		{% if request.GET.ip_address %}
+		"ajax": '/api/listDatatableSubdomain/?&format=datatables&ip_address={{request.GET.ip_address}}',
+		{% else %}
 		"ajax": '/api/listDatatableSubdomain/?&format=datatables',
+		{% endif %}
 		"order": [[ 8, "desc" ]],
 		"columns": [
 			{'data': 'id'},

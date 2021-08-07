@@ -165,6 +165,45 @@ Dashboard
 		</div>
 	</div>
 </div>
+<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-timeline-log" style="height: 450px;">
+		<div class="widget-heading">
+			<h6 class="">
+				Most common IP Address
+			</h6>
+		</div>
+		<div class="widget-content">
+			<div id="most_common_ip_chart">
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-timeline-log" style="height: 450px;">
+		<div class="widget-heading">
+			<h6 class="">
+				Most common Ports
+			</h6>
+		</div>
+		<div class="widget-content">
+			<div id="most_common_port_chart">
+			</div>
+		</div>
+	</div>
+</div>
+<div class="col-xl-4 col-lg-4 col-md-4 col-sm-12 col-12 layout-spacing">
+	<div class="widget widget-timeline-log" style="height: 450px;">
+		<div class="widget-heading">
+			<h6 class="">
+				Most common Technology
+			</h6>
+		</div>
+		<div class="widget-content">
+			<div id="most_common_tech_chart">
+			</div>
+		</div>
+	</div>
+</div>
 <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12 layout-spacing">
 	<div class="widget widget-activity-feed">
 		<div class="widget-heading">
@@ -377,339 +416,420 @@ Dashboard
 				</div>
 			</div>
 		</div>
-		{% endblock main_content %}
+	</div>
+</div>
+{% endblock main_content %}
 
 
-		{% block page_level_script %}
-		<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-		<script type="text/javascript">
-		// apex charts for vulnerability summary
-		var options = {
+{% block page_level_script %}
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script type="text/javascript">
+// apex charts for vulnerability summary
+var options = {
+	chart: {
+		type: 'donut',
+		width: 380
+	},
+	colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+	dataLabels: {
+		enabled: false
+	},
+	legend: {
+		position: 'bottom',
+		horizontalAlign: 'center',
+		fontSize: '14px',
+		markers: {
+			width: 10,
+			height: 10,
+		},
+		itemMargin: {
+			horizontal: 0,
+			vertical: 8
+		}
+	},
+	plotOptions: {
+		pie: {
+			donut: {
+				size: '70%',
+				background: 'transparent',
+				labels: {
+					show: true,
+					name: {
+						show: true,
+						fontSize: '29px',
+						fontFamily: 'Nunito, sans-serif',
+						color: undefined,
+						offsetY: -10
+					},
+					value: {
+						show: true,
+						fontSize: '26px',
+						fontFamily: 'Nunito, sans-serif',
+						color: '20',
+						offsetY: 16,
+						formatter: function (val) {
+							return val
+						}
+					},
+					total: {
+						show: true,
+						showAlways: true,
+						label: 'Total',
+						color: '#888ea8',
+						formatter: function (w) {
+							return w.globals.seriesTotals.reduce( function(a, b) {
+								return a + b
+							}, 0)
+						}
+					}
+				}
+			}
+		}
+	},
+	stroke: {
+		show: true,
+		width: 25,
+	},
+	series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+	labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+	responsive: [{
+		breakpoint: 1599,
+		options: {
 			chart: {
-				type: 'donut',
-				width: 380
-			},
-			colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
-			dataLabels: {
-				enabled: false
+				width: '350px',
+				height: '400px'
 			},
 			legend: {
-				position: 'bottom',
-				horizontalAlign: 'center',
-				fontSize: '14px',
-				markers: {
-					width: 10,
-					height: 10,
-				},
-				itemMargin: {
-					horizontal: 0,
-					vertical: 8
-				}
+				position: 'bottom'
+			}
+		},
+		breakpoint: 1439,
+		options: {
+			chart: {
+				width: '250px',
+				height: '390px'
+			},
+			legend: {
+				position: 'bottom'
 			},
 			plotOptions: {
 				pie: {
 					donut: {
-						size: '70%',
-						background: 'transparent',
-						labels: {
-							show: true,
-							name: {
-								show: true,
-								fontSize: '29px',
-								fontFamily: 'Nunito, sans-serif',
-								color: undefined,
-								offsetY: -10
-							},
-							value: {
-								show: true,
-								fontSize: '26px',
-								fontFamily: 'Nunito, sans-serif',
-								color: '20',
-								offsetY: 16,
-								formatter: function (val) {
-									return val
-								}
-							},
-							total: {
-								show: true,
-								showAlways: true,
-								label: 'Total',
-								color: '#888ea8',
-								formatter: function (w) {
-									return w.globals.seriesTotals.reduce( function(a, b) {
-										return a + b
-									}, 0)
-								}
-							}
-						}
+						size: '65%',
 					}
 				}
-			},
-			stroke: {
-				show: true,
-				width: 25,
-			},
-			series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-			labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
-			responsive: [{
-				breakpoint: 1599,
-				options: {
-					chart: {
-						width: '350px',
-						height: '400px'
-					},
-					legend: {
-						position: 'bottom'
-					}
-				},
-				breakpoint: 1439,
-				options: {
-					chart: {
-						width: '250px',
-						height: '390px'
-					},
-					legend: {
-						position: 'bottom'
-					},
-					plotOptions: {
-						pie: {
-							donut: {
-								size: '65%',
-							}
-						}
-					}
-				},
-			}]
-		}
-
-		var chart = new ApexCharts(
-			document.querySelector("#vulnerability-chart"),
-			options
-		);
-
-		chart.render();
-
-		var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
-
-		var fill_options = {
-			type:"gradient",
-			gradient: {
-				type: "vertical",
-				shadeIntensity: 1,
-				inverseColors: !1,
-				opacityFrom: .40,
-				opacityTo: .05,
-				stops: [45, 100]
 			}
+		},
+	}]
+}
+
+var chart = new ApexCharts(
+	document.querySelector("#vulnerability-chart"),
+	options
+);
+
+chart.render();
+
+var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
+
+var fill_options = {
+	type:"gradient",
+	gradient: {
+		type: "vertical",
+		shadeIntensity: 1,
+		inverseColors: !1,
+		opacityFrom: .40,
+		opacityTo: .05,
+		stops: [45, 100]
+	}
+}
+
+var target_chart_option = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 58,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	markers: {
+		size: 0
+	},
+	series: [{
+		name: 'Target added',
+		data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
+	}],
+	labels: label_dates,
+	yaxis: {
+		min: 0
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
 		}
+	},
+	colors: ['#2196f3'],
+	tooltip: {
+		x: {
+			show: true,
+		},
+	},
+	fill: fill_options,
+}
 
-		var target_chart_option = {
-			chart: {
-				id: 'sparkline1',
-				type: 'area',
-				height: 58,
-				sparkline: {
-					enabled: true
-				},
-			},
-			stroke: {
-				curve: 'smooth',
-				width: 2,
-			},
-			markers: {
-				size: 0
-			},
-			series: [{
-				name: 'Target added',
-				data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
-			}],
-			labels: label_dates,
-			yaxis: {
-				min: 0
-			},
-			grid: {
-				padding: {
-					top: 0,
-					bottom: 0,
-					left: 0
-				}
-			},
-			colors: ['#2196f3'],
-			tooltip: {
-				x: {
-					show: true,
-				},
-			},
-			fill: fill_options,
+var chart = new ApexCharts(document.querySelector("#targets_chart"), target_chart_option);
+chart.render();
+
+var subdomains_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 58,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	markers: {
+		size: 0
+	},
+	series: [{
+		name: 'Subdomains Discovered',
+		data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
+	}],
+	labels: label_dates,
+	yaxis: {
+		min: 0
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
 		}
-
-		var chart = new ApexCharts(document.querySelector("#targets_chart"), target_chart_option);
-		chart.render();
-
-		var subdomains_chart_options = {
-			chart: {
-				id: 'sparkline1',
-				type: 'area',
-				height: 58,
-				sparkline: {
-					enabled: true
-				},
-			},
-			stroke: {
-				curve: 'smooth',
-				width: 2,
-			},
-			markers: {
-				size: 0
-			},
-			series: [{
-				name: 'Subdomains Discovered',
-				data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
-			}],
-			labels: label_dates,
-			yaxis: {
-				min: 0
-			},
-			grid: {
-				padding: {
-					top: 0,
-					bottom: 0,
-					left: 0
-				}
-			},
-			colors: ['#4361ee'],
-			tooltip: {
-				x: {
-					show: true,
-				}
-			},
-			fill: fill_options,
+	},
+	colors: ['#4361ee'],
+	tooltip: {
+		x: {
+			show: true,
 		}
+	},
+	fill: fill_options,
+}
 
-		var chart = new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options);
-		chart.render();
+var chart = new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options);
+chart.render();
 
-		var vuln_chart_options = {
-			chart: {
-				id: 'sparkline1',
-				type: 'area',
-				height: 58,
-				sparkline: {
-					enabled: true
-				},
-			},
-			stroke: {
-				curve: 'smooth',
-				width: 2,
-			},
-			markers: {
-				size: 0
-			},
-			grid: {
-				padding: {
-					top: 0,
-					bottom: 0,
-					left: 0
-				}
-			},
-			series: [{
-				name: 'Vulnerabilities Discovered',
-				data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
-			}],
-			labels: label_dates,
-			yaxis: {
-				min: 0
-			},
-			colors: ['#e7515a'],
-			tooltip: {
-				x: {
-					show: true,
-				}
-			},
-			fill: fill_options,
+var vuln_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 58,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	markers: {
+		size: 0
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
 		}
-
-		var chart = new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options);
-		chart.render();
-
-		var scan_chart_options = {
-			chart: {
-				id: 'sparkline1',
-				type: 'area',
-				height: 70,
-				sparkline: {
-					enabled: true
-				},
-			},
-			stroke: {
-				curve: 'smooth',
-				width: 2,
-			},
-			series: [{
-				name: 'Scans Initiated',
-				data: [{{scans_in_last_week.0}},{{scans_in_last_week.1}},{{scans_in_last_week.2}},{{scans_in_last_week.3}},{{scans_in_last_week.4}},{{scans_in_last_week.5}},{{scans_in_last_week.6}}]
-			}],
-			labels: label_dates,
-			yaxis: {
-				min: 0
-			},
-			colors: ['#8dbf42'],
-			tooltip: {
-				x: {
-					show: true,
-				}
-			},
-			fill: fill_options,
+	},
+	series: [{
+		name: 'Vulnerabilities Discovered',
+		data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
+	}],
+	labels: label_dates,
+	yaxis: {
+		min: 0
+	},
+	colors: ['#e7515a'],
+	tooltip: {
+		x: {
+			show: true,
 		}
+	},
+	fill: fill_options,
+}
 
-		var chart = new ApexCharts(document.querySelector("#scan_chart"), scan_chart_options);
-		chart.render();
+var chart = new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options);
+chart.render();
 
-		var endpoint_chart_options = {
-			chart: {
-				id: 'sparkline1',
-				type: 'area',
-				height: 58,
-				sparkline: {
-					enabled: true
-				},
-			},
-			markers: {
-				size: 0
-			},
-			stroke: {
-				curve: 'smooth',
-				width: 2,
-			},
-			grid: {
-				padding: {
-					top: 0,
-					bottom: 0,
-					left: 0
-				}
-			},
-			markers: {
-				size: 0
-			},
-			series: [{
-				name: 'Endpoints Discovered',
-				data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
-			}],
-			labels: label_dates,
-			yaxis: {
-				min: 0
-			},
-			colors: ['#5c1ac3'],
-			tooltip: {
-				x: {
-					show: true,
-				}
-			},
-			fill: fill_options,
+var scan_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 70,
+		sparkline: {
+			enabled: true
+		},
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	series: [{
+		name: 'Scans Initiated',
+		data: [{{scans_in_last_week.0}},{{scans_in_last_week.1}},{{scans_in_last_week.2}},{{scans_in_last_week.3}},{{scans_in_last_week.4}},{{scans_in_last_week.5}},{{scans_in_last_week.6}}]
+	}],
+	labels: label_dates,
+	yaxis: {
+		min: 0
+	},
+	colors: ['#8dbf42'],
+	tooltip: {
+		x: {
+			show: true,
 		}
+	},
+	fill: fill_options,
+}
 
-		var chart = new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options);
-		chart.render();
+var chart = new ApexCharts(document.querySelector("#scan_chart"), scan_chart_options);
+chart.render();
 
-		</script>
-		{% endblock page_level_script %}
+var endpoint_chart_options = {
+	chart: {
+		id: 'sparkline1',
+		type: 'area',
+		height: 58,
+		sparkline: {
+			enabled: true
+		},
+	},
+	markers: {
+		size: 0
+	},
+	stroke: {
+		curve: 'smooth',
+		width: 2,
+	},
+	grid: {
+		padding: {
+			top: 0,
+			bottom: 0,
+			left: 0
+		}
+	},
+	markers: {
+		size: 0
+	},
+	series: [{
+		name: 'Endpoints Discovered',
+		data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
+	}],
+	labels: label_dates,
+	yaxis: {
+		min: 0
+	},
+	colors: ['#5c1ac3'],
+	tooltip: {
+		x: {
+			show: true,
+		}
+	},
+	fill: fill_options,
+}
+
+var chart = new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options);
+chart.render();
+
+var options = {
+	series: [{
+		name: "Ip is Used By Subdomains",
+		data: [{{most_used_ip.6.count}}, {{most_used_ip.5.count}}, {{most_used_ip.4.count}}, {{most_used_ip.3.count}}, {{most_used_ip.2.count}}, {{most_used_ip.1.count}}, {{most_used_ip.0.count}}]
+	}],
+	chart: {
+		type: 'bar',
+		height: 350
+	},
+	plotOptions: {
+		bar: {
+			borderRadius: 4,
+			horizontal: true,
+		}
+	},
+	dataLabels: {
+		enabled: false
+	},
+	xaxis: {
+		categories: ['{{most_used_ip.6.address}}', '{{most_used_ip.5.address}}', '{{most_used_ip.4.address}}', '{{most_used_ip.3.address}}', '{{most_used_ip.2.address}}', '{{most_used_ip.1.address}}', '{{most_used_ip.0.address}}'],
+}
+};
+
+var chart = new ApexCharts(document.querySelector("#most_common_ip_chart"), options);
+chart.render();
+
+var options = {
+	series: [{
+		name: "Ports used by IPs",
+		data: [{{most_used_port.6.count}}, {{most_used_port.5.count}}, {{most_used_port.4.count}}, {{most_used_port.3.count}}, {{most_used_port.2.count}}, {{most_used_port.1.count}}, {{most_used_port.0.count}}]
+	}],
+	chart: {
+		type: 'bar',
+		height: 350
+	},
+	plotOptions: {
+		bar: {
+			borderRadius: 4,
+			horizontal: true,
+		}
+	},
+	dataLabels: {
+		enabled: false
+	},
+	xaxis: {
+		categories: ['{{most_used_port.6.number}}/{{most_used_port.6.service_name}}', '{{most_used_port.5.number}}/{{most_used_port.5.service_name}}', '{{most_used_port.4.number}}/{{most_used_port.4.service_name}}', '{{most_used_port.3.number}}/{{most_used_port.3.service_name}}', '{{most_used_port.2.number}}/{{most_used_port.2.service_name}}', '{{most_used_port.1.number}}/{{most_used_port.1.service_name}}', '{{most_used_port.0.number}}/{{most_used_port.0.service_name}}'],
+}
+};
+
+var chart = new ApexCharts(document.querySelector("#most_common_port_chart"), options);
+chart.render();
+
+
+var options = {
+	series: [{
+		name: "Tech used by Subdomains",
+		data: [{{most_used_tech.6.count}}, {{most_used_tech.5.count}}, {{most_used_tech.4.count}}, {{most_used_tech.3.count}}, {{most_used_tech.2.count}}, {{most_used_tech.1.count}}, {{most_used_tech.0.count}}]
+	}],
+	chart: {
+		type: 'bar',
+		height: 350
+	},
+	plotOptions: {
+		bar: {
+			borderRadius: 4,
+			horizontal: true,
+		}
+	},
+	dataLabels: {
+		enabled: false
+	},
+	xaxis: {
+		categories: ['{{most_used_tech.6.name}}', '{{most_used_tech.5.name}}', '{{most_used_tech.4.name}}', '{{most_used_tech.3.name}}', '{{most_used_tech.2.name}}', '{{most_used_tech.1.name}}', '{{most_used_tech.0.name}}'],
+}
+};
+
+var chart = new ApexCharts(document.querySelector("#most_common_tech_chart"), options);
+chart.render();
+
+</script>
+{% endblock page_level_script %}

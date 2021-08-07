@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from targetApp.models import Domain
-from startScan.models import ScanHistory, EndPoint, Subdomain, Vulnerability, ScanActivity
+from startScan.models import *
 
 from django.utils import timezone
 from django.shortcuts import render, redirect
@@ -21,6 +21,7 @@ def index(request):
     endpoint_count = EndPoint.objects.all().count()
     scan_count = ScanHistory.objects.all().count()
     subdomain_count = Subdomain.objects.all().count()
+    subdomain_with_ip_count = Subdomain.objects.filter(ip_addresses__isnull=False).count()
     alive_count = \
         Subdomain.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
@@ -40,12 +41,6 @@ def index(request):
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count
-    # most_vulnerable_target = Domain.objects.exclude(
-    #     scanhistory__Subdomain__vulnerabilityscan__severity=0).annotate(
-    #     num_vul=Count(
-    #         'scanhistory__Subdomain__vulnerabilityscan__name',
-    #         distinct=True)).order_by('-num_vul')[
-    #             :5]
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
         'subdomain__vulnerability__name')).order_by('-num_vul')[:7]
     most_common_vulnerability = Vulnerability.objects.values("name", "severity").exclude(
@@ -121,6 +116,7 @@ def index(request):
         'endpoint_count': endpoint_count,
         'scan_count': scan_count,
         'subdomain_count': subdomain_count,
+        'subdomain_with_ip_count': subdomain_with_ip_count,
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
         'recent_completed_scans': recent_completed_scans,
@@ -143,6 +139,12 @@ def index(request):
         'endpoints_in_last_week': endpoints_in_last_week,
         'last_7_dates': last_7_dates,
     }
+
+    context['total_ips'] = IpAddress.objects.all().count()
+    context['most_used_port'] = Port.objects.annotate(count=Count('ports')).order_by('-count')[:7]
+    context['most_used_ip'] = IpAddress.objects.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
+    context['most_used_tech'] = Technology.objects.annotate(count=Count('technologies')).order_by('-count')[:7]
+
     return render(request, 'dashboard/index.html', context)
 
 

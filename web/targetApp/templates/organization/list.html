@@ -47,7 +47,6 @@ Organizations
             <th class="text-center">Description</th>
             <th class="text-center">Total Targets</th>
             <th class="text-center">Added on</th>
-            <th class="text-center">Summary</th>
             <th class="text-center">Action</th>
           </tr>
         </thead>
@@ -59,7 +58,6 @@ Organizations
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
             <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}}, '{{organization.name}}')">{{organization.get_domains.count}}</span></td>
             <td class="text-center">{{ organization.insert_date }}</td>
-            <td class="text-center" class="text-center"><a href="{% url 'target_summary' organization.id %}" class="btn btn-outline-primary">View</a></td>
             <td class="text-center">
               <a href="{% url 'start_organization_scan' organization.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan Entire Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
