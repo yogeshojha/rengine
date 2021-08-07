@@ -7,13 +7,10 @@ const filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="
 let col_suggestions = [
   'name',
   "page_title",
-  "is_important",
   "http_url",
-  "checked",
   "cname",
   "http_status",
   "content_type",
-  "response_time",
   "webserver",
   "content_length",
   "technology",
@@ -55,10 +52,10 @@ inputBox.onclick = (event) => {
       title = `Filters Subdomain <span class="badge badge-dark">Less than</span> Some Value`;
       break;
       case "&":
-      title = `Match Subdomain if <span class="badge badge-danger">all args</span> are true`;
+      title = `<span class="badge badge-danger">& and</span> Match Subdomain if <span class="badge badge-danger">all args</span> are true`;
       break;
       case "|":
-      title = `Match Subdomain if <span class="badge badge-warning">either of one</span> is true`;
+      title = `<span class="badge badge-warning">| or</span> Match Subdomain if <span class="badge badge-warning">either of one</span> is true`;
       break;
       default:
       badge_color = "info";
@@ -88,7 +85,11 @@ function select(element){
 }
 
 
-$('#subdomains-search').on("change paste keyup", function() {
+$('#subdomains-search').on("change paste keyup", function(event) {
+  if (event.which == 13 || event.which == 27) {
+    searchWrapper.classList.remove("active");
+    return;
+  }
   if ($(this).val().length == 0) {
     suggestion_selector = col_suggestions;
   }
@@ -113,19 +114,11 @@ $('#subdomains-search').on("change paste keyup", function() {
 });
 
 
+
+
 $(document).on('click', function (e) {
-  console.log($(e.target).attr('id'));
+  // console.log($(e.target).attr('id'));
   if ($(e.target).attr('id') != 'subdomains-search' && $(e.target).attr('id') != 'filter_name') {
      searchWrapper.classList.remove("active");
    }
-  // if ($(e.target)) {
-  //   console.log('click');
-  //   if ($(".search-input").hasClass( "active" )) {
-  //     searchWrapper.classList.remove("active");
-  //   }
-  //   else{
-  //     console.log('no');
-  //   }
-  //   // searchWrapper.classList.remove("active");
-  // }
 });

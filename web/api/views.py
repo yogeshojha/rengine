@@ -669,6 +669,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             Q(page_title__icontains=search_value) |
             Q(http_url__icontains=search_value) |
             Q(technologies__name__icontains=search_value) |
+            Q(webserver__icontains=search_value) |
             Q(ip_addresses__address__icontains=search_value) |
             Q(ip_addresses__ports__number__icontains=search_value) |
             Q(ip_addresses__ports__service_name__icontains=search_value) |
@@ -686,12 +687,26 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             lookup_content = search_param[1].lower().strip()
             if 'name' in lookup_title:
                 qs = self.queryset.filter(name__icontains=lookup_content)
+            elif 'title' in lookup_title:
+                qs = self.queryset.filter(title__icontains=lookup_content)
+            elif 'http_url' in lookup_title:
+                qs = self.queryset.filter(http_url__icontains=lookup_content)
+            elif 'content_type' in lookup_title:
+                qs = self.queryset.filter(content_type__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.filter(cname__icontains=lookup_content)
-            elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
+            elif 'webserver' in lookup_title:
+                qs = self.queryset.filter(webserver__icontains=lookup_content)
+            elif 'ip_addresses' in lookup_title:
                 qs = self.queryset.filter(
-                    ip_addresses__icontains=lookup_content)
-            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technologies' in lookup_title:
+                    ip_addresses__address__icontains=lookup_content)
+            elif 'port' in lookup_title:
+                qs = self.queryset.filter(
+                    ip_addresses__ports__number__icontains=lookup_content
+                    ) | self.queryset.filter(
+                    ip_addresses__ports__service_name__icontains=lookup_content
+                    ) | self.queryset.filter(ip_addresses__ports__description__icontains=lookup_content)
+            elif 'technology' in lookup_title:
                 qs = self.queryset.filter(
                     technologies__name__icontains=lookup_content)
             elif 'http_status' in lookup_title:
@@ -706,16 +721,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
                     qs = self.queryset.filter(content_length=int_http_status)
                 except Exception as e:
                     print(e)
-            elif 'cdn' in lookup_title:
-                if lookup_content == 'true':
-                    qs = self.queryset.filter(is_cdn=True)
-                elif lookup_content == 'false':
-                    qs = self.queryset.filter(is_cdn=False)
-            elif 'status' in lookup_title:
-                if lookup_content == 'open':
-                    qs = self.queryset.filter(checked=False)
-                elif lookup_content == 'closed':
-                    qs = self.queryset.filter(checked=True)
         elif '>' in search_value:
             search_param = search_value.split(">")
             lookup_title = search_param[0].lower().strip()
@@ -753,13 +758,27 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
             if 'name' in lookup_title:
-                qs = self.queryset.exclude(subdomain__icontains=lookup_content)
+                qs = self.queryset.exclude(name__icontains=lookup_content)
+            elif 'title' in lookup_title:
+                qs = self.queryset.exclude(title__icontains=lookup_content)
+            elif 'http_url' in lookup_title:
+                qs = self.queryset.exclude(http_url__icontains=lookup_content)
+            elif 'content_type' in lookup_title:
+                qs = self.queryset.exclude(content_type__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.exclude(cname__icontains=lookup_content)
-            elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
+            elif 'webserver' in lookup_title:
+                qs = self.queryset.exclude(webserver__icontains=lookup_content)
+            elif 'ip_addresses' in lookup_title:
                 qs = self.queryset.exclude(
-                    ip_addresses__icontains=lookup_content)
-            elif 'tech' in lookup_title or 'technology' in lookup_title or 'technologies' in lookup_title:
+                    ip_addresses__address__icontains=lookup_content)
+            elif 'port' in lookup_title:
+                qs = self.queryset.exclude(
+                    ip_addresses__ports__number__icontains=lookup_content
+                    ) | self.queryset.exclude(
+                    ip_addresses__ports__service_name__icontains=lookup_content
+                    ) | self.queryset.exclude(ip_addresses__ports__description__icontains=lookup_content)
+            elif 'technology' in lookup_title:
                 qs = self.queryset.exclude(
                     technologies__name__icontains=lookup_content)
             elif 'http_status' in lookup_title:
@@ -768,16 +787,13 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
                     qs = self.queryset.exclude(http_status=int_http_status)
                 except Exception as e:
                     print(e)
-            elif 'cdn' in lookup_title:
-                if lookup_content == 'true':
-                    qs = self.queryset.exclude(is_cdn=True)
-                elif lookup_content == 'false':
-                    qs = self.queryset.exclude(is_cdn=False)
-            elif 'status' in lookup_title:
-                if lookup_content == 'open':
-                    qs = self.queryset.exclude(checked=False)
-                elif lookup_content == 'closed':
-                    qs = self.queryset.exclude(checked=True)
+            elif 'content_length' in lookup_title:
+                try:
+                    int_http_status = int(lookup_content)
+                    qs = self.queryset.exclude(content_length=int_http_status)
+                except Exception as e:
+                    print(e)
+
         return qs
 
 

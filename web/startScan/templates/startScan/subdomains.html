@@ -35,7 +35,21 @@ All Subdomains
 
 
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+
+<div class="row justify-content-center">
+	<div class="col-xl-8 col-lg-8 col-sm-8">
+		<div class="wrapper">
+			<div class="search-input">
+				<a href="" target="_blank" hidden></a>
+				<div class="w-100">
+					<input type="text" placeholder="Filter Subdomains" id="subdomains-search">
+				</div>
+				<div class="autocom-box mt-container mx-auto" id="autocom-box">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
 	<div class="widget widget-content widget-content-area br-6">
 		<div class="row">
 			<div class="col-12">
@@ -86,6 +100,8 @@ All Subdomains
 		</div>
 	</div>
 </div>
+</div>
+
 {# modal #}
 <div class="modal fade" id="addSubdomainTaskModal" tabindex="-1" role="dialog" aria-labelledby="addSubdomainTaskModal" aria-hidden="true">
 	<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
@@ -142,17 +158,16 @@ All Subdomains
 <script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
 <script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+<script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 
 <script type="text/javascript">
 $(document).ready(function() {
-	$('#subdomain_scan_results').DataTable({
+	var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 		"destroy": true,
 		"processing": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
-			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Filter Subdomains...",
 			"sLengthMenu": "Results :  _MENU_",
 			"sProcessing": "Processing... Please wait..."
 		},
@@ -381,7 +396,7 @@ $(document).ready(function() {
 				"targets": 10,
 			},
 		],
-		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
 		"<'row'<'col'tr>>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		drawCallback: function () {
@@ -414,6 +429,10 @@ $(document).ready(function() {
 				$(row).addClass('table-secondary text-strike');
 			}
 		},
+	});
+
+	$('#subdomains-search').on("change paste keyup", function() {
+		subdomain_datatables.search($(this).val()).draw() ;
 	});
 });
 
