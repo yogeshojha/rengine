@@ -687,8 +687,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             lookup_content = search_param[1].lower().strip()
             if 'name' in lookup_title:
                 qs = self.queryset.filter(name__icontains=lookup_content)
-            elif 'title' in lookup_title:
-                qs = self.queryset.filter(title__icontains=lookup_content)
+            elif 'page_title' in lookup_title:
+                qs = self.queryset.filter(page_title__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.filter(http_url__icontains=lookup_content)
             elif 'content_type' in lookup_title:
@@ -759,8 +759,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             lookup_content = search_param[1].lower().strip()
             if 'name' in lookup_title:
                 qs = self.queryset.exclude(name__icontains=lookup_content)
-            elif 'title' in lookup_title:
-                qs = self.queryset.exclude(title__icontains=lookup_content)
+            elif 'page_title' in lookup_title:
+                qs = self.queryset.exclude(page_title__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.exclude(http_url__icontains=lookup_content)
             elif 'content_type' in lookup_title:
@@ -798,39 +798,35 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 
 class EndPointViewSet(viewsets.ModelViewSet):
-    queryset = EndPoint.objects.all()
+    queryset = EndPoint.objects.none()
     serializer_class = EndpointSerializer
 
     def get_queryset(self):
         req = self.request
-        scan_history = req.query_params.get(
-            'scan_history') if 'scan_history' in req.query_params else None
-        target_id = req.query_params.get(
-            'target_id') if 'target_id' in req.query_params else None
+        scan_id = req.query_params.get('scan_id')
+
+        target_id = req.query_params.get('target_id')
+
+        url_query = req.query_params.get('query_param')
+
         gf_tag = req.query_params.get(
             'gf_tag') if 'gf_tag' in req.query_params else None
-        url_query = req.query_params.get(
-            'query_param') if 'query_param' in req.query_params else None
 
         if target_id:
             self.queryset = EndPoint.objects.filter(
-                target_domain__id=target_id)
+                target_domain__id=target_id).distinct()
         elif url_query:
-            if url_query.isnumeric():
-                self.queryset = EndPoint.objects.filter(
-                    Q(
-                        scan_history__domain__name=url_query) | Q(
-                        http_url=url_query) | Q(
-                        id=url_query))
-            else:
-                self.queryset = EndPoint.objects.filter(
-                    Q(scan_history__domain__name=url_query) | Q(http_url=url_query))
-        elif scan_history:
             self.queryset = EndPoint.objects.filter(
-                scan_history__id=scan_history)
+                Q(target_domain__name=url_query)).distinct()
+        elif scan_id:
+            self.queryset = EndPoint.objects.filter(
+                scan_history__id=scan_id).distinct()
+        else:
+            self.queryset = EndPoint.objects.distinct()
 
         if gf_tag:
             self.queryset = self.queryset.filter(matched_gf_patterns__icontains=gf_tag)
+
         return self.queryset
 
     def filter_queryset(self, qs):
@@ -839,23 +835,23 @@ class EndPointViewSet(viewsets.ModelViewSet):
         _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'content_length'
-        if _order_col == '0':
+        if _order_col == '1':
             order_col = 'http_url'
-        elif _order_col == '1':
-            order_col = 'http_status'
         elif _order_col == '2':
-            order_col = 'page_title'
+            order_col = 'http_status'
         elif _order_col == '3':
-            order_col = 'matched_gf_patterns'
+            order_col = 'page_title'
         elif _order_col == '4':
-            order_col = 'content_type'
+            order_col = 'matched_gf_patterns'
         elif _order_col == '5':
-            order_col = 'content_length'
+            order_col = 'content_type'
         elif _order_col == '6':
-            order_col = 'technologies'
+            order_col = 'content_length'
         elif _order_col == '7':
-            order_col = 'webserver'
+            order_col = 'technologies'
         elif _order_col == '8':
+            order_col = 'webserver'
+        elif _order_col == '9':
             order_col = 'response_time'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
@@ -882,11 +878,14 @@ class EndPointViewSet(viewsets.ModelViewSet):
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
             Q(http_url__icontains=search_value) |
-            Q(content_length__icontains=search_value) |
             Q(page_title__icontains=search_value) |
             Q(http_status__icontains=search_value) |
             Q(content_type__icontains=search_value) |
-            Q(discovered_date__icontains=search_value))
+            Q(webserver__icontains=search_value) |
+            Q(technologies__name__icontains=search_value) |
+            Q(content_type__icontains=search_value) |
+            Q(matched_gf_patterns__icontains=search_value))
+
         return qs
 
     def special_lookup(self, search_value):
@@ -896,8 +895,20 @@ class EndPointViewSet(viewsets.ModelViewSet):
             search_param = search_value.split("=")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
-            if 'url' in lookup_title or 'http_url' in lookup_title:
+            if 'http_url' in lookup_title:
                 qs = self.queryset.filter(http_url__icontains=lookup_content)
+            elif 'page_title' in lookup_title:
+                qs = self.queryset.filter(page_title__icontains=lookup_content)
+            elif 'content_type' in lookup_title:
+                qs = self.queryset.filter(content_type__icontains=lookup_content)
+            elif 'webserver' in lookup_title:
+                qs = self.queryset.filter(webserver__icontains=lookup_content)
+            elif 'technology' in lookup_title:
+                qs = self.queryset.filter(
+                    technologies__name__icontains=lookup_content)
+            elif 'gf_pattern' in lookup_title:
+                qs = self.queryset.filter(
+                    matched_gf_patterns__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -910,9 +921,6 @@ class EndPointViewSet(viewsets.ModelViewSet):
                     qs = self.queryset.filter(content_length=int_http_status)
                 except Exception as e:
                     print(e)
-            elif 'content_type' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.filter(
-                    content_type__icontains=lookup_content)
         elif '>' in search_value:
             search_param = search_value.split(">")
             lookup_title = search_param[0].lower().strip()
@@ -949,8 +957,20 @@ class EndPointViewSet(viewsets.ModelViewSet):
             search_param = search_value.split("!")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
-            if 'url' in lookup_title or 'http_url' in lookup_title:
+            if 'http_url' in lookup_title:
                 qs = self.queryset.exclude(http_url__icontains=lookup_content)
+            elif 'page_title' in lookup_title:
+                qs = self.queryset.exclude(page_title__icontains=lookup_content)
+            elif 'content_type' in lookup_title:
+                qs = self.queryset.exclude(content_type__icontains=lookup_content)
+            elif 'webserver' in lookup_title:
+                qs = self.queryset.exclude(webserver__icontains=lookup_content)
+            elif 'technology' in lookup_title:
+                qs = self.queryset.exclude(
+                technologies__name__icontains=lookup_content)
+            elif 'gf_pattern' in lookup_title:
+                qs = self.queryset.exclude(
+                matched_gf_patterns__icontains=lookup_content)
             elif 'http_status' in lookup_title:
                 try:
                     int_http_status = int(lookup_content)
@@ -963,9 +983,6 @@ class EndPointViewSet(viewsets.ModelViewSet):
                     qs = self.queryset.exclude(content_length=int_http_status)
                 except Exception as e:
                     print(e)
-            elif 'content_type' in lookup_title or 'ip' in lookup_title:
-                qs = self.queryset.exclude(
-                    content_type__icontains=lookup_content)
         return qs
 
 

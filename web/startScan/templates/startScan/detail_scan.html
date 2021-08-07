@@ -802,39 +802,52 @@ Detailed Scan
 						</div>
 						{% endif %}
 						<div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<div class="row">
-										<div class="col-12">
-											<div class="task-action float-right mb-4">
-												<div class="dropdown">
-													<a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-														<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-													</a>
-													<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
-														<a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+							<div class="row justify-content-center">
+								<div class="col-xl-8 col-lg-8 col-sm-8">
+									<div class="wrapper">
+										<div class="search-input" id="endpoint-search-input">
+											<a href="" target="_blank" hidden></a>
+											<div class="w-100">
+												<input type="text" placeholder="Filter Endpoints" id="endpoint-search">
+											</div>
+											<div class="autocom-box mt-container mx-auto" id="autocom-box">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-xl-12 col-lg-12 col-sm-12">
+									<div class="widget widget-content widget-content-area br-6">
+										<div class="row">
+											<div class="col-12">
+												<div class="task-action float-right mb-4">
+													<div class="dropdown">
+														<a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+															<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+														</a>
+														<div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+															<a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+														</div>
 													</div>
 												</div>
 											</div>
-										</div>
-										<div class="col-12">
-											<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-												<thead>
-													<tr>
-														<th>ID</th>
-														<th>HTTP URL</th>
-														<th>Status</th>
-														<th>Page Title</th>
-														<th>Tags</th>
-														<th>Content Type</th>
-														<th>Content Length</th>
-														<th>Technology</th>
-														<th>Webserver</th>
-														<th>Response time</th>
-														<th>Default URL</th>
-													</tr>
-												</thead>
-											</table>
+											<div class="col-12">
+												<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+													<thead>
+														<tr>
+															<th>ID</th>
+															<th>HTTP URL</th>
+															<th>Status</th>
+															<th>Page Title</th>
+															<th>Tags</th>
+															<th>Content Type</th>
+															<th>Content Length</th>
+															<th>Technology</th>
+															<th>Webserver</th>
+															<th>Response time</th>
+														</tr>
+													</thead>
+												</table>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -1055,6 +1068,7 @@ Detailed Scan
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>

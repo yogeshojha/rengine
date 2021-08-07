@@ -52,18 +52,16 @@ function get_endpoints(scan_history_id, gf_tags){
   if (gf_tags){
     lookup_url += `&gf_tag=${gf_tags}`
   }
-  $('#endpoint_results').DataTable({
+  var endpoint_table = $('#endpoint_results').DataTable({
     "destroy": true,
     "processing": true,
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
       "sProcessing": "Processing... Please wait..."
     },
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+    "dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
     "<'row'<'col'tr>>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "stripeClasses": [],
@@ -80,24 +78,33 @@ function get_endpoints(scan_history_id, gf_tags){
       {'data': 'matched_gf_patterns'},
       {'data': 'content_type'},
       {'data': 'content_length', 'searchable': false},
-      {'data': 'technology_stack'},
+      {'data': 'technologies'},
       {'data': 'webserver'},
       {'data': 'response_time', 'searchable': false},
-      {'data': 'is_default', 'searchable': false}
     ],
     "columnDefs": [
       {
-        "targets": [ 0, 10 ],
+        "targets": [ 0 ],
         "visible": false,
         "searchable": false,
       },
       {
+        "targets": [ 7, 8 ],
+        "visible": false,
+        "searchable": true,
+      },
+      {
         "render": function ( data, type, row ) {
-          // var isDefault = '';
-          // if (row['is_default'])
-          // {
-          // 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
-          // }
+          tech_badge = '';
+          web_server = '';
+          if (row['technologies']){
+            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
+          }
+
+          if (row['webserver']) {
+            web_server = `<span class='m-1 badge badge-pills outline-badge-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+          }
+
           var url = split(data, 70);
           action_icons = `
           <div class="float-left subdomain-table-action-icons mt-2">
@@ -107,7 +114,9 @@ function get_endpoints(scan_history_id, gf_tags){
           </a>
           </div>
           `;
-          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-info'>`+ url + action_icons +"</a>";
+          tech_badge += web_server;
+
+          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-info'>`+ url +"</a>" + tech_badge + "<br>" + action_icons ;
         },
         "targets": 1,
       },
@@ -133,11 +142,11 @@ function get_endpoints(scan_history_id, gf_tags){
       {
         "render": function ( data, type, row ) {
           if (data){
-            return parse_comma_values_into_span(data.toUpperCase(), "info");
+            return parse_comma_values_into_span(data, "info");
           }
           return "";
         },
-        "targets": 7,
+        "targets": 8,
       },
       {
         "render": function ( data, type, row ) {
@@ -169,6 +178,9 @@ function get_endpoints(scan_history_id, gf_tags){
       });
     }
   });
+  $('#endpoint-search').on("change paste keyup", function() {
+		endpoint_table.search($(this).val()).draw() ;
+	});
 }
 
 
