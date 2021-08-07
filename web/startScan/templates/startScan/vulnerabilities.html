@@ -26,23 +26,39 @@ All Vulnerabilities
 
 
 {% block main_content %}
-<div class="widget widget-table-two">
-	<div class="widget-content">
-		<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-			<thead>
-				<tr>
-					<th class="checkbox-column">Status</th>
-					<th>Title</th>
-					<th class="text-center">Severity</th>
-					<th>Vulnerable URL</th>
-					<th>Detail</th>
-					<th>Status</th>
-					<th>Matcher Name</th>
-					<th>Tags</th>
-					<th>Reference</th>
-				</tr>
-			</thead>
-		</table>
+<div class="row justify-content-center">
+	<div class="col-xl-8 col-lg-8 col-sm-8">
+		<div class="wrapper">
+			<div class="search-input" id="vulnerability-search-input">
+				<a href="" target="_blank" hidden></a>
+				<div class="w-100">
+					<input type="text" placeholder="Filter Vulnerabilities" id="vulnerability-search">
+				</div>
+				<div class="autocom-box mt-container mx-auto" id="autocom-box">
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-xl-12 col-lg-12 col-sm-12">
+		<div class="widget widget-table-two">
+			<div class="widget-content">
+				<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+					<thead>
+						<tr>
+							<th class="checkbox-column">Status</th>
+							<th>Title</th>
+							<th class="text-center">Severity</th>
+							<th>Vulnerable URL</th>
+							<th>Detail</th>
+							<th>Status</th>
+							<th>Matcher Name</th>
+							<th>Tags</th>
+							<th>Reference</th>
+						</tr>
+					</thead>
+				</table>
+			</div>
+		</div>
 	</div>
 </div>
 {% endblock main_content %}
@@ -56,21 +72,19 @@ All Vulnerabilities
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
-
+<script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
-	$('#vulnerability_results').DataTable({
+	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
-			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
 			"sLengthMenu": "Results :  _MENU_",
 			"sProcessing": "Processing... Please wait..."
 		},
 		"processing": true,
-		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
 		"<'row'<'col'tr>>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"stripeClasses": [],
@@ -78,10 +92,10 @@ $(document).ready(function() {
 		"pageLength": 20,
 		'serverSide': true,
 		{% if request.GET.query %}
-	  "ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
-	  {% else %}
-	  "ajax": '/api/listVulnerability/?scan_history=&format=datatables',
-	  {% endif %}
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
+		{% else %}
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables',
+		{% endif %}
 		"order": [[ 2, "desc" ]],
 		"columns": [
 			{'data': 'id'},
@@ -97,6 +111,7 @@ $(document).ready(function() {
 			{'data': 'reference'},
 		],
 		"columnDefs": [
+			{ "orderable": false, "targets": [4,9,10]},
 			{
 				"targets": [ 6, 7, 8, 9, 10 ],
 				"visible": false,
@@ -213,6 +228,9 @@ $(document).ready(function() {
 				$(row).addClass('table-secondary text-strike');
 			}
 		},
+	});
+	$('#vulnerability-search').on("change paste keyup", function() {
+		vulnerability_table.search($(this).val()).draw() ;
 	});
 });
 </script>

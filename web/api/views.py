@@ -987,64 +987,57 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
 
 class VulnerabilityViewSet(viewsets.ModelViewSet):
-    queryset = Vulnerability.objects.all().order_by('-discovered_date')
+    queryset = Vulnerability.objects.none()
     serializer_class = VulnerabilitySerializer
 
     def get_queryset(self):
         req = self.request
-        vulnerability_of = req.query_params.get('scan_history')
+        scan_id = req.query_params.get('scan_id')
+
         target_id = req.query_params.get('target_id')
+
         url_query = req.query_params.get('query_param')
-        if url_query:
-            if url_query.isnumeric():
-                self.queryset = Vulnerability.objects.filter(
-                    Q(
-                        scan_history__domain__name=url_query) | Q(
-                        name=url_query) | Q(
-                        id=url_query))
-            else:
-                self.queryset = Vulnerability.objects.filter(
-                    Q(scan_history__domain__name=url_query) | Q(name=url_query))
-        elif vulnerability_of:
+
+        if target_id:
             self.queryset = Vulnerability.objects.filter(
-                scan_history__id=vulnerability_of)
-        elif target_id:
+                target_domain__id=target_id).distinct()
+        elif url_query:
             self.queryset = Vulnerability.objects.filter(
-                target_domain__id=target_id)
+                Q(target_domain__name=url_query)).distinct()
+        elif scan_id:
+            self.queryset = Vulnerability.objects.filter(
+                scan_history__id=scan_id).distinct()
+        else:
+            self.queryset = Vulnerability.objects.distinct()
         return self.queryset
 
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
         search_value = self.request.GET.get(u'search[value]', None)
-        column = self.request.GET.get(u'order[0][column]', None)
+        _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'severity'
-        if column == '0':
+        print(_order_col)
+        if _order_col == '0' or _order_col == '5':
             order_col = 'open_status'
-        elif column == '1':
-            order_col = 'title'
-        elif column == '2':
+        elif _order_col == '1':
+            order_col = 'name'
+        elif _order_col == '2':
             order_col = 'severity'
-        elif column == '3':
-            order_col = 'url'
-        elif column == '4':
-            order_col = 'description'
-        elif column == '5':
-            column = 'discovered_date'
-        elif column == '6':
-            order_col = 'open_status'
+        elif _order_col == '3':
+            order_col = 'http_url'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
-        if '=' in search_value or '&' in search_value or '|' in search_value or '!' in search_value:
+        if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
             if '&' in search_value:
                 complex_query = search_value.split('&')
                 for query in complex_query:
                     if query.strip():
                         qs = qs & self.special_lookup(query.strip())
             elif '|' in search_value:
-                qs = Vulnerability.objects.none()
+                qs = Subdomain.objects.none()
                 complex_query = search_value.split('|')
                 for query in complex_query:
                     if query.strip():
@@ -1057,7 +1050,6 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
-            Q(discovered_date__icontains=search_value) |
             Q(http_url__icontains=search_value) |
             Q(name__icontains=search_value) |
             Q(severity__icontains=search_value) |
@@ -1071,8 +1063,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         qs = self.queryset.filter()
         if '=' in search_value:
             search_param = search_value.split("=")
-            lookup_title = search_param[0].lower()
-            lookup_content = search_param[1].lower()
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
             if 'severity' in lookup_title:
                 severity_value = ''
                 if lookup_content == 'info':
@@ -1087,12 +1079,10 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     severity_value = 4
                 if severity_value:
                     qs = self.queryset.filter(severity=severity_value)
-            elif 'title' in lookup_title:
+            elif 'name' in lookup_title:
                 qs = self.queryset.filter(name__icontains=lookup_content)
-            elif 'vulnerable_url' in lookup_title:
-                qs = self.queryset.filter(url__icontains=lookup_content)
-            elif 'url' in lookup_title:
-                qs = self.queryset.filter(url__icontains=lookup_content)
+            elif 'http_url' in lookup_title:
+                qs = self.queryset.filter(http_url__icontains=lookup_content)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.filter(open_status=True)
@@ -1105,12 +1095,11 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     Q(extracted_results__icontains=lookup_content) |
                     Q(matcher_name__icontains=lookup_content))
         elif '!' in search_value:
-            search_param = search_value.split("!")
-            lookup_title = search_param[0].lower()
-            lookup_content = search_param[1].lower()
+            search_param = search_value.split("=")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
             if 'severity' in lookup_title:
-                # TODO: figure out this BS
-                severity_value = 5
+                severity_value = ''
                 if lookup_content == 'info':
                     severity_value = 0
                 elif lookup_content == 'low':
@@ -1121,15 +1110,12 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     severity_value = 3
                 elif lookup_content == 'critical':
                     severity_value = 4
-                print("severity_value" + str(severity_value))
-                if severity_value < 5:
+                if severity_value:
                     qs = self.queryset.exclude(severity=severity_value)
             elif 'title' in lookup_title:
                 qs = self.queryset.exclude(name__icontains=lookup_content)
-            elif 'vulnerable_url' in lookup_title:
-                qs = self.queryset.exclude(url__icontains=lookup_content)
-            elif 'url' in lookup_title:
-                qs = self.queryset.exclude(url__icontains=lookup_content)
+            elif 'http_url' in lookup_title:
+                qs = self.queryset.exclude(http_url__icontains=lookup_content)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.exclude(open_status=True)
