@@ -626,20 +626,15 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
         _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'content_length'
+        print(_order_col)
         if _order_col == '0':
             order_col = 'checked'
         elif _order_col == '1':
             order_col = 'name'
-        elif _order_col == '2':
-            order_col = 'endpoint'
-        elif _order_col == '3':
-            order_col = 'vulnerability'
         elif _order_col == '4':
             order_col = 'http_status'
         elif _order_col == '5':
             order_col = 'page_title'
-        elif _order_col == '6':
-            order_col = 'ip_addresses'
         elif _order_col == '8':
             order_col = 'content_length'
         elif _order_col == '10':
@@ -668,20 +663,17 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
-            Q(discovered_date__icontains=search_value) |
             Q(name__icontains=search_value) |
             Q(cname__icontains=search_value) |
             Q(http_status__icontains=search_value) |
-            Q(content_length__icontains=search_value) |
             Q(page_title__icontains=search_value) |
             Q(http_url__icontains=search_value) |
-            Q(is_cdn__icontains=search_value) |
-            Q(screenshot_path__icontains=search_value) |
-            Q(http_header_path__icontains=search_value) |
             Q(technologies__name__icontains=search_value) |
-            Q(directory_json__icontains=search_value) |
-            Q(checked__icontains=search_value) |
-            Q(discovered_date__icontains=search_value))
+            Q(ip_addresses__address__icontains=search_value) |
+            Q(ip_addresses__ports__number__icontains=search_value) |
+            Q(ip_addresses__ports__service_name__icontains=search_value) |
+            Q(ip_addresses__ports__description__icontains=search_value)
+        )
 
         return qs
 
@@ -693,7 +685,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
             if 'name' in lookup_title:
-                qs = self.queryset.filter(subdomain__icontains=lookup_content)
+                qs = self.queryset.filter(name__icontains=lookup_content)
             elif 'cname' in lookup_title:
                 qs = self.queryset.filter(cname__icontains=lookup_content)
             elif 'ip_addresses' in lookup_title or 'ip' in lookup_title:
