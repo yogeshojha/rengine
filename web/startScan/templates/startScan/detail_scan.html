@@ -656,7 +656,7 @@ Detailed Scan
 											<div class="w-100">
 												<input type="text" placeholder="Filter Subdomains" id="subdomains-search">
 											</div>
-											<div class="autocom-box mt-container mx-auto">
+											<div class="autocom-box mt-container mx-auto" id="autocom-box">
 											</div>
 										</div>
 									</div>
@@ -1051,6 +1051,7 @@ Detailed Scan
 {% block page_level_script %}
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
+<script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
