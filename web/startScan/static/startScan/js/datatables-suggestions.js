@@ -5,7 +5,7 @@ const succestion_icon = searchWrapper.querySelector(".suggestion-icon");
 const filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
 
 let col_suggestions = [
-  'name',
+  "name",
   "page_title",
   "http_url",
   "cname",
@@ -81,17 +81,24 @@ function showSuggestions(list){
 function select(element){
   let selectData = element.textContent.split(" ")[0];
   inputBox.value = $('#subdomains-search').val() + selectData;
-  $("#subdomains-search").change();
+  $("#subdomains-search").focus();
+
 }
 
 
+col_suggestions_used = true;
+
 $('#subdomains-search').on("change paste keyup", function(event) {
+  user_input = $(this).val();
   if (event.which == 13 || event.which == 27) {
     searchWrapper.classList.remove("active");
+    $('#subdomain-search-button').click();
     return;
   }
-  if ($(this).val().length == 0) {
+  if (user_input.length == 0) {
     suggestion_selector = col_suggestions;
+    $('#subdomain-search-button').click();
+    col_suggestions_used = true;
   }
   cond_split_val = $(this).val().split(new RegExp('[=><!&|]', 'g'));
 
@@ -99,15 +106,24 @@ $('#subdomains-search').on("change paste keyup", function(event) {
 
   if (col_suggestions.indexOf(last_obj) > -1) {
     suggestion_selector = condition_suggestions;
+    col_suggestions_used = false;
   }
 
   else if (["=", "!", ">", "<"].indexOf($(this).val().slice(-1)) > -1) {
     suggestion_selector = joiner;
+    col_suggestions_used = false;
   }
 
 
   else if (["&", "|"].indexOf($(this).val().slice(-1)) > -1) {
     suggestion_selector = col_suggestions;
+    col_suggestions_used = true;
+  }
+
+  if (col_suggestions_used) {
+    suggestion_selector = col_suggestions.filter((data)=>{
+      return data.toLocaleLowerCase().includes(last_obj.toLocaleLowerCase());
+    });
   }
 
   document.getElementById("subdomains-search").click();
