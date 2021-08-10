@@ -1,0 +1,134 @@
+{# DO NOT AUTO INDENT #}
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Hackerone Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/editors/markdown/simplemde.min.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Hackerone Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row h-100 justify-content-center align-items-center">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>Hackerone Settings</h4>
+        <img src="https://www.hackerone.com/assets/images/logo.png" alt="">
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <p>
+      You can use this feature to pull your private programs from Hacker and also <span class="text-danger">automatically report any vulnerabilities.</span>
+      <br>
+      More details on how to generate your hackerone api token is provided by <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-info" target="_blank">Hackerone Documentation.</a>
+    </p>
+    <form>
+      <div class="row mt-4 mb-4">
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="hackerone_username">Your Hackerone Username (Not email)</label>
+          <input id="hackerone_username" type="text" class="form-control" placeholder="You hackerone Username">
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="hackerone_api_token">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token here</a></label>
+          <input id="hackerone_api_token" type="text" class="form-control" placeholder="Hackerone API Token">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <a class="btn btn-primary float-right" href="#" role="button">
+            &nbsp;&nbsp;Test my hackerone api key
+          </a>
+        </div>
+      </div>
+      <h6>Report vulnerabilities to Hackerone Automatically</h6>
+      <div class="custom-control custom-checkbox">
+        <p class="mt-2">
+          Use this feature with caution!
+          <br><span class="badge badge-danger">Please do not spam triagers! Please do not!!!</span>
+          <br>
+          <br>
+          We do not allow sending vulnerability report for low severity and informational vulnerabilities to avoid spamming triagers!
+          You can send them manually from vulnerability section inside scan history or Vulnerabilities tab.
+        </p>
+        <p>Send vulnerability to hackerone for:</p>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-danger">
+            <input type="checkbox" class="new-control-input" checked>
+            <span class="new-control-indicator"></span><span class="new-chk-content">Critical Severity (Default)</span>
+          </label>
+        </div>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-danger">
+            <input type="checkbox" class="new-control-input" checked>
+            <span class="new-control-indicator"></span><span class="new-chk-content">High Severity (Default)</span>
+          </label>
+        </div>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-warning">
+            <input type="checkbox" class="new-control-input">
+            <span class="new-control-indicator"></span><span class="new-chk-content">Medium Severity</span>
+          </label>
+        </div>
+      </div>
+      <div class="mt-4">
+        <h6>Vulnerability Report Template</h6>
+        <p>You can customize the vulnerability report template using markdown. Replace the below syntax wherever you require. Curly braces are must!</p>
+        <ul>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_name}</span> Vulnerability Title/Name.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerable_url}</span> Vulnerable URL.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_severity}</span> Vulnerability Severity.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_description}</span> Description of vulnerability generated by Nuclei.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_extracted_results}</span> Vulnerabty Results extracted by Nuclei.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_reference}</span> Additional Reference to vulnerability.</li>
+        </ul>
+        <!-- Default Template: https://raw.githubusercontent.com/ZephrFish/BugBountyTemplates/master/Blank.md -->
+        <textarea id="vulnerability-report-template">
+Hi Team, while testing, a {vulnerability_severity} severity vulnerability has been discovered in {vulnerable_url} and below is the findings.
+# Vulnerability
+{vulnerability_title}
+
+## Issue Description
+{vulnerability_description}
+
+## Vulnerable URL
+- {vulnerable_url}
+
+## Extracted Results/Findings
+{vulnerability_extracted_results}
+
+## References
+- {vulnerability_reference}
+
+Thank you
+        </textarea>
+      </div>
+      <input type="submit" value="Save" class="btn btn-primary float-right">
+    </form>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/editors/markdown/simplemde.min.js' %}"></script>
+<script type="text/javascript">
+new SimpleMDE({
+	element: document.getElementById("vulnerability-report-template"),
+  toolbar: ["preview", "bold", "italic", "heading", "heading-2", "unordered-list", "link" ,"|", "code" ,"|", "quote", "|", "guide"],
+	spellChecker: false,
+});
+</script>
+{% endblock page_level_script %}

@@ -52,4 +52,8 @@ urlpatterns = [
         'proxy_settings',
         views.proxy_settings,
         name='proxy_settings'),
+    path(
+        'hackerone_settings',
+        views.hackerone_settings,
+        name='hackerone_settings'),
 ]

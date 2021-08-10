@@ -380,3 +380,37 @@ def proxy_settings(request):
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/proxy.html', context)
+
+
+def hackerone_settings(request):
+    context = {}
+    form = ProxyForm()
+    context['form'] = form
+
+    proxy = None
+    if Proxy.objects.all().exists():
+        proxy = Proxy.objects.all()[0]
+        form.set_value(proxy)
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if proxy:
+            form = ProxyForm(request.POST, instance=proxy)
+        else:
+            form = ProxyForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Proxies updated.')
+            return http.HttpResponseRedirect(reverse('proxy_settings'))
+
+
+    context['settings_nav_active'] = 'active'
+    context['hackerone_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/hackerone.html', context)

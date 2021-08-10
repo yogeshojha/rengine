@@ -687,7 +687,7 @@ function get_tech_details(tech, scan_id){
   // render tab modal
   $('.modal-title').html('Details for Technology: <b>' + tech + '</b>');
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
@@ -1104,7 +1104,7 @@ function get_dork_details(dork_type, scan_id){
   // render tab modal
   $('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
     $('#modal-loader').empty();
@@ -1146,7 +1146,7 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
   }
   $('.modal-title').html(`<b>${severity_title} Severity</b> Vulnerabilities`);
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -1184,7 +1184,7 @@ function get_endpoint_modal(scan_id, subdomain_name){
   }
   $('.modal-title').html(`<b>Endpoints Summary</b>`);
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -1292,10 +1292,10 @@ function get_recon_notes(scan_id){
 
 function get_task_details(todo_id){
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
-    $('.modal-text').empty();
+    $('.modal-text').empty(); $('#modal-footer').empty();
     note = data['notes'][0];
     subdomain_name = '';
     if (note['subdomain_name']) {
@@ -1364,7 +1364,7 @@ $(".add-scan-history-todo").click(function(){
 function list_subdomain_todos(subdomain_id, subdomain_name){
   $('.modal-title').html(`Todos for subdomain ${subdomain_name}`);
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(`/api/listTodoNotes/?subdomain_id=${subdomain_id}&format=json`, function(data) {
@@ -1520,7 +1520,7 @@ function download_subdomains(scan_id, domain_name){
     $('.modal-title').html(count + ' Subdomains');
   }
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
@@ -1556,7 +1556,7 @@ function download_interesting_subdomains(scan_id, domain_name){
   else{
     $('.modal-title').html( count + ' Interesting Subdomains');
   }
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('#exampleModal').modal('show');
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
@@ -1595,7 +1595,7 @@ function download_important_subdomains(scan_id, domain_name){
     $('.modal-title').html(count + ' Subdomains marked as important');
   }
   $('#exampleModal').modal('show');
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
@@ -1631,7 +1631,7 @@ function download_endpoints(scan_id, domain_name){
   else{
     $('.modal-title').html(count + ' Endpoints');
   }
-  $('.modal-text').empty();
+  $('.modal-text').empty(); $('#modal-footer').empty();
   $('#exampleModal').modal('show');
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
