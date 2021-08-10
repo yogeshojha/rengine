@@ -8,6 +8,7 @@ Add target for Recon
 
 {% block custom_js_css_link %}
 <link href="{% static 'assets/css/elements/alert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -60,12 +61,30 @@ Add target for Recon
                 <label for="domainDescription">Description (Optional)</label>
                 {{ form.description }}
               </div>
-              <div class="col-md-6 mb-4">
-                <label for="domainDescription">Hackerone Target <b>team_handle</b> (Optional)
-                  <br>
-                  This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
-                </label>
-                {{ form.h1_team_handle }}
+            </div>
+            <div class="creative3-accordion-content">
+              <div id="iconsAccordion" class="accordion-icons">
+                <div class="card">
+                  <div class="card-header" id="headingOne3">
+                    <section class="mb-0 mt-0">
+                      <div role="menu" class="collapsed" data-toggle="collapse" data-target="#hackerone_accordion" aria-expanded="true" aria-controls="hackerone_accordion">
+                        <div class="accordion-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg></div>
+                        Bug Bounty (Hackerone) (Optional)  <div class="icons"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                      </div>
+                    </section>
+                  </div>
+                  <div id="hackerone_accordion" class="collapse" aria-labelledby="headingOne4" data-parent="#hackerone_accordion">
+                    <div class="card-body">
+                      <div class="col-md-12 mb-4">
+                        <label for="domainDescription">Hackerone Target <b>team_handle</b>
+                          <br>
+                          This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                        </label>
+                        {{ form.h1_team_handle }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-target" id="add-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
@@ -83,6 +102,31 @@ Add target for Recon
             <div class="form-group mb-4">
               <label for="targetDescription">Target Description (Optional)</label>
               <input type="text" class="form-control" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+            </div>
+            <div class="creative3-accordion-content">
+              <div id="iconsAccordion" class="accordion-icons">
+                <div class="card">
+                  <div class="card-header" id="headingOne3">
+                    <section class="mb-0 mt-0">
+                      <div role="menu" class="collapsed" data-toggle="collapse" data-target="#hackerone_accordion" aria-expanded="true" aria-controls="hackerone_accordion">
+                        <div class="accordion-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg></div>
+                        Bug Bounty (Hackerone) (Optional)  <div class="icons"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+                      </div>
+                    </section>
+                  </div>
+                  <div id="hackerone_accordion" class="collapse" aria-labelledby="headingOne4" data-parent="#hackerone_accordion">
+                    <div class="card-body">
+                      <div class="col-md-12 mb-4">
+                        <label for="domainDescription">Hackerone Target <b>team_handle</b>
+                          <br>
+                          This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                        </label>
+                        <input type="text" class="form-control" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <button class="btn btn-primary submit-fn mt-2 float-right" type="submit" id="addTargetButton" name="add-multiple-targets" value="submit">Add 0 Target</button>
           </form>
@@ -128,6 +172,7 @@ Add target for Recon
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'assets/js/components/ui-accordions.js' %}"></script>
 <script type="text/javascript">
 var addTargetsButton = document.getElementById("addTargetButton");
 addTargetsButton.disabled = true;

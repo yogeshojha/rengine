@@ -470,8 +470,9 @@ class HackeroneForm(forms.ModelForm):
         self.initial['send_medium'] = False
 
         self.initial['report_template'] = '''Hi Team, while testing, a {vulnerability_severity} severity vulnerability has been discovered in {vulnerable_url} and below is the findings.
+
 # Vulnerability
-{vulnerability_title}
+{vulnerability_name}
 
 ## Issue Description
 {vulnerability_description}

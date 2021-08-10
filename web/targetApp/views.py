@@ -47,6 +47,7 @@ def add_target(request):
                             for target in request.POST['addTargets'].split('\n')]
             bulk_targets = [target for target in bulk_targets if target]
             description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
+            h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
             target_count = 0
             for target in bulk_targets:
                 if not Domain.objects.filter(
@@ -54,6 +55,7 @@ def add_target(request):
                     Domain.objects.create(
                         name=target.rstrip("\n"),
                         description=description,
+                        h1_team_handle=h1_team_handle,
                         insert_date=timezone.now())
                     target_count += 1
             if target_count:
@@ -123,7 +125,7 @@ def add_target(request):
         "target_data_active": "active",
         'form': add_target_form}
     return render(request, 'target/add.html', context)
-    
+
 def list_target(request):
     domains = Domain.objects.all().order_by('-insert_date')
     context = {
@@ -183,7 +185,7 @@ def update_target(request, id):
                 'Domain {} modified!'.format(domain.name))
             return http.HttpResponseRedirect(reverse('list_target'))
     else:
-        form.set_value(domain.name, domain.description)
+        form.set_value(domain.name, domain.description, domain.h1_team_handle)
     context = {
         'list_target_li': 'active',
         'target_data_active': 'active',

@@ -84,7 +84,7 @@ class AddOrganizationForm(forms.Form):
 class UpdateTargetForm(forms.ModelForm):
     class Meta:
         model = Domain
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'h1_team_handle']
     name = forms.CharField(
         validators=[validate_domain],
         required=True,
@@ -113,7 +113,7 @@ class UpdateTargetForm(forms.ModelForm):
             }
         ))
 
-    def set_value(self, domain_value, description_value):
+    def set_value(self, domain_value, description_value, h1_team_handle):
         self.initial['name'] = domain_value
         self.initial['description'] = description_value
         self.initial['h1_team_handle'] = h1_team_handle
