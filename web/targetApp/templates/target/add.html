@@ -60,6 +60,13 @@ Add target for Recon
                 <label for="domainDescription">Description (Optional)</label>
                 {{ form.description }}
               </div>
+              <div class="col-md-6 mb-4">
+                <label for="domainDescription">Hackerone Target <b>team_handle</b> (Optional)
+                  <br>
+                  This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                </label>
+                {{ form.h1_team_handle }}
+              </div>
             </div>
             <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-target" id="add-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
           </form>

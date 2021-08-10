@@ -56,4 +56,9 @@ urlpatterns = [
         'hackerone_settings',
         views.hackerone_settings,
         name='hackerone_settings'),
+    path(
+        'testHackerone/',
+        views.test_hackerone,
+        name='testHackerone'
+    ),
 ]

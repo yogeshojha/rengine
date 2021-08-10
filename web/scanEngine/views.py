@@ -382,31 +382,49 @@ def proxy_settings(request):
     return render(request, 'scanEngine/settings/proxy.html', context)
 
 
+def test_hackerone(request):
+    context = {}
+    if request.method == "POST":
+        headers = {
+            'Accept': 'application/json'
+        }
+        body = json.loads(request.body)
+        r = requests.get(
+            'https://api.hackerone.com/v1/hackers/payments/balance',
+            auth=(body['username'], body['api_key']),
+            headers = headers
+        )
+        if r.status_code == 200:
+            return http.JsonResponse({"status": 200})
+
+    return http.JsonResponse({"status": 401})
+
+
 def hackerone_settings(request):
     context = {}
-    form = ProxyForm()
+    form = HackeroneForm()
     context['form'] = form
 
-    proxy = None
-    if Proxy.objects.all().exists():
-        proxy = Proxy.objects.all()[0]
-        form.set_value(proxy)
+    hackerone = None
+    if Hackerone.objects.all().exists():
+        hackerone = Hackerone.objects.all()[0]
+        form.set_value(hackerone)
     else:
         form.set_initial()
 
     if request.method == "POST":
-        if proxy:
-            form = ProxyForm(request.POST, instance=proxy)
+        if hackerone:
+            form = HackeroneForm(request.POST, instance=hackerone)
         else:
-            form = ProxyForm(request.POST or None)
+            form = HackeroneForm(request.POST or None)
 
         if form.is_valid():
             form.save()
             messages.add_message(
                 request,
                 messages.INFO,
-                'Proxies updated.')
-            return http.HttpResponseRedirect(reverse('proxy_settings'))
+                'Hackerone Settings updated.')
+            return http.HttpResponseRedirect(reverse('hackerone_settings'))
 
 
     context['settings_nav_active'] = 'active'

@@ -22,6 +22,16 @@ class AddTargetForm(forms.Form):
             }
         ))
 
+    h1_team_handle = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "h1_team_handle",
+                "placeholder": "team_handle"
+            }
+        ))
+
     def clean_name(self):
         data = self.cleaned_data['name']
         if Domain.objects.filter(name=data).count() > 0:
@@ -94,9 +104,19 @@ class UpdateTargetForm(forms.ModelForm):
             }
         ))
 
+    h1_team_handle = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "h1_team_handle",
+            }
+        ))
+
     def set_value(self, domain_value, description_value):
         self.initial['name'] = domain_value
         self.initial['description'] = description_value
+        self.initial['h1_team_handle'] = h1_team_handle
 
 
 class UpdateOrganizationForm(forms.ModelForm):

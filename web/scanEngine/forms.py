@@ -398,3 +398,91 @@ class ProxyForm(forms.ModelForm):
     def set_initial(self):
         self.initial['use_proxy'] = False
         self.fields['proxies'].widget.attrs['readonly'] = True
+
+
+class HackeroneForm(forms.ModelForm):
+    class Meta:
+        model = Hackerone
+        fields = '__all__'
+
+    username = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "username",
+                "placeholder": "Your Hackerone Username",
+            }))
+
+    api_key = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "api_key",
+                "placeholder": "Hackerone API Token",
+            }))
+
+    send_critical = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "send_critical",
+            }))
+
+    send_high = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "send_high",
+            }))
+
+    send_medium = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "send_medium",
+            }))
+
+    report_template = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "id": "vulnerability-report-template"
+            }))
+
+    def set_value(self, key):
+        self.initial['username'] = key.username
+        self.initial['api_key'] = key.api_key
+
+        self.initial['send_critical'] = key.send_critical
+        self.initial['send_high'] = key.send_high
+        self.initial['send_medium'] = key.send_medium
+
+        self.initial['report_template'] = key.report_template
+
+    def set_initial(self):
+        self.initial['send_critical'] = True
+        self.initial['send_high'] = True
+        self.initial['send_medium'] = False
+
+        self.initial['report_template'] = '''Hi Team, while testing, a {vulnerability_severity} severity vulnerability has been discovered in {vulnerable_url} and below is the findings.
+# Vulnerability
+{vulnerability_title}
+
+## Issue Description
+{vulnerability_description}
+
+## Vulnerable URL
+- {vulnerable_url}
+
+## Extracted Results/Findings
+{vulnerability_extracted_results}
+
+## References
+- {vulnerability_reference}
+
+Thank you'''
