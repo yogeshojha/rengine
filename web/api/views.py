@@ -707,6 +707,11 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             elif 'ip_addresses' in lookup_title:
                 qs = self.queryset.filter(
                     ip_addresses__address__icontains=lookup_content)
+            elif 'is_important' in lookup_title:
+                if 'true' in lookup_content.lower():
+                    qs = self.queryset.filter(is_important=True)
+                else:
+                    qs = self.queryset.filter(is_important=False)
             elif 'port' in lookup_title:
                 qs = self.queryset.filter(
                     ip_addresses__ports__number__icontains=lookup_content

@@ -7,15 +7,16 @@ const filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="
 let col_suggestions = [
   "name",
   "page_title",
-  "http_url",
-  "cname",
   "http_status",
-  "content_type",
-  "webserver",
-  "content_length",
+  "is_important",
+  "cname",
+  "http_url",
   "technology",
+  "port",
+  "webserver",
+  "content_type",
   "ip_address",
-  "port"
+  "content_length",
 ];
 
 let condition_suggestions = [

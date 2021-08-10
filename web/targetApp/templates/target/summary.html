@@ -313,37 +313,74 @@ Target Summary for {{target.name}}
           </div>
         </div>
         <div class="tab-pane fade" id="pills-subdomain" role="tabpanel" aria-labelledby="pills-subdomain-tab">
-          <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
-            <div class="widget widget-content widget-content-area br-6">
-              <table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
-                <thead>
-                  <tr>
-                    <th class="checkbox-column">Status</th>
-                    <th>Subdomain</th>
-                    <th class="text-center">Endpoints</th>
-                    <th class="text-center">Vulnerabilities</th>
-                    <th>Status</th>
-                    <th class="text-center">Title</th>
-                    <th>IP Address</th>
-                    <th>Ports</th>
-                    <th>Content Length</th>
-                    <th>Screenshot</th>
-                    <th>Response Time</th>
-                    <th>Technology</th>
-                    <th>Checked</th>
-                    <th>HTTP URL</th>
-                    <th>CNAME</th>
-                    <th>is_interesting</th>
-                    <th>Info</th>
-                    <th>Low</th>
-                    <th>Medium</th>
-                    <th>High</th>
-                    <th>Critical</th>
-                    <th>Todos</th>
-                    <th>Is Important</th>
-                  </tr>
-                </thead>
-              </table>
+          <div class="row justify-content-center">
+            <div class="col-xl-8 col-lg-8 col-sm-8">
+              <div class="wrapper">
+                <div class="search-input">
+                  <a href="" target="_blank" hidden></a>
+                  <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Filter Subdomains" aria-label="Filter Subdomains" id="subdomains-search">
+                    <div class="input-group-append">
+                      <button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+                    </div>
+                  </div>
+                  <div class="autocom-box mt-container mx-auto" id="autocom-box">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-12 col-lg-12 col-sm-12">
+              <div class="widget widget-content widget-content-area">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="task-action float-right mb-4">
+                      <div class="dropdown">
+                        <a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+                          <a class="dropdown-item" href="javascript:download_subdomains({{scan_history_id}}, '{{history.domain.name}}')">Download All Subdomains</a>
+                          <a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
+                          <a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <table id="subdomain_scan_results" class="table dt-table-hover" style="width:100%">
+                      <thead>
+                        <tr>
+                          <th class="checkbox-column">Status</th>
+                          <th>Subdomain</th>
+                          <th class="text-center">Endpoints</th>
+                          <th class="text-center">Vulnerabilities</th>
+                          <th>Status</th>
+                          <th class="text-center">Title</th>
+                          <th>IP Address</th>
+                          <th>Ports</th>
+                          <th>Content Length</th>
+                          <th>Screenshot</th>
+                          <th>Response Time</th>
+                          <th>Technology</th>
+                          <th>Checked</th>
+                          <th>HTTP URL</th>
+                          <th>CNAME</th>
+                          <th>is_interesting</th>
+                          <th>Info</th>
+                          <th>Low</th>
+                          <th>Medium</th>
+                          <th>High</th>
+                          <th>Critical</th>
+                          <th>Todos</th>
+                          <th>Is Important</th>
+                          <th>Webserver</th>
+                          <th>Content Type</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -407,6 +444,7 @@ Target Summary for {{target.name}}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
+<script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
 get_recon_notes({{target.id}})
@@ -518,14 +556,12 @@ get_interesting_subdomains({{target.id}});
 // get interesting endpoint
 get_interesting_endpoint({{target.id}});
 $("#pills-subdomain-tab").click(function() {
-  $('#subdomain_scan_results').DataTable({
+  var subdomain_datatables = $('#subdomain_scan_results').DataTable({
     "destroy": true,
     "processing": true,
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Filter Subdomains...",
       "sLengthMenu": "Results :  _MENU_",
       "sProcessing": "Processing... Please wait..."
     },
@@ -559,6 +595,8 @@ $("#pills-subdomain-tab").click(function() {
       {'data': 'critical_count'},
       {'data': 'todos_count'},
       {'data': 'is_important'},
+      {'data': 'webserver'},
+      {'data': 'content_type'},
     ],
     "columnDefs": [
       { "orderable": false, "targets": [2, 3, 6, 7, 9]},
@@ -568,7 +606,7 @@ $("#pills-subdomain-tab").click(function() {
         "searchable": false,
       },
       {
-        "targets": [ 11, 13 ],
+        "targets": [ 11, 13, 22, 23, 24 ],
         "visible": false,
         "searchable": true,
       },
@@ -597,12 +635,22 @@ $("#pills-subdomain-tab").click(function() {
           badges = '';
           tech_badge = '';
           interesting_badge = '';
+          content_type = '';
+          web_server = '';
           if (row['technologies']){
-            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, target_id={{target.id}});
+            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id=0);
           }
           if(row['is_interesting'])
           {
             interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+          }
+
+          if (row['content_type']) {
+            content_type = `<span class='m-1 badge badge-pills outline-badge-warning bs-tooltip' title="Content Type">${row['content_type']}</span>`;
+          }
+
+          if (row['webserver']) {
+            web_server = `<span class='m-1 badge badge-pills outline-badge-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
           }
 
           badges =   interesting_badge + '</br>';
@@ -625,15 +673,15 @@ $("#pills-subdomain-tab").click(function() {
 
           endpoint_count_badge = '';
           if (row['endpoint_count']) {
-            endpoint_count_badge = `<span class="pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${row['endpoint_count']}</span>`
+            endpoint_count_badge = `<span class="pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal(null, '${row['name']}')">${row['endpoint_count']}</span>`
           }
 
           vuln_count_badge = '';
-          info_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
-          low_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
-          medium_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
-          high_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
-          critical_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
+          info_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(null, 0, '${row['name']}')">${row['info_count']}</span>`;
+          low_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(null, 1, '${row['name']}')">${row['low_count']}</span>`;
+          medium_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(null, 2, '${row['name']}')">${row['medium_count']}</span>`;
+          high_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(null, 3, '${row['name']}')">${row['high_count']}</span>`;
+          critical_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-right badge badge-pills badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(null, 4, '${row['name']}')">${row['critical_count']}</span>`;
           vuln_count_badge =  (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
 
 
@@ -645,12 +693,16 @@ $("#pills-subdomain-tab").click(function() {
           <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-info copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
           </a>
-          <span class="m-1 badge-link text-success bs-tooltip" title="Add Recon Todo/Note" onclick="add_task_for_subdomain(${row['id']}, '${data}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>
+          <!--
+          <span class="m-1 badge-link text-success bs-tooltip" title="Add Recon Todo/Note" onclick="add_task_for_subdomain(${row['id']}, '${data}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>-->
           <span class="m-1 badge-link text-danger bs-tooltip" title="Mark Important" onclick="mark_important_subdomain(${row['id']})">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
           </span>
           </div>
           `;
+
+          tech_badge += content_type;
+          tech_badge += web_server;
 
           if (row['http_url']) {
             if (row['cname']) {
@@ -699,10 +751,10 @@ $("#pills-subdomain-tab").click(function() {
           {
             Object.entries(data).forEach(([key, value]) => {
               if (value['is_cdn']) {
-                ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+                ip_badge += `<span class='m-1 badge badge-pills outline-badge-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}')">${value.address}</span>`
               }
               else{
-                ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+                ip_badge += `<span class='m-1 badge badge-pills outline-badge-info badge-link' onclick="get_ip_details('${value.address}')">${value.address}</span>`
               }
             });
             return ip_badge;
@@ -722,7 +774,7 @@ $("#pills-subdomain-tab").click(function() {
                 port_obj = data[ip]['ports'][port]
                 badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
                 title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-                port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
+                port_badge += `<span class='m-1 badge badge-pills outline-badge-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']})">${port_obj['number']}/${port_obj['service_name']}</span>`
               }
             }
             return port_badge;
@@ -753,13 +805,18 @@ $("#pills-subdomain-tab").click(function() {
         "targets": 10,
       },
     ],
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+    "dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
     "<'row'<'col'tr>>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.bs-tooltip').tooltip();
+      var clipboard = new Clipboard('.copyable');
+      clipboard.on('success', function(e) {
+        setTooltip(e.trigger, 'Copied!');
+        hideTooltip(e.trigger);
+      });
       // get screenshot size from localStorage
       var elements = document.getElementsByClassName("screenshot");
       screenshot_size = localStorage.getItem('screenshotSize');
@@ -782,6 +839,11 @@ $("#pills-subdomain-tab").click(function() {
       }
     },
   });
+  // when search button pressed
+  $('#subdomain-search-button').click(function () {
+    subdomain_datatables.search($('#subdomains-search').val()).draw() ;
+  });
+
 });
 
 $("#pills-endpoints-tab").click(function() {

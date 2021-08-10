@@ -964,3 +964,8 @@ div.item {
 	color: #644bff;
 	cursor: pointer;
 }
+
+
+div.dataTables_wrapper div.dataTables_processing {
+	top: 5%;
+}

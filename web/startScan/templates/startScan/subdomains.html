@@ -44,7 +44,7 @@ All Subdomains
 				<div class="input-group">
 					<input type="text" class="form-control" placeholder="Filter Subdomains" aria-label="Filter Subdomains" id="subdomains-search">
 					<div class="input-group-append">
-						<button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+						<button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
 					</div>
 				</div>
 				<div class="autocom-box mt-container mx-auto" id="autocom-box">
@@ -208,6 +208,8 @@ $(document).ready(function() {
 			{'data': 'critical_count'},
 			{'data': 'todos_count'},
 			{'data': 'is_important'},
+			{'data': 'webserver'},
+			{'data': 'content_type'},
 		],
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
@@ -217,7 +219,7 @@ $(document).ready(function() {
 				"searchable": false,
 			},
 			{
-				"targets": [ 11, 13 ],
+				"targets": [ 11, 13, 22, 23, 24 ],
 				"visible": false,
 				"searchable": true,
 			},
@@ -246,12 +248,22 @@ $(document).ready(function() {
 					badges = '';
 					tech_badge = '';
 					interesting_badge = '';
+					content_type = '';
+					web_server = '';
 					if (row['technologies']){
 						tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id=0);
 					}
 					if(row['is_interesting'])
 					{
 						interesting_badge = "<span class='m-1 badge badge-pills badge-danger'>Interesting</span>"
+					}
+
+					if (row['content_type']) {
+						content_type = `<span class='m-1 badge badge-pills outline-badge-warning bs-tooltip' title="Content Type">${row['content_type']}</span>`;
+					}
+
+					if (row['webserver']) {
+						web_server = `<span class='m-1 badge badge-pills outline-badge-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
 					}
 
 					badges =   interesting_badge + '</br>';
@@ -301,6 +313,9 @@ $(document).ready(function() {
 					</span>
 					</div>
 					`;
+
+					tech_badge += content_type;
+					tech_badge += web_server;
 
 					if (row['http_url']) {
 						if (row['cname']) {
