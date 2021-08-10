@@ -76,45 +76,58 @@ function endpoint_showSuggestions(list){
 
 function endpoint_select(element){
   let selectData = element.textContent.split(" ")[0];
-  endpointInputBox.value = $('#endpoint-search').val() + selectData;
-  $("#endpoint-search").change();
+  endpointInputBox.value = $('#endpoints-search').val() + selectData;
+  $("#endpoints-search").focus();
 }
 
+endpoint_col_suggestions_used = true;
 
-$('#endpoint-search').on("change paste keyup", function(event) {
+$('#endpoints-search').on("change paste keyup", function(event) {
+  user_input = $(this).val();
   if (event.which == 13 || event.which == 27) {
     endpointSearchWrapper.classList.remove("active");
+    $('#endpoint-search-button').click();
     return;
   }
-  if ($(this).val().length == 0) {
+
+  if (user_input.length == 0) {
     endpoint_suggestion_selector = endpoint_col_suggestions;
+    $('#endpoint-search-button').click();
+    endpoint_col_suggestions_used = true;
   }
+
   cond_split_val = $(this).val().split(new RegExp('[=><!&|]', 'g'));
 
   last_obj = cond_split_val.slice(-1)[0];
 
   if (endpoint_col_suggestions.indexOf(last_obj) > -1) {
     endpoint_suggestion_selector = endpoint_condition_suggestions;
+    endpoint_col_suggestions_used = false;
   }
 
   else if (["=", "!", ">", "<"].indexOf($(this).val().slice(-1)) > -1) {
     endpoint_suggestion_selector = endpoint_joiner;
+    endpoint_col_suggestions_used = false;
   }
 
 
   else if (["&", "|"].indexOf($(this).val().slice(-1)) > -1) {
     endpoint_suggestion_selector = endpoint_col_suggestions;
+    endpoint_col_suggestions_used = true;
   }
 
-  document.getElementById("endpoint-search").click();
+  if (endpoint_col_suggestions_used) {
+    endpoint_suggestion_selector = endpoint_col_suggestions.filter((data)=>{
+      return data.toLocaleLowerCase().includes(last_obj.toLocaleLowerCase());
+    });
+  }
+
+  document.getElementById("endpoints-search").click();
 });
-
-
-
 
 $(document).on('click', function (e) {
   // console.log($(e.target).attr('id'));
-  if ($(e.target).attr('id') != 'endpoint-search' && $(e.target).attr('id') != 'filter_name') {
-     endpointSearchWrapper.classList.remove("active");
-   }
+  if ($(e.target).attr('id') != 'endpoints-search' && $(e.target).attr('id') != 'filter_name') {
+    endpointSearchWrapper.classList.remove("active");
+  }
 });

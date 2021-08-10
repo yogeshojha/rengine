@@ -178,8 +178,8 @@ function get_endpoints(scan_history_id, gf_tags){
       });
     }
   });
-  $('#endpoint-search').on("change paste keyup", function() {
-		endpoint_table.search($(this).val()).draw() ;
+  $('#endpoint-search-button').click(function () {
+		endpoint_table.search($('#endpoints-search').val()).draw() ;
 	});
 }
 

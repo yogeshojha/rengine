@@ -385,24 +385,57 @@ Target Summary for {{target.name}}
           </div>
         </div>
         <div class="tab-pane fade" id="pills-endpoints" role="tabpanel" aria-labelledby="pills-endpoints-tab">
-          <div class="col-xl-12 col-lg-12 col-sm-12">
-            <div class="widget widget-content widget-content-area br-6">
-              <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
-                <thead>
-                  <tr>
-                    <th>HTTP URL</th>
-                    <th>Status</th>
-                    <th>Page Title</th>
-                    <th>Tags</th>
-                    <th>Content Type</th>
-                    <th>Content Length</th>
-                    <th>Technology</th>
-                    <th>Webserver</th>
-                    <th>Response time</th>
-                    <th>Default URL</th>
-                  </tr>
-                </thead>
-              </table>
+          <div class="row justify-content-center">
+            <div class="col-xl-8 col-lg-8 col-sm-8">
+              <div class="wrapper">
+                <div class="search-input" id="endpoint-search-input">
+                  <a href="" target="_blank" hidden></a>
+                  <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Filter Endpoints" aria-label="Filter Endpoints" id="endpoints-search">
+                    <div class="input-group-append">
+                      <button id="endpoint-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+                    </div>
+                  </div>
+                  <div class="autocom-box mt-container mx-auto" id="autocom-box">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-12 col-lg-12 col-sm-12">
+              <div class="widget widget-content widget-content-area br-6">
+                <div class="row">
+                  <div class="col-12">
+                    <div class="task-action float-right mb-4">
+                      <div class="dropdown">
+                        <a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+                          <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-12">
+                    <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+                      <thead>
+                        <tr>
+                          <th>ID</th>
+                          <th>HTTP URL</th>
+                          <th>Status</th>
+                          <th>Page Title</th>
+                          <th>Tags</th>
+                          <th>Content Type</th>
+                          <th>Content Length</th>
+                          <th>Technology</th>
+                          <th>Webserver</th>
+                          <th>Response time</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -445,6 +478,7 @@ Target Summary for {{target.name}}
 <script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
 get_recon_notes({{target.id}})
@@ -847,18 +881,16 @@ $("#pills-subdomain-tab").click(function() {
 });
 
 $("#pills-endpoints-tab").click(function() {
-  $('#endpoint_results').DataTable({
+  var endpoint_table = $('#endpoint_results').DataTable({
     "destroy": true,
     "processing": true,
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
       "sProcessing": "Processing... Please wait..."
     },
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+    "dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
     "<'row'<'col'tr>>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "stripeClasses": [],
@@ -866,36 +898,56 @@ $("#pills-endpoints-tab").click(function() {
     "pageLength": 20,
     'serverSide': true,
     "ajax": '/api/listEndpoints/?target_id={{target.id}}&format=datatables',
-    "order": [[ 5, "desc" ]],
+    "order": [[ 6, "desc" ]],
     "columns": [
+      {'data': 'id'},
       {'data': 'http_url'},
       {'data': 'http_status'},
       {'data': 'page_title'},
       {'data': 'matched_gf_patterns'},
       {'data': 'content_type'},
       {'data': 'content_length', 'searchable': false},
-      {'data': 'technology_stack'},
+      {'data': 'technologies'},
       {'data': 'webserver'},
       {'data': 'response_time', 'searchable': false},
-      {'data': 'is_default', 'searchable': false}
     ],
     "columnDefs": [
       {
-        "targets": [ 9 ],
+        "targets": [ 0 ],
         "visible": false,
         "searchable": false,
       },
       {
+        "targets": [ 7, 8 ],
+        "visible": false,
+        "searchable": true,
+      },
+      {
         "render": function ( data, type, row ) {
-          // var isDefault = '';
-          // if (row['is_default'])
-          // {
-          // 	isDefault = `</br><span class='badge badge-pills badge-info'>Default</span>`;
-          // }
+          tech_badge = '';
+          web_server = '';
+          if (row['technologies']){
+            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
+          }
+
+          if (row['webserver']) {
+            web_server = `<span class='m-1 badge badge-pills outline-badge-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+          }
+
           var url = split(data, 70);
-          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+          action_icons = `
+          <div class="float-left subdomain-table-action-icons mt-2">
+          <span class="m-1">
+          <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-info copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+          </a>
+          </div>
+          `;
+          tech_badge += web_server;
+
+          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-info'>`+ url +"</a>" + tech_badge + "<br>" + action_icons ;
         },
-        "targets": 0,
+        "targets": 1,
       },
       {
         "render": function ( data, type, row ) {
@@ -914,16 +966,16 @@ $("#pills-endpoints-tab").click(function() {
           return "<span class='badge badge-pills badge-danger'>"+data+"</span>";
 
         },
-        "targets": 1,
+        "targets": 2,
       },
       {
         "render": function ( data, type, row ) {
           if (data){
-            return parse_comma_values_into_span(data.toUpperCase(), "info");
+            return parse_comma_values_into_span(data, "info");
           }
           return "";
         },
-        "targets": 6,
+        "targets": 8,
       },
       {
         "render": function ( data, type, row ) {
@@ -932,7 +984,7 @@ $("#pills-endpoints-tab").click(function() {
           }
           return "";
         },
-        "targets": 3,
+        "targets": 4,
       },
       {
         "render": function ( data, type, row ) {
@@ -941,14 +993,23 @@ $("#pills-endpoints-tab").click(function() {
           }
           return "";
         },
-        "targets": 8,
+        "targets": 9,
       },
     ],
     drawCallback: function () {
       $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
       $('.dataTables_wrapper table').removeClass('table-striped');
+      $('.bs-tooltip').tooltip();
+      var clipboard = new Clipboard('.copyable');
+      clipboard.on('success', function(e) {
+        setTooltip(e.trigger, 'Copied!');
+        hideTooltip(e.trigger);
+      });
     }
   });
+  $('#endpoint-search-button').click(function () {
+		endpoint_table.search($('#endpoints-search').val()).draw() ;
+	});
 });
 
 $("#pills-vulnerabilities-tab").click(function() {

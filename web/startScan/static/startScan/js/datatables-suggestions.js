@@ -1,10 +1,10 @@
-const searchWrapper = document.querySelector(".search-input");
-const inputBox = searchWrapper.querySelector("input");
-const suggBox = searchWrapper.querySelector(".autocom-box");
-const succestion_icon = searchWrapper.querySelector(".suggestion-icon");
-const filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
+var searchWrapper = document.querySelector(".search-input");
+var inputBox = searchWrapper.querySelector("input");
+var suggBox = searchWrapper.querySelector(".autocom-box");
+var succestion_icon = searchWrapper.querySelector(".suggestion-icon");
+var filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
 
-let col_suggestions = [
+var col_suggestions = [
   "name",
   "page_title",
   "http_status",
@@ -19,14 +19,14 @@ let col_suggestions = [
   "content_length",
 ];
 
-let condition_suggestions = [
+var condition_suggestions = [
   "=",
   "!",
   ">",
   "<",
 ];
 
-let joiner = [
+var joiner = [
   "&",
   "|"
 ];
@@ -129,9 +129,6 @@ $('#subdomains-search').on("change paste keyup", function(event) {
 
   document.getElementById("subdomains-search").click();
 });
-
-
-
 
 $(document).on('click', function (e) {
   // console.log($(e.target).attr('id'));
