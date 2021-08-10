@@ -68,27 +68,13 @@
             </li>
 
             <li class="menu single-menu {{target_data_active}}">
-              <a href="#targets" data-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+              <a href="{% url 'list_target' %}" aria-expanded="false" class="dropdown-toggle">
                 <div class="">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
                   <span>Targets</span>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </a>
-              <ul class="collapse submenu list-unstyled animated fadeInUp" id="targets" data-parent="#topAccordion">
-                <li class="{{ add_target_li }}">
-                  <a href="{% url 'add_target' %}"> Add Target </a>
-                </li>
-                <li class="{{ add_targets_li }}">
-                  <a href="{% url 'add_targets_bulk' %}"> Add Targets (Bulk) </a>
-                </li>
-                <li class="{{ import_target_li }}">
-                  <a href="{% url 'import_targets' %}"> Import Targets </a>
-                </li>
-                <li class="{{ list_target_li }}">
-                  <a href="{% url 'list_target' %}"> List Targets </a>
-                </li>
-              </ul>
             </li>
 
             <li class="menu single-menu {{scan_engine_nav_active}}">

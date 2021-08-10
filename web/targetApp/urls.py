@@ -17,14 +17,6 @@ urlpatterns = [
         views.add_organization,
         name='add_organization'),
     path(
-        'add/bulk/',
-        views.add_bulk_targets,
-        name='add_targets_bulk'),
-    path(
-        'import/',
-        views.import_targets,
-        name='import_targets'),
-    path(
         'update/target/<int:id>',
         views.update_target,
         name='update_target'),
