@@ -1068,6 +1068,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             Q(description__icontains=search_value) |
             Q(extracted_results__icontains=search_value) |
             Q(template_used__icontains=search_value) |
+            Q(tags__icontains=search_value) |
             Q(matcher_name__icontains=search_value))
         return qs
 
@@ -1078,6 +1079,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
             if 'severity' in lookup_title:
+                print(lookup_content)
                 severity_value = ''
                 if lookup_content == 'info':
                     severity_value = 0
@@ -1095,6 +1097,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                 qs = self.queryset.filter(name__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.filter(http_url__icontains=lookup_content)
+            elif 'tag' in lookup_title:
+                qs = self.queryset.filter(tags__icontains=lookup_content)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.filter(open_status=True)
@@ -1107,7 +1111,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     Q(extracted_results__icontains=lookup_content) |
                     Q(matcher_name__icontains=lookup_content))
         elif '!' in search_value:
-            search_param = search_value.split("=")
+            print(search_value)
+            search_param = search_value.split("!")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
             if 'severity' in lookup_title:
@@ -1128,6 +1133,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                 qs = self.queryset.exclude(name__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.exclude(http_url__icontains=lookup_content)
+            elif 'tag' in lookup_title:
+                qs = self.queryset.exclude(tags__icontains=lookup_content)
             elif 'status' in lookup_title:
                 if lookup_content == 'open':
                     qs = self.queryset.exclude(open_status=True)

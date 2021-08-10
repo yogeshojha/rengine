@@ -440,23 +440,40 @@ Target Summary for {{target.name}}
           </div>
         </div>
         <div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
-          <div class="col-xl-12 col-lg-12 col-sm-12">
-            <div class="widget widget-content widget-content-area br-6">
-              <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-                <thead>
-                  <tr>
-                    <th class="checkbox-column">Status</th>
-                    <th>Title</th>
-                    <th>Severity</th>
-                    <th>Vulnerable URL</th>
-                    <th>Detail</th>
-                    <th>Status</th>
-                    <th>Matcher Name</th>
-                    <th>Tags</th>
-                    <th>Reference</th>
-                  </tr>
-                </thead>
-              </table>
+          <div class="row justify-content-center">
+            <div class="col-xl-8 col-lg-8 col-sm-8">
+              <div class="wrapper">
+                <div class="search-input" id="vulnerability-search-input">
+                  <a href="" target="_blank" hidden></a>
+                  <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Filter Vulnerabilities" aria-label="Filter Vulnerabilities" id="vulnerability-search">
+                    <div class="input-group-append">
+                      <button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+                    </div>
+                  </div>
+                  <div class="autocom-box mt-container mx-auto" id="autocom-box">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-12 col-lg-12 col-sm-12">
+              <div class="widget widget-content widget-content-area br-6">
+                <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+                  <thead>
+                    <tr>
+                      <th class="checkbox-column">Status</th>
+                      <th>Title</th>
+                      <th>Severity</th>
+                      <th>Vulnerable URL</th>
+                      <th>Detail</th>
+                      <th>Status</th>
+                      <th>Matcher Name</th>
+                      <th>Tags</th>
+                      <th>Reference</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -479,6 +496,7 @@ Target Summary for {{target.name}}
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
 get_recon_notes({{target.id}})
@@ -1013,156 +1031,159 @@ $("#pills-endpoints-tab").click(function() {
 });
 
 $("#pills-vulnerabilities-tab").click(function() {
-  $('#vulnerability_results').DataTable({
-    "destroy": true,
-    "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-      "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
-      "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
-    },
-    "processing": true,
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-    "stripeClasses": [],
-    "lengthMenu": [20, 50, 100, 500, 1000],
-    "pageLength": 20,
-    'serverSide': true,
-    "ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
-    "order": [[ 2, "desc" ]],
-    "columns": [
-      {'data': 'id'},
-      {'data': 'name'},
-      {'data': 'severity'},
-      {'data': 'http_url'},
-      {'data': 'extracted_results'},
-      {'data': 'open_status'},
-      {'data': 'matcher_name'},
-      {'data': 'discovered_date'},
-      {'data': 'tags'},
-      {'data': 'description'},
-      {'data': 'reference'},
-    ],
-    "columnDefs": [
-      {
-        "targets": [ 6, 7, 8, 9, 10 ],
-        "visible": false,
-        "searchable": true,
-      },
-      {
-        "render": function ( data, type, row ) {
-          if(row['open_status']){
-            return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-            <input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
-            <span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-            </label>`;
-          }
-          else{
-            return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-            <input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
-            <span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-            </label>`;
-          }
-        },
-        "targets": 0,
-      },
-      {
-        "render": function ( data, type, row ) {
-          var tags_span ="";
-          switch (row['severity']) {
-            case 'Info':
-            color = 'info'
-            break;
-            case 'Low':
-            color = 'low'
-            break;
-            case 'Medium':
-            color = 'warning'
-            break;
-            case 'High':
-            color = 'danger'
-            break;
-            case 'Critical':
-            color = 'critical'
-            break;
-            default:
-          }
-          if (row['tags']) {
-            var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
-            row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-              tags_span+=badge + split_vals + "</span>";
-            });
-          }
-          return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
-        },
-        "targets": 1,
-      },
-      {
-        "render": function ( data, type, row ) {
-          switch (data) {
-            case 'Info':
-            return "<span class='badge badge-info'>Info</span>";
-            break;
-            case 'Low':
-            return "<span class='badge badge-low'>Low</span>";
-            break;
-            case 'Medium':
-            return "<span class='badge badge-warning'>Medium</span>";
-            break;
-            case 'High':
-            return "<span class='badge badge-danger'>High</span>";
-            break;
-            case 'Critical':
-            return "<span class='badge badge-critical'>Critical</span>";
-            break;
-            default:
-            return "";
-          }
-        },
-        "targets": 2,
-      },
+  var vulnerability_table = $('#vulnerability_results').DataTable({
+		"destroy": true,
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sLengthMenu": "Results :  _MENU_",
+			"sProcessing": "Processing... Please wait..."
+		},
+		"processing": true,
+		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+		"<'row'<'col'tr>>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"stripeClasses": [],
+		"lengthMenu": [20, 50, 100, 500, 1000],
+		"pageLength": 20,
+		'serverSide': true,
+		"ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
+		"order": [[ 2, "desc" ]],
+		"columns": [
+			{'data': 'id'},
+			{'data': 'name'},
+			{'data': 'severity'},
+			{'data': 'http_url'},
+			{'data': 'extracted_results'},
+			{'data': 'open_status'},
+			{'data': 'matcher_name'},
+			{'data': 'discovered_date'},
+			{'data': 'tags'},
+			{'data': 'description'},
+			{'data': 'reference'},
+		],
+		"columnDefs": [
+			{ "orderable": false, "targets": [4,9,10]},
+			{
+				"targets": [ 6, 7, 8, 9, 10 ],
+				"visible": false,
+				"searchable": true,
+			},
+			{"className": "text-center", "targets": [0, 2, 5]},
+			{
+				"render": function ( data, type, row ) {
+					if(row['open_status']){
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+					else{
+						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
+						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
+						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
+						</label>`;
+					}
+				},
+				"targets": 0,
+			},
+			{
+				"render": function ( data, type, row ) {
+					var tags_span ="";
+					switch (row['severity']) {
+						case 'Info':
+						color = 'info'
+						break;
+						case 'Low':
+						color = 'low'
+						break;
+						case 'Medium':
+						color = 'warning'
+						break;
+						case 'High':
+						color = 'danger'
+						break;
+						case 'Critical':
+						color = 'critical'
+						break;
+						default:
+					}
+					if (row['tags']) {
+						var badge = "<span class='badge badge-pill outline-badge-"+color+" m-1'>";
+						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+							tags_span+=badge + split_vals + "</span>";
+						});
+					}
+					return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
+				},
+				"targets": 1,
+			},
+			{
+				"render": function ( data, type, row ) {
+					switch (data) {
+						case 'Info':
+						return "<span class='badge badge-info'>Info</span>";
+						break;
+						case 'Low':
+						return "<span class='badge badge-low'>Low</span>";
+						break;
+						case 'Medium':
+						return "<span class='badge badge-warning'>Medium</span>";
+						break;
+						case 'High':
+						return "<span class='badge badge-danger'>High</span>";
+						break;
+						case 'Critical':
+						return "<span class='badge badge-critical'>Critical</span>";
+						break;
+						default:
+						return "";
+					}
+				},
+				"targets": 2,
+			},
 
-      {
-        "render": function ( data, type, row ) {
-          return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-        },
-        "targets": 3,
-      },
-      {
-        "render": function ( data, type, row ) {
-          extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-          matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-          description = row['description'] ? row['description'] + `</br>` : "";
-          reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
-          return extracted_results + matcher_name + description + reference;
-        },
-        "targets": 4,
-      },
-      {
-        "render": function ( data, type, row ) {
-          if (data){
-            return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
-          }
-          else{
-            return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
-          }
-        },
-        "targets": 5,
-      },
-    ],
-    drawCallback: function () {
-      $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-      $('.dataTables_wrapper table').removeClass('table-striped');
-    },
-    createdRow: function( row, data, dataIndex ) {
-      if (!data['open_status']){
-        $(row).addClass('table-secondary text-strike');
-      }
-    },
-  });
+			{
+				"render": function ( data, type, row ) {
+					return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+				},
+				"targets": 3,
+			},
+			{
+				"render": function ( data, type, row ) {
+					extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+					matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+					description = row['description'] ? row['description'] + `</br>` : "";
+					reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+					return extracted_results + matcher_name + description + reference;
+				},
+				"targets": 4,
+			},
+			{
+				"render": function ( data, type, row ) {
+					if (data){
+						return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
+					}
+					else{
+						return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
+					}
+				},
+				"targets": 5,
+			},
+		],
+		drawCallback: function () {
+			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dataTables_wrapper table').removeClass('table-striped');
+		},
+		createdRow: function( row, data, dataIndex ) {
+			if (!data['open_status']){
+				$(row).addClass('table-secondary text-strike');
+			}
+		},
+	});
+	$('#vulnerability-search-button').click(function () {
+		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
+	});
 });
 
 $.getJSON(`/api/queryIps/?target_id={{target.id}}&format=json`, function(data) {

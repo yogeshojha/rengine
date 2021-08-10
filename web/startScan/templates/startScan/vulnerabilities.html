@@ -31,8 +31,11 @@ All Vulnerabilities
 		<div class="wrapper">
 			<div class="search-input" id="vulnerability-search-input">
 				<a href="" target="_blank" hidden></a>
-				<div class="w-100">
-					<input type="text" placeholder="Filter Vulnerabilities" id="vulnerability-search">
+				<div class="input-group">
+					<input type="text" class="form-control" placeholder="Filter Vulnerabilities" aria-label="Filter Vulnerabilities" id="vulnerability-search">
+					<div class="input-group-append">
+						<button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+					</div>
 				</div>
 				<div class="autocom-box mt-container mx-auto" id="autocom-box">
 				</div>
@@ -229,8 +232,8 @@ $(document).ready(function() {
 			}
 		},
 	});
-	$('#vulnerability-search').on("change paste keyup", function() {
-		vulnerability_table.search($(this).val()).draw() ;
+	$('#vulnerability-search-button').click(function () {
+		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 });
 </script>

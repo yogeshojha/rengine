@@ -809,16 +809,16 @@ Detailed Scan
 								<div class="col-xl-8 col-lg-8 col-sm-8">
 									<div class="wrapper">
 										<div class="search-input" id="endpoint-search-input">
-							        <a href="" target="_blank" hidden></a>
-							        <div class="input-group">
+											<a href="" target="_blank" hidden></a>
+											<div class="input-group">
 												<input type="text" class="form-control" placeholder="Filter Endpoints" aria-label="Filter Endpoints" id="endpoints-search">
 												<div class="input-group-append">
 													<button id="endpoint-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
 												</div>
 											</div>
-							        <div class="autocom-box mt-container mx-auto" id="autocom-box">
-							        </div>
-							      </div>
+											<div class="autocom-box mt-container mx-auto" id="autocom-box">
+											</div>
+										</div>
 									</div>
 								</div>
 								<div class="col-xl-12 col-lg-12 col-sm-12">
@@ -861,23 +861,40 @@ Detailed Scan
 						</div>
 						{% if history.vulnerability_scan %}
 						<div class="tab-pane fade" id="pills-vulnerabilities" role="tabpanel" aria-labelledby="pills-vulnerabilities-tab">
-							<div class="col-xl-12 col-lg-12 col-sm-12">
-								<div class="widget widget-content widget-content-area br-6">
-									<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-										<thead>
-											<tr>
-												<th class="checkbox-column">Status</th>
-												<th>Title</th>
-												<th>Severity</th>
-												<th>Vulnerable URL</th>
-												<th>Detail</th>
-												<th>Status</th>
-												<th>Matcher Name</th>
-												<th>Tags</th>
-												<th>Reference</th>
-											</tr>
-										</thead>
-									</table>
+							<div class="row justify-content-center">
+								<div class="col-xl-8 col-lg-8 col-sm-8">
+									<div class="wrapper">
+										<div class="search-input" id="vulnerability-search-input">
+											<a href="" target="_blank" hidden></a>
+											<div class="input-group">
+												<input type="text" class="form-control" placeholder="Filter Vulnerabilities" aria-label="Filter Vulnerabilities" id="vulnerability-search">
+												<div class="input-group-append">
+													<button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+												</div>
+											</div>
+											<div class="autocom-box mt-container mx-auto" id="autocom-box">
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-xl-12 col-lg-12 col-sm-12">
+									<div class="widget widget-content widget-content-area br-6">
+										<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+											<thead>
+												<tr>
+													<th class="checkbox-column">Status</th>
+													<th>Title</th>
+													<th>Severity</th>
+													<th>Vulnerable URL</th>
+													<th>Detail</th>
+													<th>Status</th>
+													<th>Matcher Name</th>
+													<th>Tags</th>
+													<th>Reference</th>
+												</tr>
+											</thead>
+										</table>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -1075,6 +1092,7 @@ Detailed Scan
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
@@ -1531,25 +1549,27 @@ $("#pills-directories-tab").click(function() {
 
 {% if history.vulnerability_scan %}
 $("#pills-vulnerabilities-tab").click(function() {
-	$('#vulnerability_results').DataTable({
+	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
 			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
-			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
 			"sLengthMenu": "Results :  _MENU_",
 			"sProcessing": "Processing... Please wait..."
 		},
 		"processing": true,
-		"dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
+		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
 		"<'row'<'col'tr>>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"stripeClasses": [],
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+		{% if request.GET.query %}
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
+		{% else %}
+		"ajax": '/api/listVulnerability/?scan_history=&format=datatables',
+		{% endif %}
 		"order": [[ 2, "desc" ]],
 		"columns": [
 			{'data': 'id'},
@@ -1565,11 +1585,13 @@ $("#pills-vulnerabilities-tab").click(function() {
 			{'data': 'reference'},
 		],
 		"columnDefs": [
+			{ "orderable": false, "targets": [4,9,10]},
 			{
 				"targets": [ 6, 7, 8, 9, 10 ],
 				"visible": false,
 				"searchable": true,
 			},
+			{"className": "text-center", "targets": [0, 2, 5]},
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
@@ -1609,7 +1631,7 @@ $("#pills-vulnerabilities-tab").click(function() {
 						default:
 					}
 					if (row['tags']) {
-						var badge = "<span class='badge badge-pill badge-"+color+" m-1'>";
+						var badge = "<span class='badge badge-pill outline-badge-"+color+" m-1'>";
 						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
 							tags_span+=badge + split_vals + "</span>";
 						});
@@ -1680,6 +1702,9 @@ $("#pills-vulnerabilities-tab").click(function() {
 				$(row).addClass('table-secondary text-strike');
 			}
 		},
+	});
+	$('#vulnerability-search-button').click(function () {
+		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 });
 {% endif %}
