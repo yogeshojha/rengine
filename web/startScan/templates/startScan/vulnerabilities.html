@@ -17,6 +17,8 @@ All Vulnerabilities
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'custom/custom.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -43,20 +45,23 @@ All Vulnerabilities
 		</div>
 	</div>
 	<div class="col-xl-12 col-lg-12 col-sm-12">
-		<div class="widget widget-table-two">
+		<div class="widget">
 			<div class="widget-content">
-				<table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
+				<table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="vulnerability_results">
 					<thead>
 						<tr>
 							<th class="checkbox-column">Status</th>
 							<th>Title</th>
 							<th class="text-center">Severity</th>
 							<th>Vulnerable URL</th>
-							<th>Detail</th>
+							<th>Description</th>
 							<th>Status</th>
 							<th>Matcher Name</th>
+							<th>Discovered Date</th>
 							<th>Tags</th>
+							<th>Description</th>
 							<th>Reference</th>
+							<th class="text-center dt-no-sorting">Action</th>
 						</tr>
 					</thead>
 				</table>
@@ -76,6 +81,8 @@ All Vulnerabilities
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	var vulnerability_table = $('#vulnerability_results').DataTable({
@@ -112,15 +119,16 @@ $(document).ready(function() {
 			{'data': 'tags'},
 			{'data': 'description'},
 			{'data': 'reference'},
+			{'data': 'hackerone_report_id'},
 		],
 		"columnDefs": [
-			{ "orderable": false, "targets": [4,9,10]},
+			{ "orderable": false, "targets": [4, 9, 10, 11]},
 			{
 				"targets": [ 6, 7, 8, 9, 10 ],
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [0, 2, 5]},
+			{"className": "text-center", "targets": [0, 2, 5, 11]},
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
@@ -165,7 +173,8 @@ $(document).ready(function() {
 							tags_span+=badge + split_vals + "</span>";
 						});
 					}
-					return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
+					hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge outline-badge-danger m-2" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
+					return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Last Seen:` + row['discovered_date'] + "</small>";
 				},
 				"targets": 1,
 			},
@@ -221,6 +230,24 @@ $(document).ready(function() {
 				},
 				"targets": 5,
 			},
+			{
+				"render": function ( data, type, row ) {
+					if (!data){
+						return `<div class="dropdown">
+						<a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink${row['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+						</a>
+						<div class="dropdown-menu" aria-labelledby="dropdownMenuLink6">
+						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+						</div>
+						</div>`;
+					}
+					else{
+						return '';
+					}
+				},
+				"targets": 11,
+			},
 		],
 		drawCallback: function () {
 			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
@@ -236,5 +263,68 @@ $(document).ready(function() {
 		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 });
+
+function report_hackerone(vulnerability_id, severity){
+	message = ""
+	if (severity == 'Info' || severity == 'Low' || severity == 'Medium') {
+		message = "We do not recommended sending this vulnerability report to hackerone due to the severity, do you still want to report this?"
+	}
+	else{
+		message = "This vulnerability report will be sent to Hackerone.";
+	}
+	const vulnerability_report_api = "../../api/vulnerability/report/?vulnerability_id=" + vulnerability_id;
+	swal.queue([{
+		title: 'Reporting vulnerability to hackerone',
+		text: message,
+		type: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Report',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(vulnerability_report_api, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+			})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function(data) {
+				if (data.status == 201) {
+					swal.insertQueueStep({
+						title: 'Vulnerability report successfully submitted to hackerone.'
+					})
+				}
+				else if (data.status == 401) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Hackerone authentication failed.'
+					})
+				}
+				else if (data.status == 403) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'API Key forbidden by Hackerone.'
+					})
+				}
+				else if (data.status == 423) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Too many requests.'
+					})
+				}
+			})
+			.catch(function() {
+				swal.insertQueueStep({
+					type: 'error',
+					title: 'Oops! Unable to send vulnerability report to hackerone, check your target team_handle or hackerone configurarions!'
+				})
+			})
+		}
+	}])
+}
 </script>
 {% endblock page_level_script %}

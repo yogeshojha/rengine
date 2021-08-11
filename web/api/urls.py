@@ -110,6 +110,10 @@ urlpatterns = [
         'getFileContents/',
         GetFileContents.as_view(),
         name='getFileContents'),
+    path(
+        'vulnerability/report/',
+        VulnerabilityReport.as_view(),
+        name='vulnerability_report'),
 ]
 
 urlpatterns += router.urls

@@ -241,6 +241,7 @@ class Vulnerability(models.Model):
     matcher_name = models.CharField(max_length=400, null=True, blank=True)
     discovered_date = models.DateTimeField(null=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)
+    hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self):
         return self.name

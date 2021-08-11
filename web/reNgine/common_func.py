@@ -249,7 +249,7 @@ def send_hackerone_report(vulnerability_id):
               "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
               "vulnerability_information": report_template,
               "severity_rating": severity_value,
-              "impact": " " + vulnerability.reference if vulnerability.reference else "N/A",
+              "impact": " " + vulnerability.reference if vulnerability.reference else "        N/A            ",
             }
           }
         }
@@ -261,4 +261,11 @@ def send_hackerone_report(vulnerability_id):
           headers = headers
         )
 
-        print(r.json())
+        response = r.json()
+
+        if r.status_code == 201:
+            vulnerability.hackerone_report_id = response['data']["id"]
+            vulnerability.open_status = False
+            vulnerability.save()
+
+        return r.status_code

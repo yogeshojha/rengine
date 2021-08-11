@@ -18,6 +18,12 @@ from startScan.models import *
 from targetApp.models import *
 from recon_note.models import *
 
+class VulnerabilityReport(APIView):
+    def get(self, request):
+        req = self.request
+        vulnerability_id = req.query_params.get('vulnerability_id')
+        return Response({"status": send_hackerone_report(vulnerability_id)})
+
 class GetFileContents(APIView):
     def get(self, request, format=None):
         req = self.request
