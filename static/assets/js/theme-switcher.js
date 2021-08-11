@@ -12,14 +12,3 @@ function changeTheme(){
      localStorage.setItem("my-theme",null);
    }
  }
-
- // Check local storage every reload to know which theme to use.
-// if (localStorage.getItem("my-theme")==="dark") {
-   // Use dark theme.
-//   DarkReader.enable();
-// }
-// else {
-   // Use default theme.
-//   DarkReader.disable();
-// }
-
