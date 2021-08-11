@@ -258,10 +258,8 @@ def export_urls(request, scan_id):
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
-        delete_dir = obj.domain.name + '_' + \
-            str(datetime.datetime.strftime(obj.start_scan_date, '%Y_%m_%d_%H_%M_%S'))
-        delete_path = settings.TOOL_LOCATION + 'scan_results/' + delete_dir
-        os.system('rm -rf ' + delete_path)
+        delete_dir = obj.results_dir
+        os.system('rm -rf /usr/src/scan_results/' + delete_dir)
         obj.delete()
         messageData = {'status': 'true'}
         messages.add_message(
@@ -613,7 +611,10 @@ def delete_scans(request):
 
         for key, value in request.POST.items():
             if key != "scan_history_table_length" and key != "csrfmiddlewaretoken":
-                ScanHistory.objects.filter(id=value).delete()
+                obj = get_object_or_404(ScanHistory, id=value)
+                delete_dir = obj.results_dir
+                os.system('rm -rf /usr/src/scan_results/' + delete_dir)
+                obj.delete()
         messages.add_message(
             request,
             messages.INFO,

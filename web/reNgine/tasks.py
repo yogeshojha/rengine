@@ -4,6 +4,7 @@ import yaml
 import json
 import csv
 import validators
+import random
 import requests
 import logging
 import metafinder.extractor as metadata_extractor
@@ -97,8 +98,7 @@ def initiate_scan(
         send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
 
     try:
-        current_scan_dir = domain.name + '_' + \
-            str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+        current_scan_dir = domain.name + '_' + str(random.randint(100000000000, 999999999999))
         os.mkdir(current_scan_dir)
         task.results_dir = current_scan_dir
         task.save()
@@ -257,7 +257,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    # delete_scan_data(results_dir)
+    delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -1334,7 +1334,7 @@ def vulnerability_scan(
                         if Hackerone.objects.all().exists() and severity != 'info' and severity \
                             != 'low' and vulnerability.target_domain.h1_team_handle:
                             hackerone = Hackerone.objects.all()[0]
-                            
+
                             if hackerone.send_critical and severity == 'critical':
                                 send_hackerone_report(vulnerability.id)
                             elif hackerone.send_high and severity == 'high':
