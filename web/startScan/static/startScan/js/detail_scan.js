@@ -1617,13 +1617,16 @@ function download_important_subdomains(scan_id, domain_name){
   });
 }
 
-function download_endpoints(scan_id, domain_name){
+function download_endpoints(scan_id, domain_name, pattern){
   count = `<span class="modal_count">Loading... </span>`;
   if (scan_id) {
     url = `/api/queryEndpoints/?format=json&only_urls&scan_id=${scan_id}`;
   }
   else{
     url = `/api/queryEndpoints/?format=json&only_urls`;
+  }
+  if (pattern) {
+    url += `&pattern=${pattern}`;
   }
   if (domain_name) {
     $('.modal-title').html( count + ' Endpoints for : <b>' + domain_name + '</b>');

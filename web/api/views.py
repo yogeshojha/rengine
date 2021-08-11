@@ -145,6 +145,7 @@ class ListEndpoints(APIView):
         req = self.request
         scan_id = req.query_params.get('scan_id')
         subdomain_name = req.query_params.get('subdomain_name')
+        pattern = req.query_params.get('pattern')
 
         if scan_id:
             endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
@@ -153,6 +154,9 @@ class ListEndpoints(APIView):
 
         if subdomain_name:
             endpoints = endpoints.filter(subdomain__name=subdomain_name)
+
+        if pattern:
+            endpoints = endpoints.filter(matched_gf_patterns__icontains=pattern)
 
         if 'only_urls' in req.query_params:
             endpoints_serializer = EndpointOnlyURLsSerializer(endpoints, many=True)
