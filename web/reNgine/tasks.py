@@ -1321,13 +1321,27 @@ def vulnerability_scan(
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
-                        if notification and notification[0].send_vuln_notif:
+                        # send notification for all vulnerabilities except info
+                        if  severity != "info" and notification and notification[0].send_vuln_notif:
                             message = "*Alert: Vulnerability Identified*"
                             message += "\n\n"
                             message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
                             message += "\nVulnerability Name: {}".format(json_st['info']['name'])
                             message += "\nVulnerable URL: {}".format(json_st['host'])
                             send_notification(message)
+
+                        # send report to hackerone
+                        if Hackerone.objects.all().exists() and severity != 'info' and severity \
+                            != 'low' and vulnerability.target_domain.h1_team_handle:
+                            hackerone = Hackerone.objects.all()[0]
+                            
+                            if hackerone.send_critical and severity == 'critical':
+                                send_hackerone_report(vulnerability.id)
+                            elif hackerone.send_high and severity == 'high':
+                                send_hackerone_report(vulnerability.id)
+                            elif hackerone.send_medium and severity == 'medium':
+                                send_hackerone_report(vulnerability.id)
+
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
                         continue

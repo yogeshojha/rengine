@@ -384,3 +384,81 @@ function vuln_status_change(checkbox, id)
   }
   change_vuln_status(id);
 }
+
+
+function report_hackerone(vulnerability_id, severity){
+	message = ""
+	if (severity == 'Info' || severity == 'Low' || severity == 'Medium') {
+		message = "We do not recommended sending this vulnerability report to hackerone due to the severity, do you still want to report this?"
+	}
+	else{
+		message = "This vulnerability report will be sent to Hackerone.";
+	}
+	const vulnerability_report_api = "../../api/vulnerability/report/?vulnerability_id=" + vulnerability_id;
+	swal.queue([{
+		title: 'Reporting vulnerability to hackerone',
+		text: message,
+		type: 'warning',
+		showCancelButton: true,
+		confirmButtonText: 'Report',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(vulnerability_report_api, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+			})
+			.then(function (response) {
+				return response.json();
+			})
+			.then(function(data) {
+				console.log(data.status)
+				if (data.status == 111) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Target does not has team_handle to send report to.'
+					})
+				}
+				else if (data.status == 201) {
+					swal.insertQueueStep({
+						type: 'success',
+						title: 'Vulnerability report successfully submitted to hackerone.'
+					})
+				}
+				else if (data.status == 400) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Invalid Report.'
+					})
+				}
+				else if (data.status == 401) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Hackerone authentication failed.'
+					})
+				}
+				else if (data.status == 403) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'API Key forbidden by Hackerone.'
+					})
+				}
+				else if (data.status == 423) {
+					swal.insertQueueStep({
+						type: 'error',
+						title: 'Too many requests.'
+					})
+				}
+			})
+			.catch(function() {
+				swal.insertQueueStep({
+					type: 'error',
+					title: 'Oops! Unable to send vulnerability report to hackerone, check your target team_handle or hackerone configurarions!'
+				})
+			})
+		}
+	}])
+}

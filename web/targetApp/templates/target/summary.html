@@ -18,6 +18,8 @@ Target Summary for {{target.name}}
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'custom/timeline.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 {% endblock custom_js_css_link %}
 
@@ -457,23 +459,28 @@ Target Summary for {{target.name}}
               </div>
             </div>
             <div class="col-xl-12 col-lg-12 col-sm-12">
-              <div class="widget widget-content widget-content-area br-6">
-                <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="vulnerability_results">
-                  <thead>
-                    <tr>
-                      <th class="checkbox-column">Status</th>
-                      <th>Title</th>
-                      <th>Severity</th>
-                      <th>Vulnerable URL</th>
-                      <th>Detail</th>
-                      <th>Status</th>
-                      <th>Matcher Name</th>
-                      <th>Tags</th>
-                      <th>Reference</th>
-                    </tr>
-                  </thead>
-                </table>
-              </div>
+              <div class="widget">
+          			<div class="widget-content">
+          				<table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="vulnerability_results">
+          					<thead>
+          						<tr>
+          							<th class="checkbox-column">Status</th>
+          							<th>Title</th>
+          							<th class="text-center">Severity</th>
+          							<th>Vulnerable URL</th>
+          							<th>Description</th>
+          							<th>Status</th>
+          							<th>Matcher Name</th>
+          							<th>Discovered Date</th>
+          							<th>Tags</th>
+          							<th>Description</th>
+          							<th>Reference</th>
+          							<th class="text-center dt-no-sorting">Action</th>
+          						</tr>
+          					</thead>
+          				</table>
+          			</div>
+          		</div>
             </div>
           </div>
         </div>
@@ -491,12 +498,14 @@ Target Summary for {{target.name}}
 <script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
 <script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-<script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
 get_recon_notes({{target.id}})
@@ -1050,7 +1059,7 @@ $("#pills-vulnerabilities-tab").click(function() {
 		"ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
 		"order": [[ 2, "desc" ]],
 		"columns": [
-			{'data': 'id'},
+      {'data': 'id'},
 			{'data': 'name'},
 			{'data': 'severity'},
 			{'data': 'http_url'},
@@ -1061,15 +1070,16 @@ $("#pills-vulnerabilities-tab").click(function() {
 			{'data': 'tags'},
 			{'data': 'description'},
 			{'data': 'reference'},
+			{'data': 'hackerone_report_id'},
 		],
 		"columnDefs": [
-			{ "orderable": false, "targets": [4,9,10]},
+      { "orderable": false, "targets": [4, 9, 10, 11]},
 			{
 				"targets": [ 6, 7, 8, 9, 10 ],
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [0, 2, 5]},
+			{"className": "text-center", "targets": [0, 2, 5, 11]},
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
@@ -1114,7 +1124,8 @@ $("#pills-vulnerabilities-tab").click(function() {
 							tags_span+=badge + split_vals + "</span>";
 						});
 					}
-					return `<b class="text-${color}">` + data + `</b>` + `</small><br/>` + tags_span + `<br><small>Last Seen:` + row['discovered_date'];
+          hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge outline-badge-danger m-2" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
+					return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Last Seen:` + row['discovered_date'] + "</small>";
 				},
 				"targets": 1,
 			},
@@ -1169,6 +1180,24 @@ $("#pills-vulnerabilities-tab").click(function() {
 					}
 				},
 				"targets": 5,
+			},
+      {
+				"render": function ( data, type, row ) {
+					if (!data){
+						return `<div class="dropdown">
+						<a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink${row['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+						</a>
+						<div class="dropdown-menu" aria-labelledby="dropdownMenuLink6">
+						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+						</div>
+						</div>`;
+					}
+					else{
+						return '';
+					}
+				},
+				"targets": 11,
 			},
 		],
 		drawCallback: function () {

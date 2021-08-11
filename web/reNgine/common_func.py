@@ -213,59 +213,72 @@ def send_hackerone_report(vulnerability_id):
         'Accept': 'application/json'
     }
     # get hackerone creds
-    if Hackerone.objects.all().exists():
-        hackerone = Hackerone.objects.all()[0]
-        vulnerability = Vulnerability.objects.get(id=vulnerability_id)
-        if vulnerability.severity == 0:
-            severity_value = 'info'
-        elif vulnerability.severity == 1:
-            severity_value = 'low'
-        elif vulnerability.severity == 2:
-            severity_value = 'medium'
-        elif vulnerability.severity == 3:
-            severity_value = 'high'
-        elif vulnerability.severity == 4:
-            severity_value = 'critical'
-        report_template = hackerone.report_template
-        # Replace syntax of report template with actual content
-        if '{vulnerability_name}' in report_template:
-            report_template = report_template.replace('{vulnerability_name}', vulnerability.name)
-        if '{vulnerable_url}' in report_template:
-            report_template = report_template.replace('{vulnerable_url}', vulnerability.http_url)
-        if '{vulnerability_severity}' in report_template:
-            report_template = report_template.replace('{vulnerability_severity}', severity_value)
-        if '{vulnerability_description}' in report_template:
-            report_template = report_template.replace('{vulnerability_description}', vulnerability.description if vulnerability.description else '')
-        if '{vulnerability_extracted_results}' in report_template:
-            report_template = report_template.replace('{vulnerability_extracted_results}', vulnerability.extracted_results if vulnerability.extracted_results else '')
-        if '{vulnerability_reference}' in report_template:
-            report_template = report_template.replace('{vulnerability_reference}', vulnerability.reference if vulnerability.reference else '')
+    vulnerability = Vulnerability.objects.get(id=vulnerability_id)
+    # can only send vulnerability report if team_handle exists
+    if len(vulnerability.target_domain.h1_team_handle) !=0:
+        if Hackerone.objects.all().exists():
+            hackerone = Hackerone.objects.all()[0]
+            if vulnerability.severity == 0:
+                severity_value = 'none'
+            elif vulnerability.severity == 1:
+                severity_value = 'low'
+            elif vulnerability.severity == 2:
+                severity_value = 'medium'
+            elif vulnerability.severity == 3:
+                severity_value = 'high'
+            elif vulnerability.severity == 4:
+                severity_value = 'critical'
+            report_template = hackerone.report_template
+            # Replace syntax of report template with actual content
+            if '{vulnerability_name}' in report_template:
+                report_template = report_template.replace('{vulnerability_name}', vulnerability.name)
+            if '{vulnerable_url}' in report_template:
+                report_template = report_template.replace('{vulnerable_url}', vulnerability.http_url)
+            if '{vulnerability_severity}' in report_template:
+                report_template = report_template.replace('{vulnerability_severity}', severity_value)
+            if '{vulnerability_description}' in report_template:
+                report_template = report_template.replace('{vulnerability_description}', vulnerability.description if vulnerability.description else '')
+            if '{vulnerability_extracted_results}' in report_template:
+                report_template = report_template.replace('{vulnerability_extracted_results}', vulnerability.extracted_results if vulnerability.extracted_results else '')
+            if '{vulnerability_reference}' in report_template:
+                report_template = report_template.replace('{vulnerability_reference}', vulnerability.reference if vulnerability.reference else '')
 
-        data = {
-          "data": {
-            "type": "report",
-            "attributes": {
-              "team_handle": vulnerability.target_domain.h1_team_handle,
-              "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
-              "vulnerability_information": report_template,
-              "severity_rating": severity_value,
-              "impact": " " + vulnerability.reference if vulnerability.reference else "        N/A            ",
+            data = {
+              "data": {
+                "type": "report",
+                "attributes": {
+                  "team_handle": vulnerability.target_domain.h1_team_handle,
+                  "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
+                  "vulnerability_information": report_template,
+                  "severity_rating": severity_value,
+                  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
+                }
+              }
             }
-          }
-        }
 
-        r = requests.post(
-          'https://api.hackerone.com/v1/hackers/reports',
-          auth=(hackerone.username, hackerone.api_key),
-          json = data,
-          headers = headers
-        )
+            r = requests.post(
+              'https://api.hackerone.com/v1/hackers/reports',
+              auth=(hackerone.username, hackerone.api_key),
+              json = data,
+              headers = headers
+            )
 
-        response = r.json()
+            response = r.json()
 
-        if r.status_code == 201:
-            vulnerability.hackerone_report_id = response['data']["id"]
-            vulnerability.open_status = False
-            vulnerability.save()
+            # print(response)
 
-        return r.status_code
+            status_code = r.status_code
+            print(status_code)
+
+            if status_code == 201:
+                vulnerability.hackerone_report_id = response['data']["id"]
+                vulnerability.open_status = False
+                vulnerability.save()
+
+            return status_code
+
+    else:
+        print('No target ')
+        status_code = 111
+
+        return status_code
