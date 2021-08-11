@@ -11,6 +11,21 @@
                 <a href="{% url 'dashboardIndex' %}" class="nav-link"> reNgine </a>
             </li>
         </ul>
+    <label class="switch" for="theme-switch" style="float: right; margin-top: 10px;">
+     		<input type="checkbox" id="theme-switch" onclick="changeTheme()">
+     		<span class="slider round"></span> 
+	</label>
+ 	<script type="text/javascript">
+ 	document.getElementById("theme-switch").checked = localStorage.getItem("my-theme")=="dark"
+		if (localStorage.getItem("my-theme")==="dark") {
+   			// Use dark theme.
+   			DarkReader.enable();
+ 		}
+ 		else {
+   			// Use default theme.
+   			DarkReader.disable();
+ 		}
+    </script>
         <ul class="navbar-item flex-row ml-md-auto">
             <li class="nav-item dropdown user-profile-dropdown">
                 <a href="javascript:void(0);" class="nav-link dropdown-toggle user" id="userProfileDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
