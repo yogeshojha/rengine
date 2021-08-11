@@ -7,12 +7,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
     <title> {% block title %} {% endblock title %} </title>
     <link href="{% static 'assets/css/loader.css' %}" rel="stylesheet" type="text/css" />
-    <script src="{% static 'assets/js/loader.js' %}"></script>
+    <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
     <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700" rel="stylesheet">
     <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
-    <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
-    <script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
     <link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+    <script src="{% static 'assets/js/theme-switcher.js' %}"></script>
+    <script src="{% static 'assets/js/darkreader.js' %}"></script>
+    <script src="{% static 'assets/js/loader.js' %}"></script>
+    <script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+    
     <!-- load any page wise jquery or stylesheet -->
 
     {% block custom_js_css_link %}
