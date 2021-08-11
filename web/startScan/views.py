@@ -604,3 +604,18 @@ def schedule_organization_scan(request, id):
         'engines': engine,
         'custom_engine_count': custom_engine_count}
     return render(request, 'organization/schedule_scan_ui.html', context)
+
+
+def delete_scans(request):
+    context = {}
+    if request.method == "POST":
+        list_of_scan_id = []
+
+        for key, value in request.POST.items():
+            if key != "scan_history_table_length" and key != "csrfmiddlewaretoken":
+                ScanHistory.objects.filter(id=value).delete()
+        messages.add_message(
+            request,
+            messages.INFO,
+            'All Scans deleted!')
+    return HttpResponseRedirect(reverse('scan_history'))

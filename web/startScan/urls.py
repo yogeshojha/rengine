@@ -103,4 +103,8 @@ urlpatterns = [
         'delete/screenshots/',
         views.delete_all_screenshots,
         name='delete_all_screenshots'),
+    path(
+        'delete/multiple',
+        views.delete_scans,
+        name='delete_multiple_scans'),
 ]
