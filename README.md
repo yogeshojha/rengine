@@ -18,7 +18,7 @@ Dashboard             |  Scan Results
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 <p align="center">
-    <a href="https://rengine.wiki">reNgine Documentation</a>
+    ⭐<a href="https://rengine.wiki">reNgine Documentation</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md">What's new</a>
     ·
@@ -26,7 +26,7 @@ Dashboard             |  Scan Results
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
-    <a href="https://github.com/yogeshojha/rengine/issues">Request Feature</a>
+    <a href="https://github.com/yogeshojha/rengine/issues">Request Feature</a>⭐
 </p>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -273,7 +273,10 @@ reNgine would not have been possible without the following individuals/organizat
   - degoogle
 - Josué Encinar
   - Metafinder, Emailfinder
-
+- Bp0lr
+  - gauplus
+- Nicolas Crocfer
+  - whatportis
 
 <div>reNgine official Icon is made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
 
