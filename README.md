@@ -43,10 +43,11 @@ You can watch [reNgine 1.0 release trailer here.](https://youtube.com/watch?v=) 
 
 Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides can be found here.](https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing)
 
+- Dark Mode
 - Recon Data visualization
 - Improved correlation among recon data
-- Ability to Automatically report Vulnerabilities to Hackerone
 - Ability to identify Interesting Subdomains
+- Ability to Automatically report Vulnerabilities to Hackerone with customizable vulnerability report
 - Introducing OSINT Capabilities
 - Proxy Support
 - Recon Todo
@@ -60,6 +61,7 @@ Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides ca
 - Option to Mark Subdomains as important
 - Separate tab for Directory scan results
 - Option to Import Subdomains
+- Clean your scan results and screenshots
 - Enhanced and Customizable Scan alert with support for sending recon data directly to Discord, etc and many more...
 
 [Detailed Changelog for reNgine 1.0 can be found here.](https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md)
@@ -70,6 +72,7 @@ Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides ca
 
 * [About reNgine](#about-reNgine)
 * [Features](#features)
+* [Screenshots](#screenshots)
 * [Quick Installation](#quick-installation)
 * [Contributing](#contributing)
 * [Related Projects](#related-projects)
@@ -123,6 +126,37 @@ We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduce
 - Ability to Mark Important Subdomains
 - Interoperable with other tools, Import/Export Subdomains/Endpoints
 - Option to send scan data directly to discord
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## Screenshots
+
+**Dark Mode**
+<img src=".github/screenshots/dark.gif">
+
+**Recon Data filtering**
+<img src=".github/screenshots/filtering.gif">
+
+**Auto Report Vulnerability to hackerone with customizable vulnerability report template**
+<img src=".github/screenshots/hackerone1.gif">
+
+**Report Vulnerability Manually**
+<img src=".github/screenshots/hackerone.gif">
+
+**Customizable Notification**
+<img src=".github/screenshots/notif.gif">
+
+**Tagging Organization**
+<img src=".github/screenshots/organization.gif">
+
+**Recon data Visualization**
+<img src=".github/screenshots/visualization.gif">
+
+**Upload custom GF and Nuclei patterns, with option to edit tool configuration**
+<img src=".github/screenshots/tool.gif">
+
+**Recon TODO**
+<img src=".github/screenshots/todo.gif">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
