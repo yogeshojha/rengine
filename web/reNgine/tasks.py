@@ -848,8 +848,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
 
     alive_subdomains = Subdomain.objects.filter(
-        scan_history__id=task.id).exclude(
-        http_url='')
+        scan_history__id=task.id).exclude(http_url__isnull=True)
     dirs_results = results_dir + '/dirs.json'
 
     # check the yaml settings

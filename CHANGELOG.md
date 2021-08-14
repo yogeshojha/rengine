@@ -51,6 +51,7 @@
 - Added option to filter targets and scans using organization, scan status, etc
 - Added random user agent in directory scan
 - Added concurrency, rate limit, timeout, retries in Scan Engine YAML
+- Added Rescan option
 - Other tiny fixes.....
 
 ### V0.5.3 Feb25 2021
