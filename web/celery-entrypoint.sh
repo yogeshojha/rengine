@@ -82,8 +82,6 @@ then
   mv ~/Gf-Patterns/*.json ~/.gf
 fi
 
-https://github.com/davidtavarez/pwndb
-
 # store scan_results
 if [ ! -d "/usr/src/scan_results" ]
 then
