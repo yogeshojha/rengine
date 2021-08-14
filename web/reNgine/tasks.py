@@ -575,7 +575,7 @@ def http_crawler(task, domain, results_dir, activity_id):
 
     proxy = get_random_proxy()
     if proxy:
-        httpx_command += ' --http-proxy {}'.format(proxy)
+        httpx_command += " --http-proxy '{}'".format(proxy)
 
     httpx_command += ' -json -o {}'.format(
         httpx_results_file
@@ -782,8 +782,6 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         naabu_command = naabu_command + \
             ' -rate {}'.format(
                 yaml_configuration[PORT_SCAN][NAABU_RATE])
-    else:
-        naabu_command = naabu_command + ' -t 10'
 
     if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
         naabu_command += ' -config /root/.config/naabu/naabu.conf'
@@ -909,7 +907,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         # proxy
         proxy = get_random_proxy()
         if proxy:
-            dirsearch_command += ' --proxy {}'.format(proxy)
+            dirsearch_command += " --proxy '{}'".format(proxy)
 
         print(dirsearch_command)
         os.system(dirsearch_command)
@@ -1044,7 +1042,7 @@ def fetch_endpoints(
 
     proxy = get_random_proxy()
     if proxy:
-        httpx_command += ' --http-proxy {}'.format(proxy)
+        httpx_command += " --http-proxy '{}'".format(proxy)
 
     os.system(httpx_command)
 
@@ -1239,6 +1237,25 @@ def vulnerability_scan(
         # Update nuclei command with concurrent
         nuclei_command = nuclei_command + ' -c ' + str(concurrency)
 
+    if RATE_LIMIT in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
+            VULNERABILITY_SCAN][RATE_LIMIT] > 0:
+        rate_limit = yaml_configuration[VULNERABILITY_SCAN][RATE_LIMIT]
+        # Update nuclei command with concurrent
+        nuclei_command = nuclei_command + ' -rl ' + str(rate_limit)
+
+
+    if TIMEOUT in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
+            VULNERABILITY_SCAN][TIMEOUT] > 0:
+        timeout = yaml_configuration[VULNERABILITY_SCAN][TIMEOUT]
+        # Update nuclei command with concurrent
+        nuclei_command = nuclei_command + ' -timeout ' + str(timeout)
+
+    if RETRIES in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
+            VULNERABILITY_SCAN][RETRIES] > 0:
+        retries = yaml_configuration[VULNERABILITY_SCAN][RETRIES]
+        # Update nuclei command with concurrent
+        nuclei_command = nuclei_command + ' -retries ' + str(retries)
+
     # for severity
     if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
         _severity = ','.join(
@@ -1256,9 +1273,10 @@ def vulnerability_scan(
             os.system('rm {}'.format(vulnerability_result_path))
         # run nuclei
         final_nuclei_command = nuclei_command + ' -severity ' + _severity
+
         proxy = get_random_proxy()
         if proxy:
-            final_nuclei_command += ' --proxy-url {}'.format(proxy)
+            final_nuclei_command += " --proxy-url '{}'".format(proxy)
 
         logger.info(final_nuclei_command)
 
