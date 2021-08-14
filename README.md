@@ -162,46 +162,29 @@ We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduce
 
 ## Quick Installation
 
-Quick installation **assumes that you have already installed Docker, docker-compose and make**. For detailed instructions, visit official documentation at [https://reNgine.wiki](https://reNgine.wiki)
-
 1. Clone this repo
 
 ```
 git clone https://github.com/yogeshojha/rengine && cd rengine
 ```
 
-2. Edit the dotenv file, use your details
+2. Edit the dotenv file, **please make sure to change the password for postgresql POSTGRES_PASSWORD !**
 
 ```
 nano .env
 ```
 
-3. Generate SSL Certificates
+3. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
 
 ```
-make certs
+sudo ./install.sh
 ```
 
-4. Build reNgine
-
-```
-make build
-```
-
-5. Run reNgine
-
-```
-make up
-```
-
-6. Create an account
-
-```
-make username
-```
+if `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from https://127.0.0.1 or if you're on the VPS https://your_vps_ip_address**
 
+For detailed instructions, visit official documentation at [https://reNgine.wiki](https://reNgine.wiki)
 
 ## Contributing
 
