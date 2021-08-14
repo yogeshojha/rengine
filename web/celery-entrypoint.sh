@@ -90,4 +90,7 @@ then
     mkdir /usr/src/scan_results
 fi
 
+# test tools, required for configuration
+naabu && subfinder && amass && nuclei
+
 exec "$@"
