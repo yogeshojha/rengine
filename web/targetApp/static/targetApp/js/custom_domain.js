@@ -57,7 +57,7 @@ function scanMultipleTargets() {
   else {
     // atleast one target is selected
     multipleScanForm = document.getElementById("multiple_targets_form");
-    multipleScanForm.action = '../../start_scan/start/multiple/';
+    multipleScanForm.action = '../../scan/start/multiple/';
     multipleScanForm.submit();
   }
 }
