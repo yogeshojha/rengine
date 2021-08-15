@@ -37,7 +37,7 @@ services:
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - POSTGRES_DB=${POSTGRES_DB}
@@ -55,7 +55,7 @@ services:
     build: ./web
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -80,7 +80,7 @@ services:
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:
-      - DEBUG=1
+      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - POSTGRES_DB=${POSTGRES_DB}
