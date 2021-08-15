@@ -289,9 +289,9 @@ $(document).ready(function(){
   }
 
   var org_filter = document.getElementById('filterByOrganization');
-  org_filter.addEventListener('change', function() {
+  org_filter.addEventListener('click', function() {
     table.search(this.value).draw();
-    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Organization: ${this.value}
+    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
     <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
     </span>`;
     $('.bs-tooltip').tooltip();
@@ -302,7 +302,7 @@ $(document).ready(function(){
   }, false);
 
   var status_filter = document.getElementById('filterByScanStatus');
-  status_filter.addEventListener('change', function() {
+  status_filter.addEventListener('click', function() {
     table.search(this.value).draw();
     switch (this.value) {
       case 'Pending':
@@ -333,7 +333,7 @@ $(document).ready(function(){
   }, false);
 
   var engine_filter = document.getElementById('filterByScanType');
-  engine_filter.addEventListener('change', function() {
+  engine_filter.addEventListener('click', function() {
     table.search(this.value).draw();
     document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Scan Engine: ${this.value}
     <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
@@ -345,7 +345,7 @@ $(document).ready(function(){
   }, false);
 
   var target_filter = document.getElementById('filterByTarget');
-  target_filter.addEventListener('change', function() {
+  target_filter.addEventListener('click', function() {
     table.search(this.value).draw();
     document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary">Target/Domain: ${this.value}
     <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>

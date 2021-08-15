@@ -89,6 +89,8 @@ then
 fi
 
 # test tools, required for configuration
-naabu && subfinder && amass && nuclei
+naabu && subfinder && amass
+
+nuclei
 
 exec "$@"
