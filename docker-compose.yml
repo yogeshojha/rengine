@@ -137,6 +137,7 @@ services:
     volumes:
       - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
       - static_volume:/usr/src/app/staticfiles/
+      - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
 

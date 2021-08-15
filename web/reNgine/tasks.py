@@ -915,10 +915,10 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
             if os.path.isfile(dirs_results):
                 with open(dirs_results, "r") as json_file:
                     json_string = json_file.read()
-                    scanned_host = Subdomain.objects.get(
+                    subdomain = Subdomain.objects.get(
                         scan_history__id=task.id, http_url=subdomain.http_url)
-                    scanned_host.directory_json = json_string
-                    scanned_host.save()
+                    subdomain.directory_json = json_string
+                    subdomain.save()
         except Exception as exception:
             logging.error(exception)
             update_last_activity(activity_id, 0)
@@ -1933,11 +1933,8 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
         leak_target_file
     )
 
-    pwndb_output = subprocess.getoutput(pwndb_command)
-
-    print(pwndb_output)
-
     try:
+        pwndb_output = subprocess.getoutput(pwndb_command)
         creds = json.loads(pwndb_output)
 
         for cred in creds:
@@ -1952,6 +1949,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
                 scan_history.emails.add(email_obj)
     except Exception as e:
         logger.error(e)
+        pass
 
 
 def get_and_save_meta_info(meta_dict):
