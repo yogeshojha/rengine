@@ -889,16 +889,22 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
 
         dirsearch_command += ' -t {}'.format(threads)
 
-        dirsearch_command += ' --random-agent --follow-redirects'
+        dirsearch_command += ' --random-agent --follow-redirects --exclude-status 403,401,404'
 
         if EXCLUDE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
             exclude_extensions = ','.join(
                 str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_EXTENSIONS])
             dirsearch_command += ' -X {}'.format(exclude_extensions)
 
+        if EXCLUDE_TEXT in yaml_configuration[DIR_FILE_SEARCH]:
+            exclude_text = ','.join(
+                str(text) for text in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_TEXT])
+            dirsearch_command += ' -exclude-texts {}'.format(exclude_text)
+
         # check if recursive strategy is set to on
-        if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
-            dirsearch_command += ' -r'
+
+        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
+            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
 
         if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
             dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])

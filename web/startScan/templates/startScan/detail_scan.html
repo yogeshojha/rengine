@@ -1505,7 +1505,7 @@ $("#pills-directories-tab").click(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data) {
-						data = JSON.parse(JSON.stringify(data))['results']
+						data = JSON.parse(data)['results'];
 						var html_treeview = `<ul class="file-tree">`;
 						data = data[0];
 						main_url = Object.keys(data)[0];

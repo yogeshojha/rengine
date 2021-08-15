@@ -26,6 +26,8 @@ dir_file_search:
   recursive: false
   recursive_level: 1
   wordlist: default
+  exclude_extensions: [jpg, png, jpeg, gif, tiff]
+  exclude_texts: [404, Not Found, Error ]
 
 fetch_url:
   uses_tools: [ gauplus, hakrawler, waybackurls, gospider ]
