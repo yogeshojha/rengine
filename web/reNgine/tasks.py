@@ -889,7 +889,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
 
         dirsearch_command += ' -t {}'.format(threads)
 
-        dirsearch_command += ' --random-agent'
+        dirsearch_command += ' --random-agent --follow-redirects'
 
         if EXCLUDE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
             exclude_extensions = ','.join(

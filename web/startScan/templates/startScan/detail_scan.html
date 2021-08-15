@@ -1104,7 +1104,9 @@ Detailed Scan
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'startScan/js/datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+{% if history.vulnerability_scan %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+{% endif %}
 <script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
@@ -1424,7 +1426,7 @@ $("#pills-directories-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		"ajax": '/api/?scan_id={{scan_history_id}}&format=datatables',
+		"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables&only_diretory',
 		"order": [[ 5, "desc" ]],
 		"columns": [
 			{'data': 'id'},
@@ -1503,10 +1505,11 @@ $("#pills-directories-tab").click(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data) {
-						data = JSON.parse(data);
+						data = JSON.parse(JSON.stringify(data))['results']
+						var html_treeview = `<ul class="file-tree">`;
+						data = data[0];
 						main_url = Object.keys(data)[0];
 						var json_obj = data[main_url];
-						var html_treeview = `<ul class="file-tree">`;
 						for(var i = 0; i < json_obj.length; i++)
 						{
 							if(json_obj[i].status==200)
