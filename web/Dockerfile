@@ -34,25 +34,12 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     x11-utils \
     xvfb
 
-# Download and install go 1.14
-RUN wget https://dl.google.com/go/go1.16.5.linux-amd64.tar.gz
-RUN tar -xvf go1.16.5.linux-amd64.tar.gz
-RUN rm go1.16.5.linux-amd64.tar.gz
-RUN mv go /usr/local
-
 # Download geckodriver
 RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.26.0/geckodriver-v0.26.0-linux64.tar.gz
 RUN tar -xvf geckodriver-v0.26.0-linux64.tar.gz
 RUN rm geckodriver-v0.26.0-linux64.tar.gz
 RUN mv geckodriver /usr/bin
 
-# ENV for Go
-ENV GOROOT="/usr/local/go"
-ENV PATH="${PATH}:${GOROOT}/bin"
-ENV PATH="${PATH}:${GOPATH}/bin"
-
-ENV GOPATH=$HOME/go
-ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
 # Make directory for app
 WORKDIR /usr/src/app
