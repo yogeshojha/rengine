@@ -67,6 +67,27 @@ fi
 echo " "
 tput setaf 4;
 echo "#########################################################################"
+echo "Installing Updated Golang Version"
+echo "#########################################################################"
+if [ -x "$(command -v go)" ]; then
+  tput setaf 2; echo "Golang already installed, skipping."
+else
+  version=$(curl -s https://golang.org/VERSION?m=text)
+  wget https://golang.org/dl/$version.linux-amd64.tar.gz
+  sudo tar -xvf $version.linux-amd64.tar.gz
+  sudo mv go /usr/local
+  # Go-PATH
+  export GOROOT="/usr/local/go"
+  export GOPATH=$HOME/go
+  export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
+  source ~/.bashrc
+  tput setaf 2; echo "Golang installed!!!"
+fi
+
+
+echo " "
+tput setaf 4;
+echo "#########################################################################"
 echo "Installing make"
 echo "#########################################################################"
 if [ -x "$(command -v make)" ]; then
