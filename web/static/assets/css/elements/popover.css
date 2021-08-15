@@ -1,0 +1,130 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.popovers-section h6 {
+  color: #3b3f5c;
+  font-size: 0.875rem;
+  margin-top: 25px;
+  margin-bottom: 20px; }
+
+.popover {
+  border: 1px solid #ebedf2;
+  border-radius: 4px; }
+
+/*
+	Popovers
+*/
+.popover-primary {
+  border-color: #eaf1ff; }
+
+.popover-success {
+  border-color: #ddf5f0; }
+
+.popover-info {
+  border-color: #e7f7ff; }
+
+.popover-danger {
+  border-color: #fff5f5; }
+
+.popover-warning {
+  border-color: #fff9ed; }
+
+.popover-secondary {
+  border-color: #f3effc; }
+
+.popover-dark {
+  border-color: #e3e4eb; }
+
+/* 		popover Arrow 	*/
+.popover-primary .arrow:after, .popover-primary .arrow:before {
+  border-top-color: #eaf1ff; }
+
+.popover-success .arrow:after, .popover-success .arrow:before {
+  border-top-color: #ddf5f0; }
+
+.popover-info .arrow:after, .popover-info .arrow:before {
+  border-top-color: #e7f7ff; }
+
+.popover-danger .arrow:after, .popover-danger .arrow:before {
+  border-top-color: #fff5f5; }
+
+.popover-warning .arrow:after, .popover-warning .arrow:before {
+  border-top-color: #fff9ed; }
+
+.popover-secondary .arrow:after, .popover-secondary .arrow:before {
+  border-top-color: #f3effc; }
+
+.popover-dark .arrow:after, .popover-dark .arrow:before {
+  border-top-color: #e3e4eb; }
+
+/* 		popover Header 		*/
+.popover-primary .popover-header {
+  background-color: #eaf1ff;
+  border: none;
+  color: #4361ee; }
+
+.popover-success .popover-header {
+  background-color: #ddf5f0;
+  border: none;
+  color: #1abc9c; }
+
+.popover-info .popover-header {
+  background-color: #e7f7ff;
+  border: none;
+  color: #2196f3; }
+
+.popover-danger .popover-header {
+  background-color: #fff5f5;
+  border: none;
+  color: #e7515a; }
+
+.popover-warning .popover-header {
+  background-color: #fff9ed;
+  border: none;
+  color: #e2a03f; }
+
+.popover-secondary .popover-header {
+  background-color: #f3effc;
+  border: none;
+  color: #805dca; }
+
+.popover-dark .popover-header {
+  background-color: #e3e4eb;
+  border: none;
+  color: #3b3f5c; }
+
+/*  	Popover Body 	*/
+.popover-primary .popover-body {
+  background-color: #eaf1ff;
+  color: #4361ee; }
+
+.popover-success .popover-body {
+  background-color: #ddf5f0;
+  color: #1abc9c; }
+
+.popover-info .popover-body {
+  background-color: #e7f7ff;
+  color: #2196f3; }
+
+.popover-danger .popover-body {
+  background-color: #fff5f5;
+  color: #e7515a; }
+
+.popover-warning .popover-body {
+  background-color: #fff9ed;
+  color: #e2a03f; }
+
+.popover-secondary .popover-body {
+  background-color: #f3effc;
+  color: #805dca; }
+
+.popover-dark .popover-body {
+  background-color: #e3e4eb;
+  color: #3b3f5c; }

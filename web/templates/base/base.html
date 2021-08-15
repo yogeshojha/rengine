@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
+  <title> {% block title %} {% endblock title %} </title>
+  <link href="https://fonts.googleapis.com/css?family=Quicksand:400,500,600,700&display=swap" rel="stylesheet">
+  <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
+  <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
+  <script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
+  <script src="{% static 'assets/js/theme-switcher.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/darkreader@4.9.27/darkreader.min.js"></script>
+  <script src="{% static 'assets/js/loader.js' %}"></script>
+  <link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
+  <link href="{% static 'assets/css/elements/breadcrumb.css' %}" rel="stylesheet" type="text/css">
+  <!-- load any page wise jquery or stylesheet -->
+  {% block custom_js_css_link %}
+  {% endblock custom_js_css_link %}
+</head>
+<body class="sidebar-noneoverflow">
+  <!-- TOP NAVBAR BEGIN -->
+  {% include 'base/_items/top_nav.html' %}
+  <!-- TOP NAVBAR ENDS -->
+  <!--  BEGIN MAIN CONTAINER  -->
+  <div class="main-container" id="container">
+
+    <!--  BEGIN CONTENT PART  -->
+    <div id="content" class="main-content">
+      {% if messages %}
+      {% for message in messages %}
+      <script type="text/javascript">
+      Snackbar.show({
+        text: '{{ message }}',
+        pos: 'top-right',
+        {% if message.tags == 'error'%}
+        actionTextColor: '#fff',
+        backgroundColor: '#e7515a'
+        {% endif %}
+      });
+      </script>
+      {% endfor %}
+      {% endif %}
+      <div class="main-container">
+        <div class="page-header">
+          <div class="page-title">
+            <nav class="ml-2 breadcrumb-one" aria-label="breadcrumb">
+              <ol class="breadcrumb">
+                {% block breadcrumb_title %}
+                {% endblock breadcrumb_title %}
+              </ol>
+            </nav>
+          </div>
+          <div class="toggle-switch mr-4">
+            <label class="switch s-icons s-outline  s-outline-secondary">
+              <input type="checkbox" class="theme-shifter" onclick="changeTheme()" id="theme-switch">
+              <span class="slider round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              </span>
+            </label>
+          </div>
+        </div>
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-xl-12 col-lg-12 col-sm-12 layout-spacing">
+              {% block main_content %}
+              {% endblock main_content %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--  END CONTENT PART  -->
+  {% include 'base/_items/modal.html' %}
+</div>
+<!-- END MAIN CONTAINER -->
+
+<script
+src="https://code.jquery.com/jquery-3.6.0.min.js"
+integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+crossorigin="anonymous"></script>
+<script src="{% static 'bootstrap/js/popper.min.js' %}"></script>
+<script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
+<script src="{% static 'assets/js/app.js' %}"></script>
+<script>
+$(document).ready(function() {
+  App.init();
+});
+$('.mt-container').each(function(){ const ps = new PerfectScrollbar($(this)[0]); });
+if (localStorage.getItem('my-theme') == "dark") {
+  $("#theme-switch").prop("checked", true);
+  DarkReader.setFetchMethod(window.fetch);
+  DarkReader.enable();
+}
+else{
+  $("#theme-switch").prop("checked", false);
+  DarkReader.disable();
+}
+</script>
+<script src="{% static 'assets/js/custom.js' %}"></script>
+{% block page_level_script %}
+
+{% endblock page_level_script%}
+</body>
+</html>

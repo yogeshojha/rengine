@@ -1,0 +1,231 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+html {
+  height: 100%; }
+
+body {
+  height: 100%;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  background-color: #fff; }
+
+.form-form {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  margin: 0 auto; }
+  .form-form .form-form-wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    min-width: 311px;
+    min-height: 100%;
+    align-self: center;
+    width: 100%;
+    height: 100vh;
+    justify-content: center; }
+  .form-form .form-container {
+    align-items: center;
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    min-height: 100%; }
+    .form-form .form-container .form-content {
+      display: block;
+      width: 100%;
+      padding: 25px;
+      background: #fff;
+      text-align: center;
+      border-radius: 15px;
+      border: 1px solid #e0e6ed;
+      -webkit-box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01);
+      -moz-box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01);
+      box-shadow: 0 0.1px 0px rgba(0, 0, 0, 0.002), 0 0.2px 0px rgba(0, 0, 0, 0.003), 0 0.4px 0px rgba(0, 0, 0, 0.004), 0 0.6px 0px rgba(0, 0, 0, 0.004), 0 0.9px 0px rgba(0, 0, 0, 0.005), 0 1.2px 0px rgba(0, 0, 0, 0.006), 0 1.8px 0px rgba(0, 0, 0, 0.006), 0 2.6px 0px rgba(0, 0, 0, 0.007), 0 3.9px 0px rgba(0, 0, 0, 0.008), 0 7px 0px rgba(0, 0, 0, 0.01); }
+      .form-form .form-container .form-content h1 {
+        font-size: 32px;
+        color: #3b3f5c; }
+      .form-form .form-container .form-content > p {
+        font-size: 13px;
+        color: #888ea8;
+        font-weight: 600;
+        margin-bottom: 35px; }
+  .form-form .form-form-wrap .user-meta {
+    margin-bottom: 35px; }
+    .form-form .form-form-wrap .user-meta img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      margin-right: 15px;
+      border: 4px solid #e0e6ed; }
+    .form-form .form-form-wrap .user-meta div {
+      align-self: center; }
+    .form-form .form-form-wrap .user-meta p {
+      font-size: 31px;
+      color: #3b3f5c;
+      margin-bottom: 0; }
+  .form-form .form-form-wrap h1 .brand-name {
+    color: #3b3f5c;
+    font-weight: 600; }
+  .form-form .form-form-wrap p.signup-link {
+    font-size: 14px;
+    color: #3b3f5c;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-align: center;
+    margin-top: 50px; }
+    .form-form .form-form-wrap p.signup-link.register {
+      font-size: 13px;
+      color: #888ea8;
+      font-weight: 600;
+      margin-bottom: 25px;
+      margin-top: 0; }
+    .form-form .form-form-wrap p.signup-link.recovery {
+      margin-top: 0; }
+    .form-form .form-form-wrap p.signup-link a {
+      color: #4361ee;
+      border-bottom: 1px solid; }
+  .form-form .form-form-wrap form .field-wrapper {
+    width: 100%; }
+    .form-form .form-form-wrap form .field-wrapper.input {
+      padding: 11px 0px 16px 0;
+      border-bottom: none;
+      position: relative; }
+      .form-form .form-form-wrap form .field-wrapper.input:focus {
+        border: 1px solid #000; }
+    .form-form .form-form-wrap form .field-wrapper.toggle-pass p {
+      font-weight: 600;
+      color: #3b3f5c;
+      margin-bottom: 0; }
+    .form-form .form-form-wrap form .field-wrapper .logged-in-user-name {
+      font-size: 37px;
+      color: #3b3f5c; }
+    .form-form .form-form-wrap form .field-wrapper label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #3b3f5c;
+      margin-bottom: 8px; }
+    .form-form .form-form-wrap form .field-wrapper.terms_condition {
+      margin-bottom: 20px; }
+      .form-form .form-form-wrap form .field-wrapper.terms_condition label {
+        font-size: 14px;
+        color: #888ea8;
+        padding-left: 31px;
+        font-weight: 100; }
+      .form-form .form-form-wrap form .field-wrapper.terms_condition a {
+        color: #4361ee; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-user {
+      top: 53px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-lock {
+      top: 50px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-at-sign {
+      top: 47px; }
+      .form-form .form-form-wrap form .field-wrapper svg.feather-at-sign.register {
+        top: 53px; }
+    .form-form .form-form-wrap form .field-wrapper svg:not(.feather-eye) {
+      position: absolute;
+      left: 12px;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08);
+      width: 20px;
+      height: 20px; }
+    .form-form .form-form-wrap form .field-wrapper svg.feather-eye {
+      position: absolute;
+      top: 49px;
+      right: 13px;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08);
+      width: 17px;
+      cursor: pointer; }
+    .form-form .form-form-wrap form .field-wrapper input {
+      display: inline-block;
+      vertical-align: middle;
+      border-radius: 6px;
+      min-width: 50px;
+      max-width: 635px;
+      width: 100%;
+      -ms-transition: all 0.2s ease-in-out 0s;
+      transition: all 0.2s ease-in-out 0s;
+      color: #3b3f5c;
+      font-weight: 500;
+      font-size: 16px;
+      padding: 13px 35px 13px 46px; }
+      .form-form .form-form-wrap form .field-wrapper input::-webkit-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-ms-input-placeholder, .form-form .form-form-wrap form .field-wrapper input::-moz-placeholder {
+        color: #bfc9d4;
+        font-size: 14px; }
+    .form-form .form-form-wrap form .field-wrapper button.btn {
+      align-self: center;
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 16px;
+      letter-spacing: 2px; }
+    .form-form .form-form-wrap form .field-wrapper a.forgot-pass-link {
+      font-weight: 600;
+      color: #888ea8;
+      display: block;
+      letter-spacing: 1px;
+      font-size: 12px;
+      margin-bottom: 8px; }
+    .form-form .form-form-wrap form .field-wrapper .n-chk .new-control-indicator {
+      top: 2px;
+      border: 1px solid #bfc9d4;
+      background-color: #f1f2f3; }
+      .form-form .form-form-wrap form .field-wrapper .n-chk .new-control-indicator:after {
+        top: 54%; }
+
+.new-control.new-checkbox.checkbox-primary > input:checked ~ span.new-control-indicator {
+  border: none; }
+
+.form-form .form-form-wrap form .division {
+  text-align: center;
+  font-size: 13px;
+  margin: 35px 0 38px 0; }
+
+.form-form .form-form-wrap form .social {
+  text-align: center; }
+  .form-form .form-form-wrap form .social a {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid #e0e6ed;
+    padding: 12px 10px;
+    width: 181px; }
+    .form-form .form-form-wrap form .social a.social-fb {
+      margin-right: 15px; }
+      .form-form .form-form-wrap form .social a.social-fb svg, .form-form .form-form-wrap form .social a.social-fb .brand-name {
+        color: #4361ee; }
+
+@media (max-width: 991px) {
+  .form-form {
+    width: 100%; }
+    .form-form .form-form-wrap {
+      min-width: auto;
+      margin: 0 auto; }
+    .form-form .form-container .form-content {
+      border-radius: 15px; } }
+
+@media (max-width: 575px) {
+  .form-form .form-form-wrap form .field-wrapper.toggle-pass {
+    margin-bottom: 28px; }
+  .form-form .form-form-wrap form .social a.social-fb, .form-form .form-form-wrap form .social a.social-github {
+    margin-right: auto;
+    margin-left: auto;
+    margin-bottom: 10px;
+    display: block; } }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  .form-form .form-form-wrap {
+    width: 100%; }
+  .form-form .form-container {
+    height: 100%; } }
+
+@supports (-ms-ime-align: auto) {
+  .form-form .form-form-wrap {
+    height: 100%; } }

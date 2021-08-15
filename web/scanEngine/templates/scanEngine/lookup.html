@@ -1,0 +1,80 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Interesting entries Lookup
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' %}">Engines</a></li>
+<li class="breadcrumb-item active">Interesting Lookup</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <h4>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
+        </polygon>
+      </svg>
+      Interesting Lookup &nbsp;
+      <small class="text-danger">
+        <span class="badge badge-danger"> New </span>
+      </small>
+    </h4>
+  </div>
+  <div class="widget-content widget-content-area">
+    <p>
+      reNgine supports lookup for interesting keyword in recon data. This could be either looking up in subdomains, URLs or in page title.
+      You can enter the keywords to lookup and reNgine will highlight the matched entries.<br>
+      <span class="text-info">Keywords are case <b>insensitive.</b></span><br>
+    </p>
+    <h6>Default Keywords</h6>
+    <p>reNgine will use these default keywords to find the interesting subdomains, URLs from recon data.</p>
+    {% for keyword in default_lookup %}
+    {% for key in keyword.keywords|split:","  %}
+    <span class="badge badge-info"> {{key}} </span>
+    {% endfor %}
+    {% endfor %}
+    <h6 class="mt-2">Custom Keywords</h6>
+    <form method="POST">
+      {% csrf_token %}
+      {{ form.keywords }}
+      {{ form.custom_type }}
+      <span class="text-danger"><b>Press comma , to add and separate the keywords</b></span>
+      <br>
+      <h6 class="mt-2">Lookup in</h6>
+      <div class="n-chk">
+        <label class="new-control new-checkbox checkbox-primary">
+          {{form.url_lookup}}
+          <span class="new-control-indicator"></span><span class="text-dark">Subdomains/URLs</span>
+        </label>
+        <label class="new-control new-checkbox checkbox-primary">
+          {{form.title_lookup}}
+          <span class="new-control-indicator"></span><span class="text-dark">Page Title</span>
+        </label>
+      </div>
+      <h6 class="mt-2">Lookup Conditions</h6>
+      <span class="text-warning">reNgine will lookup the keywords only when below conditions are met.</span>
+      <br>
+      <b>Lookup only when</b>
+      <br>
+      <label class="new-control new-checkbox checkbox-primary">
+        {{form.condition_200_http_lookup}}
+        <span class="new-control-indicator"></span><span class="text-dark">HTTP Status is 200</span>
+      </label>
+      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Lookup</button>
+    </form>
+  </div>
+</div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+{% endblock page_level_script %}

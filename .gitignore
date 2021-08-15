@@ -53,3 +53,5 @@ staticfiles/
 
 secret
 /secrets
+
+get-docker.sh

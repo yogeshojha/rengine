@@ -1,0 +1,97 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    Tab Section
+*/
+.faq .faq-layouting .fq-tab-section {
+  padding: 35px 50px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06); }
+  .faq .faq-layouting .fq-tab-section h2 {
+    font-size: 25px;
+    font-weight: 700;
+    margin-bottom: 45px;
+    letter-spacing: 0px;
+    text-align: center; }
+    .faq .faq-layouting .fq-tab-section h2 span {
+      color: #4361ee; }
+  .faq .faq-layouting .fq-tab-section .accordion .card {
+    border: 1px solid #e0e6ed;
+    border-radius: 6px;
+    margin-bottom: 4px; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header {
+      padding: 0;
+      border: none;
+      background: none; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header > div {
+        padding: 15px 19px;
+        font-weight: 600;
+        font-size: 16px;
+        color: #4361ee;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between; }
+        .faq .faq-layouting .fq-tab-section .accordion .card .card-header > div[aria-expanded="true"] {
+          border-bottom: 1px solid #e0e6ed; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div .faq-q-title {
+        overflow: hidden;
+        font-size: 14px;
+        color: #888ea8;
+        font-weight: 600;
+        letter-spacing: 1px;
+        align-self: center; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] .faq-q-title {
+        color: #4361ee; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div .icons {
+        display: inline-block;
+        float: right; }
+        .faq .faq-layouting .fq-tab-section .accordion .card .card-header div .icons svg {
+          color: #888ea8; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] .icons svg {
+        color: #4361ee; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-header div svg.feather-thumbs-up {
+        cursor: pointer;
+        vertical-align: bottom;
+        margin-right: 10px;
+        width: 18px;
+        color: #888ea8;
+        fill: rgba(0, 23, 55, 0.08); }
+    .faq .faq-layouting .fq-tab-section .accordion .card:hover .card-header div svg.feather-thumbs-up {
+      color: #4361ee;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] svg.feather-thumbs-up {
+      color: #4361ee;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div span.faq-like-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: #888ea8;
+      fill: rgba(0, 23, 55, 0.08); }
+    .faq .faq-layouting .fq-tab-section .accordion .card:hover .card-header div span.faq-like-count, .faq .faq-layouting .fq-tab-section .accordion .card .card-header div[aria-expanded="true"] span.faq-like-count {
+      color: #4361ee;
+      fill: rgba(27, 85, 226, 0.239216); }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-body {
+      padding: 19px 30px; }
+      .faq .faq-layouting .fq-tab-section .accordion .card .card-body p {
+        font-size: 13px;
+        line-height: 23px;
+        letter-spacing: 1px; }
+
+/*
+    Media Query
+*/
+@media (max-width: 575px) {
+  .faq .faq-layouting .fq-tab-section {
+    padding: 35px 25px; }
+    .faq .faq-layouting .fq-tab-section .accordion .card .card-header div svg.feather-code {
+      display: none; } }

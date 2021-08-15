@@ -1,0 +1,180 @@
+{# DO NOT AUTO INDENT #}
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Hackerone Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/editors/markdown/simplemde.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Hackerone Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row h-100 justify-content-center align-items-center">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>Hackerone Settings</h4>
+        <img src="https://www.hackerone.com/assets/images/logo.png" alt="">
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <p>
+      You can use this feature to pull your private programs from Hacker and also <span class="text-danger">automatically report any vulnerabilities.</span>
+      <br>
+      More details on how to generate your hackerone api token is provided by <a href="https://api.hackerone.com/getting-started-hacker-api/#getting-started-hacker-api" class="text-info" target="_blank">Hackerone Documentation.</a>
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row mt-4 mb-4">
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="hackerone_username">Your Hackerone Username (Not email)</label>
+          {{form.username}}
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="hackerone_api_token">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token here</a></label>
+          {{form.api_key}}
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12">
+          <a class="btn btn-primary float-right" href="javascript:test_hackerone()" role="button">
+            &nbsp;&nbsp;Test my hackerone api key
+          </a>
+        </div>
+      </div>
+      <h6>Report vulnerabilities to Hackerone Automatically</h6>
+      <div class="custom-control custom-checkbox">
+        <p class="mt-2">
+          Use this feature with caution!
+          <br><span class="badge badge-danger">Please do not spam triagers! Please do not!!!</span>
+          <br>
+          <br>
+          We do not allow sending vulnerability report for low severity and informational vulnerabilities to avoid spamming triagers!
+          You can send them manually from vulnerability section inside scan history or Vulnerabilities tab.
+        </p>
+        <p>Send vulnerability to hackerone for:</p>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-danger">
+            {{form.send_critical}}
+            <span class="new-control-indicator"></span><span class="new-chk-content">Critical Severity (Default)</span>
+          </label>
+        </div>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-danger">
+            {{form.send_high}}
+            <span class="new-control-indicator"></span><span class="new-chk-content">High Severity (Default)</span>
+          </label>
+        </div>
+        <div class="n-chk">
+          <label class="new-control new-checkbox new-checkbox-text checkbox-warning">
+            {{form.send_medium}}
+            <span class="new-control-indicator"></span><span class="new-chk-content">Medium Severity</span>
+          </label>
+        </div>
+      </div>
+      <div class="mt-4">
+        <h6>Vulnerability Report Template</h6>
+        <p>You can customize the vulnerability report template using markdown. Replace the below syntax wherever you require. Curly braces are must!</p>
+        <ul>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_name}</span> Vulnerability Title/Name.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerable_url}</span> Vulnerable URL.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_severity}</span> Vulnerability Severity.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_description}</span> Description of vulnerability generated by Nuclei.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_extracted_results}</span> Vulnerabty Results extracted by Nuclei.</li>
+          <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_reference}</span> Additional Reference to vulnerability.</li>
+        </ul>
+        <!-- Default Template: https://raw.githubusercontent.com/ZephrFish/BugBountyTemplates/master/Blank.md -->
+        {{form.report_template}}
+      </div>
+      <input type="submit" value="Save" class="btn btn-primary float-right">
+    </form>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/editors/markdown/simplemde.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script type="text/javascript">
+new SimpleMDE({
+  element: document.getElementById("vulnerability-report-template"),
+  toolbar: ["preview", "bold", "italic", "heading", "heading-2", "unordered-list", "link" ,"|", "code" ,"|", "quote", "|", "guide"],
+  spellChecker: false,
+});
+
+function test_hackerone() {
+  if ($("#username").val().length == 0 || $("#api_key").val().length == 0) {
+    if ($("#username").val().length == 0) {
+      $("#username").addClass("is-invalid");
+    }
+    if ($("#api_key").val().length == 0) {
+      $("#api_key").addClass("is-invalid");
+    }
+  }
+  else{
+    const hackerone_api = 'testHackerone/';
+    var username = $("#username").val();
+    var api_key = $("#api_key").val();
+    swal.queue([{
+      title: 'Hackerone Configuration',
+      confirmButtonText: 'Test my hackerone API Key',
+      text:
+      'This will test if your hackerone API keys are working.',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(hackerone_api, {
+          method: 'POST',
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({'username': username, 'api_key': api_key}),
+        },
+      ).then(function (response) {
+        return response.json();
+      })
+      .then(function(data) {
+        if (data.status == 200) {
+          $("#username").addClass("is-valid");
+          $("#api_key").addClass("is-valid");
+          $("#username").removeClass("is-invalid");
+          $("#api_key").removeClass("is-invalid");
+          return swal.insertQueueStep("Your hackerone Credentials are working.")
+        }
+        else{
+          $("#username").addClass("is-invalid");
+          $("#api_key").addClass("is-invalid");
+          $("#username").removeClass("is-valid");
+          $("#api_key").removeClass("is-valid");
+          return swal.insertQueueStep("Oops! Your hackerone Credentials are not working, check your username and/or api_key.")
+        }
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Unable to get your public IP'
+        })
+      })
+    }
+  }]);
+}
+}
+</script>
+{% endblock page_level_script %}

@@ -1,0 +1,132 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.loader {
+  border: 7px solid #f1f2f3;
+  border-radius: 50%;
+  border-top: 7px solid #4361ee;
+  width: 58px;
+  height: 58px;
+  -webkit-animation: spin 2s linear infinite;
+  /* Safari */
+  animation: spin 2s linear infinite; }
+  .loader.dual-loader {
+    border-bottom: 7px solid #4361ee; }
+  .loader.multi-loader {
+    border-bottom: 7px solid #e2a03f;
+    border-right: 7px solid #1abc9c;
+    border-left: 7px solid #e7515a; }
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg); }
+  100% {
+    -webkit-transform: rotate(360deg); } }
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg); }
+  100% {
+    transform: rotate(360deg); } }
+
+@-webkit-keyframes spinner-border {
+  to {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg); } }
+
+@keyframes spinner-border {
+  to {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg); } }
+
+.spinner-border {
+  position: relative;
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  text-indent: -999em;
+  border: .25em solid;
+  border-color: currentColor transparent currentColor currentColor;
+  border-radius: 50%;
+  -webkit-animation-name: spinner-border;
+  animation-name: spinner-border;
+  -webkit-animation-duration: .75s;
+  animation-duration: .75s;
+  -webkit-animation-timing-function: linear;
+  animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  animation-iteration-count: infinite; }
+
+.spinner-border-reverse {
+  border-color: transparent currentColor transparent transparent; }
+  .spinner-border-reverse::after {
+    position: absolute;
+    top: -.25em;
+    right: -.25em;
+    bottom: -.25em;
+    left: -.25em;
+    display: inline-block;
+    content: "";
+    border: 0.25em solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%; }
+
+@-webkit-keyframes spinner-grow {
+  0% {
+    opacity: 0;
+    -webkit-transform: scale(0);
+    transform: scale(0); }
+  50% {
+    opacity: 1; }
+  100% {
+    opacity: 0;
+    -webkit-transform: scale(1);
+    transform: scale(1); } }
+
+@keyframes spinner-grow {
+  0% {
+    opacity: 0;
+    -webkit-transform: scale(0);
+    transform: scale(0); }
+  50% {
+    opacity: 1; }
+  100% {
+    opacity: 0;
+    -webkit-transform: scale(1);
+    transform: scale(1); } }
+
+.spinner-grow {
+  position: relative;
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  text-indent: -999em;
+  background-color: currentColor;
+  border-radius: 50%;
+  -webkit-animation-name: spinner-grow;
+  animation-name: spinner-grow;
+  -webkit-animation-duration: .75s;
+  animation-duration: .75s;
+  -webkit-animation-timing-function: linear;
+  animation-timing-function: linear;
+  -webkit-animation-iteration-count: infinite;
+  animation-iteration-count: infinite; }
+
+.loader-lg {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-width: 0.35em; }
+
+.loader-sm {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-width: 0.15em; }

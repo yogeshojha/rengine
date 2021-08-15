@@ -6,7 +6,7 @@
 COMPOSE_PREFIX_CMD := COMPOSE_DOCKER_CLI_BUILD=1
 
 COMPOSE_ALL_FILES := -f docker-compose.yml
-SERVICES          := db web proxy redis celery celery-beat
+SERVICES          := db web proxy redis celery celery-beat tor
 
 # --------------------------
 
@@ -25,7 +25,7 @@ build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
 username:		## Generate Username (Use only after make up).
-	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python manage.py createsuperuser
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser
 
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com

@@ -1,0 +1,64 @@
+<div class="widget widget-table-one">
+  <div class="widget-heading">
+    <h6 class=""> Interesting Recon Data</h6>
+  </div>
+  <div class="widget-content">
+    <div id="interesting_recon_accordion" class="accordion-icons">
+      <div class="card">
+        <div class="card-header" id="">
+          <section class="mb-0 mt-0">
+            <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_subdomain" aria-expanded="false" aria-controls="iconAccordionOne" id="interesting_subdomain_accordion">
+              <div class="accordion-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-zap text-success">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2">
+                  </polygon>
+                </svg>
+              </div>
+              <span id="interesting_subdomain_count_badge"><span class="spinner-border text-danger align-self-center loader-sm"></span></span> Interesting Subdomains
+              <div class="icons text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div id="interesting_subdomain" class="collapse hide" aria-labelledby="" data-parent="#interesting_recon_accordion">
+          <div class="card-body">
+            <div class="widget-table-two">
+              <div class="widget-content">
+                {% include 'base/_items/interesting_subdomains.html' %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header" id="">
+          <section class="mb-0 mt-0">
+            <div role="menu" class="collapsed" data-toggle="collapse" data-target="#interesting_endpoint" aria-expanded="false" aria-controls="iconAccordionOne" id="interesting_endpoint_accordion">
+              <div class="accordion-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-link">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              </div>
+              <span id="interesting_endpoint_count_badge"><span class="spinner-border text-danger align-self-center loader-sm"></span></span> Interesting Endpoints
+              <div class="icons text-info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="interesting_endpoint" class="collapse" aria-labelledby="" data-parent="#interesting_recon_accordion">
+          <div class="card-body">
+            <div class="widget-table-two">
+              <div class="widget-content">
+                {% include 'base/_items/interesting_endpoints.html' %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

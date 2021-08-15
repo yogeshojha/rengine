@@ -1,0 +1,141 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+reNgine Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">reNgine Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row h-100 justify-content-center align-items-center">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>Danger Zone</h4>
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <div id="chart">
+    </div>
+    <div class="text-center">
+      Total Storage: <b>{{total}} Gb</b> Used Space: <b>{{used}} Gb</b> Free Space: <b>{{free}} Gb</b>
+    </div>
+    <div class="">
+      <h6 class="text-danger">Danger Zone</h6>
+      <div class="widget-content widget-content-area" style="border:1px solid #e7515a;">
+        <div class="row">
+          <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12">
+            <b class="text-dark">
+              Delete all scan results
+            </b>
+            <p class="">
+              <span class="text-danger">Once you delete all scan results, there is no going back.</span><br>
+              This will delete all the scan history and also screenshots and likely to free up disk space.
+            </p>
+          </div>
+          <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-3">
+            <button class="btn btn-danger float-right" onclick="delete_all_scan_results()">Delete All Scan Results</button>
+          </div>
+        </div>
+        <hr>
+        <div class="row">
+          <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12">
+            <b class="text-dark">
+              Delete all Screenshots
+            </b>
+            <p class="">
+              Once you delete all screenshots, you are likely to free up some disk space.<br>
+              <span class="text-danger">Scan history will not be able to show any screenshots after deleted.</span><br>
+            </p>
+          </div>
+          <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-3">
+            <button class="btn btn-danger float-right" onclick="delete_all_screenshots()">Delete All Screenshots</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script type="text/javascript">
+$(document).ready(function(){
+  var options = {
+    chart: {
+      height: 350,
+      type: "radialBar",
+    },
+
+    series: [{{consumed_percent}}],
+    colors: ["#20E647"],
+    plotOptions: {
+      radialBar: {
+        hollow: {
+          margin: 0,
+          size: "70%",
+          background: "#293450"
+        },
+        track: {
+          dropShadow: {
+            enabled: true,
+            top: 2,
+            left: 0,
+            blur: 4,
+            opacity: 0.15
+          }
+        },
+        dataLabels: {
+          name: {
+            offsetY: -10,
+            color: "#fff",
+            fontSize: "13px"
+          },
+          value: {
+            color: "#fff",
+            fontSize: "30px",
+            show: true
+          }
+        }
+      }
+    },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "dark",
+        type: "vertical",
+        gradientToColors: ["#87D4F9"],
+        stops: [0, 100]
+      }
+    },
+    stroke: {
+      lineCap: "round"
+    },
+    labels: ["Disk Space Consumed"]
+  };
+
+  var chart = new ApexCharts(document.querySelector("#chart"), options);
+
+  chart.render();
+});
+</script>
+{% endblock page_level_script %}

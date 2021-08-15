@@ -1,0 +1,58 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.maintanence-hero-img img {
+  width: 62px;
+  height: 62px; }
+
+body.maintanence {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 400'%3E%3Cdefs%3E%3CradialGradient id='a' cx='396' cy='281' r='514' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23e6e6e6'/%3E%3Cstop offset='1' stop-color='%23eaf1ff'/%3E%3C/radialGradient%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='400' y1='148' x2='400' y2='333'%3E%3Cstop offset='0' stop-color='%234361ee' stop-opacity='0'/%3E%3Cstop offset='1' stop-color='%234361ee' stop-opacity='0.5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect fill='url(%23a)' width='800' height='400'/%3E%3Cg fill-opacity='0.5'%3E%3Ccircle fill='url(%23b)' cx='267.5' cy='61' r='300'/%3E%3Ccircle fill='url(%23b)' cx='532.5' cy='61' r='300'/%3E%3Ccircle fill='url(%23b)' cx='400' cy='30' r='300'/%3E%3C/g%3E%3C/svg%3E");
+  background-attachment: fixed;
+  background-size: cover;
+  background-color: #ffffff; }
+  body.maintanence > .maintanence-content {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px; }
+
+.maintanence .error-title {
+  margin-top: 65px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 54px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  text-shadow: 0px 5px 4px rgba(31, 45, 61, 0.101961); }
+
+.maintanence .error-text {
+  margin-top: 40px;
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 0;
+  color: #4361ee; }
+
+.maintanence a.btn {
+  width: 134px;
+  padding: 6px;
+  font-size: 17px;
+  background-image: linear-gradient(135deg, #4361ee 0%, #805dca 100%);
+  border: none;
+  letter-spacing: 2px; }
+
+.maintanence .text {
+  color: #3b3f5c;
+  font-size: 15px;
+  font-size: 16px;
+  color: #3b3f5c;
+  font-weight: 600;
+  margin-top: 21px; }

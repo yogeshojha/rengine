@@ -1,5 +1,59 @@
 # Changelog
 
+### Verion 1.0 Major release
+
+#### Features/Additions
+- Dark Mode
+- Recon Data visualization
+- Improved correlation among recon data
+- Ability to identify Interesting Subdomains
+- Ability to Automatically report Vulnerabilities to Hackerone with customizable vulnerability report
+- Added option to download URLs and Endpoints along with matched GF patterns
+- Dorking support for stackoverflow, 3rdparty, social_media, project_management, code_sharing, config_files, jenkins, wordpress_files, cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik, git_exposed
+- Emails, metainfo, employees, leaked password discovery
+- Optin to Add bulk targets
+- Proxy Support
+- Target Summary
+- Recon Todo
+- Unusual Port Identification
+- GF patterns support #110, #88
+- Screenshot Gallery with Filters
+- Powerful recon data filtering with auto suggestions
+- Added whatportis, this allows ports to be displayed as Service Name and Description
+- Recon Data changes, finds new/removed subdomains/endpoints
+- Tagging of targets into Organization
+- Added option to delete all scan results or delete all screenshots inside Settings and reNgine settings
+- Support for custom GF patterns and Nuclei Templates
+- Support for editing tool related configuration files (Nuclei, Subfinder, Naabu, amass)
+- Option to Mark Subdomains as important
+- Separate tab for Directory scan results
+- Option to Import Subdomains
+- Clean your scan results and screenshots
+- Enhanced and Customizable Scan alert with support for sending recon data directly to Discord
+- Improvement in Vulnerability Scanning, If endpoint scan is performed, those endpoints will be an input to Nuclei.
+- Ignore file extensions in URLs
+- Added response time in endpoints and subdomains
+- Added badge to identify CDN and non CDN IPs
+- Added gospider, gauplus and waybackurls for url discovery
+- Added activity log in Scan activity
+- For better UX shifted nav bar from vertical position to horizontal position on top. This allows better navigation on recon data.
+- Separate table for Directory scan results #244
+- Scan results UI now in tabs
+- Added badge on Subdomain Result table to directly query Vulnerability and Endpoints
+- Webserver and content_type badge has been addeed in Subdomain Result table
+- Inside Targets list, Recent Scan button has been added to quickly go to the last scan results
+- In target summary, timelin of scan has been added
+- Randomized user agent in HTTPX
+- reNgine will no longer store any recon data apart from that in Database, this includes sorted_subdomains list.txt or any json file
+- aquatone has been replaced with Eyewitness
+- Out of Scope subdomains are no longer part of scan engine, they can be imported before initiating the scan
+- Added script to uninstall reNgine
+- Added option to filter targets and scans using organization, scan status, etc
+- Added random user agent in directory scan
+- Added concurrency, rate limit, timeout, retries in Scan Engine YAML
+- Added Rescan option
+- Other tiny fixes.....
+
 ### V0.5.3 Feb25 2021
 - Build error for Naabu v2 Fixed
 - Added rate support for Naabu

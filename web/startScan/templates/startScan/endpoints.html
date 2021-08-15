@@ -1,0 +1,115 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+{% load custom_tags %}
+{% block title %}
+All Endpoints
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
+<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/loaders/custom-loader.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/apps/todolist.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
+<script src="https://cdn.jsdelivr.net/gh/deltoss/d3-mitch-tree@1.0.2/dist/js/d3-mitch-tree.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active" aria-current="page">All Endpoints</li>
+{% endblock breadcrumb_title %}
+
+
+{% block main_content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8 col-lg-8 col-sm-8">
+    <div class="wrapper">
+      <div class="search-input" id="endpoint-search-input">
+        <a href="" target="_blank" hidden></a>
+        <div class="input-group">
+					<input type="text" class="form-control" placeholder="Filter Endpoints" aria-label="Filter Endpoints" id="endpoints-search">
+					<div class="input-group-append">
+						<button id="endpoint-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+					</div>
+				</div>
+        <div class="autocom-box mt-container mx-auto" id="autocom-box">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-12 col-lg-12 col-sm-12">
+    <div class="widget widget-content widget-content-area br-6">
+      <div class="row">
+        <div class="col-12">
+          <div class="task-action float-right mb-4">
+            <div class="dropdown">
+              <a class="dropdown-toggle bs-tooltip" title="Download Results" href="#" role="button" id="pendingTask" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </a>
+              <div class="dropdown-menu dropdown-menu-right" aria-labelledby="pendingTask" style="will-change: transform;">
+                <a class="dropdown-item" href="javascript:download_endpoints()">Download All Endpoints</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <table class="multi-table table table-striped table-bordered table-hover" style="width:100%" id="endpoint_results">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>HTTP URL</th>
+                <th>Status</th>
+                <th>Page Title</th>
+                <th>Tags</th>
+                <th>Content Type</th>
+                <th>Content Length</th>
+                <th>Technology</th>
+                <th>Webserver</th>
+                <th>Response time</th>
+                <th>Default URL</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
+<script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
+<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
+<script src="{% static 'assets/js/clipboard/clipboard.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.1/underscore-min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+  get_endpoints();
+});
+</script>
+{% endblock page_level_script %}

@@ -1,0 +1,131 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+/*
+    Infobox 1
+*/
+.infobox-1 {
+  border: 1px solid #e0e6ed;
+  width: 50%;
+  padding: 25px;
+  border-radius: 6px;
+  -webkit-box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  margin-right: auto;
+  margin-left: auto; }
+  .infobox-1 .info-icon svg {
+    width: 50px;
+    height: 50px;
+    stroke-width: 1px;
+    margin-bottom: 20px;
+    color: #4361ee; }
+  .infobox-1 .info-heading {
+    font-weight: 600;
+    font-size: 19px;
+    margin-bottom: 14px;
+    letter-spacing: 2px; }
+  .infobox-1 .info-text {
+    font-size: 15px;
+    color: #888ea8;
+    margin-bottom: 15px; }
+  .infobox-1 .info-link {
+    color: #4361ee;
+    font-weight: 600; }
+    .infobox-1 .info-link svg {
+      width: 15px;
+      height: 15px; }
+
+/*
+    Infobox 2
+*/
+.infobox-2 {
+  border: 1px solid #e0e6ed;
+  width: 50%;
+  padding: 25px;
+  border-radius: 6px;
+  background: #3b3f5c;
+  -webkit-box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  margin-right: auto;
+  margin-left: auto; }
+  .infobox-2 .info-icon {
+    border-radius: 50%;
+    background: #888ea8;
+    display: inline-block;
+    padding: 15px;
+    margin-bottom: 20px; }
+    .infobox-2 .info-icon svg {
+      width: 50px;
+      height: 50px;
+      stroke-width: 1px;
+      color: #d3d3d3; }
+  .infobox-2 .info-heading {
+    font-weight: 600;
+    font-size: 19px;
+    margin-bottom: 14px;
+    letter-spacing: 2px;
+    color: #fff; }
+  .infobox-2 .info-text {
+    font-size: 15px;
+    color: #e0e6ed;
+    margin-bottom: 15px; }
+  .infobox-2 .info-link {
+    color: #2196f3;
+    font-weight: 600; }
+    .infobox-2 .info-link svg {
+      width: 15px;
+      height: 15px; }
+
+/*
+    Infobox 3
+*/
+.infobox-3 {
+  position: relative;
+  border: 1px solid #e0e6ed;
+  width: 50%;
+  margin-top: 30px;
+  padding: 50px 25px 25px 25px;
+  border-radius: 6px;
+  -webkit-box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  box-shadow: 0px 2px 10px 1px rgba(31, 45, 61, 0.1);
+  margin-right: auto;
+  margin-left: auto; }
+  .infobox-3 .info-icon {
+    position: absolute;
+    margin-bottom: 20px;
+    background: #4361ee;
+    display: inline-block;
+    top: -31px;
+    padding: 6px;
+    border-radius: 6px; }
+    .infobox-3 .info-icon svg {
+      width: 50px;
+      height: 50px;
+      stroke-width: 1px;
+      color: #fff; }
+  .infobox-3 .info-heading {
+    font-weight: 600;
+    font-size: 19px;
+    margin-bottom: 14px;
+    letter-spacing: 2px; }
+  .infobox-3 .info-text {
+    font-size: 15px;
+    color: #888ea8;
+    margin-bottom: 15px; }
+  .infobox-3 .info-link {
+    color: #4361ee;
+    font-weight: 600; }
+    .infobox-3 .info-link svg {
+      width: 15px;
+      height: 15px; }
+
+@media (max-width: 575px) {
+  .infobox-1, .infobox-2, .infobox-3 {
+    width: auto; } }

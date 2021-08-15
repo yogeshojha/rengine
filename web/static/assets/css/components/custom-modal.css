@@ -1,0 +1,238 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.modal-backdrop {
+  background-color: #515365; }
+
+.modal-content {
+  border: none;
+  border-radius: 6px; }
+  .modal-content hr {
+    border-top: 1px solid #e0e6ed; }
+  .modal-content .modal-header {
+    padding: 12px 26px;
+    border: 1px solid #e0e6ed; }
+    .modal-content .modal-header h5 {
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: 1px; }
+    .modal-content .modal-header svg {
+      width: 17px;
+      color: #e3e4eb; }
+  .modal-content .modal-body {
+    padding: 26px 26px; }
+    .modal-content .modal-body a:not(.btn) {
+      color: #4361ee;
+      font-weight: 600; }
+    .modal-content .modal-body p {
+      color: #888ea8;
+      letter-spacing: 1px;
+      font-size: 14px;
+      line-height: 22px; }
+      .modal-content .modal-body p:last-child {
+        margin-bottom: 0; }
+      .modal-content .modal-body p:not(:last-child) {
+        margin-bottom: 10px; }
+  .modal-content .modal-footer {
+    border-top: 1px solid #e0e6ed; }
+    .modal-content .modal-footer button.btn {
+      font-weight: 600;
+      padding: 10px 25px;
+      letter-spacing: 1px; }
+      .modal-content .modal-footer button.btn[data-dismiss="modal"] {
+        background-color: #fff;
+        color: #4361ee;
+        font-weight: 700;
+        border: 1px solid #e8e8e8; }
+    .modal-content .modal-footer .btn.btn-primary {
+      background-color: #4361ee;
+      color: #fff;
+      border: 1px solid #4361ee; }
+
+/*
+    Modal Success
+*/
+.modal-success .modal-content {
+  background-color: #ddf5f0; }
+
+/*
+    Modal Video
+*/
+.modal-video .modal-content {
+  background-color: transparent; }
+
+.modal-video .video-container {
+  position: relative;
+  padding-bottom: 56.25%;
+  padding-top: 30px;
+  height: 0;
+  overflow: hidden; }
+
+.modal-video .modal#videoMedia1 .modal-header, .modal-video .modal#videoMedia2 .modal-header {
+  border: none;
+  padding: 0; }
+
+.modal-video .video-container iframe, .modal-video .video-container object, .modal-video .video-container embed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%; }
+
+.modal-video .modal#videoMedia1 .modal-header .close, .modal-video .modal#videoMedia2 .modal-header .close {
+  color: #fff !important;
+  opacity: 1; }
+
+.modal-video .modal-content .modal-header svg {
+  color: #fff; }
+
+/*
+    Modal Notification
+*/
+.modal-notification .modal-body .icon-content {
+  margin: 0 0 20px 0px;
+  display: inline-block;
+  padding: 13px;
+  border-radius: 50%;
+  background: #f1f2f3;
+  color: #000; }
+  .modal-notification .modal-body .icon-content svg {
+    width: 36px;
+    height: 36px;
+    color: #888ea8;
+    fill: rgba(0, 23, 55, 0.08); }
+
+/*
+    Profile
+*/
+.profile-modal .modal-content {
+  background-color: #805dca; }
+  .profile-modal .modal-content .close {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-shadow: none;
+    opacity: 1;
+    text-align: right;
+    margin-right: 13px;
+    margin-top: 8px; }
+  .profile-modal .modal-content .modal-header, .profile-modal .modal-content .modal-footer {
+    border: none; }
+  .profile-modal .modal-content .modal-body p {
+    color: #fff; }
+  .profile-modal .modal-content .modal-footer button.btn {
+    box-shadow: none; }
+
+/*
+    Slider
+*/
+.modal#sliderModal .modal-content {
+  border: 1px solid transparent;
+  background-color: transparent; }
+  .modal#sliderModal .modal-content .modal-body .carousel-indicators {
+    top: 37%;
+    bottom: auto;
+    display: block;
+    left: auto;
+    margin: auto;
+    right: 14px; }
+  .modal#sliderModal .modal-content .modal-body a.carousel-control-prev span.carousel-control-prev-icon {
+    position: absolute;
+    bottom: 14px;
+    left: 7px;
+    background-image: none;
+    color: #4361ee; }
+  .modal#sliderModal .modal-content .modal-body a.carousel-control-next span.carousel-control-next-icon {
+    position: absolute;
+    bottom: 14px;
+    right: 7px;
+    background-image: none;
+    color: #4361ee; }
+  .modal#sliderModal .modal-content .modal-body a.carousel-control-prev span.carousel-control-prev-text {
+    position: absolute;
+    bottom: 17px;
+    left: 30px;
+    color: #4361ee; }
+  .modal#sliderModal .modal-content .modal-body a.carousel-control-next span.carousel-control-next-text {
+    position: absolute;
+    bottom: 17px;
+    right: 30px;
+    color: #4361ee; }
+  .modal#sliderModal .modal-content .modal-body button.close {
+    position: absolute;
+    z-index: 2;
+    right: 16px;
+    top: 13px;
+    opacity: 1;
+    text-shadow: none; }
+    .modal#sliderModal .modal-content .modal-body button.close:hover {
+      color: #4361ee; }
+
+.carousel-indicators li {
+  background-color: #a1a3ac; }
+
+.carousel-indicators .active {
+  background-color: #4361ee; }
+
+.modal-content .modal-body a:not(.btn) {
+  opacity: 1; }
+
+/*
+    Login
+*/
+.login-modal .modal-header, .register-modal .modal-header {
+  text-align: center;
+  border: none;
+  padding-bottom: 0; }
+
+.login-modal .modal-body .form-group, .register-modal .modal-body .form-group {
+  position: relative; }
+  .login-modal .modal-body .form-group svg, .register-modal .modal-body .form-group svg {
+    position: absolute;
+    width: 20px;
+    top: 11px;
+    left: 9px;
+    color: #4361ee;
+    fill: rgba(27, 85, 226, 0.239216); }
+  .login-modal .modal-body .form-group input, .register-modal .modal-body .form-group input {
+    padding-left: 35px;
+    border: none;
+    border-bottom: 1px solid #e0e6ed;
+    border-radius: 0; }
+    .login-modal .modal-body .form-group input.form-control:focus, .register-modal .modal-body .form-group input.form-control:focus {
+      box-shadow: none; }
+
+.login-modal .modal-body .division, .register-modal .modal-body .division {
+  text-align: center;
+  font-size: 13px;
+  margin: 16px 0; }
+
+.login-modal .modal-body .social, .register-modal .modal-body .social {
+  text-align: center; }
+  .login-modal .modal-body .social a, .register-modal .modal-body .social a {
+    background: transparent;
+    box-shadow: none;
+    border: 2px solid #e0e6ed; }
+    .login-modal .modal-body .social a.social-fb svg, .register-modal .modal-body .social a.social-fb svg {
+      color: #4361ee; }
+    .login-modal .modal-body .social a.social-github svg, .register-modal .modal-body .social a.social-github svg {
+      color: #e7515a; }
+    .login-modal .modal-body .social a.social-fb .brand-name, .register-modal .modal-body .social a.social-fb .brand-name {
+      color: #4361ee; }
+    .login-modal .modal-body .social a.social-github .brand-name, .register-modal .modal-body .social a.social-github .brand-name {
+      color: #e7515a; }
+
+/*
+    Register
+*/
+@media (min-width: 576px) {
+  .login-modal .modal-dialog, .register-modal .modal-dialog {
+    max-width: 330px; } }

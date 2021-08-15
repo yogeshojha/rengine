@@ -1,0 +1,111 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Proxy Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/pages/faq/faq.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Proxy Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row h-100 justify-content-center align-items-center">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>Proxy Settings&nbsp;&nbsp;&nbsp;<span class="badge badge-danger">Beta</span></h4>
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <form method="POST">
+      {% csrf_token %}
+      <div class="row mt-1">
+        <div class="col-md-11 mx-auto">
+          <div class="form-group">
+            <div class="n-chk">
+              <label class="new-control new-checkbox new-checkbox-text checkbox-primary">
+                {{form.use_proxy}}
+                <span class="new-control-indicator"></span><span class="new-chk-content">Use Proxy</span>
+              </label>
+            </div>
+            <label for="proxList">
+              Proxy List
+              <br>
+              You can enter as many proxies as you want, reNgine will <span class="badge outline-badge-danger">randomly</span> pick one among them during the scan.
+              <br>
+              <span class="text-info">Seperate the proxies by new line.</span>
+            </label>
+            {{form.proxies}}
+          </div>
+          <span class="text-danger float-right">(Make sure proxies are working, otherwise scan is likely to fail.)</span>
+          <br>
+          <div class="col-sm-12">
+            <button type="submit" class="btn btn-primary mt-3 float-right">Save Proxies</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="faq container">
+  <div class="faq-layouting layout-spacing">
+    <div class="fq-tab-section">
+      <div class="row">
+        <div class="col-md-12 mb-5 mt-4">
+          <h5>Proxy FAQ</h5>
+          <div class="accordion" id="faq">
+            <div class="card">
+              <div class="card-header" id="fqheadingOne">
+                <div class="mb-0" data-toggle="collapse" role="navigation" data-target="#fqcollapseOne" aria-expanded="false" aria-controls="fqcollapseOne">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-help-circle"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  <span class="faq-q-title">What is proxy?</span>
+                </div>
+              </div>
+              <div id="fqcollapseOne" class="collapse" aria-labelledby="fqheadingOne" data-parent="#faq">
+                <div class="card-body">
+                  Proxies are integral part of web scraping.
+                  Every website has a limit to certain number of requests for a certain period of time from an particular IP Address that it will allow, exceeding the limit will block any incoming requests from such IP Address for a specific period of time.
+                  This results in unreiliable recon results. Suppose if you were to run Nuclei on a particular target with all the templates, your IP is likely to get banned.
+                  <br>
+                  And this is especially true for dorking and other OSINT reNgine does. After certain dorking attempts Google is likely to ban your IP for certain period of time.
+                  <br>
+                  <br>
+                  If you are looking for highly accurate recon results, <span class="text-info">it is recommended</span> that you use <a href="https://oxylabs.io/features/rotating-proxies" class="text-info" target="_blank">rotating proxies</a> or <a href="https://www.bestproxyreviews.com/proxy-pool/" class="text-info" target="_blank">proxy pool.</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script type="text/javascript">
+$(document).ready(function(){
+  var use_proxy = document.getElementById("use_proxy");
+  use_proxy.addEventListener('change', function() {
+    if (this.checked) {
+      document.getElementById("proxies").readOnly = false;
+    }
+    else{
+      document.getElementById("proxies").readOnly = true;
+    }
+  });
+});
+</script>
+{% endblock page_level_script %}

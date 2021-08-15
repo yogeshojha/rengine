@@ -1,0 +1,23 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}
+Update Target
+{% endblock title %}
+
+
+{% block custom_js_css_link %}
+<script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+<link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
+<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block main_content %}
+{% include 'target/_items/domain_form.html' with button_title="Update" widget_title="Update Target" form_action="update" %}
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'assets/js/components/ui-accordions.js' %}"></script>
+{% endblock page_level_script %}

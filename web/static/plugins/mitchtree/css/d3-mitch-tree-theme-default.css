@@ -1,0 +1,69 @@
+.mitch-d3-tree.boxed-tree.default .link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 2px;
+}
+
+.mitch-d3-tree.boxed-tree.default .node {
+}
+
+.mitch-d3-tree.boxed-tree.default .node.collapsed .body-group .body-box {
+  fill: lightsteelblue;
+}
+
+.mitch-d3-tree.boxed-tree.default .node.selected .body-group .body-box {
+  stroke: #00A2A3;
+  stroke-width: 2.5px;
+}
+
+.mitch-d3-tree.boxed-tree.default .node .body-group .body-box {
+  stroke: steelblue;
+  fill: white;
+  rx: 6;
+  ry: 6;
+}
+
+.mitch-d3-tree.boxed-tree.default .node .title-group .title-box {
+  stroke: steelblue;
+  fill: #4682B4;
+  rx: 10;
+  ry: 10;
+}
+
+.mitch-d3-tree.boxed-tree.default .node .title-group text {
+  fill: white;
+}
+
+.danger-box .body-group .body-box{
+  stroke: #e7515a !important;
+  fill: #e7515a !important;
+}
+
+.critical-box .body-group .body-box{
+  stroke: #AA2C00 !important;
+  fill: #AA2C00 !important;
+}
+
+.low-box .body-group .body-box{
+  stroke: #FFD600 !important;
+  fill: #FFD600 !important;
+}
+
+.info-box .body-group .body-box{
+  stroke: #2196f3 !important;
+  fill: #2196f3 !important;
+}
+
+.success-box .body-group .body-box{
+  stroke: #1abc9c !important;
+  fill: #1abc9c !important;
+}
+
+.warning-box .body-group .body-box{
+  stroke: #e2a03f !important;
+  fill: #e2a03f !important;
+}
+
+.title-group .d3plus-textBox text{
+  font-size: 10px !important;
+}

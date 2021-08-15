@@ -1,0 +1,71 @@
+/*
+	===============================
+			@Import	Function
+	===============================
+*/
+/*
+	===============================
+			@Import	Mixins
+	===============================
+*/
+.table-controls {
+  padding: 0;
+  margin: 0;
+  list-style: none; }
+  .table-controls > li {
+    display: inline-block;
+    margin: 0 2px;
+    line-height: 1; }
+    .table-controls > li > a {
+      display: inline-block; }
+      .table-controls > li > a i {
+        margin: 0;
+        color: #555;
+        font-size: 16px;
+        display: block; }
+        .table-controls > li > a i:hover {
+          text-decoration: none; }
+
+.table .progress {
+  margin-bottom: 0; }
+
+/*Table Colors*/
+.contextual-table.table > thead > tr > th, .contextual-table.table > tbody > tr > td {
+  border: none; }
+
+.table-default > td, .table-default > th {
+  background-color: #f1f2f3;
+  color: #3b3f5c; }
+
+.table-primary > td, .table-primary > th {
+  background-color: #c7d8fd;
+  color: #2196f3; }
+
+.table-secondary > td, .table-secondary > th {
+  background-color: #e0d4f9;
+  color: #805dca; }
+
+.table-success > td, .table-success > th {
+  background-color: #cbfdf3;
+  color: #1abc9c; }
+
+.table-danger > td, .table-danger > th {
+  background-color: #fff5f5;
+  color: #e7515a; }
+
+.table-warning > td, .table-warning > th {
+  background-color: #fdefd5;
+  color: #e2a03f; }
+
+.table-info > td, .table-info > th {
+  background-color: #e7f7ff;
+  color: #2196f3; }
+
+.table-light > td, .table-light > th {
+  background-color: #ffffff;
+  color: #888ea8; }
+
+.table-dark > td, .table-dark > th {
+  background-color: #e3e4eb;
+  color: #515365;
+  border-color: #fff !important; }
