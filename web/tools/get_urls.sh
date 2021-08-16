@@ -8,7 +8,7 @@ if [[ $3 == "deep" ]] ; then
       fi
       if [[ $i == "hakrawler" ]] ; then
         echo "Running hakrawler"
-        cat $2/sorted_subdomain_collection.txt | hakrawler -plain | grep -Eo $4 > $2/urls_hakrawler.txt
+        cat $2/alive.txt | hakrawler | grep -Eo $4 > $2/urls_hakrawler.txt
       fi
       if [[ $i == "waybackurls" ]] ; then
         echo "Running waybackurls"
