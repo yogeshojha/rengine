@@ -1514,7 +1514,7 @@ $("#pills-directories-tab").click(function() {
 						{
 							if(json_obj[i].status==200)
 							{
-								var path = json_obj[i].path;
+								var path = json_obj[i].path.substring(1);
 								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
 								// id path has / the its a directory else consider as file
 								if (path.substr(path.length - 1) == '/') {
