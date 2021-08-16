@@ -55,7 +55,7 @@ def initiate_scan(
         scan_type,
         engine_type,
         imported_subdomains=None,
-        out_of_scope_subdomains=None
+        out_of_scope_subdomains=[]
         ):
     '''
     scan_type = 0 -> immediate scan, need not create scan object
