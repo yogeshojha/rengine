@@ -98,9 +98,9 @@ def add_wordlist(request):
             txt_file = request.FILES['upload_file']
             if txt_file.content_type == 'text/plain':
                 wordlist_content = txt_file.read().decode('UTF-8')
-                wordlist_path = '/app/tools/wordlist/'
                 wordlist_file = open(
-                    wordlist_path +
+                    settings.TOOL_LOCATION +
+                    'wordlist/' +
                     form.cleaned_data['short_name'] + '.txt',
                     'w')
                 wordlist_file.write(wordlist_content)
