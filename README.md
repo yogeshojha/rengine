@@ -219,6 +219,7 @@ If reNgine has helped you in any way, and you love this project and/or support a
 - Tweet about this project, or maybe blogs?
 - Sponsor financially via Github or Paypal. https://paypal.me/yogeshojha11
 - Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features. ps. Please consider running reNgine/any recon on VPS!
+- If you are looking for Proxies, please use [this referral](https://app.privateproxy.me/from/27103) link to purchase. Or you can also use coupon `rengine` here on [PrivateProxy](https://privateproxy.me/), using coupon `rengine`, you'll get additional 25% off.
 
 Together, we can make reNgine **better** every day!
 
