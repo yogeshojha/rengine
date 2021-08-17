@@ -97,7 +97,7 @@ def add_wordlist(request):
         if form.is_valid() and 'upload_file' in request.FILES:
             txt_file = request.FILES['upload_file']
             if txt_file.content_type == 'text/plain':
-                wordlist_content = txt_file.read().decode('UTF-8')
+                wordlist_content = txt_file.read().decode('UTF-8', "ignore")
                 wordlist_file = open(
                     settings.TOOL_LOCATION +
                     'wordlist/' +
