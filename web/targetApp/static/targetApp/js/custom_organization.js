@@ -1,7 +1,7 @@
-function delete_organization(id, organization_name) {
+function delete_organization(id) {
     const delAPI = "../delete/organization/"+id;
     swal.queue([{
-        title: 'Are you sure you want to delete '+ htmlEncode(organization_name) +'?',
+        title: 'Are you sure you want to delete?',
         text: "You won't be able to revert this!",
         type: 'warning',
         showCancelButton: true,

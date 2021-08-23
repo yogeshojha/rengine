@@ -24,7 +24,7 @@ function delete_api(id, name, item)
 {
     var delAPI = 'delete/'+id;
     swal.queue([{
-        title: 'Are you sure you want to delete '+ name +'?',
+        title: 'Are you sure you want to delete '+ jsEscape(name) +'?',
         text: "You won't be able to revert this!",
         type: 'warning',
         showCancelButton: true,

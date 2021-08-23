@@ -56,7 +56,7 @@ Organizations
             <td class="checkbox-column"> {{ organization.id }} </td>
             <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
-            <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}}, '{{organization.name}}')">{{organization.get_domains.count}}</span></td>
+            <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
             <td class="text-center">{{ organization.insert_date }}</td>
             <td class="text-center">
               <a href="{% url 'start_organization_scan' organization.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan Entire Organization">
@@ -72,7 +72,7 @@ Organizations
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
               </a>
-              <a onclick="delete_organization({{ organization.id }}, '{{ organization.name }}')" class="bs-tooltip" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Organization">
+              <a onclick="delete_organization({{ organization.id }})" class="bs-tooltip" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -124,14 +124,15 @@ table = $('#style-2').DataTable({
 multiCheck(table);
 
 
-function get_target_modal(organization_id, organization_name){
-  $('.modal-title').html(`<b>Targets in Organization ${organization_name}</b>`);
+function get_target_modal(organization_id){
+  $('.modal-title').html(`<b>Loading targets...</b>`);
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
+    organization_name = htmlEncode(data['organization'][0]['name']);
     $('#modal-loader').empty();
-    $('#modal-text-content').append(`<h6>${data['domains'].length} targets in organization <span class='badge badge-primary'>${organization_name}</span></h6>`);
+    $('.modal-title').html(`<h6>${data['domains'].length} targets in organization ${organization_name}</h6>`);
     $('#modal-text-content').append(`<ul id="target-detail-modal-ul"></ul>`);
     for (domain in data['domains']){
       domain_obj = data['domains'][domain];
