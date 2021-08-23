@@ -216,7 +216,7 @@ The bounty reward is determined by industry-first equation from huntr.dev to und
 * Monetary Rewards
 * CVE ID(s)
 
-Please fine the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
+Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
 
 ## Contributing
 
