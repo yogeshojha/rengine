@@ -191,7 +191,7 @@ $(document).ready(function(){
   $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
     data = data['organizations']
     for (organization in data) {
-      name = data[organization]['name'];
+      name = htmlEncode(data[organization]['name']);
       select = document.getElementById('filterByOrganization');
       var option = document.createElement('option');
       option.value = name;

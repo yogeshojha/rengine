@@ -105,9 +105,11 @@ class ListTargetsInOrganization(APIView):
     def get(self, request, format=None):
         req = self.request
         organization_id = req.query_params.get('organization_id')
-        targets = Domain.objects.filter(domains__in=Organization.objects.filter(id=organization_id))
+        organization = Organization.objects.filter(id=organization_id)
+        targets = Domain.objects.filter(domains__in=organization)
+        organization_serializer = OrganizationSerializer(organization, many=True)
         targets_serializer = OrganizationTargetsSerializer(targets, many=True)
-        return Response({'domains': targets_serializer.data})
+        return Response({'organization': organization_serializer.data, 'domains': targets_serializer.data})
 
 
 class ListTargetsWithoutOrganization(APIView):

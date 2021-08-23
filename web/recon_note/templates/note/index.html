@@ -221,9 +221,9 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     </div>
 
     <div class="todo-content">
-    <h5 class="todo-heading">${note_obj['title']}</h5>
+    <h5 class="todo-heading">${htmlEncode(note_obj['title'])}</h5>
     <p class="target">${target_text}</p>
-    <p class="todo-text">${note_obj['description']}</p>
+    <p class="todo-text">${htmlEncode(note_obj['description'])}</p>
     </div>
 
     ${badges}

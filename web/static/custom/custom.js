@@ -28,6 +28,14 @@ function htmlEncode(str){
 	});
 }
 
+// Source: https://portswigger.net/web-security/cross-site-scripting/preventing#encode-data-on-output
+function jsEscape(str){
+	return String(str).replace(/[^\w. ]/gi, function(c){
+		return '\\u'+('0000'+c.charCodeAt(0).toString(16)).slice(-4);
+	});
+
+}
+
 function deleteScheduledScan(id, task_name)
 {
 	const delAPI = "../delete/scheduled_task/"+id;
@@ -298,58 +306,58 @@ function setTooltip(btn, message) {
 
 
 function hideTooltip(btn) {
-  setTimeout(function() {
-    $(btn).tooltip('hide');
-  }, 1000);
+	setTimeout(function() {
+		$(btn).tooltip('hide');
+	}, 1000);
 }
 
 
 function get_response_time_text(response_time){
-  var text_color = 'danger';
-  if (response_time < 0.5){
-    text_color = 'success'
-  }
-  else if (response_time >= 0.5 && response_time < 1){
-    text_color = 'warning'
-  }
-  return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
+	var text_color = 'danger';
+	if (response_time < 0.5){
+		text_color = 'success'
+	}
+	else if (response_time >= 0.5 && response_time < 1){
+		text_color = 'warning'
+	}
+	return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
 }
 
 function parse_technology(data, color, outline=null, scan_id=null)
 {
-  if(outline)
-  {
-    var badge = `<span class='badge-link badge badge-pill outline-badge-`+color+` m-1'`;
-  }
-  else {
-    var badge = `<span class='badge-link badge badge-pill badge-`+color+` m-1'`;
-  }
-  var data_with_span ="";
-  for (var key in data){
-    if (scan_id){
-      data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
-    }
-    else{
-      data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}')">` + data[key]['name'] + "</span>";
-    }
-  }
-  return data_with_span;
+	if(outline)
+	{
+		var badge = `<span class='badge-link badge badge-pill outline-badge-`+color+` m-1'`;
+	}
+	else {
+		var badge = `<span class='badge-link badge badge-pill badge-`+color+` m-1'`;
+	}
+	var data_with_span ="";
+	for (var key in data){
+		if (scan_id){
+			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
+		}
+		else{
+			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}')">` + data[key]['name'] + "</span>";
+		}
+	}
+	return data_with_span;
 }
 
 // span values function will seperate the values by comma and put badge around it
 function parse_ip(data, cdn){
-  if (cdn)
-  {
-    var badge = `<span class='badge badge-pill outline-badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
-  }
-  else{
-    var badge = `<span class='badge badge-pill outline-badge-info m-1'>`;
-  }
-  var data_with_span ="";
-  data.split(/\s*,\s*/).forEach(function(split_vals) {
-    data_with_span+=badge + split_vals + "</span>";
-  });
-  return data_with_span;
+	if (cdn)
+	{
+		var badge = `<span class='badge badge-pill outline-badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
+	}
+	else{
+		var badge = `<span class='badge badge-pill outline-badge-info m-1'>`;
+	}
+	var data_with_span ="";
+	data.split(/\s*,\s*/).forEach(function(split_vals) {
+		data_with_span+=badge + split_vals + "</span>";
+	});
+	return data_with_span;
 }
 
 //to remove the image element if there is no screenshot captured
@@ -360,29 +368,29 @@ function removeImageElement(element)
 
 // https://stackoverflow.com/a/18197341/9338140
 function download(filename, text) {
-  var element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-  element.setAttribute('download', filename);
+	var element = document.createElement('a');
+	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+	element.setAttribute('download', filename);
 
-  element.style.display = 'none';
-  document.body.appendChild(element);
+	element.style.display = 'none';
+	document.body.appendChild(element);
 
-  element.click();
+	element.click();
 
-  document.body.removeChild(element);
+	document.body.removeChild(element);
 }
 
 
 function vuln_status_change(checkbox, id)
 {
-  if (checkbox.checked) {
-    checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
-  }
-  else {
-    checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
-    checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
-  }
-  change_vuln_status(id);
+	if (checkbox.checked) {
+		checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+	}
+	else {
+		checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+		checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+	}
+	change_vuln_status(id);
 }
 
 

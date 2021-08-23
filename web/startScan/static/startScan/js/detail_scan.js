@@ -1266,13 +1266,13 @@ function get_recon_notes(scan_id){
         $(`#todo_list_${scan_id}`).append(`<div id="todo_parent_${note['id']}">
         <div class="badge-link custom-control custom-checkbox">
         <input type="checkbox" class="custom-control-input todo-item" ${checked} name="${div_id}" id="${div_id}">
-        <label for="${div_id}" class="${done_strike} custom-control-label text-dark">${important_badge}<b>${truncate(note['title'], 20)}</b>
+        <label for="${div_id}" class="${done_strike} custom-control-label text-dark">${important_badge}<b>${truncate(htmlEncode(note['title']), 20)}</b>
         </label>
         <span class="float-right text-danger bs-tooltip" title="Delete Todo" onclick="delete_todo(${note['id']})">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
         </span>
         ${mark_important}
-        <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(note['description'], 100)}
+        <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(htmlEncode(note['description']), 100)}
         </p>
         </div>
         </div>
@@ -1301,8 +1301,8 @@ function get_task_details(todo_id){
     if (note['subdomain_name']) {
       subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
     }
-    $('.modal-title').html(`<b>${split(note['title'], 80)}</b>`);
-    $('#modal-text-content').append(`<p>${subdomain_name} ${note['description']}</p>`);
+    $('.modal-title').html(`<b>${split(htmlEncode(note['title']), 80)}</b>`);
+    $('#modal-text-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
   });
 }
 
@@ -1385,9 +1385,9 @@ function list_subdomain_todos(subdomain_id, subdomain_name){
       }
 
       $("#todo-modal-content-ul").append(`<li class="${is_done}">
-      ${important_badge}<b>&nbsp;${todo_obj['title']}</b>
+      ${important_badge}<b>&nbsp;${htmlEncode(todo_obj['title'])}</b>
       <br />
-      ${todo_obj['description']}
+      ${htmlEncode(todo_obj['description'])}
 
       </li>`);
     }

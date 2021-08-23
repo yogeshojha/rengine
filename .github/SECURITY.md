@@ -11,9 +11,13 @@ Please report all security issues [here](https://github.com/yogeshojha/rengine/i
 ## Past Security Vulnerabilities
 
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/178) on Detail Scan Page via Page Title Parameter, Reported by [omemishra](https://github.com/omemishra)
+
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/347) on Vulnerability Scan page via URL Parameter, Reported by [Arif Khan, payloadartist](https://twitter.com/payloadartist)
+
+* Several Instances of XSS in reNgine 1.0 (#460, #459, #458, #457, #456, #455), Reported by [Binit Ghimire](https://github.com/TheBinitGhimire)
 
 **reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine safer!**
 
 * [onemishra](https://github.com/omemishra)
 * [Arif Khan, payloadartist](https://twitter.com/payloadartist)
+* [Binit Ghimire](https://github.com/TheBinitGhimire)

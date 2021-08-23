@@ -366,7 +366,7 @@ function todoItem() {
     var $todoDescription = $(this).find('.todo-text').text();
 
     $('.task-heading').text($_taskTitle);
-    $('.task-text').html(`<span class="text-success">${$_taskTarget}</span><br>` + $todoDescription);
+    $('.task-text').html(`<span class="text-success">${$_taskTarget}</span><br>` + htmlEncode($todoDescription));
 
     $('#todoShowListItem').modal('show');
   });

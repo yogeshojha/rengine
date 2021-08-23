@@ -20,11 +20,11 @@ $(document).ready(function() {
 } );
 
 
-function delete_api(id, name, item)
+function delete_api(id, item)
 {
     var delAPI = 'delete/'+id;
     swal.queue([{
-        title: 'Are you sure you want to delete '+ name +'?',
+        title: 'Are you sure you want to delete this scan engine?',
         text: "You won't be able to revert this!",
         type: 'warning',
         showCancelButton: true,
