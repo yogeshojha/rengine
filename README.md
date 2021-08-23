@@ -204,13 +204,13 @@ Thank you for your interest in reporting vulnerabilities to reNgine! If you are 
 Please note that the maintainer of reNgine does not determine the bounty amount. 
 The bounty reward is determined by industry-first equation from huntr.dev to understand the popularity, impact and value of repositories to the open source community.
 
-**What do we expect from security researchers?**
+**What do I expect from security researchers?**
 
 * Patience: Please note that currently I am the only maintainer in reNgine and will take sometime to validate your report. I request your patience throughout the process.
 * Respect Privacy and Security Reports: Please do not disclose any vulnerabilities in public (this also includes github issues) before or after reporting on huntr.dev! That is against the disclosure policy and will not be eligible for monetary rewards.
 * Respect the rules
 
-**What do I get in return?**
+**What do you get in return?**
 
 * Much thanks from Maintainer
 * Monetary Rewards
