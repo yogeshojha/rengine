@@ -7,6 +7,10 @@ db.sqlite3
 db.sqlite3-journal
 media
 
+.env
+.env.development
+.env.production
+
 ### Django.Python Stack ###
 # Byte-compiled / optimized / DLL files
 *.py[cod]
