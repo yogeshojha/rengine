@@ -176,6 +176,7 @@ git clone https://github.com/yogeshojha/rengine && cd rengine
 2. Edit the dotenv file, **please make sure to change the password for postgresql POSTGRES_PASSWORD !**
 
 ```
+cp .env.example .env
 nano .env
 ```
 
