@@ -173,13 +173,22 @@ We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduce
 git clone https://github.com/yogeshojha/rengine && cd rengine
 ```
 
-2. Edit the dotenv file, **please make sure to change the password for postgresql POSTGRES_PASSWORD !**
+2. Setup database for reNgine in postgres
+
+```
+sudo -u postgres psql
+postgres=# create database rengine;
+postgres=# create user rengineUser with encrypted password hE2a5@K&9nEY1fzgA6X;
+postgres=# grant all privileges on database rengine to rengineUser;
+```
+
+3. Edit the dotenv file, **please make sure to change the password for postgresql POSTGRES_PASSWORD !**
 
 ```
 nano .env
 ```
 
-3. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
+4. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
 
 ```
 sudo ./install.sh
