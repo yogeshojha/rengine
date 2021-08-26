@@ -99,7 +99,7 @@ def add_wordlist(request):
             if txt_file.content_type == 'text/plain':
                 wordlist_content = txt_file.read().decode('UTF-8', "ignore")
                 wordlist_file = open(
-                    settings.TOOL_LOCATION +
+                    '/usr/src/' +
                     'wordlist/' +
                     form.cleaned_data['short_name'] + '.txt',
                     'w')

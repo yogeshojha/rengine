@@ -31,6 +31,7 @@ services:
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
@@ -66,6 +67,7 @@ services:
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
@@ -91,6 +93,7 @@ services:
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
+      - wordlist:/usr/src/wordlist
       - scan_results:/usr/src/scan_results
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
@@ -150,6 +153,7 @@ volumes:
   gf_patterns:
   nuclei_templates:
   github_repos:
+  wordlist:
   scan_results:
   static_volume:
 

@@ -382,17 +382,16 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
             if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                 wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
                 if wordlist == 'default':
-                    wordlist_path = settings.TOOL_LOCATION + AMASS_DEFAULT_WORDLIST_PATH
+                    wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
                 else:
-                    wordlist_path = settings.TOOL_LOCATION + 'wordlist/' + wordlist + '.txt'
+                    wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
                     if not os.path.exists(wordlist_path):
-                        wordlist_path = settings.TOOL_LOCATION + AMASS_WORDLIST
+                        wordlist_path = '/usr/src/' + AMASS_WORDLIST
                 amass_command = amass_command + \
                     ' -brute -w {}'.format(wordlist_path)
             if amass_config_path:
                 amass_command = amass_command + \
-                    ' -config {}'.format(settings.TOOL_LOCATION +
-                                         'scan_results/' + amass_config_path)
+                    ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
 
             # Run Amass Active
             logging.info(amass_command)
@@ -878,7 +877,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
                 'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
             wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
         else:
-            wordlist_location = settings.TOOL_LOCATION + 'wordlist/' + \
+            wordlist_location = '/usr/src/wordlist/' + \
                 yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
         dirsearch_command += ' -w {}'.format(wordlist_location)
