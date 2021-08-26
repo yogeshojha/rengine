@@ -15,6 +15,19 @@ Dashboard             |  Scan Results
 
 <p align="left"><a href="https://www.youtube.com/watch?v=A1oNOIc0h5A" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-Europe--2020-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;<a href="https://www.youtube.com/watch?v=7uvP6MaQOX0" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-USA--2021-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;<a href="https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing" target="_blank"><img src="https://img.shields.io/badge/Defcon--Demolabs--29-2021-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;</p>
 
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+Discord Channels
+
+<p align="left">
+  <a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461?style=for-the-badge" alt="" /></a>&nbsp;
+</p>
+
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+Report Security Vulnerabilities
+
 <p align="left">
   <a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;
 </p>
@@ -80,6 +93,7 @@ Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides ca
 * [Quick Installation](#quick-installation)
 * [reNgine Bug Bounty Program](#reNgine-bug-bounty-program)
 * [Contributing](#contributing)
+* [reNgine Support](#reNgine-support)
 * [Related Projects](#related-projects)
 * [Support and Sponsor](#support-and-sponsoring)
 * [Acknowledgements & Credits](#acknowledgements-and-credits)
@@ -201,7 +215,7 @@ Thank you for your interest in reporting vulnerabilities to reNgine! If you are 
 
 **Please do not disclose any vulnerabilities via Github Issues/Blogs/Tweets after/before reporting on huntr.dev as it is explicitly against huntr.dev and reNgine disclosure policy and will not be eligible for monetary rewards.**
 
-Please note that the maintainer of reNgine does not determine the bounty amount. 
+Please note that the maintainer of reNgine does not determine the bounty amount.
 The bounty reward is determined by industry-first equation from huntr.dev to understand the popularity, impact and value of repositories to the open source community.
 
 **What do I expect from security researchers?**
@@ -218,11 +232,15 @@ The bounty reward is determined by industry-first equation from huntr.dev to und
 
 Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
 
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
 ## Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**. Your contributions could be as simple as fixing the indentations or fixing UI to as complex as bringing new modules and features.
 
 See [contributing guide](.github/CONTRIBUTING.md) to get started.
+
+You can also [join our discord channel #development](https://discord.gg/JuhHdHTtwd) for any development related queries.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -235,6 +253,12 @@ You can begin with resolving any [open issues](https://github.com/yogeshojha/ren
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 
+## reNgine Support
+
+Please do not raise any github issues for support requests. Instead, [join our discord channel #support](https://discord.gg/azv6fzhNCE)
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
 ## Related Projects
 
 There are many other great reconnaissance frameworks, you may use reNgine in conjunction with these tools. But, they themselves are great, and may sometimes even produce better results than reNgine.
@@ -242,6 +266,8 @@ There are many other great reconnaissance frameworks, you may use reNgine in con
 - [ReconFTW](https://github.com/six2dez/reconftw#sample-video)
 - [Osmedeus](https://github.com/j3ssie/Osmedeus)
 - [EchoPwn](https://github.com/hackerspider1/EchoPwn)
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Support and Sponsoring
 
