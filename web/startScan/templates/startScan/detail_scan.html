@@ -1508,20 +1508,24 @@ $("#pills-directories-tab").click(function() {
 						data = JSON.parse(data)['results'];
 						var html_treeview = `<ul class="file-tree">`;
 						data = data[0];
-						main_url = Object.keys(data)[0];
-						var json_obj = data[main_url];
+						// if main url has trailing / then we need to omit, otherwise it should be okay to append path
+						// preserve original url to access json object
+						url = Object.keys(data)[0]
+						http_url = url.substring(url.length - 1) == '/' ? url.slice(0, -1): url;
+						console.log(http_url);
+						var json_obj = data[url];
 						for(var i = 0; i < json_obj.length; i++)
 						{
 							if(json_obj[i].status==200)
 							{
-								var path = json_obj[i].path.substring(1);
+								var path = json_obj[i].path;
 								var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
 								// id path has / the its a directory else consider as file
 								if (path.substr(path.length - 1) == '/') {
-									html_treeview += `<li class="file-tree-empty-folder"><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+									html_treeview += `<li class="file-tree-empty-folder"><a href="` + http_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 								}
 								else {
-									html_treeview += `<li id='filePath'><a href="` + main_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+									html_treeview += `<li id='filePath'><a href="` + http_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
 								}
 							}
 						}
