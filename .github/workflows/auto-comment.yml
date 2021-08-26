@@ -1,0 +1,37 @@
+name: 👋 Auto Comment
+on: [issues, pull_request]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: bubkoo/auto-comment@v1.0.7
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          issuesOpened: >
+            👋 Hi @{{ author }},
+
+            Issues is only for reporting a bug/feature request. Please read documentation before raising an issue https://rengine.wiki
+
+            For very limited support, questions, and discussions, please join reNgine Discord channel: https://discord.gg/azv6fzhNCE
+
+            Please include all the requested and relevant information when opening a bug report. Improper reports will be closed without any response.
+
+          pullRequestOpened: >
+            👋 Hi @{{ author }},
+
+            Thank you for sending this pull request.
+
+            Please make sure you have followed our [contribution guidelines](https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md).
+
+            We will review this PR as soon as possible. Thank you for your patience.
+
+          pullRequestClosed: >
+            🚀 Hi @{{ author }},
+
+            You are amazing! Thank you for your contributions. Your contributions are what makes reNgine awesome!
+
+            This pull request has now been closed.
+
+            We look forward to your more contributions and support.
+
+            Thanks
