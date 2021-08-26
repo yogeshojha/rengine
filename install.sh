@@ -80,12 +80,13 @@ tput setaf 4;
 echo "#########################################################################"
 echo "Checking Docker status"
 echo "#########################################################################"
-if docker info >/dev/null 2>&1; then
+if systemctl is-active docker >/dev/null 2>&1; then
   tput setaf 4;
   echo "Docker is running."
 else
   tput setaf 1;
   echo "Docker is not running. Please run docker and try again."
+  echo "You can run docker service using sudo systemctl start docker"
   exit 1
 fi
 
