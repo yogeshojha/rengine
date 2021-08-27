@@ -3,8 +3,8 @@
 tput setaf 2;
 cat web/art/1.0.txt
 
-tput setaf 3; echo "Before running this script, please make sure you have made changes to .env file."
-tput setaf 1; echo "Changing the postgres username & password from .env is highly recommended."
+tput setaf 1; echo "Before running this script, please make sure Docker is running and you have made changes to .env file."
+tput setaf 2; echo "Changing the postgres username & password from .env is highly recommended."
 
 tput setaf 4;
 read -p "Are you sure, you made changes to .env file (y/n)? " answer
@@ -74,6 +74,22 @@ if [ -x "$(command -v make)" ]; then
 else
   apt install make
 fi
+
+echo " "
+tput setaf 4;
+echo "#########################################################################"
+echo "Checking Docker status"
+echo "#########################################################################"
+if systemctl is-active docker >/dev/null 2>&1; then
+  tput setaf 4;
+  echo "Docker is running."
+else
+  tput setaf 1;
+  echo "Docker is not running. Please run docker and try again."
+  echo "You can run docker service using sudo systemctl start docker"
+  exit 1
+fi
+
 
 
 echo " "
