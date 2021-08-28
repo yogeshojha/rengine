@@ -245,7 +245,9 @@ def tool_specific_settings(request):
             if file_extension != 'json':
                 messages.add_message(request, messages.ERROR, 'Invalid GF Pattern, upload only *.json extension')
             else:
-                file_path = '/root/.gf/' + gf_file.name
+                # remove special chars from filename, that could possibly do directory traversal or XSS
+                filename = re.sub(r'[\\/*?:"<>|]',"", gf_file.name)
+                file_path = '/root/.gf/' + filename
                 file = open(file_path, "w")
                 file.write(gf_file.read().decode("utf-8"))
                 file.close()
@@ -258,7 +260,8 @@ def tool_specific_settings(request):
             if file_extension != 'yaml':
                 messages.add_message(request, messages.ERROR, 'Invalid Nuclei Pattern, upload only *.yaml extension')
             else:
-                file_path = '/root/nuclei-templates/' + nuclei_file.name
+                filename = re.sub(r'[\\/*?:"<>|]',"", nuclei_file.name)
+                file_path = '/root/nuclei-templates/' + filename
                 file = open(file_path, "w")
                 file.write(nuclei_file.read().decode("utf-8"))
                 file.close()
