@@ -85,7 +85,12 @@ fi
 # store scan_results
 if [ ! -d "/usr/src/scan_results" ]
 then
-    mkdir /usr/src/scan_results
+  mkdir /usr/src/scan_results
+fi
+
+# check if default wordlist for amass exists
+if [ ! -f /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt ]; then
+  wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
 fi
 
 # test tools, required for configuration

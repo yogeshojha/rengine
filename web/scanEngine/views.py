@@ -97,10 +97,10 @@ def add_wordlist(request):
         if form.is_valid() and 'upload_file' in request.FILES:
             txt_file = request.FILES['upload_file']
             if txt_file.content_type == 'text/plain':
-                wordlist_content = txt_file.read().decode('UTF-8')
-                wordlist_path = '/app/tools/wordlist/'
+                wordlist_content = txt_file.read().decode('UTF-8', "ignore")
                 wordlist_file = open(
-                    wordlist_path +
+                    '/usr/src/' +
+                    'wordlist/' +
                     form.cleaned_data['short_name'] + '.txt',
                     'w')
                 wordlist_file.write(wordlist_content)
