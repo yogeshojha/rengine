@@ -1,4 +1,4 @@
-name: "💻 Checking Code Quality"
+name: "Code Quality"
 
 on:
   push:

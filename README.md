@@ -1,8 +1,25 @@
-<h1 align="center">
-  <img src="https://user-images.githubusercontent.com/17223002/129405380-a9e9658f-e2a5-46a0-a6e4-82ebb6a3e43a.png" width="224px"/><br/>
-  reNgine
-</h1>
-<p align="center">An automated reconnaissance framework for web applications with focus on highly configurable streamlined recon process via Engines, recon data correlation and organization, continuous monitoring, backed by database and simple yet intuitive User Interface.</p>
+<p align="center">
+<a href="https://rengine.wiki"><img src=".github/screenshots/banner.gif" alt=""/></a>
+</p>
+
+<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.0.1-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/issues" target="_blank"><img src="https://img.shields.io/github/issues/yogeshojha/rengine?color=red&logo=none" alt="reNgine Issues" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;</p>
+
+
+<p align="center"><a href="https://www.youtube.com/watch?v=A1oNOIc0h5A" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-Europe--2020-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://www.youtube.com/watch?v=7uvP6MaQOX0" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-USA--2021-blue.svg?logo=none" alt="" /></a>&nbsp;<a href="https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing" target="_blank"><img src="https://img.shields.io/badge/Defcon--Demolabs--29-2021-blue.svg?logo=none" alt="" /></a>&nbsp;</p>
+
+<p align="center">
+<a href="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml/badge.svg" alt="" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/actions/workflows/build.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/build.yml/badge.svg" alt="" /></a>&nbsp;
+</p>
+
+<p align="center">
+<a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461" alt="" /></a>&nbsp;
+</p>
+
+<p align="left">An automated reconnaissance framework for web applications with focus on highly configurable streamlined recon process via Engines, recon data correlation and organization, continuous monitoring, backed by database and simple yet intuitive User Interface.</p>
+
+<p align="left">
+reNgine makes is easy for penetration testers to gather reconnaissance with minimal configuration and with the help of reNgine's correlation, it just makes recon effortless.
+</p>
 
 Dashboard             |  Scan Results
 :-------------------------:|:-------------------------:
@@ -10,33 +27,10 @@ Dashboard             |  Scan Results
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-<p align="left"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.0.0-informational?style=for-the-badge&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?style=for-the-badge&logo=none" alt="License" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/issues" target="_blank"><img src="https://img.shields.io/github/issues/yogeshojha/rengine?color=red&style=for-the-badge&logo=none" alt="reNgine Issues" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;</p>
-
-Build
-
-<p align="left"><a href="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml/badge.svg" alt="" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/actions/workflows/build.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/build.yml/badge.svg" alt="" /></a>&nbsp;</p>
-
-Discord Channel
-
-<p align="left">
-  <a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461?style=for-the-badge" alt="" /></a>&nbsp;
-</p>
-
-Report Security Vulnerabilities
-
-<p align="left">
-  <a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;
-</p>
-
-
-<p align="left"><a href="https://www.youtube.com/watch?v=A1oNOIc0h5A" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-Europe--2020-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;<a href="https://www.youtube.com/watch?v=7uvP6MaQOX0" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-USA--2021-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;<a href="https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing" target="_blank"><img src="https://img.shields.io/badge/Defcon--Demolabs--29-2021-blue.svg?style=for-the-badge&logo=none" alt="" /></a>&nbsp;</p>
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
 <p align="center">
     ⭐<a href="https://rengine.wiki">reNgine Documentation</a>
     ·
-    <a href="https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md">What's new</a>
+    <a href="https://rengine.wiki/changelog/">What's new</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
     ·
@@ -47,48 +41,13 @@ Report Security Vulnerabilities
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-
-
-## ⚡️ What's new in reNgine 1.0?
-
-You can watch [reNgine 1.0 release trailer here.](https://www.youtube.com/watch?v=_jBf_9qEG3U) (Recommended)
-
-**Major Changes**
-
-**Please note that reNgine 1.0 is not backwards compatible! Please do not raise any github issues for older versions on how to update reNgine. Support for reNgine < 1.0 has ended as of this release.**
-
-Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides can be found here.](https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing)
-
-- Dark Mode
-- Recon Data visualization
-- Improved correlation among recon data
-- Ability to identify Interesting Subdomains
-- Ability to Automatically report Vulnerabilities to Hackerone with customizable vulnerability report
-- Introducing OSINT Capabilities
-- Proxy Support
-- Recon Todo
-- GF support
-- Screenshot Gallery with Filters
-- Powerful recon data filtering with auto suggestions
-- Recon Data changes, finds new/removed subdomains/endpoints
-- Tagging of targets into Organization
-- Support for custom GF patterns and Nuclei Templates
-- Support for editing tool related configuration files (Nuclei, Subfinder, Naabu, amass)
-- Option to Mark Subdomains as important
-- Separate tab for Directory scan results
-- Option to Import Subdomains
-- Clean your scan results and screenshots
-- Enhanced and Customizable Scan alert with support for sending recon data directly to Discord, etc and many more...
-
-[Detailed Changelog for reNgine 1.0 can be found here.](https://github.com/yogeshojha/rengine/blob/master/CHANGELOG.md)
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
 ## Table of Contents
 
 * [About reNgine](#about-reNgine)
 * [Features](#features)
+* [Documentation](#documentation)
 * [Screenshots](#screenshots)
+* [What's new in reNgine](#changelog)
 * [Quick Installation](#quick-installation)
 * [reNgine Bug Bounty Program](#reNgine-bug-bounty-program)
 * [Contributing](#contributing)
@@ -102,7 +61,7 @@ Some of these features have been demonstraed @ Defcon 29 Demolabs and [slides ca
 
 ## About reNgine
 
-<img src=".github/screenshots/3.gif">
+<img src=".github/screenshots/rengine_1.jpeg">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -147,7 +106,15 @@ We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduce
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
+## Documentation
+
+You can find reNgine documentation at [https://rengine.wiki](https://rengine.wiki)
+
 ## Screenshots
+
+**General Usage**
+<img src=".github/screenshots/3.gif">
+
 
 **Dark Mode**
 <img src=".github/screenshots/dark.gif">
@@ -155,30 +122,46 @@ We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduce
 **Recon Data filtering**
 <img src=".github/screenshots/filtering.gif">
 
-**Auto Report Vulnerability to hackerone with customizable vulnerability report template**
-<img src=".github/screenshots/hackerone1.gif">
+<details>
+  <summary>Other Screenshots (Click to Expand!)</summary>
 
-**Report Vulnerability Manually**
-<img src=".github/screenshots/hackerone.gif">
+  **Auto Report Vulnerability to hackerone with customizable vulnerability report template**
+  <img src=".github/screenshots/hackerone1.gif">
 
-**Customizable Notification**
-<img src=".github/screenshots/notif.gif">
+  **Report Vulnerability Manually**
+  <img src=".github/screenshots/hackerone.gif">
 
-**Tagging Organization**
-<img src=".github/screenshots/organization.gif">
+  **Customizable Notification**
+  <img src=".github/screenshots/notif.gif">
 
-**Recon data Visualization**
-<img src=".github/screenshots/visualization.gif">
+  **Tagging Organization**
+  <img src=".github/screenshots/organization.gif">
 
-**Upload custom GF and Nuclei patterns, with option to edit tool configuration**
-<img src=".github/screenshots/tool.gif">
+  **Recon data Visualization**
+  <img src=".github/screenshots/visualization.gif">
 
-**Recon TODO**
-<img src=".github/screenshots/todo.gif">
+  **Upload custom GF and Nuclei patterns, with option to edit tool configuration**
+  <img src=".github/screenshots/tool.gif">
+
+  **Recon TODO**
+  <img src=".github/screenshots/todo.gif">
+
+</details>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
+
+## Changelog
+
+You can watch [reNgine 1.0 release trailer here.](https://www.youtube.com/watch?v=_jBf_9qEG3U) (Recommended)
+
+[Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
+
 ## Quick Installation
+
+**(Only Ubuntu/VPS)**
 
 1. Clone this repo
 
@@ -202,7 +185,9 @@ if `./install.sh` does not have install permission, please change it, `chmod +x 
 
 **reNgine can now be accessed from https://127.0.0.1 or if you're on the VPS https://your_vps_ip_address**
 
-For detailed instructions, visit official documentation at [https://reNgine.wiki](https://reNgine.wiki)
+## Installation (Mac/Windows/Other)
+
+Installation instructions can be found at [https://reNgine.wiki](https://reNgine.wiki)
 
 ## reNgine Bug Bounty Program
 
