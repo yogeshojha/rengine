@@ -65,8 +65,8 @@ function get_endpoints(scan_history_id, gf_tags){
     "<'row'<'col'tr>>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "stripeClasses": [],
-    "lengthMenu": [20, 50, 100, 500, 1000],
-    "pageLength": 20,
+    "lengthMenu": [100, 200, 300, 500, 1000],
+    "pageLength": 100,
     'serverSide': true,
     "ajax": lookup_url,
     "order": [[ 6, "desc" ]],
