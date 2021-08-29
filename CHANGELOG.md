@@ -1,5 +1,37 @@
 # Changelog
 
+## 🏷️ 1.0.1 [Current Release]
+
+**Release Date: Aug 29, 2021**
+
+**Changelog**
+
+- Fixed [#482](https://github.com/yogeshojha/rengine/issues/482) Endpoints and Vulnerability Datatable were showing results of other targets due to the scan_id parameter
+- Fixed [#479](https://github.com/yogeshojha/rengine/issues/479) where the scan was failing due to recent httpx release, change was in the JSON output
+- Fixed [#476](https://github.com/yogeshojha/rengine/issues/476) where users were unable to click on Clocked Scan (Reported only on Firefox)
+- Fixed [#442](https://github.com/yogeshojha/rengine/issues/442) where an extra slash was added in Directory URLs
+- Fixed [#337](https://github.com/yogeshojha/rengine/issues/337) where users were unable to link custom wordlist
+- Fixed [#436](https://github.com/yogeshojha/rengine/issues/436) Checkbox in Notification Settings were not working due to same name attribute, now fixed
+- Fixed [#439](https://github.com/yogeshojha/rengine/issues/439) Hakrawler crashed if the deep mode was activated due to -plain flag
+- Fixed [#437](https://github.com/yogeshojha/rengine/issues/437) If Out of Scope subdomains were supplied, the scan was failing due to None value
+- Fixed [#424](https://github.com/yogeshojha/rengine/issues/424) Multiple Targets couldn't be scanned
+
+**Improvements**
+
+- Enhanced install script, check for if docker is running service or not #468
+
+**Security**
+
+- Fixed Cross Site Scripting
+    - [#460](https://github.com/yogeshojha/rengine/issues/460)
+    - [#457](https://github.com/yogeshojha/rengine/issues/457)
+    - [#454](https://github.com/yogeshojha/rengine/issues/454)
+    - [#453](https://github.com/yogeshojha/rengine/issues/453)
+    - [#459](https://github.com/yogeshojha/rengine/issues/459)
+    - [#460](https://github.com/yogeshojha/rengine/issues/460)
+- Fixed Cross Site Scripting reported on Huntr [#478](https://github.com/yogeshojha/rengine/issues/478)
+    [https://www.huntr.dev/bounties/ac07ae2a-1335-4dca-8d55-64adf720bafb/](https://www.huntr.dev/bounties/ac07ae2a-1335-4dca-8d55-64adf720bafb/)
+
 ### Verion 1.0 Major release
 
 #### Features/Additions
