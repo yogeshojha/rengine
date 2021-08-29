@@ -36,12 +36,12 @@ function jsEscape(str){
 
 }
 
-function deleteScheduledScan(id, task_name)
+function deleteScheduledScan(id)
 {
 	const delAPI = "../delete/scheduled_task/"+id;
 	swal.queue([{
-		title: 'Are you sure you want to delete ' + task_name + '?',
-		text: "You won't be able to revert this!",
+		title: 'Are you sure you want to delete this?',
+		text: "This action is irreversible.",
 		type: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
