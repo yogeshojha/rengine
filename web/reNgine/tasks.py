@@ -593,8 +593,13 @@ def http_crawler(task, domain, results_dir, activity_id):
         for line in lines:
             json_st = json.loads(line.strip())
             try:
-                subdomain = Subdomain.objects.get(
-                    scan_history=task, name=json_st['url'].split("//")[-1])
+                # fallback for older versions of httpx
+                if 'url' in json_st:
+                    subdomain = Subdomain.objects.get(
+                    scan_history=task, name=json_st['input'])
+                else:
+                    subdomain = Subdomain.objects.get(
+                        scan_history=task, name=json_st['url'].split("//")[-1])
                 '''
                 Saving Default http urls to EndPoint
                 '''
