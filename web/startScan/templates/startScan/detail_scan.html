@@ -1584,11 +1584,7 @@ $("#pills-vulnerabilities-tab").click(function() {
 		"lengthMenu": [20, 50, 100, 500, 1000],
 		"pageLength": 20,
 		'serverSide': true,
-		{% if request.GET.query %}
-		"ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
-		{% else %}
-		"ajax": '/api/listVulnerability/?scan_history=&format=datatables',
-		{% endif %}
+		"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
 		"order": [[ 2, "desc" ]],
 		"columns": [
 			{'data': 'id'},
