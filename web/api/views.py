@@ -831,7 +831,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
-        scan_id = req.query_params.get('scan_id')
+        scan_id = req.query_params.get('scan_history')
 
         target_id = req.query_params.get('target_id')
 
@@ -840,17 +840,20 @@ class EndPointViewSet(viewsets.ModelViewSet):
         gf_tag = req.query_params.get(
             'gf_tag') if 'gf_tag' in req.query_params else None
 
-        if target_id:
+        if scan_id:
+            self.queryset = EndPoint.objects.filter(
+                scan_history__id=scan_id
+            ).distinct()
+
+        elif target_id:
             self.queryset = EndPoint.objects.filter(
                 target_domain__id=target_id).distinct()
-        elif url_query:
-            self.queryset = EndPoint.objects.filter(
-                Q(target_domain__name=url_query)).distinct()
-        elif scan_id:
-            self.queryset = EndPoint.objects.filter(
-                scan_history__id=scan_id).distinct()
         else:
             self.queryset = EndPoint.objects.distinct()
+
+        if url_query:
+            self.queryset = EndPoint.objects.filter(
+                Q(target_domain__name=url_query)).distinct()
 
         if gf_tag:
             self.queryset = self.queryset.filter(matched_gf_patterns__icontains=gf_tag)
@@ -1020,23 +1023,34 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
-        scan_id = req.query_params.get('scan_id')
+        scan_id = req.query_params.get('scan_history')
 
         target_id = req.query_params.get('target_id')
 
-        url_query = req.query_params.get('query_param')
+        domain = req.query_params.get('domain')
 
-        if target_id:
-            self.queryset = Vulnerability.objects.filter(
-                target_domain__id=target_id).distinct()
-        elif url_query:
-            self.queryset = Vulnerability.objects.filter(
-                Q(target_domain__name=url_query)).distinct()
-        elif scan_id:
+        vulnerability_name = req.query_params.get('vulnerability_name')
+
+        if scan_id:
             self.queryset = Vulnerability.objects.filter(
                 scan_history__id=scan_id).distinct()
+
+        elif target_id:
+            self.queryset = Vulnerability.objects.filter(
+                target_domain__id=target_id).distinct()
+
+        elif domain:
+            self.queryset = Vulnerability.objects.filter(
+                Q(target_domain__name=domain)).distinct()
+
+        elif vulnerability_name:
+            self.queryset = Vulnerability.objects.filter(
+                Q(name=vulnerability_name)).distinct()
+
         else:
             self.queryset = Vulnerability.objects.distinct()
+
+
         return self.queryset
 
     def filter_queryset(self, qs):

@@ -98,13 +98,15 @@ $(document).ready(function() {
 		"<'row'<'col'tr>>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"stripeClasses": [],
-		"lengthMenu": [20, 50, 100, 500, 1000],
-		"pageLength": 20,
+		"lengthMenu": [50, 100, 500, 1000],
+		"pageLength": 50,
 		'serverSide': true,
-		{% if request.GET.query %}
-		"ajax": '/api/listVulnerability/?scan_history=&format=datatables&query_param={{request.GET.query}}',
+		{% if request.GET.domain %}
+		"ajax": '/api/listVulnerability/?format=datatables&domain={{request.GET.domain}}',
+		{% elif request.GET.vulnerability_name %}
+		"ajax": '/api/listVulnerability/?format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
 		{% else %}
-		"ajax": '/api/listVulnerability/?scan_history=&format=datatables',
+		"ajax": '/api/listVulnerability/?format=datatables',
 		{% endif %}
 		"order": [[ 2, "desc" ]],
 		"columns": [

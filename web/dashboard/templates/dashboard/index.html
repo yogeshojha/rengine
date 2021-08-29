@@ -106,7 +106,7 @@ Dashboard
 							</thead>
 							<tbody>
 								{% for item in most_vulnerable_target %}
-								<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+								<tr class="bs-tooltip" title="{{item.num_vul}} Vulnerabilities" onclick="window.location='scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
 									<td>{{item.name}}</td>
 									<td class="text-center">
 										<div class="progress br-30">
@@ -132,7 +132,7 @@ Dashboard
 									<th>Severity</th>
 								</thead>
 								{% for item in most_common_vulnerability %}
-								<tr onclick="window.location='scan/detail/vuln?query={{item.name}}';" style="cursor: pointer;">
+								<tr onclick="window.location='scan/detail/vuln?vulnerability_name={{item.name}}';" style="cursor: pointer;">
 									<td>{{item.name}}</td>
 									<td class="text-center">
 										{{item.count}}
