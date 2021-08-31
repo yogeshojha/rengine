@@ -508,7 +508,7 @@ Target Summary for {{target.name}}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 get_important_subdomains({{target.id}})
-get_recon_notes({{target.id}})
+get_recon_notes({{target.id}}, null)
 // apex charts for vulnerability summary
 var options = {
   chart: {
