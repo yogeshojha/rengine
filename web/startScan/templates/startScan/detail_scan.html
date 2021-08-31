@@ -1847,9 +1847,9 @@ get_subdomain_changes({{scan_history_id}});
 get_endpoint_changes({{scan_history_id}});
 
 // get interesting subdomain
-get_interesting_subdomains({{scan_history_id}});
+get_interesting_subdomains(null, {{scan_history_id}});
 // get interesting endpoint
-get_interesting_endpoint({{scan_history_id}});
+get_interesting_endpoint(null, {{scan_history_id}});
 
 
 // get screenshots
@@ -1881,7 +1881,7 @@ $("#pills-visualisation-tab").click(function() {
 	visualise_scan_results({{scan_history_id}});
 });
 
-get_important_subdomains({{scan_history_id}});
+get_important_subdomains(null, {{scan_history_id}});
 
 get_ips({{scan_history_id}});
 
