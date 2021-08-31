@@ -99,9 +99,9 @@ function populateTodofunction(){
     '</div>'+
 
     '<div class="todo-content">'+
-    '<h5 class="todo-heading">'+$_task+'</h5>'+
+    '<h5 class="todo-heading">'+htmlEncode($_task)+'</h5>'+
     '<p class="target">'+$_targetText+'</h5>'+
-    "<p class='todo-text' >"+$_taskDescriptionText+"</p>"+
+    "<p class='todo-text' >"+htmlEncode($_taskDescriptionText)+"</p>"+
     '</div>'+
 
     '<div class="action-dropdown">'+

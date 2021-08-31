@@ -7,7 +7,7 @@ function load_gf_template(pattern_name){
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').append(`<pre>${data['content']}</pre>`);
+    $('#modal-text-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
   }).fail(function(){
     $('#modal-loader').empty();
     $("#modal-text-content").append(`<p class='text-danger'>Error loading GF Pattern</p>`);
@@ -24,7 +24,7 @@ function load_nuclei_template(pattern_name){
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?nuclei_template&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').append(`<pre>${data['content']}</pre>`);
+    $('#modal-text-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
   }).fail(function(){
     $('#modal-loader').empty();
     $("#modal-text-content").append(`<p class='text-danger'>Error loading Nuclei Template</p>`);
@@ -52,7 +52,7 @@ $("#nuclei_config_text_area").dblclick(function() {
 // get Subfinder config
 $.getJSON(`/api/getFileContents?subfinder_config&format=json`, function(data) {
   $("#subfinder_config_text_area").attr("rows", 14);
-  $("textarea#subfinder_config_text_area").html(data['content']);
+  $("textarea#subfinder_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#subfinder_config_text_area").removeAttr("readonly");
   $("textarea#subfinder_config_text_area").html(`# Your Subfinder configuration here.`);
@@ -69,7 +69,7 @@ $("#subfinder_config_text_area").dblclick(function() {
 // get Naabu config
 $.getJSON(`/api/getFileContents?naabu_config&format=json`, function(data) {
   $("#naabu_config_text_area").attr("rows", 14);
-  $("textarea#naabu_config_text_area").html(data['content']);
+  $("textarea#naabu_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#naabu_config_text_area").removeAttr("readonly");
   $("textarea#naabu_config_text_area").html(`# Your Naabu configuration here.`);
@@ -87,7 +87,7 @@ $("#naabu_config_text_area").dblclick(function() {
 // get amass config
 $.getJSON(`/api/getFileContents?amass_config&format=json`, function(data) {
   $("#amass_config_text_area").attr("rows", 14);
-  $("textarea#amass_config_text_area").html(data['content']);
+  $("textarea#amass_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#amass_config_text_area").removeAttr("readonly");
   $("textarea#amass_config_text_area").html(`# Your amass configuration here.`);
