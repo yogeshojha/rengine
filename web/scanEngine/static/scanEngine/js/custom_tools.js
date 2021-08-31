@@ -52,7 +52,7 @@ $("#nuclei_config_text_area").dblclick(function() {
 // get Subfinder config
 $.getJSON(`/api/getFileContents?subfinder_config&format=json`, function(data) {
   $("#subfinder_config_text_area").attr("rows", 14);
-  $("textarea#subfinder_config_text_area").html(data['content']);
+  $("textarea#subfinder_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#subfinder_config_text_area").removeAttr("readonly");
   $("textarea#subfinder_config_text_area").html(`# Your Subfinder configuration here.`);
@@ -69,7 +69,7 @@ $("#subfinder_config_text_area").dblclick(function() {
 // get Naabu config
 $.getJSON(`/api/getFileContents?naabu_config&format=json`, function(data) {
   $("#naabu_config_text_area").attr("rows", 14);
-  $("textarea#naabu_config_text_area").html(data['content']);
+  $("textarea#naabu_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#naabu_config_text_area").removeAttr("readonly");
   $("textarea#naabu_config_text_area").html(`# Your Naabu configuration here.`);
@@ -87,7 +87,7 @@ $("#naabu_config_text_area").dblclick(function() {
 // get amass config
 $.getJSON(`/api/getFileContents?amass_config&format=json`, function(data) {
   $("#amass_config_text_area").attr("rows", 14);
-  $("textarea#amass_config_text_area").html(data['content']);
+  $("textarea#amass_config_text_area").html(htmlEncode(data['content']));
 }).fail(function(){
   $("#amass_config_text_area").removeAttr("readonly");
   $("textarea#amass_config_text_area").html(`# Your amass configuration here.`);
