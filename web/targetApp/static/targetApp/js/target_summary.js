@@ -68,13 +68,13 @@ function get_recon_notes(target_id){
         $(`#todo_list_${target_id}`).append(`<div id="todo_parent_${note['id']}">
         <div class="badge-link custom-control custom-checkbox">
         <input type="checkbox" class="custom-control-input todo-item" ${checked} name="${div_id}" id="${div_id}">
-        <label for="${div_id}" class="${done_strike} custom-control-label text-dark">${important_badge}<b>${truncate(note['title'], 20)}</b>
+        <label for="${div_id}" class="${done_strike} custom-control-label text-dark">${important_badge}<b>${truncate(htmlEncode(note['title']), 20)}</b>
         </label>
         <span class="float-right text-danger bs-tooltip" title="Delete Todo" onclick="delete_todo(${note['id']})">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
         </span>
         ${mark_important}
-        <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(note['description'], 100)}
+        <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(htmlEncode(note['description']), 100)}
         </p>
         </div>
         </div>
@@ -91,6 +91,21 @@ function get_recon_notes(target_id){
   });
 }
 
+function get_task_details(todo_id){
+  $('#exampleModal').modal('show');
+  $('.modal-text').empty(); $('#modal-footer').empty();
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
+    $('.modal-text').empty(); $('#modal-footer').empty();
+    note = data['notes'][0];
+    subdomain_name = '';
+    if (note['subdomain_name']) {
+      subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+    }
+    $('.modal-title').html(`<b>${split(htmlEncode(note['title']), 80)}</b>`);
+    $('#modal-text-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
+  });
+}
 
 function get_interesting_subdomains(target_id){
   var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
