@@ -32,26 +32,38 @@ class GetFileContents(APIView):
         name = req.query_params.get('name')
 
         if 'nuclei_config' in req.query_params:
-            f = open("/root/.config/nuclei/config.yaml", "r")
+            path = "/root/.config/nuclei/config.yaml"
+            if not os.path.exists(path):
+                os.system('touch {}'.format(path))
+            f = open(path, "r")
             return Response({'content': f.read()})
 
         if 'subfinder_config' in req.query_params:
-            f = open("/root/.config/subfinder/config.yaml", "r")
+            path = "/root/.config/subfinder/config.yaml"
+            if not os.path.exists(path):
+                os.system('touch {}'.format(path))
+            f = open(path, "r")
             return Response({'content': f.read()})
 
         if 'naabu_config' in req.query_params:
-            f = open("/root/.config/naabu/naabu.conf", "r")
+            path = "/root/.config/naabu/naabu.conf"
+            if not os.path.exists(path):
+                os.system('touch {}'.format(path))
+            f = open(path, "r")
             return Response({'content': f.read()})
 
         if 'amass_config' in req.query_params:
-            f = open("/root/.config/amass.ini", "r")
+            path = "/root/.config/amass.ini"
+            if not os.path.exists(path):
+                os.system('touch {}'.format(path))
+            f = open(path, "r")
             return Response({'content': f.read()})
 
         if 'gf_pattern' in req.query_params:
             basedir = '/root/.gf'
             path = '/root/.gf/{}.json'.format(name)
-            if is_safe_path(basedir, path):
-                content = open(path, "r")
+            if is_safe_path(basedir, path) and os.path.exists(path):
+                content = open(path, "r").read()
             else:
                 content = "Invalid path!"
             return Response({'content': content})
@@ -60,8 +72,8 @@ class GetFileContents(APIView):
         if 'nuclei_template' in req.query_params:
             safe_dir = '/root/nuclei-templates'
             path = '/root/nuclei-templates/{}'.format(name)
-            if is_safe_path(safe_dir, path):
-                content = open(path.format(name), "r")
+            if is_safe_path(safe_dir, path) and os.path.exists(path):
+                content = open(path.format(name), "r").read()
             else:
                 content = 'Invalid Path!'
             return Response({'content': content})
