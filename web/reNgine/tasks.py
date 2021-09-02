@@ -1349,7 +1349,7 @@ def vulnerability_scan(
                         vulnerability.open_status = True
                         vulnerability.save()
                         # send notification for all vulnerabilities except info
-                        if  severity != "info" and notification and notification[0].send_vuln_notif:
+                        if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:
                             message = "*Alert: Vulnerability Identified*"
                             message += "\n\n"
                             message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
@@ -1358,15 +1358,15 @@ def vulnerability_scan(
                             send_notification(message)
 
                         # send report to hackerone
-                        if Hackerone.objects.all().exists() and severity != 'info' and severity \
+                        if Hackerone.objects.all().exists() and json_st['info']['severity'] != 'info' and json_st['info']['severity'] \
                             != 'low' and vulnerability.target_domain.h1_team_handle:
                             hackerone = Hackerone.objects.all()[0]
 
-                            if hackerone.send_critical and severity == 'critical':
+                            if hackerone.send_critical and json_st['info']['severity'] == 'critical':
                                 send_hackerone_report(vulnerability.id)
-                            elif hackerone.send_high and severity == 'high':
+                            elif hackerone.send_high and json_st['info']['severity'] == 'high':
                                 send_hackerone_report(vulnerability.id)
-                            elif hackerone.send_medium and severity == 'medium':
+                            elif hackerone.send_medium and json_st['info']['severity'] == 'medium':
                                 send_hackerone_report(vulnerability.id)
 
                     except ObjectDoesNotExist:
@@ -1388,7 +1388,7 @@ def vulnerability_scan(
             scan_history__id=task.id, severity=3).count()
         critical_count = Vulnerability.objects.filter(
             scan_history__id=task.id, severity=4).count()
-        vulnerability_count = info + low_count + medium_count + high_count + critical_count
+        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
 
         message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
             domain.name,
