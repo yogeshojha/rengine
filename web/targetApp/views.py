@@ -67,6 +67,7 @@ def add_target(request):
                     request,
                     messages.ERROR,
                     'Oops! Could not import any targets, either targets already exists or is not a valid target.')
+                return http.HttpResponseRedirect(reverse('add_target'))
         elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:
             if 'txtFile' in request.FILES:
                 txt_file = request.FILES['txtFile']
@@ -75,51 +76,57 @@ def add_target(request):
                     txt_content = txt_file.read().decode('UTF-8')
                     io_string = io.StringIO(txt_content)
                     for target in io_string:
+                        target_domain = target.rstrip("\n").rstrip("\r")
                         if not Domain.objects.filter(
-                                name=target.rstrip("\n")).exists() and validators.domain(target):
+                                name=target_domain).exists() and validators.domain(target_domain):
                             Domain.objects.create(
-                                name=target.rstrip("\n"),
+                                name=target_domain,
                                 insert_date=timezone.now())
                             target_count += 1
                     if target_count:
                         messages.add_message(request, messages.SUCCESS, str(
                             target_count) + ' targets added successfully!')
-                        return http.HttpResponseRedirect(reverse('list_target'))
                     else:
                         messages.add_message(
                             request,
                             messages.ERROR,
-                            'Oops! File format was invalid, could not import any targets.')
+                            'Error importing targets, either targets already exist or CSV file is not valid.')
+                        return http.HttpResponseRedirect(reverse('add_target'))
                 else:
                     messages.add_message(
                         request, messages.ERROR, 'Invalid File type!')
+                    return http.HttpResponseRedirect(reverse('add_target'))
             elif 'csvFile' in request.FILES:
                 csv_file = request.FILES['csvFile']
-                if csv_file.content_type == 'text/csv':
+                if csv_file.content_type == 'text/csv' or csv_file.name.split('.')[1]:
                     target_count = 0
                     csv_content = csv_file.read().decode('UTF-8')
                     io_string = io.StringIO(csv_content)
                     for column in csv.reader(io_string, delimiter=','):
+                        target_domain = column[0]
+                        description = None if len(column) == 1 else column[1]
                         if not Domain.objects.filter(
-                                name=column[0]).exists() and validators.domain(
-                                column[0]):
+                                name=target_domain).exists() and validators.domain(
+                                target_domain):
                             Domain.objects.create(
-                                name=column[0],
-                                description=column[1],
+                                name=target_domain,
+                                description=description,
                                 insert_date=timezone.now())
                             target_count += 1
                     if target_count:
                         messages.add_message(request, messages.SUCCESS, str(
                             target_count) + ' targets added successfully!')
-                        return http.HttpResponseRedirect(reverse('list_target'))
                     else:
                         messages.add_message(
                             request,
                             messages.ERROR,
-                            'Oops! File format was invalid, could not import any targets.')
+                            'Error importing targets, either targets already exist or CSV file is not valid.')
+                        return http.HttpResponseRedirect(reverse('add_target'))
                 else:
                     messages.add_message(
                         request, messages.ERROR, 'Invalid File type!')
+                    return http.HttpResponseRedirect(reverse('add_target'))
+            return http.HttpResponseRedirect(reverse('list_target'))
     context = {
         "add_target_li": "active",
         "target_data_active": "active",
