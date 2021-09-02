@@ -142,8 +142,10 @@ Add target for Recon
           <form method="post" enctype="multipart/form-data">
             <div class="custom-file">
               {% csrf_token %}
-              <input type="file" class="custom-file-input" id="txtFile" required multiple accept=".txt" name="txtFile">
+              <input type="file" class="custom-file-input" id="txtFile" required multiple accept=".txt" name="txtFile" onchange="showname(this, '#selectedTextFileName')">
+              <br><br><h6 id="selectedTextFileName" class="text-primary"></h6>
               <label class="custom-file-label" for="txtFile">Choose *.txt file</label>
+
             </div>
             <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-txt-target">
           </form>
@@ -157,7 +159,8 @@ Add target for Recon
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="custom-file">
-              <input type="file" class="custom-file-input" id="csvFile" multiple accept=".csv" required name="csvFile">
+              <input type="file" class="custom-file-input" id="csvFile" multiple accept=".csv" required name="csvFile" onchange="showname(this, '#selectedCsvFileName')">
+              <br><br><h6 id="selectedCsvFileName" class="text-primary"></h6>
               <label class="custom-file-label" for="csvFile">Choose *.csv file</label>
             </div>
             <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-csv-target">
@@ -196,5 +199,10 @@ $('#domainName').on('change keyup',function(){
     $("#add-target").prop("disabled", true);
   }
 });
+
+function showname (file, id) {
+  $(id).html('Selected file: ' + file.files.item(0).name);
+};
+
 </script>
 {% endblock page_level_script %}
