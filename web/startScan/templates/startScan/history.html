@@ -196,7 +196,7 @@ Scan history
                   </svg>
                 </a>
                 <!-- generate report -->
-                <a onclick="#generateReportModal" href="#" class="bs-tooltip m-1" data-toggle="modal" data-target="#generateReportModal" data-toggle="tooltip" data-placement="top" title="" data-original-title="Generate Executive Summary">
+                <a href="javascript:initiate_report({{scan_history.id}})" data-toggle="tooltip" data-placement="top" title="" data-original-title="Generate Executive Summary">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                     <polyline points="14 2 14 8 20 8"></polyline>
@@ -217,7 +217,7 @@ Scan history
   </div>
 </div>
 <div class="modal fade" id="generateReportModal" tabindex="-1" role="dialog" aria-labelledby="generateReportModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header" id="generateReportModalLabel">
         <h4 class="modal-title">Download Report</h4>
@@ -228,18 +228,19 @@ Scan history
           </svg></button>
       </div>
       <div class="modal-body">
-        <form class="mt-0">
-          <div class="form-group mb-4">
-            <label for="exampleFormControlSelect1">Example select</label>
-            <select class="form-control" id="exampleFormControlSelect1" name="report_type">
-                <option value="full">Full Report</option>
-                <option value="recon">Reconnaissance Report</option>
-                <option value="vulnerability">Vulnerability Report</option>
-            </select>
-          </div>
-          <input type="submit" name="" value="Download Report" class="btn btn-primary float-right">
-        </form>
-
+        <div class="form-group mb-4">
+          <label for="exampleFormControlSelect1">Example select</label>
+          <select class="form-control" id="exampleFormControlSelect1" name="report_type">
+            <option value="full">Full Report</option>
+            <option value="recon">Reconnaissance Report</option>
+            <option value="vulnerability">Vulnerability Report</option>
+          </select>
+        </div>
+        <div class="form-group mb-4">
+          <label for="preparedBy">Prepared by(Optional)</label>
+          <input type="text" class="form-control" id="preparedBy" placeholder="Report Prepared by Company/Individual Name">
+        </div>
+        <a id='generateReportButton' href="#" class="btn btn-primary float-right">Download Report</a>
       </div>
     </div>
   </div>
@@ -492,6 +493,47 @@ Scan history
         }
       }])
     }
+  }
+
+  function initiate_report(id) {
+    $('#generateReportModal').modal('show');
+    $('#generateReportButton').attr('onClick', `generate_report(${id})`);
+  }
+
+  function generate_report(id) {
+    var report_type = $('#generateReportModal option:selected').val();
+    var report_created_by = $('#preparedBy').val();
+    var create_report_api = '../create_report/' + id;
+    $('#generateReportModal').modal('hide');
+    swal({
+      title: 'Generating Report!',
+      text: `Please wait until we generate a ${report_type} report for you!`,
+      padding: '2em',
+      onOpen: function() {
+        swal.showLoading()
+
+        return fetch(create_report_api, {
+            method: 'POST',
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken")
+            }
+          })
+          .then(function(response) {
+            return response.json();
+          })
+          .then(function(data) {
+            // TODO Look for better way
+            console.log(data);
+          })
+          .catch(function() {
+            swal.insertQueueStep({
+              type: 'error',
+              title: 'Oops! Unable to generate report!'
+            })
+          })
+      }
+  });
   }
 </script>
 {% endblock page_level_script %}
