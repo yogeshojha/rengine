@@ -32,7 +32,12 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     python3-netaddr \
     wget \
     x11-utils \
-    xvfb
+    xvfb \
+    python3-cffi \
+    python3-brotli \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0
+
 
 # Download and install go 1.17
 RUN wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz
