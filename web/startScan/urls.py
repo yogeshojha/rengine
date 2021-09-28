@@ -16,6 +16,10 @@ urlpatterns = [
         views.detail_scan,
         name='detail_scan'),
     path(
+        'create_report/<int:id>',
+        views.create_report,
+        name='create_report'),
+    path(
         'all/subdomains',
         views.all_subdomains,
         name='all_subdomains'),
