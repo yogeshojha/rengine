@@ -1,8 +1,12 @@
 import os
 import requests
 import itertools
+import tempfile
 
 from datetime import datetime
+
+from django.template.loader import get_template
+from weasyprint import HTML
 
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
@@ -620,3 +624,15 @@ def delete_scans(request):
             messages.INFO,
             'All Scans deleted!')
     return HttpResponseRedirect(reverse('scan_history'))
+
+
+def create_report(request, id):
+    scan_object = ScanHistory.objects.get(id=id)
+    template = get_template('report/full.html')
+    data = {'scan_object': scan_object}
+    html = template.render(data)
+    pdf = HTML(string=html).write_pdf()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Transfer-Encoding'] = 'utf-8'
+
+    return response
