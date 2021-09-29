@@ -86,6 +86,54 @@
     </div>
     <span id="info_title">* {{scan_object.get_info_vulnerability_count}} Informational Vulnerabilities Identified</span>
   </article>
+  <article class="">
+    <h3>Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    <div class="table">
+
+   <div class="row header">
+     <div class="cell" style="width: 15%">
+       Severity
+     </div>
+     <div class="cell" style="width: 55%">
+       Vulnerability Name
+     </div>
+     <div class="cell" style="width: 19%;">
+       Times Identified
+     </div>
+   </div>
+
+   {% for vulnerability in vulnerabilities %}
+   <div class="row">
+     {% if vulnerability.severity == 0 %}
+     <div class="cell info-cell" style="width: 15%">
+     <span class="severity-title-box">Informational</span>
+     {% elif vulnerability.severity == 1 %}
+     <div class="cell low" style="width: 15%">
+     <span class="severity-title-box">Low</span>
+     {% elif vulnerability.severity == 2 %}
+     <div class="cell medium" style="width: 15%">
+     <span class="severity-title-box">Medium</span>
+     {% elif vulnerability.severity == 3 %}
+     <div class="cell high" style="width: 15%">
+     <span class="severity-title-box">High</span>
+     {% elif vulnerability.severity == 4 %}
+     <div class="cell critical" style="width: 15%">
+     <span class="severity-title-box">Critical</span>
+     {% endif %}
+     </div>
+     <div class="cell" style="width: 55%">
+       {{vulnerability.name}}
+     </div>
+     <div class="cell" style="float: right; width: 19%;">
+       {{vulnerability.count}}
+     </div>
+   </div>
+   {% endfor %}
+ </div>
+  </article>
+  <article class="">
+
+  </article>
 </body>
 
 </html>

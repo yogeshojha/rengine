@@ -16,6 +16,7 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSch
 from django.utils import timezone
 from django.conf import settings
 from django.core import serializers
+from django.db.models import Count
 
 from startScan.models import *
 from targetApp.models import *
@@ -628,8 +629,12 @@ def delete_scans(request):
 
 def create_report(request, id):
     scan_object = ScanHistory.objects.get(id=id)
+    vulnerabilities = Vulnerability.objects.values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
     template = get_template('report/full.html')
-    data = {'scan_object': scan_object}
+    data = {
+        'scan_object': scan_object,
+        'vulnerabilities': vulnerabilities
+    }
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
     response = HttpResponse(pdf, content_type='application/pdf')
