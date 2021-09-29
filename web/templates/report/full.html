@@ -29,9 +29,20 @@
       https://github.com/yogeshojha/rengine
     </footer>
   </article>
+  <article id="contents">
+    <h2>&nbsp;</h2>
+    <h3>Table of contents</h3>
+    <ul>
+      <li><a href="#quick-summary"></a></li>
+      <li><a href="#interesting-recon-data"></a></li>
+      <li><a href="#vulnerability-summary"></a></li>
+      <li><a href="#assessment-timeline"></a></li>
+      <li><a href="#reconnaissance-results"></a></li>
+    </ul>
+  </article>
 
-  <article id="summary">
-    <h2>Quick Summary</h2>
+  <article id="summary" style="page-break-before: always">
+    <h2 id="quick-summary">Quick Summary</h2>
     <h4 id="light-title">This section contains quick summary of scan performed on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     <section>
       <h4>Subdomains</h4>
@@ -49,7 +60,41 @@
     </section>
   </article>
   <article>
-    <h3 id="bold-h3">Vulnerabilities</h3>
+    {% if interesting_subdomains %}
+    <h3 id="interesting-recon-data" class="bold-h3">Interesting Recon Data</h3>
+    <h3>Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    {% endif %}
+    <div class="table">
+      <div class="row header green-header">
+        <div class="cell" style="width: 38%">
+          Subdomain
+        </div>
+        <div class="cell" style="width: 38%">
+          Page title
+        </div>
+        <div class="cell" style="width: 18%">
+          HTTP Status
+        </div>
+      </div>
+      {% for subdomain in interesting_subdomains %}
+      <div class="row">
+        <div class="cell" style="width: 38%">
+          {{subdomain.name}}
+        </div>
+        <div class="cell" style="width: 38%">
+          {% if subdomain.page_title %}
+          {{subdomain.page_title}}
+          {% endif %}
+        </div>
+        <div class="cell" style="width: 18%">
+          {{subdomain.http_status}}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  <article>
+    <h3 id="vulnerability-summary" class="bold-h3">Vulnerability Summary</h3>
     <div id="vulnerability-boxes">
       <section>
         <p id="inside-box-title" class="critical">Critical
@@ -89,50 +134,100 @@
   <article class="">
     <h3>Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
     <div class="table">
+      <div class="row header red-header">
+        <div class="cell" style="width: 15%">
+          Severity
+        </div>
+        <div class="cell" style="width: 55%">
+          Vulnerability Name
+        </div>
+        <div class="cell" style="width: 19%;">
+          Times Identified
+        </div>
+      </div>
 
-   <div class="row header">
-     <div class="cell" style="width: 15%">
-       Severity
-     </div>
-     <div class="cell" style="width: 55%">
-       Vulnerability Name
-     </div>
-     <div class="cell" style="width: 19%;">
-       Times Identified
-     </div>
-   </div>
-
-   {% for vulnerability in vulnerabilities %}
-   <div class="row">
-     {% if vulnerability.severity == 0 %}
-     <div class="cell info-cell" style="width: 15%">
-     <span class="severity-title-box">Informational</span>
-     {% elif vulnerability.severity == 1 %}
-     <div class="cell low" style="width: 15%">
-     <span class="severity-title-box">Low</span>
-     {% elif vulnerability.severity == 2 %}
-     <div class="cell medium" style="width: 15%">
-     <span class="severity-title-box">Medium</span>
-     {% elif vulnerability.severity == 3 %}
-     <div class="cell high" style="width: 15%">
-     <span class="severity-title-box">High</span>
-     {% elif vulnerability.severity == 4 %}
-     <div class="cell critical" style="width: 15%">
-     <span class="severity-title-box">Critical</span>
-     {% endif %}
-     </div>
-     <div class="cell" style="width: 55%">
-       {{vulnerability.name}}
-     </div>
-     <div class="cell" style="float: right; width: 19%;">
-       {{vulnerability.count}}
-     </div>
-   </div>
-   {% endfor %}
- </div>
+      {% for vulnerability in vulnerabilities %}
+      <div class="row">
+        {% if vulnerability.severity == 0 %}
+        <div class="cell info-cell" style="width: 15%">
+          <span class="severity-title-box">Informational</span>
+          {% elif vulnerability.severity == 1 %}
+          <div class="cell low" style="width: 15%">
+            <span class="severity-title-box">Low</span>
+            {% elif vulnerability.severity == 2 %}
+            <div class="cell medium" style="width: 15%">
+              <span class="severity-title-box">Medium</span>
+              {% elif vulnerability.severity == 3 %}
+              <div class="cell high" style="width: 15%">
+                <span class="severity-title-box">High</span>
+                {% elif vulnerability.severity == 4 %}
+                <div class="cell critical" style="width: 15%">
+                  <span class="severity-title-box">Critical</span>
+                  {% endif %}
+                </div>
+                <div class="cell" style="width: 55%">
+                  {{vulnerability.name}}
+                </div>
+                <div class="cell" style="float: right; width: 19%;">
+                  {{vulnerability.count}}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
   </article>
-  <article class="">
-
+  <article style="page-break-before: always" class="summary">
+    <h2 id="assessment-timeline">Timeline of the Assessment</h2>
+    <p>
+      Scan started on: {{scan_object.start_scan_date|date:"F j, Y h:i"}}
+      <br>
+      Total time taken:
+      {% if scan_object.scan_status == 0 %}
+      {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }}
+      {% elif scan_object.scan_status == 1 %}
+      {{ scan_object.get_elapsed_time }}
+      {% elif scan_object.scan_status == 2 %}
+      {% if scan_object.get_completed_time_in_sec < 60 %}
+      Completed in < 1 minutes {% else %} Completed in {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }} {% endif %} {% elif scan_object.scan_status == 3 %} Aborted in
+        {{ scan_object.start_scan_date|timesince:scan_object.stop_scan_date }} {% endif %} <br>
+        Report Generated on: {% now "F j, Y" %}
+    </p>
+  </article>
+  <article class="summary">
+    <h2 id="reconnaissance-results">Reconnaissance Results</h2>
+    <p>
+      During the reconnaissance phase, {{scan_object.get_subdomain_count}} subdomains were discovered.
+      Out of {{scan_object.get_subdomain_count}} subdomains, {{subdomain_alive_count}} returned HTTP status 200.
+      {{interesting_subdomains.count}} interesting subdomains were also identified based on the interesting keywords used.
+    </p>
+    <h3>Listed below are the {{scan_object.get_subdomain_count}} subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    <div class="table">
+      <div class="row header blue-header">
+        <div class="cell" style="width: 38%">
+          Subdomain
+        </div>
+        <div class="cell" style="width: 38%">
+          Page title
+        </div>
+        <div class="cell" style="width: 18%">
+          HTTP Status
+        </div>
+      </div>
+      {% for subdomain in subdomains %}
+      <div class="row">
+        <div class="cell" style="width: 38%">
+          {{subdomain.name}}
+        </div>
+        <div class="cell" style="width: 38%">
+          {% if subdomain.page_title %}
+          {{subdomain.page_title}}
+          {% endif %}
+        </div>
+        <div class="cell" style="width: 18%">
+          {{subdomain.http_status}}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   </article>
 </body>
 
