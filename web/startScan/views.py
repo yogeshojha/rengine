@@ -629,11 +629,19 @@ def delete_scans(request):
 
 def create_report(request, id):
     scan_object = ScanHistory.objects.get(id=id)
-    vulnerabilities = Vulnerability.objects.values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
+    vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
+    subdomains = Subdomain.objects.filter(scan_history=scan_object)
+    subdomain_alive_count = Subdomain.objects.filter(
+        scan_history__id=id).values('name').distinct().filter(
+        http_status__exact=200).count()
+    interesting_subdomains = get_interesting_subdomains(scan_history=id)
     template = get_template('report/full.html')
     data = {
         'scan_object': scan_object,
-        'vulnerabilities': vulnerabilities
+        'vulnerabilities': vulnerabilities,
+        'subdomain_alive_count': subdomain_alive_count,
+        'interesting_subdomains': interesting_subdomains,
+        'subdomains': subdomains,
     }
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
