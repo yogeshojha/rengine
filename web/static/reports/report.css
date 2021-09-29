@@ -105,7 +105,6 @@ h2, h3, h4 {
 }
 
 h2 {
-  break-before: always;
   font-size: 28pt;
   string-set: heading content();
 }
@@ -196,7 +195,7 @@ h4 {
   margin-bottom: 0;
   padding: .25cm 0;
   text-align: center;
-  height: 100px;
+  height: 85px;
   color: #37474F;
 }
 
@@ -242,4 +241,36 @@ h4 {
 
 #mini-text{
   font-size: 11px;
+}
+
+.table{
+  margin: 0 0 40px 0;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  display: table;
+  border-spacing: 0 0.4em;
+}
+
+.row{
+  display: table-row;
+  background: #f6f6f6;
+}
+
+.cell{
+  padding: 6px 6px 6px 6px;
+  display: table-cell;
+}
+
+.header{
+  font-weight: 900;
+  color: #ffffff;
+  background: #ea6153;
+}
+
+.info-cell{
+  background: #42A5F5;
+}
+
+.severity-title-box{
+  color: #37474F;
 }
