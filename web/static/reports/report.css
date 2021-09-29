@@ -212,13 +212,45 @@ h4 {
   background: #FFE082 !important;
 }
 
+.critical-text{
+  color: #F44336 !important;
+}
+.high-text{
+  color: #FFAB91 !important;
+}
+.medium-text{
+  color: #FF7043 !important;
+}
+.low-text{
+  color: #FFE082 !important;
+}
+.info-text{
+  color: #29B6F6 !important;
+}
+
+.critical-line{
+  border-bottom: 3px solid #F44336 !important;
+}
+.high-line{
+  border-bottom: 3px solid #FFAB91 !important;
+}
+.medium-line{
+  border-bottom: 3px solid #FF7043 !important;
+}
+.low-line{
+  border-bottom: 3px solid #FFE082 !important;
+}
+.info-line{
+  border-bottom: 3px solid #29B6F6 !important;
+}
+
 #vulnerability-count{
   font-size: 30pt;
 }
 
 #info_title{
   font-size: 13pt;
-  color: #1976D2;
+  color: #29B6F6;
 }
 
 .bold-h3{
