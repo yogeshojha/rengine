@@ -13,6 +13,8 @@
       <br>
       {{scan_object.domain.name}}
       <div class="line"></div>
+      {# generated date #}
+      <span class="subheading">{% now "F j, Y" %}</span>
     </h1>
     <footer>
       Company Name
@@ -28,16 +30,61 @@
     </footer>
   </article>
 
-  <article id="columns">
-    <h2 id="columns-title">Quick Summary</h2>
-    <h3>This section is a quick summary of scan performed on {{scan_object.domain.name}}.</h3>
-    <p>
-      {% if scan_object.domain.description %}
-      <h4>Target/Domain Information</h4>
-        Description: {{scan_object.domain.description}}
-        <hr>
-      {% endif %}
-    </p>
+  <article id="summary">
+    <h2>Quick Summary</h2>
+    <h4 id="light-title">This section contains quick summary of scan performed on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <section>
+      <h4>Subdomains</h4>
+      <p>{{scan_object.get_subdomain_count}}</p>
+    </section>
+    <section>
+      <h4>Endpoints</h4>
+      <p>{{scan_object.get_endpoint_count}}</p>
+    </section>
+
+    <section>
+      <h4>Vulnerabilities</h4>
+      <p>{{scan_object.get_vulnerability_count}}</p>
+      <span id="mini-text" style="float: right">* Including Info Vulnerabilities</span>
+    </section>
+  </article>
+  <article>
+    <h3 id="bold-h3">Vulnerabilities</h3>
+    <div id="vulnerability-boxes">
+      <section>
+        <p id="inside-box-title" class="critical">Critical
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_critical_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="high">High
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_high_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="medium">Medium
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_medium_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="low">Low
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_low_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+    </div>
+    <span id="info_title">* {{scan_object.get_info_vulnerability_count}} Informational Vulnerabilities Identified</span>
   </article>
 </body>
 
