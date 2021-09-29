@@ -62,7 +62,7 @@
 }
 
 @page :first {
-  background-color: #212121;
+  background-color: #424242;
   background-size: cover;
   margin: 0;
 }
@@ -88,12 +88,20 @@ h1 {
   margin: 5cm 2cm 0 2cm;
   page: no-chapter;
   width: 100%;
+  line-height: normal;
+}
+
+.subheading {
+  font-family: roboto-light;
+  font-size: 22pt;
+  width: 100%;
 }
 
 h2, h3, h4 {
   font-family: roboto-regular;
   color: black;
   font-weight: 400;
+  line-height: normal;
 }
 
 h2 {
@@ -130,161 +138,33 @@ h4 {
 #cover footer:first-of-type {
   padding-left: 3cm;
 }
-#contents {
-  page: no-chapter;
-}
-#contents h2 {
-  font-size: 20pt;
-  font-weight: 400;
-  margin-bottom: 3cm;
-}
-#contents h3 {
-  font-weight: 500;
-  margin: 3em 0 1em;
-}
-#contents h3::before {
-  background: #FF7043;
-  content: '';
-  display: block;
-  height: .08cm;
-  margin-bottom: .25cm;
-  width: 2cm;
-}
-#contents ul {
-  list-style: none;
-  padding-left: 0;
-}
-#contents ul li {
-  border-top: .25pt solid #c1c1c1;
-  margin: .25cm 0;
-  padding-top: .25cm;
-}
-#contents ul li::before {
-  color: #FF7043;
-  content: '• ';
-  font-size: 40pt;
-  line-height: 16pt;
-  vertical-align: bottom;
-}
-#contents ul li a {
-  color: inherit;
-  text-decoration-line: inherit;
-}
-#contents ul li a::before {
-  content: target-text(attr(href));
-}
-#contents ul li a::after {
-  color: #FF7043;
-  content: target-counter(attr(href), page);
-  float: right;
-}
 
-#columns section {
-  columns: 2;
-  column-gap: 1cm;
-  padding-top: 1cm;
-}
-#columns section p {
-  text-align: justify;
-}
-#columns section p:first-of-type {
-  font-weight: 700;
-}
-
-#skills h3 {
-  background: #FF7043;
-  margin: 0 -3cm 1cm;
-  padding: 1cm 1cm 1cm 3cm;
-  width: 21cm;
-}
-#skills section {
-  padding: .5cm 0;
-}
-#skills section#table-content::before {
-  background: url(table-content.svg) no-repeat center #FF7043;
-  background-size: 50%;
-  content: '';
-  display: inline-block;
-  float: left;
-  height: 2cm;
-  margin-right: .5cm;
-  vertical-align: middle;
-  width: 2cm;
-}
-#skills section#heading::before {
-  background: url(heading.svg) no-repeat center #FF7043;
-  background-size: 50%;
-  content: '';
-  display: inline-block;
-  float: left;
-  height: 2cm;
-  margin-right: .5cm;
-  vertical-align: middle;
-  width: 2cm;
-}
-#skills section#multi-columns::before {
-  background: url(multi-columns.svg) no-repeat center #FF7043;
-  background-size: 50%;
-  content: '';
-  display: inline-block;
-  float: left;
-  height: 2cm;
-  margin-right: .5cm;
-  vertical-align: middle;
-  width: 2cm;
-}
-#skills section#internal-links::before {
-  background: url(internal-links.svg) no-repeat center #FF7043;
-  background-size: 50%;
-  content: '';
-  display: inline-block;
-  float: left;
-  height: 2cm;
-  margin-right: .5cm;
-  vertical-align: middle;
-  width: 2cm;
-}
-#skills section#style::before {
-  background: url(style.svg) no-repeat center #FF7043;
-  background-size: 50%;
-  content: '';
-  display: inline-block;
-  float: left;
-  height: 2cm;
-  margin-right: .5cm;
-  vertical-align: middle;
-  width: 2cm;
-}
-#skills section h4 {
-  margin: 0;
-}
-#skills section p {
-  margin-top: 0;
-}
-
-#offers {
+#summary {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
 }
-#offers h2, #offers h3 {
+
+#summary h2, #summary h3 {
   width: 100%;
 }
-#offers section {
+
+#summary section {
   width: 30%;
 }
-#offers section h4 {
+
+#summary section h4 {
   margin-bottom: 0;
 }
-#offers section ul {
+#summary section ul {
   list-style: none;
   margin: 0;
   padding-left: 0;
 }
-#offers section ul li:not(:last-of-type) {
+#summary section ul li:not(:last-of-type) {
   margin: .5cm 0;
 }
-#offers section p {
+#summary section p {
   background: #FF7043;
   display: block;
   font-size: 15pt;
@@ -294,116 +174,72 @@ h4 {
   text-align: center;
 }
 
-#chapter {
-  align-items: center;
+#vulnerability-boxes {
   display: flex;
-  height: 297mm;
-  justify-content: center;
-  page: chapter;
+  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
-#typography section {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 1cm 0;
+#vulnerability-boxes section {
+  width: 24%;
 }
-#typography section h4 {
-  border-top: 1pt solid;
-  flex: 1 25%;
-  margin: 0;
+
+#vulnerability-boxes section h4 {
+  margin-bottom: 0;
 }
-#typography section h4 + * {
-  flex: 1 75%;
-  margin: 0;
-  padding-left: .5cm;
+
+#vulnerability-boxes section p {
+  background: #FF7043;
+  display: block;
+  font-size: 15pt;
+  font-weight: 700;
+  margin-bottom: 0;
+  padding: .25cm 0;
+  text-align: center;
+  height: 100px;
+  color: #37474F;
 }
-#typography section p {
-  text-align: justify;
+
+.critical{
+  background: #EF9A9A !important;
 }
-#typography section ul {
-  line-height: 2;
-  list-style: none;
+.high{
+  background: #FFAB91 !important;
 }
-#typography section#small-caps p {
-  font-variant: small-caps;
+.medium{
+  background: #FFCC80 !important;
 }
-#typography section#ligatures dl {
-  display: flex;
-  flex-wrap: wrap;
+.low{
+  background: #FFE082 !important;
 }
-#typography section#ligatures dl dt {
-  font-weight: 400;
-  width: 30%;
+
+#vulnerability-count{
+  font-size: 30pt;
 }
-#typography section#ligatures dl dd {
-  flex: 1 70%;
-  margin: 0;
-  padding: 0;
+
+#info_title{
+  font-size: 13pt;
+  color: #1976D2;
 }
-#typography section#ligatures .none {
-  font-variant-ligatures: none;
+
+#bold-h3{
+  font-family: roboto-medium;
+  font-size: 18pt;
 }
-#typography section#ligatures .common {
-  font-variant-ligatures: common-ligatures;
-}
-#typography section#ligatures .discretionary {
-  font-variant-ligatures: discretionary-ligatures;
-}
-#typography section#ligatures .contextual {
-  font-variant-ligatures: contextual;
-}
-#typography section#numbers dl {
-  display: flex;
-  flex-wrap: wrap;
-}
-#typography section#numbers dl dt {
-  font-weight: 400;
-  width: 30%;
-}
-#typography section#numbers dl dd {
-  flex: 1 70%;
-  margin: 0;
-  padding: 0;
-}
-#typography section#numbers #fractions {
-  font-variant-numeric: diagonal-fractions;
-}
-#typography section#numbers #ordinals {
-  font-variant-numeric: ordinal;
-}
-#typography section#numbers #slashed {
-  font-variant-numeric: slashed-zero;
-}
-#typography section#numbers #super {
-  font-variant-position: super;
-}
-#typography section#numbers #sub {
-  font-variant-position: sub;
-}
-#typography section#figures dl {
-  columns: 4;
-}
-#typography section#figures dl dt {
-  font-weight: 400;
-}
-#typography section#figures dl dd {
-  display: flex;
-  margin: 0;
-  padding: 0;
-}
-#typography section#figures dl dd ul {
-  padding: 0 1em 0 0;
-}
-#typography section#figures #oldstyle {
-  font-variant-numeric: oldstyle-nums;
-}
-#typography section#figures #tabular {
-  font-variant-numeric: tabular-nums;
-}
-#typography section#figures #old-tabular {
-  font-variant-numeric: oldstyle-nums tabular-nums;
-}
+
 
 .line {
   border-bottom: 1px double #FF7043;
+}
+
+#light-title{
+  font-family: roboto-light;
+}
+
+#primary-title{
+  color: #FF7043;
+}
+
+#mini-text{
+  font-size: 11px;
 }
