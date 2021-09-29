@@ -221,7 +221,7 @@ h4 {
   color: #1976D2;
 }
 
-#bold-h3{
+.bold-h3{
   font-family: roboto-medium;
   font-size: 18pt;
 }
@@ -264,7 +264,18 @@ h4 {
 .header{
   font-weight: 900;
   color: #ffffff;
+}
+
+.red-header{
   background: #ea6153;
+}
+
+.blue-header{
+  background: #1E88E5;
+}
+
+.green-header{
+  background: #66BB6A;
 }
 
 .info-cell{
@@ -273,4 +284,66 @@ h4 {
 
 .severity-title-box{
   color: #37474F;
+}
+
+
+#contents {
+  page: no-chapter;
+}
+#contents h2 {
+  font-size: 20pt;
+  font-weight: 400;
+  margin-bottom: 3cm;
+}
+#contents h3 {
+  font-weight: 500;
+  margin: 3em 0 1em;
+}
+#contents h3::before {
+  background: #FF7043;
+  content: '';
+  display: block;
+  height: .08cm;
+  margin-bottom: .25cm;
+  width: 2cm;
+}
+#contents ul {
+  list-style: none;
+  padding-left: 0;
+}
+#contents ul li {
+  border-top: .25pt solid #c1c1c1;
+  margin: .25cm 0;
+  padding-top: .25cm;
+}
+#contents ul li::before {
+  color: #FF7043;
+  content: '• ';
+  font-size: 30pt;
+  line-height: 16pt;
+  vertical-align: bottom;
+}
+#contents ul li a {
+  color: inherit;
+  text-decoration-line: inherit;
+}
+#contents ul li a::before {
+  content: target-text(attr(href));
+}
+#contents ul li a::after {
+  color: #FF7043;
+  content: target-counter(attr(href), page);
+  float: right;
+}
+
+#columns section {
+  columns: 2;
+  column-gap: 1cm;
+  padding-top: 1cm;
+}
+#columns section p {
+  text-align: justify;
+}
+#columns section p:first-of-type {
+  font-weight: 700;
 }
