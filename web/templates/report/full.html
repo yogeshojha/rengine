@@ -38,6 +38,7 @@
       <li><a href="#vulnerability-summary"></a></li>
       <li><a href="#assessment-timeline"></a></li>
       <li><a href="#reconnaissance-results"></a></li>
+      <li><a href="#vulnerabilities-discovered"></a></li>
     </ul>
   </article>
 
@@ -228,6 +229,97 @@
       </div>
       {% endfor %}
     </div>
+  </article>
+  <article style="page-break-before: always" class="summary">
+    <h2 id="vulnerabilities-discovered">Vulnerabilities Discovered</h2>
+    <p>
+      Total of {{scan_object.get_vulnerability_count}} were discovered in {{scan_object.domain.name}},
+      {{scan_object.get_critical_vulnerability_count}} of them were Critical,
+      {{scan_object.get_high_vulnerability_count}} of them were High Severity,
+      {{scan_object.get_medium_vulnerability_count}} of them were Medium severity,
+      {{scan_object.get_low_vulnerability_count}} of them were Low severity, and
+      {{scan_object.get_info_vulnerability_count}} of them were Informational.
+    </p>
+    <h3>Vulnerability Breakdown by Severity</h3>
+    <div id="vulnerability-boxes">
+      <section>
+        <p id="inside-box-title" class="critical">Critical
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_critical_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="high">High
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_high_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="medium">Medium
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_medium_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+      <section>
+        <p id="inside-box-title" class="low">Low
+          <br>
+          <span id="vulnerability-count">
+            {{scan_object.get_low_vulnerability_count}}
+          </span>
+        </p>
+      </section>
+    </div>
+    <span id="info_title">* {{scan_object.get_info_vulnerability_count}} Informational Vulnerabilities Identified</span>
+  </article>
+  {# start vulnerability #}
+  <article class="">
+    <h3>Vulnerability Details</h3>
+    <br>
+    {% for vulnerability in all_vulnerabilities %}
+    <h3>
+      {{vulnerability.name}}
+      {% if vulnerability.severity == 0 %}
+        <span style="float: right; font-size: 18px;" class="info-text">Informational</span>
+        </h3>
+        <div class="info-line"></div>
+      {% elif vulnerability.severity == 1 %}
+        <span style="float: right; font-size: 18px;" class="low-text">Low</span>
+        </h3>
+        <div class="low-line"></div>
+      {% elif vulnerability.severity == 2 %}
+        <span style="float: right; font-size: 18px;" class="medium-text">Medium</span>
+        </h3>
+        <div class="medium-line"></div>
+      {% elif vulnerability.severity == 3 %}
+        <span style="float: right; font-size: 18px;" class="high-text">High</span>
+        </h3>
+        <div class="high-line"></div>
+      {% elif vulnerability.severity == 4 %}
+        <span style="float: right; font-size: 18px;" class="critical-text">Critical</span>
+        </h3>
+        <div class="critical-line"></div>
+      {% endif %}
+    </div>
+    <span style="float: left; font-size: 12px;">
+      {{vulnerability.tags}}
+    </span>
+    <span style="float: right; font-size: 12px;">Discovered on: {{vulnerability.discovered_date}}</span>
+    <br>
+    <span>Vulnerable URL: {{vulnerability.http_url}}</span>
+    <br>
+    {% if vulnerability.description %}
+      <span>
+        {{vulnerability.description}}
+      </span>
+    {% endif %}
+    <br><br>
+    {% endfor %}
   </article>
 </body>
 
