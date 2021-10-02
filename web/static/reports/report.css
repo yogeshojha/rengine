@@ -379,3 +379,8 @@ h4 {
 #columns section p:first-of-type {
   font-weight: 700;
 }
+
+
+.line-break{
+  display: block;
+}
