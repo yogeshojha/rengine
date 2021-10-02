@@ -630,7 +630,7 @@ def delete_scans(request):
 def create_report(request, id):
     scan_object = ScanHistory.objects.get(id=id)
     unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
-    all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')
+    all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')[:5]
     subdomains = Subdomain.objects.filter(scan_history=scan_object)
     subdomain_alive_count = Subdomain.objects.filter(
         scan_history__id=id).values('name').distinct().filter(
