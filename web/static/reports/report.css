@@ -211,6 +211,12 @@ h4 {
 .low{
   background: #FFE082 !important;
 }
+.success{
+  background-color: #A5D6A7 !important;
+}
+.grey{
+  background-color: #B0BEC5 !important;
+}
 
 .critical-text{
   color: #F44336 !important;
@@ -263,7 +269,7 @@ h4 {
   border-bottom: 1px double #FF7043;
 }
 
-#light-title{
+.light-title{
   font-family: roboto-light;
 }
 

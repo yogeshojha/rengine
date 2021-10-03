@@ -43,23 +43,37 @@
 
   <article id="summary" style="page-break-before: always">
     <h2 id="quick-summary">Quick Summary</h2>
-    <h4 id="light-title">This section contains quick summary of scan performed on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <h4 class="light-title">This section contains quick summary of scan performed on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     <h3 id="reconnaissance-summary">Reconnaissance</h3>
-    <section class="line-break">
-      <h4>Subdomains</h4>
-      <p>{{scan_object.get_subdomain_count}}</p>
-    </section>
-    <section>
-      <h4>Endpoints</h4>
-      <p>{{scan_object.get_endpoint_count}}</p>
-    </section>
-    <section>
-      <h4>Vulnerabilities</h4>
-      <p>{{scan_object.get_vulnerability_count}}</p>
-      <span id="mini-text" style="float: right">* Including Info Vulnerabilities</span>
-    </section>
   </article>
+  <div id="vulnerability-boxes">
+    <section>
+      <p id="inside-box-title" class="success">Subdomains
+        <br>
+        <span id="vulnerability-count">
+          {{scan_object.get_subdomain_count}}
+        </span>
+      </p>
+    </section>
+    <section>
+      <p id="inside-box-title" class="grey">Endpoints
+        <br>
+        <span id="vulnerability-count">
+          {{scan_object.get_endpoint_count}}
+        </span>
+      </p>
+    </section>
+    <section>
+      <p id="inside-box-title" class="critical">Vulnerabilities
+        <br>
+        <span id="vulnerability-count">
+          {{scan_object.get_vulnerability_count}}
+        </span>
+      </p>
+    </section>
+  </div>
   <article>
+    <br>
     <h3 id="vulnerability-summary">Vulnerability Summary</h3>
     <div id="vulnerability-boxes">
       <section>
@@ -117,31 +131,37 @@
   {% if interesting_subdomains %}
   <article style="page-break-before: always" class="summary">
     <h3 id="interesting-recon-data" class="bold-h3">Interesting Recon Data</h3>
-    <h3>Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    <h4 class="light-title">Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     {% endif %}
     <div class="table">
       <div class="row header green-header">
-        <div class="cell" style="width: 38%">
+        <div class="cell" style="width: 5%">
+          #
+        </div>
+        <div class="cell" style="width: 33%">
           Subdomain
         </div>
-        <div class="cell" style="width: 38%">
+        <div class="cell" style="width: 33%">
           Page title
         </div>
-        <div class="cell" style="width: 18%">
+        <div class="cell" style="width: 13%">
           HTTP Status
         </div>
       </div>
       {% for subdomain in interesting_subdomains %}
       <div class="row">
-        <div class="cell" style="width: 38%">
+        <div class="cell" style="width: 5%">
+          {{ forloop.counter }}
+        </div>
+        <div class="cell" style="width: 35%">
           {{subdomain.name}}
         </div>
-        <div class="cell" style="width: 38%">
+        <div class="cell" style="width: 35%">
           {% if subdomain.page_title %}
           {{subdomain.page_title}}
           {% endif %}
         </div>
-        <div class="cell" style="width: 18%">
+        <div class="cell" style="width: 13%;">
           {{subdomain.http_status}}
         </div>
       </div>
@@ -149,48 +169,54 @@
   </article>
   {% endfor %}
   <article style="page-break-before: always" class="summary">
-    <h3>Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    <h3 id="vulnerability-summary" class="bold-h3">Summary of Vulnerabilities Identified</h3>
+    <h4 class="light-title">Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     <div class="table">
       <div class="row header red-header">
-        <div class="cell" style="width: 15%">
-          Severity
+        <div class="cell" style="width: 5%">
+          #
         </div>
-        <div class="cell" style="width: 55%">
+        <div class="cell" style="width: 50%">
           Vulnerability Name
         </div>
         <div class="cell" style="width: 19%;">
           Times Identified
         </div>
+        <div class="cell" style="width: 15%">
+          Severity
+        </div>
       </div>
-
       {% for vulnerability in vulnerabilities %}
       <div class="row">
+        <div class="cell" style="width: 5%">
+          {{ forloop.counter }}
+        </div>
+        <div class="cell" style="width: 50%">
+          {{vulnerability.name}}
+        </div>
+        <div class="cell" style="float: right; width: 19%;">
+          {{vulnerability.count}}
+        </div>
         {% if vulnerability.severity == 0 %}
         <div class="cell info-cell" style="width: 15%">
           <span class="severity-title-box">Informational</span>
-          {% elif vulnerability.severity == 1 %}
+        {% elif vulnerability.severity == 1 %}
           <div class="cell low" style="width: 15%">
-            <span class="severity-title-box">Low</span>
-            {% elif vulnerability.severity == 2 %}
-            <div class="cell medium" style="width: 15%">
-              <span class="severity-title-box">Medium</span>
-              {% elif vulnerability.severity == 3 %}
-              <div class="cell high" style="width: 15%">
-                <span class="severity-title-box">High</span>
-                {% elif vulnerability.severity == 4 %}
-                <div class="cell critical" style="width: 15%">
-                  <span class="severity-title-box">Critical</span>
-                  {% endif %}
-                </div>
-                <div class="cell" style="width: 55%">
-                  {{vulnerability.name}}
-                </div>
-                <div class="cell" style="float: right; width: 19%;">
-                  {{vulnerability.count}}
-                </div>
-              </div>
-              {% endfor %}
-            </div>
+          <span class="severity-title-box">Low</span>
+        {% elif vulnerability.severity == 2 %}
+          <div class="cell medium" style="width: 15%">
+          <span class="severity-title-box">Medium</span>
+        {% elif vulnerability.severity == 3 %}
+          <div class="cell high" style="width: 15%">
+          <span class="severity-title-box">High</span>
+        {% elif vulnerability.severity == 4 %}
+          <div class="cell critical" style="width: 15%">
+          <span class="severity-title-box">Critical</span>
+        {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   </article>
   <article class="summary" style="page-break-before: always">
     <h2 id="reconnaissance-results">Reconnaissance Results</h2>
@@ -199,7 +225,7 @@
       Out of {{scan_object.get_subdomain_count}} subdomains, {{subdomain_alive_count}} returned HTTP status 200.
       {{interesting_subdomains.count}} interesting subdomains were also identified based on the interesting keywords used.
     </p>
-    <h3>Listed below are the {{scan_object.get_subdomain_count}} subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h3>
+    <h4>{{scan_object.get_subdomain_count}} subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     <div class="table">
       <div class="row header blue-header">
         <div class="cell" style="width: 38%">
