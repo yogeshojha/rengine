@@ -27,6 +27,7 @@
 }
 
 @page {
+  size: A4;
   @top-left {
     background: #FF7043;
     content: counter(page);
@@ -217,15 +218,54 @@ h4 {
 .grey{
   background-color: #B0BEC5 !important;
 }
+.info{
+  background-color: #90CAF9 !important;
+}
+
+.critical-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #EF9A9A !important;
+}
+.high-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #FFAB91 !important;
+}
+.medium-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #FFCC80 !important;
+}
+.low-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #FFE082 !important;
+}
+.success-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #A5D6A7 !important;
+}
+.grey-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #B0BEC5 !important;
+}
+.info-border{
+  border-style:solid;
+  border-width: 1px;
+  border-color: #90CAF9 !important;
+}
 
 .critical-text{
-  color: #F44336 !important;
+  color: #EF9A9A !important;
 }
 .high-text{
   color: #FFAB91 !important;
 }
 .medium-text{
-  color: #FF7043 !important;
+  color: #FFCC80 !important;
 }
 .low-text{
   color: #FFE082 !important;
@@ -264,6 +304,13 @@ h4 {
   font-size: 18pt;
 }
 
+.small_text{
+  font-size: 9pt;
+}
+
+.bold{
+  font-weight: bold;
+}
 
 .line {
   border-bottom: 1px double #FF7043;

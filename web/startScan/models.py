@@ -182,6 +182,12 @@ class Subdomain(models.Model):
             subdomain__name=self.name).count()
 
     @property
+    def get_vulnerabilities(self):
+        return Vulnerability.objects.filter(
+            scan_history=self.scan_history).filter(
+            subdomain__name=self.name)
+
+    @property
     def get_todos(self):
         TodoNote = apps.get_model('recon_note', 'TodoNote')
         notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
