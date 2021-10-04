@@ -144,7 +144,7 @@
         <div class="cell" style="width: 33%">
           Page title
         </div>
-        <div class="cell" style="width: 13%">
+        <div class="cell" style="width: 15%">
           HTTP Status
         </div>
       </div>
@@ -161,7 +161,7 @@
           {{subdomain.page_title}}
           {% endif %}
         </div>
-        <div class="cell" style="width: 13%;">
+        <div class="cell" style="width: 15%;">
           {{subdomain.http_status}}
         </div>
       </div>
@@ -219,7 +219,8 @@
     </div>
   </article>
   <article class="summary" style="page-break-before: always">
-    <h2 id="reconnaissance-results">Reconnaissance Results</h2>
+    <h2 id="reconnaissance-results">Discovered Assets</h2>
+    <h3 id="">Subdomains</h3>
     <p>
       During the reconnaissance phase, {{scan_object.get_subdomain_count}} subdomains were discovered.
       Out of {{scan_object.get_subdomain_count}} subdomains, {{subdomain_alive_count}} returned HTTP status 200.
@@ -254,6 +255,45 @@
       </div>
       {% endfor %}
     </div>
+    <h3 id="">IP Addresses</h3>
+    <h4>{{ip_addresses.count}} IP Addresses were identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <div class="table">
+      <div class="row header blue-header">
+        <div class="cell" style="width: 38%">
+          IP
+        </div>
+        <div class="cell" style="width: 38%">
+          Open Ports
+        </div>
+        <div class="cell" style="width: 18%">
+          Remarks
+        </div>
+      </div>
+      {% for ip in ip_addresses %}
+      <div class="row">
+        <div class="cell" style="width: 38%">
+          {{ip.address}}
+        </div>
+        <div class="cell" style="width: 38%">
+          {% for port in ip.ports.all %}
+          {{port.number}}/{{port.service_name}}{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        </div>
+        {% if ip.is_cdn %}
+        <div class="cell medium" style="width: 18%">
+          CDN IP Address
+        {% else %}
+        <div class="cell" style="width: 18%">
+        {% endif %}
+      </div>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+  <br>
+  <article class="">
+    <h3 class="bold-h3">Reconnaissance Findings</h3>
+    
   </article>
   <article style="page-break-before: always" class="summary">
     <h2 id="vulnerabilities-discovered">Vulnerabilities Discovered</h2>

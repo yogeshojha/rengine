@@ -636,7 +636,9 @@ def create_report(request, id):
         scan_history__id=id).values('name').distinct().filter(
         http_status__exact=200).count()
     interesting_subdomains = get_interesting_subdomains(scan_history=id)
-    template = get_template('report/full.html')
+    ip_addresses = IpAddress.objects.filter(
+        ip_addresses__in=Subdomain.objects.filter(
+            target_domain__id=id)).distinct()
     data = {
         'scan_object': scan_object,
         'vulnerabilities': unique_vulnerabilities,
@@ -644,7 +646,9 @@ def create_report(request, id):
         'subdomain_alive_count': subdomain_alive_count,
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
+        'ip_addresses': ip_addresses
     }
+    template = get_template('report/full.html')
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
     response = HttpResponse(pdf, content_type='application/pdf')
