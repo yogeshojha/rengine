@@ -293,7 +293,87 @@
   <br>
   <article class="">
     <h3 class="bold-h3">Reconnaissance Findings</h3>
-    
+      {% for subdomain in subdomains %}
+      <table class="table" cellspacing="0" style="border-collapse: collapse;">
+      <tr>
+        <td style="width: 2%" class="cell info-border">{{ forloop.counter }}.</td>
+        <td style="width: 80%" class="cell info-border">{{subdomain.name}}</td>
+        {% if subdomain.http_status == 200 %}
+          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %}
+          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        {% elif subdomain.http_status >= 400 %}
+          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        {% elif subdomain.http_status == 0 %}
+          <td style="width: 10%" class="cell info-border">N/A</td>
+        {% else %}
+          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        {% endif %}
+      </tr>
+      {% if subdomain.page_title %}
+      <tr>
+        <td colspan="3" class="cell info-border"><strong>Page Title: </strong>{{subdomain.page_title}}</td>
+      </tr>
+      {% endif %}
+      {% if subdomain.ip_addresses.all %}
+      <tr>
+        <td colspan="3" class="cell info-border">
+          IP Address:
+          <ul>
+            {% for ip in subdomain.ip_addresses.all %}
+              <li>{{ip.address}}
+                {% if ip.ports.all %}
+                <ul>
+                <li>Open Ports: &nbsp;
+                {% for port in ip.ports.all %}
+                {{port.number}}/{{port.service_name}}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+                </li>
+                </ul>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% endif %}
+      {% if subdomain.get_vulnerabilities %}
+      <tr>
+        <td colspan="3" class="cell info-border">
+          Vulnerabilities
+          {% regroup subdomain.get_vulnerabilities by name as vuln_list %}
+          <ul>
+            {% for vulnerability in vuln_list %}
+            <li>
+              {{ vulnerability.grouper }}
+              {% regroup vulnerability.list by http_url as vuln_http_url_list %}
+              <ul>
+                {% for vuln_urls in vuln_http_url_list %}
+                <li>
+                  {{vuln_urls.grouper}}
+                  <br>
+                  {% for vuln_url in vuln_urls.list %}
+                  <span class="small_text">
+                    {% if vuln_url.extracted_results %}
+                      {% if not forloop.first %}•{% endif %} {{vuln_url.exextracted_results}}
+                      <br>
+                    {% endif %}
+                    {% if vuln_url.matcher_name %}
+                      {% if not forloop.first %}•{% endif %} {{vuln_url.matcher_name}}
+                    {% endif %}
+                  </span>
+                  {% endfor %}
+                </li>
+                {% endfor %}
+              </ul>
+            </li>
+            {% endfor %}
+          </ul>
+        </td>
+      </tr>
+      {% endif %}
+    </table>
+      {% endfor %}
   </article>
   <article style="page-break-before: always" class="summary">
     <h2 id="vulnerabilities-discovered">Vulnerabilities Discovered</h2>
