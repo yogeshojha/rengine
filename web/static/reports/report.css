@@ -222,6 +222,17 @@ h4 {
   background-color: #90CAF9 !important;
 }
 
+.badge{
+  display:inline-block;
+  padding-left:8px;
+  padding-right:8px;
+  text-align:center
+}
+
+.dark-text{
+  color: #424242;
+}
+
 .critical-border{
   border-style:solid;
   border-width: 1px;
@@ -275,20 +286,21 @@ h4 {
 }
 
 .critical-line{
-  border-bottom: 3px solid #F44336 !important;
+  border-bottom: 3px solid #EF9A9A !important;
 }
 .high-line{
   border-bottom: 3px solid #FFAB91 !important;
 }
 .medium-line{
-  border-bottom: 3px solid #FF7043 !important;
+  border-bottom: 3px solid #FFCC80 !important;
 }
 .low-line{
   border-bottom: 3px solid #FFE082 !important;
 }
 .info-line{
-  border-bottom: 3px solid #29B6F6 !important;
+  border-bottom: 3px solid #90CAF9 !important;
 }
+
 
 #vulnerability-count{
   font-size: 30pt;
@@ -436,4 +448,12 @@ h4 {
 
 .line-break{
   display: block;
+}
+
+#chapter {
+  align-items: center;
+  display: flex;
+  height: 297mm;
+  justify-content: center;
+  page: chapter;
 }
