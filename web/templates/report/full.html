@@ -34,10 +34,16 @@
     <h3>Table of contents</h3>
     <ul>
       <li><a href="#quick-summary"></a></li>
+      {% if interesting_subdomains %}
       <li><a href="#interesting-recon-data"></a></li>
+      {% endif %}
+      {% if all_vulnerabilities.count > 0 %}
       <li><a href="#vulnerability-summary"></a></li>
+      {% endif %}
       <li><a href="#reconnaissance-results"></a></li>
+      {% if all_vulnerabilities.count > 0 %}
       <li><a href="#vulnerabilities-discovered"></a></li>
+      {% endif %}
     </ul>
   </article>
 
@@ -132,7 +138,6 @@
   <article style="page-break-before: always" class="summary">
     <h3 id="interesting-recon-data" class="bold-h3">Interesting Recon Data</h3>
     <h4 class="light-title">Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
-    {% endif %}
     <div class="table">
       <div class="row header green-header">
         <div class="cell" style="width: 5%">
@@ -166,8 +171,10 @@
         </div>
       </div>
     </div>
+    {% endfor %}
   </article>
-  {% endfor %}
+  {% endif %}
+  {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
     <h3 id="vulnerability-summary" class="bold-h3">Summary of Vulnerabilities Identified</h3>
     <h4 class="light-title">Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
@@ -186,7 +193,7 @@
           Severity
         </div>
       </div>
-      {% for vulnerability in vulnerabilities %}
+      {% for vulnerability in unique_vulnerabilities %}
       <div class="row">
         <div class="cell" style="width: 5%">
           {{ forloop.counter }}
@@ -218,6 +225,7 @@
       {% endfor %}
     </div>
   </article>
+  {% endif %}
   <article class="summary" style="page-break-before: always">
     <h2 id="reconnaissance-results">Discovered Assets</h2>
     <h3 id="">Subdomains</h3>
@@ -359,7 +367,7 @@
                       <br>
                     {% endif %}
                     {% if vuln_url.matcher_name %}
-                      {% if not forloop.first %}•{% endif %} {{vuln_url.matcher_name}}
+                      {% if not forloop.first %} • {% endif %} {{vuln_url.matcher_name}}
                     {% endif %}
                   </span>
                   {% endfor %}
@@ -375,10 +383,13 @@
     </table>
       {% endfor %}
   </article>
+  {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
     <h2 id="vulnerabilities-discovered">Vulnerabilities Discovered</h2>
     <p>
-      Total of {{scan_object.get_vulnerability_count}} were discovered in {{scan_object.domain.name}},
+      This section reports the security issues found during the audit.
+      <br>
+      A Total of {{scan_object.get_vulnerability_count}} were discovered in {{scan_object.domain.name}},
       {{scan_object.get_critical_vulnerability_count}} of them were Critical,
       {{scan_object.get_high_vulnerability_count}} of them were High Severity,
       {{scan_object.get_medium_vulnerability_count}} of them were Medium severity,
@@ -424,47 +435,60 @@
   </article>
   {# start vulnerability #}
   <article class="">
-    <h3>Vulnerability Details</h3>
-    <br>
-    {% for vulnerability in all_vulnerabilities %}
-    <h3>
-      {{vulnerability.name}}
-      {% if vulnerability.severity == 0 %}
-      <span style="float: right; font-size: 18px;" class="info-text">Informational</span>
-    </h3>
-    <div class="info-line"></div>
-    {% elif vulnerability.severity == 1 %}
-    <span style="float: right; font-size: 18px;" class="low-text">Low</span>
-    </h3>
-    <div class="low-line"></div>
-    {% elif vulnerability.severity == 2 %}
-    <span style="float: right; font-size: 18px;" class="medium-text">Medium</span>
-    </h3>
-    <div class="medium-line"></div>
-    {% elif vulnerability.severity == 3 %}
-    <span style="float: right; font-size: 18px;" class="high-text">High</span>
-    </h3>
-    <div class="high-line"></div>
-    {% elif vulnerability.severity == 4 %}
-    <span style="float: right; font-size: 18px;" class="critical-text">Critical</span>
-    </h3>
-    <div class="critical-line"></div>
-    {% endif %}
+    {% regroup all_vulnerabilities by name as grouped_vulnerabilities %}
+    {% for vulnerability in grouped_vulnerabilities %}
+    <div>
+      <h4 class="dark-text">
+        {{vulnerability.grouper}}
+        {% if vulnerability.list.0.severity == 0 %}
+        <span style="float: right;" class="badge info dark-text">Informational</span>
+        <div class="info-line"></div>
+        {% elif vulnerability.list.0.severity == 1 %}
+        <span style="float: right;" class="badge low dark-text">Low</span>
+        <div class="low-line"></div>
+        {% elif vulnerability.list.0.severity == 2 %}
+        <span style="float: right;" class="badge medium dark-text">Medium</span>
+        <div class="medium-line"></div>
+        {% elif vulnerability.list.0.severity == 3 %}
+        <span style="float: right;" class="badge high dark-text">High</span>
+        <div class="high-line"></div>
+        {% elif vulnerability.list.0.severity == 4 %}
+        <span style="float: right;" class="badge critical dark-text">Critical</span>
+        <div class="critical-line"></div>
+        {% endif %}
+      </h4>
+      {% if vulnerability.list.0.description %}
+      <h5>Description</h5>
+      {{vulnerability.list.0.description}}
+      {% endif %}
+      <h5>Vulnerable URL(s)</h5>
+      {% regroup vulnerability.list by http_url as vuln_http_url_list %}
+      <ul>
+      {% for vuln_urls in vuln_http_url_list %}
+        <li>{{vuln_urls.grouper}}</li>
+        <strong>Results/Findings:</strong>
+        {% for vuln in vuln_urls.list %}
+          {% if vuln.matcher_name %}
+            {% if not forloop.first %} • {% endif %} {{vuln.matcher_name}}
+          {% endif %}
+          {% if vuln.extracted_results %}
+            {% if not forloop.first %} • {% endif %} {{vuln.exextracted_results}}
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+      </ul>
+      {% if vulnerability.list.0.reference %}
+      <h5>Reference</h5>
+      {{vulnerability.list.0.reference}}
+      {% endif %}
+      <br>
+      <br>
     </div>
-    <span style="float: left; font-size: 12px;">
-      {{vulnerability.tags}}
-    </span>
-    <span style="float: right; font-size: 12px;">Discovered on: {{vulnerability.discovered_date}}</span>
-    <br>
-    <span>Vulnerable URL: {{vulnerability.http_url}}</span>
-    <br>
-    {% if vulnerability.description %}
-    <span>
-      {{vulnerability.description}}
-    </span>
-    {% endif %}
-    <br><br>
     {% endfor %}
+  </article>
+  {% endif %}
+  <article id="chapter">
+      <h2 id="chapter-title">END OF REPORT</h2>
   </article>
 </body>
 
