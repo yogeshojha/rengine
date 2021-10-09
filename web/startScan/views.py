@@ -1,4 +1,5 @@
 import os
+import logging
 import requests
 import itertools
 import tempfile
@@ -651,7 +652,10 @@ def create_report(request, id):
     template = get_template('report/full.html')
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
-    response = HttpResponse(pdf, content_type='application/pdf')
-    response['Content-Transfer-Encoding'] = 'utf-8'
+
+    if 'download' in request.GET:
+        response = HttpResponse(pdf, content_type='application/octet-stream')
+    else:
+        response = HttpResponse(pdf, content_type='application/pdf')
 
     return response
