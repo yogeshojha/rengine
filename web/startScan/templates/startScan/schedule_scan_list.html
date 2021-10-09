@@ -61,7 +61,7 @@ Scheduled Scan
               {% if task.interval %}
               Will run  {{ task.interval }}
               {% elif task.clocked %}
-              Will run exactly at {{ task.clocked.clocked_time}}
+              Will run exactly at {{ task.clocked.clocked_time}} UTC
               {% endif %}
             </td>
             <td>{{ task.last_run_at|none_or_never }}</td>
