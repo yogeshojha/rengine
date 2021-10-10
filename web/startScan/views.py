@@ -658,7 +658,7 @@ def create_report(request, id):
         'subdomains': subdomains,
         'ip_addresses': ip_addresses
     }
-    template = get_template('report/full.html')
+    template = get_template('report/template.html')
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
 

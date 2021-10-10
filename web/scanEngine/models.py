@@ -91,3 +91,16 @@ class Hackerone(models.Model):
     send_high = models.BooleanField(default=True)
     send_medium = models.BooleanField(default=False)
     report_template = models.TextField(blank=True, null=True)
+
+
+class VulnerabilityReport(models.Model):
+    id = models.AutoField(primary_key=True)
+    company_name = models.CharField(max_length=100, null=True, blank=True)
+    company_address = models.CharField(max_length=200, null=True, blank=True)
+    company_email = models.CharField(max_length=100, null=True, blank=True)
+    company_website = models.CharField(max_length=100, null=True, blank=True)
+    show_rengine_banner = models.BooleanField(default=True)
+    show_executive_summary = models.BooleanField(default=True)
+    executive_summary_description = models.TextField(blank=True, null=True)
+    show_methodology = models.BooleanField(default=True)
+    methodology_description = models.TextField(blank=True, null=True)
