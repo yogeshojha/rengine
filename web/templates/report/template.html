@@ -131,21 +131,6 @@
       line-height: normal;
     }
 
-    h2 {
-      font-size: 28pt;
-      string-set: heading content();
-    }
-
-    h3 {
-      font-family: 'Inter';
-      font-weight: 200;
-      font-size: 15pt;
-    }
-
-    h4 {
-      font-size: 13pt;
-    }
-
     #cover {
       align-content: space-between;
       display: flex;
@@ -165,60 +150,28 @@
       padding-left: 3cm;
     }
 
+    #cover-line {
+      margin-top: 6px;
+      border-bottom: 1px double #FF7043;
+    }
+
     #summary {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
     }
 
-    #summary h2,
-    #summary h3 {
-      width: 100%;
-      font-weight: 200;
-    }
-
-    #summary section {
-      width: 30%;
-    }
-
-    #summary section h4 {
-      margin-bottom: 0;
-    }
-
-    #summary section ul {
-      list-style: none;
-      margin: 0;
-      padding-left: 0;
-    }
-
-    #summary section ul li:not(:last-of-type) {
-      margin: .5cm 0;
-    }
-
-    #summary section p {
-      background: #FF7043;
-      display: block;
-      font-size: 15pt;
-      margin-bottom: 0;
-      padding: .25cm 0;
-      text-align: center;
-    }
-
-    #vulnerability-boxes {
+    #boxes {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
     }
 
-    #vulnerability-boxes section {
-      width: 24%;
-    }
-
-    #vulnerability-boxes section h4 {
+    #boxes section h4 {
       margin-bottom: 0;
     }
 
-    #vulnerability-boxes section p {
+    #boxes section p {
       background: #FF7043;
       display: block;
       font-size: 15pt;
@@ -229,32 +182,64 @@
       color: #37474F;
     }
 
-    .critical {
+    .bg-critical {
       background: #EF9A9A !important;
     }
 
-    .high {
+    .bg-high {
       background: #FFAB91 !important;
     }
 
-    .medium {
+    .bg-medium {
       background: #FFCC80 !important;
     }
 
-    .low {
+    .bg-low {
       background: #FFE082 !important;
     }
 
-    .success {
+    .bg-success {
       background-color: #A5D6A7 !important;
     }
 
-    .grey {
+    .bg-grey {
       background-color: #B0BEC5 !important;
     }
 
-    .info {
+    .bg-info {
       background-color: #90CAF9 !important;
+    }
+
+    .critical-color {
+      color: #EF9A9A;
+    }
+
+    .high-color {
+      color: #FFAB91;
+    }
+
+    .medium-color {
+      color: #FFCC80;
+    }
+
+    .low-color {
+      color: #FFE082;
+    }
+
+    .success-color {
+      color: #A5D6A7;
+    }
+
+    .grey-color {
+      color: #212121;
+    }
+
+    .info-color {
+      color: #90CAF9;
+    }
+
+    .primary-color {
+      color: #FF7043;
     }
 
     .badge {
@@ -264,130 +249,28 @@
       text-align: center
     }
 
-    .dark-text {
-      color: #424242;
-    }
-
-    .critical-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #EF9A9A !important;
-    }
-
-    .high-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #FFAB91 !important;
-    }
-
-    .medium-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #FFCC80 !important;
-    }
-
-    .low-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #FFE082 !important;
-    }
-
-    .success-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #A5D6A7 !important;
-    }
-
-    .grey-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #B0BEC5 !important;
-    }
-
-    .info-border {
-      border-style: solid;
-      border-width: 1px;
-      border-color: #90CAF9 !important;
-    }
-
-    .critical-text {
-      color: #EF9A9A !important;
-    }
-
-    .high-text {
-      color: #FFAB91 !important;
-    }
-
-    .medium-text {
-      color: #FFCC80 !important;
-    }
-
-    .low-text {
-      color: #FFE082 !important;
-    }
-
-    .info-text {
-      color: #29B6F6 !important;
-    }
-
-    .critical-line {
+    .critical-hr-line {
       border-bottom: 3px solid #EF9A9A !important;
     }
 
-    .high-line {
+    .high-hr-line {
       border-bottom: 3px solid #FFAB91 !important;
     }
 
-    .medium-line {
+    .medium-hr-line {
       border-bottom: 3px solid #FFCC80 !important;
     }
 
-    .low-line {
+    .low-hr-line {
       border-bottom: 3px solid #FFE082 !important;
     }
 
-    .info-line {
+    .info-hr-line {
       border-bottom: 3px solid #90CAF9 !important;
     }
 
-
-    #vulnerability-count {
-      font-size: 30pt;
-    }
-
-    #info_title {
-      font-size: 13pt;
-      color: #29B6F6;
-    }
-
-    .bold-h3 {
-      font-family: 'Inter';
-      font-size: 18pt;
-    }
-
-    .small_text {
-      font-size: 9pt;
-    }
-
-    .bold {
-      font-weight: bold;
-    }
-
-    .line {
-      margin-top: 6px;
-      border-bottom: 1px double #FF7043;
-    }
-
-    .light-title {
-      font-family: 'Inter';
-    }
-
-    #primary-title {
-      color: #FF7043;
-    }
-
-    #mini-text {
-      font-size: 11px;
+    .inside-box-counter {
+      font-size: 28pt;
     }
 
     .table {
@@ -413,27 +296,6 @@
       color: #ffffff;
     }
 
-    .red-header {
-      background: #ea6153;
-    }
-
-    .blue-header {
-      background: #1E88E5;
-    }
-
-    .green-header {
-      background: #66BB6A;
-    }
-
-    .info-cell {
-      background: #42A5F5;
-    }
-
-    .severity-title-box {
-      color: #37474F;
-    }
-
-
     #contents {
       page: no-chapter;
     }
@@ -445,7 +307,7 @@
     }
 
     #contents h3 {
-      font-weight: 500;
+      font-weight: 400;
       margin: 3em 0 1em;
     }
 
@@ -526,7 +388,7 @@
     <h1 style="color:#FF7043">Full Scan Report
       <br>
       {{scan_object.domain.name}}
-      <div class="line"></div>
+      <div id="cover-line"></div>
       {# generated date #}
       <span class="subheading">{% now "F j, Y" %}</span>
     </h1>
@@ -563,30 +425,31 @@
 
   <article id="summary" style="page-break-before: always">
     <h2 id="quick-summary">Quick Summary</h2>
-    <h4 class="light-title">This section contains quick summary of scan performed on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
-    <h3 id="reconnaissance-summary">Reconnaissance</h3>
+    <p>This section contains quick summary of scan performed on <span class="primary-color">{{scan_object.domain.name}}</span></p>
+    <br>
   </article>
-  <div id="vulnerability-boxes">
-    <section>
-      <p id="inside-box-title" class="success">Subdomains
+  <h4 id="reconnaissance-summary">Reconnaissance</h4>
+  <div id="boxes">
+    <section style="width: 30%">
+      <p class="bg-success">Subdomains
         <br>
-        <span id="vulnerability-count">
+        <span class="inside-box-counter">
           {{scan_object.get_subdomain_count}}
         </span>
       </p>
     </section>
-    <section>
-      <p id="inside-box-title" class="grey">Endpoints
+    <section style="width: 30%">
+      <p class="bg-grey">Endpoints
         <br>
-        <span id="vulnerability-count">
+        <span class="inside-box-counter">
           {{scan_object.get_endpoint_count}}
         </span>
       </p>
     </section>
-    <section>
-      <p id="inside-box-title" class="critical">Vulnerabilities
+    <section style="width: 30%">
+      <p class="bg-critical">Vulnerabilities
         <br>
-        <span id="vulnerability-count">
+        <span class="inside-box-counter">
           {{scan_object.get_vulnerability_count}}
         </span>
       </p>
@@ -594,45 +457,52 @@
   </div>
   <article>
     <br>
-    <h3 id="vulnerability-summary">Vulnerability Summary</h3>
-    <div id="vulnerability-boxes">
-      <section>
-        <p id="inside-box-title" class="critical">Critical
+    <h4 id="vulnerability-summary">Vulnerability Summary</h4>
+    <div id="boxes">
+      <section style="width: 18%">
+        <p class="bg-critical">Critical
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_critical_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="high">High
+      <section style="width: 18%">
+        <p class="bg-high">High
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_high_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="medium">Medium
+      <section style="width: 18%">
+        <p class="bg-medium">Medium
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_medium_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="low">Low
+      <section style="width: 18%">
+        <p class="bg-low">Low
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_low_vulnerability_count}}
           </span>
         </p>
       </section>
+      <section style="width: 18%">
+        <p class="bg-info">Info
+          <br>
+          <span class="inside-box-counter">
+            {{scan_object.get_info_vulnerability_count}}
+          </span>
+        </p>
+      </section>
     </div>
-    <span id="info_title">* {{scan_object.get_info_vulnerability_count}} Informational Vulnerabilities Identified</span>
   </article>
   <article>
-    <h3 id="assessment-timeline">Timeline of the Assessment</h3>
+    <h2 id="assessment-timeline">Timeline of the Assessment</h2>
     <p>
       Scan started on: {{scan_object.start_scan_date|date:"F j, Y h:i"}}
       <br>
@@ -650,20 +520,20 @@
   </article>
   {% if interesting_subdomains %}
   <article style="page-break-before: always" class="summary">
-    <h3 id="interesting-recon-data" class="bold-h3">Interesting Recon Data</h3>
-    <h4 class="light-title">Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <h3 id="interesting-recon-data">Interesting Recon Data</h3>
+    <p>Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
     <div class="table">
-      <div class="row header green-header">
-        <div class="cell" style="width: 5%">
+      <div class="row header bg-success">
+        <div class="cell grey-color" style="width: 5%">
           #
         </div>
-        <div class="cell" style="width: 33%">
+        <div class="cell grey-color" style="width: 33%">
           Subdomain
         </div>
-        <div class="cell" style="width: 33%">
+        <div class="cell grey-color" style="width: 33%">
           Page title
         </div>
-        <div class="cell" style="width: 15%">
+        <div class="cell grey-color" style="width: 15%">
           HTTP Status
         </div>
       </div>
@@ -696,20 +566,20 @@
   {% endif %}
   {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
-    <h3 id="vulnerability-summary" class="bold-h3">Summary of Vulnerabilities Identified</h3>
-    <h4 class="light-title">Listed below are the vulnerabilities identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <h3 id="vulnerability-summary">Summary of Vulnerabilities Identified</h3>
+    <p>Listed below are the vulnerabilities identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
     <div class="table">
-      <div class="row header red-header">
-        <div class="cell" style="width: 5%">
+      <div class="row header bg-critical">
+        <div class="cell grey-color" style="width: 5%">
           #
         </div>
-        <div class="cell" style="width: 50%">
+        <div class="cell grey-color" style="width: 50%;">
           Vulnerability Name
         </div>
-        <div class="cell" style="width: 19%;">
+        <div class="cell grey-color" style="width: 19%;">
           Times Identified
         </div>
-        <div class="cell" style="width: 15%">
+        <div class="cell grey-color" style="width: 15%">
           Severity
         </div>
       </div>
@@ -725,19 +595,19 @@
           {{vulnerability.count}}
         </div>
         {% if vulnerability.severity == 0 %}
-        <div class="cell info-cell" style="width: 15%">
+        <div class="cell bg-info" style="width: 15%">
           <span class="severity-title-box">Informational</span>
           {% elif vulnerability.severity == 1 %}
-          <div class="cell low" style="width: 15%">
+          <div class="cell bg-low" style="width: 15%">
             <span class="severity-title-box">Low</span>
             {% elif vulnerability.severity == 2 %}
-            <div class="cell medium" style="width: 15%">
+            <div class="cell bg-medium" style="width: 15%">
               <span class="severity-title-box">Medium</span>
               {% elif vulnerability.severity == 3 %}
-              <div class="cell high" style="width: 15%">
+              <div class="cell bg-high" style="width: 15%">
                 <span class="severity-title-box">High</span>
                 {% elif vulnerability.severity == 4 %}
-                <div class="cell critical" style="width: 15%">
+                <div class="cell bg-critical" style="width: 15%">
                   <span class="severity-title-box">Critical</span>
                   {% endif %}
                 </div>
@@ -754,16 +624,16 @@
       Out of {{scan_object.get_subdomain_count}} subdomains, {{subdomain_alive_count}} returned HTTP status 200.
       {{interesting_subdomains.count}} interesting subdomains were also identified based on the interesting keywords used.
     </p>
-    <h4>{{scan_object.get_subdomain_count}} subdomains identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <h4>{{scan_object.get_subdomain_count}} subdomains identified on <span class="primary-color">{{scan_object.domain.name}}</span></h4>
     <div class="table">
-      <div class="row header blue-header">
-        <div class="cell" style="width: 38%">
+      <div class="row header bg-info">
+        <div class="cell grey-color" style="width: 38%">
           Subdomain
         </div>
-        <div class="cell" style="width: 38%">
+        <div class="cell grey-color" style="width: 38%">
           Page title
         </div>
-        <div class="cell" style="width: 18%">
+        <div class="cell grey-color" style="width: 18%">
           HTTP Status
         </div>
       </div>
@@ -785,7 +655,7 @@
     </div>
     {% if ip_addresses.count %}
     <h3 id="">IP Addresses</h3>
-    <h4>{{ip_addresses.count}} IP Addresses were identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
+    <h4>{{ip_addresses.count}} IP Addresses were identified on <span class="primary-color">{{scan_object.domain.name}}</span></h4>
     <div class="table">
       <div class="row header blue-header">
         <div class="cell" style="width: 38%">
@@ -822,7 +692,7 @@
   </article>
   <br>
   <article class="">
-    <h3 class="bold-h3">Reconnaissance Findings</h3>
+    <h3>Reconnaissance Findings</h3>
     {% for subdomain in subdomains %}
     <table class="table" cellspacing="0" style="border-collapse: collapse;">
       <tr>
@@ -883,7 +753,7 @@
                   {{vuln_urls.grouper}}
                   <br>
                   {% for vuln_url in vuln_urls.list %}
-                  <span class="small_text">
+                  <span>
                     {% if vuln_url.extracted_results %}
                     {% if not forloop.first %}•{% endif %} {{vuln_url.exextracted_results}}
                     <br>
@@ -919,64 +789,71 @@
       {{scan_object.get_info_vulnerability_count}} of them were Informational.
     </p>
     <h3>Vulnerability Breakdown by Severity</h3>
-    <div id="vulnerability-boxes">
-      <section>
-        <p id="inside-box-title" class="critical">Critical
+    <div id="boxes">
+      <section style="width: 18%">
+        <p class="bg-critical">Critical
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_critical_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="high">High
+      <section style="width: 18%">
+        <p class="bg-high">High
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_high_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="medium">Medium
+      <section style="width: 18%">
+        <p class="bg-medium">Medium
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_medium_vulnerability_count}}
           </span>
         </p>
       </section>
-      <section>
-        <p id="inside-box-title" class="low">Low
+      <section style="width: 18%">
+        <p class="bg-low">Low
           <br>
-          <span id="vulnerability-count">
+          <span class="inside-box-counter">
             {{scan_object.get_low_vulnerability_count}}
           </span>
         </p>
       </section>
+      <section style="width: 18%">
+        <p class="bg-info">Info
+          <br>
+          <span class="inside-box-counter">
+            {{scan_object.get_info_vulnerability_count}}
+          </span>
+        </p>
+      </section>
     </div>
-    <span id="info_title">* {{scan_object.get_info_vulnerability_count}} Informational Vulnerabilities Identified</span>
   </article>
   {# start vulnerability #}
   <article class="">
     {% regroup all_vulnerabilities by name as grouped_vulnerabilities %}
     {% for vulnerability in grouped_vulnerabilities %}
     <div>
-      <h4 class="dark-text">
+      <h4>
         {{vulnerability.grouper}}
         {% if vulnerability.list.0.severity == 0 %}
-        <span style="float: right;" class="badge info dark-text">Informational</span>
-        <div class="info-line"></div>
+        <span style="float: right;" class="badge bg-info">Informational</span>
+        <div class="info-hr-line"></div>
         {% elif vulnerability.list.0.severity == 1 %}
-        <span style="float: right;" class="badge low dark-text">Low</span>
-        <div class="low-line"></div>
+        <span style="float: right;" class="badge bg-low">Low</span>
+        <div class="low-hr-line"></div>
         {% elif vulnerability.list.0.severity == 2 %}
-        <span style="float: right;" class="badge medium dark-text">Medium</span>
-        <div class="medium-line"></div>
+        <span style="float: right;" class="badge bg-medium">Medium</span>
+        <div class="medium-hr-line"></div>
         {% elif vulnerability.list.0.severity == 3 %}
-        <span style="float: right;" class="badge high dark-text">High</span>
-        <div class="high-line"></div>
+        <span style="float: right;" class="badge bg-high">High</span>
+        <div class="high-hr-line"></div>
         {% elif vulnerability.list.0.severity == 4 %}
-        <span style="float: right;" class="badge critical dark-text">Critical</span>
-        <div class="critical-line"></div>
+        <span style="float: right;" class="badge bg-critical">Critical</span>
+        <div class="critical-hr-line"></div>
         {% endif %}
       </h4>
       {% if vulnerability.list.0.description %}
