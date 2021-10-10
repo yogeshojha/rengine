@@ -3,8 +3,522 @@
 <head>
   <meta charset="utf-8">
   <title>Report</title>
-  <link href="http://127.0.0.1:8000/staticfiles/reports/report.css" rel="stylesheet" type="text/css" />
-  <meta name="description" content="Report example">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+
+      @top-left {
+        background: #FF7043;
+        content: counter(page);
+        height: 1cm;
+        text-align: center;
+        width: 1cm;
+      }
+
+      @top-center {
+        background: #FF7043;
+        content: '';
+        display: block;
+        height: .05cm;
+        opacity: .5;
+        width: 100%;
+      }
+
+      @top-right {
+        content: string(heading);
+        font-size: 9pt;
+        height: 1cm;
+        vertical-align: middle;
+        width: 100%;
+      }
+
+      @bottom-left {
+        content: "Hello World";
+        font-size: 9pt;
+        height: 1cm;
+        vertical-align: middle;
+        width: 100%;
+      }
+    }
+
+    @page :blank {
+      @top-left {
+        background: none;
+        content: ''
+      }
+
+      @top-center {
+        content: none
+      }
+
+      @top-right {
+        content: none
+      }
+    }
+
+    @page no-chapter {
+      @top-left {
+        background: none;
+        content: none
+      }
+
+      @top-center {
+        content: none
+      }
+
+      @top-right {
+        content: none
+      }
+    }
+
+    @page :first {
+      background-color: #424242;
+      background-size: cover;
+      margin: 0;
+    }
+
+    @page chapter {
+      background: #FF7043;
+      margin: 0;
+
+      @top-left {
+        content: none
+      }
+
+      @top-center {
+        content: none
+      }
+
+      @top-right {
+        content: none
+      }
+    }
+
+    html {
+      color: #393939;
+      font-family: 'Inter';
+      font-weight: 300;
+      font-size: 11pt;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-family: 'Inter';
+      font-weight: 200;
+      font-size: 38pt;
+      margin: 5cm 2cm 0 2cm;
+      page: no-chapter;
+      width: 100%;
+      line-height: normal;
+    }
+
+    .subheading {
+      font-family: 'Inter';
+      font-weight: 200;
+      font-size: 22pt;
+      width: 100%;
+    }
+
+    h2,
+    h3,
+    h4 {
+      font-family: 'Inter';
+      font-weight: 200;
+      color: black;
+      font-weight: 400;
+      line-height: normal;
+    }
+
+    h2 {
+      font-size: 28pt;
+      string-set: heading content();
+    }
+
+    h3 {
+      font-family: 'Inter';
+      font-weight: 200;
+      font-size: 15pt;
+    }
+
+    h4 {
+      font-size: 13pt;
+    }
+
+    #cover {
+      align-content: space-between;
+      display: flex;
+      flex-wrap: wrap;
+      height: 297mm;
+    }
+
+    #cover footer {
+      background: #FF7043;
+      flex: 1 33%;
+      margin: 0 -2cm;
+      padding: 1cm 0;
+      white-space: pre-wrap;
+    }
+
+    #cover footer:first-of-type {
+      padding-left: 3cm;
+    }
+
+    #summary {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    #summary h2,
+    #summary h3 {
+      width: 100%;
+      font-weight: 200;
+    }
+
+    #summary section {
+      width: 30%;
+    }
+
+    #summary section h4 {
+      margin-bottom: 0;
+    }
+
+    #summary section ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 0;
+    }
+
+    #summary section ul li:not(:last-of-type) {
+      margin: .5cm 0;
+    }
+
+    #summary section p {
+      background: #FF7043;
+      display: block;
+      font-size: 15pt;
+      margin-bottom: 0;
+      padding: .25cm 0;
+      text-align: center;
+    }
+
+    #vulnerability-boxes {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    #vulnerability-boxes section {
+      width: 24%;
+    }
+
+    #vulnerability-boxes section h4 {
+      margin-bottom: 0;
+    }
+
+    #vulnerability-boxes section p {
+      background: #FF7043;
+      display: block;
+      font-size: 15pt;
+      margin-bottom: 0;
+      padding: .25cm 0;
+      text-align: center;
+      height: 85px;
+      color: #37474F;
+    }
+
+    .critical {
+      background: #EF9A9A !important;
+    }
+
+    .high {
+      background: #FFAB91 !important;
+    }
+
+    .medium {
+      background: #FFCC80 !important;
+    }
+
+    .low {
+      background: #FFE082 !important;
+    }
+
+    .success {
+      background-color: #A5D6A7 !important;
+    }
+
+    .grey {
+      background-color: #B0BEC5 !important;
+    }
+
+    .info {
+      background-color: #90CAF9 !important;
+    }
+
+    .badge {
+      display: inline-block;
+      padding-left: 8px;
+      padding-right: 8px;
+      text-align: center
+    }
+
+    .dark-text {
+      color: #424242;
+    }
+
+    .critical-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #EF9A9A !important;
+    }
+
+    .high-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #FFAB91 !important;
+    }
+
+    .medium-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #FFCC80 !important;
+    }
+
+    .low-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #FFE082 !important;
+    }
+
+    .success-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #A5D6A7 !important;
+    }
+
+    .grey-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #B0BEC5 !important;
+    }
+
+    .info-border {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #90CAF9 !important;
+    }
+
+    .critical-text {
+      color: #EF9A9A !important;
+    }
+
+    .high-text {
+      color: #FFAB91 !important;
+    }
+
+    .medium-text {
+      color: #FFCC80 !important;
+    }
+
+    .low-text {
+      color: #FFE082 !important;
+    }
+
+    .info-text {
+      color: #29B6F6 !important;
+    }
+
+    .critical-line {
+      border-bottom: 3px solid #EF9A9A !important;
+    }
+
+    .high-line {
+      border-bottom: 3px solid #FFAB91 !important;
+    }
+
+    .medium-line {
+      border-bottom: 3px solid #FFCC80 !important;
+    }
+
+    .low-line {
+      border-bottom: 3px solid #FFE082 !important;
+    }
+
+    .info-line {
+      border-bottom: 3px solid #90CAF9 !important;
+    }
+
+
+    #vulnerability-count {
+      font-size: 30pt;
+    }
+
+    #info_title {
+      font-size: 13pt;
+      color: #29B6F6;
+    }
+
+    .bold-h3 {
+      font-family: 'Inter';
+      font-size: 18pt;
+    }
+
+    .small_text {
+      font-size: 9pt;
+    }
+
+    .bold {
+      font-weight: bold;
+    }
+
+    .line {
+      margin-top: 6px;
+      border-bottom: 1px double #FF7043;
+    }
+
+    .light-title {
+      font-family: 'Inter';
+    }
+
+    #primary-title {
+      color: #FF7043;
+    }
+
+    #mini-text {
+      font-size: 11px;
+    }
+
+    .table {
+      margin: 0 0 40px 0;
+      width: 100%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      display: table;
+      border-spacing: 0 0.4em;
+    }
+
+    .row {
+      display: table-row;
+      background: #f6f6f6;
+    }
+
+    .cell {
+      padding: 6px 6px 6px 6px;
+      display: table-cell;
+    }
+
+    .header {
+      Intereight: 900;
+      color: #ffffff;
+    }
+
+    .red-header {
+      background: #ea6153;
+    }
+
+    .blue-header {
+      background: #1E88E5;
+    }
+
+    .green-header {
+      background: #66BB6A;
+    }
+
+    .info-cell {
+      background: #42A5F5;
+    }
+
+    .severity-title-box {
+      color: #37474F;
+    }
+
+
+    #contents {
+      page: no-chapter;
+    }
+
+    #contents h2 {
+      font-size: 20pt;
+      Intereight: 400;
+      margin-bottom: 3cm;
+    }
+
+    #contents h3 {
+      font-weight: 500;
+      margin: 3em 0 1em;
+    }
+
+    #contents h3::before {
+      background: #FF7043;
+      content: '';
+      display: block;
+      height: .08cm;
+      margin-bottom: .25cm;
+      width: 2cm;
+    }
+
+    #contents ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    #contents ul li {
+      border-top: .25pt solid #c1c1c1;
+      margin: .25cm 0;
+      padding-top: .25cm;
+    }
+
+    #contents ul li::before {
+      color: #FF7043;
+      content: '• ';
+      font-size: 30pt;
+      line-height: 16pt;
+      vertical-align: bottom;
+    }
+
+    #contents ul li a {
+      color: inherit;
+      text-decoration-line: inherit;
+    }
+
+    #contents ul li a::before {
+      content: target-text(attr(href));
+    }
+
+    #contents ul li a::after {
+      color: #FF7043;
+      content: target-counter(attr(href), page);
+      float: right;
+    }
+
+    #columns section {
+      columns: 2;
+      column-gap: 1cm;
+      padding-top: 1cm;
+    }
+
+    #columns section p {
+      text-align: justify;
+    }
+
+    #columns section p:first-of-type {
+      font-weight: 700;
+    }
+
+
+    .line-break {
+      display: block;
+    }
+
+    #chapter {
+      align-items: center;
+      display: flex;
+      height: 297mm;
+      justify-content: center;
+      page: chapter;
+    }
+  </style>
 </head>
 
 <body>
@@ -176,8 +690,8 @@
           {% endif %}
         </div>
       </div>
-    {% endfor %}
-  </div>
+      {% endfor %}
+    </div>
   </article>
   {% endif %}
   {% if all_vulnerabilities.count > 0 %}
@@ -213,23 +727,23 @@
         {% if vulnerability.severity == 0 %}
         <div class="cell info-cell" style="width: 15%">
           <span class="severity-title-box">Informational</span>
-        {% elif vulnerability.severity == 1 %}
+          {% elif vulnerability.severity == 1 %}
           <div class="cell low" style="width: 15%">
-          <span class="severity-title-box">Low</span>
-        {% elif vulnerability.severity == 2 %}
-          <div class="cell medium" style="width: 15%">
-          <span class="severity-title-box">Medium</span>
-        {% elif vulnerability.severity == 3 %}
-          <div class="cell high" style="width: 15%">
-          <span class="severity-title-box">High</span>
-        {% elif vulnerability.severity == 4 %}
-          <div class="cell critical" style="width: 15%">
-          <span class="severity-title-box">Critical</span>
-        {% endif %}
-        </div>
-      </div>
-      {% endfor %}
-    </div>
+            <span class="severity-title-box">Low</span>
+            {% elif vulnerability.severity == 2 %}
+            <div class="cell medium" style="width: 15%">
+              <span class="severity-title-box">Medium</span>
+              {% elif vulnerability.severity == 3 %}
+              <div class="cell high" style="width: 15%">
+                <span class="severity-title-box">High</span>
+                {% elif vulnerability.severity == 4 %}
+                <div class="cell critical" style="width: 15%">
+                  <span class="severity-title-box">Critical</span>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
   </article>
   {% endif %}
   <article class="summary" style="page-break-before: always">
@@ -297,33 +811,33 @@
         {% if ip.is_cdn %}
         <div class="cell medium" style="width: 18%">
           CDN IP Address
-        {% else %}
-        <div class="cell" style="width: 18%">
-        {% endif %}
+          {% else %}
+          <div class="cell" style="width: 18%">
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
       </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
+      {% endif %}
   </article>
   <br>
   <article class="">
     <h3 class="bold-h3">Reconnaissance Findings</h3>
-      {% for subdomain in subdomains %}
-      <table class="table" cellspacing="0" style="border-collapse: collapse;">
+    {% for subdomain in subdomains %}
+    <table class="table" cellspacing="0" style="border-collapse: collapse;">
       <tr>
         <td style="width: 2%" class="cell info-border">{{ forloop.counter }}.</td>
         <td style="width: 80%" class="cell info-border">{{subdomain.name}}</td>
         {% if subdomain.http_status == 200 %}
-          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %}
-          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status >= 400 %}
-          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status == 0 %}
-          <td style="width: 10%" class="cell info-border">N/A</td>
+        <td style="width: 10%" class="cell info-border">N/A</td>
         {% else %}
-          <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
         {% endif %}
       </tr>
       {% if subdomain.page_title %}
@@ -337,17 +851,17 @@
           IP Address:
           <ul>
             {% for ip in subdomain.ip_addresses.all %}
-              <li>{{ip.address}}
-                {% if ip.ports.all %}
-                <ul>
+            <li>{{ip.address}}
+              {% if ip.ports.all %}
+              <ul>
                 <li>Open Ports: &nbsp;
-                {% for port in ip.ports.all %}
-                {{port.number}}/{{port.service_name}}{% if not forloop.last %},{% endif %}
-                {% endfor %}
+                  {% for port in ip.ports.all %}
+                  {{port.number}}/{{port.service_name}}{% if not forloop.last %},{% endif %}
+                  {% endfor %}
                 </li>
-                </ul>
-                {% endif %}
-              </li>
+              </ul>
+              {% endif %}
+            </li>
             {% endfor %}
           </ul>
         </td>
@@ -371,11 +885,11 @@
                   {% for vuln_url in vuln_urls.list %}
                   <span class="small_text">
                     {% if vuln_url.extracted_results %}
-                      {% if not forloop.first %}•{% endif %} {{vuln_url.exextracted_results}}
-                      <br>
+                    {% if not forloop.first %}•{% endif %} {{vuln_url.exextracted_results}}
+                    <br>
                     {% endif %}
                     {% if vuln_url.matcher_name %}
-                      {% if not forloop.first %} • {% endif %} {{vuln_url.matcher_name}}
+                    {% if not forloop.first %} • {% endif %} {{vuln_url.matcher_name}}
                     {% endif %}
                   </span>
                   {% endfor %}
@@ -389,7 +903,7 @@
       </tr>
       {% endif %}
     </table>
-      {% endfor %}
+    {% endfor %}
   </article>
   {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
@@ -472,18 +986,18 @@
       <h5>Vulnerable URL(s)</h5>
       {% regroup vulnerability.list by http_url as vuln_http_url_list %}
       <ul>
-      {% for vuln_urls in vuln_http_url_list %}
+        {% for vuln_urls in vuln_http_url_list %}
         <li>{{vuln_urls.grouper}}</li>
         <strong>Results/Findings:</strong>
         {% for vuln in vuln_urls.list %}
-          {% if vuln.matcher_name %}
-            {% if not forloop.first %} • {% endif %} {{vuln.matcher_name}}
-          {% endif %}
-          {% if vuln.extracted_results %}
-            {% if not forloop.first %} • {% endif %} {{vuln.exextracted_results}}
-          {% endif %}
+        {% if vuln.matcher_name %}
+        {% if not forloop.first %} • {% endif %} {{vuln.matcher_name}}
+        {% endif %}
+        {% if vuln.extracted_results %}
+        {% if not forloop.first %} • {% endif %} {{vuln.exextracted_results}}
+        {% endif %}
         {% endfor %}
-      {% endfor %}
+        {% endfor %}
       </ul>
       {% if vulnerability.list.0.reference %}
       <h5>Reference</h5>
@@ -496,7 +1010,7 @@
   </article>
   {% endif %}
   <article id="chapter">
-      <h2 id="chapter-title">END OF REPORT</h2>
+    <h2 id="chapter-title">END OF REPORT</h2>
   </article>
 </body>
 
