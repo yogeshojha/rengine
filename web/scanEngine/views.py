@@ -440,33 +440,33 @@ def hackerone_settings(request):
 
 def report_settings(request):
     context = {}
-    form = HackeroneForm()
+    form = ReportForm()
     context['form'] = form
 
-    hackerone = None
-    if Hackerone.objects.all().exists():
-        hackerone = Hackerone.objects.all()[0]
-        form.set_value(hackerone)
+    report = None
+    if VulnerabilityReportSettings.objects.all().exists():
+        report = VulnerabilityReportSettings.objects.all()[0]
+        form.set_value(report)
     else:
         form.set_initial()
 
     if request.method == "POST":
-        if hackerone:
-            form = HackeroneForm(request.POST, instance=hackerone)
+        if report:
+            form = ReportForm(request.POST, instance=report)
         else:
-            form = HackeroneForm(request.POST or None)
+            form = ReportForm(request.POST or None)
 
         if form.is_valid():
             form.save()
             messages.add_message(
                 request,
                 messages.INFO,
-                'Hackerone Settings updated.')
-            return http.HttpResponseRedirect(reverse('hackerone_settings'))
+                'Vulnerability/Reconnaissance Settings updated.')
+            return http.HttpResponseRedirect(reverse('report_settings'))
 
 
     context['settings_nav_active'] = 'active'
-    context['hackerone_settings_li'] = 'active'
+    context['report_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/report.html', context)

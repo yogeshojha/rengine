@@ -28,8 +28,22 @@ Customize Report
   </div>
   <div class="widget-content widget-content-area">
     <p>
-      This section can be used to customize the Vulnerability/Reconnaissance report. 
+      This section can be used to customize the Vulnerability/Reconnaissance report.
     </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row mt-4 mb-4">
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="company_name">Your Hackerone Username (Not email)</label>
+          {{form.company_name}}
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+          <label for="company_address">Generate your <a href="https://hackerone.com/settings/api_token/edit" target="_blank">API Token here</a></label>
+          {{form.company_address}}
+        </div>
+      </div>
+      <input type="submit" value="Save Report Settings" class="btn btn-primary float-right">
+    </form>
   </div>
 </div>
 {% endblock main_content %}
