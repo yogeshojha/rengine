@@ -628,6 +628,15 @@ def delete_scans(request):
     return HttpResponseRedirect(reverse('scan_history'))
 
 
+def customize_report(request, id):
+    scan_history = ScanHistory.objects.get(id=id)
+    context = {
+        'scan_id': id,
+        'scan_history': scan_history,
+    }
+    return render(request, 'startScan/customize_report.html', context)
+
+
 def create_report(request, id):
     scan_object = ScanHistory.objects.get(id=id)
     unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
@@ -639,7 +648,7 @@ def create_report(request, id):
     interesting_subdomains = get_interesting_subdomains(scan_history=id)
     ip_addresses = IpAddress.objects.filter(
         ip_addresses__in=Subdomain.objects.filter(
-            target_domain__id=id)).distinct()
+            scan_history__id=id)).distinct()
     data = {
         'scan_object': scan_object,
         'unique_vulnerabilities': unique_vulnerabilities,
