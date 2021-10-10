@@ -487,3 +487,15 @@ class HackeroneForm(forms.ModelForm):
 - {vulnerability_reference}
 
 Thank you'''
+
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = VulnerabilityReportSettings
+        fields = '__all__'
+
+    def set_value(self, key):
+        self.initial['company_name'] = key.company_name
+
+    def set_initial(self):
+        self.initial['show_rengine_banner'] = True
