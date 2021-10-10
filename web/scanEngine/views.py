@@ -436,3 +436,37 @@ def hackerone_settings(request):
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/hackerone.html', context)
+
+
+def report_settings(request):
+    context = {}
+    form = HackeroneForm()
+    context['form'] = form
+
+    hackerone = None
+    if Hackerone.objects.all().exists():
+        hackerone = Hackerone.objects.all()[0]
+        form.set_value(hackerone)
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if hackerone:
+            form = HackeroneForm(request.POST, instance=hackerone)
+        else:
+            form = HackeroneForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Hackerone Settings updated.')
+            return http.HttpResponseRedirect(reverse('hackerone_settings'))
+
+
+    context['settings_nav_active'] = 'active'
+    context['hackerone_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+
+    return render(request, 'scanEngine/settings/report.html', context)

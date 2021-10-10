@@ -104,3 +104,5 @@ class VulnerabilityReport(models.Model):
     executive_summary_description = models.TextField(blank=True, null=True)
     show_methodology = models.BooleanField(default=True)
     methodology_description = models.TextField(blank=True, null=True)
+    show_footer = models.BooleanField(default=False)
+    footer_text = models.CharField(max_length=200, null=True, blank=True)
