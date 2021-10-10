@@ -114,12 +114,6 @@
       line-height: normal;
     }
 
-    .subheading {
-      font-family: 'Inter';
-      font-weight: 200;
-      font-size: 22pt;
-      width: 100%;
-    }
 
     h2,
     h3,
@@ -136,6 +130,13 @@
       display: flex;
       flex-wrap: wrap;
       height: 297mm;
+    }
+
+    #cover-subheading {
+      font-family: 'Inter';
+      font-weight: 200;
+      font-size: 22pt;
+      width: 100%;
     }
 
     #cover footer {
@@ -159,6 +160,86 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
+    }
+
+    #contents {
+      page: no-chapter;
+    }
+
+    #contents h2 {
+      font-size: 20pt;
+      Intereight: 400;
+      margin-bottom: 3cm;
+    }
+
+    #contents h3 {
+      font-weight: 400;
+      margin: 3em 0 1em;
+    }
+
+    #contents h3::before {
+      background: #FF7043;
+      content: '';
+      display: block;
+      height: .08cm;
+      margin-bottom: .25cm;
+      width: 2cm;
+    }
+
+    #contents ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    #contents ul li {
+      border-top: .25pt solid #c1c1c1;
+      margin: .25cm 0;
+      padding-top: .25cm;
+    }
+
+    #contents ul li::before {
+      color: #FF7043;
+      content: '• ';
+      font-size: 30pt;
+      line-height: 16pt;
+      vertical-align: bottom;
+    }
+
+    #contents ul li a {
+      color: inherit;
+      text-decoration-line: inherit;
+    }
+
+    #contents ul li a::before {
+      content: target-text(attr(href));
+    }
+
+    #contents ul li a::after {
+      color: #FF7043;
+      content: target-counter(attr(href), page);
+      float: right;
+    }
+
+    #columns section {
+      columns: 2;
+      column-gap: 1cm;
+      padding-top: 1cm;
+    }
+
+    #columns section p {
+      text-align: justify;
+    }
+
+    #columns section p:first-of-type {
+      font-weight: 700;
+    }
+
+    #chapter {
+      align-items: center;
+      display: flex;
+      height: 297mm;
+      justify-content: center;
+      page: chapter;
     }
 
     #boxes {
@@ -296,90 +377,16 @@
       color: #ffffff;
     }
 
-    #contents {
-      page: no-chapter;
-    }
-
-    #contents h2 {
+    .page_title{
+      font-weight: 300;
       font-size: 20pt;
-      Intereight: 400;
-      margin-bottom: 3cm;
     }
 
-    #contents h3 {
-      font-weight: 400;
-      margin: 3em 0 1em;
+    .subheading{
+      font-weight: 300;
+      font-size: 14pt;
     }
 
-    #contents h3::before {
-      background: #FF7043;
-      content: '';
-      display: block;
-      height: .08cm;
-      margin-bottom: .25cm;
-      width: 2cm;
-    }
-
-    #contents ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    #contents ul li {
-      border-top: .25pt solid #c1c1c1;
-      margin: .25cm 0;
-      padding-top: .25cm;
-    }
-
-    #contents ul li::before {
-      color: #FF7043;
-      content: '• ';
-      font-size: 30pt;
-      line-height: 16pt;
-      vertical-align: bottom;
-    }
-
-    #contents ul li a {
-      color: inherit;
-      text-decoration-line: inherit;
-    }
-
-    #contents ul li a::before {
-      content: target-text(attr(href));
-    }
-
-    #contents ul li a::after {
-      color: #FF7043;
-      content: target-counter(attr(href), page);
-      float: right;
-    }
-
-    #columns section {
-      columns: 2;
-      column-gap: 1cm;
-      padding-top: 1cm;
-    }
-
-    #columns section p {
-      text-align: justify;
-    }
-
-    #columns section p:first-of-type {
-      font-weight: 700;
-    }
-
-
-    .line-break {
-      display: block;
-    }
-
-    #chapter {
-      align-items: center;
-      display: flex;
-      height: 297mm;
-      justify-content: center;
-      page: chapter;
-    }
   </style>
 </head>
 
@@ -390,7 +397,7 @@
       {{scan_object.domain.name}}
       <div id="cover-line"></div>
       {# generated date #}
-      <span class="subheading">{% now "F j, Y" %}</span>
+      <span id="cover-subheading">{% now "F j, Y" %}</span>
     </h1>
     <footer>
       Company Name
@@ -424,11 +431,11 @@
   </article>
 
   <article id="summary" style="page-break-before: always">
-    <h2 id="quick-summary">Quick Summary</h2>
+    <h2 id="quick-summary" class="page_title">Quick Summary</h2>
     <p>This section contains quick summary of scan performed on <span class="primary-color">{{scan_object.domain.name}}</span></p>
     <br>
   </article>
-  <h4 id="reconnaissance-summary">Reconnaissance</h4>
+  <h4 id="reconnaissance-summary" class="subheading">Reconnaissance</h4>
   <div id="boxes">
     <section style="width: 30%">
       <p class="bg-success">Subdomains
@@ -457,7 +464,7 @@
   </div>
   <article>
     <br>
-    <h4 id="vulnerability-summary">Vulnerability Summary</h4>
+    <h4 id="vulnerability-summary" class="subheading">Vulnerability Summary</h4>
     <div id="boxes">
       <section style="width: 18%">
         <p class="bg-critical">Critical
@@ -502,7 +509,7 @@
     </div>
   </article>
   <article>
-    <h2 id="assessment-timeline">Timeline of the Assessment</h2>
+    <h3 id="assessment-timeline" class="page_title">Timeline of the Assessment</h3>
     <p>
       Scan started on: {{scan_object.start_scan_date|date:"F j, Y h:i"}}
       <br>
@@ -520,7 +527,7 @@
   </article>
   {% if interesting_subdomains %}
   <article style="page-break-before: always" class="summary">
-    <h3 id="interesting-recon-data">Interesting Recon Data</h3>
+    <h3 id="interesting-recon-data" class="page_title">Interesting Recon Data</h3>
     <p>Listed below are the {{interesting_subdomains.count}} interesting subdomains identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
     <div class="table">
       <div class="row header bg-success">
@@ -566,7 +573,7 @@
   {% endif %}
   {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
-    <h3 id="vulnerability-summary">Summary of Vulnerabilities Identified</h3>
+    <h3 id="vulnerability-summary" class="page_title">Summary of Vulnerabilities Identified</h3>
     <p>Listed below are the vulnerabilities identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
     <div class="table">
       <div class="row header bg-critical">
@@ -617,8 +624,8 @@
   </article>
   {% endif %}
   <article class="summary" style="page-break-before: always">
-    <h2 id="reconnaissance-results">Discovered Assets</h2>
-    <h3 id="">Subdomains</h3>
+    <h3 id="reconnaissance-results" class="page_title">Discovered Assets</h3>
+    <h4 class="subheading">Subdomains</h4>
     <p>
       During the reconnaissance phase, {{scan_object.get_subdomain_count}} subdomains were discovered.
       Out of {{scan_object.get_subdomain_count}} subdomains, {{subdomain_alive_count}} returned HTTP status 200.
@@ -654,17 +661,17 @@
       {% endfor %}
     </div>
     {% if ip_addresses.count %}
-    <h3 id="">IP Addresses</h3>
+    <h4 class="subheading">IP Addresses</h4>
     <h4>{{ip_addresses.count}} IP Addresses were identified on <span class="primary-color">{{scan_object.domain.name}}</span></h4>
     <div class="table">
-      <div class="row header blue-header">
-        <div class="cell" style="width: 38%">
+      <div class="row header bg-info">
+        <div class="cell grey-color" style="width: 38%">
           IP
         </div>
-        <div class="cell" style="width: 38%">
+        <div class="cell grey-color" style="width: 38%">
           Open Ports
         </div>
-        <div class="cell" style="width: 18%">
+        <div class="cell grey-color" style="width: 18%">
           Remarks
         </div>
       </div>
@@ -691,8 +698,8 @@
       {% endif %}
   </article>
   <br>
-  <article class="">
-    <h3>Reconnaissance Findings</h3>
+  <article class="summary" style="page-break-before: always">
+    <h3 class="page_title">Reconnaissance Findings</h3>
     {% for subdomain in subdomains %}
     <table class="table" cellspacing="0" style="border-collapse: collapse;">
       <tr>
@@ -777,7 +784,7 @@
   </article>
   {% if all_vulnerabilities.count > 0 %}
   <article style="page-break-before: always" class="summary">
-    <h2 id="vulnerabilities-discovered">Vulnerabilities Discovered</h2>
+    <h3 id="vulnerabilities-discovered" class="page_title">Vulnerabilities Discovered</h3>
     <p>
       This section reports the security issues found during the audit.
       <br>
@@ -788,7 +795,7 @@
       {{scan_object.get_low_vulnerability_count}} of them were Low severity, and
       {{scan_object.get_info_vulnerability_count}} of them were Informational.
     </p>
-    <h3>Vulnerability Breakdown by Severity</h3>
+    <h4 class="subheading">Vulnerability Breakdown by Severity</h4>
     <div id="boxes">
       <section style="width: 18%">
         <p class="bg-critical">Critical
