@@ -387,6 +387,12 @@
       font-size: 14pt;
     }
 
+    .table-border{
+      border-style:solid;
+      border-width: 1px;
+      border-color: #90CAF9 !important;
+    }
+
   </style>
 </head>
 
@@ -703,28 +709,28 @@
     {% for subdomain in subdomains %}
     <table class="table" cellspacing="0" style="border-collapse: collapse;">
       <tr>
-        <td style="width: 2%" class="cell info-border">{{ forloop.counter }}.</td>
-        <td style="width: 80%" class="cell info-border">{{subdomain.name}}</td>
+        <td style="width: 2%" class="cell table-border">{{ forloop.counter }}.</td>
+        <td style="width: 80%" class="cell table-border">{{subdomain.name}}</td>
         {% if subdomain.http_status == 200 %}
-        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell table-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status >= 300 and subdomain.http_status < 400 %}
-        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell table-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status >= 400 %}
-        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell table-border">{{subdomain.http_status}}</td>
         {% elif subdomain.http_status == 0 %}
-        <td style="width: 10%" class="cell info-border">N/A</td>
+        <td style="width: 10%" class="cell table-border">N/A</td>
         {% else %}
-        <td style="width: 10%" class="cell info-border">{{subdomain.http_status}}</td>
+        <td style="width: 10%" class="cell table-border">{{subdomain.http_status}}</td>
         {% endif %}
       </tr>
       {% if subdomain.page_title %}
       <tr>
-        <td colspan="3" class="cell info-border"><strong>Page Title: </strong>{{subdomain.page_title}}</td>
+        <td colspan="3" class="cell table-border"><strong>Page Title: </strong>{{subdomain.page_title}}</td>
       </tr>
       {% endif %}
       {% if subdomain.ip_addresses.all %}
       <tr>
-        <td colspan="3" class="cell info-border">
+        <td colspan="3" class="cell table-border">
           IP Address:
           <ul>
             {% for ip in subdomain.ip_addresses.all %}
@@ -746,7 +752,7 @@
       {% endif %}
       {% if subdomain.get_vulnerabilities %}
       <tr>
-        <td colspan="3" class="cell info-border">
+        <td colspan="3" class="cell table-border">
           Vulnerabilities
           {% regroup subdomain.get_vulnerabilities by name as vuln_list %}
           <ul>
