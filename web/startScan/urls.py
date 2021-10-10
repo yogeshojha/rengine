@@ -16,10 +16,6 @@ urlpatterns = [
         views.detail_scan,
         name='detail_scan'),
     path(
-        'customize_report/<int:id>',
-        views.customize_report,
-        name='customize_report'),        
-    path(
         'create_report/<int:id>',
         views.create_report,
         name='create_report'),
