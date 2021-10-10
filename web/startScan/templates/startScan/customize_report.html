@@ -1,0 +1,43 @@
+{# DO NOT AUTO INDENT #}
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Customize Report
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active">Customize Report</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="statbox widget box box-shadow">
+  <div class="widget-header">
+    <div class="row h-100 justify-content-center align-items-center">
+      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
+        <h4>Customize Report</h4>
+      </div>
+    </div>
+  </div>
+  <div class="widget-content widget-content-area">
+    <p>
+      This section can be used to customize the report. 
+    </p>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/editors/markdown/simplemde.min.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
+<script type="text/javascript">
+</script>
+{% endblock page_level_script %}

@@ -164,14 +164,20 @@
         <div class="cell" style="width: 35%">
           {% if subdomain.page_title %}
           {{subdomain.page_title}}
+          {% else %}
+          &nbsp;&nbsp;&nbsp;
           {% endif %}
         </div>
         <div class="cell" style="width: 15%;">
+          {% if subdomain.http_status %}
           {{subdomain.http_status}}
+          {% else %}
+          &nbsp;&nbsp;&nbsp;
+          {% endif %}
         </div>
       </div>
-    </div>
     {% endfor %}
+  </div>
   </article>
   {% endif %}
   {% if all_vulnerabilities.count > 0 %}
@@ -263,6 +269,7 @@
       </div>
       {% endfor %}
     </div>
+    {% if ip_addresses.count %}
     <h3 id="">IP Addresses</h3>
     <h4>{{ip_addresses.count}} IP Addresses were identified on <span id="primary-title">{{scan_object.domain.name}}</span></h4>
     <div class="table">
@@ -297,6 +304,7 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
   </article>
   <br>
   <article class="">
