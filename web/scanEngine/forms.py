@@ -494,8 +494,81 @@ class ReportForm(forms.ModelForm):
         model = VulnerabilityReportSettings
         fields = '__all__'
 
+    company_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "company_name",
+                "placeholder": "Company Name",
+            }))
+
+    company_address = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "company_address",
+                "placeholder": "Company Address",
+            }))
+
+    company_website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "company_website",
+                "placeholder": "Company Website https://company.com",
+            }))
+
+    company_email = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "company_email",
+                "placeholder": "email@yourcompany.com",
+            }))
+
+    show_footer = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "show_footer",
+            }))
+
+    footer_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+        attrs={
+            "class": "form-control",
+            "id": "footer_text",
+            "aria-label": "switch",
+            "placeholder": "Footer Text © Your Company",
+        }))
+
+    show_rengine_banner = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "show_rengine_banner",
+            }))
+
     def set_value(self, key):
         self.initial['company_name'] = key.company_name
+        self.initial['company_email'] = key.company_email
+        self.initial['company_website'] = key.company_website
+        self.initial['company_email'] = key.company_email
+        self.initial['show_rengine_banner'] = key.show_rengine_banner
+        self.initial['show_executive_summary'] = key.show_executive_summary
+        self.initial['executive_summary_description'] = key.executive_summary_description
+        self.initial['show_methodology'] = key.show_methodology
+        self.initial['methodology_description'] = key.methodology_description
+        self.initial['show_footer'] = key.show_footer
+        self.initial['footer_text'] = key.footer_text
 
     def set_initial(self):
         self.initial['show_rengine_banner'] = True
+        self.initial['show_footer'] = False
