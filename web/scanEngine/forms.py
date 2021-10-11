@@ -556,6 +556,29 @@ class ReportForm(forms.ModelForm):
                 "id": "show_rengine_banner",
             }))
 
+    show_executive_summary = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "show_executive_summary",
+            }))
+
+    executive_summary = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "id": "executive_summary"
+            }))
+
+    show_methodology = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "new-control-input",
+                "id": "show_methodology",
+            }))
+
     def set_value(self, key):
         self.initial['company_name'] = key.company_name
         self.initial['company_email'] = key.company_email
@@ -572,3 +595,5 @@ class ReportForm(forms.ModelForm):
     def set_initial(self):
         self.initial['show_rengine_banner'] = True
         self.initial['show_footer'] = False
+        self.initial['show_executive_summary'] = False
+        self.initial['show_methodology'] = False
