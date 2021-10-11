@@ -564,31 +564,21 @@ class ReportForm(forms.ModelForm):
                 "id": "show_executive_summary",
             }))
 
-    executive_summary = forms.CharField(
+    executive_summary_description = forms.CharField(
         required=False,
         widget=forms.Textarea(
             attrs={
-                "id": "executive_summary"
-            }))
-
-    show_methodology = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(
-            attrs={
-                "class": "new-control-input",
-                "id": "show_methodology",
+                "id": "executive_summary_description"
             }))
 
     def set_value(self, key):
         self.initial['company_name'] = key.company_name
-        self.initial['company_email'] = key.company_email
+        self.initial['company_address'] = key.company_address
         self.initial['company_website'] = key.company_website
         self.initial['company_email'] = key.company_email
         self.initial['show_rengine_banner'] = key.show_rengine_banner
         self.initial['show_executive_summary'] = key.show_executive_summary
         self.initial['executive_summary_description'] = key.executive_summary_description
-        self.initial['show_methodology'] = key.show_methodology
-        self.initial['methodology_description'] = key.methodology_description
         self.initial['show_footer'] = key.show_footer
         self.initial['footer_text'] = key.footer_text
 
@@ -596,4 +586,22 @@ class ReportForm(forms.ModelForm):
         self.initial['show_rengine_banner'] = True
         self.initial['show_footer'] = False
         self.initial['show_executive_summary'] = False
-        self.initial['show_methodology'] = False
+        self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_domain}** engaged **{company_name}** to perform a security audit of their Web application in an effort to ensure the security of their customer's personal information, which is processed and stored by the application.
+
+{company_name} during the audit performed both Security Audit and Reconnaissance.
+
+### Observations
+
+During the course of this engagement {company_name} was able to find **{vulnerability_count}** vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
+
+The breakdown of the Vulnerabilities Identified in {target_domain} by severity are as follows:
+
+* Critical : {critical_count}
+* High : {high_count}
+* Medium : {medium_count}
+* Low : {low_count}
+* Info : {information_count}
+
+{company_name} recommends that these issues be addressed in timely manner.
+
+'''
