@@ -639,7 +639,9 @@ def customize_report(request, id):
 
 
 def create_report(request, id):
-    primary_color = '#FF7043'
+    primary_color = '#FFB74D'
+    secondary_color = '#212121'
+
     scan_object = ScanHistory.objects.get(id=id)
     unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
     all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')
@@ -675,6 +677,7 @@ def create_report(request, id):
         data['show_executive_summary'] = report.show_executive_summary
 
         primary_color = report.primary_color
+        secondary_color = report.secondary_color
 
         description = report.executive_summary_description
 
@@ -696,6 +699,7 @@ def create_report(request, id):
         data['executive_summary_description'] = markdown.markdown(description)
 
     data['primary_color'] = primary_color
+    data['secondary_color'] = secondary_color
 
     template = get_template('report/template.html')
     html = template.render(data)
