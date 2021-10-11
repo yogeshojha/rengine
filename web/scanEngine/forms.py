@@ -586,22 +586,22 @@ class ReportForm(forms.ModelForm):
         self.initial['show_rengine_banner'] = True
         self.initial['show_footer'] = False
         self.initial['show_executive_summary'] = False
-        self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_domain}** engaged **{company_name}** to perform a security audit of their Web application in an effort to ensure the security of their customer's personal information, which is processed and stored by the application.
+        self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_name}** engaged **{company_name}** to perform a security audit on their Web application.
 
-{company_name} during the audit performed both Security Audit and Reconnaissance.
+**{company_name}** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
 
-### Observations
+## Observations
 
-During the course of this engagement {company_name} was able to find **{vulnerability_count}** vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
+During the course of this engagement **{company_name}** was able to discover **{subdomain_count}** Subdomains and  **{vulnerability_count}** Vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
 
-The breakdown of the Vulnerabilities Identified in {target_domain} by severity are as follows:
+The breakdown of the Vulnerabilities Identified in **{target_name}** by severity are as follows:
 
 * Critical : {critical_count}
 * High : {high_count}
 * Medium : {medium_count}
 * Low : {low_count}
-* Info : {information_count}
+* Info : {info_count}
 
-{company_name} recommends that these issues be addressed in timely manner.
+**{company_name}** recommends that these issues be addressed in timely manner.
 
 '''
