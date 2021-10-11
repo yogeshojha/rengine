@@ -86,7 +86,7 @@ Customize Report
           <div class="n-chk">
             <span class="text-primary new-chk-content font-weight-bold">Show Executive Summary?&nbsp;&nbsp;</span>
             <label class="new-control new-checkbox new-checkbox-text checkbox-primary">
-              {{form.show_rengine_banner}}
+              {{form.show_executive_summary}}
               <span class="new-control-indicator"></span>
               <span class="text-primary new-chk-content font-weight-bold">&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </label>
@@ -97,9 +97,6 @@ Customize Report
             </p>
             <p>You can customize the executive summary and methodology template using markdown. Replace the below syntax wherever you require. Curly braces are must!</p>
             <ul>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{this_year}</span> Current Year.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{this_month}</span> Current Month.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{this_day}</span> Current Day.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{scan_date}</span> Target Scan Date Ex. 25 June, 2020 .</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{company_name}</span> Company which performed Vulnerability/Reconnaissance Audit.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{target_name}</span> Target Domain Name.</li>
@@ -110,7 +107,7 @@ Customize Report
               <li class="text-dark"><span class="badge badge-dark mt-2">{high_count}</span> Total number of High Severity Vulnerabilities identified.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{medium_count}</span> Total number of Medium Severity Vulnerabilities identified.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{low_count}</span> Total number of Low Severity Vulnerabilities identified.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{informational_count}</span> Total number of Informational Vulnerabilities identified.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{info_count}</span> Total number of Informational Vulnerabilities identified.</li>
             </ul>
             <br>
             {{form.executive_summary_description}}
