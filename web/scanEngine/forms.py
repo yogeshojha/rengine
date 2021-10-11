@@ -604,8 +604,8 @@ class ReportForm(forms.ModelForm):
         self.initial['show_rengine_banner'] = True
         self.initial['show_footer'] = False
         self.initial['show_executive_summary'] = False
-        self.initial['primary_color'] = '#FF7043'
-        self.initial['secondary_color'] = '#424242'
+        self.initial['primary_color'] = '#FFB74D'
+        self.initial['secondary_color'] = '#212121'
         self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_name}** engaged **{company_name}** to perform a security audit on their Web application.
 
 **{company_name}** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
