@@ -91,19 +91,29 @@ Customize Report
               <span class="text-primary new-chk-content font-weight-bold">&nbsp;&nbsp;&nbsp;&nbsp;</span>
             </label>
             <br>
-            <p>If turned on, reNgine will include Executive Summary in the report. You can customize the executive summary.</p>
+            <p>If turned on, reNgine will include Executive Summary in the report. You can customize the executive summary section.
+              <br>
+              <b>Please note that, Exective Summary section will appear before quick summary.</b>
+            </p>
             <p>You can customize the executive summary and methodology template using markdown. Replace the below syntax wherever you require. Curly braces are must!</p>
             <ul>
               <li class="text-dark"><span class="badge badge-dark mt-2">{this_year}</span> Current Year.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{this_month}</span> Current Month.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{this_day}</span> Current Day.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{scan_date}</span> Target Scan Date Ex. 25 June, 2020 .</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{company_name}</span> Company which performed Vulnerability/Reconnaissance Audit.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{target}</span> Target Domain.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{subdomains_count}</span> Total number of subdomains discovered.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{target_name}</span> Target Domain Name.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{target_description}</span> Target Description.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{subdomain_count}</span> Total number of subdomains discovered.</li>
               <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_count}</span> Total number of Vulnerabilities identified.</li>
-              <li class="text-dark"><span class="badge badge-dark mt-2">{vulnerability_reference}</span> Additional Reference to vulnerability.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{critical_count}</span> Total number of Critical Severity Vulnerabilities identified.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{high_count}</span> Total number of High Severity Vulnerabilities identified.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{medium_count}</span> Total number of Medium Severity Vulnerabilities identified.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{low_count}</span> Total number of Low Severity Vulnerabilities identified.</li>
+              <li class="text-dark"><span class="badge badge-dark mt-2">{informational_count}</span> Total number of Informational Vulnerabilities identified.</li>
             </ul>
             <br>
-            {{form.executive_summary}}
+            {{form.executive_summary_description}}
           </div>
         </div>
       </div>
@@ -120,7 +130,7 @@ Customize Report
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 new SimpleMDE({
-  element: document.getElementById("executive_summary"),
+  element: document.getElementById("executive_summary_description"),
   toolbar: ["preview", "bold", "italic", "heading", "heading-2", "unordered-list", "link" ,"|", "code" ,"|", "quote", "|", "guide"],
   spellChecker: false,
 });
