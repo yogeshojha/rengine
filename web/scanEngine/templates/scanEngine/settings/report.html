@@ -181,12 +181,14 @@ const primary_pickr = Pickr.create({
     interaction: {
       hex: true,
       input: true,
-      save: true
     }
   }
 });
 
 primary_pickr.on('save', (color, instance) => {
+  document.getElementById("primary_color").value = primary_pickr.getColor().toHEXA().toString(0);
+}).on('change', (color, source, instance) => {
+  primary_pickr.setColor(color.toHEXA().toString(0));
   document.getElementById("primary_color").value = primary_pickr.getColor().toHEXA().toString(0);
 });
 
@@ -212,12 +214,14 @@ const secondary_pickr = Pickr.create({
     interaction: {
       hex: true,
       input: true,
-      save: true
     }
   }
 });
 
 secondary_pickr.on('save', (color, instance) => {
+  document.getElementById("secondary_color").value = secondary_pickr.getColor().toHEXA().toString(0);
+}).on('change', (color, source, instance) => {
+  secondary_pickr.setColor(color.toHEXA().toString(0));
   document.getElementById("secondary_color").value = secondary_pickr.getColor().toHEXA().toString(0);
 });
 
