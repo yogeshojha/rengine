@@ -443,9 +443,12 @@ def report_settings(request):
     form = ReportForm()
     context['form'] = form
 
+    primary_color = '#FF7043'
+
     report = None
     if VulnerabilityReportSettings.objects.all().exists():
         report = VulnerabilityReportSettings.objects.all()[0]
+        primary_color = report.primary_color
         form.set_value(report)
     else:
         form.set_initial()
@@ -468,5 +471,6 @@ def report_settings(request):
     context['settings_nav_active'] = 'active'
     context['report_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
+    context['primary_color'] = primary_color
 
     return render(request, 'scanEngine/settings/report.html', context)

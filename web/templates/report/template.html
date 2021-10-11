@@ -9,7 +9,7 @@
       size: A4;
 
       @top-left {
-        background: #FF7043;
+        background: {{primary_color}};
         content: counter(page);
         height: 1cm;
         text-align: center;
@@ -17,7 +17,7 @@
       }
 
       @top-center {
-        background: #FF7043;
+        background: {{primary_color}};
         content: '';
         display: block;
         height: .05cm;
@@ -81,7 +81,7 @@
     }
 
     @page chapter {
-      background: #FF7043;
+      background: {{primary_color}};
       margin: 0;
 
       @top-left {
@@ -142,7 +142,7 @@
     }
 
     #cover footer {
-      background: #FF7043;
+      background: {{primary_color}};
       flex: 1 33%;
       margin: 0 -2cm;
       padding: 1cm 0;
@@ -155,7 +155,7 @@
 
     #cover-line {
       margin-top: 6px;
-      border-bottom: 1px double #FF7043;
+      border-bottom: 1px double {{primary_color}};
     }
 
     #summary {
@@ -180,7 +180,7 @@
     }
 
     #contents h3::before {
-      background: #FF7043;
+      background: {{primary_color}};
       content: '';
       display: block;
       height: .08cm;
@@ -200,7 +200,7 @@
     }
 
     #contents ul li::before {
-      color: #FF7043;
+      color: {{primary_color}};
       content: '• ';
       font-size: 30pt;
       line-height: 16pt;
@@ -217,7 +217,7 @@
     }
 
     #contents ul li a::after {
-      color: #FF7043;
+      color: {{primary_color}};
       content: target-counter(attr(href), page);
       float: right;
     }
@@ -255,7 +255,7 @@
     }
 
     #boxes section p {
-      background: #FF7043;
+      background: {{primary_color}};
       display: block;
       font-size: 15pt;
       margin-bottom: 0;
@@ -322,7 +322,7 @@
     }
 
     .primary-color {
-      color: #FF7043;
+      color: {{primary_color}};
     }
 
     .badge {
@@ -410,7 +410,7 @@
 
 <body>
   <article id="cover">
-    <h1 style="color:#FF7043">Full Scan Report
+    <h1 style="color:{{primary_color}}">Full Scan Report
       <br>
       {{scan_object.domain.name}}
       <div id="cover-line"></div>

@@ -571,6 +571,22 @@ class ReportForm(forms.ModelForm):
                 "id": "executive_summary_description"
             }))
 
+    primary_color = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "id": "primary_color",
+                "hidden": "true"
+            }))
+
+    secondary_color = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "id": "secondary_color",
+                "hidden": "true"
+            }))
+
     def set_value(self, key):
         self.initial['company_name'] = key.company_name
         self.initial['company_address'] = key.company_address
@@ -581,11 +597,15 @@ class ReportForm(forms.ModelForm):
         self.initial['executive_summary_description'] = key.executive_summary_description
         self.initial['show_footer'] = key.show_footer
         self.initial['footer_text'] = key.footer_text
+        self.initial['primary_color'] = key.primary_color
+        self.initial['secondary_color'] = key.secondary_color
 
     def set_initial(self):
         self.initial['show_rengine_banner'] = True
         self.initial['show_footer'] = False
         self.initial['show_executive_summary'] = False
+        self.initial['primary_color'] = '#FF7043'
+        self.initial['secondary_color'] = '#424242'
         self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_name}** engaged **{company_name}** to perform a security audit on their Web application.
 
 **{company_name}** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
