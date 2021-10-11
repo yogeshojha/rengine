@@ -3,6 +3,7 @@ import logging
 import requests
 import itertools
 import tempfile
+import markdown
 
 from datetime import datetime
 
@@ -649,6 +650,7 @@ def create_report(request, id):
     ip_addresses = IpAddress.objects.filter(
         ip_addresses__in=Subdomain.objects.filter(
             scan_history__id=id)).distinct()
+
     data = {
         'scan_object': scan_object,
         'unique_vulnerabilities': unique_vulnerabilities,
@@ -656,8 +658,41 @@ def create_report(request, id):
         'subdomain_alive_count': subdomain_alive_count,
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
-        'ip_addresses': ip_addresses
+        'ip_addresses': ip_addresses,
     }
+
+    # get report related config
+    if VulnerabilityReportSettings.objects.all().exists():
+        report = VulnerabilityReportSettings.objects.all()[0]
+        data['company_name'] = report.company_name
+        data['company_address'] = report.company_address
+        data['company_email'] = report.company_email
+        data['company_website'] = report.company_website
+        data['show_rengine_banner'] = report.show_rengine_banner
+        data['show_footer'] = report.show_footer
+        data['footer_text'] = report.footer_text
+        data['show_executive_summary'] = report.show_executive_summary
+
+        description = report.executive_summary_description
+
+        # replace executive_summary_description with template syntax!
+        description = description.replace('{scan_date}', scan_object.start_scan_date.strftime('%d %B, %Y'))
+        description = description.replace('{company_name}', report.company_name)
+        description = description.replace('{target_name}', scan_object.domain.name)
+        if scan_object.domain.description:
+            description = description.replace('{target_description}', scan_object.domain.description)
+        description = description.replace('{subdomain_count}', str(subdomains.count()))
+        description = description.replace('{vulnerability_count}', str(all_vulnerabilities.count()))
+        description = description.replace('{critical_count}', str(all_vulnerabilities.filter(severity=4).count()))
+        description = description.replace('{high_count}', str(all_vulnerabilities.filter(severity=3).count()))
+        description = description.replace('{medium_count}', str(all_vulnerabilities.filter(severity=2).count()))
+        description = description.replace('{low_count}', str(all_vulnerabilities.filter(severity=1).count()))
+        description = description.replace('{info_count}', str(all_vulnerabilities.filter(severity=0).count()))
+
+        # convert to html
+        data['executive_summary_description'] = markdown.markdown(description)
+
+
     template = get_template('report/template.html')
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
