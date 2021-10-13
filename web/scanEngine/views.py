@@ -447,8 +447,8 @@ def report_settings(request):
     secondary_color = '#212121'
 
     report = None
-    if VulnerabilityReportSettings.objects.all().exists():
-        report = VulnerabilityReportSettings.objects.all()[0]
+    if VulnerabilityReportSetting.objects.all().exists():
+        report = VulnerabilityReportSetting.objects.all()[0]
         primary_color = report.primary_color
         secondary_color = report.secondary_color
         form.set_value(report)

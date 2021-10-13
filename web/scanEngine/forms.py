@@ -491,7 +491,7 @@ Thank you'''
 
 class ReportForm(forms.ModelForm):
     class Meta:
-        model = VulnerabilityReportSettings
+        model = VulnerabilityReportSetting
         fields = '__all__'
 
     company_name = forms.CharField(
