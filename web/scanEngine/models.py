@@ -93,7 +93,7 @@ class Hackerone(models.Model):
     report_template = models.TextField(blank=True, null=True)
 
 
-class VulnerabilityReportSettings(models.Model):
+class VulnerabilityReportSetting(models.Model):
     id = models.AutoField(primary_key=True)
     primary_color = models.CharField(max_length=10, null=True, blank=True, default='#FFB74D')
     secondary_color = models.CharField(max_length=10, null=True, blank=True, default='#212121')

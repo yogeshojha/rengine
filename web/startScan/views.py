@@ -665,8 +665,8 @@ def create_report(request, id):
     }
 
     # get report related config
-    if VulnerabilityReportSettings.objects.all().exists():
-        report = VulnerabilityReportSettings.objects.all()[0]
+    if VulnerabilityReportSetting.objects.all().exists():
+        report = VulnerabilityReportSetting.objects.all()[0]
         data['company_name'] = report.company_name
         data['company_address'] = report.company_address
         data['company_email'] = report.company_email
