@@ -1859,8 +1859,11 @@ def get_and_save_employees(scan_history, results_dir):
     file_location = results_dir + '/theHarvester.html'
     print(file_location)
     # delete proxy environ var
-    del os.environ['https_proxy']
-    del os.environ['HTTPS_PROXY']
+    if os.environ.get(('https_proxy')):
+        del os.environ['https_proxy']
+
+    if os.environ.get(('HTTPS_PROXY')):
+        del os.environ['HTTPS_PROXY']
 
     if os.path.isfile(file_location):
         logger.info('Parsing theHarvester results')

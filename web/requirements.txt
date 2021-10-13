@@ -1,11 +1,11 @@
 argh
 beautifulsoup4==4.9.3
-celery==5.1.1
+celery==5.1.2
 degoogle==1.0.1
 discord-webhook==0.14.0
 Django==3.2.4
 django-ace==1.0.11
-django-celery-beat==2.2.0
+django-celery-beat==2.2.1
 django-login-required-middleware==0.6.1
 django-mathfilters==1.0.0
 django-timezone-field==4.1.2
