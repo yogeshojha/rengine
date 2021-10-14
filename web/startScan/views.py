@@ -725,6 +725,8 @@ def create_report(request, id):
     html = template.render(data)
     pdf = HTML(string=html).write_pdf()
 
+    print(report_type)
+
     if 'download' in request.GET:
         response = HttpResponse(pdf, content_type='application/octet-stream')
     else:

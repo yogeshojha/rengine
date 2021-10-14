@@ -494,6 +494,7 @@ function deleteMultipleScan() {
 function initiate_report(id, is_subdomain_scan, is_vulnerability_scan) {
   $('#generateReportModal').modal('show');
   $('#report_alert_message').empty();
+  $('#report_type_select').empty();
   if (is_subdomain_scan == 'True'  && is_vulnerability_scan == 'True') {
     $('#report_alert_message').append(`
       <b>Full Scan</b> will include both Reconnaissance and Vulnerability Report.<br>
@@ -531,8 +532,7 @@ function initiate_report(id, is_subdomain_scan, is_vulnerability_scan) {
       }
 
       function generate_report(id) {
-        var report_type = $("#report_type_select option:selected").text();
-        alert(report_type);
+        var report_type = $("#report_type_select option:selected").val();
         swal({
           title: 'Generating Report!',
           text: `Please wait until we generate a report for you!`,
