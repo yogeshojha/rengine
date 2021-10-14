@@ -624,6 +624,7 @@
     {% if show_vuln %}
       <article style="page-break-before: always" class="summary">
         <h3 id="vulnerability-summary" class="page_title">Summary of Vulnerabilities Identified</h3>
+        {% if all_vulnerabilities.count > 0 %}
         <p>Listed below are the vulnerabilities identified on <span class="primary-color">{{scan_object.domain.name}}</span></p>
         <div class="table">
           <div class="row header bg-critical">
@@ -670,7 +671,11 @@
             </div>
             </div>
           {% endfor %}
-        </div>
+        {% else %}
+        <h3 class='info-color'>No Vulnerabilities were Discovered.</h3>
+        {% endif %}
+      </div>
+
       </article>
     {% endif %}
 
