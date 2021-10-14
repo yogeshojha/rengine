@@ -642,6 +642,23 @@ def create_report(request, id):
     primary_color = '#FFB74D'
     secondary_color = '#212121'
 
+    # get report type
+    report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
+
+    if report_type == 'recon':
+        show_recon = True
+        show_vuln = False
+        report_name = 'Reconnaissance Report'
+    elif report_type == 'vulnerability':
+        show_recon = False
+        show_vuln = True
+        report_name = 'Vulnerability Report'
+    else:
+        # default
+        show_recon = True
+        show_vuln = True
+        report_name = 'Full Scan Report'
+
     scan_object = ScanHistory.objects.get(id=id)
     unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
     all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')
@@ -662,6 +679,9 @@ def create_report(request, id):
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
         'ip_addresses': ip_addresses,
+        'show_recon': show_recon,
+        'show_vuln': show_vuln,
+        'report_name': report_name,
     }
 
     # get report related config
