@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.db.models import Q
 from django.db.models import CharField, Value, Count
@@ -36,16 +37,25 @@ class IPToDomain(APIView):
             options = FirefoxOptions()
             options.add_argument("--headless")
             driver = webdriver.Firefox(options=options)
-            driver.get('https://bgp.he.net/ip/{}#_dns'.format(ip_address))
+
+            # ip address may contain ip or CIDR, for ip use ip for CIDR use address
+            # as /net
+            if '/' in ip_address:
+                driver.get('https://bgp.he.net/net/{}#_dns'.format(ip_address))
+            else:
+                driver.get('https://bgp.he.net/ip/{}#_dns'.format(ip_address))
 
             try:
-                element = WebDriverWait(driver, 15).until(
-                    EC.presence_of_element_located((By.ID, "dns"))
+                element = WebDriverWait(driver, 30).until(
+                    EC.presence_of_element_located((By.ID, "tab_dns"))
                 )
                 # get all elements
                 elems = driver.find_elements_by_xpath("//a[starts-with(@href, '/dns/')]")
                 # remove empty domains as well
                 domains = [elem.text for elem in elems if elem.text]
+
+                # make domains list unique
+                domains = list(set(domains))
 
                 response = {'status': True, 'domains': domains, 'resolves_to': domains[0]}
 
@@ -58,6 +68,7 @@ class IPToDomain(APIView):
                 if whois_element:
                     response['whois'] = whois_element.text
             except Exception as e:
+                logging.error(e)
                 response = {'status': False, 'message': 'Exception {}'.format(e)}
             finally:
                 driver.quit()
