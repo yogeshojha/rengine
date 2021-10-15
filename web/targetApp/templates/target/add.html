@@ -131,14 +131,18 @@ Add target for Recon
                           <br>
                           This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
                         </label>
-                        {{ form.h1_team_handle }}
+                        <input type="text" class="form-control" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-            <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-target" id="add-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
+            <div class="form-group mt-3">
+              <label for="targetDescription">Target Description (Optional)</label>
+              <input type="text" class="form-control" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+            </div>
+            <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">Add Target</span></button>
           </form>
         </div>
       </div>
@@ -283,11 +287,23 @@ $("#resolve_ip_button").click(function(){
           $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 n-chk'></div>`);
           for (var domain in json_data['domains']) {
             $('#domains_checkbox').append(`<label class="new-control new-checkbox new-checkbox-text checkbox-dark">
-            <input type="checkbox" class="new-control-input" name="domains" value="${json_data['domains'][domain]}">
+            <input type="checkbox" class="new-control-input resolved_ip_domains" name="resolved_ip_domains" value="${json_data['domains'][domain]}">
             <span class="new-control-indicator"></span><span class="new-chk-content" class="text-info">${json_data['domains'][domain]}</span></label>`
           );
         }
         swal.close();
+        // resolved_ip_domains if any is checked, then only enable add button
+        $(".resolved_ip_domains").change(function(){
+          var addTargetsButton = document.getElementById("add-ip-target");
+          var checked_count = $('.resolved_ip_domains:checked').length;
+          if (checked_count > 0) {
+            addTargetsButton.disabled = false;
+          $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+          }
+          else{
+            addTargetsButton.disabled = true;
+          }
+        });
       }
       else{
         swal.close();
