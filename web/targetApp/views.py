@@ -42,6 +42,30 @@ def add_target(request):
                 add_target_form.cleaned_data['name'] +
                 ' added successfully')
             return http.HttpResponseRedirect(reverse('list_target'))
+        if 'add-ip-target' in request.POST:
+            domains = request.POST.getlist('resolved_ip_domains')
+            description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
+            h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
+            added_target_count = 0
+            for domain in domains:
+                if not Domain.objects.filter(
+                        name=domain).exists() and validators.domain(domain):
+                    Domain.objects.create(
+                        name=domain,
+                        description=description,
+                        h1_team_handle=h1_team_handle,
+                        insert_date=timezone.now())
+                    added_target_count += 1
+            if added_target_count:
+                messages.add_message(request, messages.SUCCESS, str(
+                    added_target_count) + ' targets added successfully!')
+                return http.HttpResponseRedirect(reverse('list_target'))
+            else:
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    'Oops! Could not import any targets, either targets already exists or is not a valid target.')
+                return http.HttpResponseRedirect(reverse('add_target'))
         elif 'add-multiple-targets' in request.POST:
             bulk_targets = [target.rstrip()
                             for target in request.POST['addTargets'].split('\n')]
