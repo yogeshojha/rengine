@@ -110,6 +110,11 @@ Add target for Recon
               </div>
             </div>
             <div class="form-row">
+              <div id='all_domains_checkbox' class='mt-2 n-chk'>
+                <label class="new-control new-checkbox new-checkbox-text checkbox-dark">
+                  <input type="checkbox" class="new-control-input" id="select_all_ip_domains">
+                  <span class="new-control-indicator"></span><span class="new-chk-content" class="text-info">Select All Domains</span></label>
+              </div>
               <div class="col-md-12 mt-2" id="resolved_domains_div">
               </div>
             </div>
@@ -260,6 +265,8 @@ $('#ip_address').on('change keyup',function(){
   }
 });
 
+// hide all checkbox by default
+$("#all_domains_checkbox").hide();
 $("#resolve_ip_button").click(function(){
   // get ip address
   var ip_addr = $("#ip_address").val();
@@ -282,6 +289,7 @@ $("#resolve_ip_button").click(function(){
       }).then(function(json_data) {
         if (json_data['status']) {
           // #resolved_domains_div
+          $("#all_domains_checkbox").show();
           $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
           $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
           $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 n-chk'></div>`);
@@ -306,6 +314,7 @@ $("#resolve_ip_button").click(function(){
         });
       }
       else{
+        $("#all_domains_checkbox").hide();
         swal.close();
         swal({
           title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
@@ -323,6 +332,16 @@ $("#resolve_ip_button").click(function(){
   }
 });
 });
+
+
+// if select all checkbox is checked, select all domains
+$("#select_all_ip_domains").click(function () {
+    $(".resolved_ip_domains").prop('checked', $(this).prop('checked'));
+    document.getElementById("add-ip-target").disabled = false;
+    var checked_count = $('.resolved_ip_domains:checked').length;
+    $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+});
+
 
 $('#domainName').on('change keyup',function(){
   if ($('#domainName').val().length) {
