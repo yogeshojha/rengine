@@ -45,6 +45,7 @@ def add_target(request):
         if 'add-ip-target' in request.POST:
             domains = request.POST.getlist('resolved_ip_domains')
             description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
+            ip_address_cidr = request.POST['ip_address'] if 'ip_address' in request.POST else ''
             h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
             added_target_count = 0
             for domain in domains:
@@ -54,6 +55,7 @@ def add_target(request):
                         name=domain,
                         description=description,
                         h1_team_handle=h1_team_handle,
+                        ip_address_cidr=ip_address_cidr,
                         insert_date=timezone.now())
                     added_target_count += 1
             if added_target_count:
