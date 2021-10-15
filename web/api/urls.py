@@ -114,6 +114,10 @@ urlpatterns = [
         'vulnerability/report/',
         VulnerabilityReport.as_view(),
         name='vulnerability_report'),
+    path(
+        'tools/ip_to_domain/',
+        IPToDomain.as_view(),
+        name='ip_to_domain'),
 ]
 
 urlpatterns += router.urls

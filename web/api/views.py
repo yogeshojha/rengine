@@ -20,6 +20,50 @@ from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
 
+# selenium
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
+
+class IPToDomain(APIView):
+    def get(self, request):
+        req = self.request
+        ip_address = req.query_params.get('ip_address')
+        if ip_address:
+            options = FirefoxOptions()
+            options.add_argument("--headless")
+            driver = webdriver.Firefox(options=options)
+            driver.get('https://bgp.he.net/ip/{}#_dns'.format(ip_address))
+
+            try:
+                element = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.ID, "dns"))
+                )
+                # get all elements
+                elems = driver.find_elements_by_xpath("//a[starts-with(@href, '/dns/')]")
+                # remove empty domains as well
+                domains = [elem.text for elem in elems if elem.text]
+
+                response = {'status': True, 'domains': domains, 'resolves_to': domains[0]}
+
+                # whois data
+                # click on whois tab
+                whois_button = driver.find_element_by_xpath("//li[@id='tab_whois']")
+                whois_button.click()
+
+                whois_element = driver.find_element_by_xpath("//div[@id='whois']/pre")
+                if whois_element:
+                    response['whois'] = whois_element.text
+            except Exception as e:
+                response = {'status': false, 'message': 'Exception {}'.format(e)}
+            finally:
+                driver.quit()
+                return Response(response)
+        return Response({'status': False, 'message': 'IP Address Required'})
+
 class VulnerabilityReport(APIView):
     def get(self, request):
         req = self.request
