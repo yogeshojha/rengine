@@ -58,7 +58,7 @@ class IPToDomain(APIView):
                 if whois_element:
                     response['whois'] = whois_element.text
             except Exception as e:
-                response = {'status': false, 'message': 'Exception {}'.format(e)}
+                response = {'status': False, 'message': 'Exception {}'.format(e)}
             finally:
                 driver.quit()
                 return Response(response)
