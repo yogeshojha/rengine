@@ -6,17 +6,15 @@
 Dashboard
 {% endblock title %}
 
+{% block page_title %}
+Dashboard
+{% endblock page_title %}
+
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
-<link href="{% static 'assets/css/dashboard/dash_1.css' %}" rel="stylesheet" type="text/css" />
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
-<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'assets/css/elements/avatar.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active"><a href="#">Dashboard</a></li>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
