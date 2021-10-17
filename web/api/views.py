@@ -35,15 +35,29 @@ class Whois(APIView):
     def get(self, request):
         req = self.request
         ip_domain = req.query_params.get('ip_domain')
+        save_db = True if 'save_db' in req.query_params else False
         if ip_domain:
             response = requests.get('https://www.whois.com/whois/{}'.format(ip_domain))
             bs = BeautifulSoup(response.text, 'html.parser')
-            result = bs.find_all('pre', {'class': 'df-raw'})[0].text.encode('UTF-8')
-            return Response({
-                'status': True,
-                'ip_domain': ip_domain,
-                'whois': result
-            })
+            try:
+                whois = bs.find_all('pre', {'class': 'df-raw'})[0].text.encode('UTF-8')
+                if save_db and Domain.objects.filter(name=ip_domain).exists() and whois:
+                    # look for domain and save in db
+                    domain = Domain.objects.get(name=ip_domain)
+                    domain.whois = whois.decode()
+                    domain.save()
+                return Response({
+                    'status': True,
+                    'ip_domain': ip_domain,
+                    'whois': whois
+                })
+            except Exception as e:
+                logging.exception(e)
+                return Response({
+                    'status': False,
+                    'ip_domain': ip_domain,
+                    'result': 'Domain not found'
+                })
         return Response({'status': False})
 
 
