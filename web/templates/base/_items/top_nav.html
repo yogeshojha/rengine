@@ -149,6 +149,22 @@
               <a class="" href="{% url 'logout' %}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg> Sign Out</a>
             </div>
           </li>
+          <li class="nav-item dropdown {{settings_nav_active}}">
+            <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-settings" role="button"
+              data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <i class="fe-settings me-1"></i> Settings
+              <div class="arrow-down"></div>
+            </a>
+            <div class="dropdown-menu" aria-labelledby="topnav-settings">
+              <a href="{% url 'proxy_settings' %}" class="dropdown-item">Proxies</a>
+              <a href="{% url 'tool_settings' %}" class="dropdown-item">Tool Settings</a>
+              <a href="{% url 'report_settings' %}" class="dropdown-item">Report Settings</a>
+              <a href="{% url 'rengine_settings' %}" class="dropdown-item">reNgine Settings</a>
+              <a href="{% url 'scan_engine_index' %}" class="dropdown-item">Proxies</a>
+              <a href="{% url 'hackerone_settings' %}" class="dropdown-item">Hackerone Settings</a>
+              <a href="{% url 'notification_settings' %}" class="dropdown-item">Notification Settings</a>
+            </div>
+          </li>
         </ul>
       </div>
     </nav>
