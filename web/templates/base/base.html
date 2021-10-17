@@ -48,7 +48,7 @@
     {% endblock custom_js_css_link %}
   </head>
 
-  <body class="loading" data-layout-mode="horizontal" data-layout='{"mode": "light", "width": "fluid", "menuPosition": "fixed", "sidebar": { "color": "light", "size": "default", "showuser": false}, "topbar": {"color": "dark"}, "showRightSidebarOnPageLoad": true}'>
+  <body class="loading" data-layout-mode="horizontal" data-layout='{"mode": "light", "width": "fluid", "menuPosition": "fixed", "sidebar": { "color": "light", "size": "default", "showuser": false}, "topbar": {"color": "dark"}}'>
     <!-- Topbar begins -->
     {% include 'base/_items/top_bar.html' %}
     {# topbar ends #}
@@ -72,12 +72,8 @@
             </div>
           </div>
         </div>
-        <div class="row">
-          <div class="col-12">
-            {% block main_content %}
-            {% endblock main_content %}
-          </div>
-        </div>
+        {% block main_content %}
+        {% endblock main_content %}
       </div>
       {% include 'base/_items/modal.html' %}
     </div>
