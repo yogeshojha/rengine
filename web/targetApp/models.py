@@ -23,6 +23,7 @@ class Domain(models.Model):
     name = models.CharField(max_length=300, unique=True)
     h1_team_handle = models.CharField(max_length=100, blank=True, null=True)
     ip_address_cidr = models.CharField(max_length=100, blank=True, null=True)
+    whois = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     insert_date = models.DateTimeField()
     start_scan_date = models.DateTimeField(null=True)
