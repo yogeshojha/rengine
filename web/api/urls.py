@@ -118,6 +118,10 @@ urlpatterns = [
         'tools/ip_to_domain/',
         IPToDomain.as_view(),
         name='ip_to_domain'),
+    path(
+        'tools/whois/',
+        Whois.as_view(),
+        name='whois'),
 ]
 
 urlpatterns += router.urls

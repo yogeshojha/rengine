@@ -1,5 +1,14 @@
 import json
 import logging
+import requests
+
+from bs4 import BeautifulSoup
+# selenium
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 
 from django.db.models import Q
 from django.db.models import CharField, Value, Count
@@ -21,12 +30,21 @@ from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
 
-# selenium
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+
+class Whois(APIView):
+    def get(self, request):
+        req = self.request
+        ip_domain = req.query_params.get('ip_domain')
+        if ip_domain:
+            response = requests.get('https://www.whois.com/whois/{}'.format(ip_domain))
+            bs = BeautifulSoup(response.text, 'html.parser')
+            result = bs.find_all('pre', {'class': 'df-raw'})[0].text.encode('UTF-8')
+            return Response({
+                'status': True,
+                'ip_domain': ip_domain,
+                'whois': result
+            })
+        return Response({'status': False})
 
 
 class IPToDomain(APIView):
@@ -57,7 +75,12 @@ class IPToDomain(APIView):
                 # make domains list unique
                 domains = list(set(domains))
 
-                response = {'status': True, 'domains': domains, 'resolves_to': domains[0]}
+                response = {
+                    'status': True,
+                    'ip_address': ip_address,
+                    'domains': domains,
+                    'resolves_to': domains[0]
+                }
 
                 # whois data
                 # click on whois tab
@@ -69,11 +92,18 @@ class IPToDomain(APIView):
                     response['whois'] = whois_element.text
             except Exception as e:
                 logging.error(e)
-                response = {'status': False, 'message': 'Exception {}'.format(e)}
+                response = {
+                    'status': False,
+                    'ip_address': ip_address,
+                    'message': 'Exception {}'.format(e)
+                }
             finally:
                 driver.quit()
                 return Response(response)
-        return Response({'status': False, 'message': 'IP Address Required'})
+        return Response({
+            'status': False,
+            'message': 'IP Address Required'
+        })
 
 class VulnerabilityReport(APIView):
     def get(self, request):
