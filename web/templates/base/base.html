@@ -72,7 +72,14 @@
             </div>
           </div>
         </div>
+        <div class="row">
+          <div class="col-12">
+            {% block main_content %}
+            {% endblock main_content %}
+          </div>
+        </div>
       </div>
+      {% include 'base/_items/modal.html' %}
     </div>
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
     <script src="{% static 'assets/js/app.min.js' %}"></script>
