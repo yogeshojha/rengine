@@ -71,15 +71,15 @@
               </div>
             </div>
           </div>
+          {% block main_content %}
+          {% endblock main_content %}
         </div>
-        {% block main_content %}
-        {% endblock main_content %}
       </div>
       {% include 'base/_items/modal.html' %}
     </div>
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
     <script src="{% static 'assets/js/app.min.js' %}"></script>
-    <script src="{% static 'assets/js/custom.js' %}"></script>
+    <script src="{% static 'custom/custom.js' %}"></script>
     {% block page_level_script %}
     {% endblock page_level_script%}
   </body>
