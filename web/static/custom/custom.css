@@ -1,0 +1,18 @@
+.text-sm-logo{
+  color:#fff;
+  font-size: 21px;
+  margin-left: 5px !important;
+}
+
+.text-lg-logo{
+  color:#fff;
+  font-size: 30px;
+}
+
+.vertical-center{
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
