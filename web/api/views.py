@@ -49,7 +49,7 @@ class Whois(APIView):
                 return Response({
                     'status': True,
                     'ip_domain': ip_domain,
-                    'whois': whois
+                    'whois': whois.decode()
                 })
             except Exception as e:
                 logging.exception(e)

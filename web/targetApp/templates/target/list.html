@@ -1,5 +1,6 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}
 List all targets
@@ -72,7 +73,7 @@ List all targets
               <th class="text-center">Domain Name</th>
               <th>Organization</th>
               <th>Description</th>
-              <th>Added on</th>
+              <th class="text-center">Added on</th>
               <th class="text-center">Last Scanned</th>
               <th class="text-center">Summary</th>
               <th class="text-center">Action</th>
@@ -86,7 +87,7 @@ List all targets
                 <b>{{ domain.name }}</b>
                 {% if domain.get_recent_scan_id %}
                 <br>
-                <a href="{% url 'detail_scan' domain.get_recent_scan_id %}" class="text-info">Recent Scan</a>
+                <a href="{% url 'detail_scan' domain.get_recent_scan_id %}" class="text-info">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg></a>
                 {% endif %}
               </td>
               <td class="">
@@ -95,9 +96,9 @@ List all targets
                 {% endfor %}
               </td>
               <td>{% if domain.description %}{{domain.description}}{% endif %}</td>
-              <td>{{ domain.insert_date }}</td>
+              <td class="text-center"><span class="bs-tooltip" title="{{domain.insert_date}}">{{ domain.insert_date|naturaltime }}</span></td>
               {% if domain.start_scan_date %}
-              <td class="text-center">{{domain.start_scan_date}}</td>
+              <td class="text-center"><span class="bs-tooltip" title="{{domain.start_scan_date}}">{{domain.start_scan_date|naturaltime}}</span></td>
               {% else %}
               <td class="text-center"><span class="shadow-none badge badge-warning">Never Scanned Before</span></td>
               {% endif %}
