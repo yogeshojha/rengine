@@ -21,3 +21,21 @@
   -ms-transform: translateY(-50%);
   transform: translateY(-50%);
 }
+
+.text-low {
+	color: #FDD835;
+}
+
+.text-critical {
+	color: #C62828;
+}
+
+.badge-critical {
+	color: #fff;
+	background-color: #AA2C00;
+}
+
+.badge-low {
+	color: #fff;
+	background-color: #FFD600;
+}
