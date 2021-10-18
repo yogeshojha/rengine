@@ -68,9 +68,9 @@ Dashboard
   </div>
 </div>
 
-<div class="row">
-  <div class="col-xl-4">
-    <div class="card">
+<div class="row row-eq-height">
+  <div class="col-4">
+    <div class="card" style="height: 100%">
       <div class="card-body">
         <h4 class="header-title mb-0">Vulnerability Breakdown by Severity</h4>
         <div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
@@ -93,6 +93,91 @@ Dashboard
             </div>
           </div>
           <div id="vulnerability-pie-chart" class="apex-charts"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-3">
+    <div class="card" style="height: 100%">
+      <div class="card-body">
+        <h4 class="header-title mb-3">Most Vulnerable Targets<span class="float-end"><span class="badge badge-soft-danger rounded-pill">{{total_vul_count}} Vulnerabilities</span></span></h4>
+        <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+          <table class="table table-borderless table-nowrap table-hover table-centered m-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40%">Target</th>
+                <th style="width: 10%">Vulnerability Count</th>
+                <th style="width: 50%">&nbsp;</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in most_vulnerable_target %}
+              <tr onclick="window.location='scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
+                <td>
+                  <h5 class="m-0 fw-normal">{{item.name}}</h5>
+                </td>
+                <td>
+                  {{item.num_vul}} Vulnerabilities
+                </td>
+                <td>
+                  <div class="progress progress-sm m-0">
+                    <div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              Not enough data.
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-3">
+    <div class="card" style="height: 100%">
+      <div class="card-body">
+        <h4 class="header-title mb-3">Most Common Vulnerabilities</h4>
+        <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+          <table class="table table-borderless table-nowrap table-hover table-centered m-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 40%">Vulnerability Name</th>
+                <th style="width: 10%">Count</th>
+                <th style="width: 50%">Severity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in most_common_vulnerability %}
+              <tr onclick="window.location='scan/detail/vuln?vulnerability_name={{item.name}}';" style="cursor: pointer;">
+                <td>
+                  <h5 class="m-0 fw-normal">{{item.name}}</h5>
+                </td>
+                <td class="text-center">
+                  {{item.count}}
+                </td>
+                <td>
+                  <div class="t-rate">
+                    {% if item.severity == 0 %}
+                    <span class='badge badge-soft-info'>Info</span>
+                    {% elif item.severity == 1 %}
+                    <span class='badge badge-low'>Low</span>
+                    {% elif item.severity == 2 %}
+                    <span class='badge badge-warning'>Medium</span>
+                    {% elif item.severity == 3 %}
+                    <span class='badge badge-danger'>High</span>
+                    {% elif item.severity == 4 %}
+                    <span class='badge badge-soft-danger'>Critical</span>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              Not enough data.
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
