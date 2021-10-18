@@ -27,12 +27,12 @@
 }
 
 .text-critical {
-	color: #C62828;
+	color: #E53935;
 }
 
 .badge-critical {
 	color: #fff;
-	background-color: #AA2C00;
+	background-color: #E53935;
 }
 
 .badge-low {
