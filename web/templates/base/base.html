@@ -118,6 +118,23 @@
     <script type="text/javascript">
       getScanStatusSidebar();
     </script>
+    {% if messages %}
+      {% for message in messages %}
+        <script type="text/javascript">
+          Snackbar.show({
+            text: '{{ message }}',
+            pos: 'top-right',
+            {% if message.tags == 'error'%}
+              actionTextColor: '#fff',
+              backgroundColor: '#e7515a',
+            {% else %}
+            actionTextColor: '#42A5F5',
+            {% endif %}
+            duration: 1500
+          });
+        </script>
+      {% endfor %}
+    {% endif %}
     {% block page_level_script %}
     {% endblock page_level_script%}
   </body>
