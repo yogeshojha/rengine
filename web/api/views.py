@@ -31,6 +31,22 @@ from recon_note.models import *
 from reNgine.common_func import is_safe_path
 
 
+class ScanStatus(APIView):
+    def get(self, request):
+        recently_completed_scans = ScanHistory.objects.all().order_by(
+            '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))
+        currently_scanning = ScanHistory.objects.order_by(
+            '-start_scan_date').filter(scan_status=1)
+        pending_scans = ScanHistory.objects.filter(scan_status=-1)
+
+        response = {
+            'recently_completed_scans': ScanHistorySerializer(recently_completed_scans, many=True).data,
+            'scanning': currently_scanning.values(),
+            'pending': pending_scans.values()
+        }
+        return Response(response)
+
+
 class Whois(APIView):
     def get(self, request):
         req = self.request

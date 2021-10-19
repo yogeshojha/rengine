@@ -38,10 +38,27 @@ class OnlySubdomainNameSerializer(serializers.ModelSerializer):
 
 
 class ScanHistorySerializer(serializers.ModelSerializer):
+
+    subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
+    endpoint_count = serializers.SerializerMethodField('get_endpoint_count')
+    vulnerability_count = serializers.SerializerMethodField('get_vulnerability_count')
+
     class Meta:
         model = ScanHistory
         fields = '__all__'
         depth = 1
+
+    def get_subdomain_count(self, scan_history):
+        if scan_history.get_subdomain_count:
+            return scan_history.get_subdomain_count()
+
+    def get_endpoint_count(self, scan_history):
+        if scan_history.get_endpoint_count:
+            return scan_history.get_endpoint_count()
+
+    def get_vulnerability_count(self, scan_history):
+        if scan_history.get_vulnerability_count:
+            return scan_history.get_vulnerability_count()
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
