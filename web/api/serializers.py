@@ -42,6 +42,9 @@ class ScanHistorySerializer(serializers.ModelSerializer):
     subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
     endpoint_count = serializers.SerializerMethodField('get_endpoint_count')
     vulnerability_count = serializers.SerializerMethodField('get_vulnerability_count')
+    current_progress = serializers.SerializerMethodField('get_progress')
+    completed_time = serializers.SerializerMethodField('get_completed_time_in_sec')
+    elapsed_time = serializers.SerializerMethodField('get_elapsed_time')
 
     class Meta:
         model = ScanHistory
@@ -59,6 +62,15 @@ class ScanHistorySerializer(serializers.ModelSerializer):
     def get_vulnerability_count(self, scan_history):
         if scan_history.get_vulnerability_count:
             return scan_history.get_vulnerability_count()
+
+    def get_progress(self, scan_history):
+        return scan_history.get_progress()
+
+    def get_completed_time_in_sec(self, scan_history):
+        return scan_history.get_completed_time_in_sec()
+
+    def get_elapsed_time(self, scan_history):
+        return scan_history.get_elapsed_time()
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
