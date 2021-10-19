@@ -122,6 +122,11 @@ urlpatterns = [
         'tools/whois/',
         Whois.as_view(),
         name='whois'),
+    # API for fetching currently ongoing scans and upcoming scans
+    path(
+        'scan_status/',
+        ScanStatus.as_view(),
+        name='scan_status'),
 ]
 
 urlpatterns += router.urls
