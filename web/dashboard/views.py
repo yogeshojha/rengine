@@ -26,11 +26,6 @@ def index(request):
         Subdomain.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
         EndPoint.objects.filter(http_status__exact=200).count()
-    recent_completed_scans = ScanHistory.objects.all().order_by(
-        '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
-    currently_scanning = ScanHistory.objects.order_by(
-        '-start_scan_date').filter(scan_status=1)[:5]
-    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
     info_count = Vulnerability.objects.filter(severity=0).count()
     low_count = Vulnerability.objects.filter(severity=1).count()
     medium_count = Vulnerability.objects.filter(severity=2).count()
@@ -118,9 +113,6 @@ def index(request):
         'subdomain_with_ip_count': subdomain_with_ip_count,
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
-        'recent_completed_scans': recent_completed_scans,
-        'pending_scans': pending_scans,
-        'currently_scanning': currently_scanning,
         'info_count': info_count,
         'low_count': low_count,
         'medium_count': medium_count,

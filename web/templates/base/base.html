@@ -12,6 +12,7 @@
     <link href="{% static 'assets/css/app-dark.min.css' %}" rel="stylesheet" type="text/css" id="main-dark-stylesheet" />
     <link href="{% static 'assets/css/icons.min.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'custom/custom.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'plugins/snackbar.min.css' %}" rel="stylesheet" type="text/css" />
     <style media="screen">
       @font-face {
         font-family: "Cerebri Sans,sans-serif";
@@ -77,10 +78,46 @@
       </div>
       {% include 'base/_items/modal.html' %}
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.all.min.js" integrity="sha512-9LKXH8DIeFSdiDIWQSOJNZuwLynJNm4x/1eBRpPfRJsEXZWJL+aoH+JNDglF3DcCoQYVBHqXo8sVHOLveoaN0A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <div class="right-bar">
+      <div data-simplebar class="h-100">
+        <div class="tab-content pt-0">
+          <div class="tab-pane active" id="tasks-tab" role="tabpanel">
+            <h6 class="fw-medium p-2 m-0 text-uppercase">Currently Scanning</h6>
+            <div class="px-2">
+              <h5><span class="badge bg-primary rounded-pill float-end" id="current_scan_count"></span></h5>
+              <br>
+              <div id="currently_scanning">
+              </div>
+            </div>
+            <h6 class="fw-medium p-2 m-0 text-uppercase">Recently Completed Scans</h6>
+            <div id="recently_completed_scans" class="px-2">
+            </div>
+            <h6 class="fw-medium p-2 m-0 text-uppercase">Upcoming Scan</h6>
+            <div class="px-2">
+              <h5><span class="badge bg-warning rounded-pill float-end" id="pending_scan_count"></span></h5>
+              <br>
+              <div id="upcoming_scans">
+              </div>
+            </div>
+            <div class="text-center mt-3">
+              <a href="javascript:getScanStatusSidebar(reload=true)" class="btn btn-md btn-primary">
+                Reload
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
     <script src="{% static 'assets/js/app.min.js' %}"></script>
     <script src="{% static 'custom/custom.js' %}"></script>
+    <script src="{% static 'custom/dashboard.js' %}"></script>
+    <script src="{% static 'plugins/snackbar.min.js' %}"></script>
+    <script type="text/javascript">
+      getScanStatusSidebar();
+    </script>
     {% block page_level_script %}
     {% endblock page_level_script%}
   </body>

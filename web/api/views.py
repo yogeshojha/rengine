@@ -40,9 +40,9 @@ class ScanStatus(APIView):
         pending_scans = ScanHistory.objects.filter(scan_status=-1)
 
         response = {
-            'recently_completed_scans': ScanHistorySerializer(recently_completed_scans, many=True).data,
-            'scanning': currently_scanning.values(),
-            'pending': pending_scans.values()
+            'pending': ScanHistorySerializer(pending_scans, many=True).data,
+            'scanning': ScanHistorySerializer(currently_scanning, many=True).data,
+            'recently_completed_scans': ScanHistorySerializer(recently_completed_scans, many=True).data
         }
         return Response(response)
 

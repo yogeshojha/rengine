@@ -30,9 +30,9 @@ class ScanHistory(models.Model):
     used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 
     # osint is directly linked to scan history and not subdomains
-    emails = models.ManyToManyField('Email', related_name='emails')
-    employees = models.ManyToManyField('Employee', related_name='employees')
-    dorks = models.ManyToManyField('Dork', related_name='dorks')
+    emails = models.ManyToManyField('Email', related_name='emails', blank=True)
+    employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
+    dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 
     def __str__(self):
         # debug purpose remove scan type and id in prod
@@ -89,6 +89,25 @@ class ScanHistory(models.Model):
         return Vulnerability.objects.filter(
             scan_history__id=self.id).filter(
             severity=4).count()
+
+    def get_progress(self):
+        '''
+        formulae to calculate
+        count number of true things to do, for http crawler, it is always +1
+        divided by total scan activity associated - 2 (Start and Stop)
+        '''
+        number_of_steps = sum([
+            self.subdomain_discovery,
+            self.dir_file_search,
+            self.port_scan,
+            self.fetch_url,
+            self.vulnerability_scan,
+            self.osint,
+            self.screenshot,
+            True
+        ])
+        steps_done = len(self.scanactivity_set.all())
+        return (number_of_steps / (steps_done - 2))*100
 
     def get_completed_time(self):
         return self.stop_scan_date - self.start_scan_date
