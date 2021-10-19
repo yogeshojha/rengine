@@ -2,74 +2,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no">
-    <title>Login</title>
-    <link href="https://fonts.googleapis.com/css?family=Nunito:400,600,700" rel="stylesheet">
-    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet" type="text/css" />
-    <link href="{% static 'assets/css/plugins.css' %}" rel="stylesheet" type="text/css" />
-    <link href="{% static 'assets/css/authentication/form-2.css' %}" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
-</head>
-<body class="form" style="background: #212121">
-    <div class="form-container outer">
-        <div class="form-form">
-            <div class="form-form-wrap">
-                <div class="form-container">
-                    <div class="form-content">
-                        <img src="{% static 'img/logo.png' %}" class="navbar-logo" alt="logo">
-                        <h5 class="">Login to reNgine.</h5>
-                        {% if messages %}
-                        <p class="">
-                            {% for message in messages %}
-                                {{message}}
-                            {% endfor %}
-                        <span>If you have any issues or feature request, feel free to <a href="https://github.com/yogeshojha/rengine/issues" class="text-info">raise issue on Github.</a></span>
-                        </p>
-                        {% endif %}
-                        <form class="text-left" method="POST">
-                            {% csrf_token %}
-                            <div class="form">
-                                <div id="username-field" class="field-wrapper input">
-                                    <label for="username">USERNAME</label>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    <input id="username" name="username" type="text" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="username" required>
-                                </div>
+  <meta charset="utf-8" />
+  <title>Login reNgine</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="{% static 'bootstrap/bootstrap.min.css' %}" rel="stylesheet" type="text/css" id="bootstrap-stylesheet" />
+  <link href="{% static 'assets/css/app.min.css' %}" rel="stylesheet" type="text/css" id="main-stylesheet" />
+  <link href="{% static 'bootstrap/bootstrap-dark.min.css' %}" rel="stylesheet" type="text/css" id="bootstrap-dark-stylesheet" />
+  <link href="{% static 'assets/css/app-dark.min.css' %}" rel="stylesheet" type="text/css" id="main-dark-stylesheet" />
+  <link href="{% static 'assets/css/icons.min.css' %}" rel="stylesheet" type="text/css" />
+  <style media="screen">
+    @font-face {
+      font-family: "Cerebri Sans,sans-serif";
+      src: url("{% static 'fonts/cerebrisans-light.eot' %}");
+      src: local("Cerebri-sans Light"), url("{% static 'fonts/cerebrisans-light.woff' %}") format("woff");
+      font-weight: 300; }
 
-                                <div id="password-field" class="field-wrapper input mb-2">
-                                    <div class="d-flex justify-content-between">
-                                        <label for="password">PASSWORD</label>
-                                    </div>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-lock"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                    <input id="password" name="password" type="password" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="Password" required>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="toggle-password" class="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                                </div>
-                                {% if form.errors %}
-                                <div class="col-12 text-danger">
-                                    <p class="text-danger">
-                                        <strong>Oops! Invalid username or password.</strong>
-                                        <br>
-                                        Please note, both password and username are case-sensitive.
-                                    </p>
-                                </div>
-                                {% endif %}
-                                <div class="d-sm-flex justify-content-between">
-                                    <div class="field-wrapper">
-                                        <button type="submit" class="btn btn-outline-primary" value="">Log In</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+    @font-face {
+      font-family: "Cerebri Sans,sans-serif";
+      src: url("{% static 'fonts/cerebrisans-regular.eot' %}");
+      src: local("Cerebri-sans Regular"), url("{% static 'fonts/cerebrisans-regular.woff' %}") format("woff");
+      font-weight: 400; }
+
+    @font-face {
+      font-family: "Cerebri Sans,sans-serif";
+      src: url("{% static 'fonts/cerebrisans-medium.eot' %}");
+      src: local("Cerebri-sans Medium"), url("{% static 'fonts/cerebrisans-medium.woff' %}") format("woff");
+      font-weight: 500; }
+
+    @font-face {
+      font-family: "Cerebri Sans,sans-serif";
+      src: url("{% static 'fonts/cerebrisans-semibold.eot' %}");
+      src: local("Cerebri-sans Semibold"), url("{% static 'fonts/cerebrisans-semibold.woff' %}") format("woff");
+      font-weight: 600; }
+
+    @font-face {
+      font-family: "Cerebri Sans,sans-serif";
+      src: url("{% static 'fonts/cerebrisans-bold.eot' %}");
+      src: local("Cerebri-sans Bold"), url("{% static 'fonts/cerebrisans-bold.woff' %}") format("woff");
+      font-weight: 700; }
+  </style>
+</head>
+<body class="loading authentication-bg">
+  <div class="account-pages mt-5 mb-5">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 col-xl-4">
+          <div class="card bg-pattern">
+            <div class="card-body p-4">
+              <div class="text-center w-75 m-auto">
+                <div class="auth-logo">
+                  <a href="index.html" class="logo text-center">
+                    <span class="logo-lg">
+                      <img src="/staticfiles/img/logo-lg.png" alt="" height="90">
+                    </span>
+                  </a>
                 </div>
+                <h3 class="">Login to reNgine</h3>
+                <p>Current release: v1.1</p>
+              </div>
+              <div class="alert alert-primary" role="alert">
+                <a href="https://rengine.wiki" target="_blank">Learn how to create reNgine account.</a>
+              </div>
+              {% if messages %}
+              <p class="">
+                  {% for message in messages %}
+                    <div class="alert alert-warning" role="alert">
+                      {{message}}
+                    </div>
+                  {% endfor %}
+              <span>If you have any issues or feature request, feel free to <a href="https://github.com/yogeshojha/rengine/issues" class="text-primary">raise issue on Github.</a></span>
+              </p>
+              {% endif %}
+              <form method="POST">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label for="username" class="form-label">Username</label>
+                  <div class="input-group">
+                    <span class="input-group-text" id="basic-addon1">@</span>
+                    <input id="username" name="username" type="text" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="username" required>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label for="password" class="form-label">Password</label>
+                  <div class="input-group input-group-merge">
+                    <input id="password" name="password" type="password" class="form-control {% if form.errors %}is-invalid{% endif %}" placeholder="Password" required>
+                    <div class="input-group-text" data-password="false">
+                      <span class="password-eye"></span>
+                    </div>
+                  </div>
+                </div>
+                {% if form.errors %}
+                <div class="col-12 text-danger">
+                    <p class="text-danger">
+                        <strong>Oops! Invalid username or password.</strong>
+                        <br>
+                        Please note, both password and username are case-sensitive.
+                    </p>
+                </div>
+                {% endif %}
+                <div class="text-center d-grid">
+                  <button class="btn btn-primary" type="submit"> Log In </button>
+                </div>
+              </form>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-    <script src="{% static 'assets/js/libs/jquery-3.1.1.min.js' %}"></script>
-    <script src="{% static 'bootstrap/js/popper.min.js' %}"></script>
-    <script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
-    <script src="{% static 'assets/js/authentication/form-2.js' %}"></script>
+  </div>
+  <script src="{% static 'assets/js/vendor.min.js' %}"></script>
+  <script src="{% static 'assets/js/app.min.js' %}"></script>
 </body>
 </html>
