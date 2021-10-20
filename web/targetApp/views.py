@@ -31,7 +31,7 @@ def index(request):
 def add_target(request):
     add_target_form = AddTargetForm(request.POST or None)
     if request.method == "POST":
-        if 'add-target' in request.POST and add_target_form.is_valid():
+        if 'add-single-target' in request.POST and add_target_form.is_valid():
             Domain.objects.create(
                 **add_target_form.cleaned_data,
                 insert_date=timezone.now())

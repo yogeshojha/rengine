@@ -2,16 +2,12 @@
 {% load static %}
 
 {% block title %}
-Add target for Recon
+Add targets
 {% endblock title %}
 
 
 {% block custom_js_css_link %}
-<link href="{% static 'assets/css/elements/alert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/dropzone/dropzone.min.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -19,212 +15,175 @@ Add target for Recon
 <li class="breadcrumb-item active">Add Target</li>
 {% endblock breadcrumb_title %}
 
-{% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row">
-      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-        <h4>Add Targets</h4>
-      </div>
-    </div>
-  </div>
-  <div class="widget-content widget-content-area simple-pills">
-    <ul class="nav nav-pills mb-3 mt-3" id="pills-tab" role="tablist">
-      <li class="nav-item">
-        <a class="nav-link active" id="pills-add-tab" data-toggle="pill" href="#pills-add" role="tab" aria-controls="pills-add" aria-selected="true">Add Target</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="pills-ip-address-tab" data-toggle="pill" href="#pills-ip-address" role="tab" aria-controls="pills-multiple" aria-selected="false">Add IP Address</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="pills-multiple-tab" data-toggle="pill" href="#pills-multiple" role="tab" aria-controls="pills-multiple" aria-selected="false">Add Multiple Targets</a>
-      </li>
-      <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Import <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></a>
-        <div class="dropdown-menu">
-          <a class="dropdown-item" id="pills-txt-tab" data-toggle="tab" href="#pills-txt" role="tab" aria-controls="pills-txt" aria-selected="false">Import from Text File</a>
-          <a class="dropdown-item"  id="pills-csv-tab2" data-toggle="tab" href="#pills-csv" role="tab" aria-controls="pills-csv" aria-selected="false">Import from CSV</a>
-        </div>
-      </li>
-    </ul>
+{% block page_title %}
+Add or Import Targets
+{% endblock page_title %}
 
-    <div class="tab-content" id="pills-tabContent">
-      <div class="tab-pane fade show active" id="pills-add" role="tabpanel" aria-labelledby="pills-add-tab">
-        <div class="mb-4">
-          <form class="simple-example" method="POST">
-            {% csrf_token %}
-            <div class="form-row">
-              <div class="col-md-6 mb-4">
-                <label for="domainName">Domain name</label>
-                {{ form.name }}
-                {% if form.errors %}
-                <div class="invalid-feedback" style="display: block;">
-                  {{ form.errors.name|striptags }}
-                </div>
-                {% endif %}
-              </div>
-              <div class="col-md-6 mb-4">
-                <label for="domainDescription">Description (Optional)</label>
-                {{ form.description }}
-              </div>
-            </div>
-            <div class="creative3-accordion-content">
-              <div id="iconsAccordion" class="accordion-icons">
-                <div class="card">
-                  <div class="card-header" id="headingOne3">
-                    <section class="mb-0 mt-0">
-                      <div role="menu" class="collapsed" data-toggle="collapse" data-target="#hackerone_accordion" aria-expanded="true" aria-controls="hackerone_accordion">
-                        <div class="accordion-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg></div>
-                        Bug Bounty (Hackerone) (Optional)  <div class="icons"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
+{% block main_content %}
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body">
+        <ul class="nav nav-tabs nav-bordered">
+          <li class="nav-item">
+            <a href="#pills-add" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
+              Add Target
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#ip-address-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
+              Add IP Address
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#add-multiple-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+              Add Multiple Targets
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle arrow-none" href="#" id="import-dropdown" role="button"
+            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Import
+            <div class="arrow-down"></div>
+          </a>
+          <div class="dropdown-menu" aria-labelledby="import-dropdown">
+            <a class="dropdown-item" href="#import-text-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">Import from Text File</a>
+            <a class="dropdown-item" href="#import-csv-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">Import from CSV</a>
+          </div>
+        </li>
+      </ul>
+      <div class="tab-content" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="pills-add" role="tabpanel" aria-labelledby="pills-add-tab">
+          <div class="mb-4">
+            <div class="row">
+              <form class="simple-example" method="POST">
+                {% csrf_token %}
+                <div class="row mb-3">
+                  <div class="col-6">
+                    <div>
+                      <label for="simpleinput" class="form-label">Domain name</label>
+                      {{ form.name }}
+                      {% if form.errors %}
+                      <div class="invalid-feedback" style="display: block;">
+                        {{ form.errors.name|striptags }}
                       </div>
-                    </section>
-                  </div>
-                  <div id="hackerone_accordion" class="collapse" aria-labelledby="headingOne4" data-parent="#hackerone_accordion">
-                    <div class="card-body">
-                      <div class="col-md-12 mb-4">
-                        <label for="domainDescription">Hackerone Target <b>team_handle</b>
-                          <br>
-                          This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
-                        </label>
-                        {{ form.h1_team_handle }}
-                      </div>
+                      {% endif %}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-            <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-target" id="add-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
-          </form>
-        </div>
-      </div>
-      <div class="tab-pane fade" id="pills-ip-address" role="tabpanel" aria-labelledby="pills-ip-address-tab">
-        <div class="mb-4">
-          <p>Please enter your Target IP address, reNgine will look for the A records and resolve them to the domains.</p>
-          <form class="simple-example" method="POST">
-            {% csrf_token %}
-            <div class="form-row">
-              <div class="col-md-12 mt-2">
-                <label for="ip_address" class="text-dark">IP Address or CIDR</br><span class="text-muted">Example: 192.168.1.1 or 192.168.1.1/24, both are supported</span></label>
-                <input type="text" name="ip_address" class="form-control" id="ip_address" placeholder="X.X.X.X">
-                <button class="btn btn-primary mt-2 float-right" disabled type="button" name="resolve_ip_button" id="resolve_ip_button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> Resolve IP Address</button>
-              </div>
-            </div>
-            <div class="form-row">
-              <div id='all_domains_checkbox' class='mt-2 n-chk'>
-                <label class="new-control new-checkbox new-checkbox-text checkbox-dark">
-                  <input type="checkbox" class="new-control-input" id="select_all_ip_domains">
-                  <span class="new-control-indicator"></span><span class="new-chk-content" class="text-info">Select All Domains</span></label>
-              </div>
-              <div class="col-md-12 mt-2" id="resolved_domains_div">
-              </div>
-            </div>
-            <div class="creative3-accordion-content mt-2">
-              <div id="iconsAccordion" class="accordion-icons">
-                <div class="card">
-                  <div class="card-header" id="headingOne3">
-                    <section class="mb-0 mt-0">
-                      <div role="menu" class="collapsed" data-toggle="collapse" data-target="#hackerone_accordion" aria-expanded="true" aria-controls="hackerone_accordion">
-                        <div class="accordion-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg></div>
-                        Bug Bounty (Hackerone) (Optional)  <div class="icons"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
-                      </div>
-                    </section>
-                  </div>
-                  <div id="hackerone_accordion" class="collapse" aria-labelledby="headingOne4" data-parent="#hackerone_accordion">
-                    <div class="card-body">
-                      <div class="col-md-12 mb-4">
-                        <label for="domainDescription">Hackerone Target <b>team_handle</b>
-                          <br>
-                          This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
-                        </label>
-                        <input type="text" class="form-control" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
-                      </div>
-                    </div>
+                  <div class="col-6">
+                    <label for="domainDescription" class="form-label">Description (Optional)</label>
+                    {{ form.description }}
                   </div>
                 </div>
-              </div>
+                <div class="col-12">
+                  <label for="domainDescription" class="form-label">Hackerone Target Team Handle
+                    <br>
+                    This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                  </label>
+                  {{ form.h1_team_handle }}
+                </div>
+                <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-single-target" id="add-single-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
+              </form>
             </div>
-            <div class="form-group mt-3">
-              <label for="targetDescription">Target Description (Optional)</label>
-              <input type="text" class="form-control" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
-            </div>
-            <button class="btn btn-primary submit-fn mt-2 float-right" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">Add Target</span></button>
-          </form>
+          </div>
         </div>
-      </div>
-      <div class="tab-pane fade" id="pills-multiple" role="tabpanel" aria-labelledby="pills-multiple-tab">
-        <div class="mb-4">
+        <div class="tab-pane fade" id="ip-address-tab" role="tabpanel" aria-labelledby="ip-address-tab">
           <form method="post">
             {% csrf_token %}
-            <div class="form-group mb-4">
-              <label for="importSubdomainFormControlTextarea">You can add one or more targets. If you are adding multiple targets, Seperate them using new line. If the subdomain already exists, it will be skipped.</label>
-              <textarea class="form-control" id="addTargets" rows="7" spellcheck="false" name="addTargets" placeholder="example.com"></textarea>
-            </div>
-            <div class="form-group mb-4">
-              <label for="targetDescription">Target Description (Optional)</label>
-              <input type="text" class="form-control" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
-            </div>
-            <div class="creative3-accordion-content">
-              <div id="iconsAccordion" class="accordion-icons">
-                <div class="card">
-                  <div class="card-header" id="headingOne3">
-                    <section class="mb-0 mt-0">
-                      <div role="menu" class="collapsed" data-toggle="collapse" data-target="#hackerone_accordion" aria-expanded="true" aria-controls="hackerone_accordion">
-                        <div class="accordion-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg></div>
-                        Bug Bounty (Hackerone) (Optional)  <div class="icons"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg></div>
-                      </div>
-                    </section>
-                  </div>
-                  <div id="hackerone_accordion" class="collapse" aria-labelledby="headingOne4" data-parent="#hackerone_accordion">
-                    <div class="card-body">
-                      <div class="col-md-12 mb-4">
-                        <label for="domainDescription">Hackerone Target <b>team_handle</b>
-                          <br>
-                          This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
-                        </label>
-                        <input type="text" class="form-control" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
-                      </div>
-                    </div>
+            <div class="row">
+              <div class="col-12">
+                <div class="alert alert-primary border-0 mb-4" role="alert">
+                  Please enter your Target IP address, reNgine will look for the <b>A</b> records and resolve them to the domains.
+                </div>
+                <label for="ip_address" class="text-dark">IP Address or CIDR</br><span class="text-muted">Example: 192.168.1.1 or 192.168.1.1/24, both are supported</span></label>
+                <input type="text" name="ip_address" class="form-control form-control-lg" id="ip_address" placeholder="X.X.X.X">
+                <button class="btn btn-primary mt-2 float-end" disabled type="button" name="resolve_ip_button" id="resolve_ip_button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-repeat"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg> Resolve IP Address</button>
+              </div>
+              <div class="col-12">
+                <div id='all_domains_checkbox' class='mt-2 n-chk'>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="select_all_ip_domains">
+                    <label class="form-check-label" for="select_all_ip_domains">Select All Domains</label>
                   </div>
                 </div>
               </div>
-            </div>
-            <button class="btn btn-primary submit-fn mt-2 float-right" type="submit" id="addTargetButton" name="add-multiple-targets" value="submit">Add 0 Target</button>
-          </form>
-        </div>
-      </div>
-      <div class="tab-pane fade" id="pills-txt" role="tabpanel" aria-labelledby="pills-txt-tab">
-        <div class="mb-4">
-          <div class="alert alert-light-primary border-0 mb-4" role="alert">
-            Your txt file must have list of domains seperated by new line.
-            <br><br>
-            By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended.
+              <div class="col-12 mt-3">
+                <div id="resolved_domains_div">
+                </div>
+              </div>
+              <div class="col-12 mt-3">
+                <label for="targetDescription" class="form-label">Target Description (Optional)</label>
+                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+              </div>
+              <div class="col-12 mt-3">
+                <label for="domainDescription" class="form-label">Hackerone Target Team Handle
+                  <br>
+                  This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                </label>
+                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
+                <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-ip-target" id="add-ip-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> <span id="add_ip_target_btn">Add Target</span></button>
+              </div>
+            </form>
           </div>
-          <form method="post" enctype="multipart/form-data">
-            <div class="custom-file">
-              {% csrf_token %}
-              <input type="file" class="custom-file-input" id="txtFile" required multiple accept=".txt" name="txtFile" onchange="showname(this, '#selectedTextFileName')">
-              <br><br><h6 id="selectedTextFileName" class="text-primary"></h6>
-              <label class="custom-file-label" for="txtFile">Choose *.txt file</label>
-
-            </div>
-            <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-txt-target">
-          </form>
         </div>
-      </div>
-      <div class="tab-pane fade" id="pills-csv" role="tabpanel" aria-labelledby="pills-csv-tab">
-        <div class="mb-4">
-          <div class="alert alert-light-primary border-0 mb-4" role="alert">
-            *Your csv file must be in the format of <strong>domain, description</strong> seperated by new line.
-          </div>
-          <form method="post" enctype="multipart/form-data">
+        <div class="tab-pane fade" id="add-multiple-tab" role="tabpanel" aria-labelledby="add-multiple-tab">
+          <form method="post">
             {% csrf_token %}
-            <div class="custom-file">
-              <input type="file" class="custom-file-input" id="csvFile" multiple accept=".csv" required name="csvFile" onchange="showname(this, '#selectedCsvFileName')">
-              <br><br><h6 id="selectedCsvFileName" class="text-primary"></h6>
-              <label class="custom-file-label" for="csvFile">Choose *.csv file</label>
+            <div class="row">
+              <div class="col-12">
+                <label for="importSubdomainFormControlTextarea">You can add one or more targets. If you are adding multiple targets, Seperate them using new line. If the subdomain already exists, it will be skipped.</label>
+                <textarea class="form-control" id="addTargets" rows="8" spellcheck="false" name="addTargets" placeholder="example.com"></textarea>
+              </div>
+              <div class="col-12 mt-3">
+                <label for="targetDescription">Target Description (Optional)</label>
+                <input type="text" class="form-control form-control-lg" id="targetDescription" placeholder="Interesting Target" name="targetDescription">
+              </div>
+              <div class="col-12 mt-3">
+                <label for="domainDescription" class="form-label">Hackerone Target Team Handle
+                  <br>
+                  This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                </label>
+                <input type="text" class="form-control form-control-lg" id="targetH1TeamHandle" placeholder="team_handle" name="targetH1TeamHandle">
+              </div>
             </div>
-            <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-csv-target">
+            <button class="btn btn-primary submit-fn mt-2 float-end" type="submit" id="add-multiple-targets" name="add-multiple-targets" value="submit">Add 0 Target</button>
           </form>
+        </div>
+        <div class="tab-pane fade" id="import-text-tab" role="tabpanel" aria-labelledby="import-text-tab">
+          <div class="row">
+            <div class="col-12">
+              <div class="alert alert-primary border-0 mb-4" role="alert">
+                Your txt file must have list of domains seperated by new line.
+                <br><br>
+                By default all domains imported from txt will have no description. If you choose to import multiple domains with description, csv import is recommended.
+              </div>
+              <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                  {% csrf_token %}
+                  <input type="file" class="form-control" id="txtFile" required accept=".txt" name="txtFile" onchange="showname(this, '#selectedTextFileName')">
+                  <h6 id="selectedTextFileName" class="text-primary"></h6>
+                </div>
+                <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-txt-target">
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" id="import-csv-tab" role="tabpanel" aria-labelledby="import-csv-tab">
+          <div class="row">
+            <div class="col-12">
+              <div class="alert alert-warning border-0 mb-4" role="alert">
+                Your csv file must be in the format of <strong>domain, description</strong> seperated by new line.
+              </div>
+              <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                  {% csrf_token %}
+                  <input type="file" class="form-control" id="csvFile" required accept=".csv" name="csvFile" onchange="showname(this, '#selectedCsvFileName')">
+                  <h6 id="selectedCsvFileName" class="text-primary"></h6>
+                </div>
+                <input type="submit" class="btn btn-primary float-right mt-5 mb-2" value="Upload" name="import-csv-target">
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -234,23 +193,21 @@ Add target for Recon
 
 
 {% block page_level_script %}
+<script src="{% static 'plugins/dropzone/dropzone.min.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script type="text/javascript">
-var addTargetsButton = document.getElementById("addTargetButton");
-addTargetsButton.disabled = true;
+var add_multiple_targets_btn = document.getElementById("add-multiple-targets");
+add_multiple_targets_btn.disabled = true;
 $('#addTargets').on('change keyup',function(){
   var text = $("#addTargets").val();
   var lines = text.split(/\r|\r\n|\n/);
   var count = lines.length;
-  addTargetsButton.innerHTML = `Add ${count} Targets`;
+  add_multiple_targets_btn.innerHTML = `Add ${count} Targets`;
   if (!count) {
-    addTargetsButton.disabled = true;
+    add_multiple_targets_btn.disabled = true;
   }
   else{
-    addTargetsButton.disabled = false;
+    add_multiple_targets_btn.disabled = false;
   }
 });
 
@@ -271,7 +228,7 @@ $("#resolve_ip_button").click(function(){
   // get ip address
   var ip_addr = $("#ip_address").val();
   $('#resolved_domains_div').empty();
-  swal({
+  swal.fire({
     title: `Fetching domains`,
     text: `Please wait while we fetch domains associated with IP address or CIDR ${ip_address.value}`,
     padding: '2em',
@@ -292,70 +249,70 @@ $("#resolve_ip_button").click(function(){
           $("#all_domains_checkbox").show();
           $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
           $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
-          $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 n-chk'></div>`);
+          $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
           for (var domain in json_data['domains']) {
-            $('#domains_checkbox').append(`<label class="new-control new-checkbox new-checkbox-text checkbox-dark">
-            <input type="checkbox" class="new-control-input resolved_ip_domains" name="resolved_ip_domains" value="${json_data['domains'][domain]}">
-            <span class="new-control-indicator"></span><span class="new-chk-content" class="text-info">${json_data['domains'][domain]}</span></label>`
-          );
+            $('#domains_checkbox').append(`
+              <div class="col-xl-2 col-md-4 col-sm-6 col-12">
+              <div class="form-check">
+              <input type="checkbox" class="form-check-input resolved_ip_domains" name="resolved_ip_domains" id="${json_data['domains'][domain]}" value="${json_data['domains'][domain]}">
+              <label class="form-check-label" for="${json_data['domains'][domain]}">${json_data['domains'][domain]}</label>
+              </div>
+              </div>`
+            );
+          }
+          swal.close();
+          // resolved_ip_domains if any is checked, then only enable add button
+          $(".resolved_ip_domains").change(function(){
+            var add_multiple_targets_btn = document.getElementById("add-ip-target");
+            var checked_count = $('.resolved_ip_domains:checked').length;
+            if (checked_count > 0) {
+              add_multiple_targets_btn.disabled = false;
+              $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+            }
+            else{
+              add_multiple_targets_btn.disabled = true;
+            }
+          });
         }
-        swal.close();
-        // resolved_ip_domains if any is checked, then only enable add button
-        $(".resolved_ip_domains").change(function(){
-          var addTargetsButton = document.getElementById("add-ip-target");
-          var checked_count = $('.resolved_ip_domains:checked').length;
-          if (checked_count > 0) {
-            addTargetsButton.disabled = false;
-          $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
-          }
-          else{
-            addTargetsButton.disabled = true;
-          }
-        });
-      }
-      else{
-        $("#all_domains_checkbox").hide();
-        swal.close();
-        swal({
-          title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
-          type: 'error',
-          padding: '2em'
-        })
-      }
-    })
-    .catch(function() {
-      swal.insertQueueStep({
-        type: 'error',
-        title: 'Oops! Unable to fetch domains for this IP!'
+        else{
+          $("#all_domains_checkbox").hide();
+          swal.close();
+          swal({
+            title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
+            type: 'error',
+            padding: '2em'
+          })
+        }
       })
-    })
-  }
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to fetch domains for this IP!'
+        })
+      })
+    }
+  });
 });
-});
-
 
 // if select all checkbox is checked, select all domains
 $("#select_all_ip_domains").click(function () {
-    $(".resolved_ip_domains").prop('checked', $(this).prop('checked'));
-    document.getElementById("add-ip-target").disabled = false;
-    var checked_count = $('.resolved_ip_domains:checked').length;
-    $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+  $(".resolved_ip_domains").prop('checked', $(this).prop('checked'));
+  document.getElementById("add-ip-target").disabled = false;
+  var checked_count = $('.resolved_ip_domains:checked').length;
+  $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
 });
-
 
 $('#domainName').on('change keyup',function(){
   if ($('#domainName').val().length) {
-    $("#add-target").removeAttr("disabled");
+    $("#add-single-target").removeAttr("disabled");
   }
   else{
-    $("#add-target").prop("disabled", true);
+    $("#add-single-target").prop("disabled", true);
   }
 });
 
 function showname (file, id) {
   $(id).html('Selected file: ' + file.files.item(0).name);
 };
-
-
 </script>
 {% endblock page_level_script %}
