@@ -113,7 +113,8 @@ class ScanHistory(models.Model):
         return self.stop_scan_date - self.start_scan_date
 
     def get_completed_time_in_sec(self):
-        return (self.stop_scan_date - self.start_scan_date).seconds
+        if self.stop_scan_date:
+            return (self.stop_scan_date - self.start_scan_date).seconds
 
     def get_elapsed_time(self):
         duration = timezone.now() - self.start_scan_date
