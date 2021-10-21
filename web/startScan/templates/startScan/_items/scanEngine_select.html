@@ -1,119 +1,122 @@
-<div id="toggleAccordion">
+<div class="accordion mt-3" id="engine_accordion">
   {% for engine in engines.all %}
-  <div class="card">
-    <div class="card-header" id="headingOne{{engine.id}}">
-      <section class="mb-0 mt-0">
-        <div role="menu" class="collapsed" data-toggle="collapse" data-target="#accordion{{engine.id}}" aria-expanded="true" aria-controls="accordion{{engine.id}}">
-          <label class="new-control new-checkbox checkbox-primary w-100 justify-content-between">
-            <input type="radio" class="new-control-input" name="scan_mode" value="{{engine.id}}" required>
-            <span class="new-control-indicator"></span>
-            <span class="ml-2">{{engine.engine_name}}</span>
-          </label>
-          <div class="icons">
-            {% if engine.default_engine %}
-            <span class="badge badge-pills outline-badge-info">Default Engine</span>
-            {% else %}
-            <span class="badge badge-pills outline-badge-danger">Custom Engine</span>
-            {% endif %}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="heading_{{engine.id}}">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_{{engine.id}}" aria-expanded="false" aria-controls="collapse_{{engine.id}}">
+          <div class="form-check form-check-primary">
+            <input class="form-check-input rounded-circle" type="radio" id="accordion_{{engine.id}}" name="scan_mode" value="{{engine.id}}" required>
+            <label class="form-check-label lead" for="accordion_{{engine.id}}">{{engine.engine_name}}
+              &nbsp;&nbsp;&nbsp;
+              {% if engine.default_engine %}
+                <span class="badge badge-soft-primary rounded-pill">Default Engine</span>
+              {% else %}
+                <span class="badge badge-soft-danger rounded-pill">Custom Engine</span>
+              {% endif %}
+            </label>
           </div>
-        </div>
-      </section>
-    </div>
-
-    <div id="accordion{{engine.id}}" class="collapse" aria-labelledby="headingOne1" data-parent="#toggleAccordion">
-      <div class="card-body">
-        <table>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Subdomain Discovery</>
+        </button>
+      </h2>
+      <div id="collapse_{{engine.id}}" class="accordion-collapse collapse" aria-labelledby="heading_{{engine.id}}" data-bs-parent="#engine_accordion">
+        <div class="accordion-body">
+          <span class="lead">Engine Capabilities</span>
+          <table class="mt-2">
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Subdomain Discovery</>
               </td>
               <td>
                 {% if engine.subdomain_discovery %}
-                {% include 'base/_items/green_tick.html' %}
+                  {% include 'base/_items/green_tick.html' %}
                 {% else %}
-                {% include 'base/_items/red_cross.html' %}
+                  {% include 'base/_items/red_cross.html' %}
                 {% endif %}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Screenshot</>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Screenshot</>
               </td>
               <td>
                 {% if engine.screenshot %}
-                {% include 'base/_items/green_tick.html' %}
+                  {% include 'base/_items/green_tick.html' %}
                 {% else %}
-                {% include 'base/_items/red_cross.html' %}
+                  {% include 'base/_items/red_cross.html' %}
                 {% endif %}
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">OSINT</>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">OSINT</>
               </td>
               <td>
                 {% if engine.osint %}
-                {% include 'base/_items/green_tick.html' %}
+                  {% include 'base/_items/green_tick.html' %}
                 {% else %}
-                {% include 'base/_items/red_cross.html' %}
+                  {% include 'base/_items/red_cross.html' %}
                 {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Port Scan</p>
+              </td>
+              <td>
+                {% if engine.port_scan %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Directory and Files Search</p>
+              </td>
+              <td>
+                {% if engine.dir_file_search %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
+              </td>
+              <td>
+                {% if engine.fetch_url %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <p class="mr-2 mt-1">Vulnerability Scan</p>
+              </td>
+              <td>
+                {% if engine.vulnerability_scan %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+          </table>
+          <div class="card">
+            <a data-bs-toggle="collapse" class="card-header bg-dark py-3 text-light p-4" href="#cardCollpase{{engine.id}}" role="button" aria-expanded="false" aria-controls="cardCollpase2">
+              <h5 class="card-title mb-0 text-light">YAML Configuration <i class="fe-chevron-down float-end"></i></h5>
+            </a>
+            <div id="cardCollpase{{engine.id}}" class="collapse">
+              <div class="card-body">
+                {{engine.yaml_configuration|linebreaks}}
               </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Port Scan</p>
-            </td>
-            <td>
-              {% if engine.port_scan %}
-              {% include 'base/_items/green_tick.html' %}
-              {% else %}
-              {% include 'base/_items/red_cross.html' %}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Directory and Files Search</p>
-            </td>
-            <td>
-              {% if engine.dir_file_search %}
-              {% include 'base/_items/green_tick.html' %}
-              {% else %}
-              {% include 'base/_items/red_cross.html' %}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
-            </td>
-            <td>
-              {% if engine.fetch_url %}
-              {% include 'base/_items/green_tick.html' %}
-              {% else %}
-              {% include 'base/_items/red_cross.html' %}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <p class="mr-2 mt-1">Vulnerability Scan</p>
-            </td>
-            <td>
-              {% if engine.vulnerability_scan %}
-              {% include 'base/_items/green_tick.html' %}
-              {% else %}
-              {% include 'base/_items/red_cross.html' %}
-              {% endif %}
-            </td>
-          </tr>
-        </table>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
   {% endfor %}
 </div>
