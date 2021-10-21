@@ -31,18 +31,14 @@ Initiating scan for {{domain.name}}
           <div id="select_engine">
             <h3>Choose Scan Engine</h3>
             <div class="">
-              <div class="form-row">
-                <div class="col-md-12 mb-4">
-                  <h4>Select Scan Engine</h4>
-                  {% if custom_engine_count == 0 %}
-                  <div class="alert bg-soft-primary border-0 mb-4" role="alert">
-                    <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                    <a href="{% url 'add_engine' %}" class="text-primary">Create Custom Scan Engine</a>
-                  </div>
-                  {% endif %}
-                  {% include "startScan/_items/scanEngine_select.html" %}
-                </div>
+              <h4>Select Scan Engine</h4>
+              {% if custom_engine_count == 0 %}
+              <div class="alert bg-soft-primary border-0 mb-4" role="alert">
+                <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
+                <a href="{% url 'add_engine' %}" class="text-primary">Create Custom Scan Engine</a>
               </div>
+              {% endif %}
+              {% include "startScan/_items/scanEngine_select.html" %}
             </div>
             <h3>Import/Ignore Subdomains</h3>
             <div class="">
