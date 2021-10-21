@@ -118,7 +118,9 @@ Dashboard
                 </td>
                 <td>
                   <div class="progress progress-sm m-0">
+                    {% if total_vul_count %}
                     <div class="progress-bar br-30 bg-danger" role="progressbar" style="width: {% with percent=item.num_vul|div:total_vul_count %}{{percent|mul:100}}{% endwith %}%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                    {% endif %}
                   </div>
                 </td>
               </tr>
@@ -136,6 +138,7 @@ Dashboard
       <div class="card-body">
         <h4 class="header-title mb-3">Most Common Vulnerabilities</h4>
         <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+          {% if most_common_vulnerability %}
           <table class="table table-borderless table-nowrap table-hover table-centered m-0">
             <thead class="table-dark">
               <tr>
@@ -169,11 +172,14 @@ Dashboard
                   </div>
                 </td>
               </tr>
-              {% empty %}
-              Not enough data.
               {% endfor %}
             </tbody>
           </table>
+          {% else %}
+          <div class="alert alert-primary border-0 mb-4" role="alert">
+            Not enough data, once Vulnerability Scan is performed this section will be auto populated.
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
