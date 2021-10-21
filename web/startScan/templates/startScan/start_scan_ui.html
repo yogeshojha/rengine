@@ -46,22 +46,30 @@ Initiating scan for {{domain.name}}
             </div>
             <h3>Import/Ignore Subdomains</h3>
             <div class="">
-              <div class="form-group mb-4">
-                <label for="importSubdomainFormControlTextarea"><b class="text-info">Import Subdomains(Optional)</b></br>You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</label>
-              </br>
-              <label for="importSubdomainFormControlTextarea">Seperate the subdomains using new line. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</label>
-              <textarea class="form-control" id="importSubdomainFormControlTextarea" rows="7" spellcheck="false" name="importSubdomainTextArea"></textarea>
-            </div>
-            <div class="">
-              <div class="form-group mb-4">
-                <label for="outOfScopeSubdomainTextarea"><b class="text-warning">Out of Scope Subdomains(Optional)</b></label>
-              </br>
-              <label for="outOfScopeSubdomainTextarea">Seperate the out of scope subdomains/keywords using new line.(No regex currently supported.)</label>
-              <textarea class="form-control" id="outOfScopeSubdomainTextarea" rows="7" spellcheck="false" name="outOfScopeSubdomainTextarea"></textarea>
+              <div class="mb-3">
+                <h4 class="text-info">Import Subdomains(Optional)</h4>
+                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <br>
+                <div class="alert bg-soft-primary border-0 mt-1 mb-1" role="alert">
+                  <span class="">Seperate the subdomains using <b>new line</b>. If the subdomain does not belong to <b>{{domain.name}}</b> it will be skipped.</span>
+                </div>
+                <label for="importSubdomainFormControlTextarea" class="form-label mt-1">Subdomains List</label>
+                <textarea class="form-control" id="importSubdomainFormControlTextarea" name="importSubdomainTextArea" rows="6" spellcheck="false"></textarea>
+              </div>
+              <div class="mb-3">
+                <h4 class="text-warning">Out of Scope Subdomains(Optional)</h4>
+                <span class="">You can import subdomains for <b>{{domain.name}}</b> using your private recon tools.</span>
+                <br>
+                <div class="alert bg-soft-warning border-0 mt-1 mb-1" role="alert">
+                  <span class="">Seperate the out of scope subdomains/keywords using new line.(No regex currently supported.)</span>
+                </div>
+                <label for="outOfScopeSubdomainTextarea" class="form-label mt-1">Out of Scope Subdomains List</label>
+                <textarea class="form-control" id="outOfScopeSubdomainTextarea" name="outOfScopeSubdomainTextarea" rows="6" spellcheck="false"></textarea>
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -92,6 +100,7 @@ function enableNext(){
 }
 
 function updateButton(){
+  $('a[role="menuitem"]').addClass('btn btn-primary waves-effect waves-light');
   var text = $("input[type=radio][name=scan_mode]").val();
   if(text === ''){
     disableNext();
@@ -117,6 +126,9 @@ $(function(){
   });
   $("input[type=radio][name=scan_mode]").change(initTimer).keyup(initTimer);
   disableNext();
+  $('a[role="menuitem"]').addClass('text-white');
 });
+
+
 </script>
 {% endblock page_level_script %}

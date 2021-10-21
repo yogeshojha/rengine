@@ -64,3 +64,12 @@ input[type="color"]:focus,
 input[type="text"][disabled] {
    background-color: #dddddd;
 }
+
+.accordion-item{
+  margin-top: -10px;
+}
+
+/* jquery steps for scan engine  */
+.wizard > .content > .body{
+  padding: 1% !important;
+}
