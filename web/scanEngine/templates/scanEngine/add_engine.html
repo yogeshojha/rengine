@@ -8,8 +8,7 @@ Add Engine Type
 
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+<link href="{% static 'plugins/switchery/switchery.min.css' %}" rel="stylesheet" type="text/css" />
 {{ form.media }}
 <style media="screen">
 .ace_editor {
@@ -29,31 +28,39 @@ Add Engine Type
 <li class="breadcrumb-item active">Add Scan Engine</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Add Scan Engine
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-	<div class="widget-header">
-		<div class="row">
-			<div class="col-12">
-				<h4>Add Scan Engine Name</h4>
-				{{ form.errors }}
-				{{ form.non_field_errors }}
+<div class="row">
+	<div class="col-xl-12">
+		<div class="card">
+			<div class="card-body">
+				<h4 class="header-title">Scan Engines</h4>
+				<p>
+					<code>Scan Engines</code> are the most crucial part of reNgine. They define how a <code>scan</code> is performed against a target. <code>Scan Engines</code> allow you to define the configuration and use it against multiple targets.
+					<br>
+					YAML configuration allows you fine tuning the engines such as rate, templates to be used, or configurations to be used.
+				</p>
+				<form method="POST">
+					{% csrf_token %}
+					{% include "scanEngine/_items/form_engine.html" %}
+					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Engine</button>
+				</form>
 			</div>
 		</div>
-	</div>
-	<div class="widget-content widget-content-area">
-		<form class="simple-example" method="POST">
-			{% csrf_token %}
-			{% include "scanEngine/_items/form_engine.html" %}
-			<button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Add Engine</button>
-		</form>
 	</div>
 </div>
 {% endblock main_content %}
 
 {% block page_level_script %}
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'plugins/switchery/switchery.min.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
+	$('[data-plugin="switchery"]').each(function(i, obj) {
+		new Switchery(obj, { color: '#2b3d51'});
+	});
 	$('.ace_text-input').attr('id','editor');
 	document.getElementById("editor").innerHTML = `subdomain_discovery:
   uses_tools: [ amass-passive, assetfinder, sublist3r, subfinder, oneforall ]
