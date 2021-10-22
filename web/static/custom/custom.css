@@ -73,3 +73,33 @@ input[type="text"][disabled] {
 .wizard > .content > .body{
   padding: 1% !important;
 }
+
+/* select2 badges */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered li{
+  list-style: none;
+}
+
+
+.select2-container .select2-selection--multiple .select2-selection__choice{
+  background-color: #3283f6 !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 3px !important;
+  padding: 0 7px !important;
+  margin-top: 6px !important;
+}
+
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove{
+  color: #fff !important;
+}
+
+.select2-selection__rendered {
+    line-height: 31px !important;
+}
+.select2-container .select2-selection--single {
+    height: 35px !important;
+}
+.select2-selection__arrow {
+    height: 34px !important;
+}
