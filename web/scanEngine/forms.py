@@ -12,30 +12,47 @@ class AddEngineForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": "Custom Engine"}))
+                "placeholder": "Engine Name"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "data-plugin": "switchery",
+        }))
     screenshot = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "data-plugin": "switchery",
+        }))
     dir_file_search = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     vulnerability_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "data-plugin": "switchery",
+        }))
     osint = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="monokai",
@@ -55,7 +72,7 @@ class UpdateEngineForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
@@ -104,7 +121,7 @@ class AddWordlistForm(forms.Form):
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
-            attrs={'class': 'form-control',
+            attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
                    'placeholder': 'my awesome wordlist', }))
     short_name = forms.CharField(
@@ -112,7 +129,7 @@ class AddWordlistForm(forms.Form):
         validators=[validate_short_name],
         widget=forms.TextInput(
             attrs={
-                'class': 'form-control',
+                'class': 'form-control form-control-lg',
                 'id': 'short_name',
                 'placeholder': 'my_awesome_wordlist', }))
     upload_file = forms.FileField(
@@ -131,7 +148,7 @@ class ConfigurationForm(forms.ModelForm):
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
-            attrs={'class': 'form-control',
+            attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
                    'placeholder': 'Configuration Name', }))
     short_name = forms.CharField(
@@ -139,7 +156,7 @@ class ConfigurationForm(forms.ModelForm):
         validators=[validate_short_name],
         widget=forms.TextInput(
             attrs={
-                'class': 'form-control',
+                'class': 'form-control form-control-lg',
                 'id': 'short_name',
                 'placeholder': 'my_awesome_configuration', }))
     content = forms.CharField(widget=AceWidget(
@@ -165,7 +182,7 @@ class InterestingLookupForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "keywords",
                 "placeholder": "Interesting Keywords",
             }))
@@ -228,7 +245,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "slack_hook_url",
                 "placeholder": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
             }))
@@ -245,7 +262,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "discord_hook_url",
                 "placeholder": "https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             }))
@@ -262,7 +279,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "telegram_bot_token",
                 "placeholder": "Bot Token",
             }))
@@ -271,7 +288,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "telegram_bot_chat_id",
                 "placeholder": "Bot Chat ID",
             }))
@@ -381,7 +398,7 @@ class ProxyForm(forms.ModelForm):
         required=False,
         widget=forms.Textarea(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "proxies",
                 "rows": "10",
                 "spellcheck": "false",
@@ -409,7 +426,7 @@ class HackeroneForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "username",
                 "placeholder": "Your Hackerone Username",
             }))
@@ -418,7 +435,7 @@ class HackeroneForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "api_key",
                 "placeholder": "Hackerone API Token",
             }))
@@ -498,7 +515,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "company_name",
                 "placeholder": "Company Name",
             }))
@@ -507,7 +524,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "company_address",
                 "placeholder": "Company Address",
             }))
@@ -516,7 +533,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "company_website",
                 "placeholder": "Company Website https://company.com",
             }))
@@ -525,7 +542,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "company_email",
                 "placeholder": "email@yourcompany.com",
             }))
@@ -542,7 +559,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
         attrs={
-            "class": "form-control",
+            "class": "form-control form-control-lg",
             "id": "footer_text",
             "aria-label": "switch",
             "placeholder": "Footer Text © Your Company",
