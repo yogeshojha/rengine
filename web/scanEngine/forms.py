@@ -213,21 +213,24 @@ class InterestingLookupForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "title_lookup"
             }))
 
     url_lookup = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "url_lookup"
             }))
 
     condition_200_http_lookup = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "condition_200_http_lookup"
             }))
 
     def set_value(self, key):
@@ -252,7 +255,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "slack_checkbox",
             }))
 
@@ -269,7 +272,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "discord_checkbox",
             }))
 
@@ -286,7 +289,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "telegram_checkbox",
             }))
 
@@ -312,7 +315,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_scan_status_notif",
             }))
 
@@ -320,7 +323,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_interesting_notif",
             }))
 
@@ -329,7 +332,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_vuln_notif",
             }))
 
@@ -338,7 +341,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_subdomain_changes_notif",
             }))
 
@@ -347,7 +350,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_scan_output_file",
             }))
 
