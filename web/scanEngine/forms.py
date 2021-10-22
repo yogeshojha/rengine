@@ -55,13 +55,13 @@ class AddEngineForm(forms.ModelForm):
         }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
-        theme="monokai",
+        theme="tomorrow_night_eighties",
         width="100%",
         height="450px",
-        tabsize=4,
-        fontsize=13,
-        toolbar=True,
-        attrs={"id": "editor", "value": "ok"}))
+        tabsize=2,
+        fontsize='17px',
+        showinvisibles=True,
+        attrs={"id": "editor"}))
 
 
 class UpdateEngineForm(forms.ModelForm):
@@ -77,33 +77,48 @@ class UpdateEngineForm(forms.ModelForm):
                 "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     screenshot = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     dir_file_search = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     vulnerability_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     osint = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "data-plugin": "switchery",
+        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
-        theme="monokai",
+        theme="tomorrow_night_eighties",
         width="100%",
         height="450px",
-        tabsize=4,
-        fontsize=13,
-        toolbar=True,))
+        tabsize=2,
+        fontsize='17px',
+        showinvisibles=True,
+        attrs={"id": "editor"}))
 
     def set_value(self, engine):
         self.initial['engine_name'] = engine.engine_name
