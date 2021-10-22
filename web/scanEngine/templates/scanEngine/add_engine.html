@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-Add Engine Type
+Add Scan Engine
 {% endblock title %}
 
 
@@ -14,7 +14,6 @@ Add Engine Type
 .ace_editor {
 	width:100%;
 	height:450px;
-	font-size:12px;
 	border:1px solid #CCC;
 }
 .django-ace-toolbar{
@@ -46,7 +45,7 @@ Add Scan Engine
 				<form method="POST">
 					{% csrf_token %}
 					{% include "scanEngine/_items/form_engine.html" %}
-					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Engine</button>
+					<button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Scan Engine</button>
 				</form>
 			</div>
 		</div>
