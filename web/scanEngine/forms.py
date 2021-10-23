@@ -408,7 +408,7 @@ class ProxyForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "use_proxy",
             }))
 
@@ -416,7 +416,7 @@ class ProxyForm(forms.ModelForm):
         required=False,
         widget=forms.Textarea(
             attrs={
-                "class": "form-control form-control-lg",
+                "class": "form-control",
                 "id": "proxies",
                 "rows": "10",
                 "spellcheck": "false",
@@ -462,7 +462,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_critical",
             }))
 
@@ -470,7 +470,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_high",
             }))
 
@@ -478,7 +478,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_medium",
             }))
 
@@ -569,7 +569,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "show_footer",
             }))
 
@@ -587,7 +587,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "show_rengine_banner",
             }))
 
@@ -595,7 +595,7 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "show_executive_summary",
             }))
 
