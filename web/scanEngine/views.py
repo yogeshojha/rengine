@@ -239,6 +239,7 @@ def tool_specific_settings(request):
     # check for incoming form requests
     if request.method == "POST":
 
+        print(request.FILES)
         if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
             file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
