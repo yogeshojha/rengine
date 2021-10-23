@@ -6,13 +6,6 @@ reNgine Settings
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
-<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/forms/switches.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -20,51 +13,53 @@ reNgine Settings
 <li class="breadcrumb-item active">reNgine Settings</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+reNgine Settings
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row h-100 justify-content-center align-items-center">
-      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-        <h4>Danger Zone</h4>
-      </div>
-    </div>
-  </div>
-  <div class="widget-content widget-content-area">
-    <div id="chart">
-    </div>
-    <div class="text-center">
-      Total Storage: <b>{{total}} Gb</b> Used Space: <b>{{used}} Gb</b> Free Space: <b>{{free}} Gb</b>
-    </div>
-    <div class="">
-      <h6 class="text-danger">Danger Zone</h6>
-      <div class="widget-content widget-content-area" style="border:1px solid #e7515a;">
-        <div class="row">
-          <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12">
-            <b class="text-dark">
-              Delete all scan results
-            </b>
-            <p class="">
-              <span class="text-danger">Once you delete all scan results, there is no going back.</span><br>
-              This will delete all the scan history and also screenshots and likely to free up disk space.
-            </p>
-          </div>
-          <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-3">
-            <button class="btn btn-danger float-right" onclick="delete_all_scan_results()">Delete All Scan Results</button>
-          </div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title text-danger">Danger Zone</h4>
+        <div id="chart">
         </div>
-        <hr>
-        <div class="row">
-          <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12">
-            <b class="text-dark">
-              Delete all Screenshots
-            </b>
-            <p class="">
-              Once you delete all screenshots, you are likely to free up some disk space.<br>
-              <span class="text-danger">Scan history will not be able to show any screenshots after deleted.</span><br>
-            </p>
-          </div>
-          <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-3">
-            <button class="btn btn-danger float-right" onclick="delete_all_screenshots()">Delete All Screenshots</button>
+        <div class="text-center">
+          Total Storage: <b>{{total}} Gb</b> Used Space: <b>{{used}} Gb</b> Free Space: <b>{{free}} Gb</b>
+        </div>
+        <div class="">
+          <h4 class="header-title text-danger">Danger Zone</h4>
+          <div class="widget-content widget-content-area" style="border:1px solid #e7515a;">
+            <div class="row ms-2 me-2">
+              <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <b class="header-title">
+                  Delete all scan results
+                </b>
+                <p class="">
+                  <span class="text-danger">Once you delete all scan results, there is no going back.</span><br>
+                  This will delete all the scan history and also screenshots and likely to free up disk space.
+                </p>
+              </div>
+              <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_scan_results()">Delete All Scan Results</button>
+              </div>
+            </div>
+            <hr>
+            <div class="row ms-2 me-2">
+              <div class="col-xl-9 col-lg-9 col-md-6 col-sm-6 col-12 mt-2">
+                <b class="header-title">
+                  Delete all Screenshots
+                </b>
+                <p class="">
+                  Once you delete all screenshots, you are likely to free up some disk space.<br>
+                  <span class="text-danger">Scan history will not be able to show any screenshots after deleted.</span><br>
+                </p>
+              </div>
+              <div class="col-xl-3 col-lg-9 col-md-6 col-sm-6 col-12 mt-2 mb-2">
+                <button class="btn btn-danger mt-1 float-end" onclick="delete_all_screenshots()">Delete All Screenshots</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -75,9 +70,7 @@ reNgine Settings
 
 
 {% block page_level_script %}
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script type="text/javascript">
 $(document).ready(function(){
   var options = {
