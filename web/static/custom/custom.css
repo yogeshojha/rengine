@@ -23,21 +23,21 @@
 }
 
 .text-low {
-	color: #FDD835;
+  color: #FDD835;
 }
 
 .text-critical {
-	color: #E53935;
+  color: #E53935;
 }
 
 .badge-critical {
-	color: #fff;
-	background-color: #E53935;
+  color: #fff;
+  background-color: #E53935;
 }
 
 .badge-low {
-	color: #fff;
-	background-color: #FFD600;
+  color: #fff;
+  background-color: #FFD600;
 }
 
 .form-control:focus,
@@ -62,7 +62,7 @@ input[type="color"]:focus,
 }
 
 input[type="text"][disabled] {
-   background-color: #dddddd;
+  background-color: #dddddd;
 }
 
 form-control:disabled, .form-control[readonly]{
@@ -99,11 +99,21 @@ form-control:disabled, .form-control[readonly]{
 }
 
 .select2-selection__rendered {
-    line-height: 31px !important;
+  line-height: 31px !important;
 }
 .select2-container .select2-selection--single {
-    height: 35px !important;
+  height: 35px !important;
 }
 .select2-selection__arrow {
-    height: 34px !important;
+  height: 34px !important;
+}
+
+.badge {
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease-out;
+  -webkit-transition: all 0.3s ease-out;
 }
