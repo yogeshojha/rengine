@@ -6,17 +6,9 @@ Scan Engine
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_miscellaneous.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -24,24 +16,21 @@ Scan Engine
 <li class="breadcrumb-item active">All Scan Engines</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Scan Engines
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="widget widget-table-two">
-  <div class="widget-heading">
-    <div class="row">
-      <div class="col-6">
-        <h5>Scan Engines</h5>
-      </div>
-      <div class="col-6">
-        <a href="{% url 'add_engine' %}" class="btn btn-outline-primary mb-2 float-right">Add New Engine</a>
-      </div>
-    </div>
-  </div>
-  <div class="widget-content">
-    <div class="table-responsive mt-4 mb-4">
-      <table id="scan_engine_table" class="table">
+<!--begins main content-->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <table id="style-3" class="table style-3 table-hover">
         <thead>
           <tr>
+            <th>ID</th>
             <th>Engine Name</th>
+            <th class="text-center">Type</th>
             <th class="text-center">Subdomain Discovery</th>
             <th class="text-center">Screenshot</th>
             <th class="text-center">OSINT</th>
@@ -55,7 +44,15 @@ Scan Engine
         <tbody>
           {% for engine_type in engine_type.all %}
           <tr>
-            <td><span class="bs-tooltip text-info" data-placement="right" title="{% if engine_type.default_engine %}Default Engine {% else %}Custom Engine{% endif %}">{{engine_type.engine_name}}</span></td>
+            <td>{{engine_type.id}}</td>
+            <td class="text-primary">{{engine_type.engine_name}}</td>
+            <td class="text-center">
+              {% if engine_type.default_engine %}
+              <span class="badge bg-primary p-1">Default Engine</span>
+              {% else %}
+              <span class="badge bg-danger p-1">Custom Engine</span>
+              {% endif %}
+            </td>
             <td class="text-center">
               {% if engine_type.subdomain_discovery %}
               {% include 'base/_items/green_tick.html' %}
@@ -131,8 +128,24 @@ Scan Engine
 
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-<script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
+<script type="text/javascript">
+c3 = $('#style-3').DataTable({
+  "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
+  "<'table-responsive'tr>" +
+  "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+  "oLanguage": {
+    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+    "sInfo": "Showing page _PAGE_ of _PAGES_",
+    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+    "sSearchPlaceholder": "Search...",
+    "sLengthMenu": "Results :  _MENU_",
+  },
+  "stripeClasses": [],
+  "lengthMenu": [20, 30, 40, 50],
+  "pageLength": 20
+});
+
+multiCheck(c3);
+</script>
 {% endblock page_level_script %}
