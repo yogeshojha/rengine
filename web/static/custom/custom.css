@@ -65,6 +65,10 @@ input[type="text"][disabled] {
    background-color: #dddddd;
 }
 
+form-control:disabled, .form-control[readonly]{
+  background-color: #dddddd;
+}
+
 .accordion-item{
   margin-top: -10px;
 }
