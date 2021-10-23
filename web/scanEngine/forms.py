@@ -263,7 +263,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control form-control-lg",
+                "class": "form-control",
                 "id": "slack_hook_url",
                 "placeholder": "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX",
             }))
@@ -280,7 +280,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control form-control-lg",
+                "class": "form-control",
                 "id": "discord_hook_url",
                 "placeholder": "https://discord.com/api/webhooks/000000000000000000/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
             }))
@@ -297,7 +297,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control form-control-lg",
+                "class": "form-control",
                 "id": "telegram_bot_token",
                 "placeholder": "Bot Token",
             }))
@@ -306,7 +306,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control form-control-lg",
+                "class": "form-control",
                 "id": "telegram_bot_chat_id",
                 "placeholder": "Bot Chat ID",
             }))
