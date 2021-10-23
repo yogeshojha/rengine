@@ -467,7 +467,7 @@ def report_settings(request):
             messages.add_message(
                 request,
                 messages.INFO,
-                'Vulnerability/Reconnaissance Settings updated.')
+                'Report Settings updated.')
             return http.HttpResponseRedirect(reverse('report_settings'))
 
 
