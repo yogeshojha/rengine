@@ -150,7 +150,7 @@ class AddWordlistForm(forms.Form):
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
-            attrs={'class': 'custom-file-input',
+            attrs={'class': 'form-control',
                    'id': 'txtFile',
                    'multiple': '',
                    'accept': '.txt', }))
