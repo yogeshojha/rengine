@@ -117,3 +117,15 @@ form-control:disabled, .form-control[readonly]{
   transition: all 0.3s ease-out;
   -webkit-transition: all 0.3s ease-out;
 }
+
+/* grow datatables search section */
+div.dataTables_wrapper div.dataTables_filter input {
+	width: 100%;
+	float: left;
+	transition: all .2s ease-in-out;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus {
+	width: 300%;
+	transform: scale(1);
+}

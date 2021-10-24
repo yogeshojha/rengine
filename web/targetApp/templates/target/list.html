@@ -7,18 +7,9 @@ List all targets
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}">
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
-<link href="{% static 'assets/css/custom.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -26,50 +17,50 @@ List all targets
 <li class="breadcrumb-item"><a href="#">All Targets</a></li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Targets
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="widget widget-table-two">
-  <div class="widget-heading">
-    <div class="row">
-      <div class="col-xl-4 col-md-4 col-sm-12 col-12 layout-spacing">
-        <h5>All Targets</h5>
-      </div>
-      <div class="col-xl-8 col-md-8 col-sm-12 col-12 layout-spacing">
-        <a class="btn btn-primary float-right" href="{% url 'add_target' %}" role="button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          &nbsp;&nbsp;Add Targets
-        </a>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="p-2">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
+              Filter <i class="fe-filter"></i>
+            </button>
+            <div class="dropdown-menu" style="width: 30%">
+              <div class="px-4 py-3">
+                <h4 class="headline-title">Filters</h4>
+                <label for="filterByOrganization" class="form-label">Filter by Organization</label>
+                <select class="form-control" id="filterByOrganization">
+                </select>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+            </div>
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
+            <a class="btn btn-soft-info float-end disabled ms-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="widget-content">
-    <div class="">
-      <a class="btn btn-primary dropdown-toggle" href="#" role="button" id="filterMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-        &nbsp;&nbsp;Filter
-      </a>
-      <div class="dropdown-menu dropdown-menu-left mt-2" aria-labelledby="filterMenu" style="will-change: transform; width: 35%">
-        <div class="p-2">
-          <h5 class="mb-2">Filters</h5>
-          <p class="text-dark">Filter by Organization</p>
-          <select class="form-control" id="filterByOrganization">
-          </select>
-          <a href="#" class="text-info float-right mt-3" id="resetFilters">Reset Filters</a>
-        </div>
-      </div>
-      <a class="btn btn-outline-danger mb-2 float-right disabled" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
-      <a class="btn btn-outline-info mb-2 float-right disabled" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
-    </div>
-    <div class="">
-      <div id="filteringText">
-      </div>
-    </div>
-    <form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
-      {% csrf_token %}
-      <div class="table-responsive mt-4 mb-4">
-        <table id="list_target_table" class="table">
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
+        {% csrf_token %}
+        <table id="list_target_table" class="table style-3 table-hover">
           <thead>
             <tr>
-              <th class="checkbox-column">Serial Number</th>
+              <th class="checkbox-column text-center">Serial Number</th>
+              <th>Serial Number</th>
               <th class="text-center">Domain Name</th>
               <th>Organization</th>
               <th>Description</th>
@@ -83,6 +74,7 @@ List all targets
             {% for domain in domains.all %}
             <tr>
               <td class="checkbox-column"> {{ domain.id }} </td>
+              <td class=""> {{ domain.id }} </td>
               <td>
                 <b>{{ domain.name }}</b>
                 {% if domain.get_recent_scan_id %}
@@ -129,8 +121,8 @@ List all targets
             {% endfor %}
           </tbody>
         </table>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock main_content %}
@@ -139,97 +131,98 @@ List all targets
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
-<script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function(){
   var table = $('#list_target_table').DataTable({
     headerCallback:function(e, a, t, n, s) {
-      e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+      e.getElementsByTagName("th")[0].innerHTML='<input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n'
     },
-    columnDefs:[ {
-      targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-        return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox['+ e + ']" class="new-control-input child-chk targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-      }
-    }],
-    "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-      "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-      "sSearchPlaceholder": "Search...",
-      "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
-    },
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
-    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-    "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
-    "pageLength": 10
-  });
-  multiCheck(table);
-  // Handle form submission event
-  $('#frm-example').on('submit', function(e){
-    var form = this;
+    "columnDefs":[
+      { 'visible': false, 'targets': [1] },
+      {
+        "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+          return'<input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>'
+        },
 
-    table.$('input[type="checkbox"]').each(function(){
-      if(!$.contains(document, this)){
-        if(this.checked){
-          $(form).append(
-            $('<input>')
-            .attr('type', 'hidden')
-            .attr('name', this.name)
-            .val(this.value)
-          );
-        }
-      }
+      }],
+      "order": [[1, 'desc']],
+      "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+      "<'table-responsive'tr>" +
+      "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+      "oLanguage": {
+        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        "sSearchPlaceholder": "Search...",
+        "sLengthMenu": "Results :  _MENU_",
+      },
+      "stripeClasses": [],
+      "lengthMenu": [20, 30, 40, 50],
+      "pageLength": 20,
     });
-    e.preventDefault();
+    multiCheck(table);
+    // Handle form submission event
+    $('#frm-example').on('submit', function(e){
+      var form = this;
+
+      table.$('input[type="checkbox"]').each(function(){
+        if(!$.contains(document, this)){
+          if(this.checked){
+            $(form).append(
+              $('<input>')
+              .attr('type', 'hidden')
+              .attr('name', this.name)
+              .val(this.value)
+            );
+          }
+        }
+      });
+      e.preventDefault();
+    });
+
+    // filter organization populate
+    $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
+      data = data['organizations']
+      for (organization in data) {
+        name = htmlEncode(data[organization]['name']);
+        select = document.getElementById('filterByOrganization');
+        var option = document.createElement('option');
+        option.value = name;
+        option.innerHTML = name;
+        select.appendChild(option);
+      }
+    }).fail(function(){
+    });
+
+    var a = document.getElementById('filterByOrganization');
+    a.addEventListener('click', function() {
+      table.search(this.value).draw();
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
+      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+      </span>`;
+      Snackbar.show({
+        text: `Filtering by organization ${this.value}`,
+        pos: 'top-center'
+      });
+    }, false);
+
+    // reset filtering
+    var reset_filter = document.getElementById('resetFilters');
+    reset_filter.addEventListener('click', function() {
+      resetFilters(table);
+    }, false);
+
   });
 
-  // filter organization populate
-  $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
-    data = data['organizations']
-    for (organization in data) {
-      name = htmlEncode(data[organization]['name']);
-      select = document.getElementById('filterByOrganization');
-      var option = document.createElement('option');
-      option.value = name;
-      option.innerHTML = name;
-      select.appendChild(option);
-    }
-  }).fail(function(){
-  });
-
-  var a = document.getElementById('filterByOrganization');
-  a.addEventListener('click', function() {
-    table.search(this.value).draw();
-    document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
-    <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
-    </span>`;
+  function resetFilters(table_obj) {
+    table_obj.search("").draw();
     Snackbar.show({
-      text: `Filtering by organization ${this.value}`,
+      text: `Filters Reset`,
       pos: 'top-center'
     });
-  }, false);
-
-  // reset filtering
-  var reset_filter = document.getElementById('resetFilters');
-  reset_filter.addEventListener('click', function() {
-    resetFilters(table);
-  }, false);
-
-});
-
-function resetFilters(table_obj) {
-  table_obj.search("").draw();
-  Snackbar.show({
-    text: `Filters Reset`,
-    pos: 'top-center'
-  });
-  document.getElementById('filteringText').innerHTML = '';
-}
+    document.getElementById('filteringText').innerHTML = '';
+  }
 
 </script>
 {% endblock page_level_script %}
