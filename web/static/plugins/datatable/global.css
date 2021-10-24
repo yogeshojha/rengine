@@ -38,7 +38,7 @@
     .table-form .form-group input {
       padding: 7px 18px 7px 14px;
       height: auto;
-      font-size: 12px; }
+    }
 
 table.dt-table-hover tbody tr:hover {
   background: #fafafa; }
@@ -166,8 +166,7 @@ div.dataTables_wrapper div.dataTables_filter svg {
   border-radius: 6px;
   border: 1px solid #e0e6ed;
   padding: 6px 29px 8px 14px;
-  height: auto;
-  font-size: 12px; }
+  height: auto;}
   .dataTables_wrapper .form-control:focus {
     border: 1px solid #888ea8; }
 
