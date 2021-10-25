@@ -34,10 +34,10 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     x11-utils \
     xvfb
 
-# Download and install go 1.14
-RUN wget https://dl.google.com/go/go1.16.5.linux-amd64.tar.gz
-RUN tar -xvf go1.16.5.linux-amd64.tar.gz
-RUN rm go1.16.5.linux-amd64.tar.gz
+# Download and install go 1.17
+RUN wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz
+RUN tar -xvf go1.17.2.linux-amd64.tar.gz
+RUN rm go1.17.2.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
