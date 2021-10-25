@@ -62,7 +62,8 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Download Go packages
-RUN go install -v github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler@latest
+RUN go install -v github.com/tomnomnom/assetfinder@latest
+RUN go install -v github.com/hakluke/hakrawler@latest
 
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
 
