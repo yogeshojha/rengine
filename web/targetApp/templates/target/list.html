@@ -44,7 +44,8 @@ Targets
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
-            <a class="btn btn-soft-info float-end disabled ms-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+            <a class="btn btn-soft-primary float-end disabled ms-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+            <a class="btn btn-soft-success float-end ms-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
           </div>
         </div>
       </div>

@@ -7,17 +7,52 @@ Update Target
 
 
 {% block custom_js_css_link %}
-<script src="{% static 'plugins/notification/snackbar/snackbar.min.js' %}"></script>
-<link href="{% static 'plugins/notification/snackbar/snackbar.min.css' %}" rel="stylesheet" type="text/css">
-<link href="{% static 'assets/css/components/tabs-accordian/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
+{% block page_title %}
+Update Target   {{ form.name.value }}
+{% endblock page_title %}
+
 {% block main_content %}
-{% include 'target/_items/domain_form.html' with button_title="Update" widget_title="Update Target" form_action="update" %}
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">Update Target</h4>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row mb-3">
+            <div class="col-6">
+              <div>
+                <label for="simpleinput" class="form-label">Domain name</label>
+                {{ form.name }}
+                {% if form.errors %}
+                <div class="invalid-feedback" style="display: block;">
+                  {{ form.errors.name|striptags }}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-6">
+              <label for="domainDescription" class="form-label">Description (Optional)</label>
+              {{ form.description }}
+            </div>
+          </div>
+          <div class="col-12">
+            <label for="domainDescription" class="form-label">Hackerone Target Team Handle
+              <br>
+              This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+            </label>
+            {{ form.h1_team_handle }}
+          </div>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Update Target</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock main_content %}
 
 
 {% block page_level_script %}
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
-<script src="{% static 'assets/js/components/ui-accordions.js' %}"></script>
 {% endblock page_level_script %}
