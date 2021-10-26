@@ -245,6 +245,7 @@
         "lengthMenu": [5, 10, 20, 30, 40, 50],
         "pageLength": 20,
         "initComplete": function(settings, json) {
+          $('[data-toggle="tooltip"]').tooltip();
           table = settings.oInstance.api();
           var rows = table.rows({
             selected: true

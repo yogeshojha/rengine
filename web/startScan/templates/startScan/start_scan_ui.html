@@ -29,7 +29,7 @@ Initiating scan for {{domain.name}}
         <form method="POST" id="start-scan-form">
           {% csrf_token %}
           <div id="select_engine">
-            <h3>Choose Scan Engine</h3>
+            <h4>Choose Scan Engine</h4>
             <div class="">
               <h4>Select Scan Engine</h4>
               {% if custom_engine_count == 0 %}
@@ -40,7 +40,7 @@ Initiating scan for {{domain.name}}
               {% endif %}
               {% include "startScan/_items/scanEngine_select.html" %}
             </div>
-            <h3>Import/Ignore Subdomains</h3>
+            <h4>Import/Ignore Subdomains</h4>
             <div class="">
               <div class="mb-3">
                 <h4 class="text-info">Import Subdomains(Optional)</h4>
@@ -109,7 +109,7 @@ function updateButton(){
 
 $(function(){
   $("#select_engine").steps({
-    headerTag: "h3",
+    headerTag: "h4",
     bodyTag: "div",
     transitionEffect: "slide",
     cssClass: 'pill wizard',
