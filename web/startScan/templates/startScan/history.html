@@ -162,7 +162,7 @@
                       </button>
                       <div class="dropdown-menu" style="">
                         {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                          <a class="dropdown-item" href="{% url 'start_scan' scan_history.domain.id %}">
+                          <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
                             <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                         {% endif %}
                         {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
@@ -175,7 +175,7 @@
                         {% endif %}
                         {% if scan.scan_status != -1%}
                           <div class="dropdown-divider"></div>
-                          <a href="#" class="dropdown-item" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}')">
+                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}')">
                             <i class="fe-download"></i>&nbsp;Download Report</a>
                         {% endif %}
                       </div>
