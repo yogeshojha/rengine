@@ -127,10 +127,20 @@ function deleteScheduledScan(id)
 	}])
 }
 
-function change_scheduled_task_status(id)
+function change_scheduled_task_status(id, checkbox)
 {
+  if (checkbox.checked) {
+    text_msg = 'Schedule Scan Started';
+  }
+  else{
+    text_msg = 'Schedule Scan Stopped';
+  }
+  Snackbar.show({
+    text: text_msg,
+    pos: 'top-right',
+    duration: 2500
+  });
 	const taskStatusApi = "../toggle/scheduled_task/"+id;
-
 	return fetch(taskStatusApi, {
 		method: 'POST',
 		credentials: "same-origin",
