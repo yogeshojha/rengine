@@ -178,7 +178,6 @@ def start_scan_ui(request, domain_id):
 
 def start_multiple_scan(request):
     # domain = get_object_or_404(Domain, id=host_id)
-    domain_text = ""
     if request.method == "POST":
         if request.POST.get('scan_mode', 0):
             # if scan mode is available, then start the scan
@@ -204,12 +203,10 @@ def start_multiple_scan(request):
             list_of_domain_name = []
             list_of_domain_id = []
             for key, value in request.POST.items():
-                print(value)
                 if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
                     domain = get_object_or_404(Domain, id=value)
                     list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
-            domain_text = ", ".join(list_of_domain_name)
             domain_ids = ",".join(list_of_domain_id)
     engine = EngineType.objects
     custom_engine_count = EngineType.objects.filter(
@@ -217,7 +214,7 @@ def start_multiple_scan(request):
     context = {
         'scan_history_active': 'active',
         'engines': engine,
-        'domain_list': domain_text,
+        'domain_list': list_of_domain_name,
         'domain_ids': domain_ids,
         'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_multiple_scan_ui.html', context)
