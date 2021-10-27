@@ -121,13 +121,16 @@ def add_wordlist(request):
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
-        os.remove(
-            settings.TOOL_LOCATION +
+        obj.delete()
+        try:
+            os.remove(
+            '/usr/src/' +
             'wordlist/' +
             obj.short_name +
             '.txt')
-        obj.delete()
-        responseData = {'status': 'true'}
+            responseData = {'status': True}
+        except Exception as e:
+            responseData = {'status': False}
         messages.add_message(
             request,
             messages.INFO,
@@ -140,66 +143,6 @@ def delete_wordlist(request, id):
             'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
 
-
-def configuration_list(request):
-    configurations = Configuration.objects.all().order_by('id')
-    context = {
-            'configuration_nav_active':
-            'true', 'configurations': configurations}
-    return render(request, 'scanEngine/configuration/index.html', context)
-
-
-def add_configuration(request):
-    context = {'configuration_nav_active': 'true'}
-    form = ConfigurationForm(request.POST or None)
-    if request.method == "POST":
-        if form.is_valid():
-            form.save()
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Configuration added successfully')
-            return http.HttpResponseRedirect(reverse('configuration_list'))
-    context['form'] = form
-    return render(request, 'scanEngine/configuration/add.html', context)
-
-
-def delete_configuration(request, id):
-    obj = get_object_or_404(Configuration, id=id)
-    if request.method == "POST":
-        obj.delete()
-        responseData = {'status': 'true'}
-        messages.add_message(
-            request,
-            messages.INFO,
-            'Configuration successfully deleted!')
-    else:
-        responseData = {'status': 'false'}
-        messages.add_message(
-                request,
-                messages.ERROR,
-                'Oops! Configuration could not be deleted!')
-    return http.JsonResponse(responseData)
-
-
-def update_configuration(request, id):
-    configuration = get_object_or_404(Configuration, id=id)
-    form = ConfigurationForm()
-    if request.method == "POST":
-        form = ConfigurationForm(request.POST, instance=configuration)
-        if form.is_valid():
-            form.save()
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Configuration edited successfully')
-            return http.HttpResponseRedirect(reverse('configuration_list'))
-    else:
-        form.set_value(configuration)
-    context = {
-            'configuration_nav_active':
-            'true', 'form': form}
-    return render(request, 'scanEngine/configuration/update.html', context)
 
 def interesting_lookup(request):
     lookup_keywords = None
