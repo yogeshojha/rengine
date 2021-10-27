@@ -1,0 +1,30 @@
+<div class="right-bar">
+  <div data-simplebar class="h-100">
+    <div class="tab-content pt-0">
+      <div class="tab-pane active" id="tasks-tab" role="tabpanel">
+        <h6 class="fw-medium p-2 mt-1 text-uppercase">Currently Scanning</h6>
+        <div class="px-2">
+          <h5><span class="badge bg-primary rounded-pill float-end" id="current_scan_count"></span></h5>
+          <br>
+          <div id="currently_scanning">
+          </div>
+        </div>
+        <h6 class="fw-medium p-2 mt-1 text-uppercase">Recently Completed Scans</h6>
+        <div id="recently_completed_scans" class="px-2">
+        </div>
+        <h6 class="fw-medium p-2 mt-1 text-uppercase">Upcoming Scan</h6>
+        <div class="px-2">
+          <h5><span class="badge bg-warning rounded-pill float-end" id="pending_scan_count"></span></h5>
+          <br>
+          <div id="upcoming_scans">
+          </div>
+        </div>
+        <div class="text-center mt-3 mb-4">
+          <a href="javascript:getScanStatusSidebar(reload=true)" class="btn btn-md btn-primary">
+            Reload
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

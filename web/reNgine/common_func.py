@@ -292,3 +292,18 @@ def is_safe_path(basedir, path, follow_symlinks=True):
     else:
         matchpath = os.path.abspath(path)
     return basedir == os.path.commonpath((basedir, matchpath))
+
+
+def get_time_ago(time):
+    duration = timezone.now() - time
+    days, seconds = duration.days, duration.seconds
+    hours = days * 24 + seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    if not hours and not minutes:
+        return '{} seconds'.format(seconds)
+    elif not hours:
+        return '{} minutes'.format(minutes)
+    elif not minutes:
+        return '{} hours'.format(hours)
+    return '{} hours {} minutes'.format(hours, minutes)
