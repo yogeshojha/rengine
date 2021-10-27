@@ -34,7 +34,7 @@ from reNgine.common_func import is_safe_path
 class ScanStatus(APIView):
     def get(self, request):
         recently_completed_scans = ScanHistory.objects.all().order_by(
-            '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))
+            '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:7]
         currently_scanning = ScanHistory.objects.order_by(
             '-start_scan_date').filter(scan_status=1)
         pending_scans = ScanHistory.objects.filter(scan_status=-1)
