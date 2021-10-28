@@ -156,8 +156,8 @@
                   </td>
                   <td class="text-center">
                     <div class="btn-group dropdown mb-2">
-                      <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-dark">View Results</a>
-                      <button type="button" class="btn btn-dark dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-soft-primary">View Results</a>
+                      <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="mdi mdi-chevron-down"></i>
                       </button>
                       <div class="dropdown-menu" style="">
@@ -220,13 +220,13 @@
     $(document).ready(function() {
       var table = $('#scan_history_table').DataTable({
         headerCallback: function(e, a, t, n, s) {
-          e.getElementsByTagName("th")[0].innerHTML='<input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n'
+          e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
         },
         "columnDefs":[
           { 'visible': false, 'targets': [1] },
           {
             "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
-              return'<input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>'
+              return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
             },
 
           }],
@@ -418,12 +418,13 @@
       }
     }
 
-    function mainCheckBoxSelected() {
-      var input = document.querySelector('#head_checkbox');
-      if (input.checked) {
+    function mainCheckBoxSelected(checkbox) {
+      if (checkbox.checked) {
         $("#delete_multiple_button").removeClass("disabled");
+        $(".targets_checkbox").prop('checked', true);
       } else {
         $("#delete_multiple_button").addClass("disabled");
+        $(".targets_checkbox").prop('checked', false);
       }
     }
 

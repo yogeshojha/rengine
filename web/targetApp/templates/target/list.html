@@ -85,7 +85,7 @@ Targets
               </td>
               <td class="">
                 {% for organization in domain.get_organization %}
-                <span class="badge bg-dark m-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+                <span class="badge badge-soft-primary m-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
                 {% endfor %}
               </td>
               <td>{% if domain.description %}{{domain.description}}{% endif %}</td>
@@ -137,13 +137,13 @@ Targets
 $(document).ready(function(){
   var table = $('#list_target_table').DataTable({
     headerCallback:function(e, a, t, n, s) {
-      e.getElementsByTagName("th")[0].innerHTML='<input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n'
+      e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
     },
     "columnDefs":[
       { 'visible': false, 'targets': [1] },
       {
         "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
-          return'<input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>'
+          return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
         },
 
       }],

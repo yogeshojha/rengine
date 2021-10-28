@@ -25,7 +25,7 @@ Initiate Scan for Multiple Targets
       <div class="card-body">
         <h4 class="header-title">Initiating multiple scan for {{ domain_list|length }} targets: </h4>
         {% for domain in domain_list %}
-        <span class="badge bg-dark">{{domain}}</span>
+        <span class="badge badge-soft-primary">{{domain}}</span>
         {% endfor %}
         <form method="POST">
           {% csrf_token %}
