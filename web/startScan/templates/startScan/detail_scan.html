@@ -2,265 +2,324 @@
 {% load static %}
 {% load humanize %}
 {% load custom_tags %}
+{% load mathfilters %}
 {% block title %}
-Detailed Scan
+  Detailed Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+  <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_history' %}">Scan History</a></li>
-<li class="breadcrumb-item active">Summary</li>
-<li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li>
+  <li class="breadcrumb-item"><a href="{% url 'scan_history' %}">Scan History</a></li>
+  <li class="breadcrumb-item active">Summary</li>
+  <li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-Scan Findings
+  Scan Findings
 {% endblock page_title %}
 
 {% block main_content %}
-<div class="row">
-	<div class="col-12">
-		<div class="card">
-			<ul class="nav nav-tabs nav-bordered m-1">
-				<li class="nav-item">
-					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
-				</li>
-				<li class="nav-item">
-					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
-				</li>
-				{% if history.screenshot %}
-				<li class="nav-item">
-					<a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Screenshots</a>
-				</li>
-				{% endif %}
-				{% if history.dir_file_search %}
-				<li class="nav-item">
-					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Directories</a>
-				</li>
-				{% endif %}
-				<li class="nav-item dropdown">
-					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">URLs&nbsp;<i class="fe-chevron-down"></i></a>
-					<ul class="dropdown-menu">
-						<li><a class="dropdown-item" id="pills-endpoints-tab">All Endpoints</a></li>
-						{% if history.fetch_url and history.used_gf_patterns%}
-						{% for key,value in matched_gf_count.items %}
-						{% if value > 0 %}
-						<li><a class="dropdown-item" id="pills-{{key}}-tab">{{key|upper}}<span class="badge bg-danger float-end">{{value}}</span></a></li>
-						{% endif %}
-						{% endfor %}
-						{% endif %}
-					</ul>
-				</li>
-				{% if history.vulnerability_scan %}
-				<li class="nav-item">
-					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Vulnerabilities</a>
-				</li>
-				{% endif %}
-				{% if history.osint %}
-				<li class="nav-item">
-					<a class="nav-link" id="pills-osint-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">OSINT</a>
-				</li>
-				{% endif %}
-				<li class="nav-item">
-					<a class="nav-link" id="pills-visualisation-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Visualization</a>
-				</li>
-			</ul>
-		</div>
-	</div>
-</div>
-<div class="tab-content">
-	{# start tab contents #}
-	<div class="tab-pane show active" id="summary-tab">
-		<div class="row">
-			<div class="col-md-6 col-xl-3">
-				<div class="card" id="tooltip-container">
-					<div class="card-body">
-						<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
-						<h4 class="mt-0 font-16">Subdomains Discovered</h4>
-						<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
-						<p class="mb-0 text-success">Alive Subdomains: {{alive_count}} <span class="float-end"></p>
-						</div>
-					</div>
-				</div>
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <ul class="nav nav-tabs nav-bordered m-1">
+          <li class="nav-item">
+            <a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
+          </li>
+          {% if history.screenshot %}
+            <li class="nav-item">
+              <a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Screenshots</a>
+            </li>
+          {% endif %}
+          {% if history.dir_file_search %}
+            <li class="nav-item">
+              <a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Directories</a>
+            </li>
+          {% endif %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">URLs&nbsp;<i class="fe-chevron-down"></i></a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" id="pills-endpoints-tab">All Endpoints</a></li>
+              {% if history.fetch_url and history.used_gf_patterns%}
+                {% for key,value in matched_gf_count.items %}
+                  {% if value > 0 %}
+                    <li><a class="dropdown-item" id="pills-{{key}}-tab">{{key|upper}}<span class="badge bg-danger float-end">{{value}}</span></a></li>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </ul>
+          </li>
+          {% if history.vulnerability_scan %}
+            <li class="nav-item">
+              <a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Vulnerabilities</a>
+            </li>
+          {% endif %}
+          {% if history.osint %}
+            <li class="nav-item">
+              <a class="nav-link" id="pills-osint-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">OSINT</a>
+            </li>
+          {% endif %}
+          <li class="nav-item">
+            <a class="nav-link" id="pills-visualisation-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Visualization</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="tab-content">
+    {# start tab contents #}
+    <div class="tab-pane show active" id="summary-tab">
+      <div class="row">
+        <div class="col-md-6 col-xl-3">
+          <div class="card" id="tooltip-container">
+            <div class="card-body">
+              <i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
+              <h4 class="mt-0 font-16">Subdomains Discovered</h4>
+              <h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
+              <p class="mb-0 text-success">Alive Subdomains: {{alive_count}} <span class="float-end"></p>
+              </div>
+            </div>
+          </div>
 
-				<div class="col-md-6 col-xl-3">
-					<div class="card" id="tooltip-container1">
-						<div class="card-body">
-							<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered by reNgine during this scan. This includes any URLs discovered."></i>
-							<h4 class="mt-0 font-16">Endpoints Discovered</h4>
-							<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
-							<p class="text-success mb-0">Alive Endpoints: {{endpoint_alive_count}}</p>
-						</div>
-					</div>
-				</div>
+          <div class="col-md-6 col-xl-3">
+            <div class="card" id="tooltip-container1">
+              <div class="card-body">
+                <i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered by reNgine during this scan. This includes any URLs discovered."></i>
+                <h4 class="mt-0 font-16">Endpoints Discovered</h4>
+                <h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
+                <p class="text-success mb-0">Alive Endpoints: {{endpoint_alive_count}}</p>
+              </div>
+            </div>
+          </div>
 
-				<div class="col-md-6 col-xl-3">
-					<div class="card" id="tooltip-container2">
-						<div class="card-body">
-							<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
-							<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
-							<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
-							{% if history.vulnerability_scan %}
-							<p class="text-muted mb-0">
-								<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
-								<span class="w-title text-warning">and {{low_count}} Low Vulnerabilities</span>
-							</p>
-							{% else %}
-							<p class="text-muted mb-0">Vulnerability scan hasn't been performed.</p>
-							{% endif %}
-						</div>
-					</div>
-				</div>
+          <div class="col-md-6 col-xl-3">
+            <div class="card" id="tooltip-container2">
+              <div class="card-body">
+                <i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
+                <h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
+                <h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
+                {% if history.vulnerability_scan %}
+                  <p class="text-muted mb-0">
+                    <span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
+                    <span class="w-title text-warning">and {{low_count}} Low Vulnerabilities</span>
+                  </p>
+                {% else %}
+                  <p class="text-muted mb-0">Vulnerability scan hasn't been performed.</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
 
-				<div class="col-md-6 col-xl-3">
-					<div class="card" id="tooltip-container3">
-						<div class="card-body">
-							<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="OSINT Results"></i>
-							<h4 class="mt-0 font-16">OSINT</h4>
-							{% if history.osint %}
-							<h5 class="text-warning">{{exposed_count}} Exposed Credentials</h5>
-							<p class="text-muted mb-0">{{email_count}} Email Address Discovered</p>
-							<p class="text-muted mb-0">{{employees_count}} Employees Found</p>
-							<br>
-							{% else %}
-							<h5 class="text-warning">&nbsp;</h5>
-							<p class="text-muted mb-0">OSINT hasn't been performed.</p>
-							<p class="text-muted mb-0">&nbsp;</p>
-							<br>
-							{% endif %}
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-xl-3 col-lg-4">
-					<div class="card">
-						<div class="card-body">
-							<div class="d-flex align-items-start mb-3">
-								<div class="w-100">
-									<h5 class="mt-0 mb-0 font-15">
-										Scan Status for <span class="badge badge-soft-primary">{{history.domain.name}}</span>
-									</h5>
-									<p class="mt-1 mb-0 text-muted font-14">
-										{% if history.scan_status == -1 %}
-										<span class="mdi mdi-circle text-warning"></span>
-										<span class="badge badge-soft-warning">Pending</span>
-										{% elif history.scan_status == 0 %}
-										<span class="mdi mdi-circle text-danger"></span>
-										<span class="badge badge-soft-danger">Failed</span>
-										{% elif history.scan_status == 1 %}
-										<span class="mdi mdi-circle text-warning"></span>
-										<span class="badge badge-soft-warning">In Progress</span>
-										{% elif history.scan_status == 2 %}
-										<span class="mdi mdi-circle text-success"></span>
-										<span class="badge badge-soft-success">Completed</span>
-										{% elif history.scan_status == 3 %}
-										<span class="mdi mdi-circle text-danger"></span>
-										<span class="badge badge-soft-danger">Aborted</span>
-										{% else %}
-										<span class="mdi mdi-circle text-danger"></span>
-										<span class="badge badge-danger">Unknown</span>
-										{% endif %}
-									</p>
-								</div>
-								<div class="btn-group mb-2">
-									<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-										<i class="fe-more-vertical"></i>
-									</a>
-									<div class="dropdown-menu" style="">
-										<a class="dropdown-item" href="javascript:download_subdomains({{scan_history_id}}, '{{history.domain.name}}')">Download All Subdomains</a>
-										<a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
-										<a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
-										<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
-									</div>
-								</div>
-							</div>
-							<h6 class="font-13 text-muted text-uppercase">Scan Engine <span class="badge badge-soft-primary float-end">{{history.scan_type.engine_name}}</span></h6>
-							<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration</h6>
-							{% if history.scan_status == -1 %}
-							<p class="mt-1 mb-0 text-warning font-14"><small class="text-center text-muted">Scan not yet started.</small></p>
-							{% elif history.scan_status == 0 %}
-							<span class="mt-1 mb-0 text-danger font-14">{{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
-							{% elif history.scan_status == 1 %}
-							<span class="mt-1 mb-0 text-primary font-14">{{ history.get_elapsed_time }}</span>
-							{% elif history.scan_status == 2 %}
-							{% if history.get_completed_time_in_sec < 60 %}
-							<span class="mt-1 mb-0 text-success font-14">Completed in < 1 minutes</span>
-							{% else %}
-							<span class="mt-1 mb-0 text-success font-14">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
-							{% endif %}
-							{% elif history.scan_status == 3 %}
-							<span class="mt-1 mb-0 text-danger font-14">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
-							{% endif %}
+          <div class="col-md-6 col-xl-3">
+            <div class="card" id="tooltip-container3">
+              <div class="card-body">
+                <i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="OSINT Results"></i>
+                <h4 class="mt-0 font-16">OSINT</h4>
+                {% if history.osint %}
+                  <h5 class="text-warning">{{exposed_count}} Exposed Credentials</h5>
+                  <p class="text-muted mb-0">{{email_count}} Email Address Discovered</p>
+                  <p class="text-muted mb-0">{{employees_count}} Employees Found</p>
+                  <br>
+                {% else %}
+                  <h5 class="text-warning">&nbsp;</h5>
+                  <p class="text-muted mb-0">OSINT hasn't been performed.</p>
+                  <p class="text-muted mb-0">&nbsp;</p>
+                  <br>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-xl-3 col-lg-4">
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                  <div class="w-100">
+                    <h5 class="mt-0 mb-0 font-15">
+                      Scan Status for <span class="badge badge-soft-primary">{{history.domain.name}}</span>
+                    </h5>
+                    <p class="mt-1 mb-0 text-muted font-14">
+                      {% if history.scan_status == -1 %}
+                        <span class="mdi mdi-circle text-warning"></span>
+                        <span class="badge badge-soft-warning">Pending</span>
+                      {% elif history.scan_status == 0 %}
+                        <span class="mdi mdi-circle text-danger"></span>
+                        <span class="badge badge-soft-danger">Failed</span>
+                      {% elif history.scan_status == 1 %}
+                        <span class="mdi mdi-circle text-warning"></span>
+                        <span class="badge badge-soft-warning">In Progress</span>
+                      {% elif history.scan_status == 2 %}
+                        <span class="mdi mdi-circle text-success"></span>
+                        <span class="badge badge-soft-success">Completed</span>
+                      {% elif history.scan_status == 3 %}
+                        <span class="mdi mdi-circle text-danger"></span>
+                        <span class="badge badge-soft-danger">Aborted</span>
+                      {% else %}
+                        <span class="mdi mdi-circle text-danger"></span>
+                        <span class="badge badge-danger">Unknown</span>
+                      {% endif %}
+                    </p>
+                  </div>
+                  <div class="btn-group mb-2">
+                    <a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <i class="fe-more-vertical"></i>
+                    </a>
+                    <div class="dropdown-menu" style="">
+                      <a class="dropdown-item" href="javascript:download_subdomains({{scan_history_id}}, '{{history.domain.name}}')">Download All Subdomains</a>
+                      <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+                      <a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
+                      <a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
+                    </div>
+                  </div>
+                </div>
+                <h6 class="font-13 text-muted text-uppercase">Scan Engine <span class="badge badge-soft-primary float-end">{{history.scan_type.engine_name}}</span></h6>
+                <h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration</h6>
+                {% if history.scan_status == -1 %}
+                  <p class="mt-1 mb-0 text-warning font-14"><small class="text-center text-muted">Scan not yet started.</small></p>
+                {% elif history.scan_status == 0 %}
+                  <span class="mt-1 mb-0 text-danger font-14">{{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
+                {% elif history.scan_status == 1 %}
+                  <span class="mt-1 mb-0 text-primary font-14">{{ history.get_elapsed_time }}</span>
+                {% elif history.scan_status == 2 %}
+                  {% if history.get_completed_time_in_sec < 60 %}
+                    <span class="mt-1 mb-0 text-success font-14">Completed in < 1 minutes</span>
+                  {% else %}
+                    <span class="mt-1 mb-0 text-success font-14">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
+                  {% endif %}
+                {% elif history.scan_status == 3 %}
+                  <span class="mt-1 mb-0 text-danger font-14">Aborted in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
+                {% endif %}
 
 
-							<h3 class="font-13 text-muted text-uppercase mb-2">Scan Progress</h3>
-							<div class="progress mb-2 progress-md">
-								{% if history.scan_status == -1 %}
-								<div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
-								</div>
-								{% elif history.scan_status == 0 %}
-								<div class="progress-bar bg-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-								</div>
-								{% elif history.scan_status == 1 %}
-								<div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-								</div>
-								{% elif history.scan_status == 2 %}
-								<div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
-								</div>
-								{% elif history.scan_status == 3 %}
-								<div class="progress-bar bg-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
-								</div>
-								{% else %}
-								<div class="progress">
-									<div class="progress-bar bg-danger" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
-									</div>
-								</div>
-								{% endif %}
-							</div>
+                <h3 class="font-13 text-muted text-uppercase mb-2">Scan Progress</h3>
+                <div class="progress mb-2 progress-md">
+                  {% if history.scan_status == -1 %}
+                    <div class="progress-bar bg-warning" role="progressbar" style="width: 10%" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                  {% elif history.scan_status == 0 %}
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+                    </div>
+                  {% elif history.scan_status == 1 %}
+                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+                    </div>
+                  {% elif history.scan_status == 2 %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                  {% elif history.scan_status == 3 %}
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {% widthratio history.scanactivity_set.all|length history.scan_type.get_number_of_steps|add:4  100 %}%" aria-valuemin="0" aria-valuemax="4">
+                    </div>
+                  {% else %}
+                    <div class="progress">
+                      <div class="progress-bar bg-danger" role="progressbar" style="width: 100%" aria-valuemin="0" aria-valuemax="100">
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
 
-							{% if  history.domain.get_organization %}
-							<h3 class="font-13 text-muted text-uppercase mb-2">Tagged to Organization</h3>
-							{% for organization in history.domain.get_organization %}
-							<span class="badge badge-soft-dark m-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
-							{% endfor %}
-							{% endif %}
+                {% if  history.domain.get_organization %}
+                  <h3 class="font-13 text-muted text-uppercase mb-2">Tagged to Organization</h3>
+                  {% for organization in history.domain.get_organization %}
+                    <span class="badge badge-soft-dark m-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+                  {% endfor %}
+                {% endif %}
 
-							<h6 class="font-13 text-muted text-uppercase mt-4 mb-2">Scan Timeline</h6>
-							<div data-simplebar style="max-height: 410px;" class="p-2">
-								<div class="track-order-list">
-									<ul class="list-unstyled">
-										{% for activity in scan_activity %}
-										<li class="completed">
-											<h5 class="mt-0 mb-1">{{activity.title}}
-												<span class="float-end badge {% if activity.status == 0 %}badge-soft-danger {% elif activity.status == 1 %}badge-soft-warning{% elif activity.status == 2 %}badge-soft-success{% endif %}">
-													{% if activity.status == 0 %}Failed
-													{% elif activity.status == 1 %}In progress
-													{% elif activity.status == 2 %}Completed
-													{% endif %}
-												</span>
-											</h5>
-											<p class="text-muted">{{activity.time|naturaltime}}<br><small class="text-muted">{{activity.time}}</small> </p>
-										</li>
-										{% endfor %}
-									</ul>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	{% endblock main_content %}
+                <h6 class="font-13 text-muted text-uppercase mt-4 mb-2">Scan Timeline</h6>
+                <div data-simplebar style="max-height: 410px;" class="p-2">
+                  <div class="track-order-list">
+                    <ul class="list-unstyled">
+                      {% for activity in scan_activity %}
+                        <li class="completed">
+                          <h5 class="mt-0 mb-1">{{activity.title}}
+                            <span class="float-end badge {% if activity.status == 0 %}badge-soft-danger {% elif activity.status == 1 %}badge-soft-warning{% elif activity.status == 2 %}badge-soft-success{% endif %}">
+                              {% if activity.status == 0 %}Failed
+                              {% elif activity.status == 1 %}In progress<span class="active-dot dot"></span>
+                              {% elif activity.status == 2 %}Completed
+                              {% endif %}
+                            </span>
+                          </h5>
+                          <p class="text-muted">{{activity.time|naturaltime}}<br><small class="text-muted">{{activity.time}}</small> </p>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-	{% block page_level_script %}
-	<script type="text/javascript">
-	$(document).ready(function(){
-		$('[data-toggle="tooltip"]').tooltip();
-	});
-	</script>
-	{% endblock page_level_script %}
+            <div class="card">
+              <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                  <div class="w-100">
+                    <h5 class="mt-0 mb-0 font-15">
+                      Recent Scans for <span class="badge badge-soft-primary">{{history.domain.name}}<span>
+                      </h5>
+                        <div class="track-order-list mt-3">
+                          <ul class="list-unstyled">
+                            {% for scan in most_recent_scans %}
+                              <li class="completed">
+                                <a href="{% url 'detail_scan' scan.id %}">
+                                  <h5 class="mt-0 mb-1">{{activity.title}}
+                                    {% if history.id == scan.id %}
+                                      <span class="active-dot dot"></span>
+                                      <span class="float-start badge badge-soft-primary ms-1 me-1">Current Scan</span>
+                                    {% endif %}
+                                    {{scan.scan_type.engine_name}}
+                                    {% if scan.scan_status == -1 %}
+                                      <span class="badge badge-soft-warning float-end">Pending</span>
+                                    {% elif scan.scan_status == 0 %}
+                                      <span class="badge badge-soft-danger float-end">Failed</span>
+                                    {% elif scan.scan_status == 1 %}
+                                      <span class="badge badge-soft-primary float-end">Scanning</span>
+                                    {% elif scan.scan_status == 2 %}
+                                      <span class="badge badge-soft-success float-end">Completed</span>
+                                    {% elif scan.scan_status == 3 %}
+                                      <span class="badge badge-soft-danger float-end">Aborted</span>
+                                    {% else %}
+                                      <span class="badge badge-soft-danger float-end">Unknown</span>
+                                    {% endif %}
+                                  </h5>
+                                  <p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
+                                  <p class="text-primary">
+                                    {{scan.get_subdomain_count}} Subdomains Discovered
+                                    <span class="float-end text-dark">
+                                      {% with next_element=most_recent_scans|next:forloop.counter0 %}
+                                        {% if next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count > scan.get_subdomain_count %}
+                                          <span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+                                        {% elif next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count < scan.get_subdomain_count %}
+                                          <span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+                                        {% endif %}
+                                      {% endwith %}
+                                    </span>
+                                  </p>
+                                </a>
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock main_content %}
+
+{% block page_level_script %}
+  <script type="text/javascript">
+    $(document).ready(function(){
+      $('[data-toggle="tooltip"]').tooltip();
+    });
+  </script>
+{% endblock page_level_script %}
