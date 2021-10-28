@@ -15,7 +15,10 @@
           <span>(Choose the subdomain scanning tools from YAML config.)</span>
         </td>
         <td>
-          {{form.subdomain_discovery}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.subdomain_discovery}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -24,7 +27,10 @@
           <span>(Takes the screenshots of all the discovered subdomains.)</span>
         </td>
         <td>
-          {{form.screenshot}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.screenshot}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -32,7 +38,10 @@
           <h5 class="text-secondary">OSINT</h5>
         </td>
         <td>
-          {{form.osint}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.osint}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -40,7 +49,10 @@
           <h5 class="text-secondary">Port Scan</h5>
         </td>
         <td>
-          {{form.port_scan}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.port_scan}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -48,7 +60,10 @@
           <h5 class="text-secondary">Directory and Files Search</h5>
         </td>
         <td>
-          {{form.dir_file_search}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.dir_file_search}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -57,7 +72,10 @@
           <span>(Open Threat Exchange, Wayback Machine <br>Common Crawl)</span>
         </td>
         <td>
-          {{form.fetch_url}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.fetch_url}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
       <tr>
@@ -72,7 +90,10 @@
           </span>
         </td>
         <td>
-          {{form.vulnerability_scan}}
+          <label class="switch s-icons s-outline s-outline-info">
+            {{form.vulnerability_scan}}
+            <span class="slider round"></span>
+          </label>
         </td>
       </tr>
     </table>

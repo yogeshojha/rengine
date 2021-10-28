@@ -10,7 +10,7 @@ Scheduled Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
-<link href="{% static 'plugins/switchery/switchery.min.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -67,7 +67,7 @@ Scheduled Scans
               </label>
             </td>
             <td class="text-center">
-              <a onclick="deleteScheduledScan({{ task.id }})" class="bs-tooltip btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
+              <a onclick="deleteScheduledScan({{ task.id }})" class="text-danger btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -85,13 +85,9 @@ Scheduled Scans
 {% endblock main_content %}
 {% block page_level_script %}
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/switchery/switchery.min.js' %}"></script>
 <script>
 // var e;
 $(document).ready(function() {
-  $('[data-plugin="switchery"]').each(function(i, obj) {
-    new Switchery(obj, { color: '#2b3d51'});
-  });
   var scheduled_scan_table = $('#scheduled_scan_table').DataTable({
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },

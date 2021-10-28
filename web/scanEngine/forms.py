@@ -19,39 +19,39 @@ class AddEngineForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(attrs={
             "checked": "",
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     screenshot = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
             "checked": "",
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     port_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     vulnerability_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
             "checked": "",
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     osint = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
@@ -78,37 +78,37 @@ class UpdateEngineForm(forms.ModelForm):
     subdomain_discovery = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     screenshot = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     dir_file_search = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     port_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     fetch_url = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     vulnerability_scan = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     osint = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
-            "data-plugin": "switchery",
+            "class": "switch",
         }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",

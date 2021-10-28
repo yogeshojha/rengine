@@ -8,6 +8,7 @@ Add Scan Engine
 
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {{ form.media }}
 <style media="screen">
 .ace_editor {
@@ -55,9 +56,6 @@ Add Scan Engine
 {% block page_level_script %}
 <script type="text/javascript">
 $(document).ready(function() {
-	$('[data-plugin="switchery"]').each(function(i, obj) {
-		new Switchery(obj, { color: '#2b3d51'});
-	});
 	$('.ace_text-input').attr('id','editor');
 	document.getElementById("editor").innerHTML = `subdomain_discovery:
   uses_tools: [ amass-passive, assetfinder, sublist3r, subfinder, oneforall ]

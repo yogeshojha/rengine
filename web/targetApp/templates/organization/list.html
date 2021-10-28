@@ -42,8 +42,7 @@ Organizations
       <table id="list_organization_table" class="table style-3 table-hover">
         <thead>
           <tr>
-            <th class="checkbox-column">Serial Number</th>
-            <th class="text-center">Organization</th>
+            <th class="">Organization</th>
             <th class="text-center">Description</th>
             <th class="text-center">Total Targets</th>
             <th class="text-center">Added</th>
@@ -53,7 +52,6 @@ Organizations
         <tbody>
           {% for organization in organizations.all %}
           <tr>
-            <td class="checkbox-column"> {{ organization.id }} </td>
             <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
             <td class="text-center"><span class="badge bg-primary badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
@@ -97,14 +95,6 @@ Organizations
 <script>
 $(document).ready(function() {
   list_organization_table = $('#list_organization_table').DataTable({
-    headerCallback:function(e, a, t, n, s) {
-      e.getElementsByTagName("th")[0].innerHTML='<input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n'
-    },
-    "columnDefs":[ {
-      "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
-        return'<input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>'
-      },
-    }],
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
