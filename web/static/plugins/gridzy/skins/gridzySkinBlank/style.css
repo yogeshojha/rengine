@@ -1,0 +1,35 @@
+/** SKIN Blank **/
+
+/* all gallery items (children of the main container element) */
+.gridzySkinBlank > .gridzyItem {
+  overflow: hidden;
+}
+
+/* all gallery images (already predefined in Gridzy's main css file and you can override it here) */
+.gridzySkinBlank .gridzyImage {
+}
+
+/* all gallery captions (just create your own style) */
+.gridzySkinBlank .gridzyCaption {
+  margin: 0;
+  padding: .5em;
+  position: absolute;
+  z-index: 1;
+  bottom: 0;
+  left: 0;
+  text-align: left;
+  width: 100%;
+  height: auto;
+  color: #ffffff;
+  font-weight: 200;
+  background: rgba(0, 0, 0, .9);
+}
+
+.gridzySkinBlank .gridzyCaption a{
+  color: #2196f3;
+}
+
+/* the mouseover status of all captions */
+.gridzySkinBlank > .gridzyItem:hover .gridzyCaption {
+  opacity: 1;
+}
