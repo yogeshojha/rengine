@@ -1,13 +1,3 @@
-/*
-	===============================
-			@Import	Function
-	===============================
-*/
-/*
-	===============================
-			@Import	Mixins
-	===============================
-*/
 .widget-content-area {
   border: 1px solid #e0e6ed;
   box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06);
@@ -32,7 +22,6 @@
   .table-form .form-group {
     margin-bottom: 0; }
     .table-form .form-group label {
-      color: #515365;
       font-size: 14px;
       align-self: center; }
     .table-form .form-group input {
@@ -93,7 +82,6 @@ table.dataTable {
   -webkit-transition: all 0.1s ease;
   transition: all 0.1s ease;
   padding: 10px 21px 10px 21px;
-  color: #515365;
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 1px;
@@ -118,7 +106,6 @@ table.dataTable {
   border: none;
   padding: 0;
   padding: 10px 21px 10px 21px;
-  color: #515365;
   letter-spacing: normal;
 }
 
@@ -248,7 +235,6 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination {
   margin-right: 6px;
   vertical-align: middle;
   cursor: pointer;
-  color: #515365;
   stroke-width: 1.5; }
 
 .table-hover:not(.table-dark) tbody tr:hover .table-cancel {

@@ -94,7 +94,7 @@
                     {{ scan_history.domain.name }}
                     <br>
                     {% for organization in scan_history.domain.get_organization %}
-                      <span class="badge bg-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+                      <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
                     {% endfor %}
                   </td>
                   <td class="text-left">

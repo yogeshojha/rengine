@@ -8,7 +8,6 @@ Add Scan Engine
 
 
 {% block custom_js_css_link %}
-<link href="{% static 'plugins/switchery/switchery.min.css' %}" rel="stylesheet" type="text/css" />
 {{ form.media }}
 <style media="screen">
 .ace_editor {
@@ -54,7 +53,6 @@ Add Scan Engine
 {% endblock main_content %}
 
 {% block page_level_script %}
-<script src="{% static 'plugins/switchery/switchery.min.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	$('[data-plugin="switchery"]').each(function(i, obj) {
