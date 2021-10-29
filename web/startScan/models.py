@@ -145,8 +145,8 @@ class Subdomain(models.Model):
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     content_length = models.IntegerField(default=0, blank=True, null=True)
     page_title = models.CharField(max_length=1000, blank=True, null=True)
-    technologies = models.ManyToManyField('Technology', related_name='technologies')
-    ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses')
+    technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True, null=True)
+    ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True, null=True)
 
     def __str__(self):
         return str(self.name)

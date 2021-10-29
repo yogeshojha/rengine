@@ -137,3 +137,25 @@ div.dataTables_wrapper div.dataTables_filter input:focus {
   width: 360px;
   right: -370px;
 }
+
+/* theme toggle theme-switch */
+.toggle-theme-switch {
+  vertical-align: middle;
+  margin-top: 3px;
+}
+
+
+/* fe icon sizes */
+.icon-sml {
+  width: 15px;
+  height: 15px;
+}
+
+.icon-med {
+  font-size: 25px;
+}
+
+.icon-lrg {
+  width: 35px;
+  height: 35px;
+}
