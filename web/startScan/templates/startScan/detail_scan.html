@@ -310,6 +310,76 @@ Scan Findings
 					</div>
 					<div class="col-xl-9 col-lg-8">
 						<div class="row">
+							{% if history.vulnerability_scan %}
+							<div class="col-xl-5 col-lg-5 col-12">
+								<div class="card" style="height: 95%">
+									<div class="card-body">
+										<h4 class="header-title mb-0">Vulnerability Breakdown by Severity</h4>
+										<div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
+											<div class="row mt-3 text-center">
+												<div class="col-3">
+													<p class="text-critical font-15 mb-1 text-truncate">Critical</p>
+													<h4 class="text-critical">{{critical_count}}</h4>
+												</div>
+												<div class="col-3">
+													<p class="text-danger font-15 mb-1 text-truncate">High</p>
+													<h4 class="text-danger">{{high_count}}</h4>
+												</div>
+												<div class="col-3">
+													<p class="text-warning font-15 mb-1 text-truncate">Medium</p>
+													<h4 class="text-warning">{{medium_count}}</h4>
+												</div>
+												<div class="col-3">
+													<p class="text-low font-15 mb-1 text-truncate">Low</p>
+													<h4 class="text-low">{{low_count}}</h4>
+												</div>
+											</div>
+											<div id="vulnerability-pie-chart" class="apex-charts"></div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-7 col-lg-7 col-12">
+								<div class="card" style="height: 95%">
+									<div class="card-body">
+										<h4 class="header-title mb-3">Vulnerability Highlights</h4>
+										<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+											<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+												<thead class="table-dark">
+													<tr>
+														<th style="width: 40%">Vulnerability</th>
+														<th style="width: 10%">Severity</th>
+														<th style="width: 50%">Vulnerable URL</th>
+													</tr>
+												</thead>
+												<tbody>
+													{% for vulnerability in vulnerability_list %}
+													<tr>
+														<td>{{vulnerability.name}}<br><small class="text-muted">Discovered: {{vulnerability.discovered_date|naturaltime}}</small></td>
+														<td>{% if vulnerability.severity == 0 %}
+															<span class='badge badge-soft-info'>Info</span>
+															{% elif vulnerability.severity == 1 %}
+															<span class='badge badge-soft-low'>Low</span>
+															{% elif vulnerability.severity == 2 %}
+															<span class='badge badge-soft-warning'>Medium</span>
+															{% elif vulnerability.severity == 3 %}
+															<span class='badge badge-soft-danger'>High</span>
+															{% elif vulnerability.severity == 4 %}
+															<span class='badge badge-critical'>Critical</span>
+															{% endif %}
+														</td>
+														<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+													</tr>
+													{% empty %}
+													Not enough data.
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+							{% endif %}
 							<div class="col-xl-6 col-lg-6 col-12">
 								<div class="card">
 									<div class="card-body">
@@ -411,7 +481,6 @@ Scan Findings
 									</div>
 								</div>
 							</div>
-
 						</div>
 					</div>
 				</div>
@@ -422,6 +491,9 @@ Scan Findings
 {% endblock main_content %}
 
 {% block page_level_script %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
+<script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
@@ -435,12 +507,102 @@ $(document).ready(function(){
 		dropdownParent: $('#addTaskModal')
 	});
 
+	//populate charts
+	// vulnerability summary pie chart
+	var options = {
+		chart: {
+			type: 'donut',
+			height: 280,
+		},
+		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			show: !0,
+			position: "bottom",
+			horizontalAlign: "center",
+			verticalAlign: "middle",
+			floating: !1,
+			fontSize: "15px",
+			offsetX: 0,
+			offsetY: 7
+		},
+		plotOptions: {
+			pie: {
+				donut: {
+					size: '70%',
+					background: 'transparent',
+					labels: {
+						show: true,
+						name: {
+							show: true,
+							fontSize: '29px',
+							fontFamily: 'Nunito, sans-serif',
+							color: undefined,
+							offsetY: -10
+						},
+						value: {
+							show: true,
+							fontSize: '26px',
+							fontFamily: 'Nunito, sans-serif',
+							color: '20',
+							offsetY: 16,
+							formatter: function (val) {
+								return val
+							}
+						},
+						total: {
+							show: true,
+							showAlways: true,
+							label: 'Total',
+							color: '#888ea8',
+							formatter: function (w) {
+								return w.globals.seriesTotals.reduce( function(a, b) {
+									return a + b
+								}, 0)
+							}
+						}
+					}
+				}
+			}
+		},
+		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
+		labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+		responsive: [{
+			breakpoint: 1599,
+			options: {
+				chart: {
+					height: 240
+				},
+				legend: {
+					position: 'bottom'
+				}
+			},
+			breakpoint: 1439,
+			options: {
+				chart: {
+					width: '250px',
+					height: '390px'
+				},
+			},
+		}],
+	}
+
+	var chart = new ApexCharts(
+		document.querySelector("#vulnerability-pie-chart"),
+		options
+	);
+
+	chart.render()
+
 	//populate widgets
 	get_important_subdomains(null, {{scan_history_id}});
 	get_recon_notes(null, {{scan_history_id}});
 	get_ips({{scan_history_id}});
 	get_technologies({{scan_history_id}});
 	get_ports({{scan_history_id}});
+
 });
 </script>
 {% endblock page_level_script %}
