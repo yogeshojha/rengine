@@ -9,7 +9,6 @@ from django.apps import apps
 
 from targetApp.models import Domain
 from scanEngine.models import EngineType
-from reNgine.common_func import *
 
 
 class ScanHistory(models.Model):
@@ -113,14 +112,28 @@ class ScanHistory(models.Model):
 
     def get_completed_ago(self):
         if self.stop_scan_date:
-            return get_time_ago(self.stop_scan_date)
+            return self.get_time_ago(self.stop_scan_date)
 
     def get_total_scan_time_in_sec(self):
         if self.stop_scan_date:
             return (self.stop_scan_date - self.start_scan_date).seconds
 
     def get_elapsed_time(self):
-        return get_time_ago(self.start_scan_date)
+        return self.get_time_ago(self.start_scan_date)
+
+    def get_time_ago(self, time):
+        duration = timezone.now() - time
+        days, seconds = duration.days, duration.seconds
+        hours = days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        if not hours and not minutes:
+            return '{} seconds'.format(seconds)
+        elif not hours:
+            return '{} minutes'.format(minutes)
+        elif not minutes:
+            return '{} hours'.format(hours)
+        return '{} hours {} minutes'.format(hours, minutes)
 
 
 class Subdomain(models.Model):

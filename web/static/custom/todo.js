@@ -48,7 +48,7 @@ function delete_todo(todo_id){
           pos: 'top-right',
           duration: 1500,
         });
-        get_recon_notes(scan_id);
+        get_recon_notes(null, scan_id);
       })
       .catch(function() {
         swal.insertQueueStep({
@@ -83,7 +83,7 @@ function change_todo_priority(todo_id, imp_type){
       pos: 'top-right',
       duration: 1500,
     });
-    get_recon_notes(scan_id);
+    get_recon_notes(null, scan_id);
   });
 }
 
@@ -142,6 +142,7 @@ function get_task_details(todo_id){
 
 function get_recon_notes(target_id, scan_id){
   if (target_id) {
+    console.log('Hello');
     url = `/api/listTodoNotes/?target_id=${target_id}&format=json`;
   }
   else if (scan_id) {
