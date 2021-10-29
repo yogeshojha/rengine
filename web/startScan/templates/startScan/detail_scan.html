@@ -375,6 +375,43 @@ Scan Findings
 									</div>
 								</div>
 							</div>
+							<div class="col-xl-4 col-lg-4 col-12">
+								<div class="card">
+									<div class="card-body">
+										<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> IP Addresses</h4>
+										<span class="text-warning float-end">*IP Addresses highlighted with yellow are CDN IP</span>
+										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+											<div id="ip-address" class="mt-2">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-4 col-lg-4 col-12">
+								<div class="card">
+									<div class="card-body">
+										<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Ports</h4>
+										<span class="text-danger float-end">*Ports highlighted with red are uncommon Ports</span>
+										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+											<div id="ports" class="mt-2">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-4 col-lg-4 col-12">
+								<div class="card">
+									<div class="card-body">
+										<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Technologies</h4>
+										<span class="text-warning float-end">&nbsp;</span>
+										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+											<div id="technologies" class="mt-2">
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+
 						</div>
 					</div>
 				</div>
@@ -385,9 +422,9 @@ Scan Findings
 {% endblock main_content %}
 
 {% block page_level_script %}
-<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
-<script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
+<script src="{% static 'note/js/todo.js' %}"></script>
+<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function(){
@@ -401,6 +438,9 @@ $(document).ready(function(){
 	//populate widgets
 	get_important_subdomains(null, {{scan_history_id}});
 	get_recon_notes(null, {{scan_history_id}});
+	get_ips({{scan_history_id}});
+	get_technologies({{scan_history_id}});
+	get_ports({{scan_history_id}});
 });
 </script>
 {% endblock page_level_script %}
