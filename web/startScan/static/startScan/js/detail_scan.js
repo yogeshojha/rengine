@@ -401,51 +401,59 @@ function get_ip_details(ip_address, scan_id){
     subdomain_url = `/api/querySubdomains/?&ip_address=${ip_address}&format=json`
   }
   var interesting_badge = `<span class="m-1 badge  badge-soft-danger bs-tooltip" title="Interesting Subdomain">Interesting</span>`;
-  // render tab modal
-  $('#tab-modal-title').html('Details for IP: <b>' + ip_address + '</b>');
+
+  var port_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="port-modal-loader"></span>`;
+  var subdomain_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="subdomain-modal-loader"></span>`;
+
   // add tab modal title
+  $('#modal_title').html('Details for IP: <b>' + ip_address + '</b>');
+
+  $('#modal-content').empty();
   $('#modal-tabs').empty();
-  port_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="port-modal-loader"></span>`;
-  subdomain_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="subdomain-modal-loader"></span>`;
-  $('#tabsModal').modal('show');
-  $('#modal-tabs').append(`<li class="nav-item"><a class="nav-link active" id="open-ports-tab" data-toggle="tab" href="#modal-open-ports" role="tab" aria-controls="home" aria-selected="true"><span id="modal-open-ports-count"></span>Open Ports &nbsp;${port_loader}</a></li>`);
-  $('#modal-tabs').append(`<li class="nav-item"><a class="nav-link" id="subdomain-tab" data-toggle="tab" href="#modal-subdomain" role="tab" aria-controls="profile" aria-selected="false"><span id="modal-subdomain-count"></span>Subdomains &nbsp;${subdomain_loader}</a></li>`)
+
+  $('#modal-content').append(`<ul class='nav nav-tabs nav-bordered' id="modal_tab_nav"></ul><div id="modal_tab_content" class="tab-content"></div>`);
+
+  $('#modal_tab_nav').append(`<li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#modal_content_port" aria-expanded="true"><span id="modal-open-ports-count"></span>Open Ports &nbsp;${port_loader}</a></li>`);
+  $('#modal_tab_nav').append(`<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#modal_content_subdomain" aria-expanded="false"><span id="modal-subdomain-count"></span>Subdomains &nbsp;${subdomain_loader}</a></li>`)
+
   // add content area
-  $('#modal-tab-content').empty();
-  $('#modal-tab-content').append(`<div class="tab-pane fade show active" id="modal-open-ports" role="tabpanel" aria-labelledby="open-ports-tab"></div>`);
+  $('#modal_tab_content').empty();
+  $('#modal_tab_content').append(`<div class="tab-pane show active" id="modal_content_port"></div><div class="tab-pane" id="modal_content_subdomain"></div>`);
+
   $('#modal-open-ports').append(`<div class="modal-text" id="modal-text-open-port"></div>`);
   $('#modal-text-open-port').append(`<ul id="modal-open-port-text"></ul>`);
 
-  $('#modal-tab-content').append(`<div class="tab-pane fade" id="modal-subdomain" role="tabpanel" aria-labelledby="subdomain-tab">`);
-  $('#modal-subdomain').append(`<div class="modal-text" id="modal-text-subdomain"></div>`);
-  $('#modal-text-subdomain').append(`<ul id="modal-subdomain-text"></ul>`);
+  $('#modal_content_port').append(`<ul id="modal_port_ul"></ul>`);
+  $('#modal_content_subdomain').append(`<ul id="modal_subdomain_ul"></ul>`);
 
   $.getJSON(port_url, function(data) {
-    $('#modal-open-port-text').empty();
-    $('#modal-open-port-text').append(`<p> IP Addresses ${ip_address} has ${data['ports'].length} Open Ports`);
+    $('#modal_content_port').empty();
+    $('#modal_content_port').append(`<p> IP Addresses ${ip_address} has ${data['ports'].length} Open Ports`);
     $('#modal-open-ports-count').html(`<b>${data['ports'].length}</b>&nbsp;&nbsp;`);
     for (port in data['ports']){
       port_obj = data['ports'][port];
       badge_color = port_obj['is_uncommon'] ? 'danger' : 'info';
-      $("#modal-open-port-text").append(`<li>${port_obj['description']} <b class="text-${badge_color}">(${port_obj['number']}/${port_obj['service_name']})</b></li>`)
+      $("#modal_content_port").append(`<li class="mt-1">${port_obj['description']} <b class="text-${badge_color}">(${port_obj['number']}/${port_obj['service_name']})</b></li>`)
     }
     $("#port-modal-loader").remove();
   });
 
+  $('#modal_dialog').modal('show');
+
   // query subdomains
   $.getJSON(subdomain_url, function(data) {
-    $('#modal-subdomain-text').empty();
-    $('#modal-subdomain-text').append(`<p>${data['subdomains'].length} Subdomains are associated with IP ${ip_address}`);
+    $('#modal_content_subdomain').empty();
+    $('#modal_content_subdomain').append(`<p>${data['subdomains'].length} Subdomains are associated with IP ${ip_address}`);
     $('#modal-subdomain-count').html(`<b>${data['subdomains'].length}</b>&nbsp;&nbsp;`);
     for (subdomain in data['subdomains']){
       subdomain_obj = data['subdomains'][subdomain];
       badge_color = subdomain_obj['http_status'] >= 400 ? 'danger' : '';
       li_id = get_randid();
       if (subdomain_obj['http_url']) {
-        $("#modal-subdomain-text").append(`<li id="${li_id}"><a href='${subdomain_obj['http_url']}' target="_blank" class="text-${badge_color}">${subdomain_obj['name']}</a></li>`)
+        $("#modal_content_subdomain").append(`<li class="mt-1" id="${li_id}"><a href='${subdomain_obj['http_url']}' target="_blank" class="text-${badge_color}">${subdomain_obj['name']}</a></li>`)
       }
       else {
-        $("#modal-subdomain-text").append(`<li class="text-${badge_color}" id="${li_id}">${subdomain_obj['name']}</li>`);
+        $("#modal_content_subdomain").append(`<li class="mt-1 text-${badge_color}" id="${li_id}">${subdomain_obj['name']}</li>`);
       }
 
       if (subdomain_obj['http_status']) {
@@ -488,8 +496,7 @@ function get_port_details(port, scan_id){
   $('#modal_tab_nav').append(`<li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#modal_content_subdomain" aria-expanded="false"><span id="modal-subdomain-count"></span>Subdomains&nbsp;${subdomain_spinner}</a></li>`)
 
   // add content area
-  $('#modal_tab_content').append(`<div class="tab-pane show active" id="modal_content_ip"></div>`);
-  $('#modal_tab_content').append(`<div class="tab-pane" id="modal_content_subdomain"></div>`);
+  $('#modal_tab_content').append(`<div class="tab-pane show active" id="modal_content_ip"></div><div class="tab-pane" id="modal_content_subdomain"></div>`);
 
   $('#modal_content_ip').append(`<ul id="modal_ip_ul"></ul>`);
   $('#modal_content_subdomain').append(`<ul id="modal_subdomain_ul"></ul>`);
