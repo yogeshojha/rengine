@@ -181,7 +181,7 @@ Scan Findings
 								</div>
 							</div>
 							<h6 class="font-13 text-muted text-uppercase">Scan Engine <span class="badge badge-soft-primary float-end">{{history.scan_type.engine_name}}</span></h6>
-							<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration</h6>
+							<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration </h6>
 							{% if history.scan_status == -1 %}
 							<p class="mt-1 mb-0 text-warning font-14"><small class="text-center text-muted">Scan not yet started.</small></p>
 							{% elif history.scan_status == 0 %}
@@ -189,7 +189,7 @@ Scan Findings
 							{% elif history.scan_status == 1 %}
 							<span class="mt-1 mb-0 text-primary font-14">{{ history.get_elapsed_time }}</span>
 							{% elif history.scan_status == 2 %}
-							{% if history.get_completed_time_in_sec < 60 %}
+							{% if history.get_total_scan_time_in_sec < 60 %}
 							<span class="mt-1 mb-0 text-success font-14">Completed in < 1 minutes</span>
 							{% else %}
 							<span class="mt-1 mb-0 text-success font-14">Completed in {{ history.start_scan_date|timesince:history.stop_scan_date }}</span>
