@@ -91,6 +91,8 @@ def detail_scan(request, id=None):
 
         context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:5]
 
+        context['http_status_breakdown'] = Subdomain.objects.filter(scan_history=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
+
         if domain_id:
             domain_id = domain_id[0].domain.id
             scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)

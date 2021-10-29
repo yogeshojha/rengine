@@ -310,6 +310,22 @@ Scan Findings
 					</div>
 					<div class="col-xl-9 col-lg-8">
 						<div class="row">
+							<div class="col-xl-6 col-lg-6 col-12">
+								<div class="card" style="height: 95%">
+									<div class="card-body">
+										<h4 class="header-title mb-0">HTTP Status Breakdown</h4>
+										<div id="http_status_chart" class="apex-charts"></div>
+									</div>
+								</div>
+							</div>
+							<div class="col-xl-6 col-lg-6 col-12">
+								<div class="card" style="height: 95%">
+									<div class="card-body">
+										<h4 class="header-title mb-0">Something</h4>
+										<div id="remain" class="apex-charts"></div>
+									</div>
+								</div>
+							</div>
 							{% if history.vulnerability_scan %}
 							<div class="col-xl-5 col-lg-5 col-12">
 								<div class="card" style="height: 95%">
@@ -595,6 +611,67 @@ $(document).ready(function(){
 	);
 
 	chart.render()
+
+	// depending on http_status_breakdown, generate color
+	var colors = [
+		{% for status in http_status_breakdown %}
+		{% if status.http_status >= 200 and status.http_status < 300 %}
+			'#4CAF50',
+		{% elif status.http_status >= 300 and status.http_status < 400 %}
+			'#FFC107',
+		{% else %}
+			'#F44336',
+		{% endif %}
+		{% endfor %}
+	];
+
+	// http_status chart
+	var options = {
+		series: [{
+			name: 'Subdomains',
+			data: [{% for status in http_status_breakdown %}
+				{{status.http_status__count}},
+			{% endfor %}]
+		}],
+		chart: {
+			height: 350,
+			type: 'bar',
+			events: {
+				click: function(chart, w, e) {
+					// console.log(chart, w, e)
+				}
+			}
+		},
+		colors: colors,
+		plotOptions: {
+			bar: {
+				columnWidth: '45%',
+				distributed: true,
+			}
+		},
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			show: false
+		},
+		xaxis: {
+			categories: [
+				{% for status in http_status_breakdown %}
+				  '{{status.http_status}}',
+				{% endfor %}
+			],
+			labels: {
+				style: {
+					colors: colors,
+					fontSize: '12px'
+				}
+			}
+		}
+	};
+
+	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
+	chart.render();
 
 	//populate widgets
 	get_important_subdomains(null, {{scan_history_id}});
