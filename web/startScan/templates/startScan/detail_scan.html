@@ -333,19 +333,19 @@ Scan Findings
 															</tr>
 															<tr>
 																<td>Domain Name</td>
-																<td>yogeshojha.com</td>
+																<td>{{history.domain.name}}</td>
 															</tr>
 															<tr>
 																<td>Domain age</td>
-																<td>5 years and 5 months old (Created on 2020-12-12)</td>
+																<td>{{history.domain.domain_info.domain_age}} {{history.domain.domain_info.date_created}}</td>
 															</tr>
 															<tr>
 																<td>IP Address</td>
-																<td>192.168.1.1</td>
+																<td>{{history.domain.domain_info.ip_address}}</td>
 															</tr>
 															<tr>
 																<td>IP Geolocation</td>
-																<td>Nepal</td>
+																<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}"> {{history.domain.domain_info.geolocation}}</td>
 															</tr>
 														</table>
 														<h4 class="header-title mt-3">Registrant Information</h4>
@@ -356,81 +356,28 @@ Scan Findings
 															</tr>
 															<tr>
 																<td>Name</td>
-																<td>Yogesh Ojha</td>
+																<td>{{history.domain.domain_info.whois.registrant.name}}</td>
 															</tr>
 															<tr>
 																<td>Organization</td>
-																<td>Yogesh Technologies</td>
+																<td>{{history.domain.domain_info.whois.registrant.organization}}</td>
 															</tr>
 															<tr>
 																<td>Address</td>
-																<td>Kathmandu, Nepal</td>
+																<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}"> {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
 															</tr>
 															<tr>
 																<td>Phone Numbers</td>
-																<td>+977 9845708388</td>
+																<td>{{history.domain.domain_info.whois.registrant.phone_number}}</td>
+															</tr>
+															<tr>
+																<td>Fax</td>
+																<td>{{history.domain.domain_info.whois.registrant.fax}}</td>
 															</tr>
 														</table>
 													</div>
 													<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-														<pre data-simplebar style="max-height: 310px; min-height: 310px;">
-Domain Name: KHALTI.COM
-Registry Domain ID: 2027649241_DOMAIN_COM-VRSN
-Registrar WHOIS Server: whois.publicdomainregistry.com
-Registrar URL: www.publicdomainregistry.com
-Updated Date: 2019-01-12T15:52:22Z
-Creation Date: 2016-05-12T11:57:54Z
-Registrar Registration Expiration Date: 2019-05-12T11:57:54Z
-Registrar: PDR Ltd. d/b/a PublicDomainRegistry.com
-Registrar IANA ID: 303
-Domain Status: clientTransferProhibited https://icann.org/epp#clientTransferProhibited
-Registry Registrant ID: Not Available From Registry
-Registrant Name: Dhruba Adhikari
-Registrant Organization: Janaki Technology Pvt. Ltd.
-Registrant Street: Kathmandu
-Registrant City: Kathmandu
-Registrant State/Province: Bagmati
-Registrant Postal Code: 44600
-Registrant Country: NP
-Registrant Phone: +977.15522942
-Registrant Phone Ext:
-Registrant Fax:
-Registrant Fax Ext:
-Registrant Email: info(at)janakitech.com
-Registry Admin ID: Not Available From Registry
-Admin Name: Dhruba Adhikari
-Admin Organization: Janaki Technology Pvt. Ltd.
-Admin Street: Kathmandu
-Admin City: Kathmandu
-Admin State/Province: Bagmati
-Admin Postal Code: 44600
-Admin Country: NP
-Admin Phone: +977.15522942
-Admin Phone Ext:
-Admin Fax:
-Admin Fax Ext:
-Admin Email: info(at)janakitech.com
-Registry Tech ID: Not Available From Registry
-Tech Name: Dhruba Adhikari
-Tech Organization: Janaki Technology Pvt. Ltd.
-Tech Street: Kathmandu
-Tech City: Kathmandu
-Tech State/Province: Bagmati
-Tech Postal Code: 44600
-Tech Country: NP
-Tech Phone: +977.15522942
-Tech Phone Ext:
-Tech Fax:
-Tech Fax Ext:
-Tech Email: info(at)janakitech.com
-Name Server: pns21.cloudns.net
-Name Server: pns22.cloudns.net
-Name Server: pns23.cloudns.net
-Name Server: pns24.cloudns.net
-DNSSEC: Unsigned
-Registrar Abuse Contact Email: abuse-contact(at)publicdomainregistry.com
-Registrar Abuse Contact Phone: +1.2013775952
-														</pre>
+														<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
 													</div>
 													<div class="tab-pane fade" id="v-pills-historical-whois" role="tabpanel" aria-labelledby="v-pills-historical-whois-tab">
 													</div>
