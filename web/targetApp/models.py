@@ -28,17 +28,34 @@ class WhoisDetail(models.Model):
         return self.registrant.name
 
 
+class NameServerHistory(models.Model):
+    date = models.CharField(max_length=10, null=True, blank=True)
+    action = models.CharField(max_length=50, null=True, blank=True)
+    server = models.CharField(max_length=100, null=True, blank=True)
+
+
+class NSRecord(models.Model):
+    type = models.CharField(max_length=10, null=True, blank=True)
+    hostname = models.CharField(max_length=50, null=True, blank=True)
+    address = models.CharField(max_length=50, null=True, blank=True)
+    preference = models.CharField(max_length=5, null=True, blank=True)
+    ttl = models.CharField(max_length=10, null=True, blank=True)
+    ns_class = models.CharField(max_length=10, null=True, blank=True)
+
+
 class DomainInfo(models.Model):
-    date_created = models.CharField(max_length=300)
-    domain_age = models.CharField(max_length=300)
+    date_created = models.CharField(max_length=300, null=True, blank=True)
+    domain_age = models.CharField(max_length=300, null=True, blank=True)
     ip_address = models.CharField(max_length=200, null=True, blank=True)
     geolocation = models.CharField(max_length=50, null=True, blank=True)
     geolocation_iso = models.CharField(max_length=4, null=True, blank=True)
     is_private = models.BooleanField(default=False)
     whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
+    nameserver_history = models.ManyToManyField(NameServerHistory)
 
     def __str__(self):
         return self.whois.registrant.name
+
 
 
 class Organization(models.Model):

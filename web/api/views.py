@@ -57,6 +57,7 @@ class Whois(APIView):
             response = requests.get('https://domainbigdata.com/{}'.format(ip_domain))
             tree = html.fromstring(response.content)
 
+
             try:
                 #RegistrantInfo Model
                 name = tree.xpath('//*[@id="trRegistrantName"]/td[2]/a/text()')
@@ -103,6 +104,18 @@ class Whois(APIView):
                 tel = tel[0].strip() if tel else None
                 fax = fax[0].strip() if fax else None
 
+                dns_history_xpath = tree.xpath("//*[@id='MainMaster_divNSHistory']/table/tbody/tr")
+                dns_history = []
+                for table_row in dns_history_xpath:
+                    row = table_row.xpath('td/text()')
+                    dns_history.append(
+                        {
+                            'date': row[0],
+                            'action': row[1],
+                            'nameserver': row[2],
+                        }
+                    )
+
                 # save in db
                 if save_db and Domain.objects.filter(name=ip_domain).exists():
                     # look for domain and save in db
@@ -135,6 +148,16 @@ class Whois(APIView):
                     domain_info.whois = whois_model
                     domain_info.save()
 
+                    for table_row in dns_history_xpath:
+                        row = table_row.xpath('td/text()')
+                        ns_history = NameServerHistory()
+                        ns_history.date = row[0]
+                        ns_history.action = row[1]
+                        ns_history.server = row[2]
+                        ns_history.save()
+
+                        domain_info.nameserver_history.add(ns_history);
+
                     domain.domain_info = domain_info
                     domain.save()
 
@@ -148,6 +171,9 @@ class Whois(APIView):
                         'ip_address': ip_address,
                         'geolocation': geolocation,
                         'geolocation_iso': geolocation_iso,
+                    },
+                    'nameserver': {
+                        'history': dns_history
                     },
                     'registrant': {
                         'name': name,
