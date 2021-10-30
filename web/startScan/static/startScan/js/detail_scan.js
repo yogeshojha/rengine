@@ -179,8 +179,8 @@ function get_endpoints(scan_history_id, gf_tags){
     }
   });
   $('#endpoint-search-button').click(function () {
-		endpoint_table.search($('#endpoints-search').val()).draw() ;
-	});
+    endpoint_table.search($('#endpoints-search').val()).draw() ;
+  });
 }
 
 function get_subdomain_changes(scan_history_id){
@@ -1359,5 +1359,27 @@ function download_endpoints(scan_id, domain_name, pattern){
     $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_endpoints_text_area">Copy Endpoints</a>`);
   }).fail(function(){
     $('#modal-loader').empty();
+  });
+}
+
+
+function fetch_whois(domain_name){
+  $('[data-toggle="tooltip"]').tooltip('hide');
+  Snackbar.show({
+    text: 'Fetching WHOIS...',
+    pos: 'top-right',
+    duration: 1500,
+  });
+  fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}&save_db`, {}).then(res => res.json())
+  .then(function (response) {
+    Snackbar.show({
+      text: 'Whois Fetched...(Click to reload)',
+      pos: 'top-right',
+      duration: 3000,
+      actionText: 'Reload',
+      onActionClick: function(element) {
+        location.reload();
+      }
+    });
   });
 }
