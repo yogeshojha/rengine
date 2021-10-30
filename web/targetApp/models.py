@@ -52,6 +52,7 @@ class DomainInfo(models.Model):
     is_private = models.BooleanField(default=False)
     whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
     nameserver_history = models.ManyToManyField(NameServerHistory)
+    nameserver_record = models.ManyToManyField(NSRecord)
 
     def __str__(self):
         return self.whois.registrant.name

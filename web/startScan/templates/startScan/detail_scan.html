@@ -311,6 +311,9 @@ Scan Findings
 							<div class="col-xl-7 col-lg-7 col-12">
 								<div class="card" style="height: 95%">
 									<div class="card-body">
+										<div class="card-widgets">
+											<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois, Page needs to be refreshed!"><i class="mdi mdi-refresh"></i></a>
+										</div>
 										<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
 										<div class="row mt-3">
 											<div class="col-sm-3">
@@ -392,6 +395,34 @@ Scan Findings
 																	<td>{{history.date}}</td>
 																	<td>{{history.action}}</td>
 																	<td>{{history.server}}</td>
+																</tr>
+																{% endfor %}
+															</tbody>
+														</table>
+														{% else %}
+														No DNS history records found.
+														{% endif %}
+													</div>
+													<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+														{% if history.domain.domain_info.nameserver_record.all %}
+														<table class="table table-striped mb-0">
+															<thead class="table-dark">
+																<td>Type</td>
+																<td>Hostname</td>
+																<td>Address</td>
+																<td>TTL</td>
+																<td>Class</td>
+																<td>Preference</td>
+															</thead>
+															<tbody>
+																{% for nameserver in history.domain.domain_info.nameserver_record.all %}
+																<tr>
+																	<td><span class="badge badge-soft-primary me-1 ms-1">{{ nameserver.type}}</span></td>
+																	<td>{{nameserver.hostname}}</td>
+																	<td>{{nameserver.address}}</td>
+																	<td>{{nameserver.ttl}}</td>
+																	<td>{{nameserver.ns_class}}</td>
+																	<td>{% if nameserver.preference %}{{nameserver.preference}}{% endif %}</td>
 																</tr>
 																{% endfor %}
 															</tbody>

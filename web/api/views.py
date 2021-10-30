@@ -135,7 +135,7 @@ class Whois(APIView):
                     registrant.save()
 
                     whois_model = WhoisDetail()
-                    whois_model.details = whois if whois else Noen
+                    whois_model.details = whois if whois else None
                     whois_model.registrant = registrant
                     whois_model.save()
 
@@ -161,6 +161,81 @@ class Whois(APIView):
                     domain.domain_info = domain_info
                     domain.save()
 
+                ns_records = []
+                for i in range(4):
+                    ns_records_xpath = tree.xpath("//*[@id='divDNSRecords']/table[{}]/tbody/tr".format(i))
+                    for table_row in ns_records_xpath:
+                        row = table_row.xpath('td/text()')
+                        if row[0] == 'A':
+                            # for getting address, use child lookup
+                            address = table_row.xpath('td/a/text()')
+                            address = address[0] if address else None
+
+                            ns_records.append(
+                                {
+                                    'type': row[0],
+                                    'hostname': row[1],
+                                    'address': address,
+                                    'ttl': row[2],
+                                    'class': row[3],
+                                }
+                            )
+
+                            if save_db and Domain.objects.filter(name=ip_domain).exists():
+                                ns = NSRecord()
+                                ns.type = row[0]
+                                ns.hostname = row[1]
+                                ns.address = address
+                                ns.ttl = row[2]
+                                ns.ns_class = row[3]
+                                ns.save()
+                                domain_info.nameserver_record.add(ns)
+
+                        elif row[0] == 'AAAA':
+                            # for getting address, use child lookup
+                            ns_records.append(
+                                {
+                                    'type': row[0],
+                                    'hostname': row[1],
+                                    'address': row[2],
+                                    'ttl': row[3],
+                                    'class': row[4],
+                                }
+                            )
+
+                            if save_db and Domain.objects.filter(name=ip_domain).exists():
+                                ns = NSRecord()
+                                ns.type = row[0]
+                                ns.hostname = row[1]
+                                ns.address = row[2]
+                                ns.ttl = row[3]
+                                ns.ns_class = row[4]
+                                ns.save()
+                                domain_info.nameserver_record.add(ns)
+
+                        elif row[0] == 'MX':
+                            ns_records.append(
+                                {
+                                    'type': row[0],
+                                    'hostname': row[1],
+                                    'address': row[2],
+                                    'preference': row[3],
+                                    'ttl': row[4],
+                                    'class': row[5],
+                                }
+                            )
+
+                            if save_db and Domain.objects.filter(name=ip_domain).exists():
+                                ns = NSRecord()
+                                ns.type = row[0]
+                                ns.hostname = row[1]
+                                ns.address = address
+                                ns.preference = row[3]
+                                ns.ttl = row[4]
+                                ns.ns_class = row[5]
+                                ns.save()
+                                domain_info.nameserver_record.add(ns)
+
 
                 return Response({
                     'status': True,
@@ -173,7 +248,8 @@ class Whois(APIView):
                         'geolocation_iso': geolocation_iso,
                     },
                     'nameserver': {
-                        'history': dns_history
+                        'history': dns_history,
+                        'records': ns_records
                     },
                     'registrant': {
                         'name': name,
