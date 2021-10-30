@@ -159,3 +159,29 @@ div.dataTables_wrapper div.dataTables_filter input:focus {
   width: 35px;
   height: 35px;
 }
+
+/* domain details table */
+.domain_details_table{
+  display: table-cell;
+  padding: 3px;
+}
+
+table.domain_details_table{
+  width: 100%;
+}
+
+table.domain_details_table tr {
+  width: 465px;
+  padding-top: 5px;
+}
+
+
+table.domain_details_table td {
+  border-radius: 2px;
+  padding: 4px;
+}
+
+table.domain_details_table td:nth-child(1) {
+  width: 125px;
+  font-weight: bold;
+}
