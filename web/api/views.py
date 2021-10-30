@@ -3,6 +3,7 @@ import logging
 import requests
 
 from bs4 import BeautifulSoup
+from lxml import html
 # selenium
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium import webdriver
@@ -53,19 +54,114 @@ class Whois(APIView):
         ip_domain = req.query_params.get('ip_domain')
         save_db = True if 'save_db' in req.query_params else False
         if ip_domain:
-            response = requests.get('https://www.whois.com/whois/{}'.format(ip_domain))
-            bs = BeautifulSoup(response.text, 'html.parser')
+            response = requests.get('https://domainbigdata.com/{}'.format(ip_domain))
+            tree = html.fromstring(response.content)
+
             try:
-                whois = bs.find_all('pre', {'class': 'df-raw'})[0].text.encode('UTF-8')
-                if save_db and Domain.objects.filter(name=ip_domain).exists() and whois:
+                #RegistrantInfo Model
+                name = tree.xpath('//*[@id="trRegistrantName"]/td[2]/a/text()')
+                organization = tree.xpath('//*[@id="MainMaster_trRegistrantOrganization"]/td[2]/a/text()')
+                email = tree.xpath('//*[@id="trRegistrantEmail"]/td[2]/a/text()')
+                address = tree.xpath('//*[@id="trRegistrantAddress"]/td[2]/text()')
+                city = tree.xpath('//*[@id="trRegistrantCity"]/td[2]/text()')
+                state = tree.xpath('//*[@id="trRegistrantState"]/td[2]/text()')
+                country = tree.xpath('//*[@id="trRegistrantCountry"]/td[2]/text()')
+                country_iso = tree.xpath('//*[@id="imgFlagRegistrant"]/@alt')
+                tel = tree.xpath('//*[@id="trRegistrantTel"]/td[2]/text()')
+                fax = tree.xpath('//*[@id="trRegistrantFax"]/td[2]/text()')
+
+                # whois model
+                whois = tree.xpath('//*[@id="whois"]/div/div[3]/text()')
+                whois = "\n".join(whois).strip()
+
+                # DomainInfo Model
+                date_created = tree.xpath('//*[@id="trDateCreation"]/td[2]/text()')
+                domain_age = tree.xpath('//*[@id="trWebAge"]/td[2]/text()')
+                ip_address = tree.xpath('//*[@id="trIP"]/td[2]/a/text()')
+                geolocation = tree.xpath('//*[@id="imgFlag"]/following-sibling::text()')
+                geolocation_iso = tree.xpath('//*[@id="imgFlag"]/@alt')
+
+                is_private_path = tree.xpath("//*[contains(@class, 'websiteglobalstats')]/tr[10]/td[2]/span/text()")
+                is_private = False
+                if len(is_private_path) > 0:
+                    is_private = True
+
+
+                date_created = date_created[0].strip() if date_created else None
+                domain_age = domain_age[0].strip() if domain_age else None
+                ip_address = ip_address[0].strip() if ip_address else None
+                geolocation = geolocation[0].strip() if geolocation else None
+                geolocation_iso = geolocation_iso[0].strip() if geolocation_iso else None
+                name = name[0].strip() if name else None
+                organization = organization[0].strip() if organization else None
+                email = email[0].strip() if email else None
+                address = address[0].strip() if address else None
+                city = city[0].strip() if city else None
+                state = state[0].strip() if state else None
+                country = country[0].strip() if country else None
+                country_iso = country_iso[0].strip() if country_iso else None
+                tel = tel[0].strip() if tel else None
+                fax = fax[0].strip() if fax else None
+
+                # save in db
+                if save_db and Domain.objects.filter(name=ip_domain).exists():
                     # look for domain and save in db
                     domain = Domain.objects.get(name=ip_domain)
-                    domain.whois = whois.decode()
+
+                    registrant = RegistrantInfo()
+                    registrant.name = name
+                    registrant.organization = organization
+                    registrant.email = email
+                    registrant.address = address
+                    registrant.city = city
+                    registrant.state = state
+                    registrant.country = country
+                    registrant.country_iso = country_iso
+                    registrant.phone_number = tel
+                    registrant.fax = fax
+                    registrant.save()
+
+                    whois_model = WhoisDetail()
+                    whois_model.details = whois if whois else Noen
+                    whois_model.registrant = registrant
+                    whois_model.save()
+
+                    domain_info = DomainInfo()
+                    domain_info.date_created = date_created
+                    domain_info.domain_age = domain_age
+                    domain_info.ip_address = ip_address
+                    domain_info.geolocation = geolocation
+                    domain_info.geolocation_iso = geolocation_iso
+                    domain_info.whois = whois_model
+                    domain_info.save()
+
+                    domain.domain_info = domain_info
                     domain.save()
+
+
                 return Response({
                     'status': True,
                     'ip_domain': ip_domain,
-                    'whois': whois.decode()
+                    'domain': {
+                        'date_created': date_created,
+                        'domain_age': domain_age,
+                        'ip_address': ip_address,
+                        'geolocation': geolocation,
+                        'geolocation_iso': geolocation_iso,
+                    },
+                    'registrant': {
+                        'name': name,
+                        'organization': organization,
+                        'email': email,
+                        'address': address,
+                        'city': city,
+                        'state': state,
+                        'country': country,
+                        'country_iso': country_iso,
+                        'tel': tel,
+                        'fax': fax,
+                    },
+                    'whois': whois if whois else None
                 })
             except Exception as e:
                 logging.exception(e)
