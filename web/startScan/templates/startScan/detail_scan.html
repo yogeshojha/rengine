@@ -315,16 +315,15 @@ Scan Findings
 										<div class="row mt-3">
 											<div class="col-sm-3">
 												<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-													<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain nfo</a>
+													<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 													<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
-													<a class="nav-link mb-1" id="v-pills-historical-whois-tab" data-bs-toggle="pill" href="#v-pills-historical-whois" role="tab" aria-controls="v-pills-historical-whois" aria-selected="false">Historical Whois</a>
 													<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
-													<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">History</a>
+													<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
 												</div>
 											</div> <!-- end col-->
 											<div class="col-sm-9">
 												<div class="tab-content pt-0">
-													<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab">
+													<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 														<h4 class="header-title">Domain Information</h4>
 														<table class="domain_details_table table table-hover table-borderless">
 															<tr style="display: none">
@@ -345,7 +344,7 @@ Scan Findings
 															</tr>
 															<tr>
 																<td>IP Geolocation</td>
-																<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}"> {{history.domain.domain_info.geolocation}}</td>
+																<td>{% if history.domain.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}">{% endif %} {{history.domain.domain_info.geolocation}}</td>
 															</tr>
 														</table>
 														<h4 class="header-title mt-3">Registrant Information</h4>
@@ -364,7 +363,7 @@ Scan Findings
 															</tr>
 															<tr>
 																<td>Address</td>
-																<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}"> {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
+																<td>{% if history.domain.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}">{% endif %} {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
 															</tr>
 															<tr>
 																<td>Phone Numbers</td>
@@ -379,7 +378,27 @@ Scan Findings
 													<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 														<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
 													</div>
-													<div class="tab-pane fade" id="v-pills-historical-whois" role="tabpanel" aria-labelledby="v-pills-historical-whois-tab">
+													<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+														{% if history.domain.domain_info.nameserver_history.all %}
+														<table class="table table-striped mb-0">
+															<thead class="table-dark">
+																<td>Date</td>
+																<td>Action</td>
+																<td>NameServer</td>
+															</thead>
+															<tbody>
+																{% for history in history.domain.domain_info.nameserver_history.all %}
+																<tr>
+																	<td>{{history.date}}</td>
+																	<td>{{history.action}}</td>
+																	<td>{{history.server}}</td>
+																</tr>
+																{% endfor %}
+															</tbody>
+														</table>
+														{% else %}
+														No DNS history records found.
+														{% endif %}
 													</div>
 												</div>
 											</div>
