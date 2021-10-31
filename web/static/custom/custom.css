@@ -1,3 +1,8 @@
+/* make container 100% */
+body[data-layout-mode=horizontal] .container-fluid {
+    max-width: 100% !important;
+}
+
 .navbar-light .navbar-nav .nav-link.active, .navbar-light .navbar-nav .show>.nav-link{
   color: #3283f6;
 }
@@ -184,4 +189,89 @@ table.domain_details_table td {
 table.domain_details_table td:nth-child(1) {
   width: 125px;
   font-weight: bold;
+}
+
+/* for autocom dropdown suggestion */
+/* Source https://www.codingnepalweb.com/search-bar-autocomplete-search-suggestions-javascript/ */
+.wrapper{
+	margin-bottom: 20px;
+}
+
+.wrapper .search-input{
+	background: #fff;
+	width: 100%;
+	border-radius: 5px;
+	position: relative;
+	box-shadow: 0px 1px 5px 3px rgba(0,0,0,0.12);
+}
+
+.search-input input{
+	height: 55px;
+	width: 100%;
+	outline: none;
+	border: none;
+	border-radius: 5px;
+	padding: 0 60px 0 20px;
+	font-size: 16px;
+	box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.search-input button{
+	height: 55px;
+	font-size: 16px;
+}
+
+.search-input.active input{
+	border-radius: 5px 5px 0 0;
+}
+
+.search-input .autocom-box{
+	max-height: 250px;
+	position: absolute;
+	z-index: 1000000;
+	background: #fff;
+	opacity: 0;
+	width: 100%;
+	box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.search-input.active .autocom-box{
+	padding: 10px 8px;
+	opacity: 1;
+	pointer-events: auto;
+	box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.autocom-box li{
+	list-style: none;
+	padding: 8px 12px;
+	display: none;
+	width: 100%;
+	cursor: default;
+	border-radius: 3px;
+}
+
+.search-input.active .autocom-box li{
+	display: block;
+}
+.autocom-box li:hover{
+	background: #efefef;
+}
+
+.search-input .icon{
+	position: absolute;
+	right: 0px;
+	top: 0px;
+	height: 55px;
+	width: 55px;
+	text-align: center;
+	line-height: 55px;
+	font-size: 20px;
+	color: #644bff;
+	cursor: pointer;
+}
+
+
+div.dataTables_wrapper div.dataTables_processing {
+	top: 5%;
 }

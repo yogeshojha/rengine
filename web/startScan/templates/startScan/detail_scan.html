@@ -8,8 +8,13 @@ Detailed Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
+<link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -28,10 +33,10 @@ Scan Findings
 		<div class="card">
 			<ul class="nav nav-tabs nav-bordered m-1">
 				<li class="nav-item">
-					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
+					<a class="nav-link" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
+					<a class="nav-link active" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
 				</li>
 				{% if history.screenshot %}
 				<li class="nav-item">
@@ -50,7 +55,7 @@ Scan Findings
 						{% if history.fetch_url and history.used_gf_patterns%}
 						{% for key,value in matched_gf_count.items %}
 						{% if value > 0 %}
-						<li><a class="dropdown-item" id="pills-{{key}}-tab">{{key|upper}}<span class="badge bg-danger float-end">{{value}}</span></a></li>
+						<li><a class="dropdown-item" id="pills-{{key}}-tab">{{key|upper}}<span class="badge-soft-danger float-end">{{value}}</span></a></li>
 						{% endif %}
 						{% endfor %}
 						{% endif %}
@@ -75,7 +80,7 @@ Scan Findings
 </div>
 <div class="tab-content">
 	{# start tab contents #}
-	<div class="tab-pane show active" id="summary-tab">
+	<div class="tab-pane" id="summary-tab">
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -197,420 +202,239 @@ Scan Findings
 						<div class="d-flex align-items-start mb-3">
 							<div class="w-100">
 								<h5 class="mt-0 mb-0 font-15">
-									Recent Scans for <span class="badge badge-soft-primary">{{history.domain.name}}<span>
-									</h5>
-									<div class="track-order-list mt-3">
-										<ul class="list-unstyled">
-											{% for scan in most_recent_scans %}
-											<li class="completed">
-												<a href="{% url 'detail_scan' scan.id %}">
-													<h5 class="mt-0 mb-1">{{activity.title}}
-														{% if history.id == scan.id %}
-														<span class="active-dot dot"></span>
-														<span class="float-start badge badge-soft-primary ms-1 me-1">Current Scan</span>
+									Recent Scans for <span class="badge badge-soft-primary">{{history.domain.name}}</span>
+								</h5>
+								<div class="track-order-list mt-3">
+									<ul class="list-unstyled">
+										{% for scan in most_recent_scans %}
+										<li class="completed">
+											<a href="{% url 'detail_scan' scan.id %}">
+												<h5 class="mt-0 mb-1">{{activity.title}}
+													{% if history.id == scan.id %}
+													<span class="active-dot dot"></span>
+													<span class="float-start badge badge-soft-primary ms-1 me-1">Current Scan</span>
+													{% endif %}
+													{{scan.scan_type.engine_name}}
+													{% if scan.scan_status == -1 %}
+													<span class="badge badge-soft-warning float-end">Pending</span>
+													{% elif scan.scan_status == 0 %}
+													<span class="badge badge-soft-danger float-end">Failed</span>
+													{% elif scan.scan_status == 1 %}
+													<span class="badge badge-soft-primary float-end">Scanning</span>
+													{% elif scan.scan_status == 2 %}
+													<span class="badge badge-soft-success float-end">Completed</span>
+													{% elif scan.scan_status == 3 %}
+													<span class="badge badge-soft-danger float-end">Aborted</span>
+													{% else %}
+													<span class="badge badge-soft-danger float-end">Unknown</span>
+													{% endif %}
+												</h5>
+												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
+												<p class="text-primary">
+													{{scan.get_subdomain_count}} Subdomains Discovered
+													<span class="float-end text-dark">
+														{% with next_element=most_recent_scans|next:forloop.counter0 %}
+														{% if next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count > scan.get_subdomain_count %}
+														<span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
+														{% elif next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count < scan.get_subdomain_count %}
+														<span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
 														{% endif %}
-														{{scan.scan_type.engine_name}}
-														{% if scan.scan_status == -1 %}
-														<span class="badge badge-soft-warning float-end">Pending</span>
-														{% elif scan.scan_status == 0 %}
-														<span class="badge badge-soft-danger float-end">Failed</span>
-														{% elif scan.scan_status == 1 %}
-														<span class="badge badge-soft-primary float-end">Scanning</span>
-														{% elif scan.scan_status == 2 %}
-														<span class="badge badge-soft-success float-end">Completed</span>
-														{% elif scan.scan_status == 3 %}
-														<span class="badge badge-soft-danger float-end">Aborted</span>
-														{% else %}
-														<span class="badge badge-soft-danger float-end">Unknown</span>
-														{% endif %}
-													</h5>
-													<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
-													<p class="text-primary">
-														{{scan.get_subdomain_count}} Subdomains Discovered
-														<span class="float-end text-dark">
-															{% with next_element=most_recent_scans|next:forloop.counter0 %}
-															{% if next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count > scan.get_subdomain_count %}
-															<span class="text-danger" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count|abs}} subdomains missing since last scan."><i class="fa fa-caret-down text-danger me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
-															{% elif next_element.get_subdomain_count and scan.get_subdomain_count and next_element.get_subdomain_count < scan.get_subdomain_count %}
-															<span class="text-success" data-toggle="tooltip" data-placement="top" title="{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} subdomains added since last scan."><i class="fa fa-caret-up text-success me-1"></i>{{scan.get_subdomain_count|sub:next_element.get_subdomain_count}} Subdomains</span>
-															{% endif %}
-															{% endwith %}
-														</span>
-													</p>
-												</a>
-											</li>
-											{% endfor %}
-										</ul>
-									</div>
+														{% endwith %}
+													</span>
+												</p>
+											</a>
+										</li>
+										{% endfor %}
+									</ul>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-9 col-lg-8">
-					<div class="row">
-						<div class="col-xl-3 col-lg-3 col-6">
-							<div class="card" id="tooltip-container">
-								<div class="card-body">
-									<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
-									<h4 class="mt-0 font-16">Subdomains Discovered</h4>
-									<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
-									<p class="mb-0 text-success">Alive Subdomains: {{alive_count}} <span class="float-end"></p>
-									</div>
-								</div>
+			</div>
+			<div class="col-xl-9 col-lg-8">
+				<div class="row">
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
+								<h4 class="mt-0 font-16">Subdomains Discovered</h4>
+								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
+								<p class="mb-0"><span class="badge badge-soft-success">Alive Subdomains: {{alive_count}}</span></p>
 							</div>
+						</div>
+					</div>
 
-							<div class="col-xl-3 col-lg-3 col-6">
-								<div class="card" id="tooltip-container1">
-									<div class="card-body">
-										<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered by reNgine during this scan. This includes any URLs discovered."></i>
-										<h4 class="mt-0 font-16">Endpoints Discovered</h4>
-										<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
-										<p class="text-success mb-0">Alive Endpoints: {{endpoint_alive_count}}</p>
-									</div>
-								</div>
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container1">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered by reNgine during this scan. This includes any URLs discovered."></i>
+								<h4 class="mt-0 font-16">Endpoints Discovered</h4>
+								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
+								<p class="text-success mb-0"><span class="badge badge-soft-success">Alive Endpoints: {{endpoint_alive_count}}</span></p>
 							</div>
+						</div>
+					</div>
 
-							<div class="col-xl-3 col-lg-3 col-6">
-								<div class="card" id="tooltip-container2">
-									<div class="card-body">
-										<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
-										<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
-										<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
-										{% if history.vulnerability_scan %}
-										<p class="text-muted mb-0">
-											<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
-											<span class="w-title text-warning">and {{low_count}} Low Vulnerabilities</span>
-										</p>
-										{% else %}
-										<p class="text-muted mb-0 small">Vulnerability scan hasn't been performed.</p>
-										{% endif %}
-									</div>
-								</div>
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container2">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
+								<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
+								<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
+								{% if history.vulnerability_scan %}
+								<p class="text-muted mb-0">
+									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
+									<span class="w-title text-warning">and {{low_count}} Low Vulnerabilities</span>
+								</p>
+								{% else %}
+								<p class="text-muted mb-0 small">Vulnerability scan hasn't been performed.</p>
+								{% endif %}
 							</div>
+						</div>
+					</div>
 
-							<div class="col-xl-3 col-lg-3 col-6">
-								<div class="card" id="tooltip-container3">
-									<div class="card-body">
-										<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="OSINT Results"></i>
-										<h4 class="mt-0 font-16">OSINT</h4>
-										{% if history.osint %}
-										<h5 class="text-warning">{{exposed_count}} Exposed Credentials</h5>
-										<p class="text-muted mb-0">{{email_count}} Email Address Discovered</p>
-										<p class="text-muted mb-0">{{employees_count}} Employees Found</p>
-										<br>
-										{% else %}
-										<h5 class="text-warning">&nbsp;</h5>
-										<p class="text-muted mb-0">OSINT hasn't been performed.</p>
-										<p class="text-muted mb-0">&nbsp;</p>
-										<br>
-										{% endif %}
-									</div>
-								</div>
+					<div class="col-xl-3 col-lg-3 col-6">
+						<div class="card" id="tooltip-container3">
+							<div class="card-body">
+								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="OSINT Results"></i>
+								<h4 class="mt-0 font-16">OSINT</h4>
+								{% if history.osint %}
+								<h5 class="text-warning">{{exposed_count}} Exposed Credentials</h5>
+								<p class="text-muted mb-0">{{email_count}} Email Address Discovered</p>
+								<p class="text-muted mb-0">{{employees_count}} Employees Found</p>
+								<br>
+								{% else %}
+								<h5 class="text-warning">&nbsp;</h5>
+								<p class="text-muted mb-0">OSINT hasn't been performed.</p>
+								<p class="text-muted mb-0">&nbsp;</p>
+								<br>
+								{% endif %}
 							</div>
-							<div class="col-xl-7 col-lg-7 col-12">
-								<div class="card" style="height: 95%">
-									<div class="card-body">
-										<div class="card-widgets">
-											<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois, Page needs to be refreshed!"><i class="mdi mdi-refresh"></i></a>
+						</div>
+					</div>
+					<div class="col-xl-7 col-lg-7 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<div class="card-widgets">
+									<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois, Page needs to be refreshed!"><i class="mdi mdi-refresh"></i></a>
+								</div>
+								<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
+								<div class="row mt-3">
+									<div class="col-sm-3">
+										<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+											<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
+											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
+											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
+											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
 										</div>
-										<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
-										<div class="row mt-3">
-											<div class="col-sm-3">
-												<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
-													<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
-													<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
-													<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
-													<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
-												</div>
-											</div> <!-- end col-->
-											<div class="col-sm-9">
-												<div class="tab-content pt-0">
-													<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-														<h4 class="header-title">Domain Information</h4>
-														<table class="domain_details_table table table-hover table-borderless">
-															<tr style="display: none">
-																<th>&nbsp;</th>
-																<th>&nbsp;</th>
-															</tr>
-															<tr>
-																<td>Domain Name</td>
-																<td>{{history.domain.name}}</td>
-															</tr>
-															<tr>
-																<td>Domain age</td>
-																<td>{{history.domain.domain_info.domain_age}} {{history.domain.domain_info.date_created}}</td>
-															</tr>
-															<tr>
-																<td>IP Address</td>
-																<td>{{history.domain.domain_info.ip_address}}</td>
-															</tr>
-															<tr>
-																<td>IP Geolocation</td>
-																<td>{% if history.domain.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}">{% endif %} {{history.domain.domain_info.geolocation}}</td>
-															</tr>
-														</table>
-														<h4 class="header-title mt-3">Registrant Information</h4>
-														<table class="domain_details_table table table-hover table-borderless">
-															<tr style="display: none">
-																<th>&nbsp;</th>
-																<th>&nbsp;</th>
-															</tr>
-															<tr>
-																<td>Name</td>
-																<td>{{history.domain.domain_info.whois.registrant.name}}</td>
-															</tr>
-															<tr>
-																<td>Organization</td>
-																<td>{{history.domain.domain_info.whois.registrant.organization}}</td>
-															</tr>
-															<tr>
-																<td>Address</td>
-																<td>{% if history.domain.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}">{% endif %} {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
-															</tr>
-															<tr>
-																<td>Phone Numbers</td>
-																<td>{{history.domain.domain_info.whois.registrant.phone_number}}</td>
-															</tr>
-															<tr>
-																<td>Fax</td>
-																<td>{{history.domain.domain_info.whois.registrant.fax}}</td>
-															</tr>
-														</table>
-													</div>
-													<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-														<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
-													</div>
-													<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-														{% if history.domain.domain_info.nameserver_history.all %}
-														<table class="table table-striped mb-0">
-															<thead class="table-dark">
-																<td>Date</td>
-																<td>Action</td>
-																<td>NameServer</td>
-															</thead>
-															<tbody>
-																{% for history in history.domain.domain_info.nameserver_history.all %}
-																<tr>
-																	<td>{{history.date}}</td>
-																	<td>{{history.action}}</td>
-																	<td>{{history.server}}</td>
-																</tr>
-																{% endfor %}
-															</tbody>
-														</table>
-														{% else %}
-														No DNS history records found.
-														{% endif %}
-													</div>
-													<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-														{% if history.domain.domain_info.nameserver_record.all %}
-														<table class="table table-striped mb-0">
-															<thead class="table-dark">
-																<td>Type</td>
-																<td>Hostname</td>
-																<td>Address</td>
-																<td>TTL</td>
-																<td>Class</td>
-																<td>Preference</td>
-															</thead>
-															<tbody>
-																{% for nameserver in history.domain.domain_info.nameserver_record.all %}
-																<tr>
-																	<td><span class="badge badge-soft-primary me-1 ms-1">{{ nameserver.type}}</span></td>
-																	<td>{{nameserver.hostname}}</td>
-																	<td>{{nameserver.address}}</td>
-																	<td>{{nameserver.ttl}}</td>
-																	<td>{{nameserver.ns_class}}</td>
-																	<td>{% if nameserver.preference %}{{nameserver.preference}}{% endif %}</td>
-																</tr>
-																{% endfor %}
-															</tbody>
-														</table>
-														{% else %}
-														No DNS history records found.
-														{% endif %}
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-5 col-lg-5 col-12">
-								<div class="card" style="height: 95%">
-									<div class="card-body">
-										<h4 class="header-title mb-0">HTTP Status Breakdown</h4>
-										<div id="http_status_chart" class="apex-charts"></div>
-									</div>
-								</div>
-							</div>
-							{% if history.vulnerability_scan %}
-							<div class="col-xl-5 col-lg-5 col-12">
-								<div class="card" style="height: 95%">
-									<div class="card-body">
-										<h4 class="header-title mb-0">Vulnerability Breakdown by Severity</h4>
-										<div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
-											<div class="row mt-3 text-center">
-												<div class="col-3">
-													<p class="text-critical font-15 mb-1 text-truncate">Critical</p>
-													<h4 class="text-critical">{{critical_count}}</h4>
-												</div>
-												<div class="col-3">
-													<p class="text-danger font-15 mb-1 text-truncate">High</p>
-													<h4 class="text-danger">{{high_count}}</h4>
-												</div>
-												<div class="col-3">
-													<p class="text-warning font-15 mb-1 text-truncate">Medium</p>
-													<h4 class="text-warning">{{medium_count}}</h4>
-												</div>
-												<div class="col-3">
-													<p class="text-low font-15 mb-1 text-truncate">Low</p>
-													<h4 class="text-low">{{low_count}}</h4>
-												</div>
-											</div>
-											<div id="vulnerability-pie-chart" class="apex-charts"></div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-7 col-lg-7 col-12">
-								<div class="card" style="height: 95%">
-									<div class="card-body">
-										<h4 class="header-title mb-3">Vulnerability Highlights</h4>
-										<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
-											<table class="table table-borderless table-nowrap table-hover table-centered m-0">
-												<thead class="table-dark">
-													<tr>
-														<th style="width: 40%">Vulnerability</th>
-														<th style="width: 10%">Severity</th>
-														<th style="width: 50%">Vulnerable URL</th>
+									</div> <!-- end col-->
+									<div class="col-sm-9">
+										<div class="tab-content pt-0">
+											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												<h4 class="header-title">Domain Information</h4>
+												<table class="domain_details_table table table-hover table-borderless">
+													<tr style="display: none">
+														<th>&nbsp;</th>
+														<th>&nbsp;</th>
 													</tr>
-												</thead>
-												<tbody>
-													{% for vulnerability in vulnerability_list %}
 													<tr>
-														<td>{{vulnerability.name}}<br><small class="text-muted">Discovered: {{vulnerability.discovered_date|naturaltime}}</small></td>
-														<td>{% if vulnerability.severity == 0 %}
-															<span class='badge badge-soft-info'>Info</span>
-															{% elif vulnerability.severity == 1 %}
-															<span class='badge badge-soft-low'>Low</span>
-															{% elif vulnerability.severity == 2 %}
-															<span class='badge badge-soft-warning'>Medium</span>
-															{% elif vulnerability.severity == 3 %}
-															<span class='badge badge-soft-danger'>High</span>
-															{% elif vulnerability.severity == 4 %}
-															<span class='badge badge-critical'>Critical</span>
-															{% endif %}
-														</td>
-														<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+														<td>Domain Name</td>
+														<td>{{history.domain.name}}</td>
 													</tr>
-													{% empty %}
-													Not enough data.
-													{% endfor %}
-												</tbody>
-											</table>
-										</div>
-									</div>
-								</div>
-							</div>
-							{% endif %}
-							<div class="col-xl-6 col-lg-6 col-12">
-								<div class="card">
-									<div class="card-body">
-										<h4 class="header-title mb-0"><span id="important-count"><span class="spinner-border spinner-border-sm me-1"></span></span>Important Subdomains</h4>
-										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
-											<div id="important-subdomains-list">
+													<tr>
+														<td>Domain age</td>
+														<td>{{history.domain.domain_info.domain_age}} {{history.domain.domain_info.date_created}}</td>
+													</tr>
+													<tr>
+														<td>IP Address</td>
+														<td>{{history.domain.domain_info.ip_address}}</td>
+													</tr>
+													<tr>
+														<td>IP Geolocation</td>
+														<td>{% if history.domain.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}">{% endif %} {{history.domain.domain_info.geolocation}}</td>
+													</tr>
+												</table>
+												<h4 class="header-title mt-3">Registrant Information</h4>
+												<table class="domain_details_table table table-hover table-borderless">
+													<tr style="display: none">
+														<th>&nbsp;</th>
+														<th>&nbsp;</th>
+													</tr>
+													<tr>
+														<td>Name</td>
+														<td>{{history.domain.domain_info.whois.registrant.name}}</td>
+													</tr>
+													<tr>
+														<td>Organization</td>
+														<td>{{history.domain.domain_info.whois.registrant.organization}}</td>
+													</tr>
+													<tr>
+														<td>Address</td>
+														<td>{% if history.domain.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}">{% endif %} {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
+													</tr>
+													<tr>
+														<td>Phone Numbers</td>
+														<td>{{history.domain.domain_info.whois.registrant.phone_number}}</td>
+													</tr>
+													<tr>
+														<td>Fax</td>
+														<td>{{history.domain.domain_info.whois.registrant.fax}}</td>
+													</tr>
+												</table>
 											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-6 col-lg-6 col-12">
-								<div class="card">
-									<div class="card-body">
-										<h4 class="header-title mb-0"><span id="tasks-count"><span class="spinner-border spinner-border-sm me-1"></span></span>
-											Recon Note/Todo
-											<span class="text-info float-end" data-toggle="tooltip" data-placement="top" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
-												<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-											</span>
-										</h4>
-										<div class="p-2">
-											<div style="max-height: 210px;min-height: 210px;" data-simplebar>
-												<ul class="list-group list-group-flush todo-list" id="todo-list"></ul>
+											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
+												<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
 											</div>
-										</div>
-										<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
-											<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-												<div class="modal-content">
-													<div class="modal-body">
-														<div class="compose-box">
-															<div class="compose-content" id="addTaskModalTitle">
-																<h4 class="header-title">Add Recon Todo</h4>
-																<form>
-																	<input type="hidden" name="summary_identifier" value="{{history.id}}" id="summary_identifier_val">
-
-																	<div class="mt-2">
-																		<label for="todoTitle" class="form-label">Todo Title</label>
-																		<input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
-																	</div>
-
-																	<div class="mt-2">
-																		<label for="todoSubdomainDropdown" class="form-label">Select Subdomain (Optional)</label>
-																		<span id="selectedSubdomainCount"></span>
-																		<select class="w-100 form-control" data-toggle="select2" data-width="100%" id="todoSubdomainDropdown">
-																			<option>Choose Subdomain...</option>
-																		</select>
-																	</div>
-
-																	<div class="">
-																		<label for="todoDescription" class="form-label">Todo Description (Optional)</label>
-																		<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Todo Description"></textarea>
-																	</div>
-																</form>
-															</div>
-														</div>
-													</div>
-													<div class="modal-footer">
-														<button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
-													</div>
-												</div>
+											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if history.domain.domain_info.nameserver_history.all %}
+												<table class="table table-striped mb-0">
+													<thead class="table-dark">
+														<td>Date</td>
+														<td>Action</td>
+														<td>NameServer</td>
+													</thead>
+													<tbody>
+														{% for history in history.domain.domain_info.nameserver_history.all %}
+														<tr>
+															<td>{{history.date}}</td>
+															<td>{{history.action}}</td>
+															<td>{{history.server}}</td>
+														</tr>
+														{% endfor %}
+													</tbody>
+												</table>
+												{% else %}
+												No DNS history records found.
+												{% endif %}
 											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-12">
-								<div class="card">
-									<div class="card-body">
-										<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> IP Addresses</h4>
-										<span class="text-warning float-end">*IP Addresses highlighted with yellow are CDN IP</span>
-										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
-											<div id="ip-address" class="mt-2">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-12">
-								<div class="card">
-									<div class="card-body">
-										<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Ports</h4>
-										<span class="text-danger float-end">*Ports highlighted with red are uncommon Ports</span>
-										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
-											<div id="ports" class="mt-2">
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="col-xl-4 col-lg-4 col-12">
-								<div class="card">
-									<div class="card-body">
-										<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Technologies</h4>
-										<span class="text-warning float-end">&nbsp;</span>
-										<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
-											<div id="technologies" class="mt-2">
+											<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if history.domain.domain_info.nameserver_record.all %}
+												<table class="table table-striped mb-0">
+													<thead class="table-dark">
+														<td>Type</td>
+														<td>Hostname</td>
+														<td>Address</td>
+														<td>TTL</td>
+														<td>Class</td>
+														<td>Preference</td>
+													</thead>
+													<tbody>
+														{% for nameserver in history.domain.domain_info.nameserver_record.all %}
+														<tr>
+															<td><span class="badge badge-soft-primary me-1 ms-1">{{ nameserver.type}}</span></td>
+															<td>{{nameserver.hostname}}</td>
+															<td>{{nameserver.address}}</td>
+															<td>{{nameserver.ttl}}</td>
+															<td>{{nameserver.ns_class}}</td>
+															<td>{% if nameserver.preference %}{{nameserver.preference}}{% endif %}</td>
+														</tr>
+														{% endfor %}
+													</tbody>
+												</table>
+												{% else %}
+												No DNS history records found.
+												{% endif %}
 											</div>
 										</div>
 									</div>
@@ -618,6 +442,240 @@ Scan Findings
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-5 col-lg-5 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<h4 class="header-title mb-0">HTTP Status Breakdown</h4>
+								<div id="http_status_chart" class="apex-charts"></div>
+							</div>
+						</div>
+					</div>
+					{% if history.vulnerability_scan %}
+					<div class="col-xl-5 col-lg-5 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<h4 class="header-title mb-0">Vulnerability Breakdown by Severity</h4>
+								<div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
+									<div class="row mt-3 text-center">
+										<div class="col-3">
+											<p class="text-critical font-15 mb-1 text-truncate">Critical</p>
+											<h4 class="text-critical">{{critical_count}}</h4>
+										</div>
+										<div class="col-3">
+											<p class="text-danger font-15 mb-1 text-truncate">High</p>
+											<h4 class="text-danger">{{high_count}}</h4>
+										</div>
+										<div class="col-3">
+											<p class="text-warning font-15 mb-1 text-truncate">Medium</p>
+											<h4 class="text-warning">{{medium_count}}</h4>
+										</div>
+										<div class="col-3">
+											<p class="text-low font-15 mb-1 text-truncate">Low</p>
+											<h4 class="text-low">{{low_count}}</h4>
+										</div>
+									</div>
+									<div id="vulnerability-pie-chart" class="apex-charts"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-7 col-lg-7 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<h4 class="header-title mb-3">Vulnerability Highlights</h4>
+								<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+									<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+										<thead class="table-dark">
+											<tr>
+												<th style="width: 40%">Vulnerability</th>
+												<th style="width: 10%">Severity</th>
+												<th style="width: 50%">Vulnerable URL</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for vulnerability in vulnerability_list %}
+											<tr>
+												<td>{{vulnerability.name}}<br><small class="text-muted">Discovered: {{vulnerability.discovered_date|naturaltime}}</small></td>
+												<td>{% if vulnerability.severity == 0 %}
+													<span class='badge badge-soft-info'>Info</span>
+													{% elif vulnerability.severity == 1 %}
+													<span class='badge badge-soft-low'>Low</span>
+													{% elif vulnerability.severity == 2 %}
+													<span class='badge badge-soft-warning'>Medium</span>
+													{% elif vulnerability.severity == 3 %}
+													<span class='badge badge-soft-danger'>High</span>
+													{% elif vulnerability.severity == 4 %}
+													<span class='badge badge-critical'>Critical</span>
+													{% endif %}
+												</td>
+												<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
+											</tr>
+											{% empty %}
+											Not enough data.
+											{% endfor %}
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endif %}
+					<div class="col-xl-6 col-lg-6 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="important-count"><span class="spinner-border spinner-border-sm me-1"></span></span>Important Subdomains</h4>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="important-subdomains-list">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="tasks-count"><span class="spinner-border spinner-border-sm me-1"></span></span>
+									Recon Note/Todo
+									<span class="text-primary float-end" data-toggle="tooltip" data-placement="top" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+									</span>
+								</h4>
+								<div class="p-2">
+									<div style="max-height: 210px;min-height: 210px;" data-simplebar>
+										<ul class="list-group list-group-flush todo-list" id="todo-list"></ul>
+									</div>
+								</div>
+								<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+										<div class="modal-content">
+											<div class="modal-body">
+												<div class="compose-box">
+													<div class="compose-content" id="addTaskModalTitle">
+														<h4 class="header-title">Add Recon Todo</h4>
+														<form>
+															<input type="hidden" name="summary_identifier" value="{{history.id}}" id="summary_identifier_val">
+
+															<div class="mt-2">
+																<label for="todoTitle" class="form-label">Todo Title</label>
+																<input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+															</div>
+
+															<div class="mt-2">
+																<label for="todoSubdomainDropdown" class="form-label">Select Subdomain (Optional)</label>
+																<span id="selectedSubdomainCount"></span>
+																<select class="w-100 form-control" data-toggle="select2" data-width="100%" id="todoSubdomainDropdown">
+																	<option>Choose Subdomain...</option>
+																</select>
+															</div>
+
+															<div class="">
+																<label for="todoDescription" class="form-label">Todo Description (Optional)</label>
+																<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Todo Description"></textarea>
+															</div>
+														</form>
+													</div>
+												</div>
+											</div>
+											<div class="modal-footer">
+												<button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> IP Addresses</h4>
+								<span class="text-warning float-end">*IP Addresses highlighted with yellow are CDN IP</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="ip-address" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Ports</h4>
+								<span class="text-danger float-end">*Ports highlighted with red are uncommon Ports</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="ports" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Technologies</h4>
+								<span class="text-warning float-end">&nbsp;</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="technologies" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="tab-pane show active" id="subdomain-tab">
+	<div class="row justify-content-center">
+		<div class="col-xl-8 col-lg-8 col-sm-8">
+			<div class="wrapper">
+				<div class="search-input">
+					<a href="" target="_blank" hidden></a>
+					<div class="input-group">
+						<input type="text" class="form-control" placeholder="Filter Subdomains" aria-label="Filter Subdomains" id="subdomains-search">
+						<div class="input-group-append">
+							<button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+						</div>
+					</div>
+					<div class="autocom-box mt-container mx-auto" id="autocom-box">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row mt-4">
+		<div class="col-12">
+			<div class="card">
+				<div class="card-body">
+					<table id="subdomain_scan_results" class="table style-3 table-hover">
+						<thead>
+							<tr>
+								<th class="checkbox-column">Status</th>
+								<th>Subdomain</th>
+								<th class="text-center">Endpoints</th>
+								<th class="text-center">Vulnerabilities</th>
+								<th>Status</th>
+								<th class="text-center">Title</th>
+								<th>IP Address</th>
+								<th>Ports</th>
+								<th>Content Length</th>
+								<th>Screenshot</th>
+								<th>Response Time</th>
+								<th>Technology</th>
+								<th>Checked</th>
+								<th>HTTP URL</th>
+								<th>CNAME</th>
+								<th>is_interesting</th>
+								<th>Info</th>
+								<th>Low</th>
+								<th>Medium</th>
+								<th>High</th>
+								<th>Critical</th>
+								<th>Todos</th>
+								<th>Is Important</th>
+								<th>Webserver</th>
+								<th>Content Type</th>
+							</tr>
+						</thead>
+					</table>
 				</div>
 			</div>
 		</div>
@@ -633,9 +691,14 @@ Scan Findings
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
+<script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
+<script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function(){
 	// init
+	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#addTaskModal select').css('width', '100%');
 	$("#todoSubdomainDropdown").select2({
@@ -799,6 +862,306 @@ $(document).ready(function(){
 		get_technologies({{scan_history_id}});
 		get_ports({{scan_history_id}});
 
+		// if clicked on pills get subdomains
+		// $("#pills-subdomain-tab").click(function() {
+		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
+			"destroy": true,
+			"processing": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+			},
+			"stripeClasses": [],
+			"lengthMenu": [50, 100, 500, 1000],
+			"pageLength": 50,
+			'serverSide': true,
+			"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables',
+			"order": [[ 8, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'endpoint_count'},
+				{'data': 'endpoint_count'},
+				{'data': 'http_status'},
+				{'data': 'page_title'},
+				{'data': 'ip_addresses'},
+				{'data': 'ip_addresses'},
+				{'data': 'content_length', 'searchable': false},
+				{'data': 'screenshot_path', 'searchable': false},
+				{'data': 'response_time'},
+				{'data': 'technologies'},
+				{'data': 'checked'},
+				{'data': 'http_url'},
+				{'data': 'cname'},
+				{'data': 'is_interesting'},
+				{'data': 'info_count'},
+				{'data': 'low_count'},
+				{'data': 'medium_count'},
+				{'data': 'high_count'},
+				{'data': 'critical_count'},
+				{'data': 'todos_count'},
+				{'data': 'is_important'},
+				{'data': 'webserver'},
+				{'data': 'content_type'},
+			],
+			"columnDefs": [
+				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
+				{
+					"targets": [ 2, 3, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+					"visible": false,
+					"searchable": false,
+				},
+				{
+					"targets": [ 11, 13, 22, 23, 24 ],
+					"visible": false,
+					"searchable": true,
+				},
+				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+				// checkbox
+				{
+					"render": function ( data, type, row ) {
+						if(row['checked']){
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+						else{
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+					},
+					"targets": 0,
+				},
+				// subdomain Name
+				{
+					"render": function ( data, type, row ) {
+						badges = '';
+						tech_badge = '';
+						interesting_badge = '';
+						content_type = '';
+						web_server = '';
+						if (row['technologies']){
+							tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id={{scan_history_id}});
+						}
+						if(row['is_interesting'])
+						{
+							interesting_badge = "<span class='m-1 badge badge-soft-danger'>Interesting</span>"
+						}
+
+						if (row['content_type']) {
+							content_type = `<span class='m-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span>`;
+						}
+
+						if (row['webserver']) {
+							web_server = `<span class='m-1 badge badge-soft-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+						}
+
+						badges =   interesting_badge + '</br>';
+
+						todo_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7515a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
+						todo_badge = '';
+
+						if (row['todos_count']) {
+							todo_badge = `<span class="text-danger badge badge-link badge-soft-danger m-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+						}
+
+						important_badge = '';
+						if (row['is_important']) {
+							important_badge = `
+							<span id="important_subdomain_${row['id']}" class="text-danger bs-tooltip" data-toggle="tooltip" data-placement="top" title="Important Subdomain">
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-triangle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+							</span>
+							`;
+						}
+
+						endpoint_count_badge = '';
+						if (row['endpoint_count']) {
+							endpoint_count_badge = `<span class="pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${row['endpoint_count']}</span>`
+						}
+
+						vuln_count_badge = '';
+						info_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
+						low_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
+						medium_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
+						high_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
+						critical_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
+						vuln_count_badge =  (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
+
+						action_icons = `
+						<br />
+						<div class="float-left subdomain-table-action-icons mt-2">
+						<span class="m-1">
+						<a href="javascript:;" data-clipboard-action="copy" class="badge-link text-primary copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
+						</a>
+						<span class="m-1 badge-link text-success bs-tooltip" title="Add Recon Todo/Note" onclick="add_task_for_subdomain(${row['id']}, '${data}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>
+						<span class="m-1 badge-link text-danger bs-tooltip" title="Mark Important" onclick="mark_important_subdomain(${row['id']})">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+						</span>
+						</div>
+						`;
+
+						tech_badge += content_type;
+						tech_badge += web_server;
+
+						if (row['http_url']) {
+							if (row['cname']) {
+								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data  +`</span></a>`+ endpoint_count_badge + vuln_count_badge +`<br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge + action_icons + `</div>`;
+							}
+							return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data + `</span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + action_icons + `</div>`;
+						}
+						return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>`+ important_badge + data + `</span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + action_icons + `</div>`;
+					},
+					"targets": 1
+				},
+				// http_status
+				{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge bg-success'>"+data+"</span>";
+						}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge bg-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge bg-danger'>`+data+`</span>`;
+					},
+					"targets": 4,
+				},
+				// page title
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return htmlEncode(data);
+						}
+						return "";
+					},
+					"targets": 5,
+				},
+				// ip address
+				{
+					"render": function ( data, type, row ) {
+						ip_badge = ''
+						if (data)
+						{
+							Object.entries(data).forEach(([key, value]) => {
+								if (value['is_cdn']) {
+									ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+								}
+								else{
+									ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', {{scan_history_id}})">${value.address}</span>`
+								}
+							});
+							return ip_badge;
+						}
+						return "";
+					},
+					"targets": 6,
+				},
+				// open ports
+				{
+					"render": function ( data, type, row ) {
+						port_badge = ''
+						if (data){
+							for (ip in data){
+								ports = data[ip]['ports']
+								for (port in ports){
+									port_obj = data[ip]['ports'][port]
+									badge_color = port_obj['is_uncommon'] ? 'danger' : 'primary';
+									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+									port_badge += `<span class='m-1 badge badge-soft-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, {{scan_history_id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
+								}
+							}
+							return port_badge;
+						}
+						return "";
+					},
+					"targets": 7,
+				},
+				// screenshot
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							//return lightbox with caption as http link
+							return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+						}
+						return "";
+					},
+					"targets": 9,
+				},
+				// response_time
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return get_response_time_text(data);
+						}
+						return "";
+					},
+					"targets": 10,
+				},
+			],
+			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+			"<'table-responsive'tr>" +
+			"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			drawCallback: function () {
+				$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+				$('.bs-tooltip').tooltip();
+				// get screenshot size from localStorage
+				var elements = document.getElementsByClassName("screenshot");
+				screenshot_size = localStorage.getItem('screenshotSize');
+				if (screenshot_size){
+					for (index = 0; index < elements.length; ++index) {
+						elements[index].setAttribute("height", screenshot_size);
+						elements[index].setAttribute("width", screenshot_size);
+					}
+				}
+				else{
+					for (index = 0; index < elements.length; ++index) {
+						elements[index].setAttribute("height", "200px");
+						elements[index].setAttribute("width", "200px");
+					}
+				}
+			},
+			'createdRow': function( row, data, dataIndex ) {
+				if (data['checked']){
+					$(row).addClass('table-secondary text-strike');
+				}
+			},
+		});
+
+		$('#subdomain-search-button').click(function () {
+			subdomain_datatables.search($("#subdomains-search").val()).draw() ;
+		});
+
+		// if port scanning is not done, remove port row
+		var column = subdomain_datatables.column('7');
+		{% if history.port_scan %}
+		column.visible(true);
+		{% else %}
+		column.visible(false);
+		{% endif %}
+
+		// });
+
 	});
+
+	function subdomain_status_change(checkbox, id)
+	{
+		if (checkbox.checked) {
+			checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+		}
+		else {
+			checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+			checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
+		}
+		change_subdomain_status(id);
+	}
+
 	</script>
 	{% endblock page_level_script %}
