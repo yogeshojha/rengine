@@ -221,10 +221,10 @@ function parse_comma_values_into_span(data, color, outline=null)
 {
 	if(outline)
 	{
-		var badge = `<span class='badge badge-pill outline-badge-`+color+` m-1'>`;
+		var badge = `<span class='badge badge-soft-`+color+` m-1'>`;
 	}
 	else {
-		var badge = `<span class='badge badge-pill badge-`+color+` m-1'>`;
+		var badge = `<span class='badge badge-soft-`+color+` m-1'>`;
 	}
 	var data_with_span ="";
 	data.split(/\s*,\s*/).forEach(function(split_vals) {
@@ -392,10 +392,10 @@ function parse_technology(data, color, outline=null, scan_id=null)
 {
 	if(outline)
 	{
-		var badge = `<span class='badge-link badge badge-pill outline-badge-`+color+` m-1'`;
+		var badge = `<span class='badge-link badge badge-soft-`+color+` m-1'`;
 	}
 	else {
-		var badge = `<span class='badge-link badge badge-pill badge-`+color+` m-1'`;
+		var badge = `<span class='badge-link badge badge-soft-`+color+` m-1'`;
 	}
 	var data_with_span ="";
 	for (var key in data){
@@ -413,10 +413,10 @@ function parse_technology(data, color, outline=null, scan_id=null)
 function parse_ip(data, cdn){
 	if (cdn)
 	{
-		var badge = `<span class='badge badge-pill outline-badge-warning m-1 bs-tooltip' title="CDN IP Address">`;
+		var badge = `<span class='badge badge-soft-warning m-1 bs-tooltip' title="CDN IP Address">`;
 	}
 	else{
-		var badge = `<span class='badge badge-pill outline-badge-info m-1'>`;
+		var badge = `<span class='badge badge-soft-primary m-1'>`;
 	}
 	var data_with_span ="";
 	data.split(/\s*,\s*/).forEach(function(split_vals) {

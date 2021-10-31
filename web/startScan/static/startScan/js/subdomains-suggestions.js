@@ -2,7 +2,7 @@ var searchWrapper = document.querySelector(".search-input");
 var inputBox = searchWrapper.querySelector("input");
 var suggBox = searchWrapper.querySelector(".autocom-box");
 var succestion_icon = searchWrapper.querySelector(".suggestion-icon");
-var filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
+var filter_icon = `<i class="fe-filter"></i>`;
 
 var col_suggestions = [
   "name",
@@ -41,28 +41,28 @@ inputBox.onclick = (event) => {
   emptyArray = emptyArray.map((data)=>{
     switch (data) {
       case "=":
-      title = `Filters Subdomain <span class="badge badge-success">Equals</span> Some Value`;
+      title = `Filters Subdomain <span class="badge badge-soft-success">Equals</span> Some Value`;
       break;
       case "!":
-      title = `Filters Subdomain <span class="badge badge-danger">Not Equals</span> Some Value`;
+      title = `Filters Subdomain <span class="badge badge-soft-danger">Not Equals</span> Some Value`;
       break;
       case ">":
-      title = `Filters Subdomain <span class="badge badge-dark">Greater than</span> Some Value`;
+      title = `Filters Subdomain <span class="badge badge-soft-blue">Greater than</span> Some Value`;
       break;
       case "<":
-      title = `Filters Subdomain <span class="badge badge-dark">Less than</span> Some Value`;
+      title = `Filters Subdomain <span class="badge badge-soft-blue">Less than</span> Some Value`;
       break;
       case "&":
-      title = `<span class="badge badge-danger">& and</span> Match Subdomain if <span class="badge badge-danger">all args</span> are true`;
+      title = `<span class="badge badge-soft-danger">& and</span> Match Subdomain if <span class="badge badge-soft-danger">all args</span> are true`;
       break;
       case "|":
-      title = `<span class="badge badge-warning">| or</span> Match Subdomain if <span class="badge badge-warning">either of one</span> is true`;
+      title = `<span class="badge badge-soft-warning">| or</span> Match Subdomain if <span class="badge badge-soft-warning">either of one</span> is true`;
       break;
       default:
-      badge_color = "info";
-      title = `Filter subdomain that contains <span class="badge badge-dark">${data}</span>`;
+      badge_color = "primary";
+      title = `Filter subdomain that contains <span class="badge badge-soft-blue">${data}</span>`;
     }
-    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${filter_icon}</span>${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
+    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${filter_icon}</span>&nbsp;${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
   });
 
   searchWrapper.classList.add("active");

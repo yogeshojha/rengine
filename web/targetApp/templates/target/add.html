@@ -194,123 +194,126 @@ Add or Import Targets
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
-var add_multiple_targets_btn = document.getElementById("add-multiple-targets");
-add_multiple_targets_btn.disabled = true;
-$('#addTargets').on('change keyup',function(){
-  var text = $("#addTargets").val();
-  var lines = text.split(/\r|\r\n|\n/);
-  var count = lines.length;
-  add_multiple_targets_btn.innerHTML = `Add ${count} Targets`;
-  if (!count) {
+  $(document).ready(function(){
+    var add_multiple_targets_btn = document.getElementById("add-multiple-targets");
     add_multiple_targets_btn.disabled = true;
-  }
-  else{
-    add_multiple_targets_btn.disabled = false;
-  }
-});
+    $('#addTargets').on('change keyup',function(){
+      var text = $("#addTargets").val();
+      var lines = text.split(/\r|\r\n|\n/);
+      var count = lines.length;
+      add_multiple_targets_btn.innerHTML = `Add ${count} Targets`;
+      if (!count) {
+        add_multiple_targets_btn.disabled = true;
+      }
+      else{
+        add_multiple_targets_btn.disabled = false;
+      }
+    });
 
-$('#ip_address').on('change keyup',function(){
-  var resolve_ip_button = document.getElementById("resolve_ip_button");
-  var ip_addr = $("#ip_address").val();
-  if (/^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/.test(ip_addr)) {
-    resolve_ip_button.disabled = false;
-  }
-  else {
-    resolve_ip_button.disabled = true;
-  }
-});
+    $('#ip_address').on('change keyup',function(){
+      var resolve_ip_button = document.getElementById("resolve_ip_button");
+      var ip_addr = $("#ip_address").val();
+      if (/^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/.test(ip_addr)) {
+        resolve_ip_button.disabled = false;
+      }
+      else {
+        resolve_ip_button.disabled = true;
+      }
+    });
 
-// hide all checkbox by default
-$("#all_domains_checkbox").hide();
-$("#resolve_ip_button").click(function(){
-  // get ip address
-  var ip_addr = $("#ip_address").val();
-  $('#resolved_domains_div').empty();
-  swal.fire({
-    title: `Fetching domains`,
-    text: `Please wait while we fetch domains associated with IP address or CIDR ${ip_address.value}`,
-    padding: '2em',
-    onOpen: function() {
-      swal.showLoading()
-      return fetch(`/api/tools/ip_to_domain/?format=json&ip_address=${ip_address.value}`, {
-        method: 'GET',
-        credentials: "same-origin",
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken")
-        }
-      })
-      .then(function(response) {
-        return response.json();
-      }).then(function(json_data) {
-        if (json_data['status']) {
-          // #resolved_domains_div
-          $("#all_domains_checkbox").show();
-          $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
-          $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
-          $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
-          for (var domain in json_data['domains']) {
-            $('#domains_checkbox').append(`
-              <div class="col-xl-2 col-md-4 col-sm-6 col-12">
-              <div class="form-check">
-              <input type="checkbox" class="form-check-input resolved_ip_domains" name="resolved_ip_domains" id="${json_data['domains'][domain]}" value="${json_data['domains'][domain]}">
-              <label class="form-check-label" for="${json_data['domains'][domain]}">${json_data['domains'][domain]}</label>
-              </div>
-              </div>`
-            );
-          }
-          swal.close();
-          // resolved_ip_domains if any is checked, then only enable add button
-          $(".resolved_ip_domains").change(function(){
-            var add_multiple_targets_btn = document.getElementById("add-ip-target");
-            var checked_count = $('.resolved_ip_domains:checked').length;
-            if (checked_count > 0) {
-              add_multiple_targets_btn.disabled = false;
-              $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+    // hide all checkbox by default
+    $("#all_domains_checkbox").hide();
+    $("#resolve_ip_button").click(function(){
+      // get ip address
+      var ip_addr = $("#ip_address").val();
+      $('#resolved_domains_div').empty();
+      swal.fire({
+        title: `Fetching domains`,
+        text: `Please wait while we fetch domains associated with IP address or CIDR ${ip_address.value}`,
+        padding: '2em',
+        onOpen: function() {
+          swal.showLoading()
+          return fetch(`/api/tools/ip_to_domain/?format=json&ip_address=${ip_address.value}`, {
+            method: 'GET',
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken")
+            }
+          })
+          .then(function(response) {
+            return response.json();
+          }).then(function(json_data) {
+            if (json_data['status']) {
+              // #resolved_domains_div
+              $("#all_domains_checkbox").show();
+              $('#resolved_domains_div').append(`<b class='text-info'>${json_data['domains'].length} domains associated with IP Address ${ip_address.value}</b></br>`);
+              $('#resolved_domains_div').append(`<b>Please select the domains to import.</b>`);
+              $('#resolved_domains_div').append(`<div id='domains_checkbox' class='mt-2 row'></div>`);
+              for (var domain in json_data['domains']) {
+                $('#domains_checkbox').append(`
+                <div class="col-xl-2 col-md-4 col-sm-6 col-12">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input resolved_ip_domains" name="resolved_ip_domains" id="${json_data['domains'][domain]}" value="${json_data['domains'][domain]}">
+                    <label class="form-check-label" for="${json_data['domains'][domain]}">${json_data['domains'][domain]}</label>
+                  </div>
+                </div>`
+                );
+              }
+              swal.close();
+              // resolved_ip_domains if any is checked, then only enable add button
+              $(".resolved_ip_domains").change(function(){
+                var add_multiple_targets_btn = document.getElementById("add-ip-target");
+                var checked_count = $('.resolved_ip_domains:checked').length;
+                if (checked_count > 0) {
+                  add_multiple_targets_btn.disabled = false;
+                  $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+                }
+                else{
+                  add_multiple_targets_btn.disabled = true;
+                }
+              });
             }
             else{
-              add_multiple_targets_btn.disabled = true;
+              $("#all_domains_checkbox").hide();
+              swal.close();
+              swal({
+                title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
+                type: 'error',
+                padding: '2em'
+              })
             }
-          });
-        }
-        else{
-          $("#all_domains_checkbox").hide();
-          swal.close();
-          swal({
-            title: `Sorry, no domains associated with IP Address ${ip_address.value}!`,
-            type: 'error',
-            padding: '2em'
+          })
+          .catch(function() {
+            swal.insertQueueStep({
+              type: 'error',
+              title: 'Oops! Unable to fetch domains for this IP!'
+            })
           })
         }
-      })
-      .catch(function() {
-        swal.insertQueueStep({
-          type: 'error',
-          title: 'Oops! Unable to fetch domains for this IP!'
-        })
-      })
-    }
+      });
+    });
+
+    // if select all checkbox is checked, select all domains
+    $("#select_all_ip_domains").click(function () {
+      $(".resolved_ip_domains").prop('checked', $(this).prop('checked'));
+      document.getElementById("add-ip-target").disabled = false;
+      var checked_count = $('.resolved_ip_domains:checked').length;
+      $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
+    });
+
+    $('#domainName').on('change keyup',function(){
+      if ($('#domainName').val().length) {
+        $("#add-single-target").removeAttr("disabled");
+      }
+      else{
+        $("#add-single-target").prop("disabled", true);
+      }
+    });
   });
-});
 
-// if select all checkbox is checked, select all domains
-$("#select_all_ip_domains").click(function () {
-  $(".resolved_ip_domains").prop('checked', $(this).prop('checked'));
-  document.getElementById("add-ip-target").disabled = false;
-  var checked_count = $('.resolved_ip_domains:checked').length;
-  $('#add_ip_target_btn').html(`Add ${checked_count} Targets`);
-});
+  function showname (file, id) {
+    $(id).html('Selected file: ' + file.files.item(0).name);
+  };
 
-$('#domainName').on('change keyup',function(){
-  if ($('#domainName').val().length) {
-    $("#add-single-target").removeAttr("disabled");
-  }
-  else{
-    $("#add-single-target").prop("disabled", true);
-  }
-});
-
-function showname (file, id) {
-  $(id).html('Selected file: ' + file.files.item(0).name);
-};
 </script>
 {% endblock page_level_script %}
