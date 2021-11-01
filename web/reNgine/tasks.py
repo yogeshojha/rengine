@@ -1335,8 +1335,10 @@ def vulnerability_scan(
                             vulnerability.description = json_st['info']['description']
                         if 'reference' in json_st['info']:
                             vulnerability.reference = json_st['info']['reference']
-                        if 'matched' in json_st:
+                        if 'matched' in json_st:  # TODO remove in rengine 1.1. 'matched' isn't used in nuclei 2.5.3
                             vulnerability.http_url = json_st['matched']
+                        if 'matched-at' in json_st:
+                            vulnerability.http_url = json_st['matched-at']
                         if 'templateID' in json_st:
                             vulnerability.template_used = json_st['templateID']
                         if 'description' in json_st:
