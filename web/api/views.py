@@ -90,7 +90,7 @@ class ListTodoNotes(APIView):
         todo_id = req.query_params.get('todo_id')
         subdomain_id = req.query_params.get('subdomain_id')
         if target_id:
-            notes = notes.filter(scan_history__in=ScanHistory.objects.filter(domain__id=target_id))
+            notes = notes.filter(scan_history__domain__id=target_id)
         elif scan_id:
             notes = notes.filter(scan_history__id=scan_id)
         if todo_id:
