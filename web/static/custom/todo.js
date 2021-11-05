@@ -90,14 +90,15 @@ function change_todo_priority(todo_id, imp_type){
 
 function list_subdomain_todos(subdomain_id, subdomain_name){
   $('.modal-title').html(`Todos for subdomain ${subdomain_name}`);
-  $('#exampleModal').modal('show');
-  $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('#modal_dialog').modal('show');
+  $('#modal-content').empty();
+   $('#modal-footer').empty();
+  $('#modal-content').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(`/api/listTodoNotes/?subdomain_id=${subdomain_id}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').empty();
-    $('#modal-text-content').append(`<ul id="todo-modal-content-ul"></ul>`);
+    $('#modal-content').empty();
+    $('#modal-content').append(`<ul id="todo-modal-content-ul"></ul>`);
     for (todo in data['notes']){
       todo_obj = data['notes'][todo];
       important_badge = '';
@@ -125,7 +126,7 @@ function list_subdomain_todos(subdomain_id, subdomain_name){
 }
 
 function get_task_details(todo_id){
-  $('#exampleModal').modal('show');
+  $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
