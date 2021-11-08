@@ -66,18 +66,19 @@ Add Organization
 {% block page_level_script %}
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script type="text/javascript">
-$(".tagging").select2({
-  tags: true,
-});
-$('select').select2({closeOnSelect: false}).on("change", function(e) {
-  var counter = $(".select2-selection__choice").length;
-  if (counter) {
-    $(':input[type="submit"]').prop('disabled', false);
-  }
-  else{
-    $(':input[type="submit"]').prop('disabled', true);
-  }
-
-});
+  $(document).ready(function(){
+    // $(".tagging").select2({
+    //   tags: true,
+    // });
+    $('select').select2({closeOnSelect: false}).on("change", function(e) {
+      var counter = $(".select2-selection__choice").length;
+      if (counter) {
+        $(':input[type="submit"]').prop('disabled', false);
+      }
+      else{
+        $(':input[type="submit"]').prop('disabled', true);
+      }
+    });
+  });
 </script>
 {% endblock page_level_script %}

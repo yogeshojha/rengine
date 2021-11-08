@@ -647,7 +647,7 @@ function get_screenshot(scan_id){
   gridzyElement.setAttribute('data-gridzy-spaceBetween', 10);
   gridzyElement.setAttribute('data-gridzy-desiredwidth', 350);
   gridzyElement.setAttribute('data-gridzySearchField', "#screenshot-search");
-  var interesting_badge = `<span class="m-1 float-end badge  badge-danger">Interesting</span>`;
+  var interesting_badge = `<span class="m-1 float-end badge  badge-soft-danger">Interesting</span>`;
   $.getJSON(`/api/listSubdomains/?scan_id=${scan_id}&no_page&only_screenshot`, function(data) {
     $("#screenshot-loader").remove();
     $("#filter-screenshot").show();
@@ -657,7 +657,13 @@ function get_screenshot(scan_id){
       // return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
       // currently lookup is supported only for http_status, page title & subdomain name,
       interesting_field = data[subdomain]['is_interesting'] ? 'interesting' : '';
-      search_field = `${data[subdomain]['page_title']} ${data[subdomain]['name']} ${data[subdomain]['http_status']} ${interesting_field}`;
+      var ips = data[subdomain]['ip_addresses'];
+      var ip_search_values = '';
+      for(var ip in ips){
+        ip_address = ips[ip]['address'];
+        ip_search_values += ip_address + ' ';
+      }
+      search_field = `${data[subdomain]['page_title']} ${data[subdomain]['name']} ${data[subdomain]['http_status']} ${ip_search_values} ${interesting_field}`;
       link.setAttribute('data-lightbox', 'screenshot-gallery')
       link.setAttribute('href', '/media/' + data[subdomain]['screenshot_path'])
       link.setAttribute('data-title', `<a target='_blank' href='`+data[subdomain]['http_url']+`'><h3 style="color:white">`+data[subdomain]['name']+`</h3></a>`);
@@ -684,7 +690,7 @@ function get_screenshot(scan_id){
       }
       page_title = data[subdomain]['page_title'] ? data[subdomain]['page_title'] + '</br>': '' ;
       subdomain_link = data[subdomain]['http_url'] ? `<a href="${data[subdomain]['http_url']}" target="_blank">${data[subdomain]['name']}</a>` : `<a href="https://${data[subdomain]['name']}" target="_blank">${data[subdomain]['name']}</a>`
-      http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-end badge  badge-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
+      http_status = data[subdomain]['http_status'] ? `<span class="m-1 float-end badge  badge-soft-${http_status_badge}">${data[subdomain]['http_status']}</span>` : '';
       figcaption.innerHTML = data[subdomain]['is_interesting'] ? page_title + subdomain_link + interesting_badge + http_status : page_title + subdomain_link + http_status;
       figure.appendChild(figcaption);
       link.appendChild(newImage);
@@ -708,7 +714,7 @@ function get_screenshot(scan_id){
       ips = data[subdomain]['ip_addresses']
       for(var ip in ips){
         ip_address = ips[ip]['address'];
-        filter_values += 'ip_' + ip_address + ' ';
+        filter_values += 'ip_' + ip_address.replace(/\./g,"_") + ' ';
         if (ip_array.indexOf(ip_address) === -1){
           ip_array.push(ip_address);
         }
@@ -792,66 +798,74 @@ function get_screenshot(scan_id){
       }
     }
 
-  });
+    $(".tagging").select2({
+      tags: true
+    });
+    // search functionality
+    var gridzyElements = document.querySelectorAll('.gridzySkinBlank[data-gridzySearchField]'),
+    pos = gridzyElements.length;
 
-  // search functionality
-  var gridzyElements = document.querySelectorAll('.gridzySkinBlank[data-gridzySearchField]'),
-  pos = gridzyElements.length;
+    while (pos--) {
+      (function(gridzyElement) {
+        var searchField = document.querySelector(gridzyElement.getAttribute('data-gridzySearchField'));
+        var gridzyInstance = gridzyElement.gridzy;
+        var gridzyItems = gridzyElement.children;
 
-  while (pos--) {
-    (function(gridzyElement) {
-      var searchField = document.querySelector(gridzyElement.getAttribute('data-gridzySearchField'));
-      var gridzyInstance = gridzyElement.gridzy;
-      var gridzyItems = gridzyElement.children;
+        if (searchField) {
+          searchField.addEventListener('input', search);
+        }
 
-      if (searchField) {
-        searchField.addEventListener('input', search);
-      }
+        function search() {
+          var pos = gridzyItems.length,
+          child,
+          itemContent,
+          found = false,
+          searchValue = searchField.value.toLowerCase();
 
-      function search() {
-        var pos = gridzyItems.length,
-        child,
-        itemContent,
-        found = false,
-        searchValue = searchField.value.toLowerCase();
-
-        if (searchValue) {
-          while (pos--) {
-            child = gridzyItems[pos];
-            itemContent = (child.getAttribute('data-gridzySearchText') || child.innerText).toLowerCase();
-            found = -1 < itemContent.search(searchValue);
-            child.classList[found ? 'add' : 'remove']('searchResult');
-          }
-          if (gridzyInstance.getOption('filter') !== '.searchResult') {
-            gridzyInstance.setOptions({filter:'.searchResult'});
-          }
-        } else {
-          while (pos--) {
-            gridzyItems[pos].classList.remove('searchResult');
-          }
-          if (gridzyInstance.getOption('filter') !== Gridzy.getDefaultOption('filter')) {
-            gridzyInstance.setOptions({filter:null});
+          if (searchValue) {
+            while (pos--) {
+              child = gridzyItems[pos];
+              itemContent = (child.getAttribute('data-gridzySearchText') || child.innerText).toLowerCase();
+              found = -1 < itemContent.search(searchValue);
+              child.classList[found ? 'add' : 'remove']('searchResult');
+            }
+            if (gridzyInstance.getOption('filter') !== '.searchResult') {
+              gridzyInstance.setOptions({filter:'.searchResult'});
+            }
+          } else {
+            while (pos--) {
+              gridzyItems[pos].classList.remove('searchResult');
+            }
+            if (gridzyInstance.getOption('filter') !== Gridzy.getDefaultOption('filter')) {
+              gridzyInstance.setOptions({filter:null});
+            }
           }
         }
-      }
-    })(gridzyElements[pos]);
-  }
+      })(gridzyElements[pos]);
+    }
 
-  //filter functionality
-  var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
-  $('#http_select_filter, #services_select_filter, #ports_select_filter, #tech_select_filter').on('change', function() {
-    values = $(this).val();
-    console.log(values);
-    if(values.length){
-      gridzyInstance.setOptions({
-        filter: values
-      });
-    }
-    else{
-      gridzyInstance.setOptions({
-        filter: '*'
-      });
-    }
+    //filter functionality
+    var gridzyInstance = document.querySelector('.gridzySkinBlank').gridzy;
+    $('#http_select_filter, #ips_select_filter, #services_select_filter, #ports_select_filter, #tech_select_filter').on('change', function() {
+      values = $(this).val();
+      console.log(values);
+      if(values.length && this.id == 'ips_select_filter'){
+        values = 
+        gridzyInstance.setOptions({
+          filter: values.replace('.', "_");
+        });
+      }
+      else if(values.length && this.id != 'ips_select_filter'){
+        gridzyInstance.setOptions({
+          filter: values
+        });
+      }
+      else{
+        gridzyInstance.setOptions({
+          filter: '*'
+        });
+      }
+    });
   });
 }
 

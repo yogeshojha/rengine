@@ -13,8 +13,10 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
+<script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -80,7 +82,7 @@ Scan Findings
 </div>
 <div class="tab-content">
 	{# start tab contents #}
-	<div class="tab-pane show active" id="summary-tab">
+	<div class="tab-pane" id="summary-tab">
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -680,55 +682,124 @@ Scan Findings
 			</div>
 		</div>
 	</div>
-	<div class="tab-pane" id="screenshot-tab">
+	{% if history.screenshot %}
+	<div class="tab-pane show active" id="screenshot-tab">
+		<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
+			<input type="text" class="form-control form-control-lg br-30 mb-3" id="screenshot-search" placeholder="">
+		</div>
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="p-2">
+						<div class="row" id="filter-screenshot" style="display: none;">
+							<div class="col-xl-6 col-lg-6 col-sm-6">
+								<h6>Filter Screenshots</h6>
+							</div>
+							<div class="col-xl-6 col-lg-6 col-sm-6">
+								<div class="float-end">
+									<button class="btn btn-soft-primary waves-effect waves-light" data-toggle="tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton">
+										<i class="fe-maximize"></i>
+									</button>
+								</div>
+							</div>
+							<div class="row">
+								<div class="col-xl-2 col-lg-4 col-sm-12">
+									<label for="http_select_filter" class="form-label">HTTP Status</label>
+									<select class="form-control tagging" id="http_select_filter" multiple="multiple" data-width="100%">
+									</select>
+								</div>
+								<div class="col-xl-2 col-lg-4 col-sm-12">
+									<label for="ips_select_filter" class="form-label">IP Address</label>
+									<select class="form-control tagging" id="ips_select_filter" multiple="multiple" data-width="100%">
+									</select>
+								</div>
+								{% if history.port_scan %}
+								<div class="col-xl-2 col-lg-4 col-sm-12">
+									<label for="services_select_filter" class="form-label">Running Services</label>
+									<select class="form-control tagging" id="services_select_filter" multiple="multiple" data-width="100%">
+									</select>
+								</div>
+								<div class="col-xl-2 col-lg-4 col-sm-12">
+									<label for="ports_select_filter" class="form-label">Ports</label>
+									<select class="form-control tagging" id="ports_select_filter" multiple="multiple" data-width="100%">
+									</select>
+								</div>
+								{% endif %}
+								<div class="col-xl-2 col-lg-4 col-sm-12">
+									<label for="tech_select_filter" class="form-label">Technology</label>
+									<select class="form-control tagging" id="tech_select_filter" multiple="multiple" data-width="100%">
+									</select>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div class="row">
 			<div class="col-12">
 				<div class="card">
 					<div class="card-body">
-
+						<div class="row">
+							<div class="col-12">
+								<div id="screenshot-loader">
+									<div class="outer-div d-flex justify-content-center">
+										<div class="spinner-grow text-primary m-2"></div>
+									</div>
+									<h5 class="text-center mt-3">Loading Screenshots...</h5>
+								</div>
+							</div>
+							<div class="col-12">
+								<div class="gridzy">
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
+	{% endif %}
 </div>
-<div class="modal fade" id="addSubdomainTaskModal" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title">Add Todo for <span id="todo-modal-subdomain-name"></span></h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="compose-box">
-          <div class="compose-content" id="addTaskModalTitle">
-            <form>
-              <div class="row">
-                <div class="col-md-12">
-                  <div class="d-flex mail-to mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                    <div class="w-100 ms-2">
-                      <input id="subdomainTodoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <div class="d-flex  mail-subject mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                <div class="w-100 ms-2">
-                  <textarea class="form-control" id="subdomainTodoDescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" id="add-todo-subdomain-submit-button">Add Recon Todo</button>
-      </div>
-    </div>
-  </div>
+{# add recon modal #}
+<div class="modal fade" id="addSubdomainTaskModal" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered modal-lg">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title">Add Todo for <span id="todo-modal-subdomain-name"></span></h4>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="compose-box">
+					<div class="compose-content" id="addTaskModalTitle">
+						<form>
+							<div class="row">
+								<div class="col-md-12">
+									<div class="d-flex mail-to mb-4">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+										<div class="w-100 ms-2">
+											<input id="subdomainTodoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="d-flex  mail-subject mb-4">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+								<div class="w-100 ms-2">
+									<textarea class="form-control" id="subdomainTodoDescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
+								</div>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-primary" id="add-todo-subdomain-submit-button">Add Recon Todo</button>
+			</div>
+		</div>
+	</div>
 </div>
 {% endblock main_content %}
 
@@ -739,12 +810,12 @@ Scan Findings
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
-<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'assets/js/clipboard.min.js' %}"></script>
+<script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function(){
 	// init
@@ -755,6 +826,10 @@ $(document).ready(function(){
 		dropdownParent: $('#addTaskModal')
 	});
 	var clipboard = new Clipboard('.copyable');
+
+	// $(".tagging").select2({
+	// 	tags: true
+	// });
 
 	//populate charts
 	// vulnerability summary pie chart
@@ -1202,6 +1277,22 @@ $(document).ready(function(){
 
 		});
 	});
+
+	{% if history.screenshot %}
+	//if clicked on get screenshots tab
+	// $("#pills-screenshot-tab").click(function() {
+	get_screenshot({{scan_history_id}});
+
+	//animate search placeholder
+	const words = ["Search by Page Title   ",
+	"Search by HTTP Status   ",
+	"Search 'Interesting'   ",
+	"Search by Subdomain Name   "]
+
+	typingEffect(words, "screenshot-search", 0);
+	// });
+	{% endif %}
+
 
 	function subdomain_status_change(checkbox, id)
 	{
