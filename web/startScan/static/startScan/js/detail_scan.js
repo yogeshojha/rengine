@@ -850,9 +850,10 @@ function get_screenshot(scan_id){
       values = $(this).val();
       console.log(values);
       if(values.length && this.id == 'ips_select_filter'){
-        values = 
+        var replaces_str = values.map(function(values){return values.replace(/(?<=\..*)\./g, '_');});
+        console.log(replaces_str);
         gridzyInstance.setOptions({
-          filter: values.replace('.', "_");
+          filter: replaces_str
         });
       }
       else if(values.length && this.id != 'ips_select_filter'){
