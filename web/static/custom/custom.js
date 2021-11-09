@@ -451,10 +451,10 @@ function download(filename, text) {
 function vuln_status_change(checkbox, id)
 {
   if (checkbox.checked) {
-    checkbox.parentNode.parentNode.parentNode.className = "table-secondary text-strike";
+    checkbox.parentNode.parentNode.parentNode.className = "table-success text-strike";
   }
   else {
-    checkbox.parentNode.parentNode.parentNode.classList.remove("table-secondary");
+    checkbox.parentNode.parentNode.parentNode.classList.remove("table-success");
     checkbox.parentNode.parentNode.parentNode.classList.remove("text-strike");
   }
   change_vuln_status(id);
