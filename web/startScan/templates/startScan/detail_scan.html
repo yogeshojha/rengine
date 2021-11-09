@@ -47,7 +47,7 @@ Scan Findings
 				{% endif %}
 				{% if history.dir_file_search %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#">Directories</a>
+					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#directories-tab">Directories</a>
 				</li>
 				{% endif %}
 				<li class="nav-item dropdown">
@@ -82,8 +82,8 @@ Scan Findings
 </div>
 <div class="tab-content">
 	{# start tab contents #}
-	{# <div class="tab-pane show active" id="summary-tab"> #}
 	<div class="tab-pane show active" id="summary-tab">
+	{# <div class="tab-pane" id="summary-tab"> #}
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -807,6 +807,34 @@ Scan Findings
 		</div>
 	</div>
 
+	{# directories section #}
+	{% if history.dir_file_search %}
+	<div class="tab-pane" id="directories-tab">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<table id="directories-table" class="table style-3 table-hover">
+							<thead>
+								<tr>
+									<th class="checkbox-column">Status</th>
+									<th>Subdomain</th>
+									<th>Status</th>
+									<th>Page Title</th>
+									<th>Directories</th>
+									<th>HTTP URL</th>
+									<th>Is Intereting</th>
+									<th>Checked</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{% endif %}
+
 </div>
 
 {# add recon modal #}
@@ -1368,6 +1396,143 @@ $(document).ready(function(){
 		get_endpoints({{scan_history_id}}, '{{pattern}}');
 	});
 	{% endfor %}
+	{% endif %}
+
+	{% if history.dir_file_search %}
+	$("#pills-directories-tab").click(function() {
+		var history_table = $('#directories-table').DataTable({
+			"destroy": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+			},
+			"processing": true,
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables&only_diretory',
+			"order": [[ 5, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'http_status'},
+				{'data': 'page_title'},
+				{'data': 'directory_json'},
+				{'data': 'http_url'},
+				{'data': 'is_interesting'},
+				{'data': 'checked'},
+			],
+			"columnDefs": [
+				{
+					"targets": [ 5, 6, 7],
+					"visible": false,
+					"searchable": false,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if(row['checked']){
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+						else{
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+					},
+					"targets": 0,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (row['http_url']) {
+							interesting_badge = '';
+							if(row['is_interesting'])
+							{
+								interesting_badge = "&nbsp;<span class='badge badge-pills badge-soft-danger ms-1'>Interesting</span>&nbsp;"
+							}
+							return `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
+						}
+						return `<a href="https://`+data+`" class="text-primary" target="_blank">`+data+`</a>` + interesting_badge;
+					},
+					"targets": 1
+				},
+				{
+					"render": function ( data, type, row ) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge badge-pills badge-soft-success'>"+data+"</span>";
+						}
+						else if (data >= 300 && data < 400) {
+							return "<span class='badge badge-pills badge-soft-warning'>"+data+"</span>";
+						}
+						else if (data == 0){
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge badge-pills badge-soft-danger'>`+data+`</span>`;
+					},
+					"targets": 2,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return htmlEncode(data);
+						}
+						return "";
+					},
+					"targets": 3,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data) {
+							data = JSON.parse(data)['results'];
+							var html_treeview = `<ul>`;
+							data = data[0];
+							// if main url has trailing / then we need to omit, otherwise it should be okay to append path
+							// preserve original url to access json object
+							url = Object.keys(data)[0]
+							http_url = url.substring(url.length - 1) == '/' ? url.slice(0, -1): url;
+							console.log(http_url);
+							var json_obj = data[url];
+							for(var i = 0; i < json_obj.length; i++)
+							{
+								if(json_obj[i].status==200)
+								{
+									var path = json_obj[i].path;
+									var contentlength = (json_obj[i]["content-length"]/1000).toFixed(2);
+									// id path has / the its a directory else consider as file
+									html_treeview += `<li><a href="` + http_url + path + `" target="_blank">` + path + ` (` + contentlength.toString() + ` Kb)</a></li>`;
+								}
+							}
+							html_treeview += `</ul>`;
+							return html_treeview;
+						}
+						return '';
+					},
+					"targets": 4,
+				},
+			],
+			"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+			"<'table-responsive'tr>" +
+			"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			drawCallback: function () {
+			},
+			initComplete: function( settings, json ) {
+			},
+			'createdRow': function( row, data, dataIndex ) {
+				if (data['checked']){
+					$(row).addClass('table-danger text-strike');
+				}
+			},
+			"rowCallback": function( row, data, index ) {
+				if (!data["directory_json"]) {
+					$(row).hide();
+				}
+			},
+		});
+	});
 	{% endif %}
 
 	</script>
