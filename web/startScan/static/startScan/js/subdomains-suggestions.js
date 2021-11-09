@@ -1,7 +1,6 @@
 var searchWrapper = document.querySelector(".search-input");
 var inputBox = searchWrapper.querySelector("input");
 var suggBox = searchWrapper.querySelector(".autocom-box");
-var succestion_icon = searchWrapper.querySelector(".suggestion-icon");
 var filter_icon = `<i class="fe-filter"></i>`;
 
 var col_suggestions = [
