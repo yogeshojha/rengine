@@ -65,7 +65,7 @@ Scan Findings
 				</li>
 				{% if history.vulnerability_scan %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Vulnerabilities</a>
+					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
 				</li>
 				{% endif %}
 				{% if history.osint %}
@@ -835,6 +835,55 @@ Scan Findings
 	</div>
 	{% endif %}
 
+	{# Vulnerabilities Section #}
+	{% if history.vulnerability_scan %}
+	<div class="tab-pane" id="vulnerabilities-tab">
+		<div class="row justify-content-center">
+			<div class="col-xl-8 col-lg-8 col-sm-8">
+				<div class="wrapper">
+					<div class="search-input" id="vulnerability-search-input">
+						<a href="" target="_blank" hidden></a>
+						<div class="input-group">
+							<input type="text" class="form-control" placeholder="Filter Vulnerabilities" aria-label="Filter Vulnerabilities" id="vulnerability-search">
+							<div class="input-group-append">
+								<button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+							</div>
+						</div>
+						<div class="autocom-box mt-container mx-auto" id="autocom-box">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<table id="vulnerability_results" class="table style-3 table-hover">
+							<thead>
+								<tr>
+									<th class="checkbox-column">Status</th>
+									<th>Title</th>
+									<th class="text-center">Severity</th>
+									<th>Vulnerable URL</th>
+									<th>Description</th>
+									<th>Status</th>
+									<th>Matcher Name</th>
+									<th>Discovered Date</th>
+									<th>Tags</th>
+									<th>Description</th>
+									<th>Reference</th>
+									<th class="text-center dt-no-sorting">Action</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{% endif %}
+
 </div>
 
 {# add recon modal #}
@@ -893,6 +942,10 @@ Scan Findings
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+
+{% if history.vulnerability_scan %}
+<script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+{% endif %}
 
 <script type="text/javascript">
 $(document).ready(function(){
@@ -1531,6 +1584,179 @@ $(document).ready(function(){
 					$(row).hide();
 				}
 			},
+		});
+	});
+	{% endif %}
+
+	// vulnerability section
+	{% if history.vulnerability_scan %}
+	$("#pills-vulnerabilities-tab").click(function() {
+		var vulnerability_table = $('#vulnerability_results').DataTable({
+			"destroy": true,
+			"oLanguage": {
+				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+			},
+			"processing": true,
+			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+			"<'table-responsive'tr>" +
+			"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 100,
+			'serverSide': true,
+			"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+			"order": [[ 2, "desc" ]],
+			"columns": [
+				{'data': 'id'},
+				{'data': 'name'},
+				{'data': 'severity'},
+				{'data': 'http_url'},
+				{'data': 'extracted_results'},
+				{'data': 'open_status'},
+				{'data': 'matcher_name'},
+				{'data': 'discovered_date'},
+				{'data': 'tags'},
+				{'data': 'description'},
+				{'data': 'reference'},
+				{'data': 'hackerone_report_id'},
+			],
+			"columnDefs": [
+				{ "orderable": false, "targets": [4, 9, 10, 11]},
+				{
+					"targets": [ 6, 7, 8, 9, 10 ],
+					"visible": false,
+					"searchable": true,
+				},
+				{"className": "text-center", "targets": [0, 2, 5, 11]},
+				{
+					"render": function ( data, type, row ) {
+						if(row['open_status']){
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+						else{
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+					},
+					"targets": 0,
+				},
+				{
+					"render": function ( data, type, row ) {
+						var tags_span ="";
+						switch (row['severity']) {
+							case 'Info':
+							color = 'soft-info'
+							break;
+							case 'Low':
+							color = 'soft-low'
+							break;
+							case 'Medium':
+							color = 'soft-warning'
+							break;
+							case 'High':
+							color = 'soft-danger'
+							break;
+							case 'Critical':
+							color = 'critical'
+							break;
+							default:
+						}
+						if (row['tags']) {
+							var badge = "<span class='badge badge-"+color+" m-1'>";
+							row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
+								tags_span+=badge + split_vals + "</span>";
+							});
+						}
+						hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge badge-soft-danger m-2" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
+						return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Discovered on: ` + row['discovered_date'] + "</small>";
+					},
+					"targets": 1,
+				},
+				{
+					"render": function ( data, type, row ) {
+						switch (data) {
+							case 'Info':
+							return "<span class='badge badge-soft-info'>Info</span>";
+							break;
+							case 'Low':
+							return "<span class='badge badge-soft-low'>Low</span>";
+							break;
+							case 'Medium':
+							return "<span class='badge badge-soft-warning'>Medium</span>";
+							break;
+							case 'High':
+							return "<span class='badge badge-soft-danger'>High</span>";
+							break;
+							case 'Critical':
+							return "<span class='badge badge-critical'>Critical</span>";
+							break;
+							default:
+							return "";
+						}
+					},
+					"targets": 2,
+				},
+
+				{
+					"render": function ( data, type, row ) {
+						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+					},
+					"targets": 3,
+				},
+				{
+					"render": function ( data, type, row ) {
+						extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
+						matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
+						description = row['description'] ? row['description'] + `</br>` : "";
+						reference = row['reference'] ? `<a href=${row['reference']} class='text-primary' target='_blank'>Read More...</a>` : "";
+						return extracted_results + matcher_name + description + reference;
+					},
+					"targets": 4,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (data){
+							return '<span class="badge badge-soft-danger">Open</span>'
+						}
+						else{
+							return '<span class="badge badge-soft-success">Closed</span>'
+						}
+					},
+					"targets": 5,
+				},
+				{
+					"render": function ( data, type, row ) {
+						if (!data){
+							return `
+							<div class="btn-group mb-2 dropstart">
+								<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+								</a>
+								<div class="dropdown-menu" style="">
+									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								</div>
+							</div>`;
+						}
+						else{
+							return '';
+						}
+					},
+					"targets": 11,
+				},
+			],
+			drawCallback: function () {
+			},
+			createdRow: function( row, data, dataIndex ) {
+				if (!data['open_status']){
+					$(row).addClass('table-success text-strike');
+				}
+			},
+		});
+		$('#vulnerability-search-button').click(function () {
+			vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 		});
 	});
 	{% endif %}
