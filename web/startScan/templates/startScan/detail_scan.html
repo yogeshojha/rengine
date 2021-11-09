@@ -70,7 +70,7 @@ Scan Findings
 				{% endif %}
 				{% if history.osint %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-osint-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">OSINT</a>
+					<a class="nav-link" id="pills-osint-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#osint-tab">OSINT</a>
 				</li>
 				{% endif %}
 				<li class="nav-item">
@@ -82,8 +82,8 @@ Scan Findings
 </div>
 <div class="tab-content">
 	{# start tab contents #}
-	<div class="tab-pane show active" id="summary-tab">
-	{# <div class="tab-pane" id="summary-tab"> #}
+	{# <div class="tab-pane show active" id="summary-tab"> #}
+	<div class="tab-pane" id="summary-tab">
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -488,7 +488,7 @@ Scan Findings
 								<h4 class="header-title mb-3">Vulnerability Highlights</h4>
 								<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
 									<table class="table table-borderless table-nowrap table-hover table-centered m-0">
-										<thead class="table-dark">
+										<thead class="table-light">
 											<tr>
 												<th style="width: 40%">Vulnerability</th>
 												<th style="width: 10%">Severity</th>
@@ -876,6 +876,104 @@ Scan Findings
 									<th class="text-center dt-no-sorting">Action</th>
 								</tr>
 							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{% endif %}
+
+	{# OSINT Section #}
+	{% if history.osint %}
+	<div class="tab-pane show active" id="osint-tab">
+		<div class="row">
+			<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">
+							<span id="employees-count">
+								<span class="spinner-border spinner-border-sm me-1"></span>
+							</span>
+							Employees/People associated with {{history.domain.name}}
+						</h4>
+						<table class="table mt-3">
+							<thead class="table-light">
+								<tr>
+									<th><div class="th-content">Employee Name</div></th>
+									<th><div class="th-content">Designation</div></th>
+								</tr>
+							</thead>
+							<tbody id="employees-table-body">
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-7 col-lg-7 col-md-12 col-sm-12 col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">
+							<span id="emails-count">
+								<span class="spinner-border spinner-border-sm me-1"></span>
+							</span>
+							Discovered Email addresses  <span id="exposed_summary" class="text-danger"></span>
+						</h4>
+						<table class="table mt-3">
+							<thead class="table-light">
+								<tr>
+									<th><div class="th-content">Email Address</div></th>
+									<th><div class="th-content">Esposed Credentials</div></th>
+								</tr>
+							</thead>
+							<tbody id="email-table-body">
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">
+							<span id="metadata-count">
+								<span class="spinner-border spinner-border-sm me-1"></span>
+							</span>
+							Discovered Metadata
+						</h4>
+						<table class="table mt-3">
+							<thead class="table-light">
+								<tr>
+									<th><div class="th-content">Document</div></th>
+									<th><div class="th-content text-center">User</div></th>
+									<th><div class="th-content text-center">Metadata</div></th>
+								</tr>
+							</thead>
+							<tbody id="metadata-table-body">
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">
+							<span id="dorks-count">
+								<span class="spinner-border spinner-border-sm me-1"></span>
+							</span>
+							Dork Data
+						</h4>
+						<table class="table mt-3">
+							<thead class="table-light">
+								<tr>
+									<th><div class="th-content text-center">Dork Type</div></th>
+									<th><div class="th-content text-center">Description</div></th>
+									<th><div class="th-content">URL</div></th>
+								</tr>
+							</thead>
+							<tbody id="dorks-table-body">
+							</tbody>
 						</table>
 					</div>
 				</div>
@@ -1732,12 +1830,12 @@ $(document).ready(function(){
 						if (!data){
 							return `
 							<div class="btn-group mb-2 dropstart">
-								<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-								</a>
-								<div class="dropdown-menu" style="">
-									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
-								</div>
+							<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+							</a>
+							<div class="dropdown-menu" style="">
+							<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+							</div>
 							</div>`;
 						}
 						else{
@@ -1760,6 +1858,15 @@ $(document).ready(function(){
 		});
 	});
 	{% endif %}
+
+	// get osint
+	// $("#pills-osint-tab").click(function() {
+		// osint
+		get_metadata({{scan_history_id}});
+		get_emails({{scan_history_id}});
+		get_employees({{scan_history_id}});
+		get_dorks({{scan_history_id}});
+	// });
 
 	</script>
 	{% endblock page_level_script %}
