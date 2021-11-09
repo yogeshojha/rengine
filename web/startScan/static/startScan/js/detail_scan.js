@@ -98,25 +98,25 @@ function get_endpoints(scan_history_id, gf_tags){
           tech_badge = '';
           web_server = '';
           if (row['technologies']){
-            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true);
+            tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true);
           }
 
           if (row['webserver']) {
-            web_server = `<span class='m-1 badge  badge-soft-secondary bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+            web_server = `<span class='m-1 badge  badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span>`;
           }
 
           var url = split(data, 70);
           action_icons = `
           <div class="float-left subdomain-table-action-icons mt-2">
           <span class="m-1">
-          <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-info copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}">
+          <a href="javascript:;" data-clipboard-action="copy" class="badge-link copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
           </a>
           </div>
           `;
           tech_badge += web_server;
 
-          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-info'>`+ url +"</a>" + tech_badge + "<br>" + action_icons ;
+          return `<div class="clipboard copy-txt">` + "<a href='"+ data +`' id="url-${row['id']}" target='_blank' class='text-primary'>`+ url +"</a>" + tech_badge + "<br>" + action_icons ;
         },
         "targets": 1,
       },
@@ -125,16 +125,16 @@ function get_endpoints(scan_history_id, gf_tags){
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
           if (data >= 200 && data < 300) {
-            return "<span class='badge  badge-success'>"+data+"</span>";
+            return "<span class='badge  badge-soft-success'>"+data+"</span>";
           }
           else if (data >= 300 && data < 400) {
-            return "<span class='badge  badge-warning'>"+data+"</span>";
+            return "<span class='badge  badge-soft-warning'>"+data+"</span>";
           }
           else if (data == 0){
             // datatable throws error when no data is returned
             return "";
           }
-          return "<span class='badge  badge-danger'>"+data+"</span>";
+          return "<span class='badge  badge-soft-danger'>"+data+"</span>";
 
         },
         "targets": 2,
@@ -249,11 +249,11 @@ function get_subdomain_changes(scan_history_id){
           }
           if (row['http_url']) {
             if (row['cname']) {
-              return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
+              return badges + `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a><br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>')+`</span>`;
             }
-            return badges + `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>`;
+            return badges + `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>`;
           }
-          return badges + `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>`;
+          return badges + `<a href="https://`+data+`" class="text-primary" target="_blank">`+data+`</a>`;
         },
         "targets": 0
       },
@@ -340,7 +340,7 @@ function get_endpoint_changes(scan_history_id){
       {
         "render": function ( data, type, row ) {
           var url = split(data, 70);
-          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+          return "<a href='"+data+"' target='_blank' class='text-primary'>"+url+"</a>";
         },
         "targets": 0
       },
@@ -402,8 +402,8 @@ function get_ip_details(ip_address, scan_id){
   }
   var interesting_badge = `<span class="m-1 badge  badge-soft-danger bs-tooltip" title="Interesting Subdomain">Interesting</span>`;
 
-  var port_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="port-modal-loader"></span>`;
-  var subdomain_loader = `<span class="inner-div spinner-border text-info align-self-center loader-sm" id="subdomain-modal-loader"></span>`;
+  var port_loader = `<span class="inner-div spinner-border text-primary align-self-center loader-sm" id="port-modal-loader"></span>`;
+  var subdomain_loader = `<span class="inner-div spinner-border text-primary align-self-center loader-sm" id="subdomain-modal-loader"></span>`;
 
   // add tab modal title
   $('#modal_title').html('Details for IP: <b>' + ip_address + '</b>');
@@ -561,7 +561,7 @@ function get_tech_details(tech, scan_id){
 
   $('.modal-text').empty();
   $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -889,7 +889,7 @@ function get_metadata(scan_id){
       rand_id = get_randid();
       $('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
       if (doc['doc_name']) {
-        file_name = `<a href=${doc['url']} target="_blank" class="text-info">${truncate(doc['doc_name'], 30)}</a>`;
+        file_name = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
       }
       else{
         file_name = ''
@@ -968,7 +968,7 @@ function get_dorks(scan_id){
       $('#dorks-table-body').append(`<tr id=${rand_id}></tr>`);
       $(`#${rand_id}`).append(`<td class="td-content text-center">${dork['type']}</td>`);
       $(`#${rand_id}`).append(`<td class="td-content">${truncate(dork['description'], 120)}</td>`);
-      $(`#${rand_id}`).append(`<td class="td-content"><a href="${dork['url']}" target="_blank" class="text-info">${truncate(dork['url'], 60)}</a></td>`);
+      $(`#${rand_id}`).append(`<td class="td-content"><a href="${dork['url']}" target="_blank" class="text-primary">${truncate(dork['url'], 60)}</a></td>`);
     }
     $('#dorks-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
   });
@@ -993,14 +993,14 @@ function get_dork_details(dork_type, scan_id){
   $('.modal-title').html('Dorking Results in category: <b>' + dork_type + '</b>');
   $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryDorks/?scan_id=${scan_id}&type=${dork_type}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-content').append(`<b>${data['dorks'].length} results found in this dork category.</b>`);
     $('#modal-content').append(`<ul id="dork-detail-modal-ul"></ul>`);
     for (dork in data['dorks']){
       dork_obj = data['dorks'][dork];
-      $("#dork-detail-modal-ul").append(`<li><a href="${dork_obj['url']}" target="_blank" class="text-info">${dork_obj['description']}</a></li>`);
+      $("#dork-detail-modal-ul").append(`<li><a href="${dork_obj['url']}" target="_blank" class="text-primary">${dork_obj['description']}</a></li>`);
     }
   });
 }
@@ -1035,10 +1035,10 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
   $('.modal-title').html(`<b>${severity_title} Severity</b> Vulnerabilities`);
   $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
-    $('#modal-content').append(`<h6>${data['vulnerabilities'].length} vulnerabilities found in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
+    $('#modal-content').append(`<h6>${data['vulnerabilities'].length} vulnerabilities found in subdomain <span class='text-primary'>${subdomain_name}</span>.</h6>`);
     $('#modal-content').append(`<ul id="vulnerabilities-detail-modal-ul"></ul>`);
     for (vuln in data['vulnerabilities']){
       vuln_obj = data['vulnerabilities'][vuln];
@@ -1054,7 +1054,7 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
       if (vuln_obj['extracted_results']) {
         extracted_results = `<br><span class="ml-2"><span class="text-dark">Extracted Results:</span> ${vuln_obj['extracted_results']}</span>`;
       }
-      $("#vulnerabilities-detail-modal-ul").append(`<li><a href="${vuln_obj['http_url']}" target="_blank" class="text-info">${vuln_obj['name']}</a>${description}${reference}${extracted_results}</li>`);
+      $("#vulnerabilities-detail-modal-ul").append(`<li><a href="${vuln_obj['http_url']}" target="_blank" class="text-primary">${vuln_obj['name']}</a>${description}${reference}${extracted_results}</li>`);
     }
   }).fail(function(){
     $('#modal-loader').empty();
@@ -1073,10 +1073,10 @@ function get_endpoint_modal(scan_id, subdomain_name){
   $('.modal-title').html(`<b>Endpoints Summary</b>`);
   $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
-    $('#modal-content').append(`<h6>${data['endpoints'].length} endpoints discovered in subdomain <span class='text-info'>${subdomain_name}</span>.</h6>`);
+    $('#modal-content').append(`<h6>${data['endpoints'].length} endpoints discovered in subdomain <span class='text-primary'>${subdomain_name}</span>.</h6>`);
     $('#modal-content').append(`<ul id="endpoints-detail-modal-ul"></ul>`);
     for (endpoint in data['endpoints']){
       endpoint_obj = data['endpoints'][endpoint];
@@ -1087,7 +1087,7 @@ function get_endpoint_modal(scan_id, subdomain_name){
       else {
         main_title = endpoint_obj['http_url']
       }
-      $("#endpoints-detail-modal-ul").append(`<li><a href="${endpoint_obj['http_url']}" target="_blank" class="text-info">${main_title}</a></li>`);
+      $("#endpoints-detail-modal-ul").append(`<li><a href="${endpoint_obj['http_url']}" target="_blank" class="text-primary">${main_title}</a></li>`);
     }
   }).fail(function(){
     $('#modal-loader').empty();
@@ -1236,7 +1236,7 @@ function download_subdomains(scan_id, domain_name){
   }
   $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -1273,7 +1273,7 @@ function download_interesting_subdomains(scan_id, domain_name){
   }
   $('.modal-text').empty(); $('#modal-footer').empty();
   $('#modal_dialog').modal('show');
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -1311,7 +1311,7 @@ function download_important_subdomains(scan_id, domain_name){
   }
   $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();
@@ -1351,7 +1351,7 @@ function download_endpoints(scan_id, domain_name, pattern){
   }
   $('.modal-text').empty(); $('#modal-footer').empty();
   $('#modal_dialog').modal('show');
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(url, function(data) {
     $('#modal-loader').empty();

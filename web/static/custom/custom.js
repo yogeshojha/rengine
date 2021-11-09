@@ -394,10 +394,10 @@ function parse_technology(data, color, outline=null, scan_id=null)
 {
   if(outline)
   {
-    var badge = `<span class='badge-link badge badge-soft-`+color+` m-1'`;
+    var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-`+color+` m-1'`;
   }
   else {
-    var badge = `<span class='badge-link badge badge-soft-`+color+` m-1'`;
+    var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-`+color+` m-1'`;
   }
   var data_with_span ="";
   for (var key in data){

@@ -47,17 +47,17 @@ Scan Findings
 				{% endif %}
 				{% if history.dir_file_search %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Directories</a>
+					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#">Directories</a>
 				</li>
 				{% endif %}
 				<li class="nav-item dropdown">
 					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">URLs&nbsp;<i class="fe-chevron-down"></i></a>
-					<ul class="dropdown-menu">
-						<li><a class="dropdown-item" id="pills-endpoints-tab">All Endpoints</a></li>
+					<ul class="dropdown-menu" style="width: 240px;">
+						<li><a class="dropdown-item" id="pills-endpoints-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">All Endpoints</a></li>
 						{% if history.fetch_url and history.used_gf_patterns%}
 						{% for key,value in matched_gf_count.items %}
 						{% if value > 0 %}
-						<li><a class="dropdown-item" id="pills-{{key}}-tab">{{key|upper}}<span class="badge-soft-danger float-end">{{value}}</span></a></li>
+						<li><a class="dropdown-item" id="pills-{{key}}-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">{{key|upper}}<span class="badge-soft-danger float-end ms-1 ps-1 pe-1">{{value}}</span></a></li>
 						{% endif %}
 						{% endfor %}
 						{% endif %}
@@ -82,7 +82,8 @@ Scan Findings
 </div>
 <div class="tab-content">
 	{# start tab contents #}
-	<div class="tab-pane" id="summary-tab">
+	{# <div class="tab-pane show active" id="summary-tab"> #}
+	<div class="tab-pane show active" id="summary-tab">
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -683,7 +684,7 @@ Scan Findings
 		</div>
 	</div>
 	{% if history.screenshot %}
-	<div class="tab-pane show active" id="screenshot-tab">
+	<div class="tab-pane" id="screenshot-tab">
 		<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
 			<input type="text" class="form-control form-control-lg br-30 mb-3" id="screenshot-search" placeholder="">
 		</div>
@@ -693,13 +694,13 @@ Scan Findings
 					<div class="p-2">
 						<div class="row" id="filter-screenshot" style="display: none;">
 							<div class="col-xl-6 col-lg-6 col-sm-6">
-								<h6>Filter Screenshots</h6>
+								<h5 class=""><i class="fe-filter text-primary"></i> Filter Screenshots</h5>
 							</div>
 							<div class="col-xl-6 col-lg-6 col-sm-6">
 								<div class="float-end">
-									<button class="btn btn-soft-primary waves-effect waves-light" data-toggle="tooltip" title="Toggle Full Screen" onclick="fullScreenDiv('#screenshot-div', '#fullscreenButton')" id="fullscreenButton">
-										<i class="fe-maximize"></i>
-									</button>
+									<a class="arrow-none waves-effect waves-light" data-toggle="fullscreen" href="#">
+										<i class="fe-maximize noti-icon"></i>
+									</a>
 								</div>
 							</div>
 							<div class="row">
@@ -760,6 +761,52 @@ Scan Findings
 		</div>
 	</div>
 	{% endif %}
+
+	{# endpoints section #}
+	<div class="tab-pane" id="endpoints-tab">
+		<div class="row justify-content-center">
+			<div class="col-xl-8 col-lg-8 col-sm-8">
+				<div class="wrapper">
+					<div class="search-input" id="endpoint-search-input">
+						<a href="" target="_blank" hidden></a>
+						<div class="input-group">
+							<input type="text" class="form-control" placeholder="Filter Endpoints" aria-label="Filter Endpoints" id="endpoints-search">
+							<div class="input-group-append">
+								<button id="endpoint-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
+							</div>
+						</div>
+						<div class="autocom-box mt-container mx-auto endpoint-search" id="autocom-box">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row mt-4">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<table id="endpoint_results" class="table style-3 table-hover">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>HTTP URL</th>
+									<th>Status</th>
+									<th>Page Title</th>
+									<th>Tags</th>
+									<th>Content Type</th>
+									<th>Content Length</th>
+									<th>Technology</th>
+									<th>Webserver</th>
+									<th>Response time</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 </div>
 
 {# add recon modal #}
@@ -813,13 +860,17 @@ Scan Findings
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
-<script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'assets/js/clipboard.min.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+{# search suggestions scripts #}
+<script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+
 <script type="text/javascript">
 $(document).ready(function(){
 	// init
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
+	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#addTaskModal select').css('width', '100%');
 	$("#todoSubdomainDropdown").select2({
@@ -1280,17 +1331,17 @@ $(document).ready(function(){
 
 	{% if history.screenshot %}
 	//if clicked on get screenshots tab
-	// $("#pills-screenshot-tab").click(function() {
-	get_screenshot({{scan_history_id}});
+	$("#pills-screenshot-tab").click(function() {
+		get_screenshot({{scan_history_id}});
 
-	//animate search placeholder
-	const words = ["Search by Page Title   ",
-	"Search by HTTP Status   ",
-	"Search 'Interesting'   ",
-	"Search by Subdomain Name   "]
+		//animate search placeholder
+		const words = ["Search by Page Title   ",
+		"Search by HTTP Status   ",
+		"Search 'Interesting'   ",
+		"Search by Subdomain Name   "]
 
-	typingEffect(words, "screenshot-search", 0);
-	// });
+		typingEffect(words, "screenshot-search", 0);
+	});
 	{% endif %}
 
 
@@ -1305,6 +1356,19 @@ $(document).ready(function(){
 		change_subdomain_status(id);
 	}
 
+	// default get urls
+	$("#pills-endpoints-tab").click(function() {
+		get_endpoints({{scan_history_id}}, null);
+	});
+
+	{% if history.fetch_url and history.used_gf_patterns %}
+	// gf patterns
+	{% for pattern in history.used_gf_patterns|split:"," %}
+	$("#pills-{{pattern}}-tab").click(function() {
+		get_endpoints({{scan_history_id}}, '{{pattern}}');
+	});
+	{% endfor %}
+	{% endif %}
 
 	</script>
 	{% endblock page_level_script %}
