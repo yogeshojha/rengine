@@ -293,7 +293,7 @@ function deleteDropdown() {
   });
 }
 function checkCheckbox() {
-  $('.todo-item input[type="checkbox"]').click(function() {
+  $('.todo-item').click(function() {
     if ($(this).is(":checked")) {
       $(this).parents('.todo-item').addClass('todo-task-done');
     }

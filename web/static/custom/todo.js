@@ -1,5 +1,5 @@
 function todoCheckboxListener(){
-  $('input[type="checkbox"]').click(function() {
+  $('.todo-item').click(function() {
     var note_id = parseInt(this.id.split('_')[1]);
     console.log(note_id);
     if ($(this).is(":checked")) {
