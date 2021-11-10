@@ -218,10 +218,10 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
         ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
         ip_serializer = VisualiseIpSerializer(ips, many=True)
 
-        endpoint = EndPoint.objects.filter(
-            scan_history=self.context.get('scan_history')).filter(
-            subdomain__name=subdomain_name)
-        endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
+        # endpoint = EndPoint.objects.filter(
+        #     scan_history=self.context.get('scan_history')).filter(
+        #     subdomain__name=subdomain_name)
+        # endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
         technologies = Technology.objects.filter(technologies__in=subdomain)
         tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
@@ -236,11 +236,11 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
                 'description': 'IPs',
                 'children': ip_serializer.data
             })
-        if endpoint_serializer.data:
-            return_data.append({
-                'description': 'Endpoints',
-                'children': endpoint_serializer.data
-            })
+        # if endpoint_serializer.data:
+        #     return_data.append({
+        #         'description': 'Endpoints',
+        #         'children': endpoint_serializer.data
+        #     })
         if tech_serializer.data:
             return_data.append({
                 'description': 'Technologies',
