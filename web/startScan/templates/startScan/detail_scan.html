@@ -17,6 +17,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -74,7 +75,7 @@ Scan Findings
 				</li>
 				{% endif %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-visualisation-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#">Visualization</a>
+					<a class="nav-link" id="pills-visualisation-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#visualisation-tab">Visualization</a>
 				</li>
 			</ul>
 		</div>
@@ -886,7 +887,7 @@ Scan Findings
 
 	{# OSINT Section #}
 	{% if history.osint %}
-	<div class="tab-pane show active" id="osint-tab">
+	<div class="tab-pane" id="osint-tab">
 		<div class="row">
 			<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
 				<div class="card">
@@ -982,6 +983,46 @@ Scan Findings
 	</div>
 	{% endif %}
 
+	{# visualisation section #}
+	<div class="tab-pane show active" id="visualisation-tab">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<div id="visualisation-filter" style="display:none">
+							<div class="form-check form-switch">
+								<input type="checkbox" class="form-check-input" name="expand-nodes-checkbox">
+								<label class="form-check-label" for="customSwitch1">&nbsp; &nbsp; Expand all nodes</label>
+							</div>
+						</div>
+						<hr>
+						<div id="visualisation-loader">
+							<div class="d-flex justify-content-center" id="visualisation-loader">
+								<div class="spinner-border" role="status">
+									<span class="visually-hidden">Loading...</span>
+								</div>
+							</div>
+							<h5 class="text-center mt-3">Loading Recon Visualization...</h5>
+						</div>
+						<div class="row">
+							<div class="col-10">
+								<div id="visualisation">
+								</div>
+							</div>
+							<div class="col-2">
+								<div class="float-end m-3">
+									<small class="text-success text-right"style="display: block;">*Subdomains highlighted with green are 20X (OK) HTTP status</small>
+									<small class="text-warning text-right"style="display: block;">*Subdomains highlighted with orange are 30X (Redirect) HTTP status</small>
+									<small class="text-danger text-right" style="display: block;">*Subdomains highlighted with red are 40X (Not found) HTTP status</small>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 </div>
 
 {# add recon modal #}
@@ -1044,6 +1085,9 @@ Scan Findings
 {% if history.vulnerability_scan %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 {% endif %}
+
+{# visualisation libraries #}
+<script src="{% static 'custom/mitch.js' %}"></script>
 
 <script type="text/javascript">
 $(document).ready(function(){
@@ -1860,12 +1904,16 @@ $(document).ready(function(){
 	{% endif %}
 
 	// get osint
-	// $("#pills-osint-tab").click(function() {
-		// osint
+	$("#pills-osint-tab").click(function() {
 		get_metadata({{scan_history_id}});
 		get_emails({{scan_history_id}});
 		get_employees({{scan_history_id}});
 		get_dorks({{scan_history_id}});
+	});
+
+	// visualisation tab
+	// $("#pills-visualisation-tab").click(function() {
+	visualise_scan_results({{scan_history_id}});
 	// });
 
 	</script>
