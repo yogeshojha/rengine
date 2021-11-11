@@ -85,9 +85,9 @@ Detailed Scan
 	</div>
 </div>
 <div class="tab-content no-padding-tab">
-	{# start tab contents #}
-	{# <div class="tab-pane show active" id="summary-tab"> #}
-	<div class="tab-pane" id="summary-tab">
+	<!-- start tab contents  -->
+	<div class="tab-pane show active" id="summary-tab">
+	<!-- <div class="tab-pane" id="summary-tab"> -->
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -987,7 +987,7 @@ Detailed Scan
 	{% endif %}
 
 	{# visualisation section #}
-	<div class="tab-pane show active" id="visualisation-tab">
+	<div class="tab-pane" id="visualisation-tab">
 		<div class="row">
 			<div class="col-12">
 				<div class="card">
@@ -1929,9 +1929,9 @@ $(document).ready(function(){
 	});
 
 	// visualisation tab
-	// $("#pills-visualisation-tab").click(function() {
+	$("#pills-visualisation-tab").click(function() {
 	visualise_scan_results({{scan_history_id}});
-	// });
+	});
 
 	</script>
 	{% endblock page_level_script %}
