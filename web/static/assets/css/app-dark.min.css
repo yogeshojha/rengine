@@ -10,3 +10,7 @@
 .page-item.disabled .page-link{
   background: #263238 !important;
 }
+
+#visualisation-svg{
+  background-color: #36404A !important;
+}

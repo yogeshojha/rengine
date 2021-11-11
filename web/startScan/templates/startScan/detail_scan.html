@@ -18,6 +18,8 @@ Detailed Scan
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js"></script>
+<script src="https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js"></script>
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -990,9 +992,23 @@ Scan Findings
 				<div class="card">
 					<div class="card-body">
 						<div id="visualisation-filter" style="display:none">
-							<div class="form-check form-switch">
-								<input type="checkbox" class="form-check-input" name="expand-nodes-checkbox">
-								<label class="form-check-label" for="customSwitch1">&nbsp; &nbsp; Expand all nodes</label>
+							<div class="row">
+								<div class="col-6">
+									<div class="form-check form-switch">
+										<input type="checkbox" class="form-check-input" name="expand-nodes-checkbox">
+										<label class="form-check-label" for="customSwitch1">&nbsp; &nbsp; Expand all nodes</label>
+									</div>
+								</div>
+								<div class="col-6">
+									<div class="dropdown float-end">
+										<a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
+											<i class="mdi mdi-dots-vertical"></i>
+										</a>
+										<div class="dropdown-menu dropdown-menu-end" style="">
+											<a href="#" class="dropdown-item" id="saveButton">Download Visualization as png</a>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 						<hr>
