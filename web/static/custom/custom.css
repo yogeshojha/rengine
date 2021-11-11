@@ -289,11 +289,41 @@ div.dataTables_wrapper div.dataTables_processing {
 }
 
 .node text {
-  font: 12px sans-serif;
+  font: 16px sans-serif;
 }
 
 .link {
   fill: none;
   stroke: #ccc;
   stroke-width: 1px;
+}
+
+
+#visualisation-svg{
+  background-color: #fff;
+}
+
+
+.svg-text-primary {
+  fill: #0d6efd;
+}
+
+.svg-text-success {
+  fill: #198754;
+}
+
+.svg-text-danger {
+  fill: #dc3545;
+}
+
+.svg-text-critical {
+  fill: #dc3545;
+}
+
+.svg-text-warning {
+  fill: #ffc107;
+}
+
+.svg-text-low {
+  fill: #ffc107;
 }
