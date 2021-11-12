@@ -1243,20 +1243,30 @@ function download_subdomains(scan_id, domain_name){
   // query subdomains
   $.getJSON(url, function(data) {
     swal.close();
-    $('#modal_dialog').modal('show');
-    $('.modal_count').html(data['subdomains'].length);
-    $('#modal-content').empty();
-    subdomains = '';
-    $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-    for (subdomain in data['subdomains']){
-      subdomain_obj = data['subdomains'][subdomain];
-      subdomains += subdomain_obj['name'] + '\n'
+    if (data['subdomains'].length) {
+      $('#modal_dialog').modal('show');
+      $('.modal_count').html(data['subdomains'].length);
+      $('#modal-content').empty();
+      subdomains = '';
+      $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+      for (subdomain in data['subdomains']){
+        subdomain_obj = data['subdomains'][subdomain];
+        subdomains += subdomain_obj['name'] + '\n'
+      }
+      $('#all_subdomains_text_area').append(subdomains);
+      $("#modal-footer").empty();
+      $("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
+      $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
     }
-    $('#all_subdomains_text_area').append(subdomains);
-    $("#modal-footer").empty();
-    $("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
+    else{
+      swal.fire("No Subdomains", "Could not find any subdomains.", "warning", {
+        button: "Okay",
+      });
+    }
   }).fail(function(){
+    swal.fire("No Subdomains", "Could not find any subdomains.", "warning", {
+      button: "Okay",
+    });
   });
 }
 
@@ -1282,20 +1292,30 @@ function download_interesting_subdomains(scan_id, domain_name){
   // query subdomains
   $.getJSON(url, function(data) {
     swal.close()
-    $('#modal_dialog').modal('show');
-    $('.modal_count').html(data.length);
-    $('#modal-content').empty();
-    subdomains = '';
-    $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-    for (subdomain in data){
-      subdomains += data[subdomain]['name'] + '\n'
+    if (data.length) {
+      $('#modal_dialog').modal('show');
+      $('.modal_count').html(data.length);
+      $('#modal-content').empty();
+      subdomains = '';
+      $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+      for (subdomain in data){
+        subdomains += data[subdomain]['name'] + '\n'
+      }
+      $('#interesting_subdomains_text_area').append(subdomains);
+      $("#modal-footer").empty();
+      $("#modal-footer").append(`<a href="javascript:download('interesting_subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
+      $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#interesting_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
     }
-    $('#interesting_subdomains_text_area').append(subdomains);
-    $("#modal-footer").empty();
-    $("#modal-footer").append(`<a href="javascript:download('interesting_subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#interesting_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
+    else{
+      swal.fire("No Interesting Subdomains", "Could not find any interesting subdomains.", "warning", {
+        button: "Okay",
+      });
+    }
 
   }).fail(function(){
+    swal.fire("No Interesting Subdomains", "Could not find any interesting subdomains.", "warning", {
+      button: "Okay",
+    });
   });
 }
 
@@ -1321,20 +1341,30 @@ function download_interesting_endpoints(scan_id, domain_name){
   // query subdomains
   $.getJSON(url, function(data) {
     swal.close();
-    $('#modal_dialog').modal('show');
-    $('.modal_count').html(data.length);
-    $('#modal-content').empty();
-    endpoints = '';
-    $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
-    for (endpoint in data){
-      endpoints += data[endpoint]['http_url'] + '\n'
+    if (data.length) {
+      $('#modal_dialog').modal('show');
+      $('.modal_count').html(data.length);
+      $('#modal-content').empty();
+      endpoints = '';
+      $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="interesting_endpoints_text_area" rows="10" spellcheck="false"></textarea>`);
+      for (endpoint in data){
+        endpoints += data[endpoint]['http_url'] + '\n'
+      }
+      $('#interesting_endpoints_text_area').append(endpoints);
+      $("#modal-footer").empty();
+      $("#modal-footer").append(`<a href="javascript:download('interesting_endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Endpoints as txt</a>`);
+      $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Endpoints!" data-clipboard-target="#interesting_endpoints_text_area"><i class="fe-copy me-1"></i> Copy Endpoints</a>`);
     }
-    $('#interesting_endpoints_text_area').append(endpoints);
-    $("#modal-footer").empty();
-    $("#modal-footer").append(`<a href="javascript:download('interesting_endpoints-${domain_name}.txt', endpoints);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Endpoints as txt</a>`);
-    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Endpoints!" data-clipboard-target="#interesting_endpoints_text_area"><i class="fe-copy me-1"></i> Copy Endpoints</a>`);
+    else{
+      swal.fire("No Interesting Endpoints", "Could not find any interesting Endpoints.", "warning", {
+        button: "Okay",
+      });
+    }
 
   }).fail(function(){
+    swal.fire("No Interesting Endpoints", "Could not find any interesting Endpoints.", "warning", {
+      button: "Okay",
+    });
   });
 }
 
@@ -1361,21 +1391,30 @@ function download_important_subdomains(scan_id, domain_name){
   // query subdomains
   $.getJSON(url, function(data) {
     swal.close();
-    $('#modal_dialog').modal('show');
-    $('.modal_count').html(data['subdomains'].length);
-    $('#modal-content').empty();
-    subdomains = '';
-    $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
-    for (subdomain in data['subdomains']){
-      subdomain_obj = data['subdomains'][subdomain];
-      subdomains += subdomain_obj['name'] + '\n'
+    if (data['subdomains'].length) {
+      $('#modal_dialog').modal('show');
+      $('.modal_count').html(data['subdomains'].length);
+      $('#modal-content').empty();
+      subdomains = '';
+      $('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="all_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+      for (subdomain in data['subdomains']){
+        subdomain_obj = data['subdomains'][subdomain];
+        subdomains += subdomain_obj['name'] + '\n'
+      }
+      $('#all_subdomains_text_area').append(subdomains);
+      $("#modal-footer").empty();
+      $("#modal-footer").append(`<a href="javascript:download('important-subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
+      $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-dark copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
     }
-    $('#all_subdomains_text_area').append(subdomains);
-    $("#modal-footer").empty();
-    $("#modal-footer").append(`<a href="javascript:download('important-subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-primary copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
-    $("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-dark copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
+    else{
+      swal.fire("No Important Endpoints", "No subdomains has been marked as important.", "warning", {
+        button: "Okay",
+      });
+    }
   }).fail(function(){
-    $('#modal-loader').empty();
+    swal.fire("No Important Endpoints", "No subdomains has been marked as important.", "warning", {
+      button: "Okay",
+    });
   });
 }
 
