@@ -47,6 +47,9 @@ Detailed Scan
 				<li class="nav-item interesting-tab-show" style="display: none">
 					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#interesting-tab">Interesting Recon</a>
 				</li>
+				<li class="nav-item recon-changes-tab-show" style="display: none">
+					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#recon-changes-tab">Recon Data Changes</a>
+				</li>
 				{% if history.screenshot %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#screenshot-tab">Screenshots</a>
@@ -1109,6 +1112,48 @@ Detailed Scan
 		</div>
 	</div>
 
+	{# Recon Data Changes section #}
+	<div class="tab-pane recon-changes-tab-show" id="recon-changes-tab" style="display: none">
+		<div class="row">
+			<div class="col-xl-12">
+				<div class="card" id="recon_changes_subdomain_div">
+					<div class="card-body">
+						<h4 class="header-title mb-0"><span id="subdomain_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Subdomain Changes</h4>
+							<table class="table style-3 table-hover" id="table-subdomain-changes">
+								<thead>
+									<tr>
+										<th>Subdomain</th>
+										<th>Page Title</th>
+										<th>Status</th>
+										<th>Content Length</th>
+										<th>Change</th>
+									</tr>
+								</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-12" id="endpoint-changes-div">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0"><span id="endpoint_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Endpoint Changes</h4>
+						<table class="table style-3 table-hover" id="table-endpoint-changes">
+							<thead>
+								<tr>
+									<th>Subdomain</th>
+									<th>Page Title</th>
+									<th>Status</th>
+									<th>Content Length</th>
+									<th>Change</th>
+								</tr>
+							</thead>
+					</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 </div>
 
 {# add recon modal #}
@@ -2010,6 +2055,10 @@ $(document).ready(function(){
 	$('#interesting-tab-btn').click(function(){
 		$('.nav-tabs a[href="#interesting-tab"]').tab('show')
 	});
+
+	// recon data changes
+	get_subdomain_changes({{scan_history_id}});
+	get_endpoint_changes({{scan_history_id}});
 
 	</script>
 	{% endblock page_level_script %}

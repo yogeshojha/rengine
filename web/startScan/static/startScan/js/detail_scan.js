@@ -187,24 +187,25 @@ function get_subdomain_changes(scan_history_id){
   $('#table-subdomain-changes').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
       if (this.fnSettings().fnRecordsTotal() > 0) {
-        $("#subdomain_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
+        $('#subdomain_change_count').empty();
+        $("#subdomain_change_count").html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</spansssss>`);
+        $('.recon-changes-tab-show').removeAttr('style');
       }
       else{
-        $("#subdomain-changes-div").remove();
+        $('#recon_changes_subdomain_div').remove();
       }
       $("#subdomain-changes-loader").remove();
     },
     "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
     },
     "processing": true,
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "stripeClasses": [],
@@ -237,11 +238,11 @@ function get_subdomain_changes(scan_history_id){
           interesting_badge = '';
           if (row['is_cdn'])
           {
-            cdn_badge = "<span class='m-1 badge  badge-warning'>CDN</span>"
+            cdn_badge = "<span class='m-1 badge  badge-soft-warning'>CDN</span>"
           }
           if(row['is_interesting'])
           {
-            interesting_badge = "<span class='m-1 badge  badge-danger'>Interesting</span>"
+            interesting_badge = "<span class='m-1 badge  badge-soft-danger'>Interesting</span>"
           }
           if(cdn_badge || interesting_badge)
           {
@@ -262,16 +263,16 @@ function get_subdomain_changes(scan_history_id){
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
           if (data >= 200 && data < 300) {
-            return "<span class='badge  badge-success'>"+data+"</span>";
+            return "<span class='badge  badge-soft-success'>"+data+"</span>";
           }
           else if (data >= 300 && data < 400) {
-            return "<span class='badge  badge-warning'>"+data+"</span>";
+            return "<span class='badge  badge-soft-warning'>"+data+"</span>";
           }
           else if (data == 0){
             // datatable throws error when no data is returned
             return "";
           }
-          return `<span class='badge  badge-danger'>`+data+`</span>`;
+          return `<span class='badge  badge-soft-danger'>`+data+`</span>`;
         },
         "targets": 2,
       },
@@ -287,10 +288,10 @@ function get_subdomain_changes(scan_history_id){
       {
         "render": function ( data, type, row ) {
           if (data == 'added'){
-            return `<span class='badge badge-success'>Added</span>`;
+            return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> Added</span>`;
           }
           else{
-            return `<span class='badge badge-danger'>Removed</span>`;
+            return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> Removed</span>`;
           }
         },
         "targets": 4,
@@ -303,7 +304,9 @@ function get_endpoint_changes(scan_history_id){
   $('#table-endpoint-changes').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
       if (this.fnSettings().fnRecordsTotal() > 0) {
+        $("#endpoint_change_count").empty();
         $("#endpoint_change_count").html(`${this.fnSettings().fnRecordsTotal()}`);
+        $('.recon-changes-tab-show').removeAttr('style');
       }
       else{
         $("#endpoint-changes-div").remove();
@@ -311,16 +314,15 @@ function get_endpoint_changes(scan_history_id){
       $("#endpoint-changes-loader").remove();
     },
     "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
     },
     "processing": true,
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "stripeClasses": [],
@@ -349,26 +351,26 @@ function get_endpoint_changes(scan_history_id){
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
           if (data >= 200 && data < 300) {
-            return "<span class='badge  badge-success'>"+data+"</span>";
+            return "<span class='badge  badge-soft-success'>"+data+"</span>";
           }
           else if (data >= 300 && data < 400) {
-            return "<span class='badge  badge-warning'>"+data+"</span>";
+            return "<span class='badge  badge-soft-warning'>"+data+"</span>";
           }
           else if (data == 0){
             // datatable throws error when no data is returned
             return "";
           }
-          return `<span class='badge  badge-danger'>`+data+`</span>`;
+          return `<span class='badge  badge-soft-danger'>`+data+`</span>`;
         },
         "targets": 2,
       },
       {
         "render": function ( data, type, row ) {
           if (data == 'added'){
-            return `<span class='badge badge-success'>Added</span>`;
+            return `<span class='badge badge-soft-success'><i class="fe-plus-circle"></i> Added</span>`;
           }
           else{
-            return `<span class='badge badge-danger'>Removed</span>`;
+            return `<span class='badge badge-soft-danger'><i class="fe-minus-circle"></i> Removed</span>`;
           }
         },
         "targets": 4,
@@ -906,7 +908,7 @@ function get_metadata(scan_id){
         metadata = ''
         metadata += doc['producer'] ? 'Software: ' + doc['producer'] : ''
         metadata += doc['creator'] ? '/' + doc['creator'] : ''
-        metadata += doc['os'] ? `<br> <span class='badge badge-danger'> OS: ` + doc['os'] + '</span>': ''
+        metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': ''
         $(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
       }
       else{
