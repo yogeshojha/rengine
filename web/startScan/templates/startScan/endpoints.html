@@ -35,22 +35,36 @@ All Endpoints
   <div class="col-12">
     <div class="card">
       <div class="card-body">
-        <table id="endpoint_results" class="table style-3 table-hover">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>HTTP URL</th>
-              <th>Status</th>
-              <th>Page Title</th>
-              <th>Tags</th>
-              <th>Content Type</th>
-              <th>Content Length</th>
-              <th>Technology</th>
-              <th>Webserver</th>
-              <th>Response time</th>
-            </tr>
-          </thead>
-        </table>
+        <div class="row">
+          <div class="col-12">
+            <div class="btn-group mb-2 float-end dropstart">
+              <button class="btn btn-primary dropdown-toggle " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fe-download"></i>
+              </button>
+              <div class="dropdown-menu" style="">
+                <a class="dropdown-item" href="javascript:download_endpoints()">Download All Endpoints</a>
+              </div>
+            </div>
+          </div>
+          <div class="col-12">
+            <table id="endpoint_results" class="table style-3 table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>HTTP URL</th>
+                  <th>Status</th>
+                  <th>Page Title</th>
+                  <th>Tags</th>
+                  <th>Content Type</th>
+                  <th>Content Length</th>
+                  <th>Technology</th>
+                  <th>Webserver</th>
+                  <th>Response time</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
