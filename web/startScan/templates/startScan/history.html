@@ -175,7 +175,7 @@
                         {% endif %}
                         {% if scan.scan_status != -1%}
                           <div class="dropdown-divider"></div>
-                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}')">
+                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}', '{{ scan_history.domain.name }}')">
                             <i class="fe-download"></i>&nbsp;Download Report</a>
                         {% endif %}
                       </div>
@@ -455,7 +455,7 @@
       }
     }
 
-    function initiate_report(id, is_subdomain_scan, is_vulnerability_scan) {
+    function initiate_report(id, is_subdomain_scan, is_vulnerability_scan, domain_name) {
       $('#generateReportModal').modal('show');
       $('#report_alert_message').empty();
       $('#report_type_select').empty();
@@ -492,10 +492,10 @@
         }));
       }
 
-      $('#generateReportButton').attr('onClick', `generate_report(${id})`);
+      $('#generateReportButton').attr('onClick', `generate_report(${id}, '${domain_name}')`);
     }
 
-    function generate_report(id) {
+    function generate_report(id, domain_name) {
       var report_type = $("#report_type_select option:selected").val();
         $('#generateReportModal').modal('hide');
       swal.queue([{
