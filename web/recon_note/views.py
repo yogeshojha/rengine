@@ -22,7 +22,7 @@ def add_note(request):
         note.description = body['description']
 
         # check for existence of scan history
-        if 'scan_history' in body:
+        if 'scan_history' in body and body['scan_history'] != 0:
             scan_history = ScanHistory.objects.get(id=body['scan_history'])
             note.scan_history = scan_history
 
