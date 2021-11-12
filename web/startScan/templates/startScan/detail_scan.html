@@ -87,7 +87,7 @@ Detailed Scan
 <div class="tab-content no-padding-tab">
 	<!-- start tab contents  -->
 	<div class="tab-pane show active" id="summary-tab">
-	<!-- <div class="tab-pane" id="summary-tab"> -->
+		<!-- <div class="tab-pane" id="summary-tab"> -->
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -625,6 +625,33 @@ Detailed Scan
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-12">
+						<div class="card">
+							<div class="card-body">
+								<div class="dropdown float-end">
+									<a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
+										<i class="mdi mdi-dots-vertical"></i>
+									</a>
+									<div class="dropdown-menu dropdown-menu-end">
+										<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
+									</div>
+								</div>
+								<h4 class="header-title mb-0"><span id="interesting_subdomain_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Subdomains</h4>
+								<table id="interesting_subdomains" class="table style-3 table-hover">
+									<thead>
+										<tr>
+											<th>Subdomain</th>
+											<th>Page Title</th>
+											<th>HTTP Status</th>
+											<th>Content Length</th>
+											<th>HTTP URL</th>
+											<th>Tech Stack</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div> <!-- end col -->
 				</div>
 			</div>
 		</div>
@@ -1930,8 +1957,11 @@ $(document).ready(function(){
 
 	// visualisation tab
 	$("#pills-visualisation-tab").click(function() {
-	visualise_scan_results({{scan_history_id}});
+		visualise_scan_results({{scan_history_id}});
 	});
+
+	// gets interesting subdomains
+	get_interesting_subdomains(null, {{scan_history_id}});
 
 	</script>
 	{% endblock page_level_script %}

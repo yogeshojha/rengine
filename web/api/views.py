@@ -906,13 +906,44 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 
         if 'only_subdomains' in self.request.query_params:
             self.serializer_class = InterestingSubdomainSerializer
+
         if scan_id:
-            return get_interesting_subdomains(scan_history=scan_id)
+            self. queryset = get_interesting_subdomains(scan_history=scan_id)
         elif target_id:
-            queryset = get_interesting_subdomains(target=target_id)
-            return queryset
+            self.queryset = get_interesting_subdomains(target=target_id)
         else:
-            return get_interesting_subdomains()
+            self.queryset = get_interesting_subdomains()
+
+        return self.queryset
+
+    def filter_queryset(self, qs):
+        qs = self.queryset.filter()
+        search_value = self.request.GET.get(u'search[value]', None)
+        _order_col = self.request.GET.get(u'order[0][column]', None)
+        _order_direction = self.request.GET.get(u'order[0][dir]', None)
+        order_col = 'content_length'
+        if _order_col == '0':
+            order_col = 'name'
+        elif _order_col == '1':
+            order_col = 'page_title'
+        elif _order_col == '2':
+            order_col = 'http_status'
+        elif _order_col == '3':
+            order_col = 'content_length'
+
+        if _order_direction == 'desc':
+            order_col = '-{}'.format(order_col)
+
+        if search_value:
+            qs = self.queryset.filter(
+                Q(name__icontains=search_value) |
+                Q(page_title__icontains=search_value) |
+                Q(http_status__icontains=search_value)
+            )
+
+        print(qs)
+
+        return qs.order_by(order_col)
 
     def paginate_queryset(self, queryset, view=None):
         if 'no_page' in self.request.query_params:
@@ -975,7 +1006,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             self.queryset = self.queryset.exclude(directory_json__isnull=True)
 
         if ip_address:
-            print(ip_address)
             self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
 
         return self.queryset
@@ -986,7 +1016,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
         _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'content_length'
-        print(_order_col)
         if _order_col == '0':
             order_col = 'checked'
         elif _order_col == '1':
@@ -1040,7 +1069,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
     def special_lookup(self, search_value):
         qs = self.queryset.filter()
-        print(search_value)
         if '=' in search_value:
             search_param = search_value.split("=")
             lookup_title = search_param[0].lower().strip()
@@ -1258,7 +1286,6 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
     def special_lookup(self, search_value):
         qs = self.queryset.filter()
-        print(search_value)
         if '=' in search_value:
             search_param = search_value.split("=")
             lookup_title = search_param[0].lower().strip()
