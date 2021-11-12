@@ -550,19 +550,18 @@ function get_interesting_subdomains(target_id, scan_history_id){
   var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
       $('#interesting_subdomain_count_badge').empty();
-      $('#interesting_subdomain_count_badge').html(`<span class="badge outline-badge-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
+      $('#interesting_subdomain_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
     },
     "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
     },
     "processing": true,
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     "destroy": true,
     "bInfo": false,
@@ -570,6 +569,8 @@ function get_interesting_subdomains(target_id, scan_history_id){
     'serverSide': true,
     "ajax": url,
     "order": [[3, "desc"]],
+    "lengthMenu": [5, 10, 20, 50, 100],
+    "pageLength": 5,
     "columns": [
       {'data': 'name'},
       {'data': 'page_title'},
@@ -595,12 +596,12 @@ function get_interesting_subdomains(target_id, scan_history_id){
         "render": function ( data, type, row ) {
           tech_badge = '';
           if (row['technologies']){
-            tech_badge = `</br>` + parse_technology(row['technologies'], "info", outline=true, scan_id=null);
+            tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id=null);
           }
           if (row['http_url']) {
-            return `<a href="`+row['http_url']+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+            return `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>` + tech_badge;
           }
-          return `<a href="https://`+data+`" class="text-info" target="_blank">`+data+`</a>` + tech_badge;
+          return `<a href="https://`+data+`" class="text-primary" target="_blank">`+data+`</a>` + tech_badge;
         },
         "targets": 0
       },
@@ -609,16 +610,16 @@ function get_interesting_subdomains(target_id, scan_history_id){
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
           if (data >= 200 && data < 300) {
-            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+            return "<span class='badge badge-pills badge-soft-success'>"+data+"</span>";
           }
           else if (data >= 300 && data < 400) {
-            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+            return "<span class='badge badge-pills badge-soft-warning'>"+data+"</span>";
           }
           else if (data == 0){
             // datatable throws error when no data is returned
             return "";
           }
-          return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+          return `<span class='badge badge-pills badge-soft-danger'>`+data+`</span>`;
         },
         "targets": 2,
       },
@@ -638,7 +639,7 @@ function get_interesting_endpoint(target_id, scan_history_id){
   $('#interesting_endpoints').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
       $('#interesting_endpoint_count_badge').empty();
-      $('#interesting_endpoint_count_badge').html(`<span class="badge outline-badge-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
+      $('#interesting_endpoint_count_badge').html(`<span class="badge badge-soft-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
     },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
