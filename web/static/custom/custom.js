@@ -567,6 +567,7 @@ function get_interesting_subdomains(target_id, scan_history_id){
       else{
         // show nav bar
         $('.interesting-tab-show').removeAttr('style');
+        $('#interesting_subdomain_alert_count').html(`${this.fnSettings().fnRecordsTotal()} Subdomains`)
         $('#interesting_subdomain_count_badge').empty();
         $('#interesting_subdomain_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
       }
@@ -663,6 +664,7 @@ function get_interesting_endpoint(target_id, scan_history_id){
       }
       else{
         $('.interesting-tab-show').removeAttr('style');
+        $('#interesting_endpoint_alert_count').html(`, ${this.fnSettings().fnRecordsTotal()} Endpoints`)
         $('#interesting_endpoint_count_badge').empty();
         $('#interesting_endpoint_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
       }
