@@ -134,7 +134,7 @@ function get_task_details(todo_id){
     note = data['notes'][0];
     subdomain_name = '';
     if (note['subdomain_name']) {
-      subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+      subdomain_name = '<small class="text-success"> Subdomain: ' + note['subdomain_name'] + '</small></br>';
     }
     $('.modal-title').html(`<b>${split(htmlEncode(note['title']), 80)}</b>`);
     $('#modal-text-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
@@ -160,7 +160,7 @@ function get_recon_notes(target_id, scan_id){
         div_id = 'todo_' + note['id'];
         subdomain_name = '';
         if (note['subdomain_name']) {
-          subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+          subdomain_name = '<small class="text-success"> Subdomain: ' + note['subdomain_name'] + '</small></br>';
         }
         strike_tag = 'span';
         checked = '';
