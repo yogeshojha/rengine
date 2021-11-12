@@ -57,7 +57,7 @@ endpointInputBox.onclick = (event) => {
       badge_color = "info";
       title = `Filter endpoint that contains <span class="badge badge-soft-blue">${data}</span>`;
     }
-    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${filter_icon}</span>&nbsp;${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
+    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${endpoint_filter_icon}</span>&nbsp;${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
   });
 
   endpointSearchWrapper.classList.add("active");

@@ -35,13 +35,13 @@ body[data-layout-mode=horizontal] .container-fluid {
 }
 
 .badge-critical {
-  color: #fff;
-  background-color: #E53935;
+  color: #E53935;
+  background-color: #FFCDD2;
 }
 
 .badge-low {
-  color: #fff;
-  background-color: #FFD600;
+  color: #FDD835;
+  background-color: #FFF9C4;
 }
 
 .form-control:focus,

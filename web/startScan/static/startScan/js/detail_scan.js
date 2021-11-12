@@ -102,14 +102,14 @@ function get_endpoints(scan_history_id, gf_tags){
           }
 
           if (row['webserver']) {
-            web_server = `<span class='m-1 badge  badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+            web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${row['webserver']}</span>`;
           }
 
           var url = split(data, 70);
           action_icons = `
           <div class="float-left subdomain-table-action-icons mt-2">
           <span class="m-1">
-          <a href="javascript:;" data-clipboard-action="copy" class="badge-link copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
+          <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-primary copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}" id="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
           </a>
           </div>
@@ -168,10 +168,10 @@ function get_endpoints(scan_history_id, gf_tags){
       },
     ],
     drawCallback: function () {
-      $('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+      $("body").tooltip({ selector: '[data-toggle=tooltip]' });
       $('.dataTables_wrapper table').removeClass('table-striped');
-      $('.bs-tooltip').tooltip();
       var clipboard = new Clipboard('.copyable');
+      $('.bs-tooltip').tooltip();
       clipboard.on('success', function(e) {
         setTooltip(e.trigger, 'Copied!');
         hideTooltip(e.trigger);
