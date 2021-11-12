@@ -188,8 +188,9 @@ function get_subdomain_changes(scan_history_id){
     "drawCallback": function(settings, start, end, max, total, pre) {
       if (this.fnSettings().fnRecordsTotal() > 0) {
         $('#subdomain_change_count').empty();
-        $("#subdomain_change_count").html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</spansssss>`);
+        $("#subdomain_change_count").html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
         $('.recon-changes-tab-show').removeAttr('style');
+        $('#subdomain_changes_alert').html(`${this.fnSettings().fnRecordsTotal()} Subdomain changes.`)
       }
       else{
         $('#recon_changes_subdomain_div').remove();

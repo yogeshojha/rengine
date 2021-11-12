@@ -783,8 +783,7 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
         scan_history = ScanHistory.objects.filter(
             domain=domain_id).filter(
             subdomain_discovery=True).filter(
-            id__lte=scan_id).filter(
-                scan_status=2)
+            id__lte=scan_id).exclude(Q(scan_status=-1) | Q(scan_status=1))
         if scan_history.count() > 1:
             last_scan = scan_history.order_by('-start_scan_date')[1]
             scanned_host_q1 = Subdomain.objects.filter(
