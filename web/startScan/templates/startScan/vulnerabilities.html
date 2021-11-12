@@ -7,25 +7,11 @@ All Vulnerabilities
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/elements/custom-tree_view.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
-<link href="{% static 'plugins/apex/apexcharts.css' %}" rel="stylesheet" type="text/css">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/widgets/modules-widgets.css' %}">
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'custom/custom.js' %}"></script>
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
+<link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
-
-{% block breadcrumb_title %}
-<li class="breadcrumb-item active" aria-current="page">Vulnerabilities</li>
-{% endblock breadcrumb_title %}
-
 
 {% block main_content %}
 <div class="row justify-content-center">
@@ -44,10 +30,12 @@ All Vulnerabilities
 			</div>
 		</div>
 	</div>
-	<div class="col-xl-12 col-lg-12 col-sm-12">
-		<div class="widget">
-			<div class="widget-content">
-				<table class="multi-table table table-striped table-bordered table-hover non-hover" style="width:100%" id="vulnerability_results">
+</div>
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<div class="card-body">
+				<table class="table style-3 table-hover" id="vulnerability_results">
 					<thead>
 						<tr>
 							<th class="checkbox-column">Status</th>
@@ -73,29 +61,23 @@ All Vulnerabilities
 
 
 {% block page_level_script %}
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
-<script src="{% static 'plugins/apex/apexchart.min.js' %}"></script>
-<script src="{% static 'assets/js/dashboard/dash_1.js' %}"></script>
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="//cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js"></script>
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
-			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
 			"sLengthMenu": "Results :  _MENU_",
-			"sProcessing": "Processing... Please wait..."
 		},
 		"processing": true,
 		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
-		"<'row'<'col'tr>>" +
+		"<'table-responsive'tr>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"stripeClasses": [],
 		"lengthMenu": [50, 100, 500, 1000],
@@ -134,16 +116,10 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
-						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-						<input type="checkbox" class="new-control-input child-chk select-customers-info" onchange="vuln_status_change(this, `+data+`);">
-						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-						</label>`;
+						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
 					}
 					else{
-						return `<label class="new-control new-checkbox checkbox-outline-info m-auto">
-						<input type="checkbox" class="new-control-input child-chk select-customers-info" checked onchange="vuln_status_change(this, `+data+`);">
-						<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>
-						</label>`;
+						return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
 					}
 				},
 				"targets": 0,
@@ -153,16 +129,16 @@ $(document).ready(function() {
 					var tags_span ="";
 					switch (row['severity']) {
 						case 'Info':
-						color = 'info'
+						color = 'soft-info'
 						break;
 						case 'Low':
 						color = 'low'
 						break;
 						case 'Medium':
-						color = 'warning'
+						color = 'soft-warning'
 						break;
 						case 'High':
-						color = 'danger'
+						color = 'soft-danger'
 						break;
 						case 'Critical':
 						color = 'critical'
@@ -170,12 +146,12 @@ $(document).ready(function() {
 						default:
 					}
 					if (row['tags']) {
-						var badge = "<span class='badge badge-pill outline-badge-"+color+" m-1'>";
+						var badge = "<span class='badge badge-"+color+" me-1 mt-1'>";
 						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
 							tags_span+=badge + split_vals + "</span>";
 						});
 					}
-					hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge outline-badge-danger m-2" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
+					hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge badge-soft-danger me-1 mt-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
 					return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Last Seen:` + row['discovered_date'] + "</small>";
 				},
 				"targets": 1,
@@ -184,16 +160,16 @@ $(document).ready(function() {
 				"render": function ( data, type, row ) {
 					switch (data) {
 						case 'Info':
-						return "<span class='badge badge-info'>Info</span>";
+						return "<span class='badge badge-soft-info'>Info</span>";
 						break;
 						case 'Low':
 						return "<span class='badge badge-low'>Low</span>";
 						break;
 						case 'Medium':
-						return "<span class='badge badge-warning'>Medium</span>";
+						return "<span class='badge badge-soft-warning'>Medium</span>";
 						break;
 						case 'High':
-						return "<span class='badge badge-danger'>High</span>";
+						return "<span class='badge badge-soft-danger'>High</span>";
 						break;
 						case 'Critical':
 						return "<span class='badge badge-critical'>Critical</span>";
@@ -224,10 +200,10 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data){
-						return '<div class="t-dot bg-danger" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open"></div>'
+						return '<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="Open">Open</span>'
 					}
 					else{
-						return '<div class="t-dot bg-success" data-toggle="tooltip" data-placement="top" title="" data-original-title="Closed"></div>'
+						return '<span class="badge badge-soft-success" data-toggle="tooltip" data-placement="top" title="Closed">Closed</span>'
 					}
 				},
 				"targets": 5,
@@ -235,11 +211,12 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (!data){
-						return `<div class="dropdown">
-						<a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink${row['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+						return `
+						<div class="btn-group mb-2 dropstart">
+						<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 						</a>
-						<div class="dropdown-menu" aria-labelledby="dropdownMenuLink6">
+						<div class="dropdown-menu" style="">
 						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
 						</div>
 						</div>`;
@@ -251,13 +228,9 @@ $(document).ready(function() {
 				"targets": 11,
 			},
 		],
-		drawCallback: function () {
-			$('.t-dot').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-			$('.dataTables_wrapper table').removeClass('table-striped');
-		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
-				$(row).addClass('table-secondary text-strike');
+				$(row).addClass('table-success text-strike');
 			}
 		},
 	});
