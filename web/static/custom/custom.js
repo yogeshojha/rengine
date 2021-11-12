@@ -552,19 +552,21 @@ function get_interesting_subdomains(target_id, scan_history_id){
       // if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
       if (this.fnSettings().fnRecordsTotal() == 0) {
         $('#interesting_subdomain_div').empty();
-        $('#interesting_subdomain_div').append(`<div class="card-header bg-primary py-3 text-white">
-        <div class="card-widgets">
-        <a href="#" data-toggle="remove"><i class="mdi mdi-close"></i></a>
-        </div>
-        <h5 class="card-title mb-0 text-white"><i class="mdi mdi-fire-alert me-2"></i>Interesting subdomains could not be identified</h5>
-        </div>
-        <div id="cardCollpase4" class="collapse show">
-        <div class="card-body">
-        reNgine could not identify any interesting subdomains. You can customize interesting subdomain keywords <a href="/scanEngine/interesting/lookup/">from here</a> and this section would be automatically updated.
-        </div>
-        </div>`);
+        // $('#interesting_subdomain_div').append(`<div class="card-header bg-primary py-3 text-white">
+        // <div class="card-widgets">
+        // <a href="#" data-toggle="remove"><i class="mdi mdi-close"></i></a>
+        // </div>
+        // <h5 class="card-title mb-0 text-white"><i class="mdi mdi-fire-alert me-2"></i>Interesting subdomains could not be identified</h5>
+        // </div>
+        // <div id="cardCollpase4" class="collapse show">
+        // <div class="card-body">
+        // reNgine could not identify any interesting subdomains. You can customize interesting subdomain keywords <a href="/scanEngine/interesting/lookup/">from here</a> and this section would be automatically updated.
+        // </div>
+        // </div>`);
       }
       else{
+        // show nav bar
+        $('.interesting-tab-show').removeAttr('style');
         $('#interesting_subdomain_count_badge').empty();
         $('#interesting_subdomain_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
       }
@@ -587,7 +589,7 @@ function get_interesting_subdomains(target_id, scan_history_id){
     "ajax": url,
     "order": [[3, "desc"]],
     "lengthMenu": [5, 10, 20, 50, 100],
-    "pageLength": 5,
+    "pageLength": 10,
     "columns": [
       {'data': 'name'},
       {'data': 'page_title'},
@@ -613,7 +615,7 @@ function get_interesting_subdomains(target_id, scan_history_id){
         "render": function ( data, type, row ) {
           tech_badge = '';
           if (row['technologies']){
-            tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id=null);
+            // tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id=null);
           }
           if (row['http_url']) {
             return `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>` + tech_badge;
@@ -645,35 +647,44 @@ function get_interesting_subdomains(target_id, scan_history_id){
 }
 
 function get_interesting_endpoint(target_id, scan_history_id){
+  var non_orderable_targets = [];
   if (target_id) {
     url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
-    non_orderable_targets = [0, 1, 2, 3];
+    // non_orderable_targets = [0, 1, 2, 3];
   }
   else if (scan_history_id) {
     url = `/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`;
-    non_orderable_targets = [0, 1, 2, 3];
+    // non_orderable_targets = [0, 1, 2, 3];
   }
   $('#interesting_endpoints').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
-      $('#interesting_endpoint_count_badge').empty();
-      $('#interesting_endpoint_count_badge').html(`<span class="badge badge-soft-danger">${this.fnSettings().fnRecordsTotal()}</span>`);
+      if (this.fnSettings().fnRecordsTotal() == 0) {
+        $('#interesting_endpoint_div').remove();
+      }
+      else{
+        $('.interesting-tab-show').removeAttr('style');
+        $('#interesting_endpoint_count_badge').empty();
+        $('#interesting_endpoint_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
+      }
     },
     "oLanguage": {
-      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
       "sInfo": "Showing page _PAGE_ of _PAGES_",
-      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
       "sSearchPlaceholder": "Search...",
       "sLengthMenu": "Results :  _MENU_",
-      "sProcessing": "Processing... Please wait..."
     },
     "processing":true,
-    "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-    "<'row'<'col'tr>>" +
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
     "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
     'serverSide': true,
+    "destroy": true,
     "bInfo": false,
     "ajax": url,
     "order": [[3, "desc"]],
+    "lengthMenu": [5, 10, 20, 50, 100],
+    "pageLength": 10,
     "columns": [
       {'data': 'http_url'},
       {'data': 'page_title'},
@@ -686,7 +697,7 @@ function get_interesting_endpoint(target_id, scan_history_id){
       {
         "render": function ( data, type, row ) {
           var url = split(data, 70);
-          return "<a href='"+data+"' target='_blank' class='text-info'>"+url+"</a>";
+          return "<a href='"+data+"' target='_blank' class='text-primary'>"+url+"</a>";
         },
         "targets": 0
       },
@@ -695,16 +706,16 @@ function get_interesting_endpoint(target_id, scan_history_id){
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
           if (data >= 200 && data < 300) {
-            return "<span class='badge badge-pills badge-success'>"+data+"</span>";
+            return "<span class='badge badge-pills badge-soft-success'>"+data+"</span>";
           }
           else if (data >= 300 && data < 400) {
-            return "<span class='badge badge-pills badge-warning'>"+data+"</span>";
+            return "<span class='badge badge-pills badge-soft-warning'>"+data+"</span>";
           }
           else if (data == 0){
             // datatable throws error when no data is returned
             return "";
           }
-          return `<span class='badge badge-pills badge-danger'>`+data+`</span>`;
+          return `<span class='badge badge-pills badge-soft-danger'>`+data+`</span>`;
         },
         "targets": 2,
       },

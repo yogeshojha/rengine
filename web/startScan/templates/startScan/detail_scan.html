@@ -44,6 +44,9 @@ Detailed Scan
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
 				</li>
+				<li class="nav-item interesting-tab-show" style="display: none">
+					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#interesting-tab">Interesting Recon</a>
+				</li>
 				{% if history.screenshot %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#screenshot-tab">Screenshots</a>
@@ -318,6 +321,12 @@ Detailed Scan
 								<br>
 								{% endif %}
 							</div>
+						</div>
+					</div>
+					<div class="col-12 interesting-tab-show" style="display: none">
+						<div class="alert alert-primary alert-dismissible fade show" role="alert">
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							<i class="mdi mdi-fire-alert me-2"></i>  reNgine has identified 2 interesting subdomains <a class="alert-link" id="interesting-tab-btn" href="#">Check it out!</a>
 						</div>
 					</div>
 					<div class="col-xl-7 col-lg-7 col-12">
@@ -622,33 +631,6 @@ Detailed Scan
 								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
 									<div id="technologies" class="mt-2"></div>
 								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-xl-12">
-						<div class="card" id="interesting_subdomain_div">
-							<div class="card-body">
-								<div class="dropdown float-end">
-									<a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
-										<i class="mdi mdi-dots-vertical"></i>
-									</a>
-									<div class="dropdown-menu dropdown-menu-end">
-										<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
-									</div>
-								</div>
-								<h4 class="header-title mb-0"><span id="interesting_subdomain_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Subdomains</h4>
-								<table id="interesting_subdomains" class="table style-3 table-hover">
-									<thead>
-										<tr>
-											<th>Subdomain</th>
-											<th>Page Title</th>
-											<th>HTTP Status</th>
-											<th>Content Length</th>
-											<th>HTTP URL</th>
-											<th>Tech Stack</th>
-										</tr>
-									</thead>
-								</table>
 							</div>
 						</div>
 					</div>
@@ -1061,6 +1043,64 @@ Detailed Scan
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{# Interesting Recon section #}
+	<div class="tab-pane interesting-tab-show" style="display: none" id="interesting-tab">
+		<div class="row">
+			<div class="col-xl-12">
+				<div class="card" id="interesting_subdomain_div">
+					<div class="card-body">
+						<div class="dropdown float-end">
+							<a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
+								<i class="mdi mdi-dots-vertical"></i>
+							</a>
+							<div class="dropdown-menu dropdown-menu-end">
+								<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
+							</div>
+						</div>
+						<h4 class="header-title mb-0"><span id="interesting_subdomain_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Subdomains</h4>
+						<table id="interesting_subdomains" class="table style-3 table-hover">
+							<thead>
+								<tr>
+									<th>Subdomain</th>
+									<th>Page Title</th>
+									<th>HTTP Status</th>
+									<th>Content Length</th>
+									<th>HTTP URL</th>
+									<th>Tech Stack</th>
+								</tr>
+							</thead>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-12" id="interesting_endpoint_div">
+				<div class="card">
+					<div class="card-body">
+						<div class="dropdown float-end">
+							<a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
+								<i class="mdi mdi-dots-vertical"></i>
+							</a>
+							<div class="dropdown-menu dropdown-menu-end">
+								<a class="dropdown-item" href="javascript:download_interesting_endpoints({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Endpoints</a>
+							</div>
+						</div>
+						<h4 class="header-title mb-0"><span id="interesting_endpoint_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Endpoints</h4>
+						<table id="interesting_endpoints" class="table style-3 table-hover">
+							<thead>
+								<tr>
+									<th>URL</th>
+									<th>Title</th>
+									<th>HTTP Status</th>
+									<th>Content Length</th>
+								</tr>
+							</thead>
+						</table>
 					</div>
 				</div>
 			</div>
@@ -1962,6 +2002,12 @@ $(document).ready(function(){
 
 	// gets interesting subdomains
 	get_interesting_subdomains(null, {{scan_history_id}});
+	get_interesting_endpoint(null, {{scan_history_id}});
+
+	// tab clicker for interesting recon data
+	$('#interesting-tab-btn').click(function(){
+		$('.nav-tabs a[href="#interesting-tab"]').tab('show')
+	});
 
 	</script>
 	{% endblock page_level_script %}
