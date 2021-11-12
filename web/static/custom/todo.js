@@ -1,5 +1,5 @@
 function todoCheckboxListener(){
-  $('.todo-item').click(function() {
+  $('.detail-scan-todo-item').click(function() {
     var note_id = parseInt(this.id.split('_')[1]);
     console.log(note_id);
     if ($(this).is(":checked")) {
@@ -180,7 +180,7 @@ function get_recon_notes(target_id, scan_id){
         $(`#todo_list_${target_id}`).append(`<div id="todo_parent_${note['id']}">
         <div class="d-flex align-items-start">
         <div class="w-100" onclick="get_task_details(${note['id']})">
-        <input type="checkbox" class="me-1 form-check-input todo-done todo-item" ${checked} name="${div_id}" id="${div_id}">
+        <input type="checkbox" class="me-1 form-check-input todo-done todo-item detail-scan-todo-item" ${checked} name="${div_id}" id="${div_id}">
         <label for="${div_id}" class="form-check-label">${important_badge}<${strike_tag}>${htmlEncode(note['title'])}</${strike_tag}></label>
         <${strike_tag}><p>${subdomain_name} <small>${truncate(htmlEncode(note['description']), 150)}</small></p></${strike_tag}>
         </div>
