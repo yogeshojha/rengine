@@ -1197,12 +1197,13 @@ function add_task_for_subdomain_handler(subdomain_id){
     'description': description
   }
 
-  scan_id = parseInt(document.getElementById('summary_identifier_val').value);
+  scan_id = 0;
+  if (document.getElementById("summary_identifier_val")) {
+    scan_id = parseInt(document.getElementById('summary_identifier_val').value);
+  }
+
   data['scan_history'] = scan_id;
   data['subdomain'] = subdomain_id;
-
-
-  console.log(data)
 
   fetch('../../recon_note/add_note', {
     method: 'post',
