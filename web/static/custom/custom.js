@@ -549,8 +549,25 @@ function get_interesting_subdomains(target_id, scan_history_id){
   }
   var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
     "drawCallback": function(settings, start, end, max, total, pre) {
-      $('#interesting_subdomain_count_badge').empty();
-      $('#interesting_subdomain_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
+      // if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
+      if (this.fnSettings().fnRecordsTotal() == 0) {
+        $('#interesting_subdomain_div').empty();
+        $('#interesting_subdomain_div').append(`<div class="card-header bg-primary py-3 text-white">
+        <div class="card-widgets">
+        <a href="#" data-toggle="remove"><i class="mdi mdi-close"></i></a>
+        </div>
+        <h5 class="card-title mb-0 text-white"><i class="mdi mdi-fire-alert me-2"></i>Interesting subdomains could not be identified</h5>
+        </div>
+        <div id="cardCollpase4" class="collapse show">
+        <div class="card-body">
+        reNgine could not identify any interesting subdomains. You can customize interesting subdomain keywords <a href="/scanEngine/interesting/lookup/">from here</a> and this section would be automatically updated.
+        </div>
+        </div>`);
+      }
+      else{
+        $('#interesting_subdomain_count_badge').empty();
+        $('#interesting_subdomain_count_badge').html(`<span class="badge badge-soft-primary me-1">${this.fnSettings().fnRecordsTotal()}</span>`);
+      }
     },
     "oLanguage": {
       "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
