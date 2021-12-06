@@ -24,9 +24,6 @@ class WhoisDetail(models.Model):
     details = models.TextField(blank=True, null=True)
     registrant = models.ForeignKey(RegistrantInfo, on_delete=models.CASCADE, null=True, blank=True)
 
-    def __str__(self):
-        return self.registrant.name
-
 
 class NameServerHistory(models.Model):
     date = models.CharField(max_length=10, null=True, blank=True)
@@ -53,10 +50,6 @@ class DomainInfo(models.Model):
     whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
     nameserver_history = models.ManyToManyField(NameServerHistory)
     nameserver_record = models.ManyToManyField(NSRecord)
-
-    def __str__(self):
-        return self.whois.registrant.name
-
 
 
 class Organization(models.Model):

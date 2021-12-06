@@ -1477,16 +1477,33 @@ function fetch_whois(domain_name){
     pos: 'top-right',
     duration: 1500,
   });
+  $("#whois_not_fetched_alert").hide();
+  $("#whois_fetching_alert").show();
   fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}&save_db`, {}).then(res => res.json())
   .then(function (response) {
+    $("#whois_fetching_alert").hide();
+    document.getElementById('domain_age').innerHTML = response['domain']['domain_age'] + ' ' + response['domain']['date_created'];
+    document.getElementById('ip_address').innerHTML = response['domain']['ip_address'];
+    document.getElementById('ip_geolocation').innerHTML = response['domain']['geolocation'];
+
+    document.getElementById('registrant_name').innerHTML = response['registrant']['name'];
+    console.log(response['registrant']['organization'])
+    document.getElementById('registrant_organization').innerHTML = response['registrant']['organization'] ? response['registrant']['organization'] : ' ';
+    document.getElementById('registrant_address').innerHTML = response['registrant']['address'] + ' ' + response['registrant']['city'] + ' ' + response['registrant']['state'] + ' ' + response['registrant']['country'];
+    document.getElementById('registrant_phone_numbers').innerHTML = response['registrant']['tel'];
+    document.getElementById('registrant_fax').innerHTML = response['registrant']['fax'];
+
     Snackbar.show({
-      text: 'Whois Fetched...(Click to reload)',
+      text: 'Whois Fetched...',
       pos: 'top-right',
-      duration: 3000,
-      actionText: 'Reload',
-      onActionClick: function(element) {
-        location.reload();
-      }
+      duration: 3000
     });
+
+    $("#whois_fetched_alert").show();
+
+    $("#whois_fetched_alert").fadeTo(2000, 500).slideUp(1500, function(){
+      $("#whois_fetched_alert").slideUp(500);
+    });
+
   });
 }
