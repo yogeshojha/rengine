@@ -343,7 +343,7 @@ Detailed Scan
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<div class="card-widgets">
-									<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois, Page needs to be refreshed!"><i class="mdi mdi-refresh"></i></a>
+									<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
 								</div>
 								<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
 								<div class="row mt-3">
@@ -358,6 +358,19 @@ Detailed Scan
 									<div class="col-sm-9">
 										<div class="tab-content pt-0">
 											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if not history.domain.domain_info %}
+												<div class="alert alert-danger alert-dismissible fade show" role="alert" id="whois_not_fetched_alert">
+													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+													WHOIS Record Has not been fetched, would you like to <a href="javascript: fetch_whois('{{history.domain}}');">fetch it now?</a>
+												</div>
+												{% endif %}
+												<div class="alert alert-info alert-dismissible fade show" role="alert" id="whois_fetching_alert" style="display: none">
+													Fetching WHOIS records, Please wait...
+													<div class="spinner-border spinner-border-sm float-end" role="status"></div>
+												</div>
+												<div class="alert alert-success alert-dismissible fade show" role="alert" id="whois_fetched_alert" style="display: none">
+													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
+												</div>
 												<h4 class="header-title">Domain Information</h4>
 												<table class="domain_details_table table table-hover table-borderless">
 													<tr style="display: none">
@@ -370,15 +383,15 @@ Detailed Scan
 													</tr>
 													<tr>
 														<td>Domain age</td>
-														<td>{{history.domain.domain_info.domain_age}} {{history.domain.domain_info.date_created}}</td>
+														<td id="domain_age"></td>
 													</tr>
 													<tr>
 														<td>IP Address</td>
-														<td>{{history.domain.domain_info.ip_address}}</td>
+														<td id="ip_address">{{history.domain.domain_info.ip_address}}</td>
 													</tr>
 													<tr>
 														<td>IP Geolocation</td>
-														<td>{% if history.domain.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}">{% endif %} {{history.domain.domain_info.geolocation}}</td>
+														<td id="ip_geolocation">{% if history.domain.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.geolocation_iso}}.png" alt="{{history.domain.domain_info.geolocation_iso}}">{% endif %} {{history.domain.domain_info.geolocation}}</td>
 													</tr>
 												</table>
 												<h4 class="header-title mt-3">Registrant Information</h4>
@@ -389,23 +402,23 @@ Detailed Scan
 													</tr>
 													<tr>
 														<td>Name</td>
-														<td>{{history.domain.domain_info.whois.registrant.name}}</td>
+														<td id="registrant_name">{{history.domain.domain_info.whois.registrant.name}}</td>
 													</tr>
 													<tr>
 														<td>Organization</td>
-														<td>{{history.domain.domain_info.whois.registrant.organization}}</td>
+														<td id="registrant_organization">{{history.domain.domain_info.whois.registrant.organization}}</td>
 													</tr>
 													<tr>
 														<td>Address</td>
-														<td>{% if history.domain.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}">{% endif %} {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
+														<td id="registrant_address">{% if history.domain.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{history.domain.domain_info.whois.registrant.country_iso}}.png" alt="{{history.domain.domain_info.whois.registrant.country_iso}}">{% endif %} {{history.domain.domain_info.whois.registrant.address}} {{history.domain.domain_info.whois.registrant.City}} {{history.domain.domain_info.whois.registrant.state}} {{history.domain.domain_info.whois.registrant.country}}</td>
 													</tr>
 													<tr>
 														<td>Phone Numbers</td>
-														<td>{{history.domain.domain_info.whois.registrant.phone_number}}</td>
+														<td id="registrant_phone_numbers">{{history.domain.domain_info.whois.registrant.phone_number}}</td>
 													</tr>
 													<tr>
 														<td>Fax</td>
-														<td>{{history.domain.domain_info.whois.registrant.fax}}</td>
+														<td id="registrant_fax">{{history.domain.domain_info.whois.registrant.fax}}</td>
 													</tr>
 												</table>
 											</div>
