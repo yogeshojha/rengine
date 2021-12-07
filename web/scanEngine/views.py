@@ -421,3 +421,10 @@ def report_settings(request):
     context['secondary_color'] = secondary_color
 
     return render(request, 'scanEngine/settings/report.html', context)
+
+
+def tool_arsenal_section(request):
+    context = {}
+    tools = InstalledExternalTool.objects.all()
+    context['installed_tools'] = tools
+    return render(request, 'scanEngine/settings/tool_arsenal.html', context)

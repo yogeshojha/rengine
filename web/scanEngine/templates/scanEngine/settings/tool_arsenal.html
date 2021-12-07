@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Tool Arsenal
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Tool Arsenal</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Tool Arsenal
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  {% for tool in installed_tools %}
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-center">
+          <img src="{{tool.logo_url}}" alt="logo" height="40">
+          <h4 class="mb-1 font-20">{{tool.name}}</h4>
+          <p>
+            {% if tool.category %}
+            <span class="badge badge-soft-primary">{{tool.category}}</span>
+            {% endif %}
+            {% if tool.active_passive %}
+            <span class="badge badge-soft-primary ms-1">{{tool.active_passive}}</span>
+            {% endif %}
+          </p>
+        </div>
+
+        <p class="font-14 text-center text-muted">
+          {{tool.description}}
+        </bp>
+
+        <p>
+          <a href="{{tool.github_url}}" target="_blank">Github <i class="fe-external-link"></i></a>
+          {% if tool.license_url %}
+          <a href="{{tool.license_url}}" class="ms-1" target="_blank">License <i class="fe-external-link"></i></a>
+          {% endif %}
+        </p>
+
+        <div class="row mt-4 text-center">
+          <div class="col-6">
+            <h5 class="fw-normal">Current Version</h5>
+            <h4></h4>
+          </div>
+          <div class="col-6">
+            <h5 class="fw-normal">Last Updated</h5>
+            <h4></h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'scanEngine/js/tool_arsenal.js' %}" charset="utf-8"></script>
+<script src="{% static 'custom/custom.js' %}" charset="utf-8"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+});
+</script>
+{% endblock page_level_script %}
