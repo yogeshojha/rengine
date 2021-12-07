@@ -34,6 +34,24 @@ from recon_note.models import *
 from reNgine.common_func import is_safe_path
 
 
+class UpdateTool(APIView):
+    def get(self, request):
+        req = self.request
+        tool_id = req.query_params.get('tool_id')
+        tool_name = req.query_params.get('name')
+
+        if tool_id:
+            tool = InstalledExternalTool.objects.get(id=tool_id)
+        elif tool_name:
+            tool = InstalledExternalTool.objects.get(name=tool_name)
+
+        update_command = tool.update_command.lower()
+
+        os.system(update_command)
+
+        return Response({'status': True})
+
+
 class GetExternalToolCurrentVersion(APIView):
     def get(self, request):
         req = self.request
@@ -83,7 +101,7 @@ class GithubToolCheckGetLatestRelease(APIView):
         response = requests.get(github_api).json()
         # check if api rate limit exceeded
         if 'message' in response:
-            return Response({'status': False, 'description': 'RateLimited'})    
+            return Response({'status': False, 'description': 'RateLimited'})
         # only send latest release
         response = response[0]
 

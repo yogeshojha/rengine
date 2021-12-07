@@ -130,6 +130,10 @@ urlpatterns = [
         'external/tool/get_current_release/',
         GetExternalToolCurrentVersion.as_view(),
         name='external_tool_get_current_release'),
+    path(
+        'tool/update/',
+        UpdateTool.as_view(),
+        name='update_tool'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',
