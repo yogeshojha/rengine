@@ -122,6 +122,10 @@ urlpatterns = [
         'tools/whois/',
         Whois.as_view(),
         name='whois'),
+    path(
+        'github/tool/get_latest_releases/',
+        GithubToolCheckGetLatestRelease.as_view(),
+        name='github_tool_latest_release'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

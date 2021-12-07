@@ -32,6 +32,22 @@ from recon_note.models import *
 from reNgine.common_func import is_safe_path
 
 
+class GithubToolCheckGetLatestRelease(APIView):
+    def get(self, request):
+        req = self.request
+        tool_github_url = req.query_params.get('tool_github_url')
+        github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
+        response = requests.get(github_api).json()[0]
+        # only send latest release
+        api_response = {
+            'url': response['url'],
+            'id': response['id'],
+            'name': response['name'],
+            'changelog': response['body'],
+        }
+        return Response(api_response)
+
+
 class ScanStatus(APIView):
     def get(self, request):
         recently_completed_scans = ScanHistory.objects.all().order_by(
