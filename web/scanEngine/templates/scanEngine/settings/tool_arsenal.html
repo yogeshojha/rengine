@@ -19,12 +19,16 @@ Tool Arsenal
 
 {% block main_content %}
 <div class="row">
+  <h4>Installed External Tools</h4>
   {% for tool in installed_tools %}
   <div class="col-lg-4 col-12 mt-2">
     <div class="card h-100">
-      <div class="card-body">
+      <div class="card-body d-flex flex-column">
         <div class="text-center">
+          {% if tool.logo_url %}
           <img src="{{tool.logo_url}}" alt="logo" height="40">
+          {% endif %}
+
           <h4 class="mb-1 font-20">{{tool.name}}</h4>
           <p>
             {% if tool.category %}
@@ -33,28 +37,25 @@ Tool Arsenal
             {% if tool.active_passive %}
             <span class="badge badge-soft-primary ms-1" data-toggle="tooltip" data-placement="top" title="Tool Type">{{tool.active_passive}}</span>
             {% endif %}
+            <a href="{{tool.github_url}}" target="_blank" class="ms-1">Github <i class="fe-external-link"></i></a>
+            {% if tool.license_url %}
+            <a href="{{tool.license_url}}" class="ms-1" target="_blank">License <i class="fe-external-link"></i></a>
+            {% endif %}
           </p>
         </div>
-        <p class="float-end">
-          <a href="{{tool.github_url}}" target="_blank">Github <i class="fe-external-link"></i></a>
-          {% if tool.license_url %}
-          <a href="{{tool.license_url}}" class="ms-1" target="_blank">License <i class="fe-external-link"></i></a>
-          {% endif %}
-        </p>
-        <div class="row mt-4 text-center">
+        <div class="row mt-4 justify-content-center text-center">
           <div class="col-6">
-            <h5 class="fw-normal">Installed Version</h5>
-            <h4></h4>
-          </div>
-          <div class="col-6">
-            <h5 class="fw-normal">Latest Version</h5>
-            <h4 id="{{tool.name}}"></h4>
+            <h5 class="fw-normal">Current Installed Version</h5>
+            <span class="badge badge-soft-primary"><h5 class="text-primary m-1" id="{{tool.name}}_current"></h5></span>
           </div>
         </div>
         <hr>
         <p class="mt-2 font-14 text-center text-muted">
           {{tool.description}}
         </p>
+        <div class="text-center mt-auto">
+          <button type="button" class="btn btn-primary waves-effect waves-light me-1" onclick="get_external_tool_latest_version('{{tool.id}}', '{{tool.name}}')"><i class="mdi mdi-download me-1"></i> Check Update</button>
+        </div>
       </div>
     </div>
   </div>
@@ -72,15 +73,86 @@ $(document).ready(function() {
 
 });
 // fetch latest version information
-// {% for tool in installed_tools %}
-// get_external_tool_version('{{tool.github_url}}', '{{tool.name}}');
-// {% endfor %}
-get_external_tool_version('https://github.com/projectdiscovery/httpx', 'httpx');
+{% for tool in installed_tools %}
+get_external_tool_current_version('{{tool.id}}', '{{tool.name}}_current');
+{% endfor %}
+// get_external_tool_version('https://github.com/projectdiscovery/httpx', 'httpx');
 
-function get_external_tool_version(github_url, id){
-  fetch('/api/github/tool/get_latest_releases/?tool_github_url=' + github_url)
+function get_external_tool_latest_version(tool_id, tool_name){
+  Swal.fire({
+    title: 'Finding latest version...'
+  });
+  swal.showLoading();
+  fetch('/api/github/tool/get_latest_releases/?tool_id=' + tool_id)
   .then(response => response.json())
-  .then(data => document.getElementById(id).innerHTML = data['name']);
+  .then(function (response) {
+    swal.close();
+    console.log(response);
+    if (response['description'] == 'RateLimited') {
+      Swal.fire({
+        showCancelButton: true,
+        title: 'Error!',
+        text: 'Github API rate limit exceeded, we can not fetch the latest version number, please try again in an hour. But you can force download the latest version.',
+        icon: 'error',
+        confirmButtonText: 'Force download',
+      });
+    }
+    else if (response['description'] == 'Tool Not found'){
+      Swal.fire({
+        title: 'Oops!',
+        text: 'We ran into an error! Please raise github request.',
+        icon: 'error'
+      });
+    }
+    else{
+      // match current version with installed version
+      // sometimes version names can be v1.1.1 or 1.1.1, so for consistency
+      // let's remove v from both
+
+      var current_version = document.getElementById(tool_name+'_current').textContent;
+      current_version = current_version.charAt(0) == 'v' ? current_version.substring(1) : current_version;
+      console.log(current_version);
+
+      var latest_version = response['name'];
+      latest_version = latest_version.charAt(0) == 'v' ? latest_version.substring(1) : latest_version;
+
+      if (current_version == latest_version) {
+        Swal.fire({
+          title: 'No Update available',
+          text: 'Looks like the latest version of ' + tool_name + ' is already installed.',
+          icon: 'info'
+        });
+      }
+      else{
+        // update available
+        Swal.fire({
+          title: 'Update available! Version: ' + latest_version,
+          text: `Your current version of ${tool_name} is v${current_version}, but latest version v${latest_version} is available, please udpate!`,
+          icon: 'info',
+          confirmButtonText: 'Update ' + tool_name
+        }).then((result) => {
+          /* Read more about isConfirmed, isDenied below */
+          if (result.isConfirmed) {
+            Swal.fire({
+              title: 'Finding latest version...'
+            });
+            swal.showLoading();
+            fetch('/api/tool/update/?tool_id=' + tool_id)
+            .then(response => response.json())
+            .then(function (response) {
+              console.log('test');
+            });
+          }
+        });
+      }
+    }
+  });
+}
+
+function get_external_tool_current_version(tool_id, id){
+  fetch('/api/external/tool/get_current_release/?tool_id=' + tool_id)
+  .then(response => response.json())
+  .then(data => document.getElementById(id).innerHTML = data['version_number']);
 }
 </script>
 {% endblock page_level_script %}
