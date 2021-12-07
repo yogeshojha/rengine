@@ -1,6 +1,8 @@
+import re
 import json
 import logging
 import requests
+import subprocess
 
 from bs4 import BeautifulSoup
 from lxml import html
@@ -32,12 +34,43 @@ from recon_note.models import *
 from reNgine.common_func import is_safe_path
 
 
+class GetExternalToolCurrentVersion(APIView):
+    def get(self, request):
+        req = self.request
+        # toolname is also the command
+        tool_id = req.query_params.get('id')
+        tool_name = req.query_params.get('name')
+        # can supply either tool id or tool_name
+        if not InstalledExternalTool.objects.filter(id=tool_id).exists():
+            return Response({'status': False, 'description': 'Tool Not found'})
+
+        if tool_id:
+            tool = InstalledExternalTool.objects.get(id=tool_id)
+        elif tool_name:
+            tool = InstalledExternalTool.objects.get(name=tool_name)
+
+        p = subprocess.Popen(tool.version_lookup_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        version_number = None
+        for line in p.stdout.readlines():
+            version_number = re.search(re.compile(tool.version_match_regex), str(line))
+            print(line)
+            if version_number:
+                break
+
+        return Response({'version_number': version_number.group(0), 'tool_name': tool.name})
+
+
+
 class GithubToolCheckGetLatestRelease(APIView):
     def get(self, request):
         req = self.request
         tool_github_url = req.query_params.get('tool_github_url')
+        # if tool_github_url has https://github.com/ remove and also remove trailing /
+        tool_github_url = tool_github_url.replace('http://github.com/', '').replace('https://github.com/', '')
+        tool_github_url = remove_lead_and_trail_slash(tool_github_url)
         github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
-        response = requests.get(github_api).json()[0]
+        response = requests.get(github_api).json()
+        response = response[0]
         # only send latest release
         api_response = {
             'url': response['url'],
