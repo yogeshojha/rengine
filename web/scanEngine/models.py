@@ -106,3 +106,16 @@ class VulnerabilityReportSetting(models.Model):
     executive_summary_description = models.TextField(blank=True, null=True)
     show_footer = models.BooleanField(default=False)
     footer_text = models.CharField(max_length=200, null=True, blank=True)
+
+
+class InstalledExternalTool(models.Model):
+    id = models.AutoField(primary_key=True)
+    logo_url = models.CharField(max_length=200, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    category = models.CharField(max_length=50, null=True, blank=True)
+    active_passive = models.CharField(max_length=50, null=True, blank=True)
+    description = models.CharField(max_length=500)
+    github_url = models.CharField(max_length=80)
+    license_url = models.CharField(max_length=80, null=True, blank=True)
+    version_lookup_command = models.CharField(max_length=50, default='tool_name -version')
+    version_match_regex = models.CharField(max_length=100, default='v(\d+\.)?(\d+\.)?(\*|\d+)')
