@@ -118,4 +118,5 @@ class InstalledExternalTool(models.Model):
     github_url = models.CharField(max_length=80)
     license_url = models.CharField(max_length=80, null=True, blank=True)
     version_lookup_command = models.CharField(max_length=50, default='tool_name -version')
+    update_command = models.CharField(max_length=150)
     version_match_regex = models.CharField(max_length=100, default='v(\d+\.)?(\d+\.)?(\*|\d+)')

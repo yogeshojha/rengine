@@ -80,7 +80,8 @@ get_external_tool_current_version('{{tool.id}}', '{{tool.name}}_current');
 
 function get_external_tool_latest_version(tool_id, tool_name){
   Swal.fire({
-    title: 'Finding latest version...'
+    title: 'Finding latest version...',
+    allowOutsideClick: false
   });
   swal.showLoading();
   fetch('/api/github/tool/get_latest_releases/?tool_id=' + tool_id)
@@ -134,13 +135,20 @@ function get_external_tool_latest_version(tool_id, tool_name){
           /* Read more about isConfirmed, isDenied below */
           if (result.isConfirmed) {
             Swal.fire({
-              title: 'Finding latest version...'
+              title: 'Downloading latest version...',
+              text: 'This may take a few minutes.',
+              allowOutsideClick: false
             });
             swal.showLoading();
             fetch('/api/tool/update/?tool_id=' + tool_id)
             .then(response => response.json())
             .then(function (response) {
-              console.log('test');
+              swal.close();
+              Swal.fire({
+                title: tool_name + ' Updated!',
+                text: `${tool_name} has now been updated to v${latest_version}!`,
+                icon: 'success',
+              });
             });
           }
         });
