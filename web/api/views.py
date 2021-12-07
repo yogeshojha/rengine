@@ -38,7 +38,7 @@ class GetExternalToolCurrentVersion(APIView):
     def get(self, request):
         req = self.request
         # toolname is also the command
-        tool_id = req.query_params.get('id')
+        tool_id = req.query_params.get('tool_id')
         tool_name = req.query_params.get('name')
         # can supply either tool id or tool_name
         if not InstalledExternalTool.objects.filter(id=tool_id).exists():
@@ -64,15 +64,31 @@ class GetExternalToolCurrentVersion(APIView):
 class GithubToolCheckGetLatestRelease(APIView):
     def get(self, request):
         req = self.request
-        tool_github_url = req.query_params.get('tool_github_url')
+
+        tool_id = req.query_params.get('tool_id')
+        tool_name = req.query_params.get('name')
+
+        if not InstalledExternalTool.objects.filter(id=tool_id).exists():
+            return Response({'status': False, 'description': 'Tool Not found'})
+
+        if tool_id:
+            tool = InstalledExternalTool.objects.get(id=tool_id)
+        elif tool_name:
+            tool = InstalledExternalTool.objects.get(name=tool_name)
+
         # if tool_github_url has https://github.com/ remove and also remove trailing /
-        tool_github_url = tool_github_url.replace('http://github.com/', '').replace('https://github.com/', '')
+        tool_github_url = tool.github_url.replace('http://github.com/', '').replace('https://github.com/', '')
         tool_github_url = remove_lead_and_trail_slash(tool_github_url)
         github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
         response = requests.get(github_api).json()
-        response = response[0]
+        # check if api rate limit exceeded
+        if 'message' in response:
+            return Response({'status': False, 'description': 'RateLimited'})    
         # only send latest release
+        response = response[0]
+
         api_response = {
+            'status': True,
             'url': response['url'],
             'id': response['id'],
             'name': response['name'],
