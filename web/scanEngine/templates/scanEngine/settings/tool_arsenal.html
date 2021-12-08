@@ -96,7 +96,27 @@ function get_external_tool_latest_version(tool_id, tool_name){
         text: 'Github API rate limit exceeded, we can not fetch the latest version number, please try again in an hour. But you can force download the latest version.',
         icon: 'error',
         confirmButtonText: 'Force download',
-      });
+      }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'Downloading latest version...',
+            text: 'This may take a few minutes.',
+            allowOutsideClick: false
+          });
+          swal.showLoading();
+          fetch('/api/tool/update/?tool_id=' + tool_id)
+          .then(response => response.json())
+          .then(function (response) {
+            swal.close();
+            Swal.fire({
+              title: tool_name + ' Updated!',
+              text: `${tool_name} has now been updated to v${latest_version}!`,
+              icon: 'success',
+            });
+          });
+        }
+      });;
     }
     else if (response['description'] == 'Tool Not found'){
       Swal.fire({
