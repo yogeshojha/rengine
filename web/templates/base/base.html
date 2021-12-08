@@ -111,31 +111,50 @@
         }
       });
       function check_rengine_update(){
+        if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
+          update_available();
+        }
+        else{
+          Swal.fire({
+            title: 'Checking reNgine latest version...',
+            allowOutsideClick: false
+          });
+          swal.showLoading();
+          fetch('/api/rengine/update/')
+          .then(response => response.json())
+          .then(function (response) {
+            swal.close();
+            if (response['description'] == 'RateLimited') {
+              Swal.fire({
+                title: 'Oops!',
+                text: 'Github rate limit exceeded, please try again in an hour!',
+                icon: 'error'
+              });
+              window.localStorage.setItem('update_available', false);
+              $('.rengine_update_available').hide();
+            }
+            else if (response['update_available']){
+              window.localStorage.setItem('update_available', true);
+              $('.rengine_update_available').show();
+              update_available();
+            }
+            else{
+              window.localStorage.setItem('update_available', false);
+              $('.rengine_update_available').hide();
+            }
+          });
+        }
+      }
+
+      function update_available(){
         Swal.fire({
-          title: 'Checking reNgine latest version...',
-          allowOutsideClick: false
-        });
-        swal.showLoading();
-        fetch('/api/rengine/update/')
-        .then(response => response.json())
-        .then(function (response) {
-          swal.close();
-          if (response['description'] == 'RateLimited') {
-            Swal.fire({
-              title: 'Oops!',
-              text: 'Github rate limit exceeded, please try again in an hour!',
-              icon: 'error'
-            });
-            window.localStorage.setItem('update_available', false);
-            $('.rengine_update_available').hide();
-          }
-          else if (response['update_available']){
-            window.localStorage.setItem('update_available', true);
-            $('.rengine_update_available').show();
-          }
-          else{
-            window.localStorage.setItem('update_available', false);
-            $('.rengine_update_available').hide();
+          title: 'Update Available!',
+          text: 'reNgine\'s new update is available, please follow the update instructions.',
+          icon: 'info',
+          confirmButtonText: 'Update Instructions',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.open("https://www.rengine.wiki/update","_self")
           }
         });
       }
