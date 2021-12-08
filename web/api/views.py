@@ -33,6 +33,52 @@ from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
 
+from packaging import version
+
+
+class RengineUpdateCheck(APIView):
+    def get(self, request):
+        req = self.request
+        github_api = \
+            'https://api.github.com/repos/yogeshojha/rengine/releases'
+        response = requests.get(github_api).json()
+        if 'message' in response:
+            return Response({'status': False, 'description': 'RateLimited'})
+
+        # get current version_number
+        # remove quotes from current_version
+        current_version = ((os.environ['RENGINE_CURRENT_VERSION'
+                           ])[1:] if os.environ['RENGINE_CURRENT_VERSION'
+                           ][0] == 'v'
+                            else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
+
+
+
+        # for consistency remove v from both if exists
+        latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
+                                   ((response[0]['name'
+                                   ])[1:] if response[0]['name'][0] == 'v'
+                                    else response[0]['name']))
+
+        if latest_version:
+            latest_version = latest_version.group(0),
+
+        if not latest_version:
+            latest_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)',
+                                       ((response[0]['name'
+                                       ])[1:] if response[0]['name'][0]
+                                       == 'v' else response[0]['name']))
+            if latest_version:
+                latest_version = latest_version.group(0)
+
+
+        return Response({
+            'status': True,
+            'update_available': version.parse(current_version) > version.parse(latest_version),
+            'current_version': current_version,
+            'latest_version':latest_version,
+            })
+
 
 class UpdateTool(APIView):
     def get(self, request):
@@ -71,7 +117,6 @@ class GetExternalToolCurrentVersion(APIView):
         version_number = None
         for line in p.stdout.readlines():
             version_number = re.search(re.compile(tool.version_match_regex), str(line))
-            print(line)
             if version_number:
                 break
 

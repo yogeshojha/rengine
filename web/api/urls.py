@@ -134,6 +134,10 @@ urlpatterns = [
         'tool/update/',
         UpdateTool.as_view(),
         name='update_tool'),
+    path(
+        'rengine/update/',
+        RengineUpdateCheck.as_view(),
+        name='check_rengine_update'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',
