@@ -91,6 +91,9 @@
     <script src="{% static 'plugins/sweetalert2/sweetalert2.all.min.js' %}"></script>
     <script type="text/javascript">
       $(document).ready(function(){
+        // rengine will also check everyday if update exists for rengine
+        checkDailyUpdate();
+
         getScanStatusSidebar();
         // hide badge if update does not exists
         if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
@@ -110,6 +113,7 @@
           $('#dark-mode-check').prop("checked", false).change();
         }
       });
+
       function check_rengine_update(){
         if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
           update_available();
@@ -163,6 +167,34 @@
             $('.rengine_update_available').hide();
           }
         });
+      }
+
+      // Source : https://stackoverflow.com/a/32428268
+      function checkDailyUpdate(){
+        if( !hasOneDayPassed() ) return false;
+        console.log('Checking Daily Update...')
+        fetch('/api/rengine/update/')
+        .then(response => response.json())
+        .then(function (response) {
+          if (response['update_available']){
+            window.localStorage.setItem('update_available', true);
+            $('.rengine_update_available').show();
+          }
+          else{
+            window.localStorage.setItem('update_available', false);
+            $('.rengine_update_available').hide();
+          }
+        });
+      }
+
+      // Source: https://stackoverflow.com/a/32428268
+      function hasOneDayPassed(){
+        var date = new Date().toLocaleDateString();
+        if(window.localStorage.getItem('last_update_checked') == date){
+          return false;
+        }
+        window.localStorage.setItem('last_update_checked', date);
+        return true;
       }
     </script>
     {% if messages %}
