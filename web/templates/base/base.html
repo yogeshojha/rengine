@@ -152,9 +152,15 @@
           text: 'reNgine\'s new update is available, please follow the update instructions.',
           icon: 'info',
           confirmButtonText: 'Update Instructions',
+          showCancelButton: true,
+          cancelButtonText: 'Dismiss',
         }).then((result) => {
           if (result.isConfirmed) {
             window.open("https://www.rengine.wiki/update","_self")
+          }
+          else{
+            window.localStorage.setItem('update_available', false);
+            $('.rengine_update_available').hide();
           }
         });
       }
