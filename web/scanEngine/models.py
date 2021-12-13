@@ -120,3 +120,7 @@ class InstalledExternalTool(models.Model):
     version_lookup_command = models.CharField(max_length=50, default='tool_name -version')
     update_command = models.CharField(max_length=150)
     version_match_regex = models.CharField(max_length=100, default='v(\d+\.)?(\d+\.)?(\*|\d+)')
+    is_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
