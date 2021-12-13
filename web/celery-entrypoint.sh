@@ -22,15 +22,6 @@ python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.Inter
 # update whatportis
 yes | whatportis --update
 
-# clone dirsearch
-if [ ! -d "/usr/src/github/dirsearch" ]
-then
-  echo "Cloning dirsearch"
-  git clone https://github.com/maurosoria/dirsearch /usr/src/github/dirsearch
-fi
-
-python3 -m pip install -r /usr/src/github/dirsearch/requirements.txt
-
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
 then
