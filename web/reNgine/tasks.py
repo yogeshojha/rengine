@@ -843,10 +843,10 @@ def check_waf():
 
 def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
     '''
-    This function is responsible for performing directory scan
+        This function is responsible for performing directory scan, and currently
+        uses ffuf as a default tool
     '''
-    # scan directories for all the alive subdomain with http status >
-    # 200
+    # scan directories for all the alive subdomain with http status >= 200
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
@@ -855,19 +855,75 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         scan_history__id=task.id).exclude(http_url__isnull=True)
     dirs_results = results_dir + '/dirs.json'
 
-    # check the yaml settings
-    if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-        extensions = ','.join(
-            str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+    if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
+        not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
+            'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
+        wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
     else:
-        extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
+        wordlist_location = '/usr/src/wordlist/' + \
+            yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
-    # Threads
+    ffuf_command = 'ffuf -w ' + wordlist_location
+
+    if USE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][USE_EXTENSIONS]:
+        if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
+            extensions = ','.join('.' + str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+
+            ffuf_command = ' {} -e {}'.format(
+                ffuf_command,
+                extensions
+            )
+
     if THREADS in yaml_configuration[DIR_FILE_SEARCH] \
         and yaml_configuration[DIR_FILE_SEARCH][THREADS] > 0:
         threads = yaml_configuration[DIR_FILE_SEARCH][THREADS]
+        ffuf_command = ' {} -t {}'.format(
+            ffuf_command,
+            threads
+        )
+
+    if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
+        recursive_level = yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL]
+        ffuf_command = '{} -recursion -recursion-depth {}'.format(
+            ffuf_command,
+            recursive_level
+        )
+
+    if STOP_ON_ERROR in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][STOP_ON_ERROR]:
+        ffuf_command = '{} -se'.format(
+            ffuf_command
+        )
+
+    if TIMEOUT in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][TIMEOUT] > 0:
+        timeout = yaml_configuration[DIR_FILE_SEARCH][TIMEOUT]
+        ffuf_command = '{} -timeout {}'.format(
+            ffuf_command,
+            timeout
+        )
+
+    if DELAY in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][DELAY] > 0:
+        delay = yaml_configuration[DIR_FILE_SEARCH][DELAY]
+        ffuf_command = '{} -p {}'.format(
+            ffuf_command,
+            delay
+        )
+
+    if MATCH_HTTP_STATUS in yaml_configuration[DIR_FILE_SEARCH]:
+        mc = ','.join(str(code) for code in yaml_configuration[DIR_FILE_SEARCH][MATCH_HTTP_STATUS])
     else:
-        threads = 10
+        mc = '200,204,301,302,307'
+
+        ffuf_command = ' {} -mc {}'.format(
+            ffuf_command,
+            mc
+        )
+
+
 
     for subdomain in alive_subdomains:
         # delete any existing dirs.json
@@ -876,14 +932,6 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         dirsearch_command = 'python3 /usr/src/github/dirsearch/dirsearch.py'
 
         dirsearch_command += ' -u {}'.format(subdomain.http_url)
-
-        if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
-            not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
-                'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
-            wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
-        else:
-            wordlist_location = '/usr/src/wordlist/' + \
-                yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
 
         dirsearch_command += ' -w {}'.format(wordlist_location)
 
