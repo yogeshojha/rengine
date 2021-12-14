@@ -918,56 +918,43 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
     else:
         mc = '200,204,301,302,307'
 
-        ffuf_command = ' {} -mc {}'.format(
+    ffuf_command = ' {} -mc {}'.format(
+        ffuf_command,
+        mc
+    )
+
+    if MAX_TIME in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][MAX_TIME] > 0:
+        max_time = yaml_configuration[DIR_FILE_SEARCH][MAX_TIME]
+        ffuf_command = '{} -maxtime {}'.format(
             ffuf_command,
-            mc
+            max_time
         )
 
-
-
     for subdomain in alive_subdomains:
+        command = None
         # delete any existing dirs.json
         if os.path.isfile(dirs_results):
             os.system('rm -rf {}'.format(dirs_results))
-        dirsearch_command = 'python3 /usr/src/github/dirsearch/dirsearch.py'
 
-        dirsearch_command += ' -u {}'.format(subdomain.http_url)
-
-        dirsearch_command += ' -w {}'.format(wordlist_location)
-
-        dirsearch_command += ' --format json -o {}'.format(dirs_results)
-
-        dirsearch_command += ' -e {}'.format(extensions)
-
-        dirsearch_command += ' -t {}'.format(threads)
-
-        dirsearch_command += ' --random-agent --follow-redirects --exclude-status 403,401,404'
-
-        if EXCLUDE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-            exclude_extensions = ','.join(
-                str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_EXTENSIONS])
-            dirsearch_command += ' -X {}'.format(exclude_extensions)
-
-        if EXCLUDE_TEXT in yaml_configuration[DIR_FILE_SEARCH]:
-            exclude_text = ','.join(
-                str(text) for text in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_TEXT])
-            dirsearch_command += ' -exclude-texts {}'.format(exclude_text)
-
-        # check if recursive strategy is set to on
-
-        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
-
-        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
+        http_url = subdomain.http_url + 'FUZZ' if subdomain.http_url[-1:] == '/' else subdomain.http_url + '/FUZZ'
 
         # proxy
         proxy = get_random_proxy()
         if proxy:
-            dirsearch_command += " --proxy '{}'".format(proxy)
+            ffuf_command = "{} -x '{}'".format(
+                ffuf_command,
+                proxy
+            )
 
-        print(dirsearch_command)
-        os.system(dirsearch_command)
+        command = '{} -u {} -o {} -of json -or'.format(
+            ffuf_command,
+            http_url,
+            dirs_results
+        )
+
+        print(command)
+        os.system(command)
 
         try:
             if os.path.isfile(dirs_results):
