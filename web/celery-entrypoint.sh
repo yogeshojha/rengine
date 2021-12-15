@@ -22,6 +22,27 @@ python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.Inter
 # update whatportis
 yes | whatportis --update
 
+# clone dirsearch default wordlist
+if [ ! -d "/usr/src/wordlist" ]
+then
+  echo "Making Wordlist directory"
+  mkdir /usr/src/wordlist
+fi
+
+if [ ! -f "/usr/src/wordlist/" ]
+then
+  echo "Downloading Default Directory Bruteforce Wordlist"
+  wget https://raw.githubusercontent.com/maurosoria/dirsearch/master/db/dicc.txt -O /usr/src/wordlist/dicc.txt
+fi
+
+# check if default wordlist for amass exists
+if [ ! -f /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt ];
+then
+  echo "Downloading Deepmagic top 50000 Wordlist"
+  wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
+fi
+
+
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
 then
@@ -77,11 +98,6 @@ fi
 if [ ! -d "/usr/src/scan_results" ]
 then
   mkdir /usr/src/scan_results
-fi
-
-# check if default wordlist for amass exists
-if [ ! -f /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt ]; then
-  wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
 fi
 
 # test tools, required for configuration
