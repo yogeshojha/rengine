@@ -858,7 +858,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
     if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
         not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
-        wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
+        wordlist_location = '/usr/src/wordlist/dicc.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
             yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
