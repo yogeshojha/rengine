@@ -38,6 +38,7 @@ EXCLUDE_EXTENSIONS = 'exclude_extensions'
 STOP_ON_ERROR = 'stop_on_error'
 DELAY = 'delay'
 MATCH_HTTP_STATUS = 'match_http_status'
+AUTO_CALIBRATION = 'auto_calibration'
 
 RECURSIVE = 'recursive'
 RECURSIVE_LEVEL = 'recursive_level'
