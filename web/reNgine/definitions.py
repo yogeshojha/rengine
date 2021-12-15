@@ -39,6 +39,7 @@ STOP_ON_ERROR = 'stop_on_error'
 DELAY = 'delay'
 MATCH_HTTP_STATUS = 'match_http_status'
 AUTO_CALIBRATION = 'auto_calibration'
+FOLLOW_REDIRECT = 'follow_redirect'
 
 RECURSIVE = 'recursive'
 RECURSIVE_LEVEL = 'recursive_level'
