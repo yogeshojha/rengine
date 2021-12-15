@@ -39,7 +39,7 @@ Detailed Scan
 		<div class="card">
 			<ul class="nav nav-tabs nav-bordered m-1">
 				<li class="nav-item">
-					<a class="nav-link" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
+					<a class="nav-link active" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
 				</li>
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
@@ -57,7 +57,7 @@ Detailed Scan
 				{% endif %}
 				{% if history.dir_file_search %}
 				<li class="nav-item">
-					<a class="nav-link active" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#directories-tab">Directories</a>
+					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#directories-tab">Directories</a>
 				</li>
 				{% endif %}
 				<li class="nav-item dropdown">
@@ -92,7 +92,7 @@ Detailed Scan
 </div>
 <div class="tab-content no-padding-tab">
 	<!-- start tab contents  -->
-	<div class="tab-pane" id="summary-tab">
+	<div class="tab-pane show active" id="summary-tab">
 		<!-- <div class="tab-pane" id="summary-tab"> -->
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
@@ -882,7 +882,7 @@ Detailed Scan
 
 	{# directories section #}
 	{% if history.dir_file_search %}
-	<div class="tab-pane show active" id="directories-tab">
+	<div class="tab-pane" id="directories-tab">
 		<div class="row">
 			<div class="col-12">
 				<div class="card">
@@ -1533,7 +1533,7 @@ $(document).ready(function(){
 							}
 							if(row['is_interesting'])
 							{
-								interesting_badge = "<span class='m-1 badge badge-soft-danger'>Interesting</span>"
+								interesting_badge = `<span class='ms-1 me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span>`;
 							}
 
 							if (row['content_type']) {
@@ -1779,7 +1779,8 @@ $(document).ready(function(){
 	{% endif %}
 
 	{% if history.dir_file_search %}
-	// $("#pills-directories-tab").click(function() {
+	$("#pills-directories-tab").click(function() {
+	var interesting_keywords_array = [];
 	var history_table = $('#directories-table').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -1829,7 +1830,7 @@ $(document).ready(function(){
 						interesting_badge = '';
 						if(row['is_interesting'])
 						{
-							interesting_badge = "&nbsp;<span class='badge badge-pills badge-soft-danger ms-1'>Interesting</span>&nbsp;"
+							interesting_badge = `<span class='me-1 badge badge-pills badge-soft-danger ms-1' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span>`;
 						}
 						return `<a href="`+row['http_url']+`" class="text-primary" target="_blank">`+data+`</a>`+interesting_badge+`<br>`;
 					}
@@ -1869,8 +1870,16 @@ $(document).ready(function(){
 					if (data) {
 						data = JSON.parse(data);
 						dir_data = data['results'];
+						console.log(dir_data);
 						var html_treeview = `<ul>`;
 						dir_data.forEach(function(item){
+							var interesting_badge = '';
+							interesting_keywords_array.forEach(function(keyword){
+								if (item.input.FUZZ.includes(keyword)) {
+									interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
+									return;
+								}
+							});
 							var http_status_badge = '';
 							if (item.status >= 200 && item.status < 300) {
 								http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+item.status+`</span>`;
@@ -1882,7 +1891,7 @@ $(document).ready(function(){
 								http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+item.status+`</span>`;
 							}
 							var http_url = item.url;
-							html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.input.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item['content-type'] + `)</span> ${http_status_badge}</a></li>`;
+							html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.input.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item['content-type'] + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
 						});
 						html_treeview += `</ul>`;
 						return html_treeview;
@@ -1896,6 +1905,15 @@ $(document).ready(function(){
 		"<'table-responsive'tr>" +
 		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		drawCallback: function () {
+		},
+		preDrawCallback: function () {
+				return fetch("/api/listInterestingKeywords")
+				.then(response => {
+					return response.json();
+				})
+				.then(data => {
+					interesting_keywords_array = data;
+				});
 		},
 		initComplete: function( settings, json ) {
 		},
@@ -1911,7 +1929,7 @@ $(document).ready(function(){
 			}
 		},
 	});
-	// });
+	});
 	{% endif %}
 
 	// vulnerability section
