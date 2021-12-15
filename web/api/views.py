@@ -36,6 +36,13 @@ from reNgine.common_func import is_safe_path
 from packaging import version
 
 
+class ListInterestingKeywords(APIView):
+    def get(self, request, format=None):
+        req = self.request
+        keywords = get_lookup_keywords()
+        return Response(keywords)
+
+
 class RengineUpdateCheck(APIView):
     def get(self, request):
         req = self.request
