@@ -897,6 +897,12 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
             ffuf_command
         )
 
+    if AUTO_CALIBRATION in yaml_configuration[DIR_FILE_SEARCH] \
+        and yaml_configuration[DIR_FILE_SEARCH][AUTO_CALIBRATION]:
+        ffuf_command = '{} -ac'.format(
+            ffuf_command
+        )
+
     if TIMEOUT in yaml_configuration[DIR_FILE_SEARCH] \
         and yaml_configuration[DIR_FILE_SEARCH][TIMEOUT] > 0:
         timeout = yaml_configuration[DIR_FILE_SEARCH][TIMEOUT]
