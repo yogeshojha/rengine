@@ -107,6 +107,10 @@ urlpatterns = [
         ListTodoNotes.as_view(),
         name='listTodoNotes'),
     path(
+        'listInterestingKeywords/',
+        ListInterestingKeywords.as_view(),
+        name='listInterestingKeywords'),
+    path(
         'getFileContents/',
         GetFileContents.as_view(),
         name='getFileContents'),
