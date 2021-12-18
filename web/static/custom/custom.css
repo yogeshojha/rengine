@@ -341,3 +341,7 @@ div.dataTables_wrapper div.dataTables_processing {
 .svg-text-low {
   fill: #ffc107;
 }
+
+.alert-text-fit {
+  display:inline-block;
+}
