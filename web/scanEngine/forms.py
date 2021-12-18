@@ -660,3 +660,81 @@ The breakdown of the Vulnerabilities Identified in **{target_name}** by severity
 **{company_name}** recommends that these issues be addressed in timely manner.
 
 '''
+
+
+class AddExternalTool(forms.ModelForm):
+    class Meta:
+        model = InstalledExternalTool
+        fields = '__all__'
+
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "tool_name",
+                "placeholder": "My Awesome Tool"}))
+
+    github_url = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "github_url",
+                "placeholder": "https://github.com/"}))
+
+    license_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "license_url",
+                "placeholder": "https://github.com/user/tool/blob/master/LICENSE.md"}))
+
+    logo_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "logo_url",
+                "placeholder": "http://example.com/logo.png"}))
+
+    description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "id": "tool_description",
+                "placeholder": "Explain what this tool is used for."
+            }
+        ))
+
+    install_command = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "install_command",
+                "placeholder": "Tool Installation Command"}))
+
+    update_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "update_command",
+                "placeholder": "Tool Update Command"}))
+
+    version_match_regex = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "version_match_regex"}))
+
+    version_lookup_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "version_lookup_command"}))
