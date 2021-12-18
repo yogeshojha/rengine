@@ -29,6 +29,10 @@ urlpatterns = [
         views.add_wordlist,
         name='add_wordlist'),
     path(
+        'tool_arsenal/add/',
+        views.add_tool,
+        name='add_tool'),
+    path(
         'wordlist/delete/<int:id>',
         views.delete_wordlist,
         name='delete_wordlist'),
