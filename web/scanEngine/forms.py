@@ -700,12 +700,13 @@ class AddExternalTool(forms.ModelForm):
                 "placeholder": "http://example.com/logo.png"}))
 
     description = forms.CharField(
-        required=False,
+        required=True,
         widget=forms.Textarea(
             attrs={
                 "class": "form-control",
                 "id": "tool_description",
-                "placeholder": "Explain what this tool is used for."
+                "placeholder": "Explain what this tool is used for.",
+                "rows": 2
             }
         ))
 
@@ -730,7 +731,9 @@ class AddExternalTool(forms.ModelForm):
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "id": "version_match_regex"}))
+                "id": "version_match_regex",
+                "value": "v(\d+\.)?(\d+\.)?(\*|\d+)"
+                }))
 
     version_lookup_command = forms.CharField(
         required=False,
