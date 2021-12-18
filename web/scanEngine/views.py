@@ -428,3 +428,20 @@ def tool_arsenal_section(request):
     tools = InstalledExternalTool.objects.all()
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
+
+
+def add_tool(request):
+    form = AddEngineForm()
+    if request.method == "POST":
+        form = AddEngineForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Scan Engine Added successfully')
+            return http.HttpResponseRedirect(reverse('scan_engine_index'))
+    context = {
+            'scan_engine_nav_active':
+            'active', 'form': form}
+    return render(request, 'scanEngine/settings/add_tool.html', context)

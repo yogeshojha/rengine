@@ -18,19 +18,36 @@ Tool Arsenal
 {% endblock page_title %}
 
 {% block main_content %}
+<div class="row mb-2">
+  <div class="col-sm-4">
+    <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new tool</a>
+    {# <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new Script</a> #}
+  </div>
+  <div class="col-sm-8">
+    <div class="text-sm-end">
+      <div class="btn-group mb-3">
+        <button type="button" class="btn btn-primary">All</button>
+      </div>
+      <div class="btn-group mb-3 ms-1">
+        <button type="button" class="btn btn-light">Default</button>
+        <button type="button" class="btn btn-light">Custom</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="row">
-  <h4>Installed External Tools</h4>
   {% for tool in installed_tools %}
-  <div class="col-lg-4 col-12 mt-2">
+  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2">
     <div class="card ribbon-box h-100">
       <div class="card-body d-flex flex-column">
-        <div class="text-center">
+        <div class="">
           {% if tool.is_default %}
-            <div class="ribbon ribbon-primary float-end"><i class="mdi mdi-hammer-screwdriver me-1"></i> Default Tool</div>
-            {% else %}
-            <div class="ribbon ribbon-danger float-end"><i class="mdi mdi-hammer-screwdriver me-1"></i> Custom Tool</div>
+          <div class="ribbon ribbon-secondary float-end"><i class="mdi mdi-hammer-screwdriver me-1"></i> Default Tool</div>
+          {% else %}
+          <div class="ribbon ribbon-danger float-end"><i class="mdi mdi-hammer-screwdriver me-1"></i> Custom Tool</div>
           {% endif %}
-
+        </div>
+        <div class="text-center">
           {% if tool.logo_url %}
           <img src="{{tool.logo_url}}" alt="logo" height="40">
           {% endif %}
@@ -67,6 +84,154 @@ Tool Arsenal
   </div>
   {% endfor %}
 </div>
+
+{# add tool modal #}
+<div id="add-tool-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display: none;">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Add your custom tool</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="tool_name" class="form-label">Tool Name <span class="text-danger">(Required)</span></label>
+              <input type="text" class="form-control" id="tool_name" name="tool_name" placeholder="My Awesome Tool" required>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="tool_category" class="form-label">Tool Category</label>
+              <select class="select form-control" id="tool_category" name="tool_category" required>
+                <option value="subdomain">Subdomain Gathering</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label for="field-4" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
+              <input type="text" class="form-control" id="github_url" name="github_url" value="https://github.com/">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="tool_logo_url" class="form-label">Tool Logo (URL) <span class="text-muted">(Optional)</span></label>
+              <input type="text" class="form-control" id="tool_logo_url" name="tool_logo_url" placeholder="http://example.com/logo.png">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="field-4" class="form-label">Tool License URL <span class="text-muted">(Optional)</span></label>
+              <input type="text" class="form-control" id="github_url" name="github_url" value="https://github.com/user/tool/blob/master/LICENSE.md">
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label for="tool_description" class="form-label">Description<span class="text-muted">(Optional)</span></label>
+              <textarea class="form-control" id="tool_description" name="tool_description" placeholder="Explain what this tool is used for."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label class="form-label">Tool Type</label><br>
+              <div class="form-check form-check-inline">
+                <input type="radio" id="active_tool" name="tool_type" class="form-check-input" checked="" value="active_tool">
+                <label class="form-check-label" for="active_tool">Active</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input type="radio" id="passive_tool" name="tool_type" class="form-check-input" value="passive_tool">
+                <label class="form-check-label" for="passive_tool">Passive</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h5>Tool Installation Process</h5>
+        <div class="row">
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label class="form-label">How does this tool install?</label><br>
+              <div class="form-check form-check-inline">
+                <input type="radio" id="github_clone" name="tool_installation_process" class="form-check-input">
+                <label class="form-check-label" for="github_clone">Github Clone</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input type="radio" id="go_installation" name="tool_installation_process" class="form-check-input" checked="">
+                <label class="form-check-label" for="go_installation">Go Installation</label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input type="radio" id="other_installation" name="tool_installation_process" class="form-check-input">
+                <label class="form-check-label" for="other_installation">Other</label>
+              </div>
+            </div>
+          </div>
+          <p class="text-muted">(Please note that any commands here will directly execute in shell, so please be careful of the commands you are using.)</p>
+          <div class="col-md-12">
+            <div class="mb-3">
+              <label for="tool_logo_url" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+              <p>
+                <ul>
+                  <li>
+                    If the tool has to be installed using github clone, then your installation command would be
+                    <br>
+                    <code> git clone https://github.com/user/tool </code>
+                  </li>
+                  <li>
+                    If the tool has to be installed using <span class="badge badge-secondary">Go</span>, the your installation command would be
+                    <br>
+                    <code>go install -v github.com/tool@latest</code>
+                    <br>
+                    <div class="alert alert-warning mt-2" role="alert">
+                      Please note that, go get command is no longer supported by go. Instead you should use go install. <a href="https://go.dev/doc/go-get-install-deprecation"> Learn why! </a>
+                    </div>
+                  </li>
+                </ul>
+              </p>
+              <label for="tool_logo_url" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+              <input type="text" class="form-control" id="installation_command" name="installation_command" placeholder="Installation Command" required>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-12">
+          <div class="mb-3">
+            <label for="tool_update" class="form-label">How does this tool update? (Optional)<br>
+              Note:
+              <ul>
+                <li>If the tool is installed using git clone, it is recommended to use <code>git pull</code> for updating.</li>
+                <li>If the tool is installed using go, it is recommended to use the same command as go install.</li>
+              </ul>
+              <br>
+            </label>
+            <br>
+            <label for="tool_update" class="form-label">Update command</label>
+            <span class="text-muted">(We have auto generated this for you based on how you have given installation steps)</span>
+            <input type="text" class="form-control" id="tool_update_command" name="tool_update_command" placeholder="Tool Installation Command" required>
+          </div>
+        </div>
+        <div class="col-md-12">
+          <div class="mb-3">
+            <label for="tool_update" class="form-label">Version match regex<br>
+              How does this tool display the version number?
+            </label>
+            <br>
+            <label for="tool_update" class="form-label">Version Regex</label>
+            <span class="text-muted">(We have auto generated this for you based on how you have given installation steps)</span>
+            <input type="text" class="form-control" id="tool_update_command" name="tool_update_command" placeholder="Tool Installation Command" required>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary waves-effect" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-info waves-effect waves-light">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock main_content %}
 
 

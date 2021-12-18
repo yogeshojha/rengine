@@ -105,3 +105,9 @@ function get_external_tool_current_version(tool_id, id){
     document.getElementById(id).innerHTML = version_number;
   });
 }
+
+
+// add new tool modal
+$(window).on('load', function() {
+  $('#add-tool-modal').modal('show');
+});

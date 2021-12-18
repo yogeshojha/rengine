@@ -121,6 +121,7 @@ class InstalledExternalTool(models.Model):
     update_command = models.CharField(max_length=150)
     version_match_regex = models.CharField(max_length=100, default='v(\d+\.)?(\d+\.)?(\*|\d+)')
     is_default = models.BooleanField(default=False)
+    is_subdomain_gathering = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
