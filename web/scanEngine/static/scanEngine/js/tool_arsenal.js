@@ -8,7 +8,6 @@ function get_external_tool_latest_version(tool_id, tool_name){
   .then(response => response.json())
   .then(function (response) {
     swal.close();
-    console.log(response);
     if (response['message'] == 'RateLimited') {
       Swal.fire({
         showCancelButton: true,
@@ -30,8 +29,8 @@ function get_external_tool_latest_version(tool_id, tool_name){
           .then(function (response) {
             swal.close();
             Swal.fire({
-              title: tool_name + ' Updated!',
-              text: `${tool_name} has now been updated to v${latest_version}!`,
+              title:  htmlEncode(tool_name) + ' Updated!',
+              text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
               icon: 'success',
             });
           });
@@ -66,8 +65,8 @@ function get_external_tool_latest_version(tool_id, tool_name){
           .then(function (response) {
             swal.close();
             Swal.fire({
-              title: tool_name + ' Updated!',
-              text: `${tool_name} has now been updated to v${latest_version}!`,
+              title:  htmlEncode(tool_name) + ' Updated!',
+              text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
               icon: 'success',
             });
           });
@@ -88,7 +87,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
           title: 'Unable to fetch latest version!',
           text: `Since the version lookup command is invalid, reNgine is not able to detect if there's a newer version. But you can still force download the latest version. The latest version is ${latest_version}.`,
           icon: 'info',
-          confirmButtonText: 'Update ' + tool_name
+          confirmButtonText: 'Update ' +  htmlEncode(tool_name)
         }).then((result) => {
           /* Read more about isConfirmed, isDenied below */
           if (result.isConfirmed) {
@@ -103,7 +102,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
             .then(function (response) {
               swal.close();
               Swal.fire({
-                title: tool_name + ' Updated!',
+                title:  htmlEncode(tool_name) + ' Updated!',
                 text: `${tool_name} has now been updated to v${latest_version}!`,
                 icon: 'success',
               });
@@ -116,7 +115,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
         if (current_version == latest_version) {
           Swal.fire({
             title: 'No Update available',
-            text: 'Looks like the latest version of ' + tool_name + ' is already installed.',
+            text: 'Looks like the latest version of ' +  htmlEncode(tool_name) + ' is already installed.',
             icon: 'info'
           });
         }
@@ -124,9 +123,9 @@ function get_external_tool_latest_version(tool_id, tool_name){
           // update available
           Swal.fire({
             title: 'Update available! Version: ' + latest_version,
-            text: `Your current version of ${tool_name} is v${current_version}, but latest version v${latest_version} is available, please udpate!`,
+            text: `Your current version of ${ htmlEncode(tool_name)} is v${current_version}, but latest version v${latest_version} is available, please udpate!`,
             icon: 'info',
-            confirmButtonText: 'Update ' + tool_name
+            confirmButtonText: 'Update ' +  htmlEncode(tool_name)
           }).then((result) => {
             /* Read more about isConfirmed, isDenied below */
             if (result.isConfirmed) {
@@ -141,8 +140,8 @@ function get_external_tool_latest_version(tool_id, tool_name){
               .then(function (response) {
                 swal.close();
                 Swal.fire({
-                  title: tool_name + ' Updated!',
-                  text: `${tool_name} has now been updated to v${latest_version}!`,
+                  title:  htmlEncode(tool_name) + ' Updated!',
+                  text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
                   icon: 'success',
                 });
               });
@@ -168,6 +167,33 @@ function get_external_tool_current_version(tool_id, id){
   });
 }
 
-function delete_tool(tool_id, id){
-
+function uninstall_tool(tool_id, tool_name){
+  Swal.fire({
+    title: 'Are you sure you want to uninstall ' + htmlEncode(tool_name),
+    text: `This is not reversible. Please proceed with caution.`,
+    icon: 'warning',
+    confirmButtonText: 'Uninstall ' +  htmlEncode(tool_name)
+  }).then((result) => {
+    /* Read more about isConfirmed, isDenied below */
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'Uninstalling ' + htmlEncode(tool_name),
+        text: 'This may take a few minutes...',
+        allowOutsideClick: false
+      });
+      swal.showLoading();
+      fetch('/api/tool/uninstall/?tool_id=' + tool_id)
+      .then(response => response.json())
+      .then(function (response) {
+        console.log(response);
+        swal.close();
+        $("#tool_card_" + tool_name).remove();
+        Swal.fire({
+          title:  htmlEncode(tool_name) + ' Uninstalled!',
+          text: `${tool_name} has been Uninstalled.`,
+          icon: 'success',
+        });
+      });
+    }
+  });
 }
