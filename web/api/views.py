@@ -87,6 +87,41 @@ class RengineUpdateCheck(APIView):
             })
 
 
+class UninstallTool(APIView):
+    def get(self, request):
+        req = self.request
+        tool_id = req.query_params.get('tool_id')
+        tool_name = req.query_params.get('name')
+
+        if tool_id:
+            tool = InstalledExternalTool.objects.get(id=tool_id)
+        elif tool_name:
+            tool = InstalledExternalTool.objects.get(name=tool_name)
+
+
+        if tool.is_default:
+            return Response({'status': False, 'message': 'Default tools can not be uninstalled'})
+
+        # check install instructions, if it is installed using go, then remove from go bin path,
+        # else try to remove from github clone path
+
+        # getting tool name is tricky!
+
+        if 'go install' in tool.install_command:
+            tool_name = tool.name.split('/')[-1].split('@')[0]
+            os.system('rm /go/bin/' + tool_name)
+        elif 'git clone' in tool.install_command:
+            tool_name = tool.name[:-1] if tool.name[-1] == '/' else tool.name
+            tool_name = tool_name.split('/')[-1]
+            os.system('rm -rf /usr/src/github' + tool_name)
+        else:
+            return Response({'status': False, 'message': 'Cannot uninstall tool!'})
+
+        tool.delete()
+
+        return Response({'status': True, 'message': 'Uninstall Tool Success'})
+
+
 class UpdateTool(APIView):
     def get(self, request):
         req = self.request
