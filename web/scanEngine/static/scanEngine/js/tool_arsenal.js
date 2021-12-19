@@ -253,3 +253,44 @@ function uninstall_tool(tool_id, tool_name){
     }
   });
 }
+
+
+// show hide tools
+$('#btn_show_custom_tools').on('click', function () {
+  $('.custom_tool').show();
+  $('.default_tool').hide();
+  Snackbar.show({
+    text: 'Filtered custom tools',
+    pos: 'top-right',
+    duration: 2500
+  });
+  $('#btn_show_custom_tools').addClass('btn-primary').removeClass('btn-light');
+  $('#btn_show_all_tools').addClass('btn-light');
+  $('#btn_show_default_tools').addClass('btn-light');
+});
+
+$('#btn_show_default_tools').on('click', function () {
+  $('.custom_tool').hide();
+  $('.default_tool').show();
+  Snackbar.show({
+    text: 'Filtered default tools',
+    pos: 'top-right',
+    duration: 2500
+  });
+  $('#btn_show_default_tools').addClass('btn-primary').removeClass('btn-light');
+  $('#btn_show_custom_tools').addClass('btn-light');
+  $('#btn_show_all_tools').addClass('btn-light');
+});
+
+$('#btn_show_all_tools').on('click', function () {
+  $('.custom_tool').show();
+  $('.default_tool').show();
+  Snackbar.show({
+    text: 'Displaying all tools',
+    pos: 'top-right',
+    duration: 2500
+  });
+  $('#btn_show_all_tools').addClass('btn-primary').removeClass('btn-light');
+  $('#btn_show_custom_tools').addClass('btn-light');
+  $('#btn_show_default_tools').addClass('btn-light');
+});
