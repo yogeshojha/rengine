@@ -28,11 +28,20 @@ function get_external_tool_latest_version(tool_id, tool_name){
           .then(response => response.json())
           .then(function (response) {
             swal.close();
-            Swal.fire({
-              title:  htmlEncode(tool_name) + ' Updated!',
-              text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
-              icon: 'success',
-            });
+            if (response['status']) {
+              Swal.fire({
+                title:  htmlEncode(tool_name) + ' Updated!',
+                text: `${ htmlEncode(tool_name)} has now been updated to v${latest_version}!`,
+                icon: 'success',
+              });
+            }
+            else{
+              Swal.fire({
+                title:  htmlEncode(tool_name) + ' could not update!',
+                text: response['message'],
+                icon: 'fail',
+              });
+            }
           });
         }
       });;

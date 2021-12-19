@@ -113,7 +113,6 @@ class UninstallTool(APIView):
         elif 'git clone' in tool.install_command:
             tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
             tool_name = tool_name.split('/')[-1]
-            print(tool_name)
             os.system('rm -rf /usr/src/github/' + tool_name)
         else:
             return Response({'status': False, 'message': 'Cannot uninstall tool!'})
@@ -134,11 +133,20 @@ class UpdateTool(APIView):
         elif tool_name:
             tool = InstalledExternalTool.objects.get(name=tool_name)
 
+        # if git clone was used for installation, then we must use git pull inside project directory,
+        # otherwise use the same command as given
+
         update_command = tool.update_command.lower()
 
+        if not update_command:
+            return Response({'status': False, 'message': tool.name + 'has missing update command! Cannot update the tool.'})
+        elif update_command == 'git pull':
+            tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
+            tool_name = tool_name.split('/')[-1]
+            os.system('cd /usr/src/github/' + tool_name + ' && git pull && cd -')
+            return Response({'status': True, 'message': tool.name + ' updated Successfully using git pull'})
         os.system(update_command)
-
-        return Response({'status': True})
+        return Response({'status': True, 'message': tool.name + ' upated successfully using update command.'})
 
 
 class GetExternalToolCurrentVersion(APIView):
