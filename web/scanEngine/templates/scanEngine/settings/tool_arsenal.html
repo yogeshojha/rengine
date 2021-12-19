@@ -26,18 +26,23 @@ Tool Arsenal
   <div class="col-sm-8">
     <div class="text-sm-end">
       <div class="btn-group mb-3">
-        <button type="button" class="btn btn-primary">All</button>
+        <button type="button" class="btn btn-primary" id="btn_show_all_tools">All</button>
       </div>
       <div class="btn-group mb-3 ms-1">
-        <button type="button" class="btn btn-light">Default</button>
-        <button type="button" class="btn btn-light">Custom</button>
+        <button type="button" class="btn btn-light" id="btn_show_default_tools">Default</button>
+        <button type="button" class="btn btn-light" id="btn_show_custom_tools">Custom</button>
       </div>
     </div>
   </div>
 </div>
 <div class="row">
   {% for tool in installed_tools %}
-  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2" id="tool_card_{{tool.name}}">
+  {% if tool.is_default %}
+  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2 default_tool" id="tool_card_{{tool.name}}">
+  {% else %}
+  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2 custom_tool" id="tool_card_{{tool.name}}">
+  {% endif %}
+
     <div class="card ribbon-box h-100">
       <div class="card-body d-flex flex-column">
         <div class="">
