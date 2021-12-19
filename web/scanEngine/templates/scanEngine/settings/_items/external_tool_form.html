@@ -1,0 +1,140 @@
+<div class="col-md-6">
+  <div class="mb-3 has-error">
+    <label for="tool_name" class="form-label">Tool Name <span class="text-danger">(Required)</span></label>
+    {{form.name}}
+    {% if form.errors.name %}
+    <span class="text-danger">
+      {{form.errors.name}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="tool_category" class="form-label">Tool Category</label>
+    <select class="select form-control" id="tool_category" name="tool_category" required>
+      <option value="subdomain">Subdomain Gathering</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+  <input type="checkbox" name="is_subdomain_gathering" checked style="display:none;">
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="github_url" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
+    <br>
+    <label class="form-label text-primary">Github URL is required to check the recent releases and updates.</span></label>
+    {{form.github_url}}
+    {% if form.errors.github_url %}
+    <span class="text-danger">
+      {{form.errors.github_url}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="tool_logo_url" class="form-label">Tool Logo (URL) <span class="text-muted">(Optional)</span></label>
+    {{form.logo_url}}
+  </div>
+</div>
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="license_url" class="form-label">Tool License URL <span class="text-muted">(Optional)</span></label>
+    {{form.license_url}}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_description" class="form-label">Description <span class="text-danger">(Required)</span></label>
+    {{form.description}}
+  </div>
+</div>
+<h5>Tool Installation Process</h5>
+<div class="row">
+  <p class="text-danger">Please note that any commands here will directly execute in shell, so please be careful of the commands you are using.</p>
+  <div class="col-md-12">
+    <div class="mb-3">
+      <label for="tool_logo_url" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+      <p>
+        <ul>
+          <li>
+            If the tool has to be installed using github clone, then your installation command would be
+            <br>
+            <code> git clone https://github.com/user/tool </code>
+          </li>
+          <li>
+            If the tool has to be installed using go, the your installation command would be
+            <br>
+            <code>go install -v github.com/tool@latest</code>
+            <br>
+            Please note that, go get command is no longer supported by go. Instead you should use go install. <a href="https://go.dev/doc/go-get-install-deprecation"> Learn why! </a>
+          </li>
+        </ul>
+      </p>
+      <label for="install_command" class="form-label">Installation Command <span class="text-danger">(Required)</span></label>
+      {{form.install_command}}
+    </div>
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">How does this tool update? (Optional)</label>
+    <p>
+      <ul>
+        <li>If the tool has to be installed using git clone, it is recommended to use <code>git pull</code> for updating.</li>
+        <li>If the tool has to be installed using go, it is recommended to use the same command as go install.</li>
+      </ul>
+      <strong>If update command is not provided, you will not be able to update the tools.</strong>
+    </p>
+    <label for="update_command" class="form-label">Update command</label>
+    <span class="text-muted">(We have auto generated this for you based on your installation steps)</span>
+    {{form.update_command}}
+    {% if form.errors.update_command %}
+    <span class="text-danger">
+      {{form.errors.update_command}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">How do you check the version in this tool? (Optional)</label>
+    <p>
+      reNgine will use this command to check the version of the tool and let you know if there is any update available. Most tools will display the version either of these ways
+      <ul>
+        <li>toolname -v</li>
+        <li>toolname -V</li>
+        <li>toolname --version</li>
+        <li>python tool_name.py -v</li>
+      </ul>
+      You can provide these commands depending on your tool, and reNgine will identify the version number.
+    </p>
+    <label for="version_lookup_command" class="form-label">Version Lookup Command</label>
+    <span class="text-muted">(We have auto generated this for you based on your installation steps)</span>
+    {{form.version_lookup_command}}
+    {% if form.errors.version_lookup_command %}
+    <span class="text-danger">
+      {{form.errors.version_lookup_command}}
+    </span>
+    {% endif %}
+  </div>
+</div>
+<div class="col-md-12">
+  <div class="mb-3">
+    <label for="tool_update" class="form-label">Version match regex (Optional)</label>
+    <p>
+      reNgine needs version match regex to find out if there is any update available or not. You can check how the tool displays the version number and we can generate the regex for you, or you can do that manually as well.
+      <br>
+      <strong>If version regex is not given, reNgine will not be able to check the updates automatically. However, you can still force update the tools, if update command is provided.</strong>
+    </p>
+    <br>
+    <label for="version_match_regex" class="form-label">Version Regex</label>
+    {{form.version_match_regex}}
+    {% if form.errors.version_match_regex %}
+    <span class="text-danger">
+      {{form.errors.version_match_regex}}
+    </span>
+    {% endif %}
+  </div>
+</div>

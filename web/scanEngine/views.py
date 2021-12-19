@@ -431,9 +431,9 @@ def tool_arsenal_section(request):
 
 
 def add_tool(request):
-    form = AddExternalTool()
+    form = ExternalToolForm()
     if request.method == "POST":
-        form = AddExternalTool(request.POST)
+        form = ExternalToolForm(request.POST)
         print(form.errors)
         if form.is_valid():
             form.save()
@@ -455,3 +455,23 @@ def add_tool(request):
             'form': form
         }
     return render(request, 'scanEngine/settings/add_tool.html', context)
+
+
+def modify_tool_in_arsenal(request, id):
+    external_tool = get_object_or_404(InstalledExternalTool, id=id)
+    form = ExternalToolForm()
+    if request.method == "POST":
+        form = ExternalToolForm(request.POST, instance=external_tool)
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Tool modified successfully')
+            return http.HttpResponseRedirect(reverse('tool_arsenal'))
+    else:
+        form.set_value(external_tool)
+    context = {
+            'scan_engine_nav_active':
+            'active', 'form': form}
+    return render(request, 'scanEngine/settings/update_tool.html', context)
