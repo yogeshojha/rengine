@@ -21,6 +21,10 @@ urlpatterns = [
         views.update_engine,
         name='update_engine'),
     path(
+        'tool_arsenal/update/<int:id>',
+        views.modify_tool_in_arsenal,
+        name='update_tool_in_arsenal'),
+    path(
         'wordlist/',
         views.wordlist_list,
         name='wordlist_list'),

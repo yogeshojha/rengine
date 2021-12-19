@@ -662,7 +662,7 @@ The breakdown of the Vulnerabilities Identified in **{target_name}** by severity
 '''
 
 
-class AddExternalTool(forms.ModelForm):
+class ExternalToolForm(forms.ModelForm):
     class Meta:
         model = InstalledExternalTool
         fields = '__all__'
@@ -741,3 +741,14 @@ class AddExternalTool(forms.ModelForm):
             attrs={
                 "class": "form-control",
                 "id": "version_lookup_command"}))
+
+    def set_value(self, key):
+        self.initial['name'] = key.name
+        self.initial['github_url'] = key.github_url
+        self.initial['license_url'] = key.license_url
+        self.initial['logo_url'] = key.logo_url
+        self.initial['description'] = key.description
+        self.initial['install_command'] = key.install_command
+        self.initial['update_command'] = key.update_command
+        self.initial['version_match_regex'] = key.version_match_regex
+        self.initial['version_lookup_command'] = key.version_lookup_command
