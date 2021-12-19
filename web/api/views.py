@@ -120,6 +120,9 @@ class GetExternalToolCurrentVersion(APIView):
         elif tool_name:
             tool = InstalledExternalTool.objects.get(name=tool_name)
 
+        if not tool.version_lookup_command:
+            return Response({'status': False, 'message': 'Version Lookup command not provided.'})
+
         p = subprocess.Popen(tool.version_lookup_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         version_number = None
         for line in p.stdout.readlines():
@@ -127,7 +130,10 @@ class GetExternalToolCurrentVersion(APIView):
             if version_number:
                 break
 
-        return Response({'version_number': version_number.group(0), 'tool_name': tool.name})
+        if not version_number:
+            return Response({'status': False, 'message': 'Invalid version lookup command.'})
+
+        return Response({'status': True, 'version_number': version_number.group(0), 'tool_name': tool.name})
 
 
 

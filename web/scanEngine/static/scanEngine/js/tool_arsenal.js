@@ -130,7 +130,12 @@ function get_external_tool_current_version(tool_id, id){
   fetch('/api/external/tool/get_current_release/?tool_id=' + tool_id)
   .then(response => response.json())
   .then(function (response){
-    version_number = response['version_number'].charAt(0) == 'v' || response['version_number'].charAt(0) == 'V' ? response['version_number'] : 'v' + response['version_number'];
-    document.getElementById(id).innerHTML = version_number;
+    if (response['status']){
+      version_number = response['version_number'].charAt(0) == 'v' || response['version_number'].charAt(0) == 'V' ? response['version_number'] : 'v' + response['version_number'];
+      document.getElementById(id).innerHTML = '<span class="badge badge-soft-primary">' + version_number + '</span>';
+    }
+    else{
+      document.getElementById(id).innerHTML = '<span class="badge badge-soft-danger">' + response['message'] + '</span>';
+    }
   });
 }
