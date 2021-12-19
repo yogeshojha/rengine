@@ -108,12 +108,13 @@ class UninstallTool(APIView):
         # getting tool name is tricky!
 
         if 'go install' in tool.install_command:
-            tool_name = tool.name.split('/')[-1].split('@')[0]
+            tool_name = tool.install_command.split('/')[-1].split('@')[0]
             os.system('rm /go/bin/' + tool_name)
         elif 'git clone' in tool.install_command:
-            tool_name = tool.name[:-1] if tool.name[-1] == '/' else tool.name
+            tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
             tool_name = tool_name.split('/')[-1]
-            os.system('rm -rf /usr/src/github' + tool_name)
+            print(tool_name)
+            os.system('rm -rf /usr/src/github/' + tool_name)
         else:
             return Response({'status': False, 'message': 'Cannot uninstall tool!'})
 
