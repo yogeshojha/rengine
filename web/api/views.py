@@ -50,7 +50,7 @@ class RengineUpdateCheck(APIView):
             'https://api.github.com/repos/yogeshojha/rengine/releases'
         response = requests.get(github_api).json()
         if 'message' in response:
-            return Response({'status': False, 'description': 'RateLimited'})
+            return Response({'status': False, 'message': 'RateLimited'})
 
         # get current version_number
         # remove quotes from current_version
@@ -113,7 +113,7 @@ class GetExternalToolCurrentVersion(APIView):
         tool_name = req.query_params.get('name')
         # can supply either tool id or tool_name
         if not InstalledExternalTool.objects.filter(id=tool_id).exists():
-            return Response({'status': False, 'description': 'Tool Not found'})
+            return Response({'status': False, 'message': 'Tool Not found'})
 
         if tool_id:
             tool = InstalledExternalTool.objects.get(id=tool_id)
@@ -139,12 +139,15 @@ class GithubToolCheckGetLatestRelease(APIView):
         tool_name = req.query_params.get('name')
 
         if not InstalledExternalTool.objects.filter(id=tool_id).exists():
-            return Response({'status': False, 'description': 'Tool Not found'})
+            return Response({'status': False, 'message': 'Tool Not found'})
 
         if tool_id:
             tool = InstalledExternalTool.objects.get(id=tool_id)
         elif tool_name:
             tool = InstalledExternalTool.objects.get(name=tool_name)
+
+        if not tool.github_url:
+            return Response({'status': False, 'message': 'Github URL is not provided, Cannot check updates'})
 
         # if tool_github_url has https://github.com/ remove and also remove trailing /
         tool_github_url = tool.github_url.replace('http://github.com/', '').replace('https://github.com/', '')
@@ -152,8 +155,10 @@ class GithubToolCheckGetLatestRelease(APIView):
         github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
         response = requests.get(github_api).json()
         # check if api rate limit exceeded
-        if 'message' in response:
-            return Response({'status': False, 'description': 'RateLimited'})
+        if 'message' in response and response['message'] == 'RateLimited':
+            return Response({'status': False, 'message': 'RateLimited'})
+        elif 'message' in response and response['message'] == 'Not Found':
+            return Response({'status': False, 'message': 'Not Found'})
         # only send latest release
         response = response[0]
 

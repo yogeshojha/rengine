@@ -9,7 +9,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
   .then(function (response) {
     swal.close();
     console.log(response);
-    if (response['description'] == 'RateLimited') {
+    if (response['message'] == 'RateLimited') {
       Swal.fire({
         showCancelButton: true,
         title: 'Error!',
@@ -38,12 +38,41 @@ function get_external_tool_latest_version(tool_id, tool_name){
         }
       });;
     }
-    else if (response['description'] == 'Tool Not found'){
+    else if (response['message'] == 'Tool Not found'){
       Swal.fire({
         title: 'Oops!',
         text: 'We ran into an error! Please raise github request.',
         icon: 'error'
       });
+    }
+    else if (response['message'] == 'Not Found'){
+      Swal.fire({
+        showCancelButton: true,
+        title: 'Oops!',
+        text: 'The github URL provided is not valid, or the project doesn\'t support releases. We are unable to check the latest version number, however, you can still force download the update',
+        icon: 'error',
+        confirmButtonText: 'Force download',
+      }).then((result) => {
+        /* Read more about isConfirmed, isDenied below */
+        if (result.isConfirmed) {
+          Swal.fire({
+            title: 'Downloading latest version...',
+            text: 'This may take a few minutes.',
+            allowOutsideClick: false
+          });
+          swal.showLoading();
+          fetch('/api/tool/update/?tool_id=' + tool_id)
+          .then(response => response.json())
+          .then(function (response) {
+            swal.close();
+            Swal.fire({
+              title: tool_name + ' Updated!',
+              text: `${tool_name} has now been updated to v${latest_version}!`,
+              icon: 'success',
+            });
+          });
+        }
+      });;
     }
     else{
       // match current version with installed version
