@@ -43,7 +43,9 @@ Add Tool
             </div>
             <div class="col-md-12">
               <div class="mb-3">
-                <label for="field-4" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
+                <label for="github_url" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
+                <br>
+                <label class="form-label text-primary">Github URL is required to check the recent releases and updates.</span></label>
                 {{form.github_url}}
                 {% if form.errors.github_url %}
                 <span class="text-danger">
