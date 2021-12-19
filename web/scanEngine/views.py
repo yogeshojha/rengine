@@ -437,6 +437,14 @@ def add_tool(request):
         print(form.errors)
         if form.is_valid():
             form.save()
+            # add tool
+            install_command = form.data['install_command']
+
+            if 'git clone' in install_command:
+                project_name = install_command.split('/')[-1]
+                install_command = install_command + ' /usr/src/github/' + project_name + ' && pip install -r /usr/src/github/' + project_name + '/requirements.txt'
+            os.system(install_command)
+            # run in thread
             messages.add_message(
                 request,
                 messages.INFO,
