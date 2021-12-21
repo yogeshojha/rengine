@@ -1,5 +1,5 @@
-<div class="col-md-6">
-  <div class="mb-3 has-error">
+<div class="col-md-12">
+  <div class="mb-3">
     <label for="tool_name" class="form-label">Tool Name <span class="text-danger">(Required)</span></label>
     {{form.name}}
     {% if form.errors.name %}
@@ -9,21 +9,24 @@
     {% endif %}
   </div>
 </div>
-<div class="col-md-6">
+<div class="col-md-12">
   <div class="mb-3">
     <label for="tool_category" class="form-label">Tool Category</label>
-    <select class="select form-control" id="tool_category" name="tool_category" required>
-      <option value="subdomain">Subdomain Gathering</option>
-      <option value="other">Other</option>
-    </select>
+    <br>
+    <span class="me-4">Does this tool gathers subdomains?</span>
+    <label class="switch s-icons s-outline s-outline-info">
+      {{form.is_subdomain_gathering}}
+      <span class="slider round"></span>
+    </label>
+    <br>
+    <span class="text-muted">If you have choosen this tool as subdomain gathering tool, you'll be able to use it in scan engine configuration and provide this tool name inside <code>uses_tools</code>. If not, you will still be able to use this tool in our custom scripting engine.</span>
   </div>
-  <input type="checkbox" name="is_subdomain_gathering" checked style="display:none;">
 </div>
 <div class="col-md-12">
   <div class="mb-3">
     <label for="github_url" class="form-label">Github URL <span class="text-danger">(Required)</span></label>
     <br>
-    <label class="form-label text-primary">Github URL is required to check the recent releases and updates.</span></label>
+    <label class="form-label text-primary">Github URL is required to check the recent releases and updates.</label>
     {{form.github_url}}
     {% if form.errors.github_url %}
     <span class="text-danger">
