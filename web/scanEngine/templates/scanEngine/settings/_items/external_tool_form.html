@@ -129,8 +129,14 @@
     <p>
       reNgine needs version match regex to find out if there is any update available or not. You can check how the tool displays the version number and we can generate the regex for you, or you can do that manually as well.
       <br>
-      <strong>If version regex is not given, reNgine will not be able to check the updates automatically. However, you can still force update the tools, if update command is provided.</strong>
+      <strong>If version regex is not given, reNgine will not be able to check the updates automatically. However, you can still force update the tools.</strong>
+      <br>
+      <strong>Additionally, we can also generate the version regext for you. You can select how this tool displays the version number. <br>See, how the tool names the release version. https://github.com/user/tool/releases</strong>
     </p>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2">v1.2 / V1.2 / 1.2</button>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2_3">v1.2.3 / V1.2.3 / 1.2.3</button>
+    <button type="button" class="btn btn-outline-primary waves-effect waves-light" id="v1_2_3_4">v1.2.3.4 / V1.2.3.4 / 1.2.3.4</button>
+    <br>
     <br>
     <label for="version_match_regex" class="form-label">Version Regex</label>
     {{form.version_match_regex}}
