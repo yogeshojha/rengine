@@ -22,15 +22,14 @@ Add Tool
           {% csrf_token %}
           <div class="row">
             {% include "scanEngine/settings/_items/external_tool_form.html" %}
-            </div>
-            <div class="row mt-3">
-              <div class="col-12">
-                <input type="submit" class="btn btn-primary float-end ps-4 pe-4" value="Add Tool">
-              </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12">
+              <input type="submit" class="btn btn-primary float-end ps-4 pe-4" value="Add Tool">
             </div>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -39,6 +38,7 @@ Add Tool
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
+  $('#subdomain_extra').hide();
   $('#v1_2').click(function() {
     $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)')
   });
@@ -50,6 +50,17 @@ $(document).ready(function() {
   $('#v1_2_3_4').click(function() {
     $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)?(\*|\d+)?(\*|\d+)')
   });
+
+  $('#is_subdomain_gathering').change(function() {
+
+    if(this.checked) {
+      $('#subdomain_extra').show();
+    }
+    else{
+      $('#subdomain_extra').hide();
+    }
+  });
+
 });
 </script>
 {% endblock page_level_script %}

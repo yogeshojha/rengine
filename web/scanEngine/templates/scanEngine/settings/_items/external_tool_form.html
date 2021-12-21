@@ -146,4 +146,33 @@
     </span>
     {% endif %}
   </div>
+  <div class="row" id="subdomain_extra">
+    <h5>Subdomain Gathering Tool Additional Information</h5>
+    <h6 class="text-danger">Please note that this subdomain gathering tool must support subdomain output in the form of txt file.</h6>
+    <p>Since you have choosen this tool as subdomain gathering tool, we will require additional information.</p>
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="tool_name" class="form-label">Which command-line argument does this tool uses to input the target? (Ex. -d, -t, --target etc)</label>
+        {{form.subdomain_target_command}}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="tool_name" class="form-label">Which command-line argument does this tool uses to output the subdomains? (Ex. -o, --output etc)</label>
+        {{form.subdomain_output_command}}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="tool_name" class="form-label">Which command-line argument does this tool uses to for proxy? (Ex. -x, -p, --proxy etc)</label>
+        {{form.subdomain_proxy_command}}
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="mb-3">
+        <label for="tool_name" class="form-label">Any Extra command-line arguments for this tool?</label>
+        {{form.subdomain_extra_command}}
+      </div>
+    </div>
+  </div>
 </div>
