@@ -122,6 +122,10 @@ class InstalledExternalTool(models.Model):
     version_match_regex = models.CharField(max_length=100, default='[vV]*(\d+\.)?(\d+\.)?(\*|\d+)', null=True, blank=True)
     is_default = models.BooleanField(default=False)
     is_subdomain_gathering = models.BooleanField(default=False)
+    subdomain_output_command = models.CharField(max_length=10, null=True, blank=True)
+    subdomain_proxy_command = models.CharField(max_length=10, null=True, blank=True)
+    subdomain_target_command = models.CharField(max_length=10, null=True, blank=True)
+    subdomain_extra_command = models.CharField(max_length=10, null=True, blank=True)
 
     def __str__(self):
         return self.name
