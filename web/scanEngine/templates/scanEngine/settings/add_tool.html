@@ -38,6 +38,18 @@ Add Tool
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
+$(document).ready(function() {
+  $('#v1_2').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)')
+  });
 
+  $('#v1_2_3').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)?(\*|\d+)')
+  });
+
+  $('#v1_2_3_4').click(function() {
+    $('#version_match_regex').val('[vV]*(\d+\.)?(\d+\.)?(\*|\d+)?(\*|\d+)')
+  });
+});
 </script>
 {% endblock page_level_script %}

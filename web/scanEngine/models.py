@@ -119,7 +119,7 @@ class InstalledExternalTool(models.Model):
     version_lookup_command = models.CharField(max_length=50, null=True, blank=True)
     update_command = models.CharField(max_length=200, null=True, blank=True)
     install_command = models.CharField(max_length=200)
-    version_match_regex = models.CharField(max_length=100, default='v(\d+\.)?(\d+\.)?(\*|\d+)', null=True, blank=True)
+    version_match_regex = models.CharField(max_length=100, default='[vV]*(\d+\.)?(\d+\.)?(\*|\d+)', null=True, blank=True)
     is_default = models.BooleanField(default=False)
     is_subdomain_gathering = models.BooleanField(default=False)
 
