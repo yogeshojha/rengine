@@ -112,11 +112,10 @@ class InstalledExternalTool(models.Model):
     id = models.AutoField(primary_key=True)
     logo_url = models.CharField(max_length=200, null=True, blank=True)
     name = models.CharField(max_length=100)
-    category = models.CharField(max_length=50, null=True, blank=True)
     description = models.CharField(max_length=500)
     github_url = models.CharField(max_length=80)
-    license_url = models.CharField(max_length=80, null=True, blank=True)
-    version_lookup_command = models.CharField(max_length=50, null=True, blank=True)
+    license_url = models.CharField(max_length=100, null=True, blank=True)
+    version_lookup_command = models.CharField(max_length=100, null=True, blank=True)
     update_command = models.CharField(max_length=200, null=True, blank=True)
     install_command = models.CharField(max_length=200)
     version_match_regex = models.CharField(max_length=100, default='[vV]*(\d+\.)?(\d+\.)?(\*|\d+)', null=True, blank=True)
@@ -125,7 +124,7 @@ class InstalledExternalTool(models.Model):
     subdomain_output_command = models.CharField(max_length=10, null=True, blank=True)
     subdomain_proxy_command = models.CharField(max_length=10, null=True, blank=True)
     subdomain_target_command = models.CharField(max_length=10, null=True, blank=True)
-    subdomain_extra_command = models.CharField(max_length=10, null=True, blank=True)
+    subdomain_extra_command = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.name
