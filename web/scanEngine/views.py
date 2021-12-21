@@ -425,7 +425,7 @@ def report_settings(request):
 
 def tool_arsenal_section(request):
     context = {}
-    tools = InstalledExternalTool.objects.all()
+    tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
 

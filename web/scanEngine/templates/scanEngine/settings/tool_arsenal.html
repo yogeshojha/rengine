@@ -68,8 +68,9 @@ Tool Arsenal
 
           <h4 class="mb-1 font-20">{{tool.name}}</h4>
           <p>
-            {% if tool.category %}
-            <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Tool Category">{{tool.category}}</span>
+            {% if tool.is_subdomain_gathering %}
+            <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Tool Category">Subdomain Enumeration Tool</span>
+            <br>
             {% endif %}
             {% if tool.active_passive %}
             <span class="badge badge-soft-primary ms-1" data-toggle="tooltip" data-placement="top" title="Tool Type">{{tool.active_passive}}</span>
