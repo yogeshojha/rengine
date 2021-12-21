@@ -18,6 +18,8 @@ python3 manage.py collectstatic --no-input --clear
 python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
 #Load Default keywords
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
+#Load Default External Tools
+python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
 # update whatportis
 yes | whatportis --update
