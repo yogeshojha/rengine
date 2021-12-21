@@ -4,6 +4,7 @@
 Add Tool
 {% endblock title %}
 {% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {% endblock custom_js_css_link %}
 {% block breadcrumb_title %}
 <li class="breadcrumb-item"><a href="{% url 'tool_arsenal' %}">Tool Arsenal</a></li>
@@ -37,5 +38,6 @@ Add Tool
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
+
 </script>
 {% endblock page_level_script %}

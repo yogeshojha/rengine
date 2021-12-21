@@ -742,6 +742,12 @@ class ExternalToolForm(forms.ModelForm):
                 "class": "form-control",
                 "id": "version_lookup_command"}))
 
+    is_subdomain_gathering = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
+
     def set_value(self, key):
         self.initial['name'] = key.name
         self.initial['github_url'] = key.github_url
@@ -752,3 +758,4 @@ class ExternalToolForm(forms.ModelForm):
         self.initial['update_command'] = key.update_command
         self.initial['version_match_regex'] = key.version_match_regex
         self.initial['version_lookup_command'] = key.version_lookup_command
+        self.initial['is_subdomain_gathering'] = key.is_subdomain_gathering
