@@ -745,8 +745,44 @@ class ExternalToolForm(forms.ModelForm):
     is_subdomain_gathering = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
+            "id": "is_subdomain_gathering",
             "class": "switch",
         }))
+
+    subdomain_output_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "subdomain_output_command",
+                "placeholder": "-o",
+                "value": "-o",
+                }))
+    subdomain_proxy_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "subdomain_proxy_command",
+                "placeholder": "-p"
+                }))
+    subdomain_target_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "subdomain_target_command",
+                "placeholder": "-d",
+                "value": "-d"
+                }))
+    subdomain_extra_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "subdomain_extra_command",
+                "placeholder": "Your custom commands"
+                }))
 
     def set_value(self, key):
         self.initial['name'] = key.name
@@ -759,3 +795,7 @@ class ExternalToolForm(forms.ModelForm):
         self.initial['version_match_regex'] = key.version_match_regex
         self.initial['version_lookup_command'] = key.version_lookup_command
         self.initial['is_subdomain_gathering'] = key.is_subdomain_gathering
+        self.initial['subdomain_output_command'] = key.subdomain_output_command
+        self.initial['subdomain_proxy_command'] = key.subdomain_proxy_command
+        self.initial['subdomain_target_command'] = key.subdomain_target_command
+        self.initial['subdomain_extra_command'] = key.subdomain_extra_command
