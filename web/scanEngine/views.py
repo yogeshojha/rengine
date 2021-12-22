@@ -443,6 +443,8 @@ def add_tool(request):
                 project_name = install_command.split('/')[-1]
                 install_command = install_command + ' /usr/src/github/' + project_name + ' && pip install -r /usr/src/github/' + project_name + '/requirements.txt'
                 github_clone_path = '/usr/src/github/' + project_name
+                # if github cloned we also need to install requirements, atleast found in the main dir
+                os.system('pip3 install -r /usr/src/github/' + project_name + '/requirements.txt')
             os.system(install_command)
             saved_form = form.save()
             if github_clone_path:
