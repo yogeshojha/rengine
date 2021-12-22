@@ -436,15 +436,20 @@ def add_tool(request):
         form = ExternalToolForm(request.POST)
         print(form.errors)
         if form.is_valid():
-            form.save()
             # add tool
             install_command = form.data['install_command']
-
+            github_clone_path = None
             if 'git clone' in install_command:
                 project_name = install_command.split('/')[-1]
                 install_command = install_command + ' /usr/src/github/' + project_name + ' && pip install -r /usr/src/github/' + project_name + '/requirements.txt'
+                github_clone_path = '/usr/src/github/' + project_name
             os.system(install_command)
-            # run in thread
+            saved_form = form.save()
+            if github_clone_path:
+                tool = InstalledExternalTool.objects.get(id=saved_form.pk)
+                tool.github_clone_path = github_clone_path
+                tool.save()
+
             messages.add_message(
                 request,
                 messages.INFO,
