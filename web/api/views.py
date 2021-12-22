@@ -113,7 +113,7 @@ class UninstallTool(APIView):
         elif 'git clone' in tool.install_command:
             tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
             tool_name = tool_name.split('/')[-1]
-            os.system('rm -rf /usr/src/github/' + tool_name)
+            os.system('rm -rf ' + tool.github_clone_path)
         else:
             return Response({'status': False, 'message': 'Cannot uninstall tool!'})
 
