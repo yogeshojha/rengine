@@ -748,40 +748,15 @@ class ExternalToolForm(forms.ModelForm):
             "id": "is_subdomain_gathering",
             "class": "switch",
         }))
-
-    subdomain_output_command = forms.CharField(
+        
+    subdomain_gathering_command = forms.CharField(
         required=False,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control",
-                "id": "subdomain_output_command",
-                "placeholder": "-o",
-                "value": "-o",
-                }))
-    subdomain_proxy_command = forms.CharField(
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control",
-                "id": "subdomain_proxy_command",
-                "placeholder": "-p"
-                }))
-    subdomain_target_command = forms.CharField(
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control",
-                "id": "subdomain_target_command",
-                "placeholder": "-d",
-                "value": "-d"
-                }))
-    subdomain_extra_command = forms.CharField(
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-control",
-                "id": "subdomain_extra_command",
-                "placeholder": "Your custom commands"
+                "id": "subdomain_gathering_command",
+                "placeholder": "Subdomain Gathering Command",
+                "value": "tool_name -d {TARGET} -o {OUTPUT}"
                 }))
 
     def set_value(self, key):
@@ -794,8 +769,4 @@ class ExternalToolForm(forms.ModelForm):
         self.initial['update_command'] = key.update_command
         self.initial['version_match_regex'] = key.version_match_regex
         self.initial['version_lookup_command'] = key.version_lookup_command
-        self.initial['is_subdomain_gathering'] = key.is_subdomain_gathering
-        self.initial['subdomain_output_command'] = key.subdomain_output_command
-        self.initial['subdomain_proxy_command'] = key.subdomain_proxy_command
-        self.initial['subdomain_target_command'] = key.subdomain_target_command
-        self.initial['subdomain_extra_command'] = key.subdomain_extra_command
+        self.initial['subdomain_gathering_command'] = key.subdomain_gathering_command
