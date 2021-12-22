@@ -146,14 +146,18 @@ def initiate_scan(
 
         if(task.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-            subdomain_scan(
-                task,
-                domain,
-                yaml_configuration,
-                results_dir,
-                activity_id,
-                out_of_scope_subdomains
-                )
+            try:
+                subdomain_scan(
+                    task,
+                    domain,
+                    yaml_configuration,
+                    results_dir,
+                    activity_id,
+                    out_of_scope_subdomains
+                    )
+            except Exception as e:
+                logger.error(e)
+                update_last_activity(activity_id, 0)
         else:
             skip_subdomain_scan(task, domain, results_dir)
 
@@ -335,9 +339,11 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
 
 
 def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, out_of_scope_subdomains=None):
-    '''
-    This function is responsible for performing subdomain enumeration
-    '''
+
+    # get all external subdomain enum tools
+    default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
+    custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('Subdomain Gathering for target {} has been started'.format(domain.name))
@@ -348,11 +354,17 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
     # if tool selected is all then make string, no need for loop
     if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
         tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
+        # also put all custom subdomain tools
+        custom_tools = ' '.join(tool for tool in custom_subdomain_tools)
+        if custom_tools:
+            tools = tools + ' ' + custom_subdomain_tools
     else:
         tools = ' '.join(
-            str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
+            str(tool).lower() for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
 
     logging.info(tools)
+    logging.info(default_subdomain_tools)
+    logging.info(custom_subdomain_tools)
 
     # check for THREADS, by default 10
     threads = 10
@@ -361,85 +373,106 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
         if _threads > 0:
             threads = _threads
 
-    if 'amass' in tools:
-        if 'amass-passive' in tools:
-            amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
-                    domain.name, results_dir)
 
-            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
-                amass_command += ' -config /root/.config/amass.ini'
-            # Run Amass Passive
-            logging.info(amass_command)
-            os.system(amass_command)
+    try:
+        for tool in tools.split(' '):
+            if tool in default_subdomain_tools:
+                if tool == 'amass-passive':
+                    amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
+                            domain.name, results_dir)
 
-        if 'amass-active' in tools:
-            amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
-                    domain.name, results_dir)
+                    if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                        amass_command += ' -config /root/.config/amass.ini'
+                    # Run Amass Passive
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
-            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
-                amass_command += ' -config /root/.config/amass.ini'
+                if tool == 'amass-active':
+                    amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
+                            domain.name, results_dir)
 
-            if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-                wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
-                if wordlist == 'default':
-                    wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
-                else:
-                    wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
-                    if not os.path.exists(wordlist_path):
-                        wordlist_path = '/usr/src/' + AMASS_WORDLIST
-                amass_command = amass_command + \
-                    ' -brute -w {}'.format(wordlist_path)
-            if amass_config_path:
-                amass_command = amass_command + \
-                    ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
+                    if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                        amass_command += ' -config /root/.config/amass.ini'
 
-            # Run Amass Active
-            logging.info(amass_command)
-            os.system(amass_command)
+                    if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                        wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
+                        if wordlist == 'default':
+                            wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
+                        else:
+                            wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
+                            if not os.path.exists(wordlist_path):
+                                wordlist_path = '/usr/src/' + AMASS_WORDLIST
+                        amass_command = amass_command + \
+                            ' -brute -w {}'.format(wordlist_path)
+                    if amass_config_path:
+                        amass_command = amass_command + \
+                            ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
 
-    if 'assetfinder' in tools:
-        assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
-            domain.name, results_dir)
+                    # Run Amass Active
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
-        # Run Assetfinder
-        logging.info(assetfinder_command)
-        os.system(assetfinder_command)
+                if tool == 'assetfinder':
+                    assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
+                        domain.name, results_dir)
 
-    if 'sublist3r' in tools:
-        sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
-            domain.name, threads, results_dir)
+                    # Run Assetfinder
+                    logging.info(assetfinder_command)
+                    os.system(assetfinder_command)
 
-        # Run sublist3r
-        logging.info(sublist3r_command)
-        os.system(sublist3r_command)
+                if tool == 'sublist3r':
+                    sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
+                        domain.name, threads, results_dir)
 
-    if 'subfinder' in tools:
-        subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
-            domain.name, threads, results_dir)
+                    # Run sublist3r
+                    logging.info(sublist3r_command)
+                    os.system(sublist3r_command)
 
-        if USE_SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_SUBFINDER_CONFIG]:
-            subfinder_command += ' -config /root/.config/subfinder/config.yaml'
+                if tool == 'subfinder':
+                    subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
+                        domain.name, threads, results_dir)
 
-        # Run Subfinder
-        logging.info(subfinder_command)
-        os.system(subfinder_command)
+                    if USE_SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_SUBFINDER_CONFIG]:
+                        subfinder_command += ' -config /root/.config/subfinder/config.yaml'
 
-    if 'oneforall' in tools:
-        oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
-            domain.name, results_dir)
+                    # Run Subfinder
+                    logging.info(subfinder_command)
+                    os.system(subfinder_command)
 
-        # Run OneForAll
-        logging.info(oneforall_command)
-        os.system(oneforall_command)
+                if tool == 'oneforall':
+                    oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
+                        domain.name, results_dir)
 
-        extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
-            domain.name, results_dir)
+                    # Run OneForAll
+                    logging.info(oneforall_command)
+                    os.system(oneforall_command)
 
-        os.system(extract_subdomain)
+                    extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
+                        domain.name, results_dir)
 
-        # remove the results from oneforall directory
-        os.system(
-            'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
+                    os.system(extract_subdomain)
+
+                    # remove the results from oneforall directory
+                    os.system(
+                        'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
+
+            elif tool in custom_subdomain_tools:
+                # this is for all the custom tools, and tools runs based on instalaltion steps provided
+                if InstalledExternalTool.objects.filter(name__icontains=tool).exists():
+                    custom_tool = InstalledExternalTool.objects.get(name__icontains=tool)
+                    execution_command = custom_tool.subdomain_gathering_command
+                    print(execution_command)
+                    # replace syntax with actual commands and path
+                    if '{TARGET}' in execution_command and '{OUTPUT}' in execution_command:
+                        execution_command = execution_command.replace('{TARGET}', domain.name)
+                        execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
+                        execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
+                        logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
+                        os.system(execution_command)
+                    else:
+                        logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
+    except Exception as e:
+        logger.error(e)
 
     '''
     All tools have gathered the list of subdomains with filename
