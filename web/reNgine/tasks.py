@@ -43,9 +43,17 @@ from scanEngine.models import EngineType, Configuration, Wordlist
 
 from .common_func import *
 
+
 '''
-task for background scan
+    All the background tasks to be executed in celery will be here
 '''
+
+@app.task
+def run_system_commands(system_command):
+    '''
+        This function will run system commands in celery container
+    '''
+    os.system(system_command)
 
 
 @app.task
