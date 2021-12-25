@@ -32,7 +32,7 @@ from targetApp.models import *
 from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
-
+from reNgine.tasks import run_system_commands
 from packaging import version
 
 
@@ -109,13 +109,16 @@ class UninstallTool(APIView):
 
         if 'go install' in tool.install_command:
             tool_name = tool.install_command.split('/')[-1].split('@')[0]
-            os.system('rm /go/bin/' + tool_name)
+            uninstall_command = 'rm /go/bin/' + tool_name
         elif 'git clone' in tool.install_command:
             tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
             tool_name = tool_name.split('/')[-1]
-            os.system('rm -rf ' + tool.github_clone_path)
+            uninstall_command = 'rm -rf ' + tool.github_clone_path
         else:
             return Response({'status': False, 'message': 'Cannot uninstall tool!'})
+
+        os.system(uninstall_command)
+        run_system_commands.apply_async(args=(uninstall_command,))
 
         tool.delete()
 
@@ -143,10 +146,11 @@ class UpdateTool(APIView):
         elif update_command == 'git pull':
             tool_name = tool.install_command[:-1] if tool.install_command[-1] == '/' else tool.install_command
             tool_name = tool_name.split('/')[-1]
-            os.system('cd /usr/src/github/' + tool_name + ' && git pull && cd -')
-            return Response({'status': True, 'message': tool.name + ' updated Successfully using git pull'})
+            update_command = 'cd /usr/src/github/' + tool_name + ' && git pull && cd -'
+
         os.system(update_command)
-        return Response({'status': True, 'message': tool.name + ' upated successfully using update command.'})
+        run_system_commands.apply_async(args=(update_command,))
+        return Response({'status': True, 'message': tool.name + ' upated successfully.'})
 
 
 class GetExternalToolCurrentVersion(APIView):
