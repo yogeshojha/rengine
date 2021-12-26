@@ -96,7 +96,7 @@ function deleteScheduledScan(id)
   const delAPI = "../delete/scheduled_task/"+id;
   swal.queue([{
     title: 'Are you sure you want to delete this?',
-    text: "This action is irreversible.",
+    text: "This action can not be undone.",
     type: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Delete',

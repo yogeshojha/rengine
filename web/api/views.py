@@ -36,6 +36,13 @@ from reNgine.tasks import run_system_commands
 from packaging import version
 
 
+class DeleteSubdomain(APIView):
+    def post(self, request):
+        req = self.request
+        print(req.data['ok'])
+        return Response({'test': True})
+
+
 class ListInterestingKeywords(APIView):
     def get(self, request, format=None):
         req = self.request
