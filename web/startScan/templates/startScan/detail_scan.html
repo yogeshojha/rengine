@@ -1699,8 +1699,8 @@ $(document).ready(function(){
 					"render": function ( data, type, row ) {
 						return `
 						<div class="mt-2">
-						<a href="javascript:void(0);" class="action-icon" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain"> <i class="mdi mdi-lightning-bolt-outline"></i></a>
-						<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain"> <i class="mdi mdi-delete"></i></a>
+						<a href="javascript:void(0);" class="action-icon" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="mdi mdi-lightning-bolt-outline"></i></a>
+						<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain" id="${row['id']}"> <i class="mdi mdi-delete"></i></a>
 						</div>
 						`;
 					},
@@ -1741,7 +1741,9 @@ $(document).ready(function(){
 		});
 
 		$("#subdomain_scan_results").on('click', '.btn-delete-subdomain', function () {
-			console.log(this);
+			var subdomain_id = $(this).attr('id');
+			var data = {'subdomain_ids': [subdomain_id]};
+			var row = this;
 			Swal.fire({
 				showCancelButton: true,
 				title: 'Delete Subdomain!',
@@ -1768,12 +1770,16 @@ $(document).ready(function(){
 					.then(function (response) {
 						swal.close();
 						if (response['status']) {
-							$(this).parent().parent().parent().remove();
+							$(row).parent().parent().parent().remove();
+							Snackbar.show({
+								text: 'Subdomain successfully deleted!',
+								pos: 'top-right',
+								duration: 2500
+							});
 						}
 						else{
 							Swal.fire({
-								title:  htmlEncode(tool_name) + ' could not update!',
-								text: response['message'],
+								title:  'Could not delete Subdomain!',
 								icon: 'fail',
 							});
 						}

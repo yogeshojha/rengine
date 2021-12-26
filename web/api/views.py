@@ -39,8 +39,9 @@ from packaging import version
 class DeleteSubdomain(APIView):
     def post(self, request):
         req = self.request
-        print(req.data['ok'])
-        return Response({'test': True})
+        for id in req.data['subdomain_ids']:
+            Subdomain.objects.get(id=id).delete()
+        return Response({'status': True})
 
 
 class ListInterestingKeywords(APIView):
