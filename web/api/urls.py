@@ -146,6 +146,10 @@ urlpatterns = [
         'rengine/update/',
         RengineUpdateCheck.as_view(),
         name='check_rengine_update'),
+    path(
+        'action/subdomain/delete/',
+        DeleteSubdomain.as_view(),
+        name='delete_subdomain'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

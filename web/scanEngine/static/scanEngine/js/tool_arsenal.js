@@ -56,7 +56,6 @@ function get_external_tool_latest_version(tool_id, tool_name){
           icon: 'error',
           confirmButtonText: 'Force download',
         }).then((result) => {
-          /* Read more about isConfirmed, isDenied below */
           if (result.isConfirmed) {
             Swal.fire({
               title: 'Downloading latest version...',
