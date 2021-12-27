@@ -39,7 +39,10 @@ from packaging import version
 class InitiateSubTask(APIView):
     def post(self, request):
         req = self.request
-        print(req.data)
+        data = req.data
+        for subdomain_id in data['subdomain_ids']:
+            if data['port_scan']:
+                print('Initiate Port Scan')
         return Response({'status': True})
 
 
