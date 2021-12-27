@@ -32,7 +32,7 @@ from targetApp.models import *
 from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
-from reNgine.tasks import run_system_commands
+from reNgine.tasks import run_system_commands, initiate_subtask
 from packaging import version
 
 
@@ -41,8 +41,14 @@ class InitiateSubTask(APIView):
         req = self.request
         data = req.data
         for subdomain_id in data['subdomain_ids']:
-            if data['port_scan']:
-                print('Initiate Port Scan')
+            celery_task = initiate_subtask.apply_async(args=(
+                subdomain_id,
+                data['port_scan'],
+                data['osint'],
+                data['endpoint'],
+                data['dir_fuzz'],
+                data['vuln_scan'],
+            ))
         return Response({'status': True})
 
 

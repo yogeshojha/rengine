@@ -57,6 +57,35 @@ def run_system_commands(system_command):
 
 
 @app.task
+def initiate_subtask(
+        subdomain_id,
+        port_scan,
+        osint,
+        endpoint,
+        dir_fuzz,
+        vuln_scan,
+    ):
+    # get scan history and yaml Configuration for this subdomain
+    subdomain = Subdomain.objects.get(id=subdomain_id)
+    scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
+    yaml_configuration = EngineType.objects.get(id=scan_history.scan_type.id)
+    # create scan activity of SubScan Model
+    current_scan_time = timezone.now()
+    sub_scan = SubScan()
+    sub_scan.start_scan_date = current_scan_time
+    sub_scan.celery_id = initiate_subtask.request.id
+    sub_scan.scan_history = scan_history
+    sub_scan.subdomain = subdomain
+    sub_scan.port_scan = port_scan
+    sub_scan.osint = osint
+    sub_scan.endpoint = endpoint
+    sub_scan.dir_fuzz = dir_fuzz
+    sub_scan.vuln_scan = vuln_scan
+    sub_scan.scan_status = -1
+    sub_scan.save()
+
+
+@app.task
 def initiate_scan(
         domain_id,
         scan_history_id,
@@ -784,7 +813,7 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('reNgine has finished gathering screenshots for {}'.format(domain.name))
 
 
-def port_scanning(task, domain, yaml_configuration, results_dir):
+def port_scanning(scan_history, domain, yaml_configuration, results_dir):
     '''
     This function is responsible for running the port scan
     '''
@@ -868,7 +897,7 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
         port_count = Port.objects.filter(
             ports__in=IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
-                    scan_history__id=task.id))).distinct().count()
+                    scan_history__id=scan_history.id))).distinct().count()
         send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain.name, port_count))
 
     if notification and notification[0].send_scan_output_file:
@@ -2094,9 +2123,3 @@ def get_and_save_meta_info(meta_dict):
                     meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
 
             meta_finder_document.save()
-
-@app.task(bind=True)
-def test_task(self):
-    print('*' * 40)
-    print('test task run')
-    print('*' * 40)

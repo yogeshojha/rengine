@@ -158,8 +158,8 @@ class Subdomain(models.Model):
     webserver = models.CharField(max_length=1000, blank=True, null=True)
     content_length = models.IntegerField(default=0, blank=True, null=True)
     page_title = models.CharField(max_length=1000, blank=True, null=True)
-    technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True, null=True)
-    ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True, null=True)
+    technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True)
+    ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
 
     def __str__(self):
         return str(self.name)
@@ -358,3 +358,18 @@ class Dork(models.Model):
     type = models.CharField(max_length=500, null=True, blank=True)
     description = models.CharField(max_length=1500, null=True, blank=True)
     url = models.CharField(max_length=1500, null=True, blank=True)
+
+
+class SubScan(models.Model):
+    id = models.AutoField(primary_key=True)
+    start_scan_date = models.DateTimeField()
+    scan_status = models.IntegerField()
+    celery_id = models.CharField(max_length=100, blank=True)
+    scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+    subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
+    dir_file_search = models.BooleanField(null=True, default=False)
+    port_scan = models.BooleanField(null=True, default=False)
+    fetch_url = models.BooleanField(null=True, default=False)
+    vulnerability_scan = models.BooleanField(null=True, default=False)
+    osint = models.BooleanField(null=True, default=False)
+    stop_scan_date = models.DateTimeField(null=True, blank=True)
