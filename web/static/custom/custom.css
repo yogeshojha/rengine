@@ -139,8 +139,8 @@ div.dataTables_wrapper div.dataTables_filter input:focus {
 }
 
 .right-bar{
-  width: 360px;
-  right: -370px;
+  width: 460px;
+  right: -470px;
 }
 
 /* theme toggle theme-switch */

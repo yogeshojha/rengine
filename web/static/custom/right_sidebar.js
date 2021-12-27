@@ -13,7 +13,7 @@ function getScanStatusSidebar(reload) {
         <p class="text-dark mb-0">${scan_object.domain.name}<span class="float-end">${scan_object.current_progress}%</span></p>
         <p class="mb-0"><small>Started ${scan_object.elapsed_time} ago<small></p>
         <h5><span class="badge badge-soft-primary badge-scan_engine-type float-end">${scan_object.scan_type.engine_name}</span></h5>
-        <h4 class="text-center">
+        <h4 class="">
         <span class="badge-subdomain-count badge badge-soft-info waves-effect waves-light">&nbsp;&nbsp;${scan_object.subdomain_count}&nbsp;&nbsp;</span>
         <span class="badge-endpoint-count badge badge-soft-primary waves-effect waves-light">&nbsp;&nbsp;${scan_object.endpoint_count}&nbsp;&nbsp;</span>
         <span class="badge-vuln-count badge badge-soft-danger waves-effect waves-light">&nbsp;&nbsp;${scan_object.vulnerability_count}&nbsp;&nbsp;</span></h4>
@@ -47,7 +47,7 @@ function getScanStatusSidebar(reload) {
         <p class="text-dark mb-0">${scan_object.domain.name}${status_badge}</p>
         <p class="mb-0"><small>Scan Completed ${scan_object.completed_ago} ago<small></p>
         <h5><span class="badge badge-soft-primary badge-scan_engine-type float-end">${scan_object.scan_type.engine_name}</span></h5>
-        <h4 class="text-center">
+        <h4 class="">
         <span class="badge-subdomain-count badge badge-soft-info waves-effect waves-light">&nbsp;&nbsp;${scan_object.subdomain_count}&nbsp;&nbsp;</span>
         <span class="badge-endpoint-count badge badge-soft-primary waves-effect waves-light">&nbsp;&nbsp;${scan_object.endpoint_count}&nbsp;&nbsp;</span>
         <span class="badge-vuln-count badge badge-soft-danger waves-effect waves-light">&nbsp;&nbsp;${scan_object.vulnerability_count}&nbsp;&nbsp;</span></h4>
