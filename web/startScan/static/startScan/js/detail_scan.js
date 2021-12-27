@@ -1507,3 +1507,55 @@ function fetch_whois(domain_name){
 
   });
 }
+
+
+// initiate sub scan
+$('#btn-initiate-subtask').on('click', function(){
+  var subdomain_id = $('#subtask_subdomain_id').val();
+  console.log(subdomain_id);
+  $('#subscan-modal').modal('hide');
+  var port_scan = $('#port_scan_subtask').is(':checked')
+  var osint = $('#osint_subtask').is(':checked')
+  var endpoint = $('#endpoint_subtask').is(':checked')
+  var dir_fuzz = $('#dir_fuzz_subtask').is(':checked')
+  var vuln_scan = $('#vuln_subtask').is(':checked')
+  var data = {
+    'subdomain_ids': [subdomain_id],
+    'port_scan': port_scan,
+    'osint': osint,
+    'endpoint': endpoint,
+    'dir_fuzz': dir_fuzz,
+    'vuln_scan': vuln_scan,
+  };
+  Swal.fire({
+    title: 'Initiating Subtask...',
+    allowOutsideClick: false
+  });
+  swal.showLoading();
+  fetch('/api/action/initiate/subtask/', {
+    method: 'POST',
+    credentials: "same-origin",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(function (response) {
+    swal.close();
+    if (response['status']) {
+      Snackbar.show({
+        text: 'Subtask initiated successfully!',
+        pos: 'top-right',
+        duration: 2500
+      });
+    }
+    else{
+      Swal.fire({
+        title:  'Could not initiate subtask!',
+        icon: 'fail',
+      });
+    }
+  });
+});
