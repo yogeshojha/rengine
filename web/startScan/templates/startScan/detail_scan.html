@@ -1251,6 +1251,59 @@ Detailed Scan
 		</div>
 	</div>
 </div>
+
+{# SubScan Modal #}
+<div id="subscan-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="standard-modalLabel">Initiate Subscan</h4>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<div class="alert alert-info">
+					reNgine will use the configuration from Engine: <b>{{history.scan_type.engine_name}}</b> for this subscan. You can <a href="/scanEngine/update/{{history.scan_type.id}}" target="_blank">change the configuration for the engine here.</a>
+				</div>
+				<h5>Select the subtasks to perform</h5>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="port_scan_subtask">
+						<label class="form-check-label" for="port_scan">Port Scan</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="osint_subtask">
+						<label class="form-check-label" for="osint_subtask">OSINT</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="endpoint_subtask">
+						<label class="form-check-label" for="endpoint_subtask">Endpoint Gathering</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="dir_fuzz_subtask">
+						<label class="form-check-label" for="dir_fuzz_subtask">Directory Fuzzing</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="vuln_subtask">
+						<label class="form-check-label" for="vuln_subtask">Vulnerability Scan</label>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary"><i class="fe-zap ms-1 me-1"></i>Initiate Subscan</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 {% endblock main_content %}
 
 {% block page_level_script %}
@@ -1278,6 +1331,7 @@ Detailed Scan
 
 <script type="text/javascript">
 $(document).ready(function(){
+	$('#subscan-modal').modal('show');
 	// init
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
@@ -1699,7 +1753,7 @@ $(document).ready(function(){
 					"render": function ( data, type, row ) {
 						return `
 						<div class="mt-2">
-						<a href="javascript:void(0);" class="action-icon" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="mdi mdi-lightning-bolt-outline"></i></a>
+						<a href="javascript:void(0);" class="action-icon btn-scan-subdomain" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="mdi mdi-lightning-bolt-outline"></i></a>
 						<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain" id="${row['id']}"> <i class="mdi mdi-delete"></i></a>
 						</div>
 						`;
@@ -1787,6 +1841,16 @@ $(document).ready(function(){
 				}
 			});;
 			$('a[data-toggle="tooltip"]').tooltip("hide")
+		});
+
+
+		$("#subdomain_scan_results").on('click', '.btn-scan-subdomain', function () {
+			var subdomain_id = $(this).attr('id');
+			var data = {'subdomain_ids': [subdomain_id]};
+			var row = this;
+			$('a[data-toggle="tooltip"]').tooltip("hide")
+			console.log(data);
+			$('#subscan-modal').modal('show');
 		});
 
 		// if port scanning is not done, remove port row
@@ -2197,5 +2261,5 @@ $(document).ready(function(){
 	get_subdomain_changes({{scan_history_id}});
 	get_endpoint_changes({{scan_history_id}});
 
-	</script>
-	{% endblock page_level_script %}
+</script>
+{% endblock page_level_script %}
