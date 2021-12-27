@@ -1514,11 +1514,19 @@ $('#btn-initiate-subtask').on('click', function(){
   var subdomain_id = $('#subtask_subdomain_id').val();
   console.log(subdomain_id);
   $('#subscan-modal').modal('hide');
-  var port_scan = $('#port_scan_subtask').is(':checked')
-  var osint = $('#osint_subtask').is(':checked')
-  var endpoint = $('#endpoint_subtask').is(':checked')
-  var dir_fuzz = $('#dir_fuzz_subtask').is(':checked')
-  var vuln_scan = $('#vuln_subtask').is(':checked')
+  var port_scan = $('#port_scan_subtask').is(':checked');
+  var osint = $('#osint_subtask').is(':checked');
+  var endpoint = $('#endpoint_subtask').is(':checked');
+  var dir_fuzz = $('#dir_fuzz_subtask').is(':checked');
+  var vuln_scan = $('#vuln_subtask').is(':checked');
+  if (!port_scan && !osint && !endpoint && !dir_fuzz && !vuln_scan) {
+    Swal.fire({
+      title: 'Oops!',
+      text: 'No Subtasks Selected. Please choose atleast one subtask!',
+      icon: 'error'
+    });
+    return;
+  }
   var data = {
     'subdomain_ids': [subdomain_id],
     'port_scan': port_scan,
