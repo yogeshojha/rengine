@@ -150,6 +150,10 @@ urlpatterns = [
         'action/subdomain/delete/',
         DeleteSubdomain.as_view(),
         name='delete_subdomain'),
+    path(
+        'action/initiate/subtask/',
+        InitiateSubTask.as_view(),
+        name='initiate_subtask'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

@@ -1268,7 +1268,7 @@ Detailed Scan
 				<div class="mt-1">
 					<div class="form-check">
 						<input type="checkbox" class="form-check-input" id="port_scan_subtask">
-						<label class="form-check-label" for="port_scan">Port Scan</label>
+						<label class="form-check-label" for="port_scan_subtask">Port Scan</label>
 					</div>
 				</div>
 				<div class="mt-1">
@@ -1298,11 +1298,14 @@ Detailed Scan
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-				<button type="button" class="btn btn-primary"><i class="fe-zap ms-1 me-1"></i>Initiate Subscan</button>
+				<button type="button" class="btn btn-primary" id="btn-initiate-subtask"><i class="fe-zap ms-1 me-1"></i>Initiate Subscan</button>
 			</div>
 		</div>
 	</div>
 </div>
+
+{# for passing subdomain id to initiate subtask scan #}
+<input type="hidden" name="subtask_subdomain_id" id="subtask_subdomain_id" value="0">
 
 {% endblock main_content %}
 
@@ -1331,7 +1334,6 @@ Detailed Scan
 
 <script type="text/javascript">
 $(document).ready(function(){
-	$('#subscan-modal').modal('show');
 	// init
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
@@ -1843,14 +1845,12 @@ $(document).ready(function(){
 			$('a[data-toggle="tooltip"]').tooltip("hide")
 		});
 
-
 		$("#subdomain_scan_results").on('click', '.btn-scan-subdomain', function () {
-			var subdomain_id = $(this).attr('id');
-			var data = {'subdomain_ids': [subdomain_id]};
-			var row = this;
-			$('a[data-toggle="tooltip"]').tooltip("hide")
-			console.log(data);
+			$('input[type=checkbox]').prop('checked',false);
 			$('#subscan-modal').modal('show');
+			var subdomain_id = $(this).attr('id');
+			$('a[data-toggle="tooltip"]').tooltip("hide")
+			$('#subtask_subdomain_id').val(subdomain_id);
 		});
 
 		// if port scanning is not done, remove port row
