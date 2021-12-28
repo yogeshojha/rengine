@@ -70,28 +70,28 @@ function getScanStatusSidebar(reload) {
     if (tasks['completed'].length > 0){
       for (var task in tasks['completed']) {
         task_object = tasks['completed'][task];
-        if (task_object.scan_status == 0 ) {
+        if (task_object.status == 0 ) {
           bg_color = 'bg-soft-danger';
           status_badge = '<span class="float-end badge bg-danger">Failed</span>';
         }
-        else if (task_object.scan_status == 3) {
+        else if (task_object.status == 3) {
           bg_color = 'bg-soft-danger';
           status_badge = '<span class="float-end badge bg-danger">Aborted</span>';
         }
-        else if (task_object.scan_status == 2){
+        else if (task_object.status == 2){
           bg_color = 'bg-soft-success';
           status_badge = '<span class="float-end badge bg-success">Task Completed</span>';
         }
 
         $('#completed_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
-        <p class="text-dark mb-0">Port Scan on ${task_object.subdomain_name}${status_badge}</p>
+        <p class="text-dark mb-0"><b>Port Scan</b> on ${task_object.subdomain_name}${status_badge}</p>
         <p class="mb-0"><small>Task Completed ${task_object.completed_ago} ago<small></p>
         <p class="mb-0"><small>Took ${task_object.time_taken}<small></p>
         </a>`);
       }
     }
     else{
-      $('#completed').html(`<div class="alert alert-info" role="alert">No scans have been recently completed.</div>`);
+      $('#completed_tasks').html(`<div class="alert alert-info" role="alert">No tasks have been recently completed.</div>`);
     }
   }).done(function() {
     tippy('.badge-subdomain-count', {
