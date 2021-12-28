@@ -81,7 +81,7 @@ def initiate_subtask(
     sub_scan.endpoint = endpoint
     sub_scan.dir_fuzz = dir_fuzz
     sub_scan.vuln_scan = vuln_scan
-    sub_scan.scan_status = INITIATED_TASK
+    sub_scan.status = INITIATED_TASK
     sub_scan.save()
 
     results_dir = '/usr/src/scan_results/' + scan_history.results_dir
@@ -92,7 +92,8 @@ def initiate_subtask(
             Loader=yaml.FullLoader)
 
         if port_scan:
-            sub_scan.scan_status = RUNNING_TASK
+            sub_scan.start_scan_date = current_scan_time
+            sub_scan.status = RUNNING_TASK
             sub_scan.save()
             # delete any existing ports.json
             port_results_file = results_dir + '/ports.json'
@@ -108,11 +109,13 @@ def initiate_subtask(
                 results_dir,
                 subdomain=subdomain.name
                 )
-                sub_scan.scan_status = SUCCESS_TASK
-                sub_scan.save()
+                task_status = SUCCESS_TASK
             except Exception as e:
                 logging.error(e)
-                sub_scan.scan_status = FAILED_TASK
+                task_status = FAILED_TASK
+            finally:
+                sub_scan.stop_scan_date = timezone.now()
+                sub_scan.status = task_status
                 sub_scan.save()
 
     except Exception as e:
