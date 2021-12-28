@@ -7,7 +7,7 @@ function getScanStatusSidebar(reload) {
 
     // subtasks
     $('#currently_running_tasks').empty();
-    $('#recently_completed_tasks').empty();
+    $('#completed_tasks').empty();
     $('#upcoming_tasks').empty();
 
     scans = data['scans'];
@@ -67,9 +67,28 @@ function getScanStatusSidebar(reload) {
       $('#completed').html(`<div class="alert alert-info" role="alert">No scans have been recently completed.</div>`);
     }
 
+    if (tasks['running'].length > 0){
+      $('#current_task_count').html(`${tasks['running'].length} Tasks are currently running`)
+      for (var task in tasks['running']) {
+        task_object = tasks['running'][task];
+        task_name = get_task_name(task_object);
+        bg_color = 'bg-soft-info';
+        status_badge = '<span class="float-end badge bg-danger">Running</span>';
+
+        $('#currently_running_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
+        <p class="text-dark mb-0"><b>${task_name}</b> on ${task_object.subdomain_name}${status_badge}</p>
+        <p class="mb-0"><small>Running Since ${task_object.elapsed_time} ago<small></p>
+        </a>`);
+      }
+    }
+    else{
+      $('#currently_running_tasks').html(`<div class="alert alert-info" role="alert">No tasks are currently running.</div>`);
+    }
+
     if (tasks['completed'].length > 0){
       for (var task in tasks['completed']) {
         task_object = tasks['completed'][task];
+        task_name = get_task_name(task_object);
         if (task_object.status == 0 ) {
           bg_color = 'bg-soft-danger';
           status_badge = '<span class="float-end badge bg-danger">Failed</span>';
@@ -84,7 +103,7 @@ function getScanStatusSidebar(reload) {
         }
 
         $('#completed_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
-        <p class="text-dark mb-0"><b>Port Scan</b> on ${task_object.subdomain_name}${status_badge}</p>
+        <p class="text-dark mb-0"><b>${task_name}</b> on ${task_object.subdomain_name}${status_badge}</p>
         <p class="mb-0"><small>Task Completed ${task_object.completed_ago} ago<small></p>
         <p class="mb-0"><small>Took ${task_object.time_taken}<small></p>
         </a>`);
@@ -93,6 +112,23 @@ function getScanStatusSidebar(reload) {
     else{
       $('#completed_tasks').html(`<div class="alert alert-info" role="alert">No tasks have been recently completed.</div>`);
     }
+
+    if (tasks['pending'].length > 0){
+      for (var task in tasks['pending']) {
+        task_object = tasks['pending'][task];
+        task_name = get_task_name(task_object);
+
+        status_badge = '<span class="float-end badge bg-warning">Upcoming</span>';
+
+        $('#upcoming_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 bg-soft-warning">
+        <p class="text-dark mb-0"><b>${task_name}</b> on ${task_object.subdomain_name}${status_badge}</p>
+        </a>`);
+      }
+    }
+    else{
+      $('#upcoming_tasks').html(`<div class="alert alert-info" role="alert">No upcoming tasks.</div>`);
+    }
+
   }).done(function() {
     tippy('.badge-subdomain-count', {
       content: 'Subdomains',
@@ -116,4 +152,27 @@ function getScanStatusSidebar(reload) {
     }
   });
 
+}
+
+
+function get_task_name(data){
+  console.log(data)
+  if (data['dir_file_search']) {
+    return 'Directory Fuzzing';
+  }
+  else if (data['port_scan']) {
+    return 'Port Scan';
+  }
+  else if (data['fetch_url']) {
+    return 'Endpoint Gathering';
+  }
+  else if (data['vulnerability_scan']) {
+    return 'Vulnerability Scan';
+  }
+  else if (data['osint']) {
+    return 'OSINT';
+  }
+  else{
+    return 'Unknown';
+  }
 }
