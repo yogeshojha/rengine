@@ -31,7 +31,7 @@ from startScan.models import *
 from targetApp.models import *
 from recon_note.models import *
 
-from reNgine.common_func import is_safe_path
+from reNgine.utilities import is_safe_path
 from reNgine.tasks import run_system_commands, initiate_subtask
 from packaging import version
 
@@ -252,16 +252,31 @@ class GithubToolCheckGetLatestRelease(APIView):
 
 class ScanStatus(APIView):
     def get(self, request):
+        # main tasks
         recently_completed_scans = ScanHistory.objects.all().order_by(
-            '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:7]
+            '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:10]
         currently_scanning = ScanHistory.objects.order_by(
             '-start_scan_date').filter(scan_status=1)
         pending_scans = ScanHistory.objects.filter(scan_status=-1)
 
+        # subtasks
+        recently_completed_tasks = SubScan.objects.all().order_by(
+        '-start_scan_date').filter(Q(status=0) | Q(status=2) | Q(status=3))[:15]
+        currently_running_tasks = SubScan.objects.order_by(
+        '-start_scan_date').filter(status=1)
+        pending_tasks = SubScan.objects.filter(status=-1)
+
         response = {
-            'pending': ScanHistorySerializer(pending_scans, many=True).data,
-            'scanning': ScanHistorySerializer(currently_scanning, many=True).data,
-            'recently_completed_scans': ScanHistorySerializer(recently_completed_scans, many=True).data
+            'scans': {
+                'pending': ScanHistorySerializer(pending_scans, many=True).data,
+                'scanning': ScanHistorySerializer(currently_scanning, many=True).data,
+                'completed': ScanHistorySerializer(recently_completed_scans, many=True).data
+            },
+            'tasks': {
+                'pending': SubScanSerializer(pending_tasks, many=True).data,
+                'running': SubScanSerializer(currently_running_tasks, many=True).data,
+                'completed': SubScanSerializer(recently_completed_tasks, many=True).data
+            }
         }
         return Response(response)
 
