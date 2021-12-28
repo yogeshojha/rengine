@@ -363,7 +363,7 @@ class Dork(models.Model):
 class SubScan(models.Model):
     id = models.AutoField(primary_key=True)
     start_scan_date = models.DateTimeField()
-    scan_status = models.IntegerField()
+    status = models.IntegerField()
     celery_id = models.CharField(max_length=100, blank=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
@@ -373,3 +373,29 @@ class SubScan(models.Model):
     vulnerability_scan = models.BooleanField(null=True, default=False)
     osint = models.BooleanField(null=True, default=False)
     stop_scan_date = models.DateTimeField(null=True, blank=True)
+
+
+    def get_completed_ago(self):
+        if self.stop_scan_date:
+            return self.get_time_ago(self.stop_scan_date)
+
+    def get_total_time_in_sec(self):
+        if self.stop_scan_date:
+            return (self.stop_scan_date - self.start_scan_date).seconds
+
+    def get_elapsed_time(self):
+        return self.get_time_ago(self.start_scan_date)
+
+    def get_time_ago(self, time):
+        duration = timezone.now() - time
+        days, seconds = duration.days, duration.seconds
+        hours = days * 24 + seconds // 3600
+        minutes = (seconds % 3600) // 60
+        seconds = seconds % 60
+        if not hours and not minutes:
+            return '{} seconds'.format(seconds)
+        elif not hours:
+            return '{} minutes'.format(minutes)
+        elif not minutes:
+            return '{} hours'.format(hours)
+        return '{} hours {} minutes'.format(hours, minutes)
