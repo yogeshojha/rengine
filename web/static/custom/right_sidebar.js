@@ -1,14 +1,23 @@
 function getScanStatusSidebar(reload) {
   $.getJSON('/api/scan_status', function(data) {
+    // main scans
     $('#currently_scanning').empty();
-    $('#recently_completed_scans').empty();
+    $('#completed').empty();
     $('#upcoming_scans').empty();
 
-    if (data['scanning'].length > 0){
-      $('#current_scan_counter').html(data['scanning'].length);
-      $('#current_scan_count').html(`${data['scanning'].length} Scans Currently Running`)
-      for (var scan in data['scanning']) {
-        scan_object = data['scanning'][scan];
+    // subtasks
+    $('#currently_running_tasks').empty();
+    $('#recently_completed_tasks').empty();
+    $('#upcoming_tasks').empty();
+
+    scans = data['scans'];
+    tasks = data['tasks'];
+
+    if (scans['scanning'].length > 0){
+      $('#current_scan_counter').html(scans['scanning'].length);
+      $('#current_scan_count').html(`${scans['scanning'].length} Scans Currently Running`)
+      for (var scan in scans['scanning']) {
+        scan_object = scans['scanning'][scan];
         $('#currently_scanning').append(`<a href="/scan/detail/${scan_object.id}" class="mt-2 text-reset item-hovered d-block p-2 bg-soft-info">
         <p class="text-dark mb-0">${scan_object.domain.name}<span class="float-end">${scan_object.current_progress}%</span></p>
         <p class="mb-0"><small>Started ${scan_object.elapsed_time} ago<small></p>
@@ -27,9 +36,9 @@ function getScanStatusSidebar(reload) {
       $('#currently_scanning').html(`<div class="alert alert-warning" role="alert">No Scans are currently running.</div>`);
     }
 
-    if (data['recently_completed_scans'].length > 0){
-      for (var scan in data['recently_completed_scans']) {
-        scan_object = data['recently_completed_scans'][scan];
+    if (scans['completed'].length > 0){
+      for (var scan in scans['completed']) {
+        scan_object = scans['completed'][scan];
         if (scan_object.scan_status == 0 ) {
           bg_color = 'bg-soft-danger';
           status_badge = '<span class="float-end badge bg-danger">Failed</span>';
@@ -43,7 +52,7 @@ function getScanStatusSidebar(reload) {
           status_badge = '<span class="float-end badge bg-success">Scan Completed</span>';
         }
 
-        $('#recently_completed_scans').append(`<a href="/scan/detail/${scan_object.id}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
+        $('#completed').append(`<a href="/scan/detail/${scan_object.id}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
         <p class="text-dark mb-0">${scan_object.domain.name}${status_badge}</p>
         <p class="mb-0"><small>Scan Completed ${scan_object.completed_ago} ago<small></p>
         <h5><span class="badge badge-soft-primary badge-scan_engine-type float-end">${scan_object.scan_type.engine_name}</span></h5>
@@ -55,21 +64,34 @@ function getScanStatusSidebar(reload) {
       }
     }
     else{
-      $('#recently_completed_scans').html(`<div class="alert alert-info" role="alert">No scans has been recently completed.</div>`);
+      $('#completed').html(`<div class="alert alert-info" role="alert">No scans have been recently completed.</div>`);
     }
 
-    if (data['pending'].length > 0){
-      $('#pending_scan_count').html(`${data['pending'].length} Scans Pending`)
-      for (var scan in data['pending']) {
-        scan_object = data['pending'][scan];
-        $('#upcoming_scans').append(`<a class="mt-2 text-reset item-hovered d-block p-2 bg-soft-warning">
-        <p class="text-dark mb-0">${scan_object.domain.name}</p>
-        <h5><span class="badge badge-soft-primary badge-scan_engine-type">${scan_object.scan_type.engine_name}</span></h5>
+    if (tasks['completed'].length > 0){
+      for (var task in tasks['completed']) {
+        task_object = tasks['completed'][task];
+        if (task_object.scan_status == 0 ) {
+          bg_color = 'bg-soft-danger';
+          status_badge = '<span class="float-end badge bg-danger">Failed</span>';
+        }
+        else if (task_object.scan_status == 3) {
+          bg_color = 'bg-soft-danger';
+          status_badge = '<span class="float-end badge bg-danger">Aborted</span>';
+        }
+        else if (task_object.scan_status == 2){
+          bg_color = 'bg-soft-success';
+          status_badge = '<span class="float-end badge bg-success">Task Completed</span>';
+        }
+
+        $('#completed_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
+        <p class="text-dark mb-0">Port Scan on ${task_object.subdomain_name}${status_badge}</p>
+        <p class="mb-0"><small>Task Completed ${task_object.completed_ago} ago<small></p>
+        <p class="mb-0"><small>Took ${task_object.time_taken}<small></p>
         </a>`);
       }
     }
     else{
-      $('#upcoming_scans').html(`<div class="alert alert-info" role="alert">No upcoming scans on Queue.</div>`);
+      $('#completed').html(`<div class="alert alert-info" role="alert">No scans have been recently completed.</div>`);
     }
   }).done(function() {
     tippy('.badge-subdomain-count', {
