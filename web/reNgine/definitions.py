@@ -98,6 +98,14 @@ MATCHED_SUBDOMAIN = 'Subdomain'
 MATCHED_PAGE_TITLE = 'Page Title'
 
 ###############################################################################
+# Celery Task Status CODES
+###############################################################################
+INITIATED_TASK = -1
+FAILED_TASK = 0
+RUNNING_TASK = 1
+SUCCESS_TASK = 2
+ABORTED_TASK = 3
+###############################################################################
 # Uncommon Ports
 # Source: https://github.com/six2dez/reconftw/blob/main/reconftw.cfg
 ###############################################################################

@@ -81,7 +81,7 @@ def initiate_subtask(
     sub_scan.endpoint = endpoint
     sub_scan.dir_fuzz = dir_fuzz
     sub_scan.vuln_scan = vuln_scan
-    sub_scan.scan_status = -1
+    sub_scan.scan_status = INITIATED_TASK
     sub_scan.save()
 
     results_dir = '/usr/src/scan_results/' + scan_history.results_dir
@@ -92,15 +92,29 @@ def initiate_subtask(
             Loader=yaml.FullLoader)
 
         if port_scan:
+            sub_scan.scan_status = RUNNING_TASK
+            sub_scan.save()
+            # delete any existing ports.json
+            port_results_file = results_dir + '/ports.json'
+            if os.path.isfile(port_results_file):
+                os.system('rm -rf {}'.format(port_results_file))
             scan_history.port_scan = True
             scan_history.save()
-            port_scanning(
+            try:
+                port_scanning(
                 scan_history,
                 0,
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain.name
-            )
+                )
+                sub_scan.scan_status = SUCCESS_TASK
+                sub_scan.save()
+            except Exception as e:
+                logging.error(e)
+                sub_scan.scan_status = FAILED_TASK
+                sub_scan.save()
+
     except Exception as e:
         logger.error(e)
 
@@ -902,7 +916,6 @@ def port_scanning(
     try:
         port_json_result = open(port_results_file, 'r')
         lines = port_json_result.readlines()
-        print(lines)
         for line in lines:
             json_st = json.loads(line.strip())
             port_number = json_st['port']
