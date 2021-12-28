@@ -68,7 +68,7 @@ def initiate_subtask(
     # get scan history and yaml Configuration for this subdomain
     subdomain = Subdomain.objects.get(id=subdomain_id)
     scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
-    yaml_configuration = EngineType.objects.get(id=scan_history.scan_type.id)
+    engine = EngineType.objects.get(id=scan_history.scan_type.id)
     # create scan activity of SubScan Model
     current_scan_time = timezone.now()
     sub_scan = SubScan()
@@ -83,6 +83,26 @@ def initiate_subtask(
     sub_scan.vuln_scan = vuln_scan
     sub_scan.scan_status = -1
     sub_scan.save()
+
+    results_dir = '/usr/src/scan_results/' + scan_history.results_dir
+
+    try:
+        yaml_configuration = yaml.load(
+            engine.yaml_configuration,
+            Loader=yaml.FullLoader)
+
+        if port_scan:
+            scan_history.port_scan = True
+            scan_history.save()
+            port_scanning(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name
+            )
+    except Exception as e:
+        logger.error(e)
 
 
 @app.task
@@ -225,7 +245,7 @@ def initiate_scan(
         try:
             if(task.port_scan):
                 activity_id = create_scan_activity(task, "Port Scanning", 1)
-                port_scanning(task, domain, yaml_configuration, results_dir)
+                port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
@@ -813,37 +833,51 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('reNgine has finished gathering screenshots for {}'.format(domain.name))
 
 
-def port_scanning(scan_history, domain, yaml_configuration, results_dir):
+def port_scanning(
+        scan_history,
+        activity_id,
+        yaml_configuration,
+        results_dir,
+        domain=None,
+        subdomain=None
+    ):
     '''
     This function is responsible for running the port scan
     '''
-    notification = Notification.objects.all()
-    if notification and notification[0].send_scan_status_notif:
-        send_notification('Port Scan initiated for {}'.format(domain.name))
-
-    subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
     port_results_file = results_dir + '/ports.json'
 
-    # check the yaml_configuration and choose the ports to be scanned
+    domain_name = domain.name if domain else subdomain
+    notification = Notification.objects.all()
+    if notification and notification[0].send_scan_status_notif:
+        send_notification('Port Scan initiated for {}'.format(domain_name))
 
+    if domain:
+        subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+        naabu_command = 'cat {} | naabu -json -o -json {} '.format(
+            subdomain_scan_results_file,
+            port_results_file
+        )
+    elif subdomain:
+        naabu_command = 'naabu -host {} -o {} -json'.format(
+            subdomain,
+            port_results_file
+        )
+
+    # check the yaml_configuration and choose the ports to be scanned
     scan_ports = '-'  # default port scan everything
     if PORTS in yaml_configuration[PORT_SCAN]:
         # TODO:  legacy code, remove top-100 in future versions
         all_ports = yaml_configuration[PORT_SCAN][PORTS]
         if 'full' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
-                subdomain_scan_results_file, port_results_file, '-')
+            naabu_command += ' -p -'
         elif 'top-100' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -top-ports 100'.format(
-                subdomain_scan_results_file, port_results_file)
+            naabu_command += ' -top-ports 100'
         elif 'top-1000' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -top-ports 1000'.format(
-                subdomain_scan_results_file, port_results_file)
+            naabu_command += ' -top-ports 1000'
         else:
             scan_ports = ','.join(
                 str(port) for port in all_ports)
-            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
-                subdomain_scan_results_file, port_results_file, scan_ports)
+            naabu_command += ' -p {}'.format(scan_ports)
 
     # check for exclude ports
     if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
@@ -861,12 +895,14 @@ def port_scanning(scan_history, domain, yaml_configuration, results_dir):
         naabu_command += ' -config /root/.config/naabu/naabu.conf'
 
     # run naabu
+    logger.info(naabu_command)
     os.system(naabu_command)
 
     # writing port results
     try:
         port_json_result = open(port_results_file, 'r')
         lines = port_json_result.readlines()
+        print(lines)
         for line in lines:
             json_st = json.loads(line.strip())
             port_number = json_st['port']
@@ -898,7 +934,7 @@ def port_scanning(scan_history, domain, yaml_configuration, results_dir):
             ports__in=IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
                     scan_history__id=scan_history.id))).distinct().count()
-        send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain.name, port_count))
+        send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain_name, port_count))
 
     if notification and notification[0].send_scan_output_file:
         send_files_to_discord(results_dir + '/ports.json')
