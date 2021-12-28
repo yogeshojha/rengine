@@ -37,6 +37,30 @@ class OnlySubdomainNameSerializer(serializers.ModelSerializer):
         fields = ['name', 'id']
 
 
+class SubScanSerializer(serializers.ModelSerializer):
+
+    subdomain_name = serializers.SerializerMethodField('get_subdomain_name')
+    time_taken = serializers.SerializerMethodField('get_total_time_taken')
+    elapsed_time = serializers.SerializerMethodField('get_elapsed_time')
+    completed_ago = serializers.SerializerMethodField('get_completed_ago')
+
+    class Meta:
+        model = SubScan
+        fields = '__all__'
+
+    def get_subdomain_name(self, sub_scan):
+        return sub_scan.subdomain.name
+
+    def get_total_time_taken(self, sub_scan):
+        return sub_scan.get_total_time_taken()
+
+    def get_elapsed_time(self, sub_scan):
+        return sub_scan.get_elapsed_time()
+
+    def get_completed_ago(self, sub_scan):
+        return sub_scan.get_completed_ago()
+
+
 class ScanHistorySerializer(serializers.ModelSerializer):
 
     subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
