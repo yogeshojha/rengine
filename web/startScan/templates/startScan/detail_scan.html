@@ -685,7 +685,7 @@ Detailed Scan
 					<div class="card-body">
 						<div class="row">
 							<div class="col-6 float-start">
-								<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans">
+								<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
 									<i class="fe-zap"></i>
 								</a>
 								<a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains">
@@ -1845,6 +1845,8 @@ $(document).ready(function(){
 				var subdomain_id = $(this).attr('id');
 				$('a[data-toggle="tooltip"]').tooltip("hide")
 				$('#subtask_subdomain_id').val(subdomain_id);
+				// to distinguish multiple subscan or single, put a extra attribute on button
+				$('#btn-initiate-subtask').attr('multiple-subscan', false);
 			});
 
 			// if port scanning is not done, remove port row
