@@ -679,12 +679,23 @@ Detailed Scan
 				</div>
 			</div>
 		</div>
-		<div class="row mt-4">
+		<div class="row">
 			<div class="col-12">
 				<div class="card">
 					<div class="card-body">
 						<div class="row">
-							<div class="col-12">
+							<div class="col-6 float-start">
+								<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans">
+									<i class="fe-zap"></i>
+								</a>
+								<a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains">
+									<i class="fe-download"></i>
+								</a>
+								<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains">
+									<i class="fe-trash"></i>
+								</a>
+							</div>
+							<div class="col-6">
 								<div class="btn-group mb-2 float-end dropstart">
 									<button class="btn btn-primary dropdown-toggle " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 										<i class="fe-download"></i>
@@ -696,6 +707,8 @@ Detailed Scan
 									</div>
 								</div>
 							</div>
+						</div>
+						<div class="row mt-1">
 							<div class="col-12">
 								<table id="subdomain_scan_results" class="table style-3 table-hover">
 									<thead>
@@ -1510,6 +1523,9 @@ $(document).ready(function(){
 		// if clicked on pills get subdomains
 		// $("#pills-subdomain-tab").click(function() {
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
+			"headerCallback": function(e, a, t, n, s) {
+				e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+			},
 			"destroy": true,
 			"processing": true,
 			"oLanguage": {
@@ -1567,16 +1583,9 @@ $(document).ready(function(){
 				{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
 				// checkbox
 				{
-					"render": function ( data, type, row ) {
-						if(row['checked']){
-							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-						}
-						else{
-							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-						}
-					},
-					"targets": 0,
-				},
+					"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+						return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
+				}},
 				// subdomain Name
 				{
 					"render": function ( data, type, row ) {
@@ -2230,6 +2239,16 @@ $(document).ready(function(){
 	// recon data changes
 	get_subdomain_changes({{scan_history_id}});
 	get_endpoint_changes({{scan_history_id}});
+
+	function mainCheckBoxSelected(checkbox) {
+		if (checkbox.checked) {
+			$("[data-button=subdomain_btns]").removeClass("disabled");
+			$(".subdomain_checkbox").prop('checked', true);
+		} else {
+			$("[data-button=subdomain_btns]").addClass("disabled");
+			$(".subdomain_checkbox").prop('checked', false);
+		}
+	}
 
 </script>
 {% endblock page_level_script %}
