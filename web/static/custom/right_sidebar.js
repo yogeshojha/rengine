@@ -9,6 +9,7 @@ function getScanStatusSidebar(reload) {
     $('#currently_running_tasks').empty();
     $('#completed_tasks').empty();
     $('#upcoming_tasks').empty();
+    $('#current_task_count').empty();
 
     scans = data['scans'];
     tasks = data['tasks'];

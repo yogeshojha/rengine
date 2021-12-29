@@ -65,6 +65,7 @@ def initiate_subtask(
         dir_fuzz,
         vuln_scan,
     ):
+    logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
     subdomain = Subdomain.objects.get(id=subdomain_id)
     scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
