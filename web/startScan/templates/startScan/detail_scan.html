@@ -1538,7 +1538,6 @@ $(document).ready(function(){
 				{'data': 'screenshot_path', 'searchable': false},
 				{'data': 'response_time'},
 				{'data': 'technologies'},
-				{'data': 'checked'},
 				{'data': 'http_url'},
 				{'data': 'cname'},
 				{'data': 'is_interesting'},
@@ -1556,12 +1555,12 @@ $(document).ready(function(){
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 2, 3, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22],
+					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21],
 					"visible": false,
 					"searchable": false,
 				},
 				{
-					"targets": [ 11, 13, 22, 23, 24 ],
+					"targets": [ 11, 13, 21, 22, 23 ],
 					"visible": false,
 					"searchable": true,
 				},
@@ -1641,7 +1640,7 @@ $(document).ready(function(){
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>
 						</a>
 						<span class="m-1 badge-link text-success bs-tooltip" title="Add Recon Todo/Note" onclick="add_task_for_subdomain(${row['id']}, '${data}')"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg></span>
-						<span class="m-1 badge-link text-danger bs-tooltip" title="Mark Important" onclick="mark_important_subdomain(${row['id']})">
+						<span class="m-1 badge-link text-danger bs-tooltip" title="Mark Important" onclick="mark_important_subdomain(row=this, subdomain_id=${row['id']})">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
 						</span>
 						</div>
@@ -1786,8 +1785,8 @@ $(document).ready(function(){
 				}
 			},
 			'createdRow': function( row, data, dataIndex ) {
-				if (data['checked']){
-					$(row).addClass('table-danger text-strike');
+				if (data['is_important']){
+					$(row).addClass('table-danger');
 				}
 			},
 		});
@@ -1896,7 +1895,7 @@ $(document).ready(function(){
 	{% if history.dir_file_search %}
 	$("#pills-directories-tab").click(function() {
 		var interesting_keywords_array = [];
-		var history_table = $('#directories-table').DataTable({
+		var directory_table = $('#directories-table').DataTable({
 			"destroy": true,
 			"oLanguage": {
 				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
