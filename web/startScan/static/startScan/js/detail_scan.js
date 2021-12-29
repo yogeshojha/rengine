@@ -1508,12 +1508,7 @@ function fetch_whois(domain_name){
   });
 }
 
-
-// initiate sub scan
-$('#btn-initiate-subtask').on('click', function(){
-  var subdomain_id = $('#subtask_subdomain_id').val();
-  console.log(subdomain_id);
-  $('#subscan-modal').modal('hide');
+function initiate_subtask(subdomain_ids){
   var port_scan = $('#port_scan_subtask').is(':checked');
   var osint = $('#osint_subtask').is(':checked');
   var endpoint = $('#endpoint_subtask').is(':checked');
@@ -1528,7 +1523,7 @@ $('#btn-initiate-subtask').on('click', function(){
     return;
   }
   var data = {
-    'subdomain_ids': [subdomain_id],
+    'subdomain_ids': subdomain_ids,
     'port_scan': port_scan,
     'osint': osint,
     'endpoint': endpoint,
@@ -1566,6 +1561,27 @@ $('#btn-initiate-subtask').on('click', function(){
       });
     }
   });
+
+}
+
+
+// initiate sub scan
+$('#btn-initiate-subtask').on('click', function(){
+  $('#subscan-modal').modal('hide');
+  if ($('#btn-initiate-subtask').attr('multiple-subscan') === 'true') {
+    var subdomain_item = document.getElementsByClassName("subdomain_checkbox");
+    var subdomain_ids = [];
+    for (var i = 0; i < subdomain_item.length; i++) {
+      if (subdomain_item[i].checked) {
+        subdomain_ids.push($(subdomain_item[i]).val());
+      }
+    }
+    initiate_subtask(subdomain_ids);
+  }
+  else{
+    var subdomain_id = $('#subtask_subdomain_id').val();
+    initiate_subtask([subdomain_id]);
+  }
 });
 
 
@@ -1634,4 +1650,12 @@ function deleteMultipleSubdomains(){
       }
     });;
   }
+}
+
+
+function initiateMultipleSubscan(){
+    $('#subscan-modal').modal('show');
+    $('a[data-toggle="tooltip"]').tooltip("hide")
+    // to distinguish multiple subscan or single, put a extra attribute on button
+    $('#btn-initiate-subtask').attr('multiple-subscan', true);
 }
