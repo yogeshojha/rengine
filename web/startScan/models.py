@@ -150,7 +150,6 @@ class Subdomain(models.Model):
     screenshot_path = models.CharField(max_length=1000, null=True, blank=True)
     http_header_path = models.CharField(max_length=1000, null=True, blank=True)
     directory_json = JSONField(null=True, blank=True)
-    checked = models.BooleanField(default=False, blank=True, null=True)
     discovered_date = models.DateTimeField(blank=True, null=True)
     cname = models.CharField(max_length=1500, blank=True, null=True)
     is_cdn = models.BooleanField(default=False, blank=True, null=True)

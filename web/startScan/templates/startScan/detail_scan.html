@@ -1879,18 +1879,6 @@ $(document).ready(function(){
 	});
 	{% endif %}
 
-
-	function subdomain_status_change(checkbox, id)
-	{
-		if (checkbox.checked) {
-			checkbox.parentNode.parentNode.parentNode.className = "table-danger";
-		}
-		else {
-			checkbox.parentNode.parentNode.parentNode.classList.remove("table-danger");
-		}
-		change_subdomain_status(id);
-	}
-
 	// default get urls
 	$("#pills-endpoints-tab").click(function() {
 		get_endpoints({{scan_history_id}}, null);

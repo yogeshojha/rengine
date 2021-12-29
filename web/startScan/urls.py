@@ -84,10 +84,6 @@ urlpatterns = [
         views.change_vuln_status,
         name='change_vuln_status'),
     path(
-        'toggle/subdomain_status/<int:id>',
-        views.change_subdomain_status,
-        name='change_subdomain_status'),
-    path(
         'toggle/subdomain/important/<int:id>',
         views.change_subdomain_important_status,
         name='change_subdomain_important_status'),
