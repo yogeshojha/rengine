@@ -420,14 +420,6 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
-def change_subdomain_status(request, id):
-    if request.method == 'POST':
-        name = Subdomain.objects.get(id=id)
-        name.checked = not name.checked
-        name.save()
-    return HttpResponse('')
-
-
 def change_subdomain_important_status(request, id):
     if request.method == 'POST':
         name = Subdomain.objects.get(id=id)

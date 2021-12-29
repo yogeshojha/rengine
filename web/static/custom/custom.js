@@ -163,19 +163,6 @@ function change_vuln_status(id)
   })
 }
 
-function change_subdomain_status(id)
-{
-  const subdomainStatusApi = "../toggle/subdomain_status/"+id;
-
-  return fetch(subdomainStatusApi, {
-    method: 'POST',
-    credentials: "same-origin",
-    headers: {
-      "X-CSRFToken": getCookie("csrftoken")
-    }
-  })
-}
-
 // truncate the long string and put ... in the end
 function truncate(source, size) {
   return source.length > size ? source.slice(0, size - 1) + "…" : source;
