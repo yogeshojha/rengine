@@ -157,7 +157,6 @@ function getScanStatusSidebar(reload) {
 
 
 function get_task_name(data){
-  console.log(data)
   if (data['dir_file_search']) {
     return 'Directory Fuzzing';
   }
