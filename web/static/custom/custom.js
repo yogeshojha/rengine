@@ -357,7 +357,7 @@ function setTooltip(btn, message) {
   instance.show();
   setTimeout(function() {
     instance.hide();
-  }, 1000);
+  }, 500);
 }
 
 
@@ -755,7 +755,7 @@ function get_important_subdomains(target_id, scan_history_id){
 
 function mark_important_subdomain(row, subdomain_id, target_summary){
   if(row){
-    parentNode = row.parentNode.parentNode.parentNode.parentNode;
+    parentNode = row.parentNode.parentNode.parentNode;
     if(parentNode.classList.contains('table-danger')){
       parentNode.classList.remove('table-danger');
     }
