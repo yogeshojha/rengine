@@ -1567,3 +1567,71 @@ $('#btn-initiate-subtask').on('click', function(){
     }
   });
 });
+
+
+function deleteMultipleSubdomains(){
+  if (!checkedCount()) {
+    swal({
+      title: 'Oops! No Subdomains has been selected!',
+      type: 'error',
+      padding: '2em'
+    })
+  } else {
+    // atleast one target is selected
+    Swal.fire({
+      showCancelButton: true,
+      title: 'Are you sure you want to delete ' + checkedCount() + ' Subdomains?',
+      text: 'Do you really want to delete these subdomains? This action cannot be undone.',
+      icon: 'error',
+      confirmButtonText: 'Delete',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Deleting Subdomain...',
+          allowOutsideClick: false
+        });
+        swal.showLoading();
+
+        subdomain_item = document.getElementsByClassName("subdomain_checkbox");
+        var subdomain_ids = [];
+        for (var i = 0; i < subdomain_item.length; i++) {
+          if (subdomain_item[i].checked) {
+            subdomain_ids.push($(subdomain_item[i]).val());
+          }
+        }
+        var data = {'subdomain_ids': subdomain_ids};
+        fetch('/api/action/subdomain/delete/', {
+          method: 'POST',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(function (response) {
+          swal.close();
+          if (response['status']) {
+            // remove all rows
+            var table = $('#subdomain_scan_results').DataTable();
+            for (var id in subdomain_ids) {
+              table.row('#subdomain_row_' + id).remove().draw();
+            }
+            Snackbar.show({
+              text: 'Subdomain successfully deleted!',
+              pos: 'top-right',
+              duration: 2500
+            });
+          }
+          else{
+            Swal.fire({
+              title:  'Could not delete Subdomain!',
+              icon: 'fail',
+            });
+          }
+        });
+      }
+    });;
+  }
+}
