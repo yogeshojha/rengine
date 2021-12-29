@@ -93,22 +93,23 @@ def initiate_subtask(
             Loader=yaml.FullLoader)
 
         if port_scan:
-            sub_scan.start_scan_date = current_scan_time
-            sub_scan.status = RUNNING_TASK
-            sub_scan.save()
-            # delete any existing ports.json
-            port_results_file = results_dir + '/ports.json'
-            if os.path.isfile(port_results_file):
-                os.system('rm -rf {}'.format(port_results_file))
-            scan_history.port_scan = True
-            scan_history.save()
             try:
+                sub_scan.start_scan_date = current_scan_time
+                sub_scan.status = RUNNING_TASK
+                sub_scan.save()
+                # delete any existing ports.json
+                port_results_file = results_dir + '/ports_{}.json'.format(subdomain.name)
+                if os.path.isfile(port_results_file):
+                    os.system('rm -rf {}'.format(port_results_file))
+                scan_history.port_scan = True
+                scan_history.save()
                 port_scanning(
-                scan_history,
-                0,
-                yaml_configuration,
-                results_dir,
-                subdomain=subdomain.name
+                    scan_history,
+                    0,
+                    yaml_configuration,
+                    results_dir,
+                    subdomain=subdomain.name,
+                    file_name=port_results_file
                 )
                 task_status = SUCCESS_TASK
             except Exception as e:
@@ -857,12 +858,14 @@ def port_scanning(
         yaml_configuration,
         results_dir,
         domain=None,
-        subdomain=None
+        subdomain=None,
+        file_name=None
     ):
     '''
     This function is responsible for running the port scan
     '''
-    port_results_file = results_dir + '/ports.json'
+    output_file_name = file_name if file_name else 'ports.json'
+    port_results_file = results_dir + '/' + output_file_name
 
     domain_name = domain.name if domain else subdomain
     notification = Notification.objects.all()
