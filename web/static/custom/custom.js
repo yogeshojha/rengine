@@ -753,7 +753,16 @@ function get_important_subdomains(target_id, scan_history_id){
 }
 
 
-function mark_important_subdomain(subdomain_id, target_summary){
+function mark_important_subdomain(row, subdomain_id, target_summary){
+  if(row){
+    parentNode = row.parentNode.parentNode.parentNode.parentNode;
+    if(parentNode.classList.contains('table-danger')){
+      parentNode.classList.remove('table-danger');
+    }
+    else{
+      parentNode.className = "table-danger";
+    }
+  }
   if (target_summary) {
     subdomainImpApi = "../../scan/toggle/subdomain/important/" + subdomain_id;
   }
