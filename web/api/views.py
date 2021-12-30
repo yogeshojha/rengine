@@ -41,14 +41,36 @@ class InitiateSubTask(APIView):
         req = self.request
         data = req.data
         for subdomain_id in data['subdomain_ids']:
-            celery_task = initiate_subtask.apply_async(args=(
-                subdomain_id,
-                data['port_scan'],
-                data['osint'],
-                data['endpoint'],
-                data['dir_fuzz'],
-                data['vuln_scan'],
-            ))
+            # initiate subtask for every task types
+            if data['port_scan']:
+                celery_task = initiate_subtask.apply_async(kwargs=(
+                    subdomain_id,
+                    True, False, False, False, False,
+                ))
+
+            if data['osint']:
+                celery_task = initiate_subtask.apply_async(args=(
+                    subdomain_id,
+                    False, True, False, False, False,
+                ))
+
+            if data['endpoint']:
+                celery_task = initiate_subtask.apply_async(args=(
+                    subdomain_id,
+                    False, False, True, False, False,
+                ))
+
+            if data['dir_fuzz']:
+                celery_task = initiate_subtask.apply_async(args=(
+                    subdomain_id,
+                    False, False, False, True, False,
+                ))
+                
+            if data['vuln_scan']:
+                celery_task = initiate_subtask.apply_async(args=(
+                    subdomain_id,
+                    False, False, False, False, True,
+                ))
         return Response({'status': True})
 
 

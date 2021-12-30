@@ -22,7 +22,7 @@ class ScanHistory(models.Model):
     scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
     celery_id = models.CharField(max_length=100, blank=True)
     subdomain_discovery = models.BooleanField(null=True, default=False)
-    dir_file_search = models.BooleanField(null=True, default=False)
+    dir_file_fuzz = models.BooleanField(null=True, default=False)
     port_scan = models.BooleanField(null=True, default=False)
     fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)
@@ -100,7 +100,7 @@ class ScanHistory(models.Model):
         '''
         number_of_steps = sum([
             self.subdomain_discovery,
-            self.dir_file_search,
+            self.dir_file_fuzz,
             self.port_scan,
             self.fetch_url,
             self.vulnerability_scan,
@@ -368,7 +368,7 @@ class SubScan(models.Model):
     celery_id = models.CharField(max_length=100, blank=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
     subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
-    dir_file_search = models.BooleanField(null=True, default=False)
+    dir_file_fuzz = models.BooleanField(null=True, default=False)
     port_scan = models.BooleanField(null=True, default=False)
     fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)

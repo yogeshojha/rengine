@@ -4,7 +4,7 @@ class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
     subdomain_discovery = models.BooleanField()
-    dir_file_search = models.BooleanField()
+    dir_file_fuzz = models.BooleanField()
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
     vulnerability_scan = models.BooleanField(null=True, default=False)
@@ -19,7 +19,7 @@ class EngineType(models.Model):
     def get_number_of_steps(self):
         engine_list = [
             self.subdomain_discovery,
-            self.dir_file_search,
+            self.dir_file_fuzz,
             self.port_scan,
             self.fetch_url,
             self.vulnerability_scan,
