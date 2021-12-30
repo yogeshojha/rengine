@@ -59,11 +59,11 @@ def run_system_commands(system_command):
 @app.task
 def initiate_subtask(
         subdomain_id,
-        port_scan,
-        osint,
-        endpoint,
-        dir_fuzz,
-        vuln_scan,
+        port_scan=False,
+        osint=False,
+        endpoint=False,
+        dir_fuzz=False,
+        vuln_scan=False,
     ):
     logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
@@ -92,11 +92,11 @@ def initiate_subtask(
             engine.yaml_configuration,
             Loader=yaml.FullLoader)
 
+        sub_scan.start_scan_date = current_scan_time
+        sub_scan.status = RUNNING_TASK
+        sub_scan.save()
+
         if port_scan:
-            try:
-                sub_scan.start_scan_date = current_scan_time
-                sub_scan.status = RUNNING_TASK
-                sub_scan.save()
                 # delete any existing ports.json
                 port_results_file = results_dir + '/ports_{}.json'.format(subdomain.name)
                 if os.path.isfile(port_results_file):
@@ -112,16 +112,31 @@ def initiate_subtask(
                     file_name=port_results_file
                 )
                 task_status = SUCCESS_TASK
-            except Exception as e:
-                logging.error(e)
-                task_status = FAILED_TASK
-            finally:
-                sub_scan.stop_scan_date = timezone.now()
-                sub_scan.status = task_status
-                sub_scan.save()
+
+        if dir_fuzz:
+            dir_fuzz_results_file = results_dir + '/dir_fuzz_{}.json'.format(subdomain.name)
+            if os.path.isfile(dir_fuzz_results_file):
+                os.system('rm -rf {}'.format(dir_fuzz_results_file))
+            scan_history.dir_file_fuzz = True
+            scan_history.save()
+            port_scanning(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name,
+                file_name=port_results_file
+            )
+            task_status = SUCCESS_TASK
+
 
     except Exception as e:
         logger.error(e)
+        task_status = FAILED_TASK
+    finally:
+        sub_scan.stop_scan_date = timezone.now()
+        sub_scan.status = task_status
+        sub_scan.save()
 
 
 @app.task
@@ -156,7 +171,7 @@ def initiate_scan(
     task.scan_status = 1
     task.start_scan_date = timezone.now()
     task.subdomain_discovery = True if engine_object.subdomain_discovery else False
-    task.dir_file_search = True if engine_object.dir_file_search else False
+    task.dir_file_fuzz = True if engine_object.dir_file_fuzz else False
     task.port_scan = True if engine_object.port_scan else False
     task.fetch_url = True if engine_object.fetch_url else False
     task.osint = True if engine_object.osint else False
@@ -281,14 +296,14 @@ def initiate_scan(
 
 
         try:
-            if task.dir_file_search:
+            if task.dir_file_fuzz:
                 activity_id = create_scan_activity(task, "Directory Search", 1)
-                directory_brute(
+                directory_fuzz(
                     task,
+                    activity_id,
                     domain,
                     yaml_configuration,
                     results_dir,
-                    activity_id
                 )
                 update_last_activity(activity_id, 2)
         except Exception as e:
@@ -967,7 +982,13 @@ def check_waf():
     pass
 
 
-def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
+def directory_fuzz(
+        scan_history,
+        activity_id,
+        domain,
+        yaml_configuration,
+        results_dir
+    ):
     '''
         This function is responsible for performing directory scan, and currently
         uses ffuf as a default tool
@@ -978,81 +999,81 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
 
     alive_subdomains = Subdomain.objects.filter(
-        scan_history__id=task.id).exclude(http_url__isnull=True)
+        scan_history__id=scan_history.id).exclude(http_url__isnull=True)
     dirs_results = results_dir + '/dirs.json'
 
-    if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
-        not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
-            'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
+    if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
+        not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
+            'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
         wordlist_location = '/usr/src/wordlist/dicc.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
-            yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
+            yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
 
     ffuf_command = 'ffuf -w ' + wordlist_location
 
-    if USE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][USE_EXTENSIONS]:
-        if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-            extensions = ','.join('.' + str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+    if USE_EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][USE_EXTENSIONS]:
+        if EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ]:
+            extensions = ','.join('.' + str(ext) for ext in yaml_configuration[DIR_FILE_FUZZ][EXTENSIONS])
 
             ffuf_command = ' {} -e {}'.format(
                 ffuf_command,
                 extensions
             )
 
-    if THREADS in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][THREADS] > 0:
-        threads = yaml_configuration[DIR_FILE_SEARCH][THREADS]
+    if THREADS in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][THREADS] > 0:
+        threads = yaml_configuration[DIR_FILE_FUZZ][THREADS]
         ffuf_command = ' {} -t {}'.format(
             ffuf_command,
             threads
         )
 
-    if RECURSIVE in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][RECURSIVE]:
-        recursive_level = yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL]
+    if RECURSIVE in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][RECURSIVE]:
+        recursive_level = yaml_configuration[DIR_FILE_FUZZ][RECURSIVE_LEVEL]
         ffuf_command = '{} -recursion -recursion-depth {}'.format(
             ffuf_command,
             recursive_level
         )
 
-    if STOP_ON_ERROR in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][STOP_ON_ERROR]:
+    if STOP_ON_ERROR in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][STOP_ON_ERROR]:
         ffuf_command = '{} -se'.format(
             ffuf_command
         )
 
-    if FOLLOW_REDIRECT in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][FOLLOW_REDIRECT]:
+    if FOLLOW_REDIRECT in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][FOLLOW_REDIRECT]:
         ffuf_command = '{} -fr'.format(
             ffuf_command
         )
 
-    if AUTO_CALIBRATION in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][AUTO_CALIBRATION]:
+    if AUTO_CALIBRATION in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][AUTO_CALIBRATION]:
         ffuf_command = '{} -ac'.format(
             ffuf_command
         )
 
-    if TIMEOUT in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][TIMEOUT] > 0:
-        timeout = yaml_configuration[DIR_FILE_SEARCH][TIMEOUT]
+    if TIMEOUT in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][TIMEOUT] > 0:
+        timeout = yaml_configuration[DIR_FILE_FUZZ][TIMEOUT]
         ffuf_command = '{} -timeout {}'.format(
             ffuf_command,
             timeout
         )
 
-    if DELAY in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][DELAY] > 0:
-        delay = yaml_configuration[DIR_FILE_SEARCH][DELAY]
+    if DELAY in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][DELAY] > 0:
+        delay = yaml_configuration[DIR_FILE_FUZZ][DELAY]
         ffuf_command = '{} -p {}'.format(
             ffuf_command,
             delay
         )
 
-    if MATCH_HTTP_STATUS in yaml_configuration[DIR_FILE_SEARCH]:
-        mc = ','.join(str(code) for code in yaml_configuration[DIR_FILE_SEARCH][MATCH_HTTP_STATUS])
+    if MATCH_HTTP_STATUS in yaml_configuration[DIR_FILE_FUZZ]:
+        mc = ','.join(str(code) for code in yaml_configuration[DIR_FILE_FUZZ][MATCH_HTTP_STATUS])
     else:
         mc = '200,204,301,302,307'
 
@@ -1061,9 +1082,9 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         mc
     )
 
-    if MAX_TIME in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][MAX_TIME] > 0:
-        max_time = yaml_configuration[DIR_FILE_SEARCH][MAX_TIME]
+    if MAX_TIME in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][MAX_TIME] > 0:
+        max_time = yaml_configuration[DIR_FILE_FUZZ][MAX_TIME]
         ffuf_command = '{} -maxtime {}'.format(
             ffuf_command,
             max_time
@@ -1099,7 +1120,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
                 with open(dirs_results, "r") as json_file:
                     json_string = json_file.read()
                     subdomain = Subdomain.objects.get(
-                        scan_history__id=task.id, http_url=subdomain.http_url)
+                        scan_history__id=scan_history.id, http_url=subdomain.http_url)
                     subdomain.directory_json = json_string
                     subdomain.save()
         except Exception as exception:

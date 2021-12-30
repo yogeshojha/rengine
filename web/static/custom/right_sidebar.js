@@ -157,7 +157,7 @@ function getScanStatusSidebar(reload) {
 
 
 function get_task_name(data){
-  if (data['dir_file_search']) {
+  if (data['dir_file_fuzz']) {
     return 'Directory Fuzzing';
   }
   else if (data['port_scan']) {

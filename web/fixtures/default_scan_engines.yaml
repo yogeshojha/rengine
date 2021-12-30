@@ -3,7 +3,7 @@
   fields:
     engine_name: Full Scan
     subdomain_discovery: true
-    dir_file_search: true
+    dir_file_fuzz: true
     port_scan: true
     fetch_url: true
     vulnerability_scan: true
@@ -17,7 +17,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
@@ -33,7 +33,7 @@
   fields:
     engine_name: Subdomain Only Scan
     subdomain_discovery: true
-    dir_file_search: false
+    dir_file_fuzz: false
     port_scan: false
     fetch_url: false
     vulnerability_scan: false
@@ -47,7 +47,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
@@ -63,7 +63,7 @@
   fields:
     engine_name: OSINT Only
     subdomain_discovery: false
-    dir_file_search: false
+    dir_file_fuzz: false
     port_scan: false
     fetch_url: false
     vulnerability_scan: false
@@ -77,7 +77,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
@@ -93,7 +93,7 @@
   fields:
     engine_name: Vulnerability Scan Only (Normal)
     subdomain_discovery: true
-    dir_file_search: false
+    dir_file_fuzz: false
     port_scan: false
     fetch_url: false
     vulnerability_scan: true
@@ -107,7 +107,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
@@ -123,7 +123,7 @@
   fields:
     engine_name: Vulnerability Scan (Deep)
     subdomain_discovery: true
-    dir_file_search: false
+    dir_file_fuzz: false
     port_scan: false
     fetch_url: true
     vulnerability_scan: true
@@ -137,7 +137,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
@@ -153,7 +153,7 @@
   fields:
     engine_name: reNgine Recommended
     subdomain_discovery: true
-    dir_file_search: false
+    dir_file_fuzz: false
     port_scan: true
     fetch_url: false
     vulnerability_scan: true
@@ -167,7 +167,7 @@
       social_media, project_management, code_sharing, config_files, jenkins, wordpress_files,
       cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik,
       git_exposed ]\r\n\r\nport_scan:\r\n  ports: [ top-100 ]\r\n  rate: 1000\r\n
-      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_search:\r\n
+      \ use_naabu_config: false\r\n  # exclude_ports: [80, 8080]\r\n\r\ndir_file_fuzz:\r\n
       \ extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf,
       sql, json ]\r\n  threads: 100\r\n  recursive: false\r\n  recursive_level: 1\r\n
       \ wordlist: default\r\n\r\nfetch_url:\r\n  uses_tools: [ gauplus, hakrawler,
