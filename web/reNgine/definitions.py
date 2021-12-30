@@ -20,7 +20,7 @@ ALL = 'all'
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 PORT_SCAN = 'port_scan'
 EYEWITNESS = 'eyewitness'
-DIR_FILE_SEARCH = 'dir_file_fuzz'
+DIR_FILE_FUZZ = 'dir_file_fuzz'
 FETCH_URL = 'fetch_url'
 INTENSITY = 'intensity'
 
