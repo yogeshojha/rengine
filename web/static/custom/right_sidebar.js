@@ -74,7 +74,7 @@ function getScanStatusSidebar(reload) {
         task_object = tasks['running'][task];
         task_name = get_task_name(task_object);
         bg_color = 'bg-soft-info';
-        status_badge = '<span class="float-end badge bg-danger">Running</span>';
+        status_badge = '<span class="float-end badge bg-info">Running</span>';
 
         $('#currently_running_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
         <p class="text-dark mb-0"><b>${task_name}</b> on ${task_object.subdomain_name}${status_badge}</p>

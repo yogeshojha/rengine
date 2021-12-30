@@ -43,7 +43,7 @@ class InitiateSubTask(APIView):
         for subdomain_id in data['subdomain_ids']:
             # initiate subtask for every task types
             if data['port_scan']:
-                celery_task = initiate_subtask.apply_async(kwargs=(
+                celery_task = initiate_subtask.apply_async(args=(
                     subdomain_id,
                     True, False, False, False, False,
                 ))
@@ -65,7 +65,7 @@ class InitiateSubTask(APIView):
                     subdomain_id,
                     False, False, False, True, False,
                 ))
-                
+
             if data['vuln_scan']:
                 celery_task = initiate_subtask.apply_async(args=(
                     subdomain_id,

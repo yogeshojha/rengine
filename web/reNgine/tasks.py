@@ -6,6 +6,7 @@ import csv
 import validators
 import random
 import requests
+import time
 import logging
 import metafinder.extractor as metadata_extractor
 import whatportis
@@ -80,7 +81,7 @@ def initiate_subtask(
     sub_scan.port_scan = port_scan
     sub_scan.osint = osint
     sub_scan.endpoint = endpoint
-    sub_scan.dir_fuzz = dir_fuzz
+    sub_scan.dir_file_fuzz = dir_fuzz
     sub_scan.vuln_scan = vuln_scan
     sub_scan.status = INITIATED_TASK
     sub_scan.save()
@@ -98,9 +99,8 @@ def initiate_subtask(
 
         if port_scan:
                 # delete any existing ports.json
-                port_results_file = results_dir + '/ports_{}.json'.format(subdomain.name)
-                if os.path.isfile(port_results_file):
-                    os.system('rm -rf {}'.format(port_results_file))
+                rand_name = str(time.time()).split('.')[0]
+                file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
                 scan_history.port_scan = True
                 scan_history.save()
                 port_scanning(
@@ -109,23 +109,22 @@ def initiate_subtask(
                     yaml_configuration,
                     results_dir,
                     subdomain=subdomain.name,
-                    file_name=port_results_file
+                    file_name=file_name
                 )
                 task_status = SUCCESS_TASK
 
         if dir_fuzz:
-            dir_fuzz_results_file = results_dir + '/dir_fuzz_{}.json'.format(subdomain.name)
-            if os.path.isfile(dir_fuzz_results_file):
-                os.system('rm -rf {}'.format(dir_fuzz_results_file))
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
             scan_history.dir_file_fuzz = True
             scan_history.save()
-            port_scanning(
+            directory_fuzz(
                 scan_history,
                 0,
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain.name,
-                file_name=port_results_file
+                file_name=file_name
             )
             task_status = SUCCESS_TASK
 
@@ -301,9 +300,9 @@ def initiate_scan(
                 directory_fuzz(
                     task,
                     activity_id,
-                    domain,
                     yaml_configuration,
                     results_dir,
+                    domain=domain,
                 )
                 update_last_activity(activity_id, 2)
         except Exception as e:
@@ -985,23 +984,26 @@ def check_waf():
 def directory_fuzz(
         scan_history,
         activity_id,
-        domain,
         yaml_configuration,
-        results_dir
+        results_dir,
+        domain=None,
+        subdomain=None,
+        file_name=None
     ):
     '''
         This function is responsible for performing directory scan, and currently
         uses ffuf as a default tool
     '''
-    # scan directories for all the alive subdomain with http status >= 200
+    output_file_name = file_name if file_name else 'dirs.json'
+    dirs_results = results_dir + '/' + output_file_name
+
+    domain_name = domain.name if domain else subdomain
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
+        send_notification('Directory Bruteforce has been initiated for {}.'.format(domain_name))
 
-    alive_subdomains = Subdomain.objects.filter(
-        scan_history__id=scan_history.id).exclude(http_url__isnull=True)
-    dirs_results = results_dir + '/dirs.json'
-
+    # get wordlist
     if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
         not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
@@ -1011,6 +1013,14 @@ def directory_fuzz(
             yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
 
     ffuf_command = 'ffuf -w ' + wordlist_location
+
+    if domain:
+        subdomains_fuzz = Subdomain.objects.filter(
+            scan_history__id=scan_history.id).exclude(http_url__isnull=True)
+    else:
+        subdomains_fuzz = Subdomain.objects.filter(
+            name=subdomain).filter(
+            scan_history__id=scan_history.id)
 
     if USE_EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][USE_EXTENSIONS]:
@@ -1090,13 +1100,16 @@ def directory_fuzz(
             max_time
         )
 
-    for subdomain in alive_subdomains:
+    for subdomain in subdomains_fuzz:
         command = None
         # delete any existing dirs.json
         if os.path.isfile(dirs_results):
             os.system('rm -rf {}'.format(dirs_results))
 
-        http_url = subdomain.http_url + 'FUZZ' if subdomain.http_url[-1:] == '/' else subdomain.http_url + '/FUZZ'
+        if subdomain.http_url:
+            http_url = subdomain.http_url + 'FUZZ' if subdomain.http_url[-1:] == '/' else subdomain.http_url + '/FUZZ'
+        else:
+            http_url = subdomain
 
         # proxy
         proxy = get_random_proxy()
@@ -1112,9 +1125,8 @@ def directory_fuzz(
             dirs_results
         )
 
-        print(command)
+        logger.info(command)
         os.system(command)
-
         try:
             if os.path.isfile(dirs_results):
                 with open(dirs_results, "r") as json_file:
@@ -1128,7 +1140,7 @@ def directory_fuzz(
             update_last_activity(activity_id, 0)
 
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Directory Bruteforce has been completed for {}.'.format(domain.name))
+        send_notification('Directory Bruteforce has been completed for {}.'.format(domain_name))
 
 
 def fetch_endpoints(
