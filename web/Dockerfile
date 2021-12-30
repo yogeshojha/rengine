@@ -34,10 +34,10 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     x11-utils \
     xvfb
 
-# Download and install go 1.14
-RUN wget https://dl.google.com/go/go1.16.5.linux-amd64.tar.gz
-RUN tar -xvf go1.16.5.linux-amd64.tar.gz
-RUN rm go1.16.5.linux-amd64.tar.gz
+# Download and install go 1.17
+RUN wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz
+RUN tar -xvf go1.17.2.linux-amd64.tar.gz
+RUN rm go1.17.2.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
@@ -62,20 +62,24 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Download Go packages
-RUN go get -u github.com/tomnomnom/assetfinder github.com/hakluke/hakrawler
+RUN go install -v github.com/tomnomnom/assetfinder@latest
+RUN go install -v github.com/hakluke/hakrawler@latest
 
-RUN GO111MODULE=on go get -v github.com/projectdiscovery/httpx/cmd/httpx
+RUN GO111MODULE=on go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
 
-RUN GO111MODULE=on go get -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder
-RUN GO111MODULE=on go get -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei
-RUN GO111MODULE=on go get -v github.com/projectdiscovery/naabu/v2/cmd/naabu
-RUN GO111MODULE=on go get -u github.com/tomnomnom/unfurl
-RUN GO111MODULE=on go get -u -v github.com/bp0lr/gauplus
-RUN GO111MODULE=on go get github.com/tomnomnom/waybackurls
-RUN GO111MODULE=on go get -u github.com/jaeles-project/gospider
-RUN GO111MODULE=on go get -u github.com/tomnomnom/gf
-RUN go get -v github.com/OWASP/Amass/v3/...
-RUN go get -u github.com/tomnomnom/gf
+RUN GO111MODULE=on go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+RUN GO111MODULE=on go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+RUN GO111MODULE=on go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+RUN GO111MODULE=on go install -v github.com/tomnomnom/unfurl@latest
+RUN GO111MODULE=on go install -v -v github.com/bp0lr/gauplus@latest
+RUN GO111MODULE=on go install -v github.com/tomnomnom/waybackurls@latest
+RUN GO111MODULE=on go install -v github.com/jaeles-project/gospider@latest
+RUN GO111MODULE=on go install -v github.com/tomnomnom/gf@latest
+RUN go install -v github.com/OWASP/Amass/v3/...@latest
+
+# Update Nuclei and Nuclei-Templates
+RUN nuclei -update
+RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
