@@ -1925,25 +1925,17 @@ $(document).ready(function(){
 					{'data': 'directory_json'},
 					{'data': 'http_url'},
 					{'data': 'is_interesting'},
-					{'data': 'checked'},
 				],
 				"columnDefs": [
 					{
-						"targets": [ 5, 6, 7],
+						"targets": [ 5, 6],
 						"visible": false,
 						"searchable": false,
 					},
 					{
-						"render": function ( data, type, row ) {
-							if(row['checked']){
-								return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-							}
-							else{
-								return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="subdomain_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-							}
-						},
-						"targets": 0,
-					},
+						"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+							return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
+						}},
 					{
 						"render": function ( data, type, row ) {
 							if (row['http_url']) {
@@ -2038,8 +2030,8 @@ $(document).ready(function(){
 				initComplete: function( settings, json ) {
 				},
 				'createdRow': function( row, data, dataIndex ) {
-					if (data['checked']){
-						$(row).addClass('table-danger text-strike');
+					if (data['is_important']){
+						$(row).addClass('table-danger');
 					}
 				},
 				"rowCallback": function( row, data, index ) {
