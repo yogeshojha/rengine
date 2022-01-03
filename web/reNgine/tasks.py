@@ -1180,9 +1180,12 @@ def fetch_endpoints(
         but, when subdomain is given, subtask is running, deep or normal scan should
         not work, it should simply fetch urls for that subdomain
     '''
+    domain_name = domain.name if domain else subdomain
+    output_file_name = file_name if file_name else 'all_urls.txt'
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('reNgine is currently gathering endpoints for {}.'.format(domain.name))
+        send_notification('reNgine is currently gathering endpoints for {}.'.format(domain_name))
 
     # check yaml settings
     if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
@@ -1196,9 +1199,9 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.name)
+    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
 
-    alive_subdomains_path = results_dir + '/alive.txt'
+    alive_subdomains_path = results_dir + '/' + output_file_name
     sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
 
     for tool in tools.split(' '):
@@ -1209,7 +1212,7 @@ def fetch_endpoints(
             elif scan_type == 'deep' and domain:
                 input_target = 'cat {}'.format(sorted_subdomains_path)
             else:
-                input_target = 'echo {}'.format(domain.name)
+                input_target = 'echo {}'.format(domain_name)
         if tool == 'gauplus':
             logger.info('Running Gauplus')
             gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
@@ -1246,7 +1249,7 @@ def fetch_endpoints(
             elif scan_type == 'deep' and domain:
                 gospider_command = 'gospider -S '.format(alive_subdomains_path)
             else:
-                gospider_command = 'gospider -s https://{} '.format(domain.name)
+                gospider_command = 'gospider -s https://{} '.format(domain_name)
 
             gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
                 valid_url_of_domain_regex,
@@ -1262,23 +1265,23 @@ def fetch_endpoints(
     # sorting and unique urls
     logger.info("Sort and Unique")
     os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
-    os.system('sort -u {0}/final_urls.txt -o {0}/all_urls.txt'.format(results_dir))
+    os.system('sort -u {0}/final_urls.txt -o {0}/{1}.txt'.format(results_dir, output_file_name))
 
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
         ignore_extension = '|'.join(
             yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
-        logger.info('Ignore extensions' + ignore_extension)
+        logger.info('Ignore extensions ' + ignore_extension)
         os.system(
-            'cat {0}/all_urls.txt | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
-                results_dir, ignore_extension))
+            'cat {0}/{2}.txt | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
+                results_dir, ignore_extension, output_file_name))
         os.system(
-            'rm {0}/all_urls.txt && mv {0}/temp_urls.txt {0}/all_urls.txt'.format(results_dir))
+            'rm {0}/{1}.txt && mv {0}/temp_urls.txt {0}/{1}.txt'.format(results_dir, output_file_name))
 
     '''
     Store all the endpoints and then run the httpx
     '''
     try:
-        endpoint_final_url = results_dir + '/all_urls.txt'
+        endpoint_final_url = results_dir + '/{}.txt'.format(output_file_name)
         if not os.path.isfile(endpoint_final_url):
             return
 
@@ -1318,7 +1321,7 @@ def fetch_endpoints(
         update_last_activity(activity_id, 0)
 
     if notification and notification[0].send_scan_output_file:
-        send_files_to_discord(results_dir + '/all_urls.txt')
+        send_files_to_discord(results_dir + '/{}.txt'.format(output_file_name))
 
     '''
     TODO:
@@ -1329,7 +1332,7 @@ def fetch_endpoints(
     '''
     logger.info('HTTP Probing on collected endpoints')
 
-    httpx_command = 'httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir)
+    httpx_command = 'httpx -l {0}/{1}.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
 
     proxy = get_random_proxy()
     if proxy:
@@ -1413,7 +1416,7 @@ def fetch_endpoints(
         endpoint_alive_count = EndPoint.objects.filter(
                 scan_history__id=scan_history.id, http_status__exact=200).values('http_url').distinct().count()
         send_notification('reNgine has finished gathering endpoints for {} and has discovered *{}* unique endpoints.\n\n{} of those endpoints reported HTTP status 200.'.format(
-            domain.name,
+            domain_name,
             endpoint_count,
             endpoint_alive_count
         ))
@@ -1425,8 +1428,8 @@ def fetch_endpoints(
             logger.info('Running GF for {}'.format(pattern))
             gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
                 results_dir, pattern)
-            gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(
-                results_dir, pattern, gf_output_file_path)
+            gf_command = 'cat {0}/{3}.txt | gf {1} >> {2}'.format(
+                results_dir, pattern, gf_output_file_path, output_file_name)
             os.system(gf_command)
             if not os.path.exists(gf_output_file_path):
                 return
