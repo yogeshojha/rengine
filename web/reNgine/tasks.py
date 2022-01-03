@@ -98,21 +98,21 @@ def initiate_subtask(
         sub_scan.save()
 
         if port_scan:
-                # delete any existing ports.json
-                rand_name = str(time.time()).split('.')[0]
-                file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
-                scan_history.port_scan = True
-                scan_history.save()
-                port_scanning(
-                    scan_history,
-                    0,
-                    yaml_configuration,
-                    results_dir,
-                    subdomain=subdomain.name,
-                    file_name=file_name
-                )
+            # delete any existing ports.json
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
+            scan_history.port_scan = True
+            scan_history.save()
+            port_scanning(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name,
+                file_name=file_name
+            )
 
-        if dir_fuzz:
+        elif dir_fuzz:
             rand_name = str(time.time()).split('.')[0]
             file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
             scan_history.dir_file_fuzz = True
@@ -126,7 +126,7 @@ def initiate_subtask(
                 file_name=file_name
             )
 
-        if endpoint:
+        elif endpoint:
             # rand_name = str(time.time()).split('.')[0]
             # file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
             scan_history.fetch_url = True
@@ -1202,7 +1202,6 @@ def fetch_endpoints(
     sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
 
     for tool in tools.split(' '):
-
         if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
             if subdomain:
                 subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
@@ -1211,7 +1210,6 @@ def fetch_endpoints(
                 input_target = 'cat {}'.format(sorted_subdomains_path)
             else:
                 input_target = 'echo {}'.format(domain.name)
-
         if tool == 'gauplus':
             logger.info('Running Gauplus')
             gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
@@ -1231,7 +1229,6 @@ def fetch_endpoints(
             )
             logger.info(hakrawler_command)
             os.system(hakrawler_command)
-
         elif tool == 'waybackurls':
             logger.info('Running waybackurls')
             waybackurls_command = '{} | waybackurls | grep -Eo {} > {}/urls_waybackurls.txt'.format(
@@ -1241,7 +1238,6 @@ def fetch_endpoints(
             )
             logger.info(waybackurls_command)
             os.system(waybackurls_command)
-
         elif tool == 'gospider':
             logger.info('Running gospider')
             if subdomain:
@@ -1283,40 +1279,43 @@ def fetch_endpoints(
     '''
     try:
         endpoint_final_url = results_dir + '/all_urls.txt'
-        if os.path.isfile(endpoint_final_url):
-            with open(endpoint_final_url) as endpoint_list:
-                for url in endpoint_list:
-                    http_url = url.rstrip('\n')
-                    if not EndPoint.objects.filter(scan_history=scan_history, http_url=http_url).exists():
-                        _subdomain = get_subdomain_from_url(http_url)
-                        if Subdomain.objects.filter(
-                                scan_history=scan_history).filter(
-                                name=_subdomain).exists():
-                            subdomain = Subdomain.objects.get(
-                                scan_history=scan_history, name=_subdomain)
-                        else:
-                            '''
+        if not os.path.isfile(endpoint_final_url):
+            return
+
+        with open(endpoint_final_url) as endpoint_list:
+            for url in endpoint_list:
+                http_url = url.rstrip('\n')
+                if not EndPoint.objects.filter(scan_history=scan_history, http_url=http_url).exists():
+                    _subdomain = get_subdomain_from_url(http_url)
+                    if Subdomain.objects.filter(
+                            scan_history=scan_history).filter(
+                            name=_subdomain).exists():
+                        subdomain = Subdomain.objects.get(
+                            scan_history=scan_history, name=_subdomain)
+                    else:
+                        '''
                             gau or gosppider can gather interesting endpoints which
                             when parsed can give subdomains that were not existent from
                             subdomain scan. so storing them
-                            '''
-                            logger.error(
-                                'Subdomain {} not found, adding...'.format(_subdomain))
-                            subdomain_dict = DottedDict({
-                                'scan_history': scan_history,
-                                'target_domain': domain,
-                                'name': _subdomain,
-                            })
-                            subdomain = save_subdomain(subdomain_dict)
-                        endpoint_dict = DottedDict({
+                        '''
+                        logger.error(
+                            'Subdomain {} not found, adding...'.format(_subdomain))
+                        subdomain_dict = DottedDict({
                             'scan_history': scan_history,
                             'target_domain': domain,
-                            'subdomain': subdomain,
-                            'http_url': http_url,
+                            'name': _subdomain,
                         })
-                        save_endpoint(endpoint_dict)
+                        subdomain = save_subdomain(subdomain_dict)
+                    endpoint_dict = DottedDict({
+                        'scan_history': scan_history,
+                        'target_domain': domain,
+                        'subdomain': subdomain,
+                        'http_url': http_url,
+                    })
+                    save_endpoint(endpoint_dict)
     except Exception as e:
         logger.error(e)
+        update_last_activity(activity_id, 0)
 
     if notification and notification[0].send_scan_output_file:
         send_files_to_discord(results_dir + '/all_urls.txt')
@@ -1429,33 +1428,34 @@ def fetch_endpoints(
             gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(
                 results_dir, pattern, gf_output_file_path)
             os.system(gf_command)
-            if os.path.exists(gf_output_file_path):
-                with open(gf_output_file_path) as gf_output:
-                    for line in gf_output:
-                        url = line.rstrip('\n')
+            if not os.path.exists(gf_output_file_path):
+                return
+            with open(gf_output_file_path) as gf_output:
+                for line in gf_output:
+                    url = line.rstrip('\n')
+                    try:
+                        endpoint = EndPoint.objects.get(
+                            scan_history=scan_history, http_url=url)
+                        earlier_pattern = endpoint.matched_gf_patterns
+                        new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
+                        endpoint.matched_gf_patterns = new_pattern
+                    except Exception as e:
+                        # add the url in db
+                        logger.error(e)
+                        logger.info('Adding URL' + url)
+                        endpoint = EndPoint()
+                        endpoint.http_url = url
+                        endpoint.target_domain = domain
+                        endpoint.scan_history = scan_history
                         try:
-                            endpoint = EndPoint.objects.get(
-                                scan_history=scan_history, http_url=url)
-                            earlier_pattern = endpoint.matched_gf_patterns
-                            new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
-                            endpoint.matched_gf_patterns = new_pattern
+                            _subdomain = Subdomain.objects.get(
+                                scan_history=scan_history, name=get_subdomain_from_url(url))
+                            endpoint.subdomain = _subdomain
                         except Exception as e:
-                            # add the url in db
-                            logger.error(e)
-                            logger.info('Adding URL' + url)
-                            endpoint = EndPoint()
-                            endpoint.http_url = url
-                            endpoint.target_domain = domain
-                            endpoint.scan_history = scan_history
-                            try:
-                                _subdomain = Subdomain.objects.get(
-                                    scan_history=scan_history, name=get_subdomain_from_url(url))
-                                endpoint.subdomain = _subdomain
-                            except Exception as e:
-                                continue
-                            endpoint.matched_gf_patterns = pattern
-                        finally:
-                            endpoint.save()
+                            continue
+                        endpoint.matched_gf_patterns = pattern
+                    finally:
+                        endpoint.save()
 
 
 def vulnerability_scan(
