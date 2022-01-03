@@ -107,5 +107,3 @@ RUN python3 -m pip install fuzzywuzzy \
 
 # Copy source code
 COPY . /usr/src/app/
-
-RUN chmod +x /usr/src/app/tools/get_urls.sh

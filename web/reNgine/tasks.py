@@ -111,7 +111,6 @@ def initiate_subtask(
                     subdomain=subdomain.name,
                     file_name=file_name
                 )
-                task_status = SUCCESS_TASK
 
         if dir_fuzz:
             rand_name = str(time.time()).split('.')[0]
@@ -126,7 +125,21 @@ def initiate_subtask(
                 subdomain=subdomain.name,
                 file_name=file_name
             )
-            task_status = SUCCESS_TASK
+
+        if endpoint:
+            # rand_name = str(time.time()).split('.')[0]
+            # file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
+            scan_history.fetch_url = True
+            scan_history.save()
+            fetch_endpoints(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name,
+                # file_name=file_name
+            )
+        task_status = SUCCESS_TASK
 
 
     except Exception as e:
@@ -314,10 +327,11 @@ def initiate_scan(
                 activity_id = create_scan_activity(task, "Fetching endpoints", 1)
                 fetch_endpoints(
                     task,
-                    domain,
+                    activity_id,
                     yaml_configuration,
                     results_dir,
-                    activity_id)
+                    domain=domain,
+                    )
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
@@ -428,7 +442,14 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     file.close()
 
 
-def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, out_of_scope_subdomains=None):
+def subdomain_scan(
+        task,
+        domain,
+        yaml_configuration,
+        results_dir,
+        activity_id,
+        out_of_scope_subdomains=None
+    ):
 
     # get all external subdomain enum tools
     default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
@@ -477,7 +498,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                     logging.info(amass_command)
                     os.system(amass_command)
 
-                if tool == 'amass-active':
+                elif tool == 'amass-active':
                     amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
                             domain.name, results_dir)
 
@@ -502,7 +523,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                     logging.info(amass_command)
                     os.system(amass_command)
 
-                if tool == 'assetfinder':
+                elif tool == 'assetfinder':
                     assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
                         domain.name, results_dir)
 
@@ -510,7 +531,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                     logging.info(assetfinder_command)
                     os.system(assetfinder_command)
 
-                if tool == 'sublist3r':
+                elif tool == 'sublist3r':
                     sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
                         domain.name, threads, results_dir)
 
@@ -518,7 +539,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                     logging.info(sublist3r_command)
                     os.system(sublist3r_command)
 
-                if tool == 'subfinder':
+                elif tool == 'subfinder':
                     subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
                         domain.name, threads, results_dir)
 
@@ -529,7 +550,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                     logging.info(subfinder_command)
                     os.system(subfinder_command)
 
-                if tool == 'oneforall':
+                elif tool == 'oneforall':
                     oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
                         domain.name, results_dir)
 
@@ -1144,15 +1165,20 @@ def directory_fuzz(
 
 
 def fetch_endpoints(
-        task,
-        domain,
+        scan_history,
+        activity_id,
         yaml_configuration,
         results_dir,
-        activity_id):
+        domain=None,
+        subdomain=None,
+        file_name=None
+        ):
     '''
-    This function is responsible for fetching all the urls associated with target
-    and run HTTP probe
-    It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
+        This function is responsible for fetching all the urls associated with target
+        and runs HTTP probe
+        reNgine has ability to fetch deep urls, meaning url for all the subdomains
+        but, when subdomain is given, subtask is running, deep or normal scan should
+        not work, it should simply fetch urls for that subdomain
     '''
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
@@ -1170,26 +1196,77 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.name)
+    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.name)
 
-    if 'deep' in scan_type:
-        # performs deep url gathering for all the subdomains present -
-        # RECOMMENDED
-        logger.info('Deep URLS Fetch')
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' %
-            ("None", results_dir, scan_type, domain_regex, tools))
-    else:
-        # perform url gathering only for main domain - USE only for quick scan
-        logger.info('Non Deep URLS Fetch')
-        os.system(
-            settings.TOOL_LOCATION +
-            'get_urls.sh %s %s %s %s %s' % (
-                domain.name,
-                results_dir,
-                scan_type,
-                domain_regex,
-                tools
-            ))
+    alive_subdomains_path = results_dir + '/alive.txt'
+    sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
+
+    for tool in tools.split(' '):
+
+        if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                input_target = 'echo {}'.format(subdomain_url)
+            elif scan_type == 'deep' and domain:
+                input_target = 'cat {}'.format(sorted_subdomains_path)
+            else:
+                input_target = 'echo {}'.format(domain.name)
+
+        if tool == 'gauplus':
+            logger.info('Running Gauplus')
+            gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(gauplus_command)
+            os.system(gauplus_command)
+
+        elif tool == 'hakrawler':
+            logger.info('Running hakrawler')
+            hakrawler_command = '{} | hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(hakrawler_command)
+            os.system(hakrawler_command)
+
+        elif tool == 'waybackurls':
+            logger.info('Running waybackurls')
+            waybackurls_command = '{} | waybackurls | grep -Eo {} > {}/urls_waybackurls.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(waybackurls_command)
+            os.system(waybackurls_command)
+
+        elif tool == 'gospider':
+            logger.info('Running gospider')
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                gospider_command = 'gospider -s '.format(subdomain_url)
+            elif scan_type == 'deep' and domain:
+                gospider_command = 'gospider -S '.format(alive_subdomains_path)
+            else:
+                gospider_command = 'gospider -s https://{} '.format(domain.name)
+
+            gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
+                valid_url_of_domain_regex,
+                results_dir
+            )
+
+            logger.info(gospider_command)
+            os.system(gospider_command)
+
+    # run cleanup of urls
+    os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
+    os.system('rm -rf {}/url*'.format(results_dir))
+    # sorting and unique urls
+    logger.info("Sort and Unique")
+    os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
+    os.system('sort -u {0}/final_urls.txt -o {0}/all_urls.txt'.format(results_dir))
 
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
         ignore_extension = '|'.join(
@@ -1210,13 +1287,13 @@ def fetch_endpoints(
             with open(endpoint_final_url) as endpoint_list:
                 for url in endpoint_list:
                     http_url = url.rstrip('\n')
-                    if not EndPoint.objects.filter(scan_history=task, http_url=http_url).exists():
+                    if not EndPoint.objects.filter(scan_history=scan_history, http_url=http_url).exists():
                         _subdomain = get_subdomain_from_url(http_url)
                         if Subdomain.objects.filter(
-                                scan_history=task).filter(
+                                scan_history=scan_history).filter(
                                 name=_subdomain).exists():
                             subdomain = Subdomain.objects.get(
-                                scan_history=task, name=_subdomain)
+                                scan_history=scan_history, name=_subdomain)
                         else:
                             '''
                             gau or gosppider can gather interesting endpoints which
@@ -1226,13 +1303,13 @@ def fetch_endpoints(
                             logger.error(
                                 'Subdomain {} not found, adding...'.format(_subdomain))
                             subdomain_dict = DottedDict({
-                                'scan_history': task,
+                                'scan_history': scan_history,
                                 'target_domain': domain,
                                 'name': _subdomain,
                             })
                             subdomain = save_subdomain(subdomain_dict)
                         endpoint_dict = DottedDict({
-                            'scan_history': task,
+                            'scan_history': scan_history,
                             'target_domain': domain,
                             'subdomain': subdomain,
                             'http_url': http_url,
@@ -1271,28 +1348,28 @@ def fetch_endpoints(
             _subdomain = get_subdomain_from_url(http_url)
 
             if Subdomain.objects.filter(
-                    scan_history=task).filter(
+                    scan_history=scan_history).filter(
                     name=_subdomain).exists():
                 subdomain_obj = Subdomain.objects.get(
-                    scan_history=task, name=_subdomain)
+                    scan_history=scan_history, name=_subdomain)
             else:
                 subdomain_dict = DottedDict({
-                    'scan_history': task,
+                    'scan_history': scan_history,
                     'target_domain': domain,
                     'name': _subdomain,
                 })
                 subdomain_obj = save_subdomain(subdomain_dict)
 
             if EndPoint.objects.filter(
-                    scan_history=task).filter(
+                    scan_history=scan_history).filter(
                     http_url=http_url).exists():
 
                 endpoint = EndPoint.objects.get(
-                    scan_history=task, http_url=http_url)
+                    scan_history=scan_history, http_url=http_url)
             else:
                 endpoint = EndPoint()
                 endpoint_dict = DottedDict({
-                    'scan_history': task,
+                    'scan_history': scan_history,
                     'target_domain': domain,
                     'http_url': http_url,
                     'subdomain': subdomain_obj
@@ -1324,7 +1401,7 @@ def fetch_endpoints(
                         tech.save()
                     endpoint.technologies.add(tech)
                     # get subdomain object
-                    subdomain = Subdomain.objects.get(scan_history=task, name=_subdomain)
+                    subdomain = Subdomain.objects.get(scan_history=scan_history, name=_subdomain)
                     subdomain.technologies.add(tech)
                     subdomain.save()
     except Exception as exception:
@@ -1333,9 +1410,9 @@ def fetch_endpoints(
 
     if notification and notification[0].send_scan_status_notif:
         endpoint_count = EndPoint.objects.filter(
-            scan_history__id=task.id).values('http_url').distinct().count()
+            scan_history__id=scan_history.id).values('http_url').distinct().count()
         endpoint_alive_count = EndPoint.objects.filter(
-                scan_history__id=task.id, http_status__exact=200).values('http_url').distinct().count()
+                scan_history__id=scan_history.id, http_status__exact=200).values('http_url').distinct().count()
         send_notification('reNgine has finished gathering endpoints for {} and has discovered *{}* unique endpoints.\n\n{} of those endpoints reported HTTP status 200.'.format(
             domain.name,
             endpoint_count,
@@ -1358,7 +1435,7 @@ def fetch_endpoints(
                         url = line.rstrip('\n')
                         try:
                             endpoint = EndPoint.objects.get(
-                                scan_history=task, http_url=url)
+                                scan_history=scan_history, http_url=url)
                             earlier_pattern = endpoint.matched_gf_patterns
                             new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
                             endpoint.matched_gf_patterns = new_pattern
@@ -1369,10 +1446,10 @@ def fetch_endpoints(
                             endpoint = EndPoint()
                             endpoint.http_url = url
                             endpoint.target_domain = domain
-                            endpoint.scan_history = task
+                            endpoint.scan_history = scan_history
                             try:
                                 _subdomain = Subdomain.objects.get(
-                                    scan_history=task, name=get_subdomain_from_url(url))
+                                    scan_history=scan_history, name=get_subdomain_from_url(url))
                                 endpoint.subdomain = _subdomain
                             except Exception as e:
                                 continue
