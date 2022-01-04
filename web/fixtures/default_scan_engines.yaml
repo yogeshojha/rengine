@@ -38,7 +38,7 @@
     fetch_url: false
     vulnerability_scan: false
     osint: false
-    screenshot: true
+    screenshot: false
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder, oneforall ]\r\n  threads: 10\r\n  use_amass_config: false\r\n
       \ use_subfinder_config: false\r\n\r\nvisual_identification:\r\n  timeout: 10\r\n
