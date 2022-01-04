@@ -66,6 +66,7 @@ def initiate_subtask(
         dir_fuzz=False,
         vuln_scan=False,
     ):
+    # TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
     logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
     subdomain = Subdomain.objects.get(id=subdomain_id)
@@ -82,7 +83,7 @@ def initiate_subtask(
     sub_scan.osint = osint
     sub_scan.fetch_url = endpoint
     sub_scan.dir_file_fuzz = dir_fuzz
-    sub_scan.vuln_scan = vuln_scan
+    sub_scan.vulnerability_scan = vuln_scan
     sub_scan.status = INITIATED_TASK
     sub_scan.save()
 
@@ -111,7 +112,6 @@ def initiate_subtask(
                 subdomain=subdomain.name,
                 file_name=file_name
             )
-
         elif dir_fuzz:
             rand_name = str(time.time()).split('.')[0]
             file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
@@ -125,13 +125,25 @@ def initiate_subtask(
                 subdomain=subdomain.name,
                 file_name=file_name
             )
-
         elif endpoint:
             rand_name = str(time.time()).split('.')[0]
             file_name = 'alive_{}_{}.txt'.format(subdomain.name, rand_name)
             scan_history.fetch_url = True
             scan_history.save()
             fetch_endpoints(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain,
+                file_name=file_name
+            )
+        elif vuln_scan:
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'alive_{}_{}.txt'.format(subdomain.name, rand_name)
+            scan_history.vulnerability_scan = True
+            scan_history.save()
+            vulnerability_scan(
                 scan_history,
                 0,
                 yaml_configuration,
@@ -342,10 +354,11 @@ def initiate_scan(
                 activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
                 vulnerability_scan(
                     task,
-                    domain,
+                    activity_id,
                     yaml_configuration,
                     results_dir,
-                    activity_id)
+                    domain=domain,
+                )
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
@@ -1469,11 +1482,14 @@ def fetch_endpoints(
 
 
 def vulnerability_scan(
-        task,
-        domain,
+        scan_history,
+        activity_id,
         yaml_configuration,
         results_dir,
-        activity_id):
+        domain=None,
+        subdomain=None,
+        file_name=None
+    ):
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
@@ -1484,19 +1500,27 @@ def vulnerability_scan(
     ignore certain file extensions
     Thanks: https://github.com/six2dez/reconftw
     '''
-    urls_path = '/alive.txt'
-    if task.scan_type.fetch_url:
-        os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
-        os.system(
-            'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
-        urls_path = '/unfurl_urls.txt'
+    output_file_name = file_name if file_name else 'vulnerability.json'
+    vulnerability_result_path = results_dir + '/' + output_file_name
 
-    vulnerability_result_path = results_dir + '/vulnerability.json'
 
-    vulnerability_scan_input_file = results_dir + urls_path
+    if domain:
+        urls_path = '/alive.txt'
+        if scan_history.scan_type.fetch_url:
+            os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
+            os.system(
+                'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
+            urls_path = '/unfurl_urls.txt'
 
-    nuclei_command = 'nuclei -json -l {} -o {}'.format(
-        vulnerability_scan_input_file, vulnerability_result_path)
+
+        vulnerability_scan_input_file = results_dir + urls_path
+
+        nuclei_command = 'nuclei -json -l {} -o {}'.format(
+            vulnerability_scan_input_file, vulnerability_result_path)
+    else:
+        url_to_scan = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+        nuclei_command = 'nuclei -json -u {} -o {}'.format(
+            url_to_scan, vulnerability_result_path)
 
     # check nuclei config
     if USE_NUCLEI_CONFIG in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[VULNERABILITY_SCAN][USE_NUCLEI_CONFIG]:
@@ -1567,6 +1591,7 @@ def vulnerability_scan(
         severity = "critical, high, medium, low, info"
 
     # update nuclei templates before running scan
+    logger.info('Updating Nuclei Templates!')
     os.system('nuclei -update-templates')
 
     for _severity in severity.split(","):
@@ -1580,8 +1605,8 @@ def vulnerability_scan(
         if proxy:
             final_nuclei_command += " --proxy-url '{}'".format(proxy)
 
+        logger.info('Running Nuclei Scanner!')
         logger.info(final_nuclei_command)
-
         os.system(final_nuclei_command)
         try:
             if os.path.isfile(vulnerability_result_path):
@@ -1593,14 +1618,14 @@ def vulnerability_scan(
                     _subdomain = get_subdomain_from_url(host)
                     try:
                         subdomain = Subdomain.objects.get(
-                            name=_subdomain, scan_history=task)
+                            name=_subdomain, scan_history=scan_history)
                         vulnerability = Vulnerability()
                         vulnerability.subdomain = subdomain
-                        vulnerability.scan_history = task
+                        vulnerability.scan_history = scan_history
                         vulnerability.target_domain = domain
                         try:
                             endpoint = EndPoint.objects.get(
-                                scan_history=task, target_domain=domain, http_url=host)
+                                scan_history=scan_history, target_domain=domain, http_url=host)
                             vulnerability.endpoint = endpoint
                         except Exception as exception:
                             logger.error(exception)
@@ -1666,7 +1691,6 @@ def vulnerability_scan(
 
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
-                        continue
 
         except Exception as exception:
             logging.error(exception)
@@ -1674,15 +1698,15 @@ def vulnerability_scan(
 
     if notification and notification[0].send_scan_status_notif:
         info_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=0).count()
+            scan_history__id=scan_history.id, severity=0).count()
         low_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=1).count()
+            scan_history__id=scan_history.id, severity=1).count()
         medium_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=2).count()
+            scan_history__id=scan_history.id, severity=2).count()
         high_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=3).count()
+            scan_history__id=scan_history.id, severity=3).count()
         critical_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=4).count()
+            scan_history__id=scan_history.id, severity=4).count()
         vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
 
         message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
@@ -1699,15 +1723,15 @@ def vulnerability_scan(
         send_notification(message)
 
 
-def scan_failed(task):
-    task.scan_status = 0
-    task.stop_scan_date = timezone.now()
-    task.save()
+def scan_failed(scan_history):
+    scan_history.scan_status = 0
+    scan_history.stop_scan_date = timezone.now()
+    scan_history.save()
 
 
-def create_scan_activity(task, message, status):
+def create_scan_activity(scan_history, message, status):
     scan_activity = ScanActivity()
-    scan_activity.scan_of = task
+    scan_activity.scan_of = scan_history
     scan_activity.title = message
     scan_activity.time = timezone.now()
     scan_activity.status = status
@@ -1778,21 +1802,23 @@ def save_endpoint(endpoint_dict):
 
     return endpoint
 
-def perform_osint(task, domain, yaml_configuration, results_dir):
+
+def perform_osint(scan_history, domain, yaml_configuration, results_dir):
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('reNgine has initiated OSINT on target {}'.format(domain.name))
 
     if 'discover' in yaml_configuration[OSINT]:
-        osint_discovery(task, domain, yaml_configuration, results_dir)
+        osint_discovery(scan_history, domain, yaml_configuration, results_dir)
 
     if 'dork' in yaml_configuration[OSINT]:
-        dorking(task, yaml_configuration)
+        dorking(scan_history, yaml_configuration)
 
     if notification and notification[0].send_scan_status_notif:
         send_notification('reNgine has completed performing OSINT on target {}'.format(domain.name))
 
-def osint_discovery(task, domain, yaml_configuration, results_dir):
+
+def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
     if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
         osint_lookup = 'emails metainfo employees'
     else:
@@ -1814,28 +1840,28 @@ def osint_discovery(task, domain, yaml_configuration, results_dir):
             meta_dict = DottedDict({
                 'osint_target': domain.name,
                 'domain': domain,
-                'scan_id': task,
+                'scan_id': scan_history,
                 'documents_limit': documents_limit
             })
             get_and_save_meta_info(meta_dict)
         elif osint_intensity == 'deep':
             # get all subdomains in scan_id
-            subdomains = Subdomain.objects.filter(scan_history=task)
+            subdomains = Subdomain.objects.filter(scan_history=scan_history)
             for subdomain in subdomains:
                 meta_dict = DottedDict({
                     'osint_target': subdomain.name,
                     'domain': domain,
-                    'scan_id': task,
+                    'scan_id': scan_history,
                     'documents_limit': documents_limit
                 })
                 get_and_save_meta_info(meta_dict)
 
     if 'emails' in osint_lookup:
-        get_and_save_emails(task, results_dir)
-        get_and_save_leaked_credentials(task, results_dir)
+        get_and_save_emails(scan_history, results_dir)
+        get_and_save_leaked_credentials(scan_history, results_dir)
 
     if 'employees' in osint_lookup:
-        get_and_save_employees(task, results_dir)
+        get_and_save_employees(scan_history, results_dir)
 
 def dorking(scan_history, yaml_configuration):
     # Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
@@ -2131,6 +2157,7 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
         )
         scan_history.dorks.add(dork)
 
+
 def get_and_save_employees(scan_history, results_dir):
     theHarvester_location = '/usr/src/github/theHarvester'
 
@@ -2230,6 +2257,7 @@ def get_and_save_emails(scan_history, results_dir):
     leak_target_file.write('%_%@%.{}\n'.format(scan_history.domain.name))
 
     leak_target_file.close()
+
 
 def get_and_save_leaked_credentials(scan_history, results_dir):
     logger.info('OSINT: Getting leaked credentials...')
