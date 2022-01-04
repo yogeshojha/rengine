@@ -80,7 +80,7 @@ def initiate_subtask(
     sub_scan.subdomain = subdomain
     sub_scan.port_scan = port_scan
     sub_scan.osint = osint
-    sub_scan.endpoint = endpoint
+    sub_scan.fetch_url = endpoint
     sub_scan.dir_file_fuzz = dir_fuzz
     sub_scan.vuln_scan = vuln_scan
     sub_scan.status = INITIATED_TASK
@@ -127,8 +127,8 @@ def initiate_subtask(
             )
 
         elif endpoint:
-            # rand_name = str(time.time()).split('.')[0]
-            # file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'alive_{}_{}.txt'.format(subdomain.name, rand_name)
             scan_history.fetch_url = True
             scan_history.save()
             fetch_endpoints(
@@ -136,8 +136,8 @@ def initiate_subtask(
                 0,
                 yaml_configuration,
                 results_dir,
-                subdomain=subdomain.name,
-                # file_name=file_name
+                subdomain=subdomain,
+                file_name=file_name
             )
         task_status = SUCCESS_TASK
 
@@ -1180,6 +1180,7 @@ def fetch_endpoints(
         but, when subdomain is given, subtask is running, deep or normal scan should
         not work, it should simply fetch urls for that subdomain
     '''
+    logger.info('Initiated Endpoint Fetching')
     domain_name = domain.name if domain else subdomain
     output_file_name = file_name if file_name else 'all_urls.txt'
 
@@ -1245,7 +1246,7 @@ def fetch_endpoints(
             logger.info('Running gospider')
             if subdomain:
                 subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-                gospider_command = 'gospider -s '.format(subdomain_url)
+                gospider_command = 'gospider -s {}'.format(subdomain_url)
             elif scan_type == 'deep' and domain:
                 gospider_command = 'gospider -S '.format(alive_subdomains_path)
             else:
@@ -1264,24 +1265,25 @@ def fetch_endpoints(
     os.system('rm -rf {}/url*'.format(results_dir))
     # sorting and unique urls
     logger.info("Sort and Unique")
-    os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
-    os.system('sort -u {0}/final_urls.txt -o {0}/{1}.txt'.format(results_dir, output_file_name))
+    if domain:
+        os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
+    os.system('sort -u {0}/final_urls.txt -o {0}/{1}'.format(results_dir, output_file_name))
 
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
         ignore_extension = '|'.join(
             yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
         logger.info('Ignore extensions ' + ignore_extension)
         os.system(
-            'cat {0}/{2}.txt | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
+            'cat {0}/{2} | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
                 results_dir, ignore_extension, output_file_name))
         os.system(
-            'rm {0}/{1}.txt && mv {0}/temp_urls.txt {0}/{1}.txt'.format(results_dir, output_file_name))
+            'rm {0}/{1} && mv {0}/temp_urls.txt {0}/{1}'.format(results_dir, output_file_name))
 
     '''
     Store all the endpoints and then run the httpx
     '''
     try:
-        endpoint_final_url = results_dir + '/{}.txt'.format(output_file_name)
+        endpoint_final_url = results_dir + '/{}'.format(output_file_name)
         if not os.path.isfile(endpoint_final_url):
             return
 
@@ -1321,7 +1323,7 @@ def fetch_endpoints(
         update_last_activity(activity_id, 0)
 
     if notification and notification[0].send_scan_output_file:
-        send_files_to_discord(results_dir + '/{}.txt'.format(output_file_name))
+        send_files_to_discord(results_dir + '/{}'.format(output_file_name))
 
     '''
     TODO:
@@ -1332,12 +1334,13 @@ def fetch_endpoints(
     '''
     logger.info('HTTP Probing on collected endpoints')
 
-    httpx_command = 'httpx -l {0}/{1}.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
+    httpx_command = 'httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
 
     proxy = get_random_proxy()
     if proxy:
         httpx_command += " --http-proxy '{}'".format(proxy)
 
+    logger.info(httpx_command)
     os.system(httpx_command)
 
     url_results_file = results_dir + '/final_httpx_urls.json'
@@ -1425,40 +1428,44 @@ def fetch_endpoints(
     # once endpoint is saved, run gf patterns TODO: run threads
     if GF_PATTERNS in yaml_configuration[FETCH_URL]:
         for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
-            logger.info('Running GF for {}'.format(pattern))
-            gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
-                results_dir, pattern)
-            gf_command = 'cat {0}/{3}.txt | gf {1} >> {2}'.format(
-                results_dir, pattern, gf_output_file_path, output_file_name)
-            os.system(gf_command)
-            if not os.path.exists(gf_output_file_path):
-                return
-            with open(gf_output_file_path) as gf_output:
-                for line in gf_output:
-                    url = line.rstrip('\n')
-                    try:
-                        endpoint = EndPoint.objects.get(
-                            scan_history=scan_history, http_url=url)
-                        earlier_pattern = endpoint.matched_gf_patterns
-                        new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
-                        endpoint.matched_gf_patterns = new_pattern
-                    except Exception as e:
-                        # add the url in db
-                        logger.error(e)
-                        logger.info('Adding URL' + url)
-                        endpoint = EndPoint()
-                        endpoint.http_url = url
-                        endpoint.target_domain = domain
-                        endpoint.scan_history = scan_history
-                        try:
-                            _subdomain = Subdomain.objects.get(
-                                scan_history=scan_history, name=get_subdomain_from_url(url))
-                            endpoint.subdomain = _subdomain
-                        except Exception as e:
-                            continue
-                        endpoint.matched_gf_patterns = pattern
-                    finally:
-                        endpoint.save()
+            # TODO: js var is causing issues, removing for now
+            if pattern != 'jsvar':
+                logger.info('Running GF for {}'.format(pattern))
+                gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
+                    results_dir, pattern)
+                gf_command = 'cat {0}/{3} | gf {1} | grep -Eo {4} >> {2} '.format(
+                    results_dir, pattern, gf_output_file_path, output_file_name, valid_url_of_domain_regex)
+                logger.info(gf_command)
+                os.system(gf_command)
+                if os.path.exists(gf_output_file_path):
+                    with open(gf_output_file_path) as gf_output:
+                        for line in gf_output:
+                            url = line.rstrip('\n')
+                            try:
+                                endpoint = EndPoint.objects.get(
+                                    scan_history=scan_history, http_url=url)
+                                earlier_pattern = endpoint.matched_gf_patterns
+                                new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
+                                endpoint.matched_gf_patterns = new_pattern
+                            except Exception as e:
+                                # add the url in db
+                                logger.error(e)
+                                logger.info('Adding URL ' + url)
+                                endpoint = EndPoint()
+                                endpoint.http_url = url
+                                endpoint.target_domain = domain
+                                endpoint.scan_history = scan_history
+                                try:
+                                    _subdomain = Subdomain.objects.get(
+                                        scan_history=scan_history, name=get_subdomain_from_url(url))
+                                    endpoint.subdomain = _subdomain
+                                except Exception as e:
+                                    continue
+                                endpoint.matched_gf_patterns = pattern
+                            finally:
+                                endpoint.save()
+
+                    os.system('rm -rf {}'.format(gf_output_file_path))
 
 
 def vulnerability_scan(
