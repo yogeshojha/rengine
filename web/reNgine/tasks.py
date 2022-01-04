@@ -1623,12 +1623,25 @@ def vulnerability_scan(
                         vulnerability.subdomain = subdomain
                         vulnerability.scan_history = scan_history
                         vulnerability.target_domain = domain
-                        try:
+
+                        if EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=host).exists():
                             endpoint = EndPoint.objects.get(
-                                scan_history=scan_history, target_domain=domain, http_url=host)
-                            vulnerability.endpoint = endpoint
-                        except Exception as exception:
-                            logger.error(exception)
+                                scan_history=scan_history,
+                                target_domain=domain,
+                                http_url=host
+                            )
+                        else:
+                            logger.info('Creating Endpoint...')
+                            endpoint_dict = DottedDict({
+                                'scan_history': scan_history,
+                                'target_domain': domain,
+                                'http_url': host,
+                                'subdomain': subdomain
+                            })
+                            endpoint = save_endpoint(endpoint_dict)
+                            logger.info('Endpoint {} created!'.format(host))
+
+                        vulnerability.endpoint = endpoint
                         if 'name' in json_st['info']:
                             vulnerability.name = json_st['info']['name']
                         if 'severity' in json_st['info']:
@@ -1653,10 +1666,21 @@ def vulnerability_scan(
                             vulnerability.description = json_st['info']['description']
                         if 'reference' in json_st['info']:
                             vulnerability.reference = json_st['info']['reference']
-                        if 'matched' in json_st:  # TODO remove in rengine 1.1. 'matched' isn't used in nuclei 2.5.3
-                            vulnerability.http_url = json_st['matched']
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
+                            # also save matched at as url endpoint
+                            if not EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=json_st['matched-at']).exists():
+                                logger.info('Creating Endpoint...')
+                                endpoint_dict = DottedDict({
+                                    'scan_history': scan_history,
+                                    'target_domain': domain,
+                                    'http_url': json_st['matched-at'],
+                                    'subdomain': subdomain
+                                })
+                                save_endpoint(endpoint_dict)
+                                logger.info('Endpoint {} created!'.format(json_st['matched-at']))
+
+
                         if 'templateID' in json_st:
                             vulnerability.template_used = json_st['templateID']
                         if 'description' in json_st:
@@ -1688,7 +1712,6 @@ def vulnerability_scan(
                                 send_hackerone_report(vulnerability.id)
                             elif hackerone.send_medium and json_st['info']['severity'] == 'medium':
                                 send_hackerone_report(vulnerability.id)
-
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
 
