@@ -694,6 +694,9 @@ Detailed Scan
 								<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
 									<i class="fe-trash"></i>
 								</a>
+								<div class="ms-2 mt-2" id="">
+									<a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
+								</div>
 							</div>
 							<div class="col-6">
 								<div class="btn-group mb-2 float-end dropstart">
@@ -2255,18 +2258,28 @@ $(document).ready(function(){
 			if (checkbox.checked) {
 				$("[data-button=subdomain_btns]").removeClass("disabled");
 				$(".subdomain_checkbox").prop('checked', true);
+				$('#subdomain_selected_count').text(checkedCount() + ' Subdomains Selected x');
 			} else {
-				$("[data-button=subdomain_btns]").addClass("disabled");
-				$(".subdomain_checkbox").prop('checked', false);
+				uncheckSubdomains();
 			}
 		}
 
 		function toggleMultipleSubdomainButton() {
-			if (checkedCount() > 0) {
+			var checked_count = checkedCount();
+			if (checked_count > 0) {
 				$("[data-button=subdomain_btns]").removeClass("disabled");
+				$('#subdomain_selected_count').text(checked_count + ' Subdomains Selected x');
 			} else {
 				$("[data-button=subdomain_btns]").addClass("disabled");
+				$('#subdomain_selected_count').empty();
 			}
+		}
+
+		function uncheckSubdomains(){
+			$("[data-button=subdomain_btns]").addClass("disabled");
+			$(".subdomain_checkbox").prop('checked', false);
+			$("#head_checkbox").prop('checked', false);
+			$('#subdomain_selected_count').empty();
 		}
 
 	</script>
