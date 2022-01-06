@@ -972,9 +972,11 @@ def port_scanning(
         port_json_result = open(port_results_file, 'r')
         lines = port_json_result.readlines()
         for line in lines:
+
             json_st = json.loads(line.strip())
             port_number = json_st['port']
             ip_address = json_st['ip']
+            host = json_st['host']
 
             # see if port already exists
             if Port.objects.filter(number__exact=port_number).exists():
@@ -985,14 +987,30 @@ def port_scanning(
             if port_number in UNCOMMON_WEB_PORTS:
                 port.is_uncommon = True
             port_detail = whatportis.get_ports(str(port_number))
+
             if len(port_detail):
                 port.service_name = port_detail[0].name
                 port.description = port_detail[0].description
             port.save()
-            if IpAddress.objects.filter(address=json_st['ip']).exists():
-                ip = IpAddress.objects.get(address=json_st['ip'])
+
+            if IpAddress.objects.filter(address=ip_address).exists():
+                ip = IpAddress.objects.get(address=ip_address)
                 ip.ports.add(port)
                 ip.save()
+            else:
+                # create a new ip
+                ip = IpAddress()
+                ip.address = ip_address
+                ip.ports.add(port)
+                ip.save()
+
+            # if this ip does not belong to host, we also need to add to specific host
+            if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
+                subdomain = Subdomain.get(scan_history=scan_history, name=host)
+                subdomain.ip_addresses.add(ip)
+                subdomain.save()
+
+
     except BaseException as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
