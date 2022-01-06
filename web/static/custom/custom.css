@@ -345,3 +345,8 @@ div.dataTables_wrapper div.dataTables_processing {
 .alert-text-fit {
   display:inline-block;
 }
+
+
+div.dataTables_wrapper div.dataTables_processing {
+   top: 5%;
+}

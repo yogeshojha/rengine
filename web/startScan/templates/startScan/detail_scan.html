@@ -700,7 +700,10 @@ Detailed Scan
 							</div>
 							<div class="col-6">
 								<div class="btn-group mb-2 float-end dropstart">
-									<button class="btn btn-primary dropdown-toggle " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="Reload Subdomains" id="reload_subdomain_table_btn">
+										<i class="fe-refresh-cw"></i>
+									</a>
+									<button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Download Subdomains">
 										<i class="fe-download"></i>
 									</button>
 									<div class="dropdown-menu" style="">
@@ -1530,6 +1533,7 @@ $(document).ready(function(){
 				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
 				"sSearchPlaceholder": "Search...",
 				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Fetching Subdomains... Please wait..."
 			},
 			"fnCreatedRow": function (nRow, aData, iDataIndex) {
 				$(nRow).attr('id', 'subdomain_row_' + aData['id']);
@@ -1782,6 +1786,10 @@ $(document).ready(function(){
 						$(row).addClass('table-danger');
 					}
 				},
+			});
+
+			$('#reload_subdomain_table_btn').click(function () {
+				subdomain_datatables.ajax.reload();
 			});
 
 			$('#subdomain-search-button').click(function () {
