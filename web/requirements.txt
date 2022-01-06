@@ -1,6 +1,6 @@
 argh
 beautifulsoup4==4.9.3
-celery==5.1.2
+celery==5.2.2
 degoogle==1.0.1
 discord-webhook==0.14.0
 Django==3.2.4
