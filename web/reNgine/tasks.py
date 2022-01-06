@@ -376,8 +376,14 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
             amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
                     domain.name, results_dir)
 
+            amass_config = ""
             if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
-                amass_command += ' -config /root/.config/amass.ini'
+                amass_config += ' -config /root/.config/amass.ini'
+
+                if AMASS_CONFIG_FILE in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                    amass_config = f' -config {yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_CONFIG_FILE]}'
+            amass_command += amass_config
+            
 
             if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
                 wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
@@ -389,9 +395,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
                         wordlist_path = '/usr/src/' + AMASS_WORDLIST
                 amass_command = amass_command + \
                     ' -brute -w {}'.format(wordlist_path)
-            if amass_config_path:
-                amass_command = amass_command + \
-                    ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
+
 
             # Run Amass Active
             logging.info(amass_command)
