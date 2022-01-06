@@ -6,6 +6,7 @@ from django.core.serializers import serialize
 from django.http import JsonResponse
 from django.utils import timezone
 from django.apps import apps
+from django.contrib.postgres.fields import ArrayField
 
 from targetApp.models import Domain
 from scanEngine.models import EngineType
@@ -246,6 +247,16 @@ class EndPoint(models.Model):
         return self.http_url
 
 
+class VulnerabilityTags(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+
+class VulnerabilityReference(models.Model):
+    id = models.AutoField(primary_key=True)
+    url = models.CharField(max_length=500)
+
+
 class Vulnerability(models.Model):
     id = models.AutoField(primary_key=True)
     scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
@@ -261,16 +272,32 @@ class Vulnerability(models.Model):
         null=True)
     target_domain = models.ForeignKey(
         Domain, on_delete=models.CASCADE, null=True, blank=True)
-    template_used = models.CharField(max_length=100)
-    name = models.CharField(max_length=400)
+    template = models.CharField(max_length=100)
+    template_url = models.CharField(max_length=200, null=True, blank=True)
+    template_id = models.CharField(max_length=200, null=True, blank=True)
+    name = models.CharField(max_length=500)
     severity = models.IntegerField()
     description = models.CharField(max_length=10000, null=True, blank=True)
-    extracted_results = models.CharField(
-        max_length=3000, null=True, blank=True)
-    reference = models.CharField(max_length=3000, null=True, blank=True)
-    tags = models.CharField(max_length=1000, null=True, blank=True)
-    http_url = models.CharField(max_length=8000, null=True)
-    matcher_name = models.CharField(max_length=400, null=True, blank=True)
+
+    extracted_results = ArrayField(
+        models.CharField(max_length=1000), blank=True, null=True
+    )
+    references = ArrayField(
+        models.CharField(max_length=500), blank=True, null=True
+    )
+    tags = ArrayField(
+        models.CharField(max_length=50), blank=True, null=True
+    )
+    cve_ids = ArrayField(
+        models.CharField(max_length=50), blank=True, null=True
+    )
+    cwe_ids = ArrayField(
+        models.CharField(max_length=50), blank=True, null=True
+    )
+    cvss_metrics = models.CharField(max_length=150, null=True, blank=True)
+    cvss_score = models.FloatField(null=True, blank=True, default=None)
+    type = models.CharField(max_length=50, null=True, blank=True)
+    http_url = models.CharField(max_length=1000, null=True)
     discovered_date = models.DateTimeField(null=True)
     open_status = models.BooleanField(null=True, blank=True, default=True)
     hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
