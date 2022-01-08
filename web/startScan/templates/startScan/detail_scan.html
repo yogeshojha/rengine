@@ -968,8 +968,8 @@ Detailed Scan
 									<th>CVE/CWE</th>
 									<th>Vulnerable URL</th>
 									<th>Description</th>
-									<th>Status</th>
 									<th>Reference</th>
+									<th>Status</th>
 									<th class="text-center dt-no-sorting">Action</th>
 								</tr>
 							</thead>
@@ -2088,15 +2088,18 @@ $(document).ready(function(){
 					{'data': 'cve_ids'},
 					{'data': 'cwe_ids'},
 					{'data': 'http_url'},
+
 					{'data': 'description'},
-					{'data': 'open_status'},
 					{'data': 'references'},
-					{'data': 'id'},
+
+					{'data': 'open_status'},
+
+					{'data': 'hackerone_report_id'},
 				],
 				"columnDefs": [
-					// { "orderable": false, "targets": [4, 9, 10, 11]},
+					{ "orderable": false, "targets": [9, 12]},
 					{
-						"targets": [3, 4, 5, 6, 10, 14],
+						"targets": [3, 4, 5, 6, 10, 13],
 						"visible": false,
 						"searchable": true,
 					},
@@ -2252,13 +2255,13 @@ $(document).ready(function(){
 					{
 						"render": function ( data, type, row ) {
 							if (data){
-								return '<span class="badge badge-soft-danger">Open</span>'
+								return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
 							}
 							else{
-								return '<span class="badge badge-soft-success">Closed</span>'
+								return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
 							}
 						},
-						"targets": 7,
+						"targets": 14,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2277,7 +2280,7 @@ $(document).ready(function(){
 								return '';
 							}
 						},
-						"targets": 11,
+						"targets": 15,
 					},
 				],
 				drawCallback: function () {

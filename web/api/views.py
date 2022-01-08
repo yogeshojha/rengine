@@ -1678,13 +1678,17 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
         order_col = 'severity'
         print(_order_col)
-        if _order_col == '0' or _order_col == '5':
+        if _order_col == '0' or _order_col == '14':
             order_col = 'open_status'
         elif _order_col == '1':
-            order_col = 'name'
+            order_col = 'type'
         elif _order_col == '2':
+            order_col = 'name'
+        elif _order_col == '7':
             order_col = 'severity'
-        elif _order_col == '3':
+        elif _order_col == '8':
+            order_col = 'cvss_score'
+        elif _order_col == '11':
             order_col = 'http_url'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
@@ -1711,11 +1715,21 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
             Q(http_url__icontains=search_value) |
+            Q(target_domain__name__icontains=search_value) |
+            Q(template__icontains=search_value) |
+            Q(template_id__icontains=search_value) |
             Q(name__icontains=search_value) |
             Q(severity__icontains=search_value) |
             Q(description__icontains=search_value) |
             Q(extracted_results__icontains=search_value) |
-            Q(template__icontains=search_value) |
+            Q(references__icontains=search_value) |
+            Q(cve_ids__icontains=search_value) |
+            Q(cwe_ids__icontains=search_value) |
+            Q(cvss_metrics__icontains=search_value) |
+            Q(cvss_score__icontains=search_value) |
+            Q(type__icontains=search_value) |
+            Q(open_status__icontains=search_value) |
+            Q(hackerone_report_id__icontains=search_value) |
             Q(tags__icontains=search_value))
         return qs
 
