@@ -39,16 +39,22 @@ All Vulnerabilities
 					<thead>
 						<tr>
 							<th class="checkbox-column">Status</th>
+							<th>Type</th>
+
 							<th>Title</th>
+							<th>CVSS Metrics</th>
+							<th>Tags</th>
+							<th>Discovered Date</th>
+							<th>Hackerone ID</th>
+
 							<th class="text-center">Severity</th>
+							<th>CVSS Score</th>
+							<th>CVE/CWE</th>
+							<th>CVE/CWE</th>
 							<th>Vulnerable URL</th>
 							<th>Description</th>
-							<th>Status</th>
-							<th>Matcher Name</th>
-							<th>Discovered Date</th>
-							<th>Tags</th>
-							<th>Description</th>
 							<th>Reference</th>
+							<th>Status</th>
 							<th class="text-center dt-no-sorting">Action</th>
 						</tr>
 					</thead>
@@ -90,29 +96,38 @@ $(document).ready(function() {
 		{% else %}
 		"ajax": '/api/listVulnerability/?format=datatables',
 		{% endif %}
-		"order": [[ 2, "desc" ]],
+		"order": [[ 4, "desc" ]],
 		"columns": [
 			{'data': 'id'},
+			{'data': 'type'},
+
 			{'data': 'name'},
-			{'data': 'severity'},
-			{'data': 'http_url'},
-			{'data': 'extracted_results'},
-			{'data': 'open_status'},
-			{'data': 'matcher_name'},
-			{'data': 'discovered_date'},
+			{'data': 'cvss_metrics'},
 			{'data': 'tags'},
+			{'data': 'discovered_date'},
+			{'data': 'hackerone_report_id'},
+
+			{'data': 'severity'},
+			{'data': 'cvss_score'},
+			{'data': 'cve_ids'},
+			{'data': 'cwe_ids'},
+			{'data': 'http_url'},
+
 			{'data': 'description'},
-			{'data': 'reference'},
+			{'data': 'references'},
+
+			{'data': 'open_status'},
+
 			{'data': 'hackerone_report_id'},
 		],
 		"columnDefs": [
-			{ "orderable": false, "targets": [4, 9, 10, 11]},
+			{ "orderable": false, "targets": [9, 12]},
 			{
-				"targets": [ 6, 7, 8, 9, 10 ],
+				"targets": [3, 4, 5, 6, 10, 13],
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [0, 2, 5, 11]},
+			{"className": "text-center", "targets": []},
 			{
 				"render": function ( data, type, row ) {
 					if(row['open_status']){
@@ -126,87 +141,151 @@ $(document).ready(function() {
 			},
 			{
 				"render": function ( data, type, row ) {
-					var tags_span ="";
-					switch (row['severity']) {
-						case 'Info':
-						color = 'soft-info'
-						break;
-						case 'Low':
-						color = 'low'
-						break;
-						case 'Medium':
-						color = 'soft-warning'
-						break;
-						case 'High':
-						color = 'soft-danger'
-						break;
-						case 'Critical':
-						color = 'critical'
-						break;
-						default:
+					if (data) {
+						return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
 					}
-					if (row['tags']) {
-						var badge = "<span class='badge badge-"+color+" me-1 mt-1'>";
-						row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-							tags_span+=badge + split_vals + "</span>";
-						});
-					}
-					hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge badge-soft-danger me-1 mt-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
-					return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Last Seen:` + row['discovered_date'] + "</small>";
 				},
 				"targets": 1,
 			},
 			{
 				"render": function ( data, type, row ) {
-					switch (data) {
+					var tags = '';
+					var cvss_metrics_badge = '';
+					switch (row['severity']) {
 						case 'Info':
-						return "<span class='badge badge-soft-info'>Info</span>";
+						color = 'primary'
+						badge_color = 'soft-primary'
 						break;
 						case 'Low':
-						return "<span class='badge badge-low'>Low</span>";
+						color = 'low'
+						badge_color = 'soft-warning'
 						break;
 						case 'Medium':
-						return "<span class='badge badge-soft-warning'>Medium</span>";
+						color = 'warning'
+						badge_color = 'soft-warning'
 						break;
 						case 'High':
-						return "<span class='badge badge-soft-danger'>High</span>";
+						color = 'danger'
+						badge_color = 'soft-danger'
 						break;
 						case 'Critical':
-						return "<span class='badge badge-critical'>Critical</span>";
+						color = 'critical'
+						badge_color = 'critical'
+						break;
+						default:
+					}
+					if (row['tags']) {
+						tags = '<div>';
+						row['tags'].forEach(tag => {
+								tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag}</span>`;
+						});
+						tags += '</div>';
+					}
+					if (row['cvss_metrics']) {
+						cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+					}
+					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report + `<small>Discovered on: ` + row['discovered_date'] + "</small>";
+				},
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
+					switch (data) {
+						case 'Info':
+						return "<span class='badge badge-soft-primary'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
+						break;
+						case 'Low':
+						return "<span class='badge badge-low'>&nbsp;&nbsp;LOW&nbsp;&nbsp;</span>";
+						break;
+						case 'Medium':
+						return "<span class='badge badge-soft-warning'>&nbsp;&nbsp;MEDIUM&nbsp;&nbsp;</span>";
+						break;
+						case 'High':
+						return "<span class='badge badge-soft-danger'>&nbsp;&nbsp;HIGH&nbsp;&nbsp;</span>";
+						break;
+						case 'Critical':
+						return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
 						break;
 						default:
 						return "";
 					}
 				},
-				"targets": 2,
+				"targets": 7,
 			},
+			{
+				"render": function ( data, type, row ) {
+					if (data) {
+						if (data > 0.1 && data <= 3.9) {
+							badge = 'info';
+						}
+						else if (data > 3.9 && data <= 6.9) {
+							badge = 'warning';
+						}
+						else if (data > 6.9 && data <= 8.9) {
+							badge = 'danger';
+						}
+						else{
+							badge = 'danger';
+						}
+						return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+					}
+					return '';
+				},
+				"targets": 8,
+			},
+			{
+				"render": function ( data, type, row ) {
+					cve_cwe_badge = '<div>';
 
-			{
-				"render": function ( data, type, row ) {
-					return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+					if (row['cve_ids']) {
+						row['cve_ids'].forEach(cve => {
+								cve_cwe_badge += `<a href="https://google.com/search?q=${cve.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cve.toUpperCase()}</a>`;
+						});
+					}
+					if (row['cwe_ids']) {
+						row['cwe_ids'].forEach(cwe => {
+								cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cwe.toUpperCase()}</a>`;
+						});
+					}
+					return cve_cwe_badge + '</div>';
 				},
-				"targets": 3,
+				"targets": 9,
 			},
 			{
 				"render": function ( data, type, row ) {
-					extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-					matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-					description = row['description'] ? row['description'] + `</br>` : "";
-					reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
-					return extracted_results + matcher_name + description + reference;
+					if (data.includes('http')) {
+						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+					}
+					return data;
 				},
-				"targets": 4,
+				"targets": 11,
+			},
+			{
+				"render": function ( data, type, row ) {
+					description = row['description'] ? `<div>${row['description']}</div>` : '';
+					if (row['references'] && row['references'].length > 0) {
+						description += `<br><a class="#" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
+						description += `<div class="collapse" id="references_${row['id']}"><ul>`;
+						row['references'].forEach(reference => {
+							description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+						});
+						description += '</ul></div>';
+					}
+					return description;
+				},
+				"targets": 12,
 			},
 			{
 				"render": function ( data, type, row ) {
 					if (data){
-						return '<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="Open">Open</span>'
+						return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
 					}
 					else{
-						return '<span class="badge badge-soft-success" data-toggle="tooltip" data-placement="top" title="Closed">Closed</span>'
+						return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
 					}
 				},
-				"targets": 5,
+				"targets": 14,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -225,14 +304,19 @@ $(document).ready(function() {
 						return '';
 					}
 				},
-				"targets": 11,
+				"targets": 15,
 			},
 		],
+		drawCallback: function () {
+		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
 				$(row).addClass('table-success text-strike');
 			}
 		},
+	});
+	$('#vulnerability-search-button').click(function () {
+		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 	$('#vulnerability-search-button').click(function () {
 		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
