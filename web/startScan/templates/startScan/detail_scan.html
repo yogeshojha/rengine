@@ -940,7 +940,7 @@ Detailed Scan
 								<button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
 							</div>
 						</div>
-						<div class="autocom-box mt-container mx-auto" id="autocom-box">
+						<div class="autocom-box mt-container mx-auto vulnerability-search" id="autocom-box">
 						</div>
 					</div>
 				</div>
@@ -1354,6 +1354,7 @@ $(document).ready(function(){
 	// init
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
+	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#addTaskModal select').css('width', '100%');
 	$("#todoSubdomainDropdown").select2({
