@@ -40,8 +40,8 @@ body[data-layout-mode=horizontal] .container-fluid {
 }
 
 .badge-low {
-  color: #FDD835;
-  background-color: #FFF9C4;
+  color: #FFB300;
+  background-color: #FFE082;
 }
 
 .form-control:focus,
