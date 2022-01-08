@@ -1194,9 +1194,6 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
                 Q(page_title__icontains=search_value) |
                 Q(http_status__icontains=search_value)
             )
-
-        print(qs)
-
         return qs.order_by(order_col)
 
     def paginate_queryset(self, queryset, view=None):
@@ -1740,7 +1737,6 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
             if 'severity' in lookup_title:
-                print(lookup_content)
                 severity_value = ''
                 if lookup_content == 'info':
                     severity_value = 0
@@ -1758,6 +1754,20 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                 qs = self.queryset.filter(name__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.filter(http_url__icontains=lookup_content)
+            elif 'template' in lookup_title:
+                qs = self.queryset.filter(template__icontains=lookup_content)
+            elif 'template_id' in lookup_title:
+                qs = self.queryset.filter(template_id__icontains=lookup_content)
+            elif 'cve_id' in lookup_title or 'cve' in lookup_title:
+                qs = self.queryset.filter(cve_ids__icontains=lookup_content)
+            elif 'cwe_id' in lookup_title or 'cwe' in lookup_title:
+                qs = self.queryset.filter(cwe_ids__icontains=lookup_content)
+            elif 'cvss_metrics' in lookup_title:
+                qs = self.queryset.filter(cvss_metrics__icontains=lookup_content)
+            elif 'cvss_score' in lookup_title:
+                qs = self.queryset.filter(cvss_score__exact=lookup_content)
+            elif 'type' in lookup_title:
+                qs = self.queryset.filter(type__icontains=lookup_content)
             elif 'tag' in lookup_title:
                 qs = self.queryset.filter(tags__icontains=lookup_content)
             elif 'status' in lookup_title:
@@ -1771,7 +1781,6 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     Q(template__icontains=lookup_content) |
                     Q(extracted_results__icontains=lookup_content))
         elif '!' in search_value:
-            print(search_value)
             search_param = search_value.split("!")
             lookup_title = search_param[0].lower().strip()
             lookup_content = search_param[1].lower().strip()
@@ -1789,10 +1798,24 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     severity_value = 4
                 if severity_value:
                     qs = self.queryset.exclude(severity=severity_value)
-            elif 'title' in lookup_title:
+            elif 'name' in lookup_title:
                 qs = self.queryset.exclude(name__icontains=lookup_content)
             elif 'http_url' in lookup_title:
                 qs = self.queryset.exclude(http_url__icontains=lookup_content)
+            elif 'template' in lookup_title:
+                qs = self.queryset.exclude(template__icontains=lookup_content)
+            elif 'template_id' in lookup_title:
+                qs = self.queryset.exclude(template_id__icontains=lookup_content)
+            elif 'cve_id' in lookup_title or 'cve' in lookup_title:
+                qs = self.queryset.exclude(cve_ids__icontains=lookup_content)
+            elif 'cwe_id' in lookup_title or 'cwe' in lookup_title:
+                qs = self.queryset.exclude(cwe_ids__icontains=lookup_content)
+            elif 'cvss_metrics' in lookup_title:
+                qs = self.queryset.exclude(cvss_metrics__icontains=lookup_content)
+            elif 'cvss_score' in lookup_title:
+                qs = self.queryset.exclude(cvss_score__exact=lookup_content)
+            elif 'type' in lookup_title:
+                qs = self.queryset.exclude(type__icontains=lookup_content)
             elif 'tag' in lookup_title:
                 qs = self.queryset.exclude(tags__icontains=lookup_content)
             elif 'status' in lookup_title:
@@ -1805,4 +1828,24 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     Q(description__icontains=lookup_content) |
                     Q(template__icontains=lookup_content) |
                     Q(extracted_results__icontains=lookup_content))
+        elif '>' in search_value:
+            search_param = search_value.split(">")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'cvss_score' in lookup_title:
+                try:
+                    val = float(lookup_content)
+                    qs = self.queryset.filter(cvss_score__gt=val)
+                except Exception as e:
+                    print(e)
+        elif '<' in search_value:
+            search_param = search_value.split("<")
+            lookup_title = search_param[0].lower().strip()
+            lookup_content = search_param[1].lower().strip()
+            if 'cvss_score' in lookup_title:
+                try:
+                    val = int(lookup_content)
+                    qs = self.queryset.filter(cvss_score__lt=val)
+                except Exception as e:
+                    print(e)
         return qs
