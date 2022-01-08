@@ -960,6 +960,7 @@ Detailed Scan
 									<th>CVSS Metrics</th>
 									<th>Tags</th>
 									<th>Discovered Date</th>
+									<th>Hackerone ID</th>
 
 									<th class="text-center">Severity</th>
 									<th>CVSS Score</th>
@@ -2075,10 +2076,13 @@ $(document).ready(function(){
 				"columns": [
 					{'data': 'id'},
 					{'data': 'type'},
+
 					{'data': 'name'},
 					{'data': 'cvss_metrics'},
 					{'data': 'tags'},
 					{'data': 'discovered_date'},
+					{'data': 'hackerone_report_id'},
+
 					{'data': 'severity'},
 					{'data': 'cvss_score'},
 					{'data': 'cve_ids'},
@@ -2087,12 +2091,12 @@ $(document).ready(function(){
 					{'data': 'description'},
 					{'data': 'open_status'},
 					{'data': 'references'},
-					{'data': 'hackerone_report_id'},
+					{'data': 'id'},
 				],
 				"columnDefs": [
 					// { "orderable": false, "targets": [4, 9, 10, 11]},
 					{
-						"targets": [3, 4, 5 ],
+						"targets": [3, 4, 5, 6, 10, 14],
 						"visible": false,
 						"searchable": true,
 					},
@@ -2122,8 +2126,8 @@ $(document).ready(function(){
 							var cvss_metrics_badge = '';
 							switch (row['severity']) {
 								case 'Info':
-								color = 'info'
-								badge_color = 'soft-info'
+								color = 'primary'
+								badge_color = 'soft-primary'
 								break;
 								case 'Low':
 								color = 'low'
@@ -2162,7 +2166,7 @@ $(document).ready(function(){
 						"render": function ( data, type, row ) {
 							switch (data) {
 								case 'Info':
-								return "<span class='badge badge-soft-info'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
+								return "<span class='badge badge-soft-primary'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
 								break;
 								case 'Low':
 								return "<span class='badge badge-low'>&nbsp;&nbsp;LOW&nbsp;&nbsp;</span>";
@@ -2180,7 +2184,7 @@ $(document).ready(function(){
 								return "";
 							}
 						},
-						"targets": 6,
+						"targets": 7,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2201,7 +2205,7 @@ $(document).ready(function(){
 							}
 							return '';
 						},
-						"targets": 7,
+						"targets": 8,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2219,23 +2223,31 @@ $(document).ready(function(){
 							}
 							return cve_cwe_badge + '</div>';
 						},
-						"targets": 8,
+						"targets": 9,
 					},
 					{
 						"render": function ( data, type, row ) {
-							return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+							if (data.includes('http')) {
+								return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+							}
+							return data;
 						},
-						"targets": 5,
+						"targets": 11,
 					},
 					{
 						"render": function ( data, type, row ) {
-							extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
-							matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
-							description = row['description'] ? row['description'] + `</br>` : "";
-							reference = row['reference'] ? `<a href=${row['reference']} class='text-primary' target='_blank'>Read More...</a>` : "";
-							return extracted_results + matcher_name + description + reference;
+							description = row['description'] ? `<div>${row['description']}</div>` : '';
+							if (row['references'] && row['references'].length > 0) {
+								description += `<br><a class="#" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
+								description += `<div class="collapse" id="references_${row['id']}"><ul>`;
+								row['references'].forEach(reference => {
+									description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+								});
+								description += '</ul></div>';
+							}
+							return description;
 						},
-						"targets": 6,
+						"targets": 12,
 					},
 					{
 						"render": function ( data, type, row ) {
