@@ -725,11 +725,11 @@ Detailed Scan
 											<th class="text-center">Vulnerabilities</th>
 											<th>Status</th>
 											<th class="text-center">Title</th>
-											<th>IP Address</th>
-											<th>Ports</th>
-											<th>Content Length</th>
-											<th>Screenshot</th>
-											<th>Response Time</th>
+											<th class="text-center">IP</th>
+											<th class="text-center">Ports</th>
+											<th class="text-center">Content Length</th>
+											<th class="text-center">Screenshot</th>
+											<th class="text-center">Response Time</th>
 											<th>Technology</th>
 											<th>Checked</th>
 											<th>HTTP URL</th>
@@ -1598,23 +1598,23 @@ $(document).ready(function(){
 							content_type = '';
 							web_server = '';
 							if (row['technologies']){
-								tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true, scan_id={{scan_history_id}});
+								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{scan_history_id}}) + '</div>';
 							}
 							if(row['is_interesting'])
 							{
-								interesting_badge = `<span class='ms-1 me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span>`;
+								interesting_badge = `<div><span class='ms-1 me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
 							}
 
 							if (row['content_type']) {
-								content_type = `<span class='m-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span>`;
+								content_type = `<div><span class='m-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
 							}
 
 							if (row['webserver']) {
-								web_server = `<span class='m-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span>`;
+								web_server = `<div><span class='m-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
 							}
 
 							if (interesting_badge) {
-								badges =   interesting_badge + '</br>';
+								badges =   interesting_badge;
 							}
 
 							todo_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7515a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
@@ -1626,15 +1626,15 @@ $(document).ready(function(){
 
 							endpoint_count_badge = '';
 							if (row['endpoint_count']) {
-								endpoint_count_badge = `<span class="pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${row['endpoint_count']}</span>`
+								endpoint_count_badge = `<span class="pl-2 pr-2 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, '${row['name']}')">${row['endpoint_count']} Endpoints</span>`
 							}
 
 							vuln_count_badge = '';
-							info_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']}</span>`;
-							low_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']}</span>`;
-							medium_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']}</span>`;
-							high_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']}</span>`;
-							critical_badge = `<span class='pl-2 pr-2 ml-1 mr-1 float-end badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']}</span>`;
+							info_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']} Info</span>`;
+							low_badge = `<span class='pl-2 pr-2 ms-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']} Low</span>`;
+							medium_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']} Med</span>`;
+							high_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']} High</span>`;
+							critical_badge = `<span class='pl-2 pr-2 ms-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']} Critical</span>`;
 							vuln_count_badge =  (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
 
 							copy_icon = `
@@ -1644,13 +1644,16 @@ $(document).ready(function(){
 							tech_badge += content_type;
 							tech_badge += web_server;
 
+							end_vuln_badge = '<div class="ms-1">' + endpoint_count_badge + vuln_count_badge + '</div>';
+
 							if (row['http_url']) {
 								if (row['cname']) {
-									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ endpoint_count_badge + vuln_count_badge +`<br><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + tech_badge + todo_badge  + `</div>`;
+										cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
+									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ `</div>` + cname_badge + end_vuln_badge + tech_badge + todo_badge;
 								}
-								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + `</div>`;
+								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
 							}
-							return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + endpoint_count_badge + vuln_count_badge + tech_badge + todo_badge + `</div>`;
+							return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + + todo_badge;
 						},
 						"targets": 1
 					},
