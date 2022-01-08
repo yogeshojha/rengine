@@ -723,7 +723,7 @@ Detailed Scan
 											<th>Subdomain</th>
 											<th class="text-center">Endpoints</th>
 											<th class="text-center">Vulnerabilities</th>
-											<th>Status</th>
+											<th class="text-center">Status</th>
 											<th class="text-center">Title</th>
 											<th class="text-center">IP</th>
 											<th class="text-center">Ports</th>
@@ -743,7 +743,6 @@ Detailed Scan
 											<th>Todos</th>
 											<th>Is Important</th>
 											<th>Webserver</th>
-											<th>Content Type</th>
 											<th>Action</th>
 										</tr>
 									</thead>
@@ -1602,15 +1601,15 @@ $(document).ready(function(){
 							}
 							if(row['is_interesting'])
 							{
-								interesting_badge = `<div><span class='ms-1 me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
+								interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
 							}
 
 							if (row['content_type']) {
-								content_type = `<div><span class='m-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
+								content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
 							}
 
 							if (row['webserver']) {
-								web_server = `<div><span class='m-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
+								web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
 							}
 
 							if (interesting_badge) {
@@ -1621,7 +1620,7 @@ $(document).ready(function(){
 							todo_badge = '';
 
 							if (row['todos_count']) {
-								todo_badge = `<span class="text-danger badge badge-link badge-soft-danger m-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+								todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
 							}
 
 							endpoint_count_badge = '';
@@ -1644,7 +1643,7 @@ $(document).ready(function(){
 							tech_badge += content_type;
 							tech_badge += web_server;
 
-							end_vuln_badge = '<div class="ms-1">' + endpoint_count_badge + vuln_count_badge + '</div>';
+							end_vuln_badge = '<div class="">' + endpoint_count_badge + vuln_count_badge + '</div>';
 
 							if (row['http_url']) {
 								if (row['cname']) {
@@ -1726,6 +1725,16 @@ $(document).ready(function(){
 						},
 						"targets": 7,
 					},
+					{
+						"render": function ( data, type, row ) {
+							if (data){
+								//return lightbox with caption as http link
+								return data;
+							}
+							return 0;
+						},
+						"targets": 8,
+					},
 					// screenshot
 					{
 						"render": function ( data, type, row ) {
@@ -1759,7 +1768,7 @@ $(document).ready(function(){
 							</div>
 							`;
 						},
-						"targets": 25,
+						"targets": 24,
 					},
 				],
 				"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
@@ -1768,23 +1777,8 @@ $(document).ready(function(){
 				drawCallback: function () {
 					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 					$('.bs-tooltip').tooltip();
-					// get screenshot size from localStorage
-					var elements = document.getElementsByClassName("screenshot");
-					screenshot_size = localStorage.getItem('screenshotSize');
-					if (screenshot_size){
-						for (index = 0; index < elements.length; ++index) {
-							elements[index].setAttribute("height", screenshot_size);
-							elements[index].setAttribute("width", screenshot_size);
-						}
-					}
-					else{
-						for (index = 0; index < elements.length; ++index) {
-							elements[index].setAttribute("height", "200px");
-							elements[index].setAttribute("width", "200px");
-						}
-					}
 				},
-				'createdRow': function( row, data, dataIndex ) {
+				"rowCallback": function( row, data, dataIndex ) {
 					if (data['is_important']){
 						$(row).addClass('table-danger');
 					}

@@ -61,21 +61,6 @@ My Profile
             {% endif %}
             <input type="submit" class="btn btn-soft-primary float-end" value="Change Password">
           </form>
-          <div class="row">
-            <div class="col-xl-4 col-md-4 col-sm-12 col-12">
-              <h4 class="header-title">Preferences</h4>
-              <p class="mt-2">Screenshot Size</p>
-              <div class="form-floating">
-                <select class="form-select" id="screenshot_size_dropdown" aria-label="Select Screenshot Size" name="screenshot_size">
-                  <option value='200px'>Small</option>
-                  <option value='300px'>Medium</option>
-                  <option value='400px'>Large</option>
-                  <option value='500px'>XLarge</option>
-                </select>
-                <label for="screenshot_size_dropdown">Select Screenshot Size</label>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -85,18 +70,4 @@ My Profile
 
 
 {% block page_level_script %}
-<script type="text/javascript">
-var select = document.querySelector("#screenshot_size_dropdown");
-var selectOption = select.options[select.selectedIndex];
-var lastSelected = localStorage.getItem('screenshotSize');
-
-if(lastSelected) {
-  select.value = lastSelected;
-}
-
-select.onchange = function () {
-  lastSelected = select.options[select.selectedIndex].value;
-  localStorage.setItem('screenshotSize', lastSelected);
-}
-</script>
 {% endblock page_level_script %}
