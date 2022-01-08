@@ -1660,6 +1660,10 @@ def vulnerability_scan(
                             logger.info('Endpoint {} created!'.format(host))
 
                         vulnerability.endpoint = endpoint
+                        vulnerability.template = json_st['template']
+                        vulnerability.template_url = json_st['template-url']
+                        vulnerability.template_id = json_st['template-id']
+
                         if 'name' in json_st['info']:
                             vulnerability.name = json_st['info']['name']
                         if 'severity' in json_st['info']:
@@ -1678,12 +1682,16 @@ def vulnerability_scan(
                         else:
                             severity = 0
                         vulnerability.severity = severity
+
                         if 'tags' in json_st['info']:
                             vulnerability.tags = json_st['info']['tags']
+
                         if 'description' in json_st['info']:
                             vulnerability.description = json_st['info']['description']
+
                         if 'reference' in json_st['info']:
-                            vulnerability.reference = json_st['info']['reference']
+                            vulnerability.references = json_st['info']['reference']
+
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
                             # also save matched at as url endpoint
@@ -1697,19 +1705,22 @@ def vulnerability_scan(
                                 })
                                 save_endpoint(endpoint_dict)
                                 logger.info('Endpoint {} created!'.format(json_st['matched-at']))
-
-
-                        if 'templateID' in json_st:
-                            vulnerability.template_used = json_st['templateID']
-                        if 'description' in json_st:
-                            vulnerability.description = json_st['description']
-                        if 'matcher_name' in json_st:
-                            vulnerability.matcher_name = json_st['matcher_name']
                         if 'extracted_results' in json_st:
                             vulnerability.extracted_results = json_st['extracted_results']
+                        if 'classification' in json_st['info']:
+                            if 'cve-id' in json_st['info']['classification']:
+                                vulnerability.cve_ids = json_st['info']['classification']['cve-id']
+                            if 'cwe-id' in json_st['info']['classification']:
+                                vulnerability.cwe_ids = json_st['info']['classification']['cwe-id']
+                            if 'cvss-metrics' in json_st['info']['classification']:
+                                vulnerability.cvss_metrics = json_st['info']['classification']['cvss-metrics']
+                            if 'cvss-score' in json_st['info']['classification']:
+                                vulnerability.cvss_score = json_st['info']['classification']['cvss-score']
+                        vulnerability.type = json_st['type']
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
+
                         # send notification for all vulnerabilities except info
                         if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:
                             message = "*Alert: Vulnerability Identified*"
