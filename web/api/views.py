@@ -1715,9 +1715,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             Q(severity__icontains=search_value) |
             Q(description__icontains=search_value) |
             Q(extracted_results__icontains=search_value) |
-            Q(template_used__icontains=search_value) |
-            Q(tags__icontains=search_value) |
-            Q(matcher_name__icontains=search_value))
+            Q(template__icontains=search_value) |
+            Q(tags__icontains=search_value))
         return qs
 
     def special_lookup(self, search_value):
@@ -1755,9 +1754,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             elif 'description' in lookup_title:
                 qs = self.queryset.filter(
                     Q(description__icontains=lookup_content) |
-                    Q(template_used__icontains=lookup_content) |
-                    Q(extracted_results__icontains=lookup_content) |
-                    Q(matcher_name__icontains=lookup_content))
+                    Q(template__icontains=lookup_content) |
+                    Q(extracted_results__icontains=lookup_content))
         elif '!' in search_value:
             print(search_value)
             search_param = search_value.split("!")
@@ -1791,7 +1789,6 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             elif 'description' in lookup_title:
                 qs = self.queryset.exclude(
                     Q(description__icontains=lookup_content) |
-                    Q(template_used__icontains=lookup_content) |
-                    Q(extracted_results__icontains=lookup_content) |
-                    Q(matcher_name__icontains=lookup_content))
+                    Q(template__icontains=lookup_content) |
+                    Q(extracted_results__icontains=lookup_content))
         return qs

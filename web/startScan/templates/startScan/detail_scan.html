@@ -42,7 +42,7 @@ Detailed Scan
 					<a class="nav-link" id="pills-summary-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#summary-tab">Home</a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link active" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
+					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
 				</li>
 				<li class="nav-item interesting-tab-show" style="display: none">
 					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#interesting-tab">Interesting Recon</a>
@@ -75,7 +75,7 @@ Detailed Scan
 				</li>
 				{% if history.vulnerability_scan %}
 				<li class="nav-item">
-					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
+					<a class="nav-link active" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
 				</li>
 				{% endif %}
 				{% if history.osint %}
@@ -661,7 +661,7 @@ Detailed Scan
 			</div>
 		</div>
 	</div>
-	<div class="tab-pane show active" id="subdomain-tab">
+	<div class="tab-pane" id="subdomain-tab">
 		<div class="row justify-content-center">
 			<div class="col-xl-8 col-lg-8 col-sm-8">
 				<div class="wrapper">
@@ -928,7 +928,7 @@ Detailed Scan
 
 	{# Vulnerabilities Section #}
 	{% if history.vulnerability_scan %}
-	<div class="tab-pane" id="vulnerabilities-tab">
+	<div class="tab-pane show active" id="vulnerabilities-tab">
 		<div class="row justify-content-center">
 			<div class="col-xl-8 col-lg-8 col-sm-8">
 				<div class="wrapper">
@@ -954,15 +954,20 @@ Detailed Scan
 							<thead>
 								<tr>
 									<th class="checkbox-column">Status</th>
+									<th>Type</th>
+
 									<th>Title</th>
+									<th>CVSS Metrics</th>
+									<th>Tags</th>
+									<th>Discovered Date</th>
+
 									<th class="text-center">Severity</th>
+									<th>CVSS Score</th>
+									<th>CVE/CWE</th>
+									<th>CVE/CWE</th>
 									<th>Vulnerable URL</th>
 									<th>Description</th>
 									<th>Status</th>
-									<th>Matcher Name</th>
-									<th>Discovered Date</th>
-									<th>Tags</th>
-									<th>Description</th>
 									<th>Reference</th>
 									<th class="text-center dt-no-sorting">Action</th>
 								</tr>
@@ -1519,7 +1524,7 @@ $(document).ready(function(){
 		get_ports({{scan_history_id}});
 
 		// if clicked on pills get subdomains
-		// $("#pills-subdomain-tab").click(function() {
+		$("#pills-subdomain-tab").click(function() {
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
@@ -1867,7 +1872,7 @@ $(document).ready(function(){
 			column.visible(false);
 			{% endif %}
 
-			// });
+			});
 		});
 
 		{% if history.screenshot %}
@@ -2047,7 +2052,7 @@ $(document).ready(function(){
 
 		// vulnerability section
 		{% if history.vulnerability_scan %}
-		$("#pills-vulnerabilities-tab").click(function() {
+		// $("#pills-vulnerabilities-tab").click(function() {
 			var vulnerability_table = $('#vulnerability_results').DataTable({
 				"destroy": true,
 				"oLanguage": {
@@ -2066,29 +2071,32 @@ $(document).ready(function(){
 				"pageLength": 100,
 				'serverSide': true,
 				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-				"order": [[ 2, "desc" ]],
+				"order": [[ 4, "desc" ]],
 				"columns": [
 					{'data': 'id'},
+					{'data': 'type'},
 					{'data': 'name'},
-					{'data': 'severity'},
-					{'data': 'http_url'},
-					{'data': 'extracted_results'},
-					{'data': 'open_status'},
-					{'data': 'matcher_name'},
-					{'data': 'discovered_date'},
+					{'data': 'cvss_metrics'},
 					{'data': 'tags'},
+					{'data': 'discovered_date'},
+					{'data': 'severity'},
+					{'data': 'cvss_score'},
+					{'data': 'cve_ids'},
+					{'data': 'cwe_ids'},
+					{'data': 'http_url'},
 					{'data': 'description'},
-					{'data': 'reference'},
+					{'data': 'open_status'},
+					{'data': 'references'},
 					{'data': 'hackerone_report_id'},
 				],
 				"columnDefs": [
-					{ "orderable": false, "targets": [4, 9, 10, 11]},
+					// { "orderable": false, "targets": [4, 9, 10, 11]},
 					{
-						"targets": [ 6, 7, 8, 9, 10 ],
+						"targets": [3, 4, 5 ],
 						"visible": false,
 						"searchable": true,
 					},
-					{"className": "text-center", "targets": [0, 2, 5, 11]},
+					{"className": "text-center", "targets": []},
 					{
 						"render": function ( data, type, row ) {
 							if(row['open_status']){
@@ -2102,66 +2110,122 @@ $(document).ready(function(){
 					},
 					{
 						"render": function ( data, type, row ) {
-							var tags_span ="";
-							switch (row['severity']) {
-								case 'Info':
-								color = 'soft-info'
-								break;
-								case 'Low':
-								color = 'soft-low'
-								break;
-								case 'Medium':
-								color = 'soft-warning'
-								break;
-								case 'High':
-								color = 'soft-danger'
-								break;
-								case 'Critical':
-								color = 'critical'
-								break;
-								default:
+							if (data) {
+								return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
 							}
-							if (row['tags']) {
-								var badge = "<span class='badge badge-"+color+" m-1'>";
-								row['tags'].split(/\s*,\s*/).forEach(function(split_vals) {
-									tags_span+=badge + split_vals + "</span>";
-								});
-							}
-							hackerone_report = row['hackerone_report_id'] ? `<br><a class="badge badge-soft-danger m-2" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a>` : "";
-							return `<b class="text-${color}">` + data + `</b>` + `<br/>` + tags_span + hackerone_report + `<br><small>Discovered on: ` + row['discovered_date'] + "</small>";
 						},
 						"targets": 1,
 					},
 					{
 						"render": function ( data, type, row ) {
-							switch (data) {
+							var tags = '';
+							var cvss_metrics_badge = '';
+							switch (row['severity']) {
 								case 'Info':
-								return "<span class='badge badge-soft-info'>Info</span>";
+								color = 'info'
+								badge_color = 'soft-info'
 								break;
 								case 'Low':
-								return "<span class='badge badge-soft-low'>Low</span>";
+								color = 'low'
+								badge_color = 'soft-warning'
 								break;
 								case 'Medium':
-								return "<span class='badge badge-soft-warning'>Medium</span>";
+								color = 'warning'
+								badge_color = 'soft-warning'
 								break;
 								case 'High':
-								return "<span class='badge badge-soft-danger'>High</span>";
+								color = 'danger'
+								badge_color = 'soft-danger'
 								break;
 								case 'Critical':
-								return "<span class='badge badge-critical'>Critical</span>";
+								color = 'critical'
+								badge_color = 'critical'
+								break;
+								default:
+							}
+							if (row['tags']) {
+								tags = '<div>';
+								row['tags'].forEach(tag => {
+										tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag}</span>`;
+								});
+								tags += '</div>';
+							}
+							if (row['cvss_metrics']) {
+								cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+							}
+							hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report + `<small>Discovered on: ` + row['discovered_date'] + "</small>";
+						},
+						"targets": 2,
+					},
+					{
+						"render": function ( data, type, row ) {
+							switch (data) {
+								case 'Info':
+								return "<span class='badge badge-soft-info'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
+								break;
+								case 'Low':
+								return "<span class='badge badge-low'>&nbsp;&nbsp;LOW&nbsp;&nbsp;</span>";
+								break;
+								case 'Medium':
+								return "<span class='badge badge-soft-warning'>&nbsp;&nbsp;MEDIUM&nbsp;&nbsp;</span>";
+								break;
+								case 'High':
+								return "<span class='badge badge-soft-danger'>&nbsp;&nbsp;HIGH&nbsp;&nbsp;</span>";
+								break;
+								case 'Critical':
+								return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
 								break;
 								default:
 								return "";
 							}
 						},
-						"targets": 2,
+						"targets": 6,
 					},
+					{
+						"render": function ( data, type, row ) {
+							if (data) {
+								if (data > 0.1 && data <= 3.9) {
+									badge = 'info';
+								}
+								else if (data > 3.9 && data <= 6.9) {
+									badge = 'warning';
+								}
+								else if (data > 6.9 && data <= 8.9) {
+									badge = 'danger';
+								}
+								else{
+									badge = 'danger';
+								}
+								return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+							}
+							return '';
+						},
+						"targets": 7,
+					},
+					{
+						"render": function ( data, type, row ) {
+							cve_cwe_badge = '<div>';
 
+							if (row['cve_ids']) {
+								row['cve_ids'].forEach(cve => {
+										cve_cwe_badge += `<a href="https://google.com/search?q=${cve.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cve.toUpperCase()}</a>`;
+								});
+							}
+							if (row['cwe_ids']) {
+								row['cwe_ids'].forEach(cwe => {
+										cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cwe.toUpperCase()}</a>`;
+								});
+							}
+							return cve_cwe_badge + '</div>';
+						},
+						"targets": 8,
+					},
 					{
 						"render": function ( data, type, row ) {
 							return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
 						},
-						"targets": 3,
+						"targets": 5,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2171,7 +2235,7 @@ $(document).ready(function(){
 							reference = row['reference'] ? `<a href=${row['reference']} class='text-primary' target='_blank'>Read More...</a>` : "";
 							return extracted_results + matcher_name + description + reference;
 						},
-						"targets": 4,
+						"targets": 6,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2182,7 +2246,7 @@ $(document).ready(function(){
 								return '<span class="badge badge-soft-success">Closed</span>'
 							}
 						},
-						"targets": 5,
+						"targets": 7,
 					},
 					{
 						"render": function ( data, type, row ) {
@@ -2215,7 +2279,7 @@ $(document).ready(function(){
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
-		});
+		// });
 		{% endif %}
 
 		// get osint
