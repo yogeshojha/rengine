@@ -111,7 +111,7 @@ class ScanHistory(models.Model):
         ])
         steps_done = len(self.scanactivity_set.all())
         if steps_done and number_of_steps:
-            return (number_of_steps / (steps_done))*100
+            return round((number_of_steps / (steps_done))*100, 2)
 
     def get_completed_ago(self):
         if self.stop_scan_date:
