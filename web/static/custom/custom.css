@@ -346,7 +346,11 @@ div.dataTables_wrapper div.dataTables_processing {
   display:inline-block;
 }
 
-
 div.dataTables_wrapper div.dataTables_processing {
    top: 5%;
+}
+
+.mini-card-body{
+  flex: 1 1 auto;
+  padding: 0.5rem 1.5rem;
 }
