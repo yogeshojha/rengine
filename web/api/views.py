@@ -44,16 +44,26 @@ class StopScan(APIView):
         data = req.data
         try:
             celery_id = data['celery_id']
-            scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
-            app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
-            scan_history.scan_status = 3
-            scan_history.save()
-            last_activity = ScanActivity.objects.filter(
-            scan_of=scan_history).order_by('-pk')[0]
-            last_activity.status = 0
-            last_activity.time = timezone.now()
-            last_activity.save()
-            create_scan_activity(scan_history, "Scan aborted", 0)
+            is_scan = data['is_scan']
+            print(celery_id)
+            if is_scan:
+                scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
+                app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+                scan_history.scan_status = 3
+                scan_history.stop_scan_date = timezone.now()
+                scan_history.save()
+                last_activity = ScanActivity.objects.filter(
+                    scan_of=scan_history).order_by('-pk')[0]
+                last_activity.status = 0
+                last_activity.time = timezone.now()
+                last_activity.save()
+                create_scan_activity(scan_history, "Scan aborted", 0)
+            else:
+                task = get_object_or_404(SubScan, celery_id=celery_id)
+                app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+                task.scan_status = 3
+                task.stop_scan_date = timezone.now()
+                task.save()
             response = {'status': True}
         except Exception as e:
             logging.error(e)
