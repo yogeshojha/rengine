@@ -358,3 +358,7 @@ div.dataTables_wrapper div.dataTables_processing {
 .mini-card-header{
   padding: 0.3rem 1rem;
 }
+
+.mini-card{
+  margin-bottom: 10px;
+}
