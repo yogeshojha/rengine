@@ -354,3 +354,7 @@ div.dataTables_wrapper div.dataTables_processing {
   flex: 1 1 auto;
   padding: 0.5rem 1.5rem;
 }
+
+.mini-card-header{
+  padding: 0.3rem 1rem;
+}
