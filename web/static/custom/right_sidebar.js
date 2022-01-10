@@ -140,7 +140,7 @@ function getScanStatusSidebar(reload) {
             </p>
             <div>
             </div>
-            <a href="#" onclick="stop_scan('${scan_object.celery_id }', is_scan=false, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
+            <a href="#" onclick="stop_scan('${task_object.celery_id }', is_scan=false, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
             </div>
             </a>
             </div>
