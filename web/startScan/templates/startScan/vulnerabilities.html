@@ -44,7 +44,6 @@ All Vulnerabilities
 							<th>Title</th>
 							<th>CVSS Metrics</th>
 							<th>Tags</th>
-							<th>Discovered Date</th>
 							<th>Hackerone ID</th>
 
 							<th class="text-center">Severity</th>
@@ -54,6 +53,7 @@ All Vulnerabilities
 							<th>Vulnerable URL</th>
 							<th>Description</th>
 							<th>Reference</th>
+							<th>Discovered on</th>
 							<th>Status</th>
 							<th class="text-center dt-no-sorting">Action</th>
 						</tr>
@@ -104,7 +104,6 @@ $(document).ready(function() {
 			{'data': 'name'},
 			{'data': 'cvss_metrics'},
 			{'data': 'tags'},
-			{'data': 'discovered_date'},
 			{'data': 'hackerone_report_id'},
 
 			{'data': 'severity'},
@@ -116,14 +115,16 @@ $(document).ready(function() {
 			{'data': 'description'},
 			{'data': 'references'},
 
+			{'data': 'discovered_date'},
+
 			{'data': 'open_status'},
 
 			{'data': 'hackerone_report_id'},
 		],
 		"columnDefs": [
-			{ "orderable": false, "targets": [9, 12]},
+			{ "orderable": false, "targets": [8, 11]},
 			{
-				"targets": [3, 4, 5, 6, 10, 13],
+				"targets": [3, 4, 5, 9, 12],
 				"visible": false,
 				"searchable": true,
 			},
@@ -185,7 +186,7 @@ $(document).ready(function() {
 						cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
 					}
 					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
-					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report + `<small>Discovered on: ` + row['discovered_date'] + "</small>";
+					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
 				},
 				"targets": 2,
 			},
@@ -211,7 +212,7 @@ $(document).ready(function() {
 						return "";
 					}
 				},
-				"targets": 7,
+				"targets": 6,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -232,7 +233,7 @@ $(document).ready(function() {
 					}
 					return '';
 				},
-				"targets": 8,
+				"targets": 7,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -250,7 +251,7 @@ $(document).ready(function() {
 					}
 					return cve_cwe_badge + '</div>';
 				},
-				"targets": 9,
+				"targets": 8,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -259,7 +260,7 @@ $(document).ready(function() {
 					}
 					return data;
 				},
-				"targets": 11,
+				"targets": 10,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -274,7 +275,7 @@ $(document).ready(function() {
 					}
 					return description;
 				},
-				"targets": 12,
+				"targets": 11,
 			},
 			{
 				"render": function ( data, type, row ) {
