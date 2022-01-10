@@ -1716,12 +1716,14 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
             order_col = 'type'
         elif _order_col == '2':
             order_col = 'name'
-        elif _order_col == '7':
+        elif _order_col == '6':
             order_col = 'severity'
-        elif _order_col == '8':
+        elif _order_col == '7':
             order_col = 'cvss_score'
-        elif _order_col == '11':
+        elif _order_col == '10':
             order_col = 'http_url'
+        elif _order_col == '13':
+            order_col = 'discovered_date'
         if _order_direction == 'desc':
             order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup

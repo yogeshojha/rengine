@@ -140,7 +140,7 @@ function getScanStatusSidebar(reload) {
             </p>
             <div>
             </div>
-            <a href="#" onclick="stop_scan('${scan_object.celery_id }', true, false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
+            <a href="#" onclick="stop_scan('${scan_object.celery_id }', is_scan=false, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
             </div>
             </a>
             </div>
@@ -202,9 +202,7 @@ function getScanStatusSidebar(reload) {
 
           status_badge = '<span class="float-end badge bg-warning">Upcoming</span>';
 
-          $('#upcoming_tasks').append(`<a href="/scan/detail/${task_object.scan_history}" class="mt-2 text-reset item-hovered d-block p-2 bg-soft-warning">
-          <p class="text-dark mb-0"><b>${task_name}</b> on ${task_object.subdomain_name}${status_badge}</p>
-          </a>`);
+          $('#upcoming_tasks').append(`<div class="alert alert-warning" role="alert">${task_name} on ${task_object.subdomain_name}</div>`);
         }
       }
       else{

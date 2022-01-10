@@ -824,8 +824,12 @@ function delete_scan(id, domain_name)
   }])
 }
 
-function stop_scan(celery_id, reload_scan_bar, reload_location){
+function stop_scan(celery_id, is_scan=true, reload_scan_bar=true, reload_location=false){
   const stopAPI = "/api/action/stop/scan/";
+  data = {
+    'celery_id': celery_id,
+    'is_scan': is_scan
+  }
   swal.queue([{
     title: 'Are you sure you want to stop this scan?',
     text: "You won't be able to revert this!",
@@ -838,7 +842,7 @@ function stop_scan(celery_id, reload_scan_bar, reload_location){
       return fetch(stopAPI, {
         method: 'POST',
         credentials: "same-origin",
-        body: JSON.stringify({'celery_id': celery_id}),
+        body: JSON.stringify(data),
         headers: {
           "X-CSRFToken": getCookie("csrftoken"),
           "Content-Type": 'application/json',
