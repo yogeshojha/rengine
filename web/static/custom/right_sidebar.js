@@ -44,7 +44,7 @@ function getScanStatusSidebar(reload) {
           <div class="progress mt-2" style="height: 4px;">
           <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="${scan_object.current_progress}" aria-valuemin="0" aria-valuemax="100" style="width: ${scan_object.current_progress}%"></div>
           </div>
-          <a href="#" onclick="stop_scan('${scan_object.celery_id }')" class="btn btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
+          <a href="#" onclick="stop_scan('${scan_object.celery_id }', true, false)" class="btn btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
           <a href="/scan/detail/${scan_object.id}" class="btn btn-soft-primary waves-effect waves-light mt-1 me-1 float-end">View</a>
           </div>
           </div>
