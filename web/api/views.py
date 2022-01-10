@@ -16,6 +16,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from django.db.models import Q
 from django.db.models import CharField, Value, Count
 from django.core import serializers
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -32,8 +33,32 @@ from targetApp.models import *
 from recon_note.models import *
 
 from reNgine.utilities import is_safe_path
-from reNgine.tasks import run_system_commands, initiate_subtask
+from reNgine.tasks import run_system_commands, initiate_subtask, create_scan_activity
 from packaging import version
+from reNgine.celery import app
+
+
+class StopScan(APIView):
+    def post(self, request):
+        req = self.request
+        data = req.data
+        try:
+            celery_id = data['celery_id']
+            scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
+            app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+            scan_history.scan_status = 3
+            scan_history.save()
+            last_activity = ScanActivity.objects.filter(
+            scan_of=scan_history).order_by('-pk')[0]
+            last_activity.status = 0
+            last_activity.time = timezone.now()
+            last_activity.save()
+            create_scan_activity(scan_history, "Scan aborted", 0)
+            response = {'status': True}
+        except Exception as e:
+            logging.error(e)
+            response = {'status': False}
+        return Response(response)
 
 
 class InitiateSubTask(APIView):

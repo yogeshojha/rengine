@@ -790,72 +790,92 @@ function mark_important_subdomain(row, subdomain_id, target_summary){
 
 function delete_scan(id, domain_name)
 {
-		const delAPI = "../delete/scan/"+id;
-		swal.queue([{
-				title: 'Are you sure you want to delete this scan history?',
-				text: "You won't be able to revert this!",
-				type: 'warning',
-				showCancelButton: true,
-				confirmButtonText: 'Delete',
-				padding: '2em',
-				showLoaderOnConfirm: true,
-				preConfirm: function() {
-					return fetch(delAPI, {
-							method: 'POST',
-								credentials: "same-origin",
-								headers: {
-										"X-CSRFToken": getCookie("csrftoken")
-								}
-						})
-						.then(function (response) {
-								return response.json();
-						})
-						.then(function(data) {
-								// TODO Look for better way
-							 return location.reload();
-						})
-						.catch(function() {
-							swal.insertQueueStep({
-								type: 'error',
-								title: 'Oops! Unable to delete the scan history!'
-							})
-						})
-				}
-		}])
+  const delAPI = "../delete/scan/"+id;
+  swal.queue([{
+    title: 'Are you sure you want to delete this scan history?',
+    text: "You won't be able to revert this!",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    padding: '2em',
+    showLoaderOnConfirm: true,
+    preConfirm: function() {
+      return fetch(delAPI, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken")
+        }
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function(data) {
+        // TODO Look for better way
+        return location.reload();
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to delete the scan history!'
+        })
+      })
+    }
+  }])
 }
 
-function stop_scan(celery_id){
-
-		const stopAPI = "../stop/scan/"+celery_id;
-		swal.queue([{
-				title: 'Are you sure you want to stop this scan?',
-				text: "You won't be able to revert this!",
-				type: 'warning',
-				showCancelButton: true,
-				confirmButtonText: 'Stop',
-				padding: '2em',
-				showLoaderOnConfirm: true,
-				preConfirm: function() {
-					return fetch(stopAPI, {
-							method: 'POST',
-								credentials: "same-origin",
-								headers: {
-										"X-CSRFToken": getCookie("csrftoken")
-								}
-						})
-						.then(function (response) {
-								return response.json();
-						})
-						.then(function(data) {
-								// TODO Look for better way
-							 return location.reload();
-						})
-						.catch(function() {
-							swal.insertQueueStep({
-								type: 'error',
-								title: 'Oops! Unable to stop the scan'
-							})
-						})
-				}
-		}])
+function stop_scan(celery_id, reload_scan_bar, reload_location){
+  const stopAPI = "/api/action/stop/scan/";
+  swal.queue([{
+    title: 'Are you sure you want to stop this scan?',
+    text: "You won't be able to revert this!",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Stop',
+    padding: '2em',
+    showLoaderOnConfirm: true,
+    preConfirm: function() {
+      return fetch(stopAPI, {
+        method: 'POST',
+        credentials: "same-origin",
+        body: JSON.stringify({'celery_id': celery_id}),
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": 'application/json',
+        }
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function(data) {
+        // TODO Look for better way
+        if (data.status) {
+          Snackbar.show({
+            text: 'Scan Successfully Aborted.',
+            pos: 'top-right',
+            duration: 1500
+          });
+          if (reload_scan_bar) {
+            getScanStatusSidebar();
+          }
+          if (reload_location) {
+            window.location.reload();
+          }
+        }
+        else{
+          Snackbar.show({
+            text: 'Oops! Could not abort the scan.',
+            pos: 'top-right',
+            duration: 1500
+          });
+        }
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to stop the scan'
+        })
+      })
+    }
+  }])
 }

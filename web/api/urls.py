@@ -154,6 +154,10 @@ urlpatterns = [
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),
         name='initiate_subtask'),
+    path(
+        'action/stop/scan/',
+        StopScan.as_view(),
+        name='stop_scan'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

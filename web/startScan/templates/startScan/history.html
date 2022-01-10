@@ -166,7 +166,7 @@
                             <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                         {% endif %}
                         {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
-                          <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{ scan_history.celery_id }}')">
+                          <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{ scan_history.celery_id }}', false, true)">
                             <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
                         {% endif %}
                         {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
