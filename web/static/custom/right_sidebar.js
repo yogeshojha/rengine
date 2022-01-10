@@ -14,14 +14,27 @@ function getScanStatusSidebar(reload) {
     scans = data['scans'];
     tasks = data['tasks'];
 
+    if (scans['pending'].length > 0){
+      for (var scan in scans['pending']) {
+        scan_object = scans['pending'][scan];
+        $('#upcoming_scans').append(`
+          <div class="alert alert-warning" role="alert">${scan_object.scan_type.engine_name} on ${scan_object.domain.name}</div>
+          `);
+      }
+    }
+    else{
+      $('#upcoming_scans').html(`<div class="alert alert-info" role="alert">No upcoming Scans.</div>`);
+    }
+
     if (scans['scanning'].length > 0){
       $('#current_scan_counter').html(scans['scanning'].length);
       $('#current_scan_count').html(`${scans['scanning'].length} Scans Currently Running`)
       for (var scan in scans['scanning']) {
         scan_object = scans['scanning'][scan];
         $('#currently_scanning').append(`
-          <div class="card border-primary border mb-2">
-          <div class="card-header bg-soft-primary text-primary">
+          <div class="card border-primary border">
+          <a href="/scan/detail/${scan_object.id}" class="text-reset item-hovered">
+          <div class="card-header bg-soft-primary text-primary mini-card-header">
           ${scan_object.scan_type.engine_name} on ${scan_object.domain.name}
           <span class="badge badge-soft-primary float-end">
           ${scan_object.current_progress}%
@@ -35,24 +48,24 @@ function getScanStatusSidebar(reload) {
           <span class="">
           Started ${scan_object.elapsed_time} ago.
           </span>
-          </p>
-          <h4 class="">
+          <div>
           <span class="badge-subdomain-count badge badge-soft-info waves-effect waves-light">&nbsp;&nbsp;${scan_object.subdomain_count}&nbsp;&nbsp;</span>
           <span class="badge-endpoint-count badge badge-soft-primary waves-effect waves-light">&nbsp;&nbsp;${scan_object.endpoint_count}&nbsp;&nbsp;</span>
           <span class="badge-vuln-count badge badge-soft-danger waves-effect waves-light">&nbsp;&nbsp;${scan_object.vulnerability_count}&nbsp;&nbsp;</span>
-          </h4>
+          </div>
           <div class="progress mt-2" style="height: 4px;">
           <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="${scan_object.current_progress}" aria-valuemin="0" aria-valuemax="100" style="width: ${scan_object.current_progress}%"></div>
           </div>
-          <a href="#" onclick="stop_scan('${scan_object.celery_id }', true, false)" class="btn btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
-          <a href="/scan/detail/${scan_object.id}" class="btn btn-soft-primary waves-effect waves-light mt-1 me-1 float-end">View</a>
+          </p>
+          <a href="#" onclick="stop_scan('${scan_object.celery_id }', true, false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Abort</a>
           </div>
+          </a>
           </div>
           `);
         }
       }
       else{
-        $('#currently_scanning').html(`<div class="alert alert-warning" role="alert">No Scans are currently running.</div>`);
+        $('#currently_scanning').html(`<div class="alert alert-info" role="alert">No Scans are currently running.</div>`);
       }
 
       if (scans['completed'].length > 0){
@@ -60,26 +73,42 @@ function getScanStatusSidebar(reload) {
           scan_object = scans['completed'][scan];
           if (scan_object.scan_status == 0 ) {
             bg_color = 'bg-soft-danger';
+            color = 'danger';
             status_badge = '<span class="float-end badge bg-danger">Failed</span>';
           }
           else if (scan_object.scan_status == 3) {
             bg_color = 'bg-soft-danger';
+            color = 'danger';
             status_badge = '<span class="float-end badge bg-danger">Aborted</span>';
           }
           else if (scan_object.scan_status == 2){
             bg_color = 'bg-soft-success';
+            color = 'success';
             status_badge = '<span class="float-end badge bg-success">Scan Completed</span>';
           }
 
-          $('#completed').append(`<a href="/scan/detail/${scan_object.id}" class="mt-2 text-reset item-hovered d-block p-2 ${bg_color}">
-          <p class="text-dark mb-0">${scan_object.domain.name}${status_badge}</p>
-          <p class="mb-0"><small>Scan Completed ${scan_object.completed_ago} ago<small></p>
-          <h5><span class="badge badge-soft-primary badge-scan_engine-type float-end">${scan_object.scan_type.engine_name}</span></h5>
-          <h4 class="">
-          <span class="badge-subdomain-count badge badge-soft-info waves-effect waves-light">&nbsp;&nbsp;${scan_object.subdomain_count}&nbsp;&nbsp;</span>
-          <span class="badge-endpoint-count badge badge-soft-primary waves-effect waves-light">&nbsp;&nbsp;${scan_object.endpoint_count}&nbsp;&nbsp;</span>
-          <span class="badge-vuln-count badge badge-soft-danger waves-effect waves-light">&nbsp;&nbsp;${scan_object.vulnerability_count}&nbsp;&nbsp;</span></h4>
-          </a>`);
+          $('#completed').append(`
+            <div class="card border-${color} border">
+            <a href="/scan/detail/${scan_object.id}" class="text-reset item-hovered float-end">
+            <div class="card-header ${bg_color} text-${color} mini-card-header">
+            ${scan_object.scan_type.engine_name} on ${scan_object.domain.name}
+            </div>
+            <div class="card-body mini-card-body">
+            <p class="card-text">
+            ${status_badge}
+            <span class="">
+            Scan Completed ${scan_object.completed_ago} ago
+            </span>
+            <div>
+            <span class="badge-subdomain-count badge badge-soft-info waves-effect waves-light">&nbsp;&nbsp;${scan_object.subdomain_count}&nbsp;&nbsp;</span>
+            <span class="badge-endpoint-count badge badge-soft-primary waves-effect waves-light">&nbsp;&nbsp;${scan_object.endpoint_count}&nbsp;&nbsp;</span>
+            <span class="badge-vuln-count badge badge-soft-danger waves-effect waves-light">&nbsp;&nbsp;${scan_object.vulnerability_count}&nbsp;&nbsp;</span>
+            </div>
+            </p>
+            </div>
+            </a>
+            </div>
+            `);
         }
       }
       else{
