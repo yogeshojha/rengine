@@ -61,7 +61,7 @@ class StopScan(APIView):
             else:
                 task = get_object_or_404(SubScan, celery_id=celery_id)
                 app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
-                task.scan_status = 3
+                task.status = 3
                 task.stop_scan_date = timezone.now()
                 task.save()
             response = {'status': True}
