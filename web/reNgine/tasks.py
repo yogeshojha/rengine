@@ -908,10 +908,7 @@ def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
         # check if recursive strategy is set to on
 
         if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
-
-        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
+            dirsearch_command += ' --max-recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
 
         # proxy
         proxy = get_random_proxy()
