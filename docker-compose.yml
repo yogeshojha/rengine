@@ -9,18 +9,12 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    networks:
-      - rengine_network
 
   redis:
     image: "redis:alpine"
     hostname: redis
-    networks:
-      - rengine_network
 
   celery:
     build:
@@ -49,8 +43,6 @@ services:
     depends_on:
       - db
       - redis
-    networks:
-      - rengine_network
 
   celery-beat:
     build: ./web
@@ -75,8 +67,6 @@ services:
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
-    networks:
-      - rengine_network
 
   web:
     build:
@@ -102,24 +92,14 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
-    ports:
-      - "8000:8000"
     depends_on:
       - db
       - celery
       - celery-beat
-    networks:
-      - rengine_network
-    networks:
-      rengine_network:
-        aliases:
-          - rengine
 
   tor:
     image: peterdavehello/tor-socks-proxy
     restart: always
-    networks:
-      - rengine_network
     depends_on:
       - web
 
@@ -127,8 +107,7 @@ services:
     restart: always
     image: nginx:alpine
     ports:
-      - 80:80/tcp
-      - 443:443/tcp
+      - 8443:443/tcp
     depends_on:
       - web
       - db
@@ -144,11 +123,10 @@ services:
       - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
       - static_volume:/usr/src/app/staticfiles/
       - scan_results:/usr/src/scan_results
-    networks:
-      - rengine_network
 
 networks:
-  rengine_network:
+  default:
+    name: renginenet
 
 volumes:
   tool_config:
