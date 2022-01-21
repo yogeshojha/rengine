@@ -883,3 +883,9 @@ function stop_scan(celery_id, is_scan=true, reload_scan_bar=true, reload_locatio
     }
   }])
 }
+
+function extractContent(s) {
+  var span = document.createElement('span');
+  span.innerHTML = s;
+  return span.textContent || span.innerText;
+};
