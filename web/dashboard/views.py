@@ -1,13 +1,8 @@
 from datetime import timedelta
-
-from targetApp.models import Domain
 from startScan.models import *
-
 from django.utils import timezone
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
 from django.db.models.functions import TruncDay
-from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
 from django.contrib.auth.signals import user_logged_out, user_logged_in
 from django.contrib import messages

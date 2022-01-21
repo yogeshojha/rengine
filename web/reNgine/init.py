@@ -1,8 +1,6 @@
 import os
 import random
 import logging
-import sys
-import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +23,7 @@ def first_run(secret_file, base_dir):
             secret.write(secret_key)
             secret.close()
         except IOError:
-            raise Exception('Secret file generation failed' % secret_file)
+            raise Exception('Secret file generation failed %s' % secret_file)
     return secret_key
 
 

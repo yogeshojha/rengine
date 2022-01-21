@@ -55,8 +55,6 @@ services:
     build: ./web
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    environment:
-      - DEBUG=1
     depends_on:
       - celery
     environment:
