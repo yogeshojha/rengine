@@ -70,6 +70,7 @@ class ScanHistorySerializer(serializers.ModelSerializer):
     completed_time = serializers.SerializerMethodField('get_total_scan_time_in_sec')
     elapsed_time = serializers.SerializerMethodField('get_elapsed_time')
     completed_ago = serializers.SerializerMethodField('get_completed_ago')
+    organizations = serializers.SerializerMethodField('get_organizations')
 
     class Meta:
         model = ScanHistory
@@ -99,6 +100,9 @@ class ScanHistorySerializer(serializers.ModelSerializer):
 
     def get_completed_ago(self, scan_history):
         return scan_history.get_completed_ago()
+
+    def get_organizations(self, scan_history):
+        return [org.name for org in scan_history.domain.get_organization()]
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
