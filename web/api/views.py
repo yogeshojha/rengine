@@ -709,7 +709,7 @@ class ListScanHistory(APIView):
         req = self.request
         scan_history = ScanHistory.objects.all().order_by('-start_scan_date')
         scan_history = ScanHistorySerializer(scan_history, many=True)
-        return Response({'scan_histories': scan_history.data})
+        return Response(scan_history.data)
 
 
 class ListEngines(APIView):
@@ -1318,22 +1318,23 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             order_col = '-{}'.format(order_col)
         # if the search query is separated by = means, it is a specific lookup
         # divide the search query into two half and lookup
-        if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
-            if '&' in search_value:
-                complex_query = search_value.split('&')
-                for query in complex_query:
-                    if query.strip():
-                        qs = qs & self.special_lookup(query.strip())
-            elif '|' in search_value:
-                qs = Subdomain.objects.none()
-                complex_query = search_value.split('|')
-                for query in complex_query:
-                    if query.strip():
-                        qs = self.special_lookup(query.strip()) | qs
+        if search_value:
+            if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+                if '&' in search_value:
+                    complex_query = search_value.split('&')
+                    for query in complex_query:
+                        if query.strip():
+                            qs = qs & self.special_lookup(query.strip())
+                elif '|' in search_value:
+                    qs = Subdomain.objects.none()
+                    complex_query = search_value.split('|')
+                    for query in complex_query:
+                        if query.strip():
+                            qs = self.special_lookup(query.strip()) | qs
+                else:
+                    qs = self.special_lookup(search_value)
             else:
-                qs = self.special_lookup(search_value)
-        else:
-            qs = self.general_lookup(search_value)
+                qs = self.general_lookup(search_value)
         return qs.order_by(order_col)
 
     def general_lookup(self, search_value):
