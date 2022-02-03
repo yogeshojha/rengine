@@ -1,3 +1,4 @@
+import logging
 import os
 import requests
 import itertools
@@ -136,6 +137,11 @@ def start_scan_ui(request, domain_id):
 
         out_of_scope_subdomains = [subdomain.rstrip() for subdomain in request.POST['outOfScopeSubdomainTextarea'].split('\n')]
         out_of_scope_subdomains = [subdomain for subdomain in out_of_scope_subdomains if subdomain]
+
+        imported_ip_ranges = [ip_range.rstrip() for ip_range in request.POST['ipRangesTextarea'].split('\n')]
+        imported_ip_ranges = [ip_range for ip_range in imported_ip_ranges if ip_range]
+        logging.debug(f'Ip ranges to be imported: {",".join(imported_ip_ranges)}')
+
         # get engine type
         engine_type = request.POST['scan_mode']
         scan_history_id = create_scan_object(domain_id, engine_type)
@@ -147,7 +153,8 @@ def start_scan_ui(request, domain_id):
                 0,
                 engine_type,
                 imported_subdomains,
-                out_of_scope_subdomains
+                out_of_scope_subdomains,
+                imported_ip_ranges
                 ))
         ScanHistory.objects.filter(
             id=scan_history_id).update(

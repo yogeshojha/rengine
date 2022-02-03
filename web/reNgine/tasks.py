@@ -10,13 +10,12 @@ import logging
 import metafinder.extractor as metadata_extractor
 import whatportis
 import subprocess
-
+import time
 
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium import webdriver
 from emailfinder.extractor import *
 from dotted_dict import DottedDict
-from celery import shared_task
 from discord_webhook import DiscordWebhook
 from reNgine.celery import app
 from startScan.models import *
@@ -25,7 +24,6 @@ from scanEngine.models import EngineType
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 
-from celery import shared_task
 from datetime import datetime
 from degoogle import degoogle
 
@@ -55,7 +53,8 @@ def initiate_scan(
         scan_type,
         engine_type,
         imported_subdomains=None,
-        out_of_scope_subdomains=[]
+        out_of_scope_subdomains=[],
+        imported_ip_ranges=None
         ):
     '''
     scan_type = 0 -> immediate scan, need not create scan object
@@ -98,7 +97,7 @@ def initiate_scan(
         send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
 
     try:
-        current_scan_dir = domain.name + '_' + str(random.randint(100000000000, 999999999999))
+        current_scan_dir = domain.name + '_' + str(round(time.time()*1000))
         os.mkdir(current_scan_dir)
         task.results_dir = current_scan_dir
         task.save()
@@ -257,7 +256,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    delete_scan_data(results_dir)
+    # delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -297,7 +296,7 @@ def skip_subdomain_scan(task, domain, results_dir):
     os.system(
         'cat {0}/from_imported.txt > {0}/subdomain_collection.txt'.format(results_dir))
 
-    os.system('rm -f {}/from_imported.txt'.format(results_dir))
+    # os.system('rm -f {}/from_imported.txt'.format(results_dir))
 
     '''
     Sort all Subdomains
@@ -305,7 +304,7 @@ def skip_subdomain_scan(task, domain, results_dir):
     os.system(
         'sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
 
-    os.system('rm -f {}/subdomain_collection.txt'.format(results_dir))
+    # os.system('rm -f {}/subdomain_collection.txt'.format(results_dir))
 
 
 def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
@@ -457,7 +456,7 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
     '''
     Remove all the from_* files
     '''
-    os.system('rm -f {}/from*'.format(results_dir))
+    # os.system('rm -f {}/from*'.format(results_dir))
 
     '''
     Sort all Subdomains
@@ -1170,7 +1169,7 @@ def fetch_endpoints(
                             endpoint.save()
 
 
-def vulnerability_scan(
+def  vulnerability_scan(
         task,
         domain,
         yaml_configuration,

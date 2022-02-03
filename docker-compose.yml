@@ -43,6 +43,11 @@ services:
     depends_on:
       - db
       - redis
+    logging:
+        driver: "json-file"
+        options:
+            max-file: 1
+            max-size: 50m
 
   celery-beat:
     build: ./web
