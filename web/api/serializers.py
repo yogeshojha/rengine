@@ -63,7 +63,8 @@ class OrganizationTargetsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Domain
         fields = [
-            'name'
+            'name',
+            'id'
         ]
 
 
