@@ -257,7 +257,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    delete_scan_data(results_dir)
+    #delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -813,10 +813,19 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
                 port.service_name = port_detail[0].name
                 port.description = port_detail[0].description
             port.save()
-            if IpAddress.objects.filter(address=json_st['ip']).exists():
-                ip = IpAddress.objects.get(address=json_st['ip'])
+            subdomain = Subdomain.objects.get(
+                    scan_history=task, name=json_st['host'])
+            ip = None
+            if IpAddress.objects.filter(address=ip_address).exists():
+                ip = IpAddress.objects.get(address=ip_address)
                 ip.ports.add(port)
                 ip.save()
+            else:
+                ip = IpAddress(address=ip_address)
+                ip.save()
+                ip.ports.add(port)
+                
+            subdomain.ip_addresses.add(ip)
     except BaseException as exception:
         logging.error(exception)
         update_last_activity(activity_id, 0)
