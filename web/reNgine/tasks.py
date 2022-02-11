@@ -10,7 +10,7 @@ import logging
 import metafinder.extractor as metadata_extractor
 import whatportis
 import subprocess
-
+import time
 
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium import webdriver
@@ -98,7 +98,7 @@ def initiate_scan(
         send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
 
     try:
-        current_scan_dir = domain.name + '_' + str(random.randint(100000000000, 999999999999))
+        current_scan_dir = domain.name + '_' + str(round(time.time()*1000))
         os.mkdir(current_scan_dir)
         task.results_dir = current_scan_dir
         task.save()
