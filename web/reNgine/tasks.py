@@ -154,17 +154,17 @@ def initiate_scan(
                 activity_id,
                 out_of_scope_subdomains
                 )
+
+            update_last_activity(activity_id, 2)
+            activity_id = create_scan_activity(task, "HTTP Crawler", 1)
+            http_crawler(
+                task,
+                domain,
+                results_dir,
+                activity_id)
+            update_last_activity(activity_id, 2)
         else:
             skip_subdomain_scan(task, domain, results_dir)
-
-        update_last_activity(activity_id, 2)
-        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
-        http_crawler(
-            task,
-            domain,
-            results_dir,
-            activity_id)
-        update_last_activity(activity_id, 2)
 
         try:
             if task.screenshot:
