@@ -303,6 +303,7 @@ def delete_organization(request, id):
 def update_organization(request, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
+    domain_list = list()
     if request.method == "POST":
         print(request.POST.getlist("domains"))
         form = UpdateOrganizationForm(request.POST, instance=organization)
