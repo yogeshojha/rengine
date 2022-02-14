@@ -28,7 +28,7 @@ trigger () {
 
     echo "INFO: Triggering scan ..."
     included_subdomains_file=$4
-    touch $included_subdomains_file
+    touch $included_subdomains_file && \
     curl -s $1/scan/start/$2 -b cookiejar --insecure -o /dev/null -d "csrfmiddlewaretoken=$csrf&scan_mode=$3&importSubdomainTextArea=$(cat $included_subdomains_file)&outOfScopeSubdomainTextarea="
 
 }
