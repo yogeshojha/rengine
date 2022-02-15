@@ -96,11 +96,6 @@ services:
       - db
       - celery
       - celery-beat
-    logging:
-      driver: "json-file"
-      options:
-        max-file: 1
-        max-size: 50m
 
   tor:
     image: peterdavehello/tor-socks-proxy
