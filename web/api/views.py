@@ -507,7 +507,7 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
                     change=Value(
                         'removed',
                         output_field=CharField()))
-                changes = added_subdomain.union(removed_subdomains)
+                changes = added_subdomain | removed_subdomains
                 return changes
         return self.queryset
 
