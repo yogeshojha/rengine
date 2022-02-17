@@ -45,6 +45,9 @@ class ScanHistory(models.Model):
         last_scan = ScanHistory.objects.filter(id=self.id).filter(
             scan_type__subdomain_discovery=True).order_by('-start_scan_date')
 
+        if not last_scan:
+            return [0, 0]
+
         scanned_host_q1 = Subdomain.objects.filter(
             target_domain__id=self.domain.id).exclude(
                 scan_history__id=last_scan[0].id).values('name')
