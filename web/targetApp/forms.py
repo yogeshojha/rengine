@@ -147,7 +147,7 @@ class UpdateOrganizationForm(forms.ModelForm):
         ))
 
     domains = forms.ChoiceField(
-        required=True,
+        required=False,
         widget=forms.Select(
             attrs={
                 "class": "form-control tagging",
