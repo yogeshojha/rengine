@@ -107,7 +107,7 @@ services:
     restart: always
     image: nginx:alpine
     ports:
-      - 8443:443/tcp
+      - 443:443/tcp
     depends_on:
       - web
       - db
