@@ -20,16 +20,6 @@ function multiCheck(tb_var) {
     $(this).parents("tr").toggleClass("active")
   })
 }
-function checkall(clickchk, relChkbox) {
-
-  var checker = $('#' + clickchk);
-  var multichk = $('.' + relChkbox);
-
-
-  checker.click(function () {
-    multichk.prop('checked', $(this).prop('checked'));
-  });
-}
 
 function GetIEVersion() {
   var sAgent = window.navigator.userAgent;
@@ -50,8 +40,6 @@ function GetIEVersion() {
 function truncate(str, n){
   return (str.length > n) ? str.substr(0, n-1) + '&hellip;' : str;
 };
-
-
 
 // seperate hostname and url
 // Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
@@ -161,11 +149,6 @@ function change_vuln_status(id)
       "X-CSRFToken": getCookie("csrftoken")
     }
   })
-}
-
-// truncate the long string and put ... in the end
-function truncate(source, size) {
-  return source.length > size ? source.slice(0, size - 1) + "…" : source;
 }
 
 // splits really long strings into multiple lines
