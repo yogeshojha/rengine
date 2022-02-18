@@ -413,3 +413,17 @@ class SubScan(models.Model):
 
     def get_elapsed_time(self):
         return get_time_taken(timezone.now(), self.start_scan_date)
+
+    def get_task_name_str(self):
+        if self.dir_file_fuzz:
+            return "Directory and File fuzzing"
+        elif self.port_scan:
+            return "Port Scan"
+        elif self.fetch_url:
+            return "Endpoint Gathering"
+        elif self.vulnerability_scan:
+            return "Vulnerability Scan"
+        elif self.osint:
+            return "OSINT"
+        else:
+            return "Unknown"

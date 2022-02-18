@@ -35,6 +35,12 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 
+def subscan_history(request):
+    subscans = SubScan.objects.all().order_by('-start_scan_date')
+    context = {'scan_history_active': 'active', "subscans": subscans}
+    return render(request, 'startScan/subscan_history.html', context)
+
+
 def detail_scan(request, id=None):
     context = {}
     if id:
