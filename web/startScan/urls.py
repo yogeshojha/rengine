@@ -4,9 +4,13 @@ from . import views
 
 urlpatterns = [
     path(
-        'history/',
+        'history/scan',
         views.scan_history,
         name="scan_history"),
+    path(
+        'history/subscan',
+        views.subscan_history,
+        name="subscan_history"),
     path(
         'scheduled/',
         views.scheduled_scan_view,
