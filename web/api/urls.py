@@ -151,6 +151,10 @@ urlpatterns = [
         DeleteSubdomain.as_view(),
         name='delete_subdomain'),
     path(
+        'action/rows/delete/',
+        DeleteMultipleRows.as_view(),
+        name='delete_rows'),
+    path(
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),
         name='initiate_subtask'),

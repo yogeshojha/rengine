@@ -38,6 +38,22 @@ from packaging import version
 from reNgine.celery import app
 
 
+class DeleteMultipleRows(APIView):
+    def post(self, request):
+        req = self.request
+        data = req.data
+
+        try:
+            if data['type'] == 'subscan':
+                for row in data['rows']:
+                    SubScan.objects.get(id=row).delete()
+            response = True
+        except Exception as e:
+            response = False
+
+        return Response({'status': response})
+
+
 class StopScan(APIView):
     def post(self, request):
         req = self.request
