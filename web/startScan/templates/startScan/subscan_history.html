@@ -71,7 +71,7 @@ SubScan History
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="scan_history_table" class="table style-3 table-hover">
+      <table id="subscan_history_table" class="table style-3 table-hover">
         <thead>
           <tr>
             <th class="checkbox-column text-center">Serial Number</th>
@@ -85,7 +85,7 @@ SubScan History
         </thead>
         <tbody>
           {% for subscan in subscans.all %}
-          <tr id="scan_history_table_row_{{subscan.id}}">
+          <tr id="subscan_history_table_row_{{subscan.id}}">
             <td class="checkbox-column"> {{ subscan.id }} </td>
             <td class=""> {{ subscan.id }} </td>
             <td class="">
@@ -141,7 +141,7 @@ SubScan History
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function() {
-  var table = $('#scan_history_table').DataTable({
+  var table = $('#subscan_history_table').DataTable({
     headerCallback: function(e, a, t, n, s) {
       e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
     },
@@ -390,7 +390,7 @@ $(document).ready(function() {
           }).then(res => res.json())
           .then(function (response) {
             if (response['status']) {
-              delete_datatable_rows('#scan_history_table', selectedRows, show_snackbar=true, 'Subscans Deleted!')
+              delete_datatable_rows('#subscan_history_table', selectedRows, show_snackbar=true, `${selectedRows.length} Subscans Deleted!`)
             }
             else{
               Snackbar.show({
