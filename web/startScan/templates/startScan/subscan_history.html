@@ -85,7 +85,7 @@ SubScan History
         </thead>
         <tbody>
           {% for subscan in subscans.all %}
-          <tr id="subscan_dt_{{subscan.id}}">
+          <tr id="scan_history_table_row_{{subscan.id}}">
             <td class="checkbox-column"> {{ subscan.id }} </td>
             <td class=""> {{ subscan.id }} </td>
             <td class="">
@@ -123,6 +123,7 @@ SubScan History
                 <i class="mdi mdi-chevron-down"></i>
               </button>
               <div class="dropdown-menu" style="">
+                <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
               </div>
             </div>
           </td>
@@ -132,27 +133,6 @@ SubScan History
     </table>
   </div>
 </div>
-</div>
-<div class="modal fade" id="generateReportModal" tabindex="-1" style="display: none;" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h4 class="modal-title" id="myCenterModalLabel">Download Report</h4>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-light-primary border-0 mb-4" role="alert">
-          <div id='report_alert_message'></div>
-        </div>
-        <div class="form-group mb-4">
-          <label for="reportTypeForm">Report Type</label>
-          <select class="form-control" id="report_type_select" name="report_type">
-          </select>
-        </div>
-        <a id='generateReportButton' href="#" class="btn btn-primary float-end">Download Report</a>
-      </div>
-    </div>
-  </div>
 </div>
 {% endblock main_content %}
 
@@ -410,19 +390,7 @@ $(document).ready(function() {
           }).then(res => res.json())
           .then(function (response) {
             if (response['status']) {
-              Snackbar.show({
-                text: 'Subscans deleted!',
-                pos: 'top-right',
-                duration: 1500,
-                actionTextColor: '#fff',
-                backgroundColor: '#e7515a',
-              });
-              var table = $('#scan_history_table').DataTable();
-              document.querySelectorAll('.targets_checkbox').forEach(function(row) {
-                if (row.checked) {
-                  table.row("#subscan_dt_" + row.value).remove().draw();
-                }
-              });
+              delete_datatable_rows('#scan_history_table', selectedRows, show_snackbar=true, 'Subscans Deleted!')
             }
             else{
               Snackbar.show({
