@@ -216,7 +216,7 @@ $(document).ready(function() {
 					extracted_results = row['extracted_results'] ? row['extracted_results'] + `</br>` : "";
 					matcher_name = row['matcher_name'] ? row['matcher_name'] + `</br>` : "";
 					description = row['description'] ? row['description'] + `</br>` : "";
-					reference = row['reference'] ? `<a href=${row['reference']} class='text-info' target='_blank'>Read More...</a>` : "";
+					reference = row['reference'] ? `<a href=${row['reference'].split(' ')[0].replaceAll('[','').replaceAll(']','').replaceAll('\'','').replaceAll(',','')} class='text-info' target='_blank'>Read More...</a>` : "";
 					return extracted_results + matcher_name + description + reference;
 				},
 				"targets": 4,
