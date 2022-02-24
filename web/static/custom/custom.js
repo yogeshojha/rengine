@@ -771,7 +771,7 @@ function mark_important_subdomain(row, subdomain_id, target_summary){
 }
 
 
-function delete_scan(id, domain_name)
+function delete_scan(id)
 {
   const delAPI = "../delete/scan/"+id;
   swal.queue([{
@@ -806,48 +806,6 @@ function delete_scan(id, domain_name)
     }
   }])
 }
-
-
-function delete_subscan(id, domain_name)
-{
-  const delAPI = "/api/action/rows/delete/";
-
-  swal.queue([{
-    title: 'Are you sure you want to delete this subscan?',
-    text: "You won't be able to revert this!",
-    type: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Delete',
-    padding: '2em',
-    showLoaderOnConfirm: true,
-    preConfirm: function() {
-      return fetch(delAPI, {
-        method: 'POST',
-        credentials: "same-origin",
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken"),
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
-      })
-      .then(function (response) {
-        return response.json();
-      })
-      .then(function(data) {
-        // TODO Look for better way
-        // delete table rows
-
-      })
-      .catch(function() {
-        swal.insertQueueStep({
-          type: 'error',
-          title: 'Oops! Unable to delete the scan history!'
-        })
-      })
-    }
-  }])
-}
-
 
 function stop_scan(celery_id, is_scan=true, reload_scan_bar=true, reload_location=false){
   const stopAPI = "/api/action/stop/scan/";
@@ -924,7 +882,7 @@ function delete_datatable_rows(table_id, rows_id, show_snackbar=true, snackbar_t
   // show_snackbar = bool => whether to show snackbar or not!
   // snackbar_title: str => snackbar title if show_snackbar = True
 
-  var table = $(scan_history_table).DataTable();
+  var table = $(table_id).DataTable();
   for (var row in rows_id) {
     table.row(table_id + '_row_' + rows_id[row]).remove().draw();
   }
@@ -935,4 +893,49 @@ function delete_datatable_rows(table_id, rows_id, show_snackbar=true, snackbar_t
     actionTextColor: '#fff',
     backgroundColor: '#e7515a',
   });
+}
+
+
+function delete_subscan(subscan_id)
+{
+  // This function will delete the sunscans using rest api
+  // Supported method: POST
+  const delAPI = "/api/action/rows/delete/";
+
+  var data = {'type': 'subscan', 'rows': [subscan_id]}
+
+  swal.queue([{
+    title: 'Are you sure you want to delete this subscan?',
+    text: "You won't be able to revert this!",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    padding: '2em',
+    showLoaderOnConfirm: true,
+    preConfirm: function() {
+      return fetch(delAPI, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function(response) {
+        if (response['status']) {
+          delete_datatable_rows('#subscan_history_table', [subscan_id], show_snackbar=true, '1 Subscan Deleted!')
+        }
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to delete the scan history!'
+        })
+      })
+    }
+  }])
 }
