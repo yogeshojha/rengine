@@ -1202,10 +1202,10 @@ function download_subdomains(scan_id, domain_name){
     url = `/api/querySubdomains?format=json&no_lookup_interesting`;
   }
   if (domain_name) {
-    $('.modal-title').html(count + 'Subdomains for : <b>' + domain_name + '</b>');
+    $('.modal-title').html(count + ' subdomains for : <b>' + domain_name + '</b>');
   }
   else{
-    $('.modal-title').html(count + ' Subdomains');
+    $('.modal-title').html(count + ' subdomains');
   }
   $('#exampleModal').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
