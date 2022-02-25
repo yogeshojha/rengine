@@ -56,7 +56,7 @@ Add Organization
         </div>
         {% endif %}
       </div>
-      <button class="btn btn-primary submit-fn mt-2 float-right" disabled="true" type="submit">Add Organization</button>
+      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Add Organization</button>
     </form>
   </div>
 </div>
@@ -72,14 +72,6 @@ $(".tagging").select2({
   tags: true,
 });
 $('select').select2({closeOnSelect: false}).on("change", function(e) {
-  var counter = $(".select2-selection__choice").length;
-  if (counter) {
-    $(':input[type="submit"]').prop('disabled', false);
-  }
-  else{
-    $(':input[type="submit"]').prop('disabled', true);
-  }
-
 });
 </script>
 {% endblock page_level_script %}
