@@ -157,29 +157,33 @@ Quick Scan History
                 {% endif %}
               </td>
               <td class="text-center">
-                <div class="btn-group dropdown mb-2">
-                  <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-soft-primary">View Results</a>
-                  <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="mdi mdi-chevron-down"></i>
-                  </button>
-                  <div class="dropdown-menu" style="">
-                    {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                    <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
-                      <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
-                      {% endif %}
-                      {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
-                      <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{ scan_history.celery_id }}', is_scan=true, reload_scan_bar=false, reload_location=true)">
-                        <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
-                        {% endif %}
+                <div class="btn-group mb-2 dropstart">
+                  <div class="btn-group">
+                    <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-soft-primary">View Results</a>
+                    <div class="btn-group dropstart" role="group">
+                      <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="mdi mdi-chevron-right"></i>
+                      </button>
+                      <div class="dropdown-menu" style="">
                         {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                        <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
-                          <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
+                        <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
+                          <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                           {% endif %}
-                          {% if scan.scan_status != -1%}
-                          <div class="dropdown-divider"></div>
-                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}', '{{ scan_history.domain.name }}')">
-                            <i class="fe-download"></i>&nbsp;Download Report</a>
+                          {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
+                          <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{ scan_history.celery_id }}', is_scan=true, reload_scan_bar=false, reload_location=true)">
+                            <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
                             {% endif %}
+                            {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
+                            <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
+                              <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
+                              {% endif %}
+                              {% if scan.scan_status != -1%}
+                              <div class="dropdown-divider"></div>
+                              <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}', '{{ scan_history.domain.name }}')">
+                                <i class="fe-download"></i>&nbsp;Download Report</a>
+                                {% endif %}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -218,12 +222,12 @@ Quick Scan History
         {% block page_level_script %}
         <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
         <script>
-          $(document).ready(function() {
-            var table = $('#scan_history_table').DataTable({
-              headerCallback: function(e, a, t, n, s) {
-                e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
-              },
-              "columnDefs":[
+        $(document).ready(function() {
+          var table = $('#scan_history_table').DataTable({
+            headerCallback: function(e, a, t, n, s) {
+              e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+            },
+            "columnDefs":[
               { 'visible': false, 'targets': [1] },
               {
                 "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
@@ -318,7 +322,7 @@ Quick Scan History
             org_filter.addEventListener('click', function() {
               table.search(this.value).draw();
               document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Organization: ${this.value}
-                <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+              <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
               </span>`;
               Snackbar.show({
                 text: `Filtering by organization ${this.value}`,
@@ -349,7 +353,7 @@ Quick Scan History
                 badge_color = 'primary'
               }
               document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">Scan Status: ${this.value}
-                <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+              <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
               </span>`;
               Snackbar.show({
                 text: `Filtering by scan status ${this.value}`,
@@ -361,7 +365,7 @@ Quick Scan History
             engine_filter.addEventListener('click', function() {
               table.search(this.value).draw();
               document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Scan Engine: ${this.value}
-                <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+              <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
               </span>`;
               Snackbar.show({
                 text: `Filtering by Engine ${this.value}`,
@@ -373,7 +377,7 @@ Quick Scan History
             target_filter.addEventListener('click', function() {
               table.search(this.value).draw();
               document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Target/Domain: ${this.value}
-                <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+              <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
               </span>`;
               Snackbar.show({
                 text: `Filtering by Engine ${this.value}`,
@@ -462,76 +466,76 @@ Quick Scan History
             $('#report_type_select').empty();
             if (is_subdomain_scan == 'True'  && is_vulnerability_scan == 'True') {
               $('#report_alert_message').append(`
-              <b>Full Scan</b> will include both Reconnaissance and Vulnerability Report.<br>
-              `);
+                <b>Full Scan</b> will include both Reconnaissance and Vulnerability Report.<br>
+                `);
 
-              $('#report_type_select').append($('<option>', {
-                value: 'full',
-                text: 'Full Scan Report'
-              }));
-            }
-
-            if (is_subdomain_scan == 'True') {
-              // eligible for reconnaissance report
-              $('#report_alert_message').append(`
-              <b>Reconnaissance Report</b> will only include Assets Discovered Section.<br>
-              `);
-              $('#report_type_select').append($('<option>', {
-                value: 'recon',
-                text: 'Reconnaissance Report'
-              }));
-            }
-
-            if (is_vulnerability_scan == 'True'){
-              // eligible for vulnerability report
-              $('#report_alert_message').append(`
-              <b>Vulnerability Report</b> will only include details of Vulnerabilities Identified.
-              `);
-              $('#report_type_select').append($('<option>', {
-                value: 'vulnerability',
-                text: 'Vulnerability Report'
-              }));
-            }
-
-            $('#generateReportButton').attr('onClick', `generate_report(${id}, '${domain_name}')`);
-          }
-
-          function generate_report(id, domain_name) {
-            var report_type = $("#report_type_select option:selected").val();
-            $('#generateReportModal').modal('hide');
-            swal.queue([{
-              title: 'Generating Report!',
-              text: `Please wait until we generate a report for you!`,
-              padding: '2em',
-              onOpen: function() {
-                swal.showLoading()
-                return fetch(`/scan/create_report/${id}?download&report_type=${report_type}`, {
-                  method: 'POST',
-                  credentials: "same-origin",
-                  headers: {
-                    "X-CSRFToken": getCookie("csrftoken")
-                  }
-                })
-                .then(function(response) {
-                  return response.blob();
-                }).then(function(blob) {
-                  const file = new Blob([blob], {type: 'application/pdf'});
-                  // process to auto download it
-                  const fileURL = URL.createObjectURL(file);
-                  const link = document.createElement('a');
-                  link.href = fileURL;
-                  link.download = domain_name + ".pdf";
-                  link.click();
-                  swal.close();
-                })
-                .catch(function() {
-                  swal.insertQueueStep({
-                    type: 'error',
-                    title: 'Oops! Unable to generate report!'
-                  })
-                })
+                $('#report_type_select').append($('<option>', {
+                  value: 'full',
+                  text: 'Full Scan Report'
+                }));
               }
-            }]);
-          }
-        </script>
-        {% endblock page_level_script %}
+
+              if (is_subdomain_scan == 'True') {
+                // eligible for reconnaissance report
+                $('#report_alert_message').append(`
+                  <b>Reconnaissance Report</b> will only include Assets Discovered Section.<br>
+                  `);
+                  $('#report_type_select').append($('<option>', {
+                    value: 'recon',
+                    text: 'Reconnaissance Report'
+                  }));
+                }
+
+                if (is_vulnerability_scan == 'True'){
+                  // eligible for vulnerability report
+                  $('#report_alert_message').append(`
+                    <b>Vulnerability Report</b> will only include details of Vulnerabilities Identified.
+                    `);
+                    $('#report_type_select').append($('<option>', {
+                      value: 'vulnerability',
+                      text: 'Vulnerability Report'
+                    }));
+                  }
+
+                  $('#generateReportButton').attr('onClick', `generate_report(${id}, '${domain_name}')`);
+                }
+
+                function generate_report(id, domain_name) {
+                  var report_type = $("#report_type_select option:selected").val();
+                  $('#generateReportModal').modal('hide');
+                  swal.queue([{
+                    title: 'Generating Report!',
+                    text: `Please wait until we generate a report for you!`,
+                    padding: '2em',
+                    onOpen: function() {
+                      swal.showLoading()
+                      return fetch(`/scan/create_report/${id}?download&report_type=${report_type}`, {
+                        method: 'POST',
+                        credentials: "same-origin",
+                        headers: {
+                          "X-CSRFToken": getCookie("csrftoken")
+                        }
+                      })
+                      .then(function(response) {
+                        return response.blob();
+                      }).then(function(blob) {
+                        const file = new Blob([blob], {type: 'application/pdf'});
+                        // process to auto download it
+                        const fileURL = URL.createObjectURL(file);
+                        const link = document.createElement('a');
+                        link.href = fileURL;
+                        link.download = domain_name + ".pdf";
+                        link.click();
+                        swal.close();
+                      })
+                      .catch(function() {
+                        swal.insertQueueStep({
+                          type: 'error',
+                          title: 'Oops! Unable to generate report!'
+                        })
+                      })
+                    }
+                  }]);
+                }
+                </script>
+                {% endblock page_level_script %}
