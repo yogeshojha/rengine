@@ -23,13 +23,13 @@ Detailed Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<!-- <li class="breadcrumb-item"><a href="{% url 'scan_history' %}">Scan History</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_history' %}">Scan History</a></li>
 <li class="breadcrumb-item active">Summary</li>
-<li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li> -->
+<li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
-<!-- Scan Findings  -->
+Scan Findings
 {% endblock page_title %}
 
 {% block main_content %}
@@ -92,8 +92,8 @@ Detailed Scan
 </div>
 <div class="tab-content no-padding-tab">
 	<!-- start tab contents  -->
-	{# <div class="tab-pane show active" id="summary-tab"> #}
-	<div class="tab-pane" id="summary-tab">
+	<div class="tab-pane show active" id="summary-tab">
+	{# <div class="tab-pane" id="summary-tab"> #}
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -928,7 +928,7 @@ Detailed Scan
 
 	{# Vulnerabilities Section #}
 	{% if history.vulnerability_scan %}
-	<div class="tab-pane show active" id="vulnerabilities-tab">
+	<div class="tab-pane" id="vulnerabilities-tab">
 		<div class="row justify-content-center">
 			<div class="col-xl-8 col-lg-8 col-sm-8">
 				<div class="wrapper">
@@ -1354,7 +1354,6 @@ $(document).ready(function(){
 	// init
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
-	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 	$('[data-toggle="tooltip"]').tooltip();
 	$('#addTaskModal select').css('width', '100%');
 	$("#todoSubdomainDropdown").select2({
@@ -1362,9 +1361,9 @@ $(document).ready(function(){
 	});
 	var clipboard = new Clipboard('.copyable');
 
-	// $(".tagging").select2({
-	// 	tags: true
-	// });
+	$(".tagging").select2({
+		tags: true
+	});
 
 	//populate charts
 	// vulnerability summary pie chart
@@ -2054,7 +2053,8 @@ $(document).ready(function(){
 
 		// vulnerability section
 		{% if history.vulnerability_scan %}
-		// $("#pills-vulnerabilities-tab").click(function() {
+		const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
+		$("#pills-vulnerabilities-tab").click(function() {
 			var vulnerability_table = $('#vulnerability_results').DataTable({
 				"destroy": true,
 				"oLanguage": {
@@ -2296,7 +2296,7 @@ $(document).ready(function(){
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
-		// });
+		});
 		{% endif %}
 
 		// get osint
