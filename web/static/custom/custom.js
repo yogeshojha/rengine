@@ -939,3 +939,79 @@ function delete_subscan(subscan_id)
     }
   }])
 }
+
+
+function show_subscan_results(subscan_id){
+  // This function will popup a modal and show the subscan results
+  // modal being used is from base
+  var api_url = '/api/fetch/results/subscan?format=json';
+  var data = {'subscan_id': subscan_id};
+  Swal.fire({
+    title: 'Fetching Results...'
+  });
+  swal.showLoading();
+  fetch(api_url, {
+    method: 'POST',
+    credentials: "same-origin",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(function (response) {
+    swal.close();
+    if (response['subscan']['status'] == -1) {
+      swal.fire("Error!", "Scan has not yet started! Please wait for other scans to complete...", "warning", {
+        button: "Okay",
+      });
+      return;
+    }
+    else if (response['subscan']['status'] == 1) {
+      swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
+        button: "Okay",
+      });
+      return;
+    }
+    $('#modal-content').empty();
+
+    $('#modal_title').html(`Scan Results for Sub Scan on Subdomain ${response['subscan']['subdomain_name']}`);
+    if (response['subscan']['task'] == 'port_scan') {
+      $('#modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">Port Scan</span></span>`);
+      var scan_status = '';
+      var badge_color = 'danger';
+      if (response['subscan']['status'] == 0) {
+        scan_status = 'Failed';
+      }
+      else if (response['subscan']['status'] == 2) {
+        scan_status = 'Successful';
+        badge_color = 'success';
+      }
+      else if (response['subscan']['status'] == 3) {
+        scan_status = 'Aborted';
+      }
+      else {
+        scan_status = 'Unknown';
+      }
+      $('#modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
+    }
+    $('#modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
+
+    for (var ip in response['result']) {
+      var id_name = `ip_${ip}`;
+      $('#port_results_li').append(`<h5>IP Address: ${ip}</h5>`);
+      $('#port_results_li').append(`<ul id="${id_name}"></ul>`);
+      for (var port in response['result'][ip]) {
+        var port_color = 'primary';
+        if (response['result'][ip][port]["is_uncommon"]) {
+          port_color = 'danger';
+        }
+        $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['description']}</span></li>`);
+      }
+    }
+    $('#modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
+    $('#modal_dialog').modal('show');
+    $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+  });
+}
