@@ -125,7 +125,11 @@ SubScan History
                     <i class="mdi mdi-chevron-right"></i>
                   </button>
                   <div class="dropdown-menu" style="">
+                    {% if subscan.status == 1 %}
+                      <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{subscan.celery_id}}', is_scan=false, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                    {% endif %}
                     <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
+
                   </div>
                 </div>
               </div>
