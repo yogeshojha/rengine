@@ -1006,7 +1006,7 @@ def port_scanning(
                 ip.ports.add(port)
 
             if subscan:
-                ip.subscan = subscan
+                ip.subscan_ids.add(subscan)
                 ip.save()
 
             # if this ip does not belong to host, we also need to add to specific host

@@ -115,6 +115,9 @@ function getScanStatusSidebar(reload) {
         $('#completed').html(`<div class="alert alert-info" role="alert">No scans have been recently completed.</div>`);
       }
 
+
+      // tasks
+
       if (tasks['running'].length > 0){
         $('#current_task_count').html(`${tasks['running'].length} Tasks are currently running`)
         for (var task in tasks['running']) {
@@ -125,7 +128,7 @@ function getScanStatusSidebar(reload) {
 
           $('#currently_running_tasks').append(`
             <div class="card border-primary border mini-card">
-            <a href="/scan/detail/${task_object.scan_history}" class="text-reset item-hovered">
+            <a href="#" onclick="show_subscan_results(${task_object['id']})" class="text-reset item-hovered">
             <div class="card-header bg-soft-primary text-primary mini-card-header">
             ${task_name} on ${task_object.subdomain_name}
             </div>
@@ -173,7 +176,7 @@ function getScanStatusSidebar(reload) {
 
           $('#completed_tasks').append(`
             <div class="card border-${color} border mini-card">
-            <a href="/scan/detail/${task_object.scan_history}" class="text-reset item-hovered">
+            <a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${task_object['id']})">
             <div class="card-header ${bg_color} text-${color} mini-card-header">
             ${task_name} on <b>${task_object.subdomain_name}</b>
             </div>
