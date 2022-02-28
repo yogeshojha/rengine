@@ -38,6 +38,28 @@ from packaging import version
 from reNgine.celery import app
 
 
+class FetchSubscanResults(APIView):
+    def post(self, request):
+        req = self.request
+        data = req.data
+
+        subscan_id = data['subscan_id']
+
+        if not SubScan.objects.filter(id=subscan_id).exists():
+            return Response({'status': False, 'error': 'Subscan {} does not exist'.format(subscan_id)})
+
+        subscan = SubScan.objects.get(id=subscan_id)
+        subscan_data = SubScanResultSerializer(subscan, many=False).data
+
+        subscan_results = None
+
+        if subscan.port_scan:
+            subdomain = subscan.subdomain
+            print(subdomain.ip_addresses.all())
+
+        return Response({'subscan': subscan_data, 'subscan_results': subscan_results})
+
+
 class DeleteMultipleRows(APIView):
     def post(self, request):
         req = self.request

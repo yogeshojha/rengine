@@ -162,6 +162,10 @@ urlpatterns = [
         'action/stop/scan/',
         StopScan.as_view(),
         name='stop_scan'),
+    path(
+        'fetch/results/subscan',
+        FetchSubscanResults.as_view(),
+        name='fetch_subscan_results'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',
