@@ -977,38 +977,52 @@ function show_subscan_results(subscan_id){
     $('#modal-content').empty();
 
     $('#modal_title').html(`Scan Results for Sub Scan on Subdomain ${response['subscan']['subdomain_name']}`);
+    var task_name = '';
     if (response['subscan']['task'] == 'port_scan') {
-      $('#modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">Port Scan</span></span>`);
-      var scan_status = '';
-      var badge_color = 'danger';
-      if (response['subscan']['status'] == 0) {
-        scan_status = 'Failed';
-      }
-      else if (response['subscan']['status'] == 2) {
-        scan_status = 'Successful';
-        badge_color = 'success';
-      }
-      else if (response['subscan']['status'] == 3) {
-        scan_status = 'Aborted';
-      }
-      else {
-        scan_status = 'Unknown';
-      }
-      $('#modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
+      task_name = 'Port Scan';
     }
-    $('#modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
+    var scan_status = '';
+    var badge_color = 'danger';
+    if (response['subscan']['status'] == 0) {
+      scan_status = 'Failed';
+    }
+    else if (response['subscan']['status'] == 2) {
+      scan_status = 'Successful';
+      badge_color = 'success';
+    }
+    else if (response['subscan']['status'] == 3) {
+      scan_status = 'Aborted';
+    }
+    else {
+      scan_status = 'Unknown';
+    }
 
-    for (var ip in response['result']) {
-      var id_name = `ip_${ip}`;
-      $('#port_results_li').append(`<h5>IP Address: ${ip}</h5>`);
-      $('#port_results_li').append(`<ul id="${id_name}"></ul>`);
-      for (var port in response['result'][ip]) {
-        var port_color = 'primary';
-        if (response['result'][ip][port]["is_uncommon"]) {
-          port_color = 'danger';
+    $('#modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">${task_name}</span></span>`);
+    $('#modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
+
+    if (!$.isEmptyObject(response['result'])) {
+      if (response['subscan']['task'] == 'port_scan') {
+        $('#modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
+        for (var ip in response['result']) {
+          var id_name = `ip_${ip}`;
+          $('#port_results_li').append(`<h5>IP Address: ${ip}</h5>`);
+          $('#port_results_li').append(`<ul id="${id_name}"></ul>`);
+          for (var port in response['result'][ip]) {
+            var port_color = 'primary';
+            if (response['result'][ip][port]["is_uncommon"]) {
+              port_color = 'danger';
+            }
+            $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['description']}</span></li>`);
+          }
         }
-        $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['description']}</span></li>`);
       }
+    }
+    else{
+      $('#modal-content').append(`
+        <div class="alert alert-info" role="alert">
+        <i class="mdi mdi-alert-circle-outline me-2"></i> ${task_name} could not fetch any results.
+        </div>
+      `);
     }
     $('#modal-footer').empty();
     $('#modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
