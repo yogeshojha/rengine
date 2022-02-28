@@ -48,14 +48,15 @@ class FetchSubscanResults(APIView):
         if not SubScan.objects.filter(id=subscan_id).exists():
             return Response({'status': False, 'error': 'Subscan {} does not exist'.format(subscan_id)})
 
-        subscan = SubScan.objects.get(id=subscan_id)
-        subscan_data = SubScanResultSerializer(subscan, many=False).data
+        subscan = SubScan.objects.filter(id=subscan_id)
+        print(subscan)
+        subscan_data = SubScanResultSerializer(subscan[0], many=False).data
 
         subscan_results = {}
 
-        if subscan.port_scan:
-            subdomain = subscan.subdomain
-            ips_in_subscan = IpAddress.objects.filter(subscan=subscan)
+        if subscan[0].port_scan:
+            subdomain = subscan[0].subdomain
+            ips_in_subscan = IpAddress.objects.filter(subscan_ids__in=subscan)
             for ip in ips_in_subscan:
                 ports = ip.ports.all()
                 subscan_results[ip.address] = PortSerializer(ports, many=True).data

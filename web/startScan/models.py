@@ -374,7 +374,7 @@ class IpAddress(models.Model):
 	is_cdn = models.BooleanField(default=False)
 	ports = models.ManyToManyField('Port', related_name='ports')
 	# this is used for querying which ip was discovered during subcan
-	subscan = models.ForeignKey(SubScan, on_delete=models.CASCADE, blank=True, null=True)
+	subscan_ids = models.ManyToManyField('SubScan', related_name='subscan_ids')
 
 	def __str__(self):
 		return str(self.address)

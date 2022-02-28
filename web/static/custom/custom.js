@@ -1010,6 +1010,7 @@ function show_subscan_results(subscan_id){
         $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['description']}</span></li>`);
       }
     }
+    $('#modal-footer').empty();
     $('#modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
     $('#modal_dialog').modal('show');
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
