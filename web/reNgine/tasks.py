@@ -110,7 +110,8 @@ def initiate_subtask(
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain.name,
-                file_name=file_name
+                file_name=file_name,
+                subscan=sub_scan
             )
         elif dir_fuzz:
             rand_name = str(time.time()).split('.')[0]
@@ -907,7 +908,8 @@ def port_scanning(
         results_dir,
         domain=None,
         subdomain=None,
-        file_name=None
+        file_name=None,
+        subscan=None
     ):
     '''
     This function is responsible for running the port scan
@@ -972,7 +974,6 @@ def port_scanning(
         port_json_result = open(port_results_file, 'r')
         lines = port_json_result.readlines()
         for line in lines:
-
             json_st = json.loads(line.strip())
             port_number = json_st['port']
             ip_address = json_st['ip']
@@ -1001,19 +1002,20 @@ def port_scanning(
                 # create a new ip
                 ip = IpAddress()
                 ip.address = ip_address
-                ip.ports.add(port)
                 ip.save()
+                ip.ports.add(port)
 
             # if this ip does not belong to host, we also need to add to specific host
             if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
-                subdomain = Subdomain.get(scan_history=scan_history, name=host)
+                subdomain = Subdomain.objects.get(scan_history=scan_history, name=host)
                 subdomain.ip_addresses.add(ip)
                 subdomain.save()
 
-
     except BaseException as exception:
         logging.error(exception)
-        update_last_activity(activity_id, 0)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         port_count = Port.objects.filter(
