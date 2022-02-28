@@ -51,13 +51,16 @@ class FetchSubscanResults(APIView):
         subscan = SubScan.objects.get(id=subscan_id)
         subscan_data = SubScanResultSerializer(subscan, many=False).data
 
-        subscan_results = None
+        subscan_results = {}
 
         if subscan.port_scan:
             subdomain = subscan.subdomain
-            print(subdomain.ip_addresses.all())
+            ips_in_subscan = IpAddress.objects.filter(subscan=subscan)
+            for ip in ips_in_subscan:
+                ports = ip.ports.all()
+                subscan_results[ip.address] = PortSerializer(ports, many=True).data
 
-        return Response({'subscan': subscan_data, 'subscan_results': subscan_results})
+        return Response({'subscan': subscan_data, 'result': subscan_results})
 
 
 class DeleteMultipleRows(APIView):

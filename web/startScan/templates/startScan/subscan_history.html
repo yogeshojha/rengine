@@ -105,9 +105,9 @@ SubScan History
             <span data-toggle="tooltip" data-placement="top" title="{{subscan.start_scan_date}}">{{subscan.start_scan_date|naturaltime}}</br><small>({{subscan.start_scan_date}})</small></span>
           </td>
           <td class="text-center">
-            {% if subscan.scan_status == -1 %}
+            {% if subscan.status == -1 %}
             <span class="badge badge-soft-warning" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
-            {% elif subscan.tatus == 0 %}
+            {% elif subscan.status == 0 %}
             <span class="badge badge-soft-danger">Failed</span>
             {% elif subscan.status == 1 %}
             <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> In Progress</span>

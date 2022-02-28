@@ -1005,6 +1005,10 @@ def port_scanning(
                 ip.save()
                 ip.ports.add(port)
 
+            if subscan:
+                ip.subscan = subscan
+                ip.save()
+
             # if this ip does not belong to host, we also need to add to specific host
             if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
                 subdomain = Subdomain.objects.get(scan_history=scan_history, name=host)
