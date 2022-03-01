@@ -124,7 +124,8 @@ def initiate_subtask(
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain.name,
-                file_name=file_name
+                file_name=file_name,
+                subscan=sub_scan
             )
         elif endpoint:
             rand_name = str(time.time()).split('.')[0]
@@ -137,7 +138,8 @@ def initiate_subtask(
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain,
-                file_name=file_name
+                file_name=file_name,
+                subscan=sub_scan
             )
         elif vuln_scan:
             rand_name = str(time.time()).split('.')[0]
@@ -150,7 +152,8 @@ def initiate_subtask(
                 yaml_configuration,
                 results_dir,
                 subdomain=subdomain,
-                file_name=file_name
+                file_name=file_name,
+                subscan=sub_scan
             )
         task_status = SUCCESS_TASK
 
@@ -462,7 +465,8 @@ def subdomain_scan(
         yaml_configuration,
         results_dir,
         activity_id,
-        out_of_scope_subdomains=None
+        out_of_scope_subdomains=None,
+        subscan=None
     ):
 
     # get all external subdomain enum tools
@@ -1046,7 +1050,8 @@ def directory_fuzz(
         results_dir,
         domain=None,
         subdomain=None,
-        file_name=None
+        file_name=None,
+        subscan=None
     ):
     '''
         This function is responsible for performing directory scan, and currently
@@ -1195,7 +1200,9 @@ def directory_fuzz(
                     subdomain.save()
         except Exception as exception:
             logging.error(exception)
-            update_last_activity(activity_id, 0)
+            if not subscan:
+                update_last_activity(activity_id, 0)
+            raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         send_notification('Directory Bruteforce has been completed for {}.'.format(domain_name))
@@ -1208,8 +1215,9 @@ def fetch_endpoints(
         results_dir,
         domain=None,
         subdomain=None,
-        file_name=None
-        ):
+        file_name=None,
+        subscan=None
+    ):
     '''
         This function is responsible for fetching all the urls associated with target
         and runs HTTP probe
@@ -1357,7 +1365,9 @@ def fetch_endpoints(
                     save_endpoint(endpoint_dict)
     except Exception as e:
         logger.error(e)
-        update_last_activity(activity_id, 0)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_output_file:
         send_files_to_discord(results_dir + '/{}'.format(output_file_name))
@@ -1448,7 +1458,9 @@ def fetch_endpoints(
                     subdomain.save()
     except Exception as exception:
         logging.error(exception)
-        update_last_activity(activity_id, 0)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         endpoint_count = EndPoint.objects.filter(
@@ -1512,7 +1524,8 @@ def vulnerability_scan(
         results_dir,
         domain=None,
         subdomain=None,
-        file_name=None
+        file_name=None,
+        subscan=None
     ):
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
@@ -1752,7 +1765,9 @@ def vulnerability_scan(
 
         except Exception as exception:
             logging.error(exception)
-            update_last_activity(activity_id, 0)
+            if not subscan:
+                update_last_activity(activity_id, 0)
+            raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         info_count = Vulnerability.objects.filter(
