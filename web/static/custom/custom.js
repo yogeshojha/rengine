@@ -974,12 +974,17 @@ function show_subscan_results(subscan_id){
       });
       return;
     }
-    $('#modal-content').empty();
+    $('#xl-modal-title').empty();
+    $('#xl-modal-content').empty();
+    $('#xl-modal-footer').empty();
 
-    $('#modal_title').html(`Scan Results for Sub Scan on Subdomain ${response['subscan']['subdomain_name']}`);
+    $('#xl-modal_title').html(`Sub Scan Results on Subdomain ${response['subscan']['subdomain_name']}`);
     var task_name = '';
     if (response['subscan']['task'] == 'port_scan') {
       task_name = 'Port Scan';
+    }
+    else if (response['subscan']['task'] == 'vulnerability_scan'){
+      task_name = 'Vulnerability Scan';
     }
     var scan_status = '';
     var badge_color = 'danger';
@@ -997,36 +1002,99 @@ function show_subscan_results(subscan_id){
       scan_status = 'Unknown';
     }
 
-    $('#modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">${task_name}</span></span>`);
-    $('#modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
+    $('#xl-modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">${task_name}</span></span>`);
+    $('#xl-modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
 
     if (!$.isEmptyObject(response['result'])) {
       if (response['subscan']['task'] == 'port_scan') {
-        $('#modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
+        $('#xl-modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
         for (var ip in response['result']) {
-          var id_name = `ip_${ip}`;
-          $('#port_results_li').append(`<h5>IP Address: ${ip}</h5>`);
+          var ip_addr = response['result'][ip]['address'];
+          var id_name = `ip_${ip_addr}`;
+          $('#port_results_li').append(`<h5>IP Address: ${ip_addr}</h5>`);
           $('#port_results_li').append(`<ul id="${id_name}"></ul>`);
-          for (var port in response['result'][ip]) {
+          for (var port_obj in response['result'][ip]['ports']) {
+            var port = response['result'][ip]['ports'][port_obj];
             var port_color = 'primary';
-            if (response['result'][ip][port]["is_uncommon"]) {
+            if (port["is_uncommon"]) {
               port_color = 'danger';
             }
-            $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${response['result'][ip][port]['description']}</span></li>`);
+            $('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['description']}</span></li>`);
           }
+        }
+        $('#xl-modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
+      }
+      else if (response['subscan']['task'] == 'vulnerability_scan'){
+        $('#xl-modal-content').append(`</br></br></br><h5> ${response['result'].length} Vulnerabilities Discovered during this subscan on subdomain ${response['subscan']['subdomain_name']}</h5>`);
+        $('#xl-modal-content').append(`<ol id="vuln_results_ol" class="list-group list-group-numbered"></ol>`);
+        for (var vuln in response['result']) {
+          var vuln_obj = response['result'][vuln];
+          var severity_badge_color = 'danger';
+          if (vuln_obj['severity'] == 'Info') {
+            severity_badge_color = 'primary';
+          }
+          else if (vuln_obj['severity'] == 'Low' || vuln_obj['severity'] == 'Medium'){
+            severity_badge_color = 'warning';
+          }
+
+          var description = vuln_obj['description'] ? vuln_obj['description']: '';
+
+          var matcher = vuln_obj['matcher_name'] ? '<span class="badge badge-soft-primary">' + vuln_obj['matcher_name'] + '</span>': '';
+
+          var cve_ids = '';
+
+          if (vuln_obj['cve_ids']){
+            for (var cve in vuln_obj['cve_ids']) {
+              cve_ids += `<span class="ms-1 badge badge-soft-danger" data-toggle="tooltip" title="CVE ID">${vuln_obj['cve_ids'][cve]}</span>`;
+            }
+          }
+
+          var cwe_ids = '';
+
+          if (vuln_obj['cwe_ids']){
+            for (var cwe in vuln_obj['cwe_ids']) {
+              cwe_ids += `<span class="ms-1 badge badge-soft-danger" data-toggle="tooltip" title="CVE ID">${vuln_obj['cwe_ids'][cwe]}</span>`;
+            }
+          }
+
+          var cwe_cve = cwe_ids + cve_ids;
+          if (cwe_cve) {
+            cwe_cve += '<br>';
+          }
+
+          var rand_id = get_randid();
+
+          if (vuln_obj['extracted_results'] && vuln_obj['extracted_results'].length > 0) {
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${rand_id}" aria-expanded="false" aria-controls="results_${rand_id}}">Extracted Results <i class="fe-chevron-down"></i></a>`;
+            description += `<div class="collapse" id="results_${rand_id}"><ul>`;
+            vuln_obj['extracted_results'].forEach(results => {
+              description += `<li>${results}</li>`;
+            });
+            description += '</ul></div>';
+          }
+
+          $('#vuln_results_ol').append(`
+            <li class="list-group-item d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+              <div class="fw-bold">${vuln_obj['name']}</div>
+              ${cwe_cve}
+              ${matcher}
+              ${description}
+              <br><a href="${vuln_obj['http_url']}">${vuln_obj['http_url']}</a>
+              </div>
+              <span class="badge bg-${severity_badge_color} rounded-pill"><span class="ms-2 me-2">${vuln_obj['severity']}</span></span>
+            </li>`);
         }
       }
     }
     else{
-      $('#modal-content').append(`
+      $('#xl-modal-content').append(`
         <div class="alert alert-info" role="alert">
         <i class="mdi mdi-alert-circle-outline me-2"></i> ${task_name} could not fetch any results.
         </div>
       `);
     }
-    $('#modal-footer').empty();
-    $('#modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
-    $('#modal_dialog').modal('show');
+    $('#modal_xl_scroll_dialog').modal('show');
     $("body").tooltip({ selector: '[data-toggle=tooltip]' });
   });
 }

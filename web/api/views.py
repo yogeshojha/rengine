@@ -49,17 +49,17 @@ class FetchSubscanResults(APIView):
             return Response({'status': False, 'error': 'Subscan {} does not exist'.format(subscan_id)})
 
         subscan = SubScan.objects.filter(id=subscan_id)
-        print(subscan)
         subscan_data = SubScanResultSerializer(subscan[0], many=False).data
 
-        subscan_results = {}
+        subscan_results = None
 
         if subscan[0].port_scan:
-            subdomain = subscan[0].subdomain
             ips_in_subscan = IpAddress.objects.filter(ip_subscan_ids__in=subscan)
-            for ip in ips_in_subscan:
-                ports = ip.ports.all()
-                subscan_results[ip.address] = PortSerializer(ports, many=True).data
+            subscan_results = IpSerializer(ips_in_subscan, many=True).data
+
+        elif subscan[0].vulnerability_scan:
+            vulns_in_subscan = Vulnerability.objects.filter(vuln_subscan_ids__in=subscan)
+            subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
 
         return Response({'subscan': subscan_data, 'result': subscan_results})
 
