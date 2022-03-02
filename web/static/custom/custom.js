@@ -1074,6 +1074,16 @@ function show_subscan_results(subscan_id){
           }
 
           var rand_id = get_randid();
+          if (vuln_obj['references'] && vuln_obj['references'].length > 0) {
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${rand_id}" aria-expanded="false" aria-controls="references_${rand_id}">References <i class="fe-chevron-down"></i></a>`;
+            description += `<div class="collapse" id="references_${rand_id}"><ul>`;
+            vuln_obj['references'].forEach(reference => {
+              description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+            });
+            description += '</ul></div>';
+          }
+
+          var rand_id = get_randid();
           if (vuln_obj['curl_command']) {
             description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${rand_id}" aria-expanded="false" aria-controls="curl_command_${rand_id}">CURL command <i class="fe-terminal"></i></a>`;
             description += `<div class="collapse" id="curl_command_${rand_id}"><ul>`;

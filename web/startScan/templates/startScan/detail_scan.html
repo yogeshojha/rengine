@@ -2276,7 +2276,6 @@ $(document).ready(function(){
 							}
 
 							if (row['curl_command']) {
-								console.log(row['curl_command']);
 								description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
 								description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
 								description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
