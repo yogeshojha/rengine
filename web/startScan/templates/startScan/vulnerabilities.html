@@ -56,6 +56,11 @@ All Vulnerabilities
 							<th>Discovered on</th>
 							<th>Status</th>
 							<th class="text-center dt-no-sorting">Action</th>
+
+							<!-- extras -->
+							<th>Extracted Results</th>
+							<th>CURL command</th>
+							<th>Matcher Name</th>
 						</tr>
 					</thead>
 				</table>
@@ -120,11 +125,16 @@ $(document).ready(function() {
 			{'data': 'open_status'},
 
 			{'data': 'hackerone_report_id'},
+
+			// extras
+			{'data': 'extracted_results'},
+			{'data': 'curl_command'},
+			{'data': 'matcher_name'},
 		],
 		"columnDefs": [
 			{ "orderable": false, "targets": [8, 11]},
 			{
-				"targets": [3, 4, 5, 9, 12],
+				"targets": [3, 4, 5, 9, 12, 16, 17, 18],
 				"visible": false,
 				"searchable": true,
 			},
@@ -265,14 +275,37 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					description = row['description'] ? `<div>${row['description']}</div>` : '';
+					// show extracted results, and show matcher names, matcher names can be in badges
+					if (row['matcher_name']) {
+						description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
+					}
+
+					if (row['extracted_results'] && row['extracted_results'].length > 0) {
+						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
+						description += `<div class="collapse" id="results_${row['id']}"><ul>`;
+						row['extracted_results'].forEach(results => {
+							description += `<li>${results}</li>`;
+						});
+						description += '</ul></div>';
+					}
+
 					if (row['references'] && row['references'].length > 0) {
-						description += `<br><a class="#" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
+						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
 						description += `<div class="collapse" id="references_${row['id']}"><ul>`;
 						row['references'].forEach(reference => {
 							description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
 						});
 						description += '</ul></div>';
 					}
+
+					if (row['curl_command']) {
+						console.log(row['curl_command']);
+						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
+						description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
+						description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
+						description += '</ul></div>';
+					}
+
 					return description;
 				},
 				"targets": 11,
