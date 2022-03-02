@@ -1010,7 +1010,7 @@ def port_scanning(
                 ip.ports.add(port)
 
             if subscan:
-                ip.subscan_ids.add(subscan)
+                ip.ip_subscan_ids.add(subscan)
                 ip.save()
 
             # if this ip does not belong to host, we also need to add to specific host
@@ -1711,6 +1711,9 @@ def vulnerability_scan(
                         if 'reference' in json_st['info']:
                             vulnerability.references = json_st['info']['reference']
 
+                        if 'matcher-name' in json_st:
+                            vulnerability.matcher_name = json_st['matcher_name']
+
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
                             # also save matched at as url endpoint
@@ -1724,8 +1727,13 @@ def vulnerability_scan(
                                 })
                                 save_endpoint(endpoint_dict)
                                 logger.info('Endpoint {} created!'.format(json_st['matched-at']))
-                        if 'extracted_results' in json_st:
-                            vulnerability.extracted_results = json_st['extracted_results']
+
+                        if 'curl-command' in json_st:
+                            vulnerability.curl_command = json_st['curl-command']
+
+                        if 'extracted-results' in json_st:
+                            vulnerability.extracted_results = json_st['extracted-results']
+
                         if 'classification' in json_st['info']:
                             if 'cve-id' in json_st['info']['classification']:
                                 vulnerability.cve_ids = json_st['info']['classification']['cve-id']
@@ -1735,10 +1743,15 @@ def vulnerability_scan(
                                 vulnerability.cvss_metrics = json_st['info']['classification']['cvss-metrics']
                             if 'cvss-score' in json_st['info']['classification']:
                                 vulnerability.cvss_score = json_st['info']['classification']['cvss-score']
+
                         vulnerability.type = json_st['type']
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
+
+                        if subscan:
+                            vulnerability.vuln_subscan_ids.add(subscan)
+                            vulnerability.save()
 
                         # send notification for all vulnerabilities except info
                         if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:

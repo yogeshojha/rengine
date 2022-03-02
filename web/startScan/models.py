@@ -315,6 +315,7 @@ class Vulnerability(models.Model):
 	template = models.CharField(max_length=100)
 	template_url = models.CharField(max_length=200, null=True, blank=True)
 	template_id = models.CharField(max_length=200, null=True, blank=True)
+	matcher_name = models.CharField(max_length=500, null=True, blank=True)
 	name = models.CharField(max_length=500)
 	severity = models.IntegerField()
 	description = models.CharField(max_length=10000, null=True, blank=True)
@@ -336,11 +337,14 @@ class Vulnerability(models.Model):
 	)
 	cvss_metrics = models.CharField(max_length=150, null=True, blank=True)
 	cvss_score = models.FloatField(null=True, blank=True, default=None)
+	curl_command = models.CharField(max_length=1500, null=True, blank=True)
 	type = models.CharField(max_length=50, null=True, blank=True)
 	http_url = models.CharField(max_length=1000, null=True)
 	discovered_date = models.DateTimeField(null=True)
 	open_status = models.BooleanField(null=True, blank=True, default=True)
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
+	# used for subscans
+	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids')
 
 	def __str__(self):
 		return self.name
@@ -374,7 +378,7 @@ class IpAddress(models.Model):
 	is_cdn = models.BooleanField(default=False)
 	ports = models.ManyToManyField('Port', related_name='ports')
 	# this is used for querying which ip was discovered during subcan
-	subscan_ids = models.ManyToManyField('SubScan', related_name='subscan_ids')
+	ip_subscan_ids = models.ManyToManyField('SubScan', related_name='ip_subscan_ids')
 
 	def __str__(self):
 		return str(self.address)

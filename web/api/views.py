@@ -56,7 +56,7 @@ class FetchSubscanResults(APIView):
 
         if subscan[0].port_scan:
             subdomain = subscan[0].subdomain
-            ips_in_subscan = IpAddress.objects.filter(subscan_ids__in=subscan)
+            ips_in_subscan = IpAddress.objects.filter(ip_subscan_ids__in=subscan)
             for ip in ips_in_subscan:
                 ports = ip.ports.all()
                 subscan_results[ip.address] = PortSerializer(ports, many=True).data
