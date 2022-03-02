@@ -1712,7 +1712,7 @@ def vulnerability_scan(
                             vulnerability.references = json_st['info']['reference']
 
                         if 'matcher-name' in json_st:
-                            vulnerability.matcher_name = json_st['matcher_name']
+                            vulnerability.matcher_name = json_st['matcher-name']
 
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
