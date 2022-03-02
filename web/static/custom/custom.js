@@ -1073,6 +1073,14 @@ function show_subscan_results(subscan_id){
             description += '</ul></div>';
           }
 
+          var rand_id = get_randid();
+          if (vuln_obj['curl_command']) {
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${rand_id}" aria-expanded="false" aria-controls="curl_command_${rand_id}">CURL command <i class="fe-terminal"></i></a>`;
+            description += `<div class="collapse" id="curl_command_${rand_id}"><ul>`;
+            description += `<li><code>${htmlEncode(vuln_obj['curl_command'])}</code></li>`;
+            description += '</ul></div>';
+          }
+
           $('#vuln_results_ol').append(`
             <li class="list-group-item d-flex justify-content-between align-items-start">
               <div class="ms-2 me-auto">
