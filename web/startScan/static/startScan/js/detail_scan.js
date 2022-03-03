@@ -95,8 +95,8 @@ function get_endpoints(scan_history_id, gf_tags){
       },
       {
         "render": function ( data, type, row ) {
-          tech_badge = '';
-          web_server = '';
+          var tech_badge = '';
+          var web_server = '';
           if (row['technologies']){
             tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true);
           }
@@ -106,7 +106,7 @@ function get_endpoints(scan_history_id, gf_tags){
           }
 
           var url = split(data, 70);
-          action_icons = `
+          var action_icons = `
           <div class="float-left subdomain-table-action-icons mt-2">
           <span class="m-1">
           <a href="javascript:;" data-clipboard-action="copy" class="badge-link text-primary copyable text-primary" data-toggle="tooltip" data-placement="top" title="Copy Url!" data-clipboard-target="#url-${row['id']}" id="#url-${row['id']}" onclick="setTooltip(this.id, 'Copied!')">
@@ -124,17 +124,9 @@ function get_endpoints(scan_history_id, gf_tags){
         "render": function ( data, type, row ) {
           // display badge based on http status
           // green for http status 2XX, orange for 3XX and warning for everything else
-          if (data >= 200 && data < 300) {
-            return "<span class='badge  badge-soft-success'>"+data+"</span>";
+          if (data) {
+            return get_http_status_badge(data);
           }
-          else if (data >= 300 && data < 400) {
-            return "<span class='badge  badge-soft-warning'>"+data+"</span>";
-          }
-          else if (data == 0){
-            // datatable throws error when no data is returned
-            return "";
-          }
-          return "<span class='badge  badge-soft-danger'>"+data+"</span>";
 
         },
         "targets": 2,

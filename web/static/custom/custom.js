@@ -41,6 +41,10 @@ function truncate(str, n){
   return (str.length > n) ? str.substr(0, n-1) + '&hellip;' : str;
 };
 
+function return_str_if_not_null(val){
+  return val ? val : '';
+}
+
 // seperate hostname and url
 // Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
 function getParsedURL(url) {
@@ -189,18 +193,15 @@ function test_white_space(x) {
 // span values function will seperate the values by comma and put badge around it
 function parse_comma_values_into_span(data, color, outline=null)
 {
-  if(outline)
-  {
+  if (data) {
     var badge = `<span class='badge badge-soft-`+color+` m-1'>`;
+    var data_with_span ="";
+    data.split(/\s*,\s*/).forEach(function(split_vals) {
+      data_with_span+=badge + split_vals + "</span>";
+    });
+    return data_with_span;
   }
-  else {
-    var badge = `<span class='badge badge-soft-`+color+` m-1'>`;
-  }
-  var data_with_span ="";
-  data.split(/\s*,\s*/).forEach(function(split_vals) {
-    data_with_span+=badge + split_vals + "</span>";
-  });
-  return data_with_span;
+  return '';
 }
 
 // Source: https://stackoverflow.com/a/54733055
@@ -350,14 +351,18 @@ function hide_all_tooltips() {
 
 
 function get_response_time_text(response_time){
-  var text_color = 'danger';
-  if (response_time < 0.5){
-    text_color = 'success'
+
+  if (response_time){
+    var text_color = 'danger';
+    if (response_time < 0.5){
+      text_color = 'success'
+    }
+    else if (response_time >= 0.5 && response_time < 1){
+      text_color = 'warning'
+    }
+    return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
   }
-  else if (response_time >= 0.5 && response_time < 1){
-    text_color = 'warning'
-  }
-  return `<span class="text-${text_color}">${response_time.toFixed(4)}s</span>`;
+  return '';
 }
 
 function parse_technology(data, color, outline=null, scan_id=null)
@@ -978,7 +983,6 @@ function show_subscan_results(subscan_id){
     $('#xl-modal-content').empty();
     $('#xl-modal-footer').empty();
 
-    $('#xl-modal_title').html(`Sub Scan Results on Subdomain ${response['subscan']['subdomain_name']}`);
     var task_name = '';
     if (response['subscan']['task'] == 'port_scan') {
       task_name = 'Port Scan';
@@ -986,6 +990,10 @@ function show_subscan_results(subscan_id){
     else if (response['subscan']['task'] == 'vulnerability_scan'){
       task_name = 'Vulnerability Scan';
     }
+    else if (response['subscan']['task'] == 'fetch_url'){
+      task_name = 'EndPoint Gathering';
+    }
+    $('#xl-modal_title').html(`${task_name} Results on ${response['subscan']['subdomain_name']}`);
     var scan_status = '';
     var badge_color = 'danger';
     if (response['subscan']['status'] == 0) {
@@ -1002,8 +1010,7 @@ function show_subscan_results(subscan_id){
       scan_status = 'Unknown';
     }
 
-    $('#xl-modal-content').append(`<span class="float-start">Scan Type: <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Scan Type">${task_name}</span></span>`);
-    $('#xl-modal-content').append(`<span class="float-end">Scan Status: <span class="badge badge-soft-${badge_color}" data-toggle="tooltip" data-placement="top" title="Scan Status">${scan_status}</span></span>`);
+    $('#xl-modal-content').append(`<div>Scan Status: <span class="badge bg-${badge_color}">${scan_status}</span></div>`);
 
     if (!$.isEmptyObject(response['result'])) {
       if (response['subscan']['task'] == 'port_scan') {
@@ -1093,26 +1100,112 @@ function show_subscan_results(subscan_id){
 
           $('#vuln_results_ol').append(`
             <li class="list-group-item d-flex justify-content-between align-items-start">
-              <div class="ms-2 me-auto">
-              <div class="fw-bold">${vuln_obj['name']}</div>
-              ${cwe_cve}
-              ${matcher}
-              ${description}
-              <br><a href="${vuln_obj['http_url']}">${vuln_obj['http_url']}</a>
-              </div>
-              <span class="badge bg-${severity_badge_color} rounded-pill"><span class="ms-2 me-2">${vuln_obj['severity']}</span></span>
+            <div class="ms-2 me-auto">
+            <div class="fw-bold">${vuln_obj['name']}</div>
+            ${cwe_cve}
+            ${matcher}
+            ${description}
+            <br><a href="${vuln_obj['http_url']}">${vuln_obj['http_url']}</a>
+            </div>
+            <span class="badge bg-${severity_badge_color} rounded-pill"><span class="ms-2 me-2">${vuln_obj['severity']}</span></span>
             </li>`);
+          }
+        }
+        else if (response['subscan']['task'] == 'fetch_url') {
+          $('#xl-modal-content').append(`
+            <div class="">
+            <table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
+            <thead>
+            <tr>
+            <th>HTTP URL</th>
+            <th>Status</th>
+            <th>Page Title</th>
+            <th>Tags</th>
+            <th>Content Type</th>
+            <th>Content Length</th>
+            <th>Response Time</th>
+            </tr>
+            </thead>
+            <tbody id="endpoint_tbody">
+            </tbody>
+            </table>
+            </div>
+          `);
+
+          $('#endpoint_tbody').empty();
+          for (var endpoint_obj in response['result']) {
+            var endpoint = response['result'][endpoint_obj];
+
+            var tech_badge = '';
+            var web_server = '';
+            if (endpoint['technologies']){
+              tech_badge = parse_technology(endpoint['technologies'], "primary", outline=true);
+            }
+
+            if (endpoint['webserver']) {
+              web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
+            }
+
+            var url = split(endpoint['http_url'], 70);
+            var rand_id = get_randid();
+            tech_badge += web_server;
+
+            var http_url_td = "<a href='"+ endpoint['http_url'] + `' target='_blank' class='text-primary'>`+ url +"</a>" + tech_badge;
+
+            $('#endpoint_tbody').append(`
+              <tr>
+              <td>${http_url_td}</td>
+              <td>${get_http_status_badge(endpoint['http_status'])}</td>
+              <td>${return_str_if_not_null(endpoint['page_title'])}</td>
+              <td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
+              <td>${return_str_if_not_null(endpoint['content_type'])}</td>
+              <td>${return_str_if_not_null(endpoint['content_length'])}</td>
+              <td>${get_response_time_text(endpoint['response_time'])}</td>
+              </tr>
+            `);
+          }
+
+          $("#endpoint-modal-datatable").DataTable({
+            "oLanguage": {
+              "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+              "sInfo": "Showing page _PAGE_ of _PAGES_",
+              "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+              "sSearchPlaceholder": "Search...",
+              "sLengthMenu": "Results :  _MENU_",
+            },
+            "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+            "<'table-responsive'tr>" +
+            "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+            "order": [[ 5, "desc" ]],
+            drawCallback: function() {
+              $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+            }
+          });
         }
       }
-    }
-    else{
-      $('#xl-modal-content').append(`
-        <div class="alert alert-info" role="alert">
-        <i class="mdi mdi-alert-circle-outline me-2"></i> ${task_name} could not fetch any results.
-        </div>
-      `);
-    }
-    $('#modal_xl_scroll_dialog').modal('show');
-    $("body").tooltip({ selector: '[data-toggle=tooltip]' });
-  });
+      else{
+        $('#xl-modal-content').append(`
+          <div class="alert alert-info" role="alert">
+          <i class="mdi mdi-alert-circle-outline me-2"></i> ${task_name} could not fetch any results.
+          </div>
+          `);
+        }
+        $('#modal_xl_scroll_dialog').modal('show');
+        $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+      });
+  }
+
+
+function get_http_status_badge(data){
+  if (data >= 200 && data < 300) {
+    return "<span class='badge  badge-soft-success'>"+data+"</span>";
+  }
+  else if (data >= 300 && data < 400) {
+    return "<span class='badge  badge-soft-warning'>"+data+"</span>";
+  }
+  else if (data == 0){
+    // datatable throws error when no data is returned
+    return "";
+  }
+  return "<span class='badge  badge-soft-danger'>"+data+"</span>";
 }
