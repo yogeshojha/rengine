@@ -1361,6 +1361,7 @@ def fetch_endpoints(
                         'target_domain': domain,
                         'subdomain': subdomain,
                         'http_url': http_url,
+                        'subscan': subscan
                     })
                     save_endpoint(endpoint_dict)
     except Exception as e:
@@ -1885,6 +1886,10 @@ def save_endpoint(endpoint_dict):
     endpoint.content_length = endpoint_dict.get('content_length') if 'content_length' in endpoint_dict else 0
     endpoint.is_default = endpoint_dict.get('is_default') if 'is_default' in endpoint_dict else False
     endpoint.save()
+
+    if endpoint_dict.get('subscan'):
+        endpoint.endpoint_subscan_ids.add(endpoint_dict.get('subscan'))
+        endpoint.save()
 
     return endpoint
 

@@ -282,6 +282,8 @@ class EndPoint(models.Model):
 	is_default = models.BooleanField(null=True, blank=True, default=False)
 	matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
 	technologies = models.ManyToManyField('Technology', related_name='technology')
+	# used for subscans
+	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids')
 
 	def __str__(self):
 		return self.http_url
