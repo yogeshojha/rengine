@@ -204,6 +204,28 @@ function parse_comma_values_into_span(data, color, outline=null)
   return '';
 }
 
+function get_severity_badge(severity){
+  switch (severity) {
+    case 'Info':
+    return "<span class='badge badge-soft-primary'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
+    break;
+    case 'Low':
+    return "<span class='badge badge-low'>&nbsp;&nbsp;LOW&nbsp;&nbsp;</span>";
+    break;
+    case 'Medium':
+    return "<span class='badge badge-soft-warning'>&nbsp;&nbsp;MEDIUM&nbsp;&nbsp;</span>";
+    break;
+    case 'High':
+    return "<span class='badge badge-soft-danger'>&nbsp;&nbsp;HIGH&nbsp;&nbsp;</span>";
+    break;
+    case 'Critical':
+    return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
+    break;
+    default:
+    return "";
+  }
+}
+
 // Source: https://stackoverflow.com/a/54733055
 function typingEffect(words, id, i) {
   let word = words[i].split("");
@@ -1032,155 +1054,243 @@ function show_subscan_results(subscan_id){
         $('#xl-modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);
       }
       else if (response['subscan']['task'] == 'vulnerability_scan'){
-        $('#xl-modal-content').append(`</br></br></br><h5> ${response['result'].length} Vulnerabilities Discovered during this subscan on subdomain ${response['subscan']['subdomain_name']}</h5>`);
+        $('#xl-modal-content').append(`<h5> ${response['result'].length} Vulnerabilities Discovered on subdomain ${response['subscan']['subdomain_name']}</h5>`);
         $('#xl-modal-content').append(`<ol id="vuln_results_ol" class="list-group list-group-numbered"></ol>`);
+        $('#xl-modal-content').append(`
+          <div class="">
+          <table id="vulnerability-modal-datatable" class="table dt-responsive nowrap w-100">
+          <thead>
+          <tr>
+          <th>Type</th>
+          <th>Title</th>
+          <th class="text-center">Severity</th>
+          <th>CVSS Score</th>
+          <th>CVE/CWE</th>
+          <th>Vulnerable URL</th>
+          <th>Description</th>
+          <th class="text-center dt-no-sorting">Action</th>
+          </tr>
+          </thead>
+          <tbody id="vuln_tbody">
+          </tbody>
+          </table>
+          </div>
+          `);
+
+          $('#vuln_tbody').empty();
         for (var vuln in response['result']) {
           var vuln_obj = response['result'][vuln];
-          var severity_badge_color = 'danger';
-          if (vuln_obj['severity'] == 'Info') {
-            severity_badge_color = 'primary';
+          var vuln_type = vuln_obj['type'] ? `<span class="badge badge-soft-primary">&nbsp;&nbsp;${vuln_obj['type'].toUpperCase()}&nbsp;&nbsp;</span>` : '';
+
+          var tags = '';
+          var cvss_metrics_badge = '';
+          switch (vuln_obj['severity']) {
+            case 'Info':
+            color = 'primary'
+            badge_color = 'soft-primary'
+            break;
+            case 'Low':
+            color = 'low'
+            badge_color = 'soft-warning'
+            break;
+            case 'Medium':
+            color = 'warning'
+            badge_color = 'soft-warning'
+            break;
+            case 'High':
+            color = 'danger'
+            badge_color = 'soft-danger'
+            break;
+            case 'Critical':
+            color = 'critical'
+            badge_color = 'critical'
+            break;
+            default:
           }
-          else if (vuln_obj['severity'] == 'Low' || vuln_obj['severity'] == 'Medium'){
-            severity_badge_color = 'warning';
+          if (vuln_obj['tags']) {
+            tags = '<div>';
+            vuln_obj['tags'].forEach(tag => {
+                tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag}</span>`;
+            });
+            tags += '</div>';
           }
+          if (vuln_obj['cvss_metrics']) {
+            cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${vuln_obj['cvss_metrics']}</span></div>`;
+          }
+          var vuln_title = `<b class="text-${color}">` + vuln_obj['name'] + `</b>` + cvss_metrics_badge + tags;
 
-          var description = vuln_obj['description'] ? vuln_obj['description']: '';
-
-          var matcher = vuln_obj['matcher_name'] ? '<span class="badge badge-soft-primary">' + vuln_obj['matcher_name'] + '</span>': '';
-
-          var cve_ids = '';
-
-          if (vuln_obj['cve_ids']){
-            for (var cve in vuln_obj['cve_ids']) {
-              cve_ids += `<span class="ms-1 badge badge-soft-danger" data-toggle="tooltip" title="CVE ID">${vuln_obj['cve_ids'][cve]}</span>`;
+          var badge = 'danger';
+          var cvss_score = '';
+          if (vuln_obj['cvss_score']) {
+            if (vuln_obj['cvss_score'] > 0.1 && vuln_obj['cvss_score'] <= 3.9) {
+              badge = 'info';
             }
-          }
-
-          var cwe_ids = '';
-
-          if (vuln_obj['cwe_ids']){
-            for (var cwe in vuln_obj['cwe_ids']) {
-              cwe_ids += `<span class="ms-1 badge badge-soft-danger" data-toggle="tooltip" title="CVE ID">${vuln_obj['cwe_ids'][cwe]}</span>`;
+            else if (vuln_obj['cvss_score'] > 3.9 && vuln_obj['cvss_score'] <= 6.9) {
+              badge = 'warning';
             }
+            else if (vuln_obj['cvss_score'] > 6.9 && vuln_obj['cvss_score'] <= 8.9) {
+              badge = 'danger';
+            }
+            cvss_score = `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${vuln_obj['cvss_score']}</span>`;
           }
 
-          var cwe_cve = cwe_ids + cve_ids;
-          if (cwe_cve) {
-            cwe_cve += '<br>';
+          var cve_cwe_badge = '<div>';
+          if (vuln_obj['cve_ids']) {
+            vuln_obj['cve_ids'].forEach(cve => {
+                cve_cwe_badge += `<a href="https://google.com/search?q=${cve.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.toUpperCase()}</a>`;
+            });
           }
+          if (vuln_obj['cwe_ids']) {
+            vuln_obj['cwe_ids'].forEach(cwe => {
+                cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.toUpperCase()}</a>`;
+            });
+          }
+          cve_cwe_badge += '</div>';
 
-          var rand_id = get_randid();
+          var http_url = vuln_obj['http_url'].includes('http') ? "<a href='"+htmlEncode(vuln_obj['http_url'])+"' target='_blank' class='text-danger'>"+htmlEncode(vuln_obj['http_url'])+"</a>" : vuln_obj['http_url'];
+
+          var description = vuln_obj['description'] ? `<div>${vuln_obj['description']}</div>` : '';
+          // show extracted results, and show matcher names, matcher names can be in badges
+          if (vuln_obj['matcher_name']) {
+            description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${vuln_obj['matcher_name']}</span>`;
+          }
 
           if (vuln_obj['extracted_results'] && vuln_obj['extracted_results'].length > 0) {
-            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${rand_id}" aria-expanded="false" aria-controls="results_${rand_id}}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-            description += `<div class="collapse" id="results_${rand_id}"><ul>`;
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${vuln_obj['id']}" aria-expanded="false" aria-controls="results_${vuln_obj['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
+            description += `<div class="collapse" id="results_${vuln_obj['id']}"><ul>`;
             vuln_obj['extracted_results'].forEach(results => {
               description += `<li>${results}</li>`;
             });
             description += '</ul></div>';
           }
 
-          var rand_id = get_randid();
           if (vuln_obj['references'] && vuln_obj['references'].length > 0) {
-            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${rand_id}" aria-expanded="false" aria-controls="references_${rand_id}">References <i class="fe-chevron-down"></i></a>`;
-            description += `<div class="collapse" id="references_${rand_id}"><ul>`;
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${vuln_obj['id']}" aria-expanded="false" aria-controls="references_${vuln_obj['id']}">References <i class="fe-chevron-down"></i></a>`;
+            description += `<div class="collapse" id="references_${vuln_obj['id']}"><ul>`;
             vuln_obj['references'].forEach(reference => {
               description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
             });
             description += '</ul></div>';
           }
 
-          var rand_id = get_randid();
           if (vuln_obj['curl_command']) {
-            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${rand_id}" aria-expanded="false" aria-controls="curl_command_${rand_id}">CURL command <i class="fe-terminal"></i></a>`;
-            description += `<div class="collapse" id="curl_command_${rand_id}"><ul>`;
+            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${vuln_obj['id']}" aria-expanded="false" aria-controls="curl_command_${vuln_obj['id']}">CURL command <i class="fe-terminal"></i></a>`;
+            description += `<div class="collapse" id="curl_command_${vuln_obj['id']}"><ul>`;
             description += `<li><code>${htmlEncode(vuln_obj['curl_command'])}</code></li>`;
             description += '</ul></div>';
           }
 
-          $('#vuln_results_ol').append(`
-            <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-            <div class="fw-bold">${vuln_obj['name']}</div>
-            ${cwe_cve}
-            ${matcher}
-            ${description}
-            <br><a href="${vuln_obj['http_url']}">${vuln_obj['http_url']}</a>
-            </div>
-            <span class="badge bg-${severity_badge_color} rounded-pill"><span class="ms-2 me-2">${vuln_obj['severity']}</span></span>
-            </li>`);
-          }
-        }
-        else if (response['subscan']['task'] == 'fetch_url') {
-          $('#xl-modal-content').append(`
-            <div class="">
-            <table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
-            <thead>
+          var action_icon = vuln_obj['hackerone_report_id'] ? '' : `
+          <div class="btn-group mb-2 dropstart">
+          <a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+          </a>
+          <div class="dropdown-menu" style="">
+          <a class="dropdown-item" href="javascript:report_hackerone(${vuln_obj['id']}, '${vuln_obj['severity']}');">Report to Hackerone</a>
+          </div>
+          </div>`;
+
+          $('#vuln_tbody').append(`
             <tr>
-            <th>HTTP URL</th>
-            <th>Status</th>
-            <th>Page Title</th>
-            <th>Tags</th>
-            <th>Content Type</th>
-            <th>Content Length</th>
-            <th>Response Time</th>
+            <td>${vuln_type}</td>
+            <td>${vuln_title}</td>
+            <td class="text-center">${get_severity_badge(vuln_obj['severity'])}</td>
+            <td class="text-center">${cvss_score}</td>
+            <td>${cve_cwe_badge}</td>
+            <td>${http_url}</td>
+            <td>${description}</td>
+            <td>${action_icon}</td>
             </tr>
-            </thead>
-            <tbody id="endpoint_tbody">
-            </tbody>
-            </table>
-            </div>
           `);
+        }
 
-          $('#endpoint_tbody').empty();
-          for (var endpoint_obj in response['result']) {
-            var endpoint = response['result'][endpoint_obj];
+        $("#vulnerability-modal-datatable").DataTable({
+          "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+          },
+          "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+          "<'table-responsive'tr>" +
+          "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+          "order": [[ 5, "desc" ]],
+          drawCallback: function() {
+            $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+          }
+        });
+      }
+      else if (response['subscan']['task'] == 'fetch_url') {
+        $('#xl-modal-content').append(`
+          <div class="">
+          <table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
+          <thead>
+          <tr>
+          <th>HTTP URL</th>
+          <th>Status</th>
+          <th>Page Title</th>
+          <th>Tags</th>
+          <th>Content Type</th>
+          <th>Content Length</th>
+          <th>Response Time</th>
+          </tr>
+          </thead>
+          <tbody id="endpoint_tbody">
+          </tbody>
+          </table>
+          </div>
+        `);
 
-            var tech_badge = '';
-            var web_server = '';
-            if (endpoint['technologies']){
-              tech_badge = parse_technology(endpoint['technologies'], "primary", outline=true);
-            }
+        $('#endpoint_tbody').empty();
+        for (var endpoint_obj in response['result']) {
+          var endpoint = response['result'][endpoint_obj];
 
-            if (endpoint['webserver']) {
-              web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
-            }
-
-            var url = split(endpoint['http_url'], 70);
-            var rand_id = get_randid();
-            tech_badge += web_server;
-
-            var http_url_td = "<a href='"+ endpoint['http_url'] + `' target='_blank' class='text-primary'>`+ url +"</a>" + tech_badge;
-
-            $('#endpoint_tbody').append(`
-              <tr>
-              <td>${http_url_td}</td>
-              <td>${get_http_status_badge(endpoint['http_status'])}</td>
-              <td>${return_str_if_not_null(endpoint['page_title'])}</td>
-              <td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
-              <td>${return_str_if_not_null(endpoint['content_type'])}</td>
-              <td>${return_str_if_not_null(endpoint['content_length'])}</td>
-              <td>${get_response_time_text(endpoint['response_time'])}</td>
-              </tr>
-            `);
+          var tech_badge = '';
+          var web_server = '';
+          if (endpoint['technologies']){
+            tech_badge = '<div>' + parse_technology(endpoint['technologies'], "primary", outline=true);
           }
 
-          $("#endpoint-modal-datatable").DataTable({
-            "oLanguage": {
-              "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-              "sInfo": "Showing page _PAGE_ of _PAGES_",
-              "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-              "sSearchPlaceholder": "Search...",
-              "sLengthMenu": "Results :  _MENU_",
-            },
-            "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
-            "<'table-responsive'tr>" +
-            "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-            "order": [[ 5, "desc" ]],
-            drawCallback: function() {
-              $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
-            }
-          });
+          if (endpoint['webserver']) {
+            web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
+          }
+
+          var url = split(endpoint['http_url'], 70);
+          var rand_id = get_randid();
+          tech_badge += web_server + '</div>';
+
+          var http_url_td = "<a href='"+ endpoint['http_url'] + `' target='_blank' class='text-primary'>`+ url +"</a>" + tech_badge;
+
+          $('#endpoint_tbody').append(`
+            <tr>
+            <td>${http_url_td}</td>
+            <td>${get_http_status_badge(endpoint['http_status'])}</td>
+            <td>${return_str_if_not_null(endpoint['page_title'])}</td>
+            <td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
+            <td>${return_str_if_not_null(endpoint['content_type'])}</td>
+            <td>${return_str_if_not_null(endpoint['content_length'])}</td>
+            <td>${get_response_time_text(endpoint['response_time'])}</td>
+            </tr>
+          `);
+        }
+
+        $("#endpoint-modal-datatable").DataTable({
+          "oLanguage": {
+            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+            "sInfo": "Showing page _PAGE_ of _PAGES_",
+            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+            "sSearchPlaceholder": "Search...",
+            "sLengthMenu": "Results :  _MENU_",
+          },
+          "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+          "<'table-responsive'tr>" +
+          "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+          "order": [[ 5, "desc" ]],
+          drawCallback: function() {
+            $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+          }
+        });
         }
       }
       else{
