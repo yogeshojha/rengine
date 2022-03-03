@@ -157,7 +157,7 @@ function change_vuln_status(id)
 
 // splits really long strings into multiple lines
 // Souce: https://stackoverflow.com/a/52395960
-function split(str, maxWidth) {
+function split_into_lines(str, maxWidth) {
   const newLineStr = "</br>";
   done = false;
   res = '';
@@ -695,7 +695,7 @@ function get_interesting_endpoint(target_id, scan_history_id){
       {"className": "text-center", "targets": [ 2 ]},
       {
         "render": function ( data, type, row ) {
-          var url = split(data, 70);
+          var url = split_into_lines(data, 70);
           return "<a href='"+data+"' target='_blank' class='text-primary'>"+url+"</a>";
         },
         "targets": 0
@@ -1149,7 +1149,7 @@ function show_subscan_results(subscan_id){
 
           var http_url = vuln_obj['http_url'].includes('http') ? "<a href='"+htmlEncode(vuln_obj['http_url'])+"' target='_blank' class='text-danger'>"+htmlEncode(vuln_obj['http_url'])+"</a>" : vuln_obj['http_url'];
 
-          var description = vuln_obj['description'] ? `<div>${vuln_obj['description']}</div>` : '';
+          var description = vuln_obj['description'] ? `<div>${split_into_lines(vuln_obj['description'], 30)}</div>` : '';
           // show extracted results, and show matcher names, matcher names can be in badges
           if (vuln_obj['matcher_name']) {
             description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${vuln_obj['matcher_name']}</span>`;
@@ -1176,7 +1176,7 @@ function show_subscan_results(subscan_id){
           if (vuln_obj['curl_command']) {
             description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${vuln_obj['id']}" aria-expanded="false" aria-controls="curl_command_${vuln_obj['id']}">CURL command <i class="fe-terminal"></i></a>`;
             description += `<div class="collapse" id="curl_command_${vuln_obj['id']}"><ul>`;
-            description += `<li><code>${htmlEncode(vuln_obj['curl_command'])}</code></li>`;
+            description += `<li><code>${split_into_lines(htmlEncode(vuln_obj['curl_command']), 30)}</code></li>`;
             description += '</ul></div>';
           }
 
@@ -1256,7 +1256,7 @@ function show_subscan_results(subscan_id){
             web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
           }
 
-          var url = split(endpoint['http_url'], 70);
+          var url = split_into_lines(endpoint['http_url'], 70);
           var rand_id = get_randid();
           tech_badge += web_server + '</div>';
 
