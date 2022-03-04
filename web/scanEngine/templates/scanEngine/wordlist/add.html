@@ -21,6 +21,7 @@ Add New Wordlist
 
 {% block page_level_script %}
 <script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
+<script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 var input = document.getElementById("name");
 var shortName = document.getElementById("short_name");
@@ -39,7 +40,7 @@ inputValue = document.getElementById("short_name").value;
 // custom file input
 $(".custom-file-input").on("change", function() {
   var fileName = $(this).val().split("\\").pop();
-  $(this).siblings(".custom-file-label").addClass("selected").html(fileName);
+  $(this).siblings(".custom-file-label").addClass("selected").html(htmlEncode(fileName));
 });
 </script>
 {% endblock page_level_script %}
