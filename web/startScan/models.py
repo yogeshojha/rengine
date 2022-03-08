@@ -150,7 +150,6 @@ class Subdomain(models.Model):
 	http_url = models.CharField(max_length=1000, null=True, blank=True)
 	screenshot_path = models.CharField(max_length=1000, null=True, blank=True)
 	http_header_path = models.CharField(max_length=1000, null=True, blank=True)
-	directory_json = JSONField(null=True, blank=True)
 	discovered_date = models.DateTimeField(blank=True, null=True)
 	cname = models.CharField(max_length=1500, blank=True, null=True)
 	is_cdn = models.BooleanField(default=False, blank=True, null=True)
@@ -162,6 +161,8 @@ class Subdomain(models.Model):
 	page_title = models.CharField(max_length=1000, blank=True, null=True)
 	technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True)
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
+	directories = models.ManyToManyField('Directory', related_name='directories', blank=True)
+
 
 	def __str__(self):
 		return str(self.name)
@@ -219,6 +220,7 @@ class Subdomain(models.Model):
 		TodoNote = apps.get_model('recon_note', 'TodoNote')
 		notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
 		return notes.values()
+
 
 class SubScan(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -384,6 +386,15 @@ class IpAddress(models.Model):
 
 	def __str__(self):
 		return str(self.address)
+
+
+class Directory(models.Model):
+	id = models.AutoField(primary_key=True)
+	json = JSONField(null=True, blank=True)
+	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids')
+
+	def __str__(self):
+		return str(self.id)
 
 
 class Port(models.Model):

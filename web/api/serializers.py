@@ -644,6 +644,13 @@ class IpSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class DirectorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Directory
+        fields = '__all__'
+
+
 class IpSubdomainSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -665,6 +672,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     todos_count = serializers.SerializerMethodField('get_todos_count')
     ip_addresses = IpSerializer(many=True)
     technologies = TechnologySerializer(many=True)
+    directories = DirectorySerializer(many=True)
 
 
     class Meta:

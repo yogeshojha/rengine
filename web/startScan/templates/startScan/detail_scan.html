@@ -1936,7 +1936,7 @@ $(document).ready(function(){
 					{'data': 'name'},
 					{'data': 'http_status'},
 					{'data': 'page_title'},
-					{'data': 'directory_json'},
+					{'data': 'directories'},
 					{'data': 'http_url'},
 					{'data': 'is_interesting'},
 				],
@@ -1994,7 +1994,7 @@ $(document).ready(function(){
 					{
 						"render": function ( data, type, row ) {
 							if (data) {
-								data = JSON.parse(data);
+								data = JSON.parse(data[0]['json']);
 								dir_data = data['results'];
 								console.log(dir_data);
 								var html_treeview = `<ul>`;
@@ -2049,10 +2049,11 @@ $(document).ready(function(){
 					}
 				},
 				"rowCallback": function( row, data, index ) {
-					var data = JSON.parse(data['directory_json']);
-					if (!data['results'].length) {
-						$(row).hide();
-					}
+					console.log(data);
+					// var data = JSON.parse(data['directories']);
+					// if (!data['results'].length) {
+					// 	$(row).hide();
+					// }
 				},
 			});
 		});

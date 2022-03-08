@@ -1196,8 +1196,18 @@ def directory_fuzz(
                     json_string = json_file.read()
                     subdomain = Subdomain.objects.get(
                         scan_history__id=scan_history.id, http_url=subdomain.http_url)
-                    subdomain.directory_json = json_string
+
+                    directory = Directory()
+                    directory.json = json_string
+                    directory.save()
+
+                    if subscan:
+                        directory.dir_subscan_ids.add(subscan)
+                        directory.save()
+
+                    subdomain.directories.add(directory)
                     subdomain.save()
+
         except Exception as exception:
             logging.error(exception)
             if not subscan:
