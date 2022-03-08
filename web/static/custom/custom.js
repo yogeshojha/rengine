@@ -1036,11 +1036,11 @@ function show_subscan_results(subscan_id){
 
     if (!$.isEmptyObject(response['result'])) {
       if (response['subscan']['task'] == 'port_scan') {
-        $('#xl-modal-content').append(`</br></br></br><div id="port_results_li"></div>`);
+        $('#xl-modal-content').append(`<div id="port_results_li"></div>`);
         for (var ip in response['result']) {
           var ip_addr = response['result'][ip]['address'];
           var id_name = `ip_${ip_addr}`;
-          $('#port_results_li').append(`<h5>IP Address: ${ip_addr}</h5>`);
+          $('#port_results_li').append(`<h5>IP Address: ${ip_addr}</br></br>${response['result'][ip]['ports'].length} Ports Open</h5>`);
           $('#port_results_li').append(`<ul id="${id_name}"></ul>`);
           for (var port_obj in response['result'][ip]['ports']) {
             var port = response['result'][ip]['ports'][port_obj];
@@ -1077,7 +1077,7 @@ function show_subscan_results(subscan_id){
           </div>
           `);
 
-          $('#vuln_tbody').empty();
+        $('#vuln_tbody').empty();
         for (var vuln in response['result']) {
           var vuln_obj = response['result'][vuln];
           var vuln_type = vuln_obj['type'] ? `<span class="badge badge-soft-primary">&nbsp;&nbsp;${vuln_obj['type'].toUpperCase()}&nbsp;&nbsp;</span>` : '';
@@ -1222,6 +1222,9 @@ function show_subscan_results(subscan_id){
         });
       }
       else if (response['subscan']['task'] == 'fetch_url') {
+
+        $('#xl-modal-content').append(`<h5> ${response['result'].length} Endpoints Discovered on subdomain ${response['subscan']['subdomain_name']}</h5>`);
+
         $('#xl-modal-content').append(`
           <div class="">
           <table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
