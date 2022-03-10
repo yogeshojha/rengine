@@ -161,7 +161,7 @@ class Subdomain(models.Model):
 	page_title = models.CharField(max_length=1000, blank=True, null=True)
 	technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True)
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
-	directories = models.ManyToManyField('Directory', related_name='directories', blank=True)
+	directories = models.ManyToManyField('DirectoryFile', related_name='directories', blank=True)
 
 
 	def __str__(self):
@@ -388,15 +388,6 @@ class IpAddress(models.Model):
 		return str(self.address)
 
 
-class Directory(models.Model):
-	id = models.AutoField(primary_key=True)
-	json = JSONField(null=True, blank=True)
-	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids')
-
-	def __str__(self):
-		return str(self.id)
-
-
 class Port(models.Model):
 	id = models.AutoField(primary_key=True)
 	number = models.IntegerField(default=0)
@@ -406,6 +397,27 @@ class Port(models.Model):
 
 	def __str__(self):
 		return str(self.service_name)
+
+
+class DirectoryFile(models.Model):
+	id = models.AutoField(primary_key=True)
+	length = models.IntegerField(default=0)
+	lines = models.IntegerField(default=0)
+	http_status = models.IntegerField(default=0)
+	words = models.IntegerField(default=0)
+	url = models.CharField(max_length=2000, blank=True, null=True)
+	content_type = models.CharField(max_length=100, blank=True, null=True)
+
+	def __str__(self):
+		return str(self.http_status)
+
+
+class DirectoryScan(models.Model):
+	id = models.AutoField(primary_key=True)
+	command_line = models.CharField(max_length=1000, blank=True, null=True)
+	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files')
+	# this is used for querying which ip was discovered during subcan
+	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids')
 
 
 class MetaFinderDocument(models.Model):
