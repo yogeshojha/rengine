@@ -1070,7 +1070,7 @@ def directory_fuzz(
     if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
         not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
-        wordlist_location = '/usr/src/wordlist/dicc.txt'
+        wordlist_location = '/usr/src/wordlist/dicc1.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
             yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
@@ -1193,20 +1193,52 @@ def directory_fuzz(
         try:
             if os.path.isfile(dirs_results):
                 with open(dirs_results, "r") as json_file:
-                    json_string = json_file.read()
+                    json_string = json.loads(json_file.read())
                     subdomain = Subdomain.objects.get(
-                        scan_history__id=scan_history.id, http_url=subdomain.http_url)
+                            scan_history__id=scan_history.id, http_url=subdomain.http_url)
+                    # TODO: URL Models to be created here
+                    # Create a directory Scan model
+                    directory_scan = DirectoryScan()
+                    directory_scan.command_line = json_string['commandline']
+                    directory_scan.save()
 
-                    directory = Directory()
-                    directory.json = json_string
-                    directory.save()
+                    for result in json_string['results']:
+                        # check if directory already exists else create a new one
+                        if DirectoryFile.objects.filter(
+                            name=result['input']['FUZZ'],
+                            length__exact=result['length'],
+                            lines__exact=result['lines'],
+                            http_status__exact=result['status'],
+                            words__exact=result['words'],
+                            url=result['url'],
+                            content_type=result['content-type'],
+                        ).exists():
+                            file = DirectoryFile.objects.get(
+                                name=result['input']['FUZZ'],
+                                length__exact=result['length'],
+                                lines__exact=result['lines'],
+                                http_status__exact=result['status'],
+                                words__exact=result['words'],
+                                url=result['url'],
+                                content_type=result['content-type'],
+                            )
+                        else:
+                            file = DirectoryFile()
+                            file.name=result['input']['FUZZ']
+                            file.length=result['length']
+                            file.lines=result['lines']
+                            file.http_status=result['status']
+                            file.words=result['words']
+                            file.url=result['url']
+                            file.content_type=result['content-type']
+                            file.save()
+
+                        directory_scan.directory_files.add(file)
 
                     if subscan:
-                        directory.dir_subscan_ids.add(subscan)
-                        directory.save()
+                        directory_scan.dir_subscan_ids.add(subscan)
 
-                    subdomain.directories.add(directory)
-                    subdomain.save()
+                    subdomain.directories.add(directory_scan)
 
         except Exception as exception:
             logging.error(exception)
