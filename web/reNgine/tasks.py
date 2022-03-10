@@ -1148,7 +1148,7 @@ def directory_fuzz(
     if MATCH_HTTP_STATUS in yaml_configuration[DIR_FILE_FUZZ]:
         mc = ','.join(str(code) for code in yaml_configuration[DIR_FILE_FUZZ][MATCH_HTTP_STATUS])
     else:
-        mc = '200,204,301,302,307'
+        mc = '200,204'
 
     ffuf_command = ' {} -mc {}'.format(
         ffuf_command,

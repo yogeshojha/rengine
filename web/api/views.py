@@ -1337,7 +1337,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
         if 'only_directory' in req.query_params:
             self.queryset = self.queryset.exclude(directories__json__isnull=True)
-            
+
         if ip_address:
             self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
 
@@ -1398,6 +1398,12 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             Q(ip_addresses__ports__service_name__icontains=search_value) |
             Q(ip_addresses__ports__description__icontains=search_value)
         )
+
+        if 'only_directory' in self.request.query_params:
+            print('Okay')
+            qs = qs | self.queryset.filter(
+                Q(directories__json__icontains=search_value)
+            )
 
         return qs
 
