@@ -161,7 +161,7 @@ class Subdomain(models.Model):
 	page_title = models.CharField(max_length=1000, blank=True, null=True)
 	technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True)
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
-	directories = models.ManyToManyField('DirectoryFile', related_name='directories', blank=True)
+	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
 
 
 	def __str__(self):
@@ -405,19 +405,20 @@ class DirectoryFile(models.Model):
 	lines = models.IntegerField(default=0)
 	http_status = models.IntegerField(default=0)
 	words = models.IntegerField(default=0)
+	name = models.CharField(max_length=500, blank=True, null=True)
 	url = models.CharField(max_length=2000, blank=True, null=True)
 	content_type = models.CharField(max_length=100, blank=True, null=True)
 
 	def __str__(self):
-		return str(self.http_status)
+		return str(self.name)
 
 
 class DirectoryScan(models.Model):
 	id = models.AutoField(primary_key=True)
 	command_line = models.CharField(max_length=1000, blank=True, null=True)
-	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files')
+	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files', blank=True)
 	# this is used for querying which ip was discovered during subcan
-	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids')
+	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids', blank=True)
 
 
 class MetaFinderDocument(models.Model):
