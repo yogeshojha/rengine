@@ -65,6 +65,10 @@ class FetchSubscanResults(APIView):
             endpoints_in_subscan = EndPoint.objects.filter(endpoint_subscan_ids__in=subscan)
             subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
 
+        elif subscan[0].dir_file_fuzz:
+            dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
+            subscan_results = DirectoryScanSerializer(dirs_in_subscan, many=True).data
+
 
         return Response({'subscan': subscan_data, 'result': subscan_results})
 

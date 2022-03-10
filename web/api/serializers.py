@@ -644,10 +644,19 @@ class IpSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class DirectorySerializer(serializers.ModelSerializer):
+class DirectoryFileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DirectoryFile
+        fields = '__all__'
+
+
+class DirectoryScanSerializer(serializers.ModelSerializer):
+
+    directory_files = DirectoryFileSerializer(many=True)
+
+    class Meta:
+        model = DirectoryScan
         fields = '__all__'
 
 
@@ -672,7 +681,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     todos_count = serializers.SerializerMethodField('get_todos_count')
     ip_addresses = IpSerializer(many=True)
     technologies = TechnologySerializer(many=True)
-    directories = DirectorySerializer(many=True)
+    directories = DirectoryScanSerializer(many=True)
 
 
     class Meta:
