@@ -647,7 +647,7 @@ class IpSerializer(serializers.ModelSerializer):
 class DirectorySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Directory
+        model = DirectoryFile
         fields = '__all__'
 
 

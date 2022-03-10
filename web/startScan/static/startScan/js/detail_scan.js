@@ -105,7 +105,7 @@ function get_endpoints(scan_history_id, gf_tags){
             web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${row['webserver']}</span>`;
           }
 
-          var url = split(data, 70);
+          var url = split_into_lines(data, 70);
           var action_icons = `
           <div class="float-left subdomain-table-action-icons mt-2">
           <span class="m-1">
@@ -334,7 +334,7 @@ function get_endpoint_changes(scan_history_id){
       {"className": "text-center", "targets": [ 2 ]},
       {
         "render": function ( data, type, row ) {
-          var url = split(data, 70);
+          var url = split_into_lines(data, 70);
           return "<a href='"+data+"' target='_blank' class='text-primary'>"+url+"</a>";
         },
         "targets": 0
