@@ -1340,7 +1340,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
             self.queryset = Subdomain.objects.distinct()
 
         if 'only_directory' in req.query_params:
-            self.queryset = self.queryset.exclude(directories__json__isnull=True)
+            self.queryset = self.queryset.exclude(directories__isnull=True)
 
         if ip_address:
             self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
