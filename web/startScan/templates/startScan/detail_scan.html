@@ -906,7 +906,7 @@ Scan Findings
 			<div class="col-12">
 				<div class="card">
 					<div class="card-body">
-						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">Display <span class="caret"></span></button> 
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">Display <span class="caret"></span></button>
 						<table id="directories-table" class="table style-3 table-hover">
 							<thead>
 								<tr>
@@ -1995,30 +1995,36 @@ $(document).ready(function(){
 					{
 						"render": function ( data, type, row ) {
 							if (data) {
-								data = JSON.parse(data[0]['json']);
-								dir_data = data['results'];
-								console.log(dir_data);
+								// data = JSON.parse(data[0]['json']);
+								// dir_data = data['results'];
+								// console.log(dir_data);
 								var html_treeview = `<ul>`;
-								dir_data.forEach(function(item){
+
+								data.forEach(function(item){
 									var interesting_badge = '';
-									interesting_keywords_array.forEach(function(keyword){
-										if (item.input.FUZZ.includes(keyword)) {
-											interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
-											return;
+									// console.log(item['directory_files'][i]['name']);
+									item['directory_files'].forEach(function(file){
+										interesting_keywords_array.forEach(function(keyword){
+											if (file.name.includes(keyword)) {
+												interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
+												return;
+											}
+										});
+										console.log(file);
+										var http_status_badge = '';
+										if (file.http_status >= 200 && file.http_status < 300) {
+											http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
 										}
+										else if (file.http_status >= 300 && file.http_status < 400) {
+											http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+										}
+										else{
+											http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+										}
+										var http_url = file.url;
+										// html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
+										html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + file.name + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + file.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
 									});
-									var http_status_badge = '';
-									if (item.status >= 200 && item.status < 300) {
-										http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+item.status+`</span>`;
-									}
-									else if (item.status >= 300 && item.status < 400) {
-										http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+item.status+`</span>`;
-									}
-									else{
-										http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+item.status+`</span>`;
-									}
-									var http_url = item.url;
-									html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.input.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item['content-type'] + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
 								});
 								html_treeview += `</ul>`;
 								return html_treeview;
@@ -2050,7 +2056,7 @@ $(document).ready(function(){
 					}
 				},
 				"rowCallback": function( row, data, index ) {
-					console.log(data);
+					// console.log(data);
 					// var data = JSON.parse(data['directories']);
 					// if (!data['results'].length) {
 					// 	$(row).hide();
