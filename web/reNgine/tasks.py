@@ -1199,6 +1199,7 @@ def directory_fuzz(
                     # TODO: URL Models to be created here
                     # Create a directory Scan model
                     directory_scan = DirectoryScan()
+                    directory_scan.scanned_date = timezone.now()
                     directory_scan.command_line = json_string['commandline']
                     directory_scan.save()
 
