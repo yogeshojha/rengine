@@ -1406,7 +1406,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
         if 'only_directory' in self.request.query_params:
             print('Okay')
             qs = qs | self.queryset.filter(
-                Q(directories__json__icontains=search_value)
+                Q(directories__directory_files__name__icontains=search_value)
             )
 
         return qs
