@@ -417,6 +417,7 @@ class DirectoryScan(models.Model):
 	id = models.AutoField(primary_key=True)
 	command_line = models.CharField(max_length=1000, blank=True, null=True)
 	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files', blank=True)
+	scanned_date = models.DateTimeField(null=True)
 	# this is used for querying which ip was discovered during subcan
 	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids', blank=True)
 
