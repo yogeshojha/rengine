@@ -652,12 +652,19 @@ class DirectoryFileSerializer(serializers.ModelSerializer):
 
 
 class DirectoryScanSerializer(serializers.ModelSerializer):
-
+    scanned_date = serializers.SerializerMethodField()
+    formatted_date_for_id = serializers.SerializerMethodField()
     directory_files = DirectoryFileSerializer(many=True)
 
     class Meta:
         model = DirectoryScan
         fields = '__all__'
+
+    def get_scanned_date(self, DirectoryScan):
+        return DirectoryScan.scanned_date.strftime("%b %d, %Y %H:%M")
+
+    def get_formatted_date_for_id(self, DirectoryScan):
+        return DirectoryScan.scanned_date.strftime("%b_%d_%Y_%H_%M")
 
 
 class IpSubdomainSerializer(serializers.ModelSerializer):
