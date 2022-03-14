@@ -1995,12 +1995,23 @@ $(document).ready(function(){
 					{
 						"render": function ( data, type, row ) {
 							if (data) {
-								// data = JSON.parse(data[0]['json']);
-								// dir_data = data['results'];
-								// console.log(dir_data);
-								var html_treeview = `<ul>`;
-
+								data = data.reverse();
+								var html_treeview = '';
+								if (data.length > 1) {
+									// has been scanned multiple times
+									html_treeview += `<p class="text-dark">Directory Scan has been performed ${data.length} times.</p>`;
+								}
+								html_treeview += `<ul>`;
+								var item_pos = 0;
 								data.forEach(function(item){
+									var aria_expanded = 'false';
+									var show = '';
+									if (item_pos == 0) {
+										aria_expanded = 'true';
+										show = 'show';
+									}
+									html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
+									html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
 									var interesting_badge = '';
 									// console.log(item['directory_files'][i]['name']);
 									item['directory_files'].forEach(function(file){
@@ -2010,7 +2021,7 @@ $(document).ready(function(){
 												return;
 											}
 										});
-										console.log(file);
+										// console.log(file);
 										var http_status_badge = '';
 										if (file.http_status >= 200 && file.http_status < 300) {
 											http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
@@ -2025,6 +2036,8 @@ $(document).ready(function(){
 										// html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
 										html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + file.name + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + file.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
 									});
+									item_pos++;
+									html_treeview += '</div>';
 								});
 								html_treeview += `</ul>`;
 								return html_treeview;
