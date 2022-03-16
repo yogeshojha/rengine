@@ -988,6 +988,7 @@ function show_subscan_results(subscan_id){
   })
   .then(response => response.json())
   .then(function (response) {
+    console.log(response);
     swal.close();
     if (response['subscan']['status'] == -1) {
       swal.fire("Error!", "Scan has not yet started! Please wait for other scans to complete...", "warning", {
@@ -1014,6 +1015,9 @@ function show_subscan_results(subscan_id){
     }
     else if (response['subscan']['task'] == 'fetch_url'){
       task_name = 'EndPoint Gathering';
+    }
+    else if (response['subscan']['task'] == 'dir_file_fuzz'){
+      task_name = 'Directory and Files Fuzzing';
     }
     $('#xl-modal_title').html(`${task_name} Results on ${response['subscan']['subdomain_name']}`);
     var scan_status = '';
@@ -1222,7 +1226,6 @@ function show_subscan_results(subscan_id){
         });
       }
       else if (response['subscan']['task'] == 'fetch_url') {
-
         $('#xl-modal-content').append(`<h5> ${response['result'].length} Endpoints Discovered on subdomain ${response['subscan']['subdomain_name']}</h5>`);
 
         $('#xl-modal-content').append(`
@@ -1278,22 +1281,75 @@ function show_subscan_results(subscan_id){
           `);
         }
 
-        $("#endpoint-modal-datatable").DataTable({
-          "oLanguage": {
-            "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-            "sInfo": "Showing page _PAGE_ of _PAGES_",
-            "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-            "sSearchPlaceholder": "Search...",
-            "sLengthMenu": "Results :  _MENU_",
-          },
-          "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
-          "<'table-responsive'tr>" +
-          "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-          "order": [[ 5, "desc" ]],
-          drawCallback: function() {
-            $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+          $("#endpoint-modal-datatable").DataTable({
+            "oLanguage": {
+              "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+              "sInfo": "Showing page _PAGE_ of _PAGES_",
+              "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+              "sSearchPlaceholder": "Search...",
+              "sLengthMenu": "Results :  _MENU_",
+            },
+            "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+            "<'table-responsive'tr>" +
+            "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+            "order": [[ 5, "desc" ]],
+            drawCallback: function() {
+              $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+            }
+          });
+        }
+        else if (response['subscan']['task'] == 'dir_file_fuzz'){
+          $('#xl-modal-content').append(`<h5> ${response['result'][0]['directory_files'].length} Directories Discovered on subdomain ${response['subscan']['subdomain_name']}</h5>`);
+
+          $('#xl-modal-content').append(`
+            <div class="">
+            <table id="directory-modal-datatable" class="table dt-responsive nowrap w-100">
+            <thead>
+            <tr>
+            <th>Directory</th>
+            <th class="text-center">HTTP Status</th>
+            <th>Content Length</th>
+            <th>Lines</th>
+            <th>Words</th>
+            </tr>
+            </thead>
+            <tbody id="directory_tbody">
+            </tbody>
+            </table>
+            </div>
+          `);
+
+          $('#directory_tbody').empty();
+          for (var dir_obj in response['result'][0]['directory_files']) {
+            var dir = response['result'][0]['directory_files'][dir_obj];
+
+            $('#directory_tbody').append(`
+              <tr>
+              <td><a href="${dir.url}" target="_blank">${dir.name}</a></td>
+              <td class="text-center">${get_http_status_badge(dir.http_status)}</td>
+              <td>${dir.length}</td>
+              <td>${dir.lines}</td>
+              <td>${dir.words}</td>
+              </tr>
+            `);
           }
-        });
+
+          $("#directory-modal-datatable").DataTable({
+            "oLanguage": {
+              "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+              "sInfo": "Showing page _PAGE_ of _PAGES_",
+              "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+              "sSearchPlaceholder": "Search...",
+              "sLengthMenu": "Results :  _MENU_",
+            },
+            "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+            "<'table-responsive'tr>" +
+            "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+            "order": [[ 2, "desc" ]],
+              drawCallback: function() {
+                $(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+              }
+            });
         }
       }
       else{
