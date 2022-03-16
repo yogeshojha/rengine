@@ -2033,8 +2033,18 @@ $(document).ready(function(){
 											http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
 										}
 										var http_url = file.url;
-										// html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + item.FUZZ + ` (` + item.length/100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + item.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
-										html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + file.name + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + file.content_type + `)</span> ${http_status_badge}</a>${interesting_badge}</li>`;
+										var lines_word_content = '';
+										if (file.lines) {
+											lines_word_content += `${file.lines} Lines`;
+										}
+										if (file.words) {
+											lines_word_content += ` ${file.words} Words`
+										}
+										var lines_word_badge = ''
+										if (lines_word_content.length > 1) {
+											lines_word_badge = `<span class="badge badge-soft-secondary" data-toggle="tooltip" data-placement="top" title="Response Content Status">${lines_word_content}</span>`;
+										}
+										html_treeview += `<li class="mt-1"><a href="` + http_url + `" target="_blank">` + file.name + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + file.content_type + `)</span> ${http_status_badge}</a>${interesting_badge} ${lines_word_badge}</li>`;
 									});
 									item_pos++;
 									html_treeview += '</div>';
