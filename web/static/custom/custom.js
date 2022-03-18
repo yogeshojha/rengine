@@ -1115,72 +1115,7 @@ function show_subscan_results(subscan_id) {
 					}
 				});
 			} else if(response['subscan']['task'] == 'fetch_url') {
-				$('#xl-modal-content').append(`<h5> ${response['result'].length} Endpoints Discovered on subdomain ${response['subscan']['subdomain_name']}</h5>`);
-				$('#xl-modal-content').append(`
-					<div class="">
-					<table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
-					<thead>
-					<tr>
-					<th>HTTP URL</th>
-					<th>Status</th>
-					<th>Page Title</th>
-					<th>Tags</th>
-					<th>Content Type</th>
-					<th>Content Length</th>
-					<th>Response Time</th>
-					</tr>
-					</thead>
-					<tbody id="endpoint_tbody">
-					</tbody>
-					</table>
-					</div>
-				`);
-				$('#endpoint_tbody').empty();
-				for(var endpoint_obj in response['result']) {
-					var endpoint = response['result'][endpoint_obj];
-					var tech_badge = '';
-					var web_server = '';
-					if(endpoint['technologies']) {
-						tech_badge = '<div>' + parse_technology(endpoint['technologies'], "primary", outline = true);
-					}
-					if(endpoint['webserver']) {
-						web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
-					}
-					var url = split_into_lines(endpoint['http_url'], 70);
-					var rand_id = get_randid();
-					tech_badge += web_server + '</div>';
-					var http_url_td = "<a href='" + endpoint['http_url'] + `' target='_blank' class='text-primary'>` + url + "</a>" + tech_badge;
-					$('#endpoint_tbody').append(`
-						<tr>
-						<td>${http_url_td}</td>
-						<td>${get_http_status_badge(endpoint['http_status'])}</td>
-						<td>${return_str_if_not_null(endpoint['page_title'])}</td>
-						<td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
-						<td>${return_str_if_not_null(endpoint['content_type'])}</td>
-						<td>${return_str_if_not_null(endpoint['content_length'])}</td>
-						<td>${get_response_time_text(endpoint['response_time'])}</td>
-						</tr>
-					`);
-				}
-				$("#endpoint-modal-datatable").DataTable({
-					"oLanguage": {
-						"oPaginate": {
-							"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-							"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-						},
-						"sInfo": "Showing page _PAGE_ of _PAGES_",
-						"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-						"sSearchPlaceholder": "Search...",
-						"sLengthMenu": "Results :  _MENU_",
-					},
-					"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" + "<'table-responsive'tr>" + "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-					"order": [
-						[5, "desc"]
-					],
-					drawCallback: function() {
-						$(".dataTables_paginate > .pagination").addClass("pagination-rounded")
-					}
-				});
+				render_endpoint_in_xlmodal(endpoint_count = response['result'].length, subdomain_name = response['subscan']['subdomain_name'], result = response['result']);
 			} else if(response['subscan']['task'] == 'dir_file_fuzz') {
 				if(response['result'][0]['directory_files'].length == 0) {
 					$('#xl-modal-content').append(`
@@ -1265,4 +1200,75 @@ function get_http_status_badge(data) {
 		return "";
 	}
 	return "<span class='badge  badge-soft-danger'>" + data + "</span>";
+}
+
+function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
+	// This function renders endpoints datatable in xl modal
+	// Used in Subscan results and subdomain to endpoints modal
+	$('#xl-modal-content').append(`<h5> ${endpoint_count} Endpoints Discovered on subdomain ${subdomain_name}</h5>`);
+	$('#xl-modal-content').append(`
+		<div class="">
+		<table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
+		<thead>
+		<tr>
+		<th>HTTP URL</th>
+		<th>Status</th>
+		<th>Page Title</th>
+		<th>Tags</th>
+		<th>Content Type</th>
+		<th>Content Length</th>
+		<th>Response Time</th>
+		</tr>
+		</thead>
+		<tbody id="endpoint_tbody">
+		</tbody>
+		</table>
+		</div>
+	`);
+	$('#endpoint_tbody').empty();
+	for(var endpoint_obj in result) {
+		var endpoint = result[endpoint_obj];
+		var tech_badge = '';
+		var web_server = '';
+		if(endpoint['technologies']) {
+			tech_badge = '<div>' + parse_technology(endpoint['technologies'], "primary", outline = true);
+		}
+		if(endpoint['webserver']) {
+			web_server = `<span class='m-1 badge badge-soft-info' data-toggle="tooltip" data-placement="top" title="Web Server">${endpoint['webserver']}</span>`;
+		}
+		var url = split_into_lines(endpoint['http_url'], 70);
+		var rand_id = get_randid();
+		tech_badge += web_server + '</div>';
+		var http_url_td = "<a href='" + endpoint['http_url'] + `' target='_blank' class='text-primary'>` + url + "</a>" + tech_badge;
+		$('#endpoint_tbody').append(`
+			<tr>
+			<td>${http_url_td}</td>
+			<td>${get_http_status_badge(endpoint['http_status'])}</td>
+			<td>${return_str_if_not_null(endpoint['page_title'])}</td>
+			<td>${parse_comma_values_into_span(endpoint['matched_gf_patterns'], "danger", outline=true)}</td>
+			<td>${return_str_if_not_null(endpoint['content_type'])}</td>
+			<td>${return_str_if_not_null(endpoint['content_length'])}</td>
+			<td>${get_response_time_text(endpoint['response_time'])}</td>
+			</tr>
+		`);
+	}
+	$("#endpoint-modal-datatable").DataTable({
+		"oLanguage": {
+			"oPaginate": {
+				"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+				"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+			},
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" + "<'table-responsive'tr>" + "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"order": [
+			[5, "desc"]
+		],
+		drawCallback: function() {
+			$(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+		}
+	});
 }

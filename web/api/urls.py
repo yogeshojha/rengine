@@ -79,10 +79,6 @@ urlpatterns = [
         ListVulnerability.as_view(),
         name='queryVulnerabilities'),
     path(
-        'queryEndpoints/',
-        ListEndpoints.as_view(),
-        name='queryEndpoints'),
-    path(
         'queryTargetsWithoutOrganization/',
         ListTargetsWithoutOrganization.as_view(),
         name='queryTargetsWithoutOrganization'),

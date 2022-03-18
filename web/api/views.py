@@ -820,33 +820,6 @@ class ListVulnerability(APIView):
         return Response({'vulnerabilities': vulnerability_serializer.data})
 
 
-class ListEndpoints(APIView):
-    def get(self, request, format=None):
-        req = self.request
-        scan_id = req.query_params.get('scan_id')
-        subdomain_name = req.query_params.get('subdomain_name')
-        pattern = req.query_params.get('pattern')
-
-        if scan_id:
-            endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
-        else:
-            endpoints = EndPoint.objects.all()
-
-        if subdomain_name:
-            endpoints = endpoints.filter(subdomain__name=subdomain_name)
-
-        if pattern:
-            endpoints = endpoints.filter(matched_gf_patterns__icontains=pattern)
-
-        if 'only_urls' in req.query_params:
-            endpoints_serializer = EndpointOnlyURLsSerializer(endpoints, many=True)
-
-        else:
-            endpoints_serializer = EndpointSerializer(endpoints, many=True)
-
-        return Response({'endpoints': endpoints_serializer.data})
-
-
 class VisualiseData(APIView):
     def get(self, request, format=None):
         req = self.request
@@ -1540,81 +1513,90 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         req = self.request
+
         scan_id = req.query_params.get('scan_history')
-
         target_id = req.query_params.get('target_id')
-
         url_query = req.query_params.get('query_param')
+        subdomain_id = req.query_params.get('subdomain_id')
 
         gf_tag = req.query_params.get(
             'gf_tag') if 'gf_tag' in req.query_params else None
 
         if scan_id:
-            self.queryset = EndPoint.objects.filter(
+            endpoints_queryset = EndPoint.objects.filter(
                 scan_history__id=scan_id
             ).distinct()
-
         elif target_id:
-            self.queryset = EndPoint.objects.filter(
+            endpoints_queryset = EndPoint.objects.filter(
                 target_domain__id=target_id).distinct()
         else:
-            self.queryset = EndPoint.objects.distinct()
+            endpoints_queryset = EndPoint.objects.distinct()
 
         if url_query:
-            self.queryset = EndPoint.objects.filter(
+            endpoints_queryset = endpoints_queryset.filter(
                 Q(target_domain__name=url_query)).distinct()
 
         if gf_tag:
-            self.queryset = self.queryset.filter(matched_gf_patterns__icontains=gf_tag)
+            endpoints_queryset = endpoints_queryset.filter(matched_gf_patterns__icontains=gf_tag)
+
+        if subdomain_id:
+            endpoints_queryset = endpoints_queryset.filter(subdomain__id=subdomain_id)
+
+        if 'only_urls' in req.query_params:
+            self.serializer_class = EndpointOnlyURLsSerializer
+
+        self.queryset = endpoints_queryset
 
         return self.queryset
 
     def filter_queryset(self, qs):
         qs = self.queryset.filter()
+        print(qs)
         search_value = self.request.GET.get(u'search[value]', None)
         _order_col = self.request.GET.get(u'order[0][column]', None)
         _order_direction = self.request.GET.get(u'order[0][dir]', None)
-        order_col = 'content_length'
-        if _order_col == '1':
-            order_col = 'http_url'
-        elif _order_col == '2':
-            order_col = 'http_status'
-        elif _order_col == '3':
-            order_col = 'page_title'
-        elif _order_col == '4':
-            order_col = 'matched_gf_patterns'
-        elif _order_col == '5':
-            order_col = 'content_type'
-        elif _order_col == '6':
+        if search_value or _order_col or _order_direction:
             order_col = 'content_length'
-        elif _order_col == '7':
-            order_col = 'technologies'
-        elif _order_col == '8':
-            order_col = 'webserver'
-        elif _order_col == '9':
-            order_col = 'response_time'
-        if _order_direction == 'desc':
-            order_col = '-{}'.format(order_col)
-        # if the search query is separated by = means, it is a specific lookup
-        # divide the search query into two half and lookup
-        if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
-            if '&' in search_value:
-                complex_query = search_value.split('&')
-                for query in complex_query:
-                    if query.strip():
-                        qs = qs & self.special_lookup(query.strip())
-            elif '|' in search_value:
-                qs = Subdomain.objects.none()
-                complex_query = search_value.split('|')
-                for query in complex_query:
-                    if query.strip():
-                        qs = self.special_lookup(query.strip()) | qs
+            if _order_col == '1':
+                order_col = 'http_url'
+            elif _order_col == '2':
+                order_col = 'http_status'
+            elif _order_col == '3':
+                order_col = 'page_title'
+            elif _order_col == '4':
+                order_col = 'matched_gf_patterns'
+            elif _order_col == '5':
+                order_col = 'content_type'
+            elif _order_col == '6':
+                order_col = 'content_length'
+            elif _order_col == '7':
+                order_col = 'technologies'
+            elif _order_col == '8':
+                order_col = 'webserver'
+            elif _order_col == '9':
+                order_col = 'response_time'
+            if _order_direction == 'desc':
+                order_col = '-{}'.format(order_col)
+            # if the search query is separated by = means, it is a specific lookup
+            # divide the search query into two half and lookup
+            if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+                if '&' in search_value:
+                    complex_query = search_value.split('&')
+                    for query in complex_query:
+                        if query.strip():
+                            qs = qs & self.special_lookup(query.strip())
+                elif '|' in search_value:
+                    qs = Subdomain.objects.none()
+                    complex_query = search_value.split('|')
+                    for query in complex_query:
+                        if query.strip():
+                            qs = self.special_lookup(query.strip()) | qs
+                else:
+                    qs = self.special_lookup(search_value)
             else:
-                qs = self.special_lookup(search_value)
-        else:
-            qs = self.general_lookup(search_value)
-        return qs.order_by(order_col)
-
+                qs = self.general_lookup(search_value)
+            return qs.order_by(order_col)
+        return qs
     def general_lookup(self, search_value):
         qs = self.queryset.filter(
             Q(http_url__icontains=search_value) |
