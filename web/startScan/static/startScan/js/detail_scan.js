@@ -127,6 +127,7 @@ function get_endpoints(scan_history_id, gf_tags){
           if (data) {
             return get_http_status_badge(data);
           }
+          return '';
 
         },
         "targets": 2,
@@ -1058,12 +1059,12 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
 }
 
 
-function get_endpoint_modal(scan_id, subdomain_name){
+function get_endpoint_modal(scan_id, subdomain_id){
   if (scan_id) {
-    url = `/api/queryEndpoints/?scan_id=${scan_id}&subdomain_name=${subdomain_name}&format=json`
+    url = `/api/listEndpoints/?scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
   }
   else{
-    url = `/api/queryEndpoints/?subdomain_name=${subdomain_name}&format=json`
+    url = `/api/listEndpoints/?subdomain_id=${subdomain_id}&format=json`
   }
   $('.modal-title').html(`<b>Endpoints Summary</b>`);
   $('#modal_dialog').modal('show');
