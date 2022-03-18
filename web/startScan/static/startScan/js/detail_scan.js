@@ -1110,6 +1110,45 @@ function get_endpoint_modal(scan_id, subdomain_id, subdomain_name){
 
 }
 
+function get_directory_modal(scan_id, subdomain_id, subdomain_name){
+	// This function will display a xl modal with datatable for displaying endpoints
+	// associated with the subdomain
+	$('#xl-modal-title').empty();
+	$('#xl-modal-content').empty();
+	$('#xl-modal-footer').empty();
+
+	if (scan_id) {
+		url = `/api/listDirectories/?scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
+	}
+	else{
+		url = `/api/listDirectories/?subdomain_id=${subdomain_id}&format=json`
+	}
+
+	Swal.fire({
+		title: `Fetching Directories for ${subdomain_name}...`
+	});
+	swal.showLoading();
+
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	}).then(response => response.json()).then(function(response) {
+		console.log(response);
+		swal.close();
+		$('#xl-modal_title').html(`${subdomain_name}`);
+		render_directories_in_xl_modal(response['count'], subdomain_name, response['results'])
+	});
+	$('#modal_xl_scroll_dialog').modal('show');
+	$("body").tooltip({
+		selector: '[data-toggle=tooltip]'
+	});
+
+}
+
 
 function get_http_badge(http_status){
 	switch (true) {

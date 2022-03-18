@@ -1684,6 +1684,32 @@ class EndPointViewSet(viewsets.ModelViewSet):
 		return qs
 
 
+class DirectoryViewSet(viewsets.ModelViewSet):
+	queryset = DirectoryFile.objects.none()
+	serializer_class = DirectoryFileSerializer
+
+	def get_queryset(self):
+		req = self.request
+
+		scan_id = req.query_params.get('scan_history')
+		subdomain_id = req.query_params.get('subdomain_id')
+
+		if scan_id:
+			dirs_queryset = DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(scan_history__id=scan_id))).distinct()
+		else:
+			dirs_queryset = DirectoryFile.objects.distinct()
+
+		print(dirs_queryset)
+
+		if subdomain_id:
+			dirs_queryset = DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(id=subdomain_id))).distinct()
+
+
+		self.queryset = dirs_queryset
+
+		return self.queryset
+
+
 class VulnerabilityViewSet(viewsets.ModelViewSet):
 	queryset = Vulnerability.objects.none()
 	serializer_class = VulnerabilitySerializer
