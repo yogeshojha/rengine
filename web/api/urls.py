@@ -75,10 +75,6 @@ urlpatterns = [
         VisualiseData.as_view(),
         name='queryAllScanResultVisualise'),
     path(
-        'queryVulnerabilities/',
-        ListVulnerability.as_view(),
-        name='queryVulnerabilities'),
-    path(
         'queryTargetsWithoutOrganization/',
         ListTargetsWithoutOrganization.as_view(),
         name='queryTargetsWithoutOrganization'),
