@@ -1070,7 +1070,7 @@ def directory_fuzz(
     if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
         not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
-        wordlist_location = '/usr/src/wordlist/dicc1.txt'
+        wordlist_location = '/usr/src/wordlist/dicc.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
             yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
