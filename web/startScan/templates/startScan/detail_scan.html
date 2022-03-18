@@ -1643,11 +1643,11 @@ $(document).ready(function(){
 							}
 
 							vuln_count_badge = '';
-							info_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, '${row['name']}')">${row['info_count']} Info</span>`;
-							low_badge = `<span class='pl-2 pr-2 ms-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, '${row['name']}')">${row['low_count']} Low</span>`;
-							medium_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, '${row['name']}')">${row['medium_count']} Med</span>`;
-							high_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, '${row['name']}')">${row['high_count']} High</span>`;
-							critical_badge = `<span class='pl-2 pr-2 ms-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, '${row['name']}')">${row['critical_count']} Critical</span>`;
+							info_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, ${row['id']}, '${row['name']}')">${row['info_count']} Info</span>`;
+							low_badge = `<span class='pl-2 pr-2 ms-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, ${row['id']}, '${row['name']}')">${row['low_count']} Low</span>`;
+							medium_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, ${row['id']}, '${row['name']}')">${row['medium_count']} Med</span>`;
+							high_badge = `<span class='pl-2 pr-2 ms-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, ${row['id']}, '${row['name']}')">${row['high_count']} High</span>`;
+							critical_badge = `<span class='pl-2 pr-2 ms-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, ${row['id']}, '${row['name']}')">${row['critical_count']} Critical</span>`;
 							vuln_count_badge =  (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '');
 
 							copy_icon = `
