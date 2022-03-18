@@ -1059,8 +1059,9 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
 }
 
 
-function get_endpoint_modal(scan_id, subdomain_id){
-
+function get_endpoint_modal(scan_id, subdomain_id, subdomain_name){
+	// This function will display a xl modal with datatable for displaying endpoints
+	// associated with the subdomain
 	$('#xl-modal-title').empty();
 	$('#xl-modal-content').empty();
 	$('#xl-modal-footer').empty();
@@ -1073,7 +1074,7 @@ function get_endpoint_modal(scan_id, subdomain_id){
 	}
 
 	Swal.fire({
-		title: 'Fetching Endpoints...'
+		title: `Fetching Endpoints for ${subdomain_name}...`
 	});
 	swal.showLoading();
 
@@ -1087,7 +1088,8 @@ function get_endpoint_modal(scan_id, subdomain_id){
 	}).then(response => response.json()).then(function(response) {
 		console.log(response);
 		swal.close();
-		$('#xl-modal_title').html(`${response['count']} Endpoints`);
+		$('#xl-modal_title').html(`${subdomain_name}`);
+		render_endpoint_in_xlmodal(response['count'], subdomain_name, response['results'])
 	});
 	$('#modal_xl_scroll_dialog').modal('show');
 	$("body").tooltip({
