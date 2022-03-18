@@ -1002,12 +1002,12 @@ function get_dork_details(dork_type, scan_id){
 }
 
 
-function get_vulnerability_modal(scan_id, severity, subdomain_name){
+function get_vulnerability_modal(scan_id, severity, subdomain_id, subdomain_name){
 	if (scan_id) {
-		url = `/api/queryVulnerabilities/?scan_id=${scan_id}&severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+		url = `/api/listVulnerability/?scan_history=${scan_id}&severity=${severity}&subdomain_id=${subdomain_id}&format=json`;
 	}
 	else{
-		url = `/api/queryVulnerabilities/?severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+		url = `/api/listVulnerability/?severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
 	}
 	switch (severity) {
 		case 0:
@@ -1028,34 +1028,34 @@ function get_vulnerability_modal(scan_id, severity, subdomain_name){
 		default:
 		severity_title = ''
 	}
-	$('.modal-title').html(`<b>${severity_title} Severity</b> Vulnerabilities`);
-	$('#modal_dialog').modal('show');
-	$('.modal-text').empty(); $('#modal-footer').empty();
-	$('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
-	$.getJSON(url, function(data) {
-		$('#modal-loader').empty();
-		$('#modal-content').append(`<h6>${data['vulnerabilities'].length} vulnerabilities found in subdomain <span class='text-primary'>${subdomain_name}</span>.</h6>`);
-		$('#modal-content').append(`<ul id="vulnerabilities-detail-modal-ul"></ul>`);
-		for (vuln in data['vulnerabilities']){
-			vuln_obj = data['vulnerabilities'][vuln];
-			description = '';
-			reference = '';
-			extracted_results = '';
-			if (vuln_obj['description']) {
-				description = `<br><span class="ml-2">${vuln_obj['description']}</span>`;
-			}
-			if (vuln_obj['reference']) {
-				reference = `<br><span class="ml-2"><span class="text-dark">Reference:</span> ${vuln_obj['reference']}</span>`;
-			}
-			if (vuln_obj['extracted_results']) {
-				extracted_results = `<br><span class="ml-2"><span class="text-dark">Extracted Results:</span> ${vuln_obj['extracted_results']}</span>`;
-			}
-			$("#vulnerabilities-detail-modal-ul").append(`<li><a href="${vuln_obj['http_url']}" target="_blank" class="text-primary">${vuln_obj['name']}</a>${description}${reference}${extracted_results}</li>`);
-		}
-	}).fail(function(){
-		$('#modal-loader').empty();
-		$("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
+
+	$('#xl-modal-title').empty();
+	$('#xl-modal-content').empty();
+	$('#xl-modal-footer').empty();
+
+	Swal.fire({
+		title: `Fetching ${severity_title} vulnerabilities for ${subdomain_name}...`
 	});
+	swal.showLoading();
+
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	}).then(response => response.json()).then(function(response) {
+		console.log(response);
+		swal.close();
+		$('#xl-modal_title').html(`${subdomain_name}`);
+		render_vulnerability_in_xl_modal(response['count'], subdomain_name, response['results'])
+	});
+	$('#modal_xl_scroll_dialog').modal('show');
+	$("body").tooltip({
+		selector: '[data-toggle=tooltip]'
+	});
+
 }
 
 

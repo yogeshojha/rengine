@@ -1719,7 +1719,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			vulnerability_queryset = vulnerability_queryset.filter(severity=severity)
 
 		if subdomain_id:
-			vulnerability_queryset = endpoints_queryset.filter(subdomain__id=subdomain_id)
+			vulnerability_queryset = vulnerability_queryset.filter(subdomain__id=subdomain_id)
 
 		self.queryset = vulnerability_queryset
 
