@@ -12,6 +12,8 @@ router.register(r'listSubdomains', SubdomainsViewSet)
 
 router.register(r'listEndpoints', EndPointViewSet)
 
+router.register(r'listDirectories', DirectoryViewSet)
+
 router.register(r'listVulnerability', VulnerabilityViewSet)
 
 router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet)
