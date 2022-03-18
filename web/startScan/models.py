@@ -216,6 +216,10 @@ class Subdomain(models.Model):
 			subdomain__name=self.name)
 
 	@property
+	def get_directories_count(self):
+		return DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(id=self.id))).distinct().count()
+
+	@property
 	def get_todos(self):
 		TodoNote = apps.get_model('recon_note', 'TodoNote')
 		notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
