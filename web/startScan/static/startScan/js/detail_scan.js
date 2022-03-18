@@ -1003,12 +1003,24 @@ function get_dork_details(dork_type, scan_id){
 
 
 function get_vulnerability_modal(scan_id, severity, subdomain_id, subdomain_name){
+	var url = `/api/listVulnerability/?&format=json`;
+
 	if (scan_id) {
-		url = `/api/listVulnerability/?scan_history=${scan_id}&severity=${severity}&subdomain_id=${subdomain_id}&format=json`;
+		url += `&scan_history=${scan_id}`;
 	}
-	else{
-		url = `/api/listVulnerability/?severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+
+	if (severity != null) {
+		url += `&severity=${severity}`;
 	}
+
+	if (subdomain_id) {
+		url += `&subdomain_id=${subdomain_id}`;
+	}
+
+
+	// else{
+	// 	url = `/api/listVulnerability/?severity=${severity}&subdomain_name=${subdomain_name}&format=json`;
+	// }
 	switch (severity) {
 		case 0:
 		severity_title = 'Informational'

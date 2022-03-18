@@ -1767,7 +1767,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			else:
 				qs = self.general_lookup(search_value)
 			return qs.order_by(order_col)
-		return qs
+		return qs.order_by('-severity')
 
 	def general_lookup(self, search_value):
 		qs = self.queryset.filter(
