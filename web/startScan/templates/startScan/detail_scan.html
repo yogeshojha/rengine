@@ -1668,7 +1668,7 @@ $(document).ready(function(){
 
 							var subscan_count_badge = '';
 							if (row['subscan_count']){
-								subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
+								subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
 							}
 
 							tech_badge += content_type;

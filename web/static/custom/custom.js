@@ -1293,3 +1293,76 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 	// 	});
 	// });
 }
+
+
+function get_and_render_subscan_history(subdomain_id, subdomain_name){
+	// This function displays the subscan history in a modal for any particular subdomain
+	var data = {'subdomain_id': subdomain_id};
+
+	fetch('/api/listSubScans/?format=json', {
+		method: 'POST',
+		credentials: "same-origin",
+		body: JSON.stringify(data),
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			"Content-Type": 'application/json',
+		}
+	}).then(function(response) {
+		return response.json();
+	}).then(function(data) {
+		console.log(data);
+		if (data['status']) {
+			$('#modal_title').html('Subscan History for subdomain ' + subdomain_name);
+			$('#modal-content').empty();
+			$('#modal-content').append(`<div id="subscan_history_table"></div>`);
+
+			$('#subscan_history_table').empty();
+
+			for (var result in data['results']) {
+
+				var result_obj = data['results'][result];
+
+
+				var task_name = get_task_name(result_obj);
+
+				if (result_obj.status == 0 ) {
+					color = 'danger';
+					bg_color = 'bg-soft-danger';
+					status_badge = '<span class="float-end badge bg-danger">Failed</span>';
+				}
+				else if (result_obj.status == 3) {
+					color = 'danger';
+					bg_color = 'bg-soft-danger';
+					status_badge = '<span class="float-end badge bg-danger">Aborted</span>';
+				}
+				else if (result_obj.status == 2){
+					color = 'success';
+					bg_color = 'bg-soft-success';
+					status_badge = '<span class="float-end badge bg-success">Task Completed</span>';
+				}
+
+				$('#subscan_history_table').append(`
+					<div class="card border-${color} border mini-card">
+					<a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${result_obj['id']})">
+					<div class="card-header ${bg_color} text-${color} mini-card-header">
+					${task_name} on <b>${result_obj.subdomain_name}</b>
+					</div>
+					<div class="card-body mini-card-body">
+					<p class="card-text">
+					${status_badge}
+					<span class="">
+					Task Completed ${result_obj.completed_ago} ago
+					</span>
+					Took ${result_obj.time_taken}
+					</p>
+					</div>
+					</a>
+					</div>
+					`);
+			}
+
+
+			$('#modal_dialog').modal('show');
+		}
+	});
+}
