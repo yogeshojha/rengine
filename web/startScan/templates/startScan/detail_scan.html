@@ -265,6 +265,21 @@ Scan Findings
 						</div>
 					</div>
 				</div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									Sub Scan History for <span class="badge badge-soft-primary">{{history.domain.name}}</span>
+								</h5>
+								<div data-simplebar style="max-height: 410px;" class="p-2">
+									<div id="subscan_history_widget">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="col-xl-9 col-lg-8">
 				<div class="row">
@@ -2391,6 +2406,9 @@ $(document).ready(function(){
 		// recon data changes
 		get_subdomain_changes({{scan_history_id}});
 		get_endpoint_changes({{scan_history_id}});
+
+		// load scan history widget
+		loadSubscanHistoryWidget({{scan_history_id}});
 
 		function checkedCount() {
 			// this function will count the number of boxes checked
