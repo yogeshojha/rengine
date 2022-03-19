@@ -687,6 +687,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
     critical_count = serializers.SerializerMethodField('get_critical_count')
     todos_count = serializers.SerializerMethodField('get_todos_count')
     directories_count = serializers.SerializerMethodField('get_directories_count')
+    subscan_count = serializers.SerializerMethodField('get_subscan_count')
     ip_addresses = IpSerializer(many=True)
     technologies = TechnologySerializer(many=True)
     directories = DirectoryScanSerializer(many=True)
@@ -721,6 +722,9 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
     def get_directories_count(self, subdomain):
         return subdomain.get_directories_count
+
+    def get_subscan_count(self, subdomain):
+        return subdomain.get_subscan_count
 
     def get_todos_count(self, subdomain):
         return len(subdomain.get_todos)
