@@ -1728,8 +1728,11 @@ function loadSubscanHistoryWidget(scan_history_id){
 		return response.json();
 	}).then(function(data) {
 		console.log(data);
+		$('#subscan_history_widget').empty();
 		if (data['status']) {
-			$('#subscan_history_widget').empty();
+			$('#sub_scan_history_count').append(`
+				<span class="badge badge-soft-primary me-1">${data['results'].length}</span>
+			`)
 			for (var result in data['results']) {
 
 				var result_obj = data['results'][result];
@@ -1748,6 +1751,11 @@ function loadSubscanHistoryWidget(scan_history_id){
 					color = 'success';
 					bg_color = 'bg-soft-success';
 					status_badge = '<span class="float-end badge bg-success">Task Completed</span>';
+				}
+				else if(result_obj.status == 1){
+					color = 'primary';
+					bg_color = 'bg-soft-primary';
+					status_badge = '<span class="float-end badge bg-primary">Running</span>';
 				}
 
 				$('#subscan_history_widget').append(`
@@ -1769,6 +1777,17 @@ function loadSubscanHistoryWidget(scan_history_id){
 					</div>
 					`);
 				}
+			}
+			else{
+				$('#sub_scan_history_count').append(`
+					<span class="badge badge-soft-primary me-1">0</span>
+				`)
+				$('#subscan_history_widget').append(`
+					<div class="alert alert-warning alert-dismissible fade show mt-2" role="alert">
+					<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+					No Subscans has been initiated for any subdomains. You can select individual subdomains and initiate subscans like Directory Fuzzing, Vulnerability Scan etc.
+					</div>
+				`);
 			}
 		});
 }
