@@ -45,6 +45,10 @@ urlpatterns = [
         ListSubdomains.as_view(),
         name='querySubdomains'),
     path(
+        'queryEndpoints/',
+        ListEndpoints.as_view(),
+        name='queryEndpoints'),
+    path(
         'queryOsintUsers/',
         ListOsintUsers.as_view(),
         name='queryOsintUsers'),
