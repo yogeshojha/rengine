@@ -93,6 +93,10 @@ urlpatterns = [
         ListEngines.as_view(),
         name='listEngines'),
     path(
+        'listSubScans/',
+        ListSubScans.as_view(),
+        name='listSubScans'),
+    path(
         'listScanHistory/',
         ListScanHistory.as_view(),
         name='listScanHistory'),

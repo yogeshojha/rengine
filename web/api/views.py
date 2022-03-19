@@ -73,6 +73,28 @@ class FetchSubscanResults(APIView):
 		return Response({'subscan': subscan_data, 'result': subscan_results})
 
 
+class ListSubScans(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		subdomain_id = data.get('subdomain_id', None)
+
+		response = {}
+
+		response['status'] = False
+
+		if subdomain_id:
+			subscans = SubScan.objects.filter(subdomain__id=subdomain_id)
+			subscan_results = SubScanResultSerializer(subscans, many=True).data
+
+			if subscans:
+				response['status'] = True
+				response['results'] = subscan_results
+
+		return Response(response)
+
+
 class DeleteMultipleRows(APIView):
 	def post(self, request):
 		req = self.request
