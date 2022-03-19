@@ -227,7 +227,7 @@ class Subdomain(models.Model):
 
 	@property
 	def get_subscan_count(self):
-		return 12
+		return SubScan.objects.filter(subdomain__id=self.id).distinct().count()
 
 
 class SubScan(models.Model):

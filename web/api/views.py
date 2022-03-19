@@ -86,7 +86,7 @@ class ListSubScans(APIView):
 
 		if subdomain_id:
 			subscans = SubScan.objects.filter(subdomain__id=subdomain_id)
-			subscan_results = SubScanResultSerializer(subscans, many=True).data
+			subscan_results = SubScanSerializer(subscans, many=True).data
 
 			if subscans:
 				response['status'] = True
