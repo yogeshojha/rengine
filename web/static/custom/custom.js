@@ -1261,7 +1261,8 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 			</tr>
 		`);
 	}
-	$("#directory-modal-datatable").DataTable({
+	var interesting_keywords_array = [];
+	var dir_modal_table = $("#directory-modal-datatable").DataTable({
 		"oLanguage": {
 			"oPaginate": {
 				"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
@@ -1277,7 +1278,18 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 			[2, "desc"]
 		],
 		drawCallback: function() {
-			$(".dataTables_paginate > .pagination").addClass("pagination-rounded")
+			$(".dataTables_paginate > .pagination").addClass("pagination-rounded");
 		}
 	});
+	// TODO: Find interetsing dirs
+	// fetch("/api/listInterestingKeywords")
+	// .then(response => {
+	// 	return response.json();
+	// })
+	// .then(data => {
+	// 	interesting_keywords_array = data;
+	// 	dir_modal_table.rows().every(function(){
+	// 		console.log(this.data());
+	// 	});
+	// });
 }

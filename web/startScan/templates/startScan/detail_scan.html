@@ -64,7 +64,7 @@ Scan Findings
 					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">URLs&nbsp;<i class="fe-chevron-down"></i></a>
 					<ul class="dropdown-menu" style="width: 240px;">
 						<li><a class="dropdown-item" id="pills-endpoints-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">All Endpoints</a></li>
-						{% if history.fetch_url and history.used_gf_patterns%}
+						{% if history.fetch_url and history.used_gf_patterns %}
 						{% for key,value in matched_gf_count.items %}
 						{% if value > 0 %}
 						<li><a class="dropdown-item" id="pills-{{key}}-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">{{key|upper}}<span class="badge-soft-danger float-end ms-1 ps-1 pe-1">{{value}}</span></a></li>
@@ -745,6 +745,7 @@ Scan Findings
 											<th>Webserver</th>
 											<th>Action</th>
 											<th>Directories Count</th>
+											<th>Subscan Count</th>
 										</tr>
 									</thead>
 								</table>
@@ -1585,11 +1586,12 @@ $(document).ready(function(){
 				{'data': 'content_type'},
 				{'data': 'id'},
 				{'data': 'directories_count'},
+				{'data': 'subscan_count'},
 			],
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25],
+					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
 					"visible": false,
 					"searchable": false,
 				},
@@ -1641,16 +1643,16 @@ $(document).ready(function(){
 
 							endpoint_count_badge = '';
 							if (row['endpoint_count']) {
-								endpoint_count_badge = `<span class="pl-2 pr-2 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
+								endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
 							}
 
 							vuln_count_badge = '';
-							total_vuln_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, null, ${row['id']}, '${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
-							info_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, ${row['id']}, '${row['name']}')">${row['info_count']} Info</span>`;
-							low_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, ${row['id']}, '${row['name']}')">${row['low_count']} Low</span>`;
-							medium_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, ${row['id']}, '${row['name']}')">${row['medium_count']} Med</span>`;
-							high_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, ${row['id']}, '${row['name']}')">${row['high_count']} High</span>`;
-							critical_badge = `<span class='pl-2 pr-2 ms-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, ${row['id']}, '${row['name']}')">${row['critical_count']} Critical</span>`;
+							total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, null, ${row['id']}, '${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
+							info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, ${row['id']}, '${row['name']}')">${row['info_count']} Info</span>`;
+							low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, ${row['id']}, '${row['name']}')">${row['low_count']} Low</span>`;
+							medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, ${row['id']}, '${row['name']}')">${row['medium_count']} Med</span>`;
+							high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, ${row['id']}, '${row['name']}')">${row['high_count']} High</span>`;
+							critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, ${row['id']}, '${row['name']}')">${row['critical_count']} Critical</span>`;
 							vuln_count_badge = `<div class="">` + (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '') + `</div>`;
 
 							vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0? total_vuln_badge : '') + vuln_count_badge;
@@ -1661,13 +1663,18 @@ $(document).ready(function(){
 
 							var directory_count_badge = '';
 							if (row['directories_count']){
-								directory_count_badge = `<span class="ms-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+								directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+							}
+
+							var subscan_count_badge = '';
+							if (row['subscan_count']){
+								subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
 							}
 
 							tech_badge += content_type;
 							tech_badge += web_server;
 
-							end_vuln_badge = '<div class="">' + endpoint_count_badge + directory_count_badge + vuln_count_badge + '</div>';
+							end_vuln_badge = '<div class="">' + subscan_count_badge + endpoint_count_badge + directory_count_badge + vuln_count_badge + '</div>';
 
 							if (row['http_url']) {
 								if (row['cname']) {

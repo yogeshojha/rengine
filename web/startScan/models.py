@@ -225,6 +225,10 @@ class Subdomain(models.Model):
 		notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
 		return notes.values()
 
+	@property
+	def get_subscan_count(self):
+		return 12
+
 
 class SubScan(models.Model):
 	id = models.AutoField(primary_key=True)
