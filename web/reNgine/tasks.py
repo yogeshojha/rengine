@@ -231,6 +231,14 @@ def initiate_scan(
 
         try:
             if task.vulnerability_scan:
+                if( not task.subdomain_discovery):
+                    activity_id = create_scan_activity(task, "HTTP Crawler", 1)
+                    http_crawler(
+                        task,
+                        domain,
+                        results_dir,
+                        activity_id)
+                    update_last_activity(activity_id, 2)
                 activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
                 vulnerability_scan(
                     task,
@@ -1343,8 +1351,8 @@ def vulnerability_scan(
                             vulnerability.http_url = json_st['matched']
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
-                        if 'templateID' in json_st:
-                            vulnerability.template_used = json_st['templateID']
+                        if 'template-id' in json_st:
+                            vulnerability.template_used = json_st['template-id']
                         if 'description' in json_st:
                             vulnerability.description = json_st['description']
                         if 'matcher_name' in json_st:
@@ -1354,14 +1362,15 @@ def vulnerability_scan(
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
-                        # send notification for all vulnerabilities except info
+                        # send notification for all NEW vulnerabilities except info
                         if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:
-                            message = "*Alert: Vulnerability Identified*"
-                            message += "\n\n"
-                            message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
-                            message += "\nVulnerability Name: {}".format(json_st['info']['name'])
-                            message += "\nVulnerable URL: {}".format(json_st['host'])
-                            send_notification(message)
+                            if Vulnerability.objects.filter(template_used=vulnerability.template_used).filter(http_url=vulnerability.http_url).count() == 1:
+                                message = "*Alert: Vulnerability Identified*"
+                                message += "\n\n"
+                                message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
+                                message += "\nVulnerability Name: {}".format(json_st['info']['name'])
+                                message += "\nVulnerable URL: {}".format(json_st['host'])
+                                send_notification(message)
 
                         # send report to hackerone
                         if Hackerone.objects.all().exists() and json_st['info']['severity'] != 'info' and json_st['info']['severity'] \
