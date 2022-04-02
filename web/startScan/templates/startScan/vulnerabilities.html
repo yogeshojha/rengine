@@ -35,6 +35,7 @@ All Vulnerabilities
 	<div class="col-12">
 		<div class="card">
 			<div class="card-body">
+				<!--
 				<div class="row">
 					<div class="col-12">
 						<div class="btn-group mb-2 dropstart float-end">
@@ -59,7 +60,7 @@ All Vulnerabilities
 							</div>
 						</div>
 					</div>
-				</div>
+				</div> -->
 				<div class="row mt-2">
 					<div class="col-12">
 						<table class="table style-3 table-hover" id="vulnerability_results">
@@ -109,7 +110,6 @@ All Vulnerabilities
 <script type="text/javascript">
 $(document).ready(function() {
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
-	var drawCallback_api;
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -387,32 +387,33 @@ $(document).ready(function() {
 		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 
-	$('input[name="grouping_type"]').on('change', function(e) {
-		var groupColumn = 2;
-		switch (this.value) {
-			case 'name':
-				groupColumn = 2;
-				break;
-			case 'type':
-				groupColumn = 1;
-				break;
-			case 'url':
-				groupColumn = 10;
-				break;
-		}
-		var api = drawCallback_api;
-		// $('#vulnerability_results').DataTable().ajax.reload();
-		var rows = api.rows( {page:'current'} ).nodes();
-		var last=null;
-		api.column(groupColumn, {page:'current'} ).data().each( function ( group, i ) {
-			if ( last !== group ) {
-				$(rows).eq( i ).before(
-					'<tr class="group"><td colspan="11">'+group+'</td></tr>'
-				);
-				last = group;
-			}
-		});
-	});
+	// TODO: Add Grouping
+	// $('input[name="grouping_type"]').on('change', function(e) {
+	// 	var groupColumn = 2;
+	// 	switch (this.value) {
+	// 		case 'name':
+	// 			groupColumn = 2;
+	// 			break;
+	// 		case 'type':
+	// 			groupColumn = 1;
+	// 			break;
+	// 		case 'url':
+	// 			groupColumn = 10;
+	// 			break;
+	// 	}
+	// 	vulnerability_table.order([[groupColumn, 'asc']]).draw();
+	// 	var api = $(`#vulnerability_results`).dataTable().api();
+	// 	var rows = api.rows( {page:'current'} ).nodes();
+	// 	var last=null;
+	// 	api.column(groupColumn, {page:'current'} ).data().each( function ( group, i ) {
+	// 		if ( last !== group ) {
+	// 			$(rows).eq( i ).before(
+	// 				'<tr class="group"><td colspan="11">'+group+'</td></tr>'
+	// 			);
+	// 			last = group;
+	// 		}
+	// 	});
+	// });
 
 });
 </script>
