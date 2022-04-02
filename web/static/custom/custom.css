@@ -362,3 +362,8 @@ div.dataTables_wrapper div.dataTables_processing {
 .mini-card{
   margin-bottom: 10px;
 }
+
+tr.group,
+tr.group:hover {
+    background-color: #ddd !important;
+}
