@@ -128,7 +128,6 @@ class StopScan(APIView):
 		try:
 			celery_id = data['celery_id']
 			is_scan = data['is_scan']
-			print(celery_id)
 			if is_scan:
 				scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
 				app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
@@ -985,7 +984,7 @@ class ListSubdomains(APIView):
 						number=port)))
 
 		if 'only_important' in req.query_params:
-			   subdomain_query = subdomain_query.filter(is_important=True)
+			subdomain_query = subdomain_query.filter(is_important=True)
 
 
 		if 'no_lookup_interesting' in req.query_params:
@@ -993,6 +992,24 @@ class ListSubdomains(APIView):
 		else:
 			serializer = SubdomainSerializer(subdomain_query, many=True)
 		return Response({"subdomains": serializer.data})
+
+	def post(self, req):
+		req = self.request
+		data = req.data
+
+		subdomain_ids = data.get('subdomain_ids')
+
+		subdomain_names = []
+
+		for id in subdomain_ids:
+			subdomain_names.append(Subdomain.objects.get(id=id).name)
+
+		if subdomain_names:
+			return Response({'status': True, "results": subdomain_names})
+
+		return Response({'status': False})
+
+
 
 class ListOsintUsers(APIView):
 	def get(self, request, format=None):
