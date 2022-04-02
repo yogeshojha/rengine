@@ -1635,14 +1635,74 @@ $('#btn-initiate-subtask').on('click', function(){
 	}
 });
 
+// download subdomains
+function downloadSelectedSubdomains(domain_name){
+	if (!checkedCount()) {
+		Swal.fire({
+			title: 'Oops! No Subdomains has been selected!',
+			icon: 'error',
+			padding: '2em'
+		})
+	} else {
+		Swal.fire({
+			title: 'Querying Selected Subdomains...'
+		});
+		swal.showLoading();
+
+		subdomain_item = document.getElementsByClassName("subdomain_checkbox");
+		var subdomain_ids = [];
+		for (var i = 0; i < subdomain_item.length; i++) {
+			if (subdomain_item[i].checked) {
+				subdomain_ids.push($(subdomain_item[i]).val());
+			}
+		}
+		var data = {'subdomain_ids': subdomain_ids};
+		fetch('/api/querySubdomains/', {
+			method: 'POST',
+			credentials: "same-origin",
+			headers: {
+				"X-CSRFToken": getCookie("csrftoken"),
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => response.json())
+		.then(function (response) {
+			swal.close();
+			if (response['status']) {
+				$('#modal_dialog').modal('show');
+				$('.modal_count').html(response['results'].length);
+				$('#modal-content').empty();
+				subdomains = '';
+				$('#modal-content').append(`<textarea class="form-control clipboard copy-txt" id="selected_subdomains_text_area" rows="10" spellcheck="false"></textarea>`);
+				for (subdomain in response['results']){
+					subdomain_obj = response['results'][subdomain];
+					subdomains += subdomain_obj + '\n'
+				}
+				$('#selected_subdomains_text_area').append(subdomains);
+				$("#modal-footer").empty();
+				$("#modal-footer").append(`<a href="javascript:download('subdomains-${domain_name}.txt', subdomains);" class="m-1 btn btn-dark copyable float-end btn-md"><i class="fe-download me-1"></i> Download Subdomains as txt</a>`);
+				$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#selected_subdomains_text_area"><i class="fe-copy me-1"></i> Copy Subdomains</a>`);
+			}
+			else{
+				Swal.fire({
+					title: 'Oops! Could not download selected subdomains.',
+					icon: 'error',
+					padding: '2em'
+				});
+			}
+		});
+	}
+}
+
 
 function deleteMultipleSubdomains(){
 	if (!checkedCount()) {
-		swal({
+		Swal.fire({
 			title: 'Oops! No Subdomains has been selected!',
-			type: 'error',
+			icon: 'error',
 			padding: '2em'
-		})
+		});
 	} else {
 		// atleast one target is selected
 		Swal.fire({
