@@ -25,7 +25,7 @@ All Vulnerabilities
 						<button id="vulnerability-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
 					</div>
 				</div>
-				<div class="autocom-box mt-container mx-auto" id="autocom-box">
+				<div class="autocom-box mt-container mx-auto vulnerability-search" id="autocom-box">
 				</div>
 			</div>
 		</div>
@@ -72,11 +72,14 @@ All Vulnerabilities
 
 
 {% block page_level_script %}
+<script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
+<script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
+	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -341,16 +344,25 @@ $(document).ready(function() {
 				"targets": 15,
 			},
 		],
-		drawCallback: function () {
+		drawCallback: function (settings) {
+			// var api = this.api();
+			// var rows = api.rows( {page:'current'} ).nodes();
+			// var last=null;
+			// var groupColumn = 3;
+			// api.column(groupColumn, {page:'current'} ).data().each( function ( group, i ) {
+			// 	if ( last !== group ) {
+			// 		$(rows).eq( i ).before(
+			// 			'<tr class="group"><td colspan="5">'+group+'</td></tr>'
+			// 		);
+			// 		last = group;
+			// 	}
+			// });
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
 				$(row).addClass('table-success text-strike');
 			}
 		},
-	});
-	$('#vulnerability-search-button').click(function () {
-		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 	$('#vulnerability-search-button').click(function () {
 		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
