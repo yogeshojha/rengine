@@ -425,11 +425,13 @@ class Whois(APIView):
 		req = self.request
 		ip_domain = req.query_params.get('ip_domain')
 		save_db = True if 'save_db' in req.query_params else False
-		if ip_domain:
+		# fetch_from_db query param can be used to pull the whois record directly from db
+		# instead of fetching new
+		# if fetch_from_db = True, will not be queried to domainbigdata
+		fetch_from_db = True if 'fetch_from_db' in req.query_params else False
+		if ip_domain and not fetch_from_db:
 			response = requests.get('https://domainbigdata.com/{}'.format(ip_domain))
 			tree = html.fromstring(response.content)
-
-
 			try:
 				#RegistrantInfo Model
 				name = tree.xpath('//*[@id="trRegistrantName"]/td[2]/a/text()')
@@ -644,6 +646,42 @@ class Whois(APIView):
 					'ip_domain': ip_domain,
 					'result': 'Domain not found'
 				})
+		elif ip_domain and fetch_from_db:
+			if Domain.objects.filter(name=ip_domain).exists():
+				domain = Domain.objects.get(name=ip_domain)
+				if domain.domain_info:
+					print(domain.domain_info.nameserver_history.all())
+					return Response({
+						'status': True,
+						'ip_domain': ip_domain,
+						'domain': {
+							'date_created': domain.domain_info.date_created,
+							'domain_age': domain.domain_info.domain_age,
+							'ip_address': domain.domain_info.ip_address,
+							'geolocation': domain.domain_info.geolocation,
+							'geolocation_iso': domain.domain_info.geolocation_iso,
+						},
+						'nameserver': {
+							'history': NameServerHistorySerializer(domain.domain_info.nameserver_history.all(), many=True).data,
+							'records': NSRecordSerializer(domain.domain_info.nameserver_record.all(), many=True).data
+						},
+						'registrant': {
+							'name': domain.domain_info.whois.registrant.name,
+							'organization': domain.domain_info.whois.registrant.organization,
+							'email': domain.domain_info.whois.registrant.email,
+							'address': domain.domain_info.whois.registrant.address,
+							'city': domain.domain_info.whois.registrant.city,
+							'state': domain.domain_info.whois.registrant.state,
+							'country': domain.domain_info.whois.registrant.country,
+							'country_iso': domain.domain_info.whois.registrant.country_iso,
+							'tel': domain.domain_info.whois.registrant.phone_number,
+							'fax': domain.domain_info.whois.registrant.fax,
+						},
+						'whois': domain.domain_info.whois.details
+					})
+					return Response({'status': True})
+				return Response({'status': False, 'message': 'WHOIS does not exist.'})
+			return Response({'status': False, 'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'})
 		return Response({'status': False})
 
 
