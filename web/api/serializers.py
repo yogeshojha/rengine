@@ -8,6 +8,18 @@ from recon_note.models import *
 from django.db.models import F, JSONField, Value
 
 
+class NSRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NSRecord
+        fields = '__all__'
+
+
+class NameServerHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NameServerHistory
+        fields = '__all__'
+
+
 class SubScanResultSerializer(serializers.ModelSerializer):
 
     task = serializers.SerializerMethodField('get_task_name')
