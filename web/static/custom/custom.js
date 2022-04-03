@@ -1366,3 +1366,228 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name){
 		}
 	});
 }
+
+function fetch_whois(domain_name, save_db){
+	// this function will fetch WHOIS record for any subdomain and also display
+	// snackbar once whois is fetched
+	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+	if (save_db) {
+		url += '&save_db';
+	}
+	$('[data-toggle="tooltip"]').tooltip('hide');
+	Snackbar.show({
+		text: 'Fetching WHOIS...',
+		pos: 'top-right',
+		duration: 1500,
+	});
+	$("#whois_not_fetched_alert").hide();
+	$("#whois_fetching_alert").show();
+	fetch(``, {}).then(res => res.json())
+	.then(function (response) {
+		$("#whois_fetching_alert").hide();
+		document.getElementById('domain_age').innerHTML = response['domain']['domain_age'] + ' ' + response['domain']['date_created'];
+		document.getElementById('ip_address').innerHTML = response['domain']['ip_address'];
+		document.getElementById('ip_geolocation').innerHTML = response['domain']['geolocation'];
+
+		document.getElementById('registrant_name').innerHTML = response['registrant']['name'];
+		console.log(response['registrant']['organization'])
+		document.getElementById('registrant_organization').innerHTML = response['registrant']['organization'] ? response['registrant']['organization'] : ' ';
+		document.getElementById('registrant_address').innerHTML = response['registrant']['address'] + ' ' + response['registrant']['city'] + ' ' + response['registrant']['state'] + ' ' + response['registrant']['country'];
+		document.getElementById('registrant_phone_numbers').innerHTML = response['registrant']['tel'];
+		document.getElementById('registrant_fax').innerHTML = response['registrant']['fax'];
+
+		Snackbar.show({
+			text: 'Whois Fetched...',
+			pos: 'top-right',
+			duration: 3000
+		});
+
+		$("#whois_fetched_alert").show();
+
+		$("#whois_fetched_alert").fadeTo(2000, 500).slideUp(1500, function(){
+			$("#whois_fetched_alert").slideUp(500);
+		});
+
+	});
+}
+
+function get_domain_whois(domain_name){
+	// this function will fetch whois from db, if not fetched, will make a fresh
+	// query and will display whois on a modal
+	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}&fetch_from_db`
+
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`
+	});
+	swal.showLoading();
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	}).then(response => response.json()).then(function(response) {
+		console.log(response);
+		if (response.status) {
+			swal.close();
+			display_whois_on_modal(response);
+		}
+		else{
+			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}&save_db`, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					'Content-Type': 'application/json'
+				},
+			}).then(response => response.json()).then(function(response) {
+				console.log(response);
+				if (response.status) {
+					swal.close();
+					display_whois_on_modal(response);
+				}
+				else{
+					Swal.fire({
+						title: 'Oops!',
+						text: `reNgine could not fetch WHOIS records for ${domain_name}!`,
+						icon: 'error'
+					});
+				}
+			});
+		}
+	});
+}
+
+
+function display_whois_on_modal(response){
+	// this function will display whois data on modal, should be followed after get_domain_whois()
+	$('#modal_dialog').modal('show');
+	$('#modal-content').empty();
+	$("#modal-footer").empty();
+
+	$('#modal-content').append(`<div class="row mt-3">
+		<div class="col-sm-3">
+			<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+				<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
+				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
+				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
+				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
+			</div>
+		</div> <!-- end col-->
+		<div class="col-sm-9">
+			<div class="tab-content pt-0">
+				<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+					<h4 class="header-title">Domain Information</h4>
+					<table class="domain_details_table table table-hover table-borderless">
+						<tr style="display: none">
+							<th>&nbsp;</th>
+							<th>&nbsp;</th>
+						</tr>
+						<tr>
+							<td>Domain Name</td>
+							<td>${response['ip_domain']}</td>
+						</tr>
+						<tr>
+							<td>Domain age</td>
+							<td>${response['domain']['domain_age']}</td>
+						</tr>
+						<tr>
+							<td>IP Address</td>
+							<td>${response['domain']['ip_address']}</td>
+						</tr>
+						<tr>
+							<td>IP Geolocation</td>
+							<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/${response['domain']['geolocation_iso']}.png" alt="${response['domain']['geolocation_iso']}">&nbsp;&nbsp;${response['domain']['geolocation']}</td>
+						</tr>
+					</table>
+					<h4 class="header-title mt-3">Registrant Information</h4>
+					<table class="domain_details_table table table-hover table-borderless">
+						<tr style="display: none">
+							<th>&nbsp;</th>
+							<th>&nbsp;</th>
+						</tr>
+						<tr>
+							<td>Name</td>
+							<td>${response['registrant']['name'] ? response['registrant']['name']: "-"}</td>
+						</tr>
+						<tr>
+							<td>Email</td>
+							<td>${response['registrant']['email'] ? response['registrant']['email']: "-"}</td>
+						</tr>
+						<tr>
+							<td>Organization</td>
+							<td>${response['registrant']['organization'] ? response['registrant']['organization']: "-"}</td>
+						</tr>
+						<tr>
+							<td>Address</td>
+							<td>${response['registrant']['address'] ? response['registrant']['address']: "-"}</td>
+						</tr>
+						<tr>
+							<td>Phone Numbers</td>
+							<td>${response['registrant']['tel'] ? response['registrant']['tel']: "-"}</td>
+						</tr>
+						<tr>
+							<td>Fax</td>
+							<td>${response['registrant']['fax'] ? response['registrant']['fax']: "-"}</td>
+						</tr>
+					</table>
+				</div>
+				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
+					<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
+				</div>
+				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+					{% if history.domain.domain_info.nameserver_history.all %}
+					<table class="table table-striped mb-0">
+						<thead class="table-dark">
+							<td>Date</td>
+							<td>Action</td>
+							<td>NameServer</td>
+						</thead>
+						<tbody>
+							{% for history in history.domain.domain_info.nameserver_history.all %}
+							<tr>
+								<td>{{history.date}}</td>
+								<td>{{history.action}}</td>
+								<td>{{history.server}}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+					{% else %}
+					No DNS history records found.
+					{% endif %}
+				</div>
+				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+					{% if history.domain.domain_info.nameserver_record.all %}
+					<table class="table table-striped mb-0">
+						<thead class="table-dark">
+							<td>Type</td>
+							<td>Hostname</td>
+							<td>Address</td>
+							<td>TTL</td>
+							<td>Class</td>
+							<td>Preference</td>
+						</thead>
+						<tbody>
+							{% for nameserver in history.domain.domain_info.nameserver_record.all %}
+							<tr>
+								<td><span class="badge badge-soft-primary me-1 ms-1">{{ nameserver.type}}</span></td>
+								<td>{{nameserver.hostname}}</td>
+								<td>{{nameserver.address}}</td>
+								<td>{{nameserver.ttl}}</td>
+								<td>{{nameserver.ns_class}}</td>
+								<td>{% if nameserver.preference %}{{nameserver.preference}}{% endif %}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+					{% else %}
+					No DNS history records found.
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>`);
+
+}
