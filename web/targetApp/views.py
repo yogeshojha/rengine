@@ -2,6 +2,8 @@ import validators
 import csv
 import io
 import os
+import requests
+import threading
 
 from datetime import timedelta
 from operator import and_, or_
@@ -41,6 +43,13 @@ def add_target(request):
                 'Target domain ' +
                 add_target_form.cleaned_data['name'] +
                 ' added successfully')
+            if 'fetch_whois_checkbox' in request.POST and request.POST['fetch_whois_checkbox'] == 'on':
+                thread = threading.Thread(
+                    target=get_whois,
+                    args=[add_target_form.cleaned_data['name'], True, False]
+                )
+                thread.setDaemon(True)
+                thread.start()
             return http.HttpResponseRedirect(reverse('list_target'))
         if 'add-ip-target' in request.POST:
             domains = request.POST.getlist('resolved_ip_domains')

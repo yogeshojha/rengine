@@ -76,11 +76,21 @@ Add or Import Targets
                   </div>
                 </div>
                 <div class="col-12">
-                  <label for="domainDescription" class="form-label">Hackerone Target Team Handle
+                  <label for="domainDescription" class="form-label">Hackerone Target Team Handle (Optional)
                     <br>
-                    This is used to send vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
+                    This is used for sending vulnerability reports to Hackerone Program automatically. Team handle can be found from program url, hackerone.com/team_handle
                   </label>
                   {{ form.h1_team_handle }}
+                </div>
+                <div class="col-6">
+                  <div class="mt-3">
+                    <div class="form-check">
+                      <input type="checkbox" class="form-check-input" id="fetch_whois_checkbox" name="fetch_whois_checkbox" checked>
+                      <label class="form-check-label" for="fetch_whois_checkbox">Fetch WHOIS and domain related information</label>
+                      <br>
+                      <span class="text-muted">(reNgine will automatically fetch whois and domain related information if selected.)</span>
+                    </div>
+                  </div>
                 </div>
                 <button class="btn btn-primary submit-fn mt-2 float-end" disabled type="submit" name="add-single-target" id="add-single-target" value="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Add Target</button>
               </form>
