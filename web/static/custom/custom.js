@@ -1466,7 +1466,7 @@ function display_whois_on_modal(response){
 	$('#modal-content').empty();
 	$("#modal-footer").empty();
 
-	$('#modal-content').append(`<div class="row mt-3">
+	content = `<div class="row mt-3">
 		<div class="col-sm-3">
 			<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 				<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
@@ -1486,19 +1486,21 @@ function display_whois_on_modal(response){
 						</tr>
 						<tr>
 							<td>Domain Name</td>
-							<td>${response['ip_domain']}</td>
+							<td>${response['ip_domain'] ? response['ip_domain']: "-"}</td>
 						</tr>
 						<tr>
 							<td>Domain age</td>
-							<td>${response['domain']['domain_age']}</td>
+							<td>${response['domain']['domain_age'] ? response['domain']['domain_age']: "-"}</td>
 						</tr>
 						<tr>
 							<td>IP Address</td>
-							<td>${response['domain']['ip_address']}</td>
+							<td>${response['domain']['ip_address'] ? response['domain']['ip_address']: "-" }</td>
 						</tr>
 						<tr>
 							<td>IP Geolocation</td>
-							<td><img src="https://domainbigdata.com/img/flags-iso/flat/24/${response['domain']['geolocation_iso']}.png" alt="${response['domain']['geolocation_iso']}">&nbsp;&nbsp;${response['domain']['geolocation']}</td>
+							<td>
+							${response['domain']['geolocation_iso'] ? `<img src="https://domainbigdata.com/img/flags-iso/flat/24/${response['domain']['geolocation_iso']}.png" alt="${response['domain']['geolocation_iso']}">` : ""}
+							&nbsp;&nbsp;${response['domain']['geolocation'] ? response['domain']['geolocation'] : "-"}</td>
 						</tr>
 					</table>
 					<h4 class="header-title mt-3">Registrant Information</h4>
@@ -1534,29 +1536,35 @@ function display_whois_on_modal(response){
 					</table>
 				</div>
 				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-					<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.whois.details}}</pre>
+					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response['whois'] ? response['whois'] : "No Whois Data found!"}</pre>
 				</div>
-				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					{% if history.domain.domain_info.nameserver_history.all %}
-					<table class="table table-striped mb-0">
-						<thead class="table-dark">
-							<td>Date</td>
-							<td>Action</td>
-							<td>NameServer</td>
-						</thead>
-						<tbody>
-							{% for history in history.domain.domain_info.nameserver_history.all %}
-							<tr>
-								<td>{{history.date}}</td>
-								<td>{{history.action}}</td>
-								<td>{{history.server}}</td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
-					{% else %}
-					No DNS history records found.
-					{% endif %}
+				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+				if (response['nameserver']['history'].length) {
+					content += `<table class="table table-striped mb-0">
+							<thead class="table-dark">
+								<td>Date</td>
+								<td>Action</td>
+								<td>NameServer</td>
+							</thead>
+							<tbody>`;
+
+					for (var history in response['nameserver']['history']) {
+						var obj = response['nameserver']['history'][history];
+						content += `
+						<tr>
+							<td>${obj['date']}</td>
+							<td>${obj['action']}</td>
+							<td>${obj['server']}</td>
+						</tr>
+						`;
+					}
+
+					content += `</tbody></table>`
+				}
+				else{
+					content += 'No DNS history records found.';
+				}
+				content += `
 				</div>
 				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 					{% if history.domain.domain_info.nameserver_record.all %}
@@ -1588,6 +1596,8 @@ function display_whois_on_modal(response){
 				</div>
 			</div>
 		</div>
-	</div>`);
+	</div>`;
+
+	$('#modal-content').append(content);
 
 }
