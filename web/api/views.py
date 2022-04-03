@@ -650,7 +650,6 @@ class Whois(APIView):
 			if Domain.objects.filter(name=ip_domain).exists():
 				domain = Domain.objects.get(name=ip_domain)
 				if domain.domain_info:
-					print(domain.domain_info.nameserver_history.all())
 					return Response({
 						'status': True,
 						'ip_domain': ip_domain,

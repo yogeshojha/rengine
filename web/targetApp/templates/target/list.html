@@ -74,9 +74,9 @@ Targets
               <td class="checkbox-column"> {{ domain.id }} </td>
               <td class=""> {{ domain.id }} </td>
               <td>
-                <b>{{ domain.name }}</b>
+                <b>{{ domain.name }}</b>&nbsp;&nbsp;<a href="#" onclick="get_domain_whois('{{domain.name}}')">(view whois)</a>
                 <br>
-                <span class="text-muted">Added {{ domain.insert_date|naturaltime }}</span>
+                <small class="text-muted">Added {{ domain.insert_date|naturaltime }}</small>
                 {% if domain.get_organization %}
                 <br>
                 {% for organization in domain.get_organization %}
