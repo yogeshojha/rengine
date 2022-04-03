@@ -3,13 +3,18 @@ import json
 import random
 import requests
 import tldextract
+
 from threading import Thread
+
+from bs4 import BeautifulSoup
+from lxml import html
 
 from discord_webhook import DiscordWebhook
 from django.db.models import Q
 from functools import reduce
 from scanEngine.models import *
 from startScan.models import *
+from api.serializers import *
 
 
 def get_lookup_keywords():
@@ -282,3 +287,266 @@ def send_hackerone_report(vulnerability_id):
         status_code = 111
 
         return status_code
+
+def get_whois(ip_domain, save_db=False, fetch_from_db=True):
+    # this function will fetch whois details for domains
+    # if save_db = True, then the whois will be saved in db
+    # if fetch_from_db = True then whois will be fetched from db, no lookup on
+    #     bigdomain data will be done
+    if ip_domain and not fetch_from_db:
+        response = requests.get('https://domainbigdata.com/{}'.format(ip_domain))
+        tree = html.fromstring(response.content)
+        try:
+            #RegistrantInfo Model
+            name = tree.xpath('//*[@id="trRegistrantName"]/td[2]/a/text()')
+            organization = tree.xpath('//*[@id="MainMaster_trRegistrantOrganization"]/td[2]/a/text()')
+            email = tree.xpath('//*[@id="trRegistrantEmail"]/td[2]/a/text()')
+            address = tree.xpath('//*[@id="trRegistrantAddress"]/td[2]/text()')
+            city = tree.xpath('//*[@id="trRegistrantCity"]/td[2]/text()')
+            state = tree.xpath('//*[@id="trRegistrantState"]/td[2]/text()')
+            country = tree.xpath('//*[@id="trRegistrantCountry"]/td[2]/text()')
+            country_iso = tree.xpath('//*[@id="imgFlagRegistrant"]/@alt')
+            tel = tree.xpath('//*[@id="trRegistrantTel"]/td[2]/text()')
+            fax = tree.xpath('//*[@id="trRegistrantFax"]/td[2]/text()')
+
+            # whois model
+            whois = tree.xpath('//*[@id="whois"]/div/div[3]/text()')
+            whois = "\n".join(whois).strip()
+
+            # DomainInfo Model
+            date_created = tree.xpath('//*[@id="trDateCreation"]/td[2]/text()')
+            domain_age = tree.xpath('//*[@id="trWebAge"]/td[2]/text()')
+            ip_address = tree.xpath('//*[@id="trIP"]/td[2]/a/text()')
+            geolocation = tree.xpath('//*[@id="imgFlag"]/following-sibling::text()')
+            geolocation_iso = tree.xpath('//*[@id="imgFlag"]/@alt')
+
+            is_private_path = tree.xpath("//*[contains(@class, 'websiteglobalstats')]/tr[10]/td[2]/span/text()")
+            is_private = False
+            if len(is_private_path) > 0:
+                is_private = True
+
+
+            date_created = date_created[0].strip() if date_created else None
+            domain_age = domain_age[0].strip() if domain_age else None
+            ip_address = ip_address[0].strip() if ip_address else None
+            geolocation = geolocation[0].strip() if geolocation else None
+            geolocation_iso = geolocation_iso[0].strip() if geolocation_iso else None
+            name = name[0].strip() if name else None
+            organization = organization[0].strip() if organization else None
+            email = email[0].strip() if email else None
+            address = address[0].strip() if address else None
+            city = city[0].strip() if city else None
+            state = state[0].strip() if state else None
+            country = country[0].strip() if country else None
+            country_iso = country_iso[0].strip() if country_iso else None
+            tel = tel[0].strip() if tel else None
+            fax = fax[0].strip() if fax else None
+
+            dns_history_xpath = tree.xpath("//*[@id='MainMaster_divNSHistory']/table/tbody/tr")
+            dns_history = []
+            for table_row in dns_history_xpath:
+                row = table_row.xpath('td/text()')
+                dns_history.append(
+                    {
+                        'date': row[0],
+                        'action': row[1],
+                        'nameserver': row[2],
+                    }
+                )
+
+            # save in db
+            if save_db and Domain.objects.filter(name=ip_domain).exists():
+                # look for domain and save in db
+                domain = Domain.objects.get(name=ip_domain)
+
+                registrant = RegistrantInfo()
+                registrant.name = name
+                registrant.organization = organization
+                registrant.email = email
+                registrant.address = address
+                registrant.city = city
+                registrant.state = state
+                registrant.country = country
+                registrant.country_iso = country_iso
+                registrant.phone_number = tel
+                registrant.fax = fax
+                registrant.save()
+
+                whois_model = WhoisDetail()
+                whois_model.details = whois if whois else None
+                whois_model.registrant = registrant
+                whois_model.save()
+
+                domain_info = DomainInfo()
+                domain_info.date_created = date_created
+                domain_info.domain_age = domain_age
+                domain_info.ip_address = ip_address
+                domain_info.geolocation = geolocation
+                domain_info.geolocation_iso = geolocation_iso
+                domain_info.whois = whois_model
+                domain_info.save()
+
+                for table_row in dns_history_xpath:
+                    row = table_row.xpath('td/text()')
+                    ns_history = NameServerHistory()
+                    ns_history.date = row[0]
+                    ns_history.action = row[1]
+                    ns_history.server = row[2]
+                    ns_history.save()
+
+                    domain_info.nameserver_history.add(ns_history);
+
+                domain.domain_info = domain_info
+                domain.save()
+
+            ns_records = []
+            for i in range(4):
+                ns_records_xpath = tree.xpath("//*[@id='divDNSRecords']/table[{}]/tbody/tr".format(i))
+                for table_row in ns_records_xpath:
+                    row = table_row.xpath('td/text()')
+                    if row[0] == 'A':
+                        # for getting address, use child lookup
+                        address = table_row.xpath('td/a/text()')
+                        address = address[0] if address else None
+
+                        ns_records.append(
+                            {
+                                'type': row[0],
+                                'hostname': row[1],
+                                'address': address,
+                                'ttl': row[2],
+                                'class': row[3],
+                            }
+                        )
+
+                        if save_db and Domain.objects.filter(name=ip_domain).exists():
+                            ns = NSRecord()
+                            ns.type = row[0]
+                            ns.hostname = row[1]
+                            ns.address = address
+                            ns.ttl = row[2]
+                            ns.ns_class = row[3]
+                            ns.save()
+                            domain_info.nameserver_record.add(ns)
+
+                    elif row[0] == 'AAAA':
+                        # for getting address, use child lookup
+                        ns_records.append(
+                            {
+                                'type': row[0],
+                                'hostname': row[1],
+                                'address': row[2],
+                                'ttl': row[3],
+                                'class': row[4],
+                            }
+                        )
+
+                        if save_db and Domain.objects.filter(name=ip_domain).exists():
+                            ns = NSRecord()
+                            ns.type = row[0]
+                            ns.hostname = row[1]
+                            ns.address = row[2]
+                            ns.ttl = row[3]
+                            ns.ns_class = row[4]
+                            ns.save()
+                            domain_info.nameserver_record.add(ns)
+
+                    elif row[0] == 'MX':
+                        ns_records.append(
+                            {
+                                'type': row[0],
+                                'hostname': row[1],
+                                'address': row[2],
+                                'preference': row[3],
+                                'ttl': row[4],
+                                'class': row[5],
+                            }
+                        )
+
+                        if save_db and Domain.objects.filter(name=ip_domain).exists():
+                            ns = NSRecord()
+                            ns.type = row[0]
+                            ns.hostname = row[1]
+                            ns.address = address
+                            ns.preference = row[3]
+                            ns.ttl = row[4]
+                            ns.ns_class = row[5]
+                            ns.save()
+                            domain_info.nameserver_record.add(ns)
+
+
+            return {
+                'status': True,
+                'ip_domain': ip_domain,
+                'domain': {
+                    'date_created': date_created,
+                    'domain_age': domain_age,
+                    'ip_address': ip_address,
+                    'geolocation': geolocation,
+                    'geolocation_iso': geolocation_iso,
+                },
+                'nameserver': {
+                    'history': dns_history,
+                    'records': ns_records
+                },
+                'registrant': {
+                    'name': name,
+                    'organization': organization,
+                    'email': email,
+                    'address': address,
+                    'city': city,
+                    'state': state,
+                    'country': country,
+                    'country_iso': country_iso,
+                    'tel': tel,
+                    'fax': fax,
+                },
+                'whois': whois if whois else None
+            }
+        except Exception as e:
+            logging.exception(e)
+            return {
+                'status': False,
+                'ip_domain': ip_domain,
+                'result': 'Domain not found'
+            }
+    elif ip_domain and fetch_from_db:
+        if Domain.objects.filter(name=ip_domain).exists():
+            domain = Domain.objects.get(name=ip_domain)
+            if domain.domain_info:
+                return {
+                    'status': True,
+                    'ip_domain': ip_domain,
+                    'domain': {
+                        'date_created': domain.domain_info.date_created,
+                        'domain_age': domain.domain_info.domain_age,
+                        'ip_address': domain.domain_info.ip_address,
+                        'geolocation': domain.domain_info.geolocation,
+                        'geolocation_iso': domain.domain_info.geolocation_iso,
+                    },
+                    'nameserver': {
+                        'history': NameServerHistorySerializer(domain.domain_info.nameserver_history.all(), many=True).data,
+                        'records': NSRecordSerializer(domain.domain_info.nameserver_record.all(), many=True).data
+                    },
+                    'registrant': {
+                        'name': domain.domain_info.whois.registrant.name,
+                        'organization': domain.domain_info.whois.registrant.organization,
+                        'email': domain.domain_info.whois.registrant.email,
+                        'address': domain.domain_info.whois.registrant.address,
+                        'city': domain.domain_info.whois.registrant.city,
+                        'state': domain.domain_info.whois.registrant.state,
+                        'country': domain.domain_info.whois.registrant.country,
+                        'country_iso': domain.domain_info.whois.registrant.country_iso,
+                        'tel': domain.domain_info.whois.registrant.phone_number,
+                        'fax': domain.domain_info.whois.registrant.fax,
+                    },
+                    'whois': domain.domain_info.whois.details
+                }
+            return {
+                'status': False,
+                'message': 'WHOIS does not exist.'
+            }
+        return {
+            'status': False,
+            'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
+        }
