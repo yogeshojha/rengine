@@ -358,7 +358,7 @@ Scan Findings
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<div class="card-widgets">
-									<a href="javascript: fetch_whois('{{history.domain}}');" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
+									<a href="javascript: fetch_whois('{{history.domain}}', true);" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
 								</div>
 								<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
 								<div class="row mt-3">
@@ -376,7 +376,7 @@ Scan Findings
 												{% if not history.domain.domain_info %}
 												<div class="alert alert-danger alert-dismissible fade show" role="alert" id="whois_not_fetched_alert">
 													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-													WHOIS Record Has not been fetched, would you like to <a href="javascript: fetch_whois('{{history.domain}}');">fetch it now?</a>
+													WHOIS Record Has not been fetched, would you like to <a href="javascript: fetch_whois('{{history.domain}}', true);">fetch it now?</a>
 												</div>
 												{% endif %}
 												<div class="alert alert-info alert-dismissible fade show" role="alert" id="whois_fetching_alert" style="display: none">
@@ -418,6 +418,10 @@ Scan Findings
 													<tr>
 														<td>Name</td>
 														<td id="registrant_name">{{history.domain.domain_info.whois.registrant.name}}</td>
+													</tr>
+													<tr>
+														<td>Email</td>
+														<td id="registrant_email">{{history.domain.domain_info.whois.registrant.email}}</td>
 													</tr>
 													<tr>
 														<td>Organization</td>
