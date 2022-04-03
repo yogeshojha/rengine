@@ -1411,7 +1411,7 @@ function fetch_whois(domain_name, save_db){
 	});
 }
 
-function get_domain_whois(domain_name){
+function get_target_whois(domain_name){
 	// this function will fetch whois from db, if not fetched, will make a fresh
 	// query and will display whois on a modal
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}&fetch_from_db`
@@ -1459,6 +1459,36 @@ function get_domain_whois(domain_name){
 	});
 }
 
+function get_domain_whois(domain_name){
+	// this function will get whois for domains that are not targets, this will
+	// not store whois into db nor create target
+	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
+	Swal.fire({
+		title: `Fetching WHOIS details for ${domain_name}...`
+	});
+	swal.showLoading();
+	fetch(url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+	}).then(response => response.json()).then(function(response) {
+		console.log(response);
+		if (response.status) {
+			swal.close();
+			display_whois_on_modal(response);
+		}
+		else{
+			Swal.fire({
+				title: 'Oops!',
+				text: `reNgine could not fetch WHOIS records for ${domain_name}! ${response['message']}`,
+				icon: 'error'
+			});
+		}
+	});
+}
 
 function display_whois_on_modal(response){
 	// this function will display whois data on modal, should be followed after get_domain_whois()

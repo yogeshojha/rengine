@@ -62,6 +62,7 @@ Add or Import Targets
                     <div>
                       <label for="simpleinput" class="form-label">Domain name</label>
                       {{ form.name }}
+                      <span class="float-end"><a href="#" onclick="show_whois()" class="btn disabled" id="btn_view_whois">(View WHOIS)</a></span>
                       {% if form.errors %}
                       <div class="invalid-feedback" style="display: block;">
                         {{ form.errors.name|striptags }}
@@ -304,9 +305,11 @@ Add or Import Targets
     $('#domainName').on('change keyup',function(){
       if ($('#domainName').val().length) {
         $("#add-single-target").removeAttr("disabled");
+        $("#btn_view_whois").removeClass("btn disabled");
       }
       else{
         $("#add-single-target").prop("disabled", true);
+        $("#btn_view_whois").addClass("btn disabled");
       }
     });
   });
@@ -314,6 +317,14 @@ Add or Import Targets
   function showname (file, id) {
     $(id).html('Selected file: ' + file.files.item(0).name);
   };
+
+  function show_whois(){
+    // check if target exists or not
+    var domain = document.getElementById("domainName").value;
+    if (domain) {
+      get_domain_whois(domain);
+    }
+  }
 
 </script>
 {% endblock page_level_script %}

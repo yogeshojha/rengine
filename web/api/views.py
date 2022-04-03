@@ -3,6 +3,7 @@ import json
 import logging
 import requests
 import subprocess
+import validators
 
 from bs4 import BeautifulSoup
 from lxml import html
@@ -424,6 +425,8 @@ class Whois(APIView):
 	def get(self, request):
 		req = self.request
 		ip_domain = req.query_params.get('ip_domain')
+		if not validators.domain(ip_domain):
+			return Response({'status': False, 'message': 'Invalid Domain or IP'})
 		save_db = True if 'save_db' in req.query_params else False
 		# fetch_from_db query param can be used to pull the whois record directly from db
 		# instead of fetching new
