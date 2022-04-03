@@ -97,26 +97,22 @@ Targets
               {% endif %}
               <td class="text-center"><a href="{% url 'target_summary' domain.id %}" class="btn btn-outline-primary">View</a></td>
               <td class="text-center">
-                <a href="{% url 'start_scan' domain.id %}" data-toggle="tooltip" data-placement="top" title="Quick Scan">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                  </svg>
-                </a>
-                <a href="{% url 'schedule_scan' domain.id %}" class="bs-tooltip open-domain" data-toggle="tooltip" data-placement="top" title="Schedule Scan">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
-                </a>
-                <a href="{% url 'update_target' domain.id %}" class="bs-tooltip open-domain text-primary" data-toggle="tooltip" data-placement="top" title="Update target">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
-                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                  </svg>
-                </a>
-                <a onclick="delete_target({{ domain.id }}, '{{ domain.name }}')" class="bs-tooltip btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete target">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                  </svg>
-                </a>
+                <div class="btn-group mb-2 dropstart">
+                  <div class="btn-group">
+                    <a href="{% url 'start_scan' domain.id %}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
+                    <div class="btn-group dropstart" role="group">
+                      <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="mdi mdi-chevron-right"></i>
+                      </button>
+                      <div class="dropdown-menu" style="">
+                        <a class="dropdown-item" href="{% url 'schedule_scan' domain.id %}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{% url 'update_target' domain.id %}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
+                        <a class="dropdown-item text-danger" href="#" onclick="delete_target({{ domain.id }}, '{{ domain.name }}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </td>
             </tr>
             {% endfor %}
