@@ -1552,9 +1552,9 @@ function display_whois_on_modal(response){
 						var obj = response['nameserver']['history'][history];
 						content += `
 						<tr>
-							<td>${obj['date']}</td>
-							<td>${obj['action']}</td>
-							<td>${obj['server']}</td>
+							<td>${obj['date']? obj['date'] : '-'}</td>
+							<td>${obj['action']? obj['action'] : '-'}</td>
+							<td>${obj['server']? obj['server'] : '-'}</td>
 						</tr>
 						`;
 					}
@@ -1566,9 +1566,10 @@ function display_whois_on_modal(response){
 				}
 				content += `
 				</div>
-				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					{% if history.domain.domain_info.nameserver_record.all %}
-					<table class="table table-striped mb-0">
+				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+
+				if (response['nameserver']['records'].length) {
+					content += `<table class="table table-striped mb-0">
 						<thead class="table-dark">
 							<td>Type</td>
 							<td>Hostname</td>
@@ -1577,22 +1578,27 @@ function display_whois_on_modal(response){
 							<td>Class</td>
 							<td>Preference</td>
 						</thead>
-						<tbody>
-							{% for nameserver in history.domain.domain_info.nameserver_record.all %}
+						<tbody>`;
+
+						for (var record in response['nameserver']['records']) {
+							var obj = response['nameserver']['records'][record];
+							content += `
 							<tr>
-								<td><span class="badge badge-soft-primary me-1 ms-1">{{ nameserver.type}}</span></td>
-								<td>{{nameserver.hostname}}</td>
-								<td>{{nameserver.address}}</td>
-								<td>{{nameserver.ttl}}</td>
-								<td>{{nameserver.ns_class}}</td>
-								<td>{% if nameserver.preference %}{{nameserver.preference}}{% endif %}</td>
-							</tr>
-							{% endfor %}
-						</tbody>
-					</table>
-					{% else %}
-					No DNS history records found.
-					{% endif %}
+								<td><span class="badge badge-soft-primary me-1 ms-1">${obj['type']? obj['type'] : '-'}</span</td>
+								<td>${obj['hostname']? obj['hostname'] : '-'}</td>
+								<td>${obj['address']? obj['address'] : '-'}</td>
+								<td>${obj['ttl']? obj['ttl'] : '-'}</td>
+								<td>${obj['ns_class']? obj['ns_class'] : '-'}</td>
+								<td>${obj['preference']? obj['preference'] : '-'}</td>
+							</tr>`;
+						}
+						content += `</tbody></table>`;
+				}
+				else{
+					content += `No DNS history records found.`;
+				}
+
+				content += `
 				</div>
 			</div>
 		</div>
