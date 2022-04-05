@@ -14,7 +14,21 @@ from django.db.models import Q
 from functools import reduce
 from scanEngine.models import *
 from startScan.models import *
-from api.serializers import *
+from targetApp.models import *
+from rest_framework import serializers
+
+
+# Serializers for NS
+class NSRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NSRecord
+        fields = '__all__'
+
+
+class NameServerHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NameServerHistory
+        fields = '__all__'
 
 
 def get_lookup_keywords():
