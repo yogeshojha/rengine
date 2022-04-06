@@ -46,6 +46,9 @@ class AddTarget(APIView):
 		data = req.data
 
 		target_name = data.get('domain_name')
+		h1_team_handle = data.get('h1_team_handle')
+		description = data.get('description')
+
 		if not target_name:
 			return Response({'status': False, 'message': 'domain_name missing!'})
 
@@ -63,6 +66,8 @@ class AddTarget(APIView):
 		domain = Domain()
 		domain.name = target_name
 		domain.insert_date = timezone.now()
+		domain.h1_team_handle = h1_team_handle
+		domain.description = description
 		domain.save()
 
 		return Response({
