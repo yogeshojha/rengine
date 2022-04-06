@@ -3,6 +3,7 @@ import json
 import random
 import requests
 import tldextract
+import logging
 
 from threading import Thread
 
@@ -323,6 +324,12 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             tel = tree.xpath('//*[@id="trRegistrantTel"]/td[2]/text()')
             fax = tree.xpath('//*[@id="trRegistrantFax"]/td[2]/text()')
 
+            #finding domain association using organization
+            organization_association_href = tree.xpath('//*[@id="MainMaster_trRegistrantOrganization"]/td[2]/a/@href')
+            #finding domain association using email
+            email_association_href = tree.xpath('//*[@id="trRegistrantEmail"]/td[2]/a/@href')
+
+
             # whois model
             whois = tree.xpath('//*[@id="whois"]/div/div[3]/text()')
             whois = "\n".join(whois).strip()
@@ -356,6 +363,10 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             tel = tel[0].strip() if tel else None
             fax = fax[0].strip() if fax else None
 
+            # association
+            organization_association_href = organization_association_href[0].strip() if organization_association_href else None
+            email_association_href = email_association_href[0].strip() if email_association_href else None
+
             dns_history_xpath = tree.xpath("//*[@id='MainMaster_divNSHistory']/table/tbody/tr")
             dns_history = []
             for table_row in dns_history_xpath:
@@ -367,6 +378,27 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         'nameserver': row[2],
                     }
                 )
+
+            associated_domains = []
+            if organization_association_href:
+                # get all associated domains using organization
+                response_org = requests.get('https://domainbigdata.com{}'.format(organization_association_href))
+                tree_org = html.fromstring(response_org.content)
+                associated_domains_tree = tree_org.xpath('//*[@id="aDomain"]/text()')
+                for domain in associated_domains_tree:
+                    associated_domains.append(domain)
+
+            if email_association_href:
+                print(email_association_href)
+                response_email = requests.get('https://domainbigdata.com{}'.format(email_association_href))
+                tree_email = html.fromstring(response_email.content)
+                associated_domains_tree = tree_email.xpath('//*[@id="aDomain"]/text()')
+                for domain in associated_domains_tree:
+                    associated_domains.append(domain)
+
+            # unique associated_domains
+            final_associated_domains = []
+            [final_associated_domains.append(domain) for domain in associated_domains if domain not in final_associated_domains]
 
             # save in db
             if save_db and Domain.objects.filter(name=ip_domain).exists():
@@ -384,6 +416,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 registrant.country_iso = country_iso
                 registrant.phone_number = tel
                 registrant.fax = fax
+                registrant.organization_association_href = organization_association_href
+                registrant.email_association_href = email_association_href
                 registrant.save()
 
                 whois_model = WhoisDetail()
@@ -489,6 +523,10 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                             domain_info.nameserver_record.add(ns)
 
 
+            final_organization_association_url = 'https://domainbigdata.com' + organization_association_href if organization_association_href else None
+            final_email_association_url = 'https://domainbigdata.com' + email_association_href if email_association_href else None
+
+
             return {
                 'status': True,
                 'ip_domain': ip_domain,
@@ -514,7 +552,10 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                     'country_iso': country_iso,
                     'tel': tel,
                     'fax': fax,
+                    'organization_association_url': final_organization_association_href,
+                    'email_association_url': final_email_association_url,
                 },
+                'related_domains': final_associated_domains,
                 'whois': whois if whois else None
             }
         except Exception as e:
