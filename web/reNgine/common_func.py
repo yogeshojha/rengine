@@ -397,33 +397,41 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                     associated_domains.append(domain)
 
             # unique associated_domains
-            final_associated_domains = []
-            [final_associated_domains.append(domain) for domain in associated_domains if domain not in final_associated_domains]
+            unique_associated_domains = []
+            [unique_associated_domains.append(domain) for domain in associated_domains if domain not in unique_associated_domains]
 
             # save in db
             if save_db and Domain.objects.filter(name=ip_domain).exists():
                 # look for domain and save in db
                 domain = Domain.objects.get(name=ip_domain)
 
-                registrant = RegistrantInfo()
-                registrant.name = name
-                registrant.organization = organization
-                registrant.email = email
-                registrant.address = address
-                registrant.city = city
-                registrant.state = state
-                registrant.country = country
-                registrant.country_iso = country_iso
-                registrant.phone_number = tel
-                registrant.fax = fax
-                registrant.organization_association_href = organization_association_href
-                registrant.email_association_href = email_association_href
-                registrant.save()
 
-                whois_model = WhoisDetail()
-                whois_model.details = whois if whois else None
-                whois_model.registrant = registrant
-                whois_model.save()
+                # check if registrant exists
+                if RegistrantInfo.objects.filter(email=email).filter(name=name).exists():
+                    registrant = RegistrantInfo.objects.get(email=email, name=name)
+                else:
+                    registrant = RegistrantInfo()
+                    registrant.name = name
+                    registrant.organization = organization
+                    registrant.email = email
+                    registrant.address = address
+                    registrant.city = city
+                    registrant.state = state
+                    registrant.country = country
+                    registrant.country_iso = country_iso
+                    registrant.phone_number = tel
+                    registrant.fax = fax
+                    registrant.organization_association_href = organization_association_href
+                    registrant.email_association_href = email_association_href
+                    registrant.save()
+
+                if WhoisDetail.objects.filter(details=whois).exists():
+                    whois_model = WhoisDetail.objects.get(details=whois)
+                else:
+                    whois_model = WhoisDetail()
+                    whois_model.details = whois if whois else None
+                    whois_model.registrant = registrant
+                    whois_model.save()
 
                 domain_info = DomainInfo()
                 domain_info.date_created = date_created
@@ -446,6 +454,17 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
 
                 domain.domain_info = domain_info
                 domain.save()
+
+
+                # save associated domains
+                for domain in unique_associated_domains:
+                    if AssociatedDomain.objects.filter(name=domain).exists():
+                        ass_domain = AssociatedDomain.objects.get(name=domain)
+                    else:
+                        ass_domain = AssociatedDomain()
+                        ass_domain.name = domain
+                        ass_domain.save()
+                    registrant.associated_domains.add(ass_domain)
 
             ns_records = []
             for i in range(4):
@@ -555,7 +574,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                     'organization_association_url': final_organization_association_url,
                     'email_association_url': final_email_association_url,
                 },
-                'related_domains': final_associated_domains,
+                'related_domains': unique_associated_domains,
                 'whois': whois if whois else None
             }
         except Exception as e:

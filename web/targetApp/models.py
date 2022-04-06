@@ -7,11 +7,11 @@ from django.contrib.postgres.fields import ArrayField
 
 class AssociatedDomain(models.Model):
     id = models.AutoField(primary_key=True)
-    association_by = models.CharField(max_length=10, null=True, blank=True)
     name = models.CharField(max_length=250, null=True, blank=True)
-    creation_date = models.CharField(max_length=20, null=True, blank=True)
-    registrar = models.CharField(max_length=40, null=True, blank=True)
     # target_id = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 class RegistrantInfo(models.Model):
@@ -31,7 +31,7 @@ class RegistrantInfo(models.Model):
     associated_domains = models.ManyToManyField(AssociatedDomain)
 
     def __str__(self):
-        return self.name
+        return self.name if self.name else ''
 
 
 class WhoisDetail(models.Model):
@@ -39,12 +39,18 @@ class WhoisDetail(models.Model):
     details = models.TextField(blank=True, null=True)
     registrant = models.ForeignKey(RegistrantInfo, on_delete=models.CASCADE, null=True, blank=True)
 
+    def __str__(self):
+        return self.registrant.name if self.registrant.name else ''
+
 
 class NameServerHistory(models.Model):
     id = models.AutoField(primary_key=True)
     date = models.CharField(max_length=10, null=True, blank=True)
     action = models.CharField(max_length=50, null=True, blank=True)
     server = models.CharField(max_length=100, null=True, blank=True)
+
+    def __str__(self):
+        return self.server if self.server else ''
 
 
 class NSRecord(models.Model):
@@ -55,6 +61,9 @@ class NSRecord(models.Model):
     preference = models.CharField(max_length=5, null=True, blank=True)
     ttl = models.CharField(max_length=10, null=True, blank=True)
     ns_class = models.CharField(max_length=10, null=True, blank=True)
+
+    def __str__(self):
+        return self.hostname if self.hostname else ''
 
 
 class DomainInfo(models.Model):
@@ -68,6 +77,9 @@ class DomainInfo(models.Model):
     whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
     nameserver_history = models.ManyToManyField(NameServerHistory)
     nameserver_record = models.ManyToManyField(NSRecord)
+
+    def __str__(self):
+        return self.ip_address
 
 
 class Organization(models.Model):
