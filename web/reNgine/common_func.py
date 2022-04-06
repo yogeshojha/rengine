@@ -593,6 +593,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
     elif ip_domain and fetch_from_db:
         if Domain.objects.filter(name=ip_domain).exists():
             domain = Domain.objects.get(name=ip_domain)
+            unique_associated_domains = []
+            if domain.domain_info and domain.domain_info.whois and domain.domain_info.whois.registrant and domain.domain_info.whois.registrant.associated_domains:
+                unique_associated_domains = [d.name for d in domain.domain_info.whois.registrant.associated_domains.all()]
             if domain.domain_info:
                 return {
                     'status': True,
@@ -620,7 +623,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         'tel': domain.domain_info.whois.registrant.phone_number,
                         'fax': domain.domain_info.whois.registrant.fax,
                     },
-                    'related_domains': AssociatedDomainSerializer(domain.domain_info.whois.registrant.associated_domains.all(), many=True).data,
+                    'related_domains': unique_associated_domains,
                     'whois': domain.domain_info.whois.details
                 }
             return {
