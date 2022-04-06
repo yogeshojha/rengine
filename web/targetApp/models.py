@@ -2,9 +2,20 @@
 from django.db import models
 from django.utils import timezone
 from django.apps import apps
+from django.contrib.postgres.fields import ArrayField
+
+
+class AssociatedDomain(models.Model):
+    id = models.AutoField(primary_key=True)
+    association_by = models.CharField(max_length=10, null=True, blank=True)
+    name = models.CharField(max_length=250, null=True, blank=True)
+    creation_date = models.CharField(max_length=20, null=True, blank=True)
+    registrar = models.CharField(max_length=40, null=True, blank=True)
+    # target_id = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class RegistrantInfo(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=250, null=True, blank=True)
     organization = models.CharField(max_length=250, null=True, blank=True)
     email = models.CharField(max_length=250, null=True, blank=True)
@@ -15,23 +26,29 @@ class RegistrantInfo(models.Model):
     country_iso = models.CharField(max_length=4, null=True, blank=True)
     phone_number = models.CharField(max_length=50, null=True, blank=True)
     fax = models.CharField(max_length=50, null=True, blank=True)
+    organization_association_href = models.CharField(max_length=100, null=True, blank=True)
+    email_association_href = models.CharField(max_length=100, null=True, blank=True)
+    associated_domains = models.ManyToManyField(AssociatedDomain)
 
     def __str__(self):
         return self.name
 
 
 class WhoisDetail(models.Model):
+    id = models.AutoField(primary_key=True)
     details = models.TextField(blank=True, null=True)
     registrant = models.ForeignKey(RegistrantInfo, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class NameServerHistory(models.Model):
+    id = models.AutoField(primary_key=True)
     date = models.CharField(max_length=10, null=True, blank=True)
     action = models.CharField(max_length=50, null=True, blank=True)
     server = models.CharField(max_length=100, null=True, blank=True)
 
 
 class NSRecord(models.Model):
+    id = models.AutoField(primary_key=True)
     type = models.CharField(max_length=10, null=True, blank=True)
     hostname = models.CharField(max_length=50, null=True, blank=True)
     address = models.CharField(max_length=50, null=True, blank=True)
@@ -41,6 +58,7 @@ class NSRecord(models.Model):
 
 
 class DomainInfo(models.Model):
+    id = models.AutoField(primary_key=True)
     date_created = models.CharField(max_length=300, null=True, blank=True)
     domain_age = models.CharField(max_length=300, null=True, blank=True)
     ip_address = models.CharField(max_length=200, null=True, blank=True)
