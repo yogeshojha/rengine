@@ -368,6 +368,7 @@ Scan Findings
 											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
 											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
+											<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">Related Domains</a>
 										</div>
 									</div> <!-- end col-->
 									<div class="col-sm-9">
@@ -493,6 +494,11 @@ Scan Findings
 												{% else %}
 												No DNS history records found.
 												{% endif %}
+											</div>
+											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% for domain in history.domain.domain_info.whois.registrant.associated_domains.all %}
+													<span class="btn btn-primary rounded-pill waves-effect waves-light me-1 mb-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+												{% endfor %}
 											</div>
 										</div>
 									</div>
