@@ -29,6 +29,10 @@ router.register(r'listIps', IpAddressViewSet)
 urlpatterns = [
     url('^', include(router.urls)),
     path(
+        'add/target/',
+        AddTarget.as_view(),
+        name='addTarget'),
+    path(
         'queryTechnologies/',
         ListTechnology.as_view(),
         name='listTechnologies'),

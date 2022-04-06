@@ -37,6 +37,37 @@ from reNgine.utilities import is_safe_path
 from reNgine.tasks import run_system_commands, initiate_subtask, create_scan_activity
 from packaging import version
 from reNgine.celery import app
+from django.utils import timezone
+
+
+class AddTarget(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		target_name = data.get('domain_name')
+		if not target_name:
+			return Response({'status': False, 'message': 'domain_name missing!'})
+
+		# validate if target_name is a valid domain_name
+		if not validators.domain(target_name):
+			return Response({'status': False, 'message': 'Invalid Domain or IP'})
+
+		if Domain.objects.filter(name=target_name).exists():
+			return Response({'status': False, 'message': 'Target already exists!'})
+
+		domain = Domain()
+		domain.name = target_name
+		domain.insert_date = timezone.now()
+		domain.save()
+
+		return Response({
+			'status': True,
+			'message': 'Domain successfully added as target!',
+			'domain_name': target_name,
+			'domain_id': domain.id
+		})
+
 
 
 class FetchSubscanResults(APIView):

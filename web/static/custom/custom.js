@@ -1637,3 +1637,9 @@ function display_whois_on_modal(response){
 	$('#modal-content').append(content);
 
 }
+
+
+function add_target(domain_name){
+	// this function will add domain_name as target
+	
+}
