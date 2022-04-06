@@ -54,7 +54,11 @@ class AddTarget(APIView):
 			return Response({'status': False, 'message': 'Invalid Domain or IP'})
 
 		if Domain.objects.filter(name=target_name).exists():
-			return Response({'status': False, 'message': 'Target already exists!'})
+			return Response({
+				'status': False,
+				'message': 'Target already exists!',
+				'domain_id': Domain.objects.get(name=target_name).id
+			})
 
 		domain = Domain()
 		domain.name = target_name
