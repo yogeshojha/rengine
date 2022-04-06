@@ -32,6 +32,12 @@ class NameServerHistorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class AssociatedDomainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssociatedDomain
+        fields = '__all__'
+
+
 def get_lookup_keywords():
     default_lookup_keywords = [
         key.strip() for key in InterestingLookupModel.objects.get(
@@ -614,6 +620,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         'tel': domain.domain_info.whois.registrant.phone_number,
                         'fax': domain.domain_info.whois.registrant.fax,
                     },
+                    'related_domains': AssociatedDomainSerializer(domain.domain_info.whois.registrant.associated_domains.all(), many=True).data,
                     'whois': domain.domain_info.whois.details
                 }
             return {
