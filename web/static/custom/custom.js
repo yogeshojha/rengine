@@ -1496,6 +1496,8 @@ function display_whois_on_modal(response){
 	$('#modal-content').empty();
 	$("#modal-footer").empty();
 
+	console.log(response);
+
 	content = `<div class="row mt-3">
 		<div class="col-sm-3">
 			<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
@@ -1503,6 +1505,7 @@ function display_whois_on_modal(response){
 				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
 				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
+				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">Related Domains</a>
 			</div>
 		</div> <!-- end col-->
 		<div class="col-sm-9">
@@ -1628,6 +1631,15 @@ function display_whois_on_modal(response){
 					content += `No DNS history records found.`;
 				}
 
+				content += `
+				</div>
+				<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+				`;
+
+				for (var domain in response['related_domains']) {
+					var domain_obj = response['related_domains'][domain];
+					content += `<span class="btn btn-primary rounded-pill waves-effect waves-light me-1 mb-1" data-toggle="tooltip" title="Add ${domain_obj['name']} as target." onclick="add_target('${domain_obj['name']}')">${domain_obj['name']}</span>`
+				}
 				content += `
 				</div>
 			</div>
