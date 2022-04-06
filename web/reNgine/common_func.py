@@ -380,7 +380,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 )
 
             associated_domains = []
-            if organization_association_href:
+            if organization_association_href and organization != 'Redacted For Privacy':
                 # get all associated domains using organization
                 response_org = requests.get('https://domainbigdata.com{}'.format(organization_association_href))
                 tree_org = html.fromstring(response_org.content)
@@ -388,7 +388,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 for domain in associated_domains_tree:
                     associated_domains.append(domain)
 
-            if email_association_href:
+            if email_association_href and email != 'Redacted For Privacy':
                 print(email_association_href)
                 response_email = requests.get('https://domainbigdata.com{}'.format(email_association_href))
                 tree_email = html.fromstring(response_email.content)
@@ -552,7 +552,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                     'country_iso': country_iso,
                     'tel': tel,
                     'fax': fax,
-                    'organization_association_url': final_organization_association_href,
+                    'organization_association_url': final_organization_association_url,
                     'email_association_url': final_email_association_url,
                 },
                 'related_domains': final_associated_domains,
