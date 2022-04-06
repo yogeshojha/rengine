@@ -76,7 +76,7 @@ function deleteScheduledScan(id) {
 	swal.queue([{
 		title: 'Are you sure you want to delete this?',
 		text: "This action can not be undone.",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
 		padding: '2em',
@@ -95,7 +95,7 @@ function deleteScheduledScan(id) {
 				return location.reload();
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to delete the scheduled task!'
 				})
 			})
@@ -251,7 +251,7 @@ function delete_all_scan_results() {
 	swal.queue([{
 		title: 'Are you sure you want to delete all scan results?',
 		text: "You won't be able to revert this!",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
 		padding: '2em',
@@ -270,7 +270,7 @@ function delete_all_scan_results() {
 				return location.reload();
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to delete Delete scan results!'
 				})
 			})
@@ -283,7 +283,7 @@ function delete_all_screenshots() {
 	swal.queue([{
 		title: 'Are you sure you want to delete all Screenshots?',
 		text: "You won't be able to revert this!",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
 		padding: '2em',
@@ -302,7 +302,7 @@ function delete_all_screenshots() {
 				return location.reload();
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to delete Empty Screenshots!'
 				})
 			})
@@ -409,7 +409,7 @@ function report_hackerone(vulnerability_id, severity) {
 	swal.queue([{
 		title: 'Reporting vulnerability to hackerone',
 		text: message,
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Report',
 		padding: '2em',
@@ -427,38 +427,38 @@ function report_hackerone(vulnerability_id, severity) {
 				console.log(data.status)
 				if(data.status == 111) {
 					swal.insertQueueStep({
-						type: 'error',
+						icon: 'error',
 						title: 'Target does not has team_handle to send report to.'
 					})
 				} else if(data.status == 201) {
 					swal.insertQueueStep({
-						type: 'success',
+						icon: 'success',
 						title: 'Vulnerability report successfully submitted to hackerone.'
 					})
 				} else if(data.status == 400) {
 					swal.insertQueueStep({
-						type: 'error',
+						icon: 'error',
 						title: 'Invalid Report.'
 					})
 				} else if(data.status == 401) {
 					swal.insertQueueStep({
-						type: 'error',
+						icon: 'error',
 						title: 'Hackerone authentication failed.'
 					})
 				} else if(data.status == 403) {
 					swal.insertQueueStep({
-						type: 'error',
+						icon: 'error',
 						title: 'API Key forbidden by Hackerone.'
 					})
 				} else if(data.status == 423) {
 					swal.insertQueueStep({
-						type: 'error',
+						icon: 'error',
 						title: 'Too many requests.'
 					})
 				}
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to send vulnerability report to hackerone, check your target team_handle or hackerone configurarions!'
 				})
 			})
@@ -730,7 +730,7 @@ function delete_scan(id) {
 	swal.queue([{
 		title: 'Are you sure you want to delete this scan history?',
 		text: "You won't be able to revert this!",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
 		padding: '2em',
@@ -749,12 +749,12 @@ function delete_scan(id) {
 				return location.reload();
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to delete the scan history!'
 				})
 			})
 		}
-	}])
+	}]);
 }
 
 function stop_scan(celery_id, is_scan = true, reload_scan_bar = true, reload_location = false) {
@@ -766,7 +766,7 @@ function stop_scan(celery_id, is_scan = true, reload_scan_bar = true, reload_loc
 	swal.queue([{
 		title: 'Are you sure you want to stop this scan?',
 		text: "You won't be able to revert this!",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Stop',
 		padding: '2em',
@@ -805,7 +805,7 @@ function stop_scan(celery_id, is_scan = true, reload_scan_bar = true, reload_loc
 				}
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to stop the scan'
 				})
 			})
@@ -850,7 +850,7 @@ function delete_subscan(subscan_id) {
 	swal.queue([{
 		title: 'Are you sure you want to delete this subscan?',
 		text: "You won't be able to revert this!",
-		type: 'warning',
+		icon: 'warning',
 		showCancelButton: true,
 		confirmButtonText: 'Delete',
 		padding: '2em',
@@ -872,7 +872,7 @@ function delete_subscan(subscan_id) {
 				}
 			}).catch(function() {
 				swal.insertQueueStep({
-					type: 'error',
+					icon: 'error',
 					title: 'Oops! Unable to delete the scan history!'
 				})
 			})
@@ -1641,5 +1641,56 @@ function display_whois_on_modal(response){
 
 function add_target(domain_name){
 	// this function will add domain_name as target
-	
+	const add_api = '/api/add/target/?format=json';
+	const data = {'domain_name': domain_name};
+
+	swal.queue([{
+		title: 'Add Target',
+		text: `Would you like to add ${domain_name} as target?`,
+		icon: 'info',
+		showCancelButton: true,
+		confirmButtonText: 'Add Target',
+		padding: '2em',
+		showLoaderOnConfirm: true,
+		preConfirm: function() {
+			return fetch(add_api, {
+				method: 'POST',
+				credentials: "same-origin",
+				headers: {
+					'X-CSRFToken': getCookie("csrftoken"),
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			}).then(function(response) {
+				return response.json();
+			}).then(function(data) {
+				if (data.status) {
+
+					swal.queue([{
+						title: 'Target Successfully added!',
+						text: `Do you wish to initiate the scan on new target?`,
+						icon: 'success',
+						showCancelButton: true,
+						confirmButtonText: 'Initiate Scan',
+						padding: '2em',
+						showLoaderOnConfirm: true,
+						preConfirm: function() {
+							window.location = `/scan/start/${data.domain_id}`;
+						}
+					}]);
+				}
+				else{
+					swal.insertQueueStep({
+						icon: 'error',
+						title: data.message
+					});
+				}
+			}).catch(function() {
+				swal.insertQueueStep({
+					icon: 'error',
+					title: 'Oops! Unable to delete the scan history!'
+				});
+			})
+		}
+	}]);
 }
