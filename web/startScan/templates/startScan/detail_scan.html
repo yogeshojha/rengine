@@ -354,6 +354,14 @@ Scan Findings
 							<i class="fe-trending-up me-2"></i> <span id="subdomain_changes_alert"></span> <a class="alert-link" id="recon-changes-tab-btn" href="#">Check it out!</a>
 						</div>
 					</div>
+					{% if history.domain.domain_info.whois.registrant.associated_domains.all %}
+					<div class="col-6 related-domains-tab-show">
+						<div class="alert alert-warning alert-dismissible fade show" role="alert">
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							<i class="fe-trending-up me-2"></i> reNgine has identified {{history.domain.domain_info.whois.registrant.associated_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').tab('show');">Check it out!</a>
+						</div>
+					</div>
+					{% endif %}
 					<div class="col-xl-7 col-lg-7 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
