@@ -16,6 +16,7 @@ from functools import reduce
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
+from reNgine.definitions import *
 from rest_framework import serializers
 
 
@@ -386,7 +387,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 )
 
             associated_domains = []
-            if organization_association_href and organization != 'Redacted For Privacy':
+            if organization_association_href and organization not in IGNORE_WHOIS_RELATED_KEYWORD:
                 # get all associated domains using organization
                 response_org = requests.get('https://domainbigdata.com{}'.format(organization_association_href))
                 tree_org = html.fromstring(response_org.content)
@@ -394,7 +395,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 for domain in associated_domains_tree:
                     associated_domains.append(domain)
 
-            if email_association_href and email != 'Redacted For Privacy':
+            if email_association_href and email not in IGNORE_WHOIS_RELATED_KEYWORD:
                 print(email_association_href)
                 response_email = requests.get('https://domainbigdata.com{}'.format(email_association_href))
                 tree_email = html.fromstring(response_email.content)

@@ -198,3 +198,18 @@ UNCOMMON_WEB_PORTS = [
     32000,
     55440,
     55672]
+
+###############################################################################
+# WHOIS DEFINITIONS
+# IGNORE_WHOIS_RELATED_KEYWORD: To ignore and disable finding generic related domains
+###############################################################################
+
+IGNORE_WHOIS_RELATED_KEYWORD = [
+    'Registration Private',
+    'Domains By Proxy Llc',
+    'Redacted For Privacy',
+    'Digital Privacy Corporation',
+    'Private Registrant',
+    'Domain Administrator',
+    'Administrator',
+]
