@@ -1656,11 +1656,58 @@ function display_whois_on_modal(response){
 
 }
 
+function show_quick_add_target_modal(){
+	// this function will display the modal to add  target
+	$('#modal_title').html('Add target');
+	$('#modal-content').empty();
+	$('#modal-content').append(`
+		<div class="mb-3">
+			<label for="target_name_modal" class="form-label">Target Name</label>
+			<input class="form-control" type="text" id="target_name_modal" required="" placeholder="yourdomain.com">
+		</div>
 
-function add_target(domain_name){
+		<div class="mb-3">
+			<label for="target_description_modal" class="form-label">Description (Optional)</label>
+			<input class="form-control" type="text" id="target_description_modal" required="" placeholder="Target Description">
+		</div>
+
+		<div class="mb-3">
+			<label for="h1_handle_modal" class="form-label">Hackerone Target Team Handle (Optional)</label>
+			<input class="form-control" type="text" id="h1_handle_modal" placeholder="hackerone.com/team_handle, Only enter team_handle after /">
+		</div>
+
+		<div class="mb-3 text-center">
+			<button class="btn btn-primary float-end" type="submit" id="add_target_modal" onclick="add_quick_target()">Add Target</button>
+		</div>
+
+	`);
+	$('#modal_dialog').modal('show');
+}
+
+function add_quick_target(){
+	// this function will be a onclick for add target button on add_target modal
+
+	var domain_name = $('#target_name_modal').val();
+	var description = $('#target_description_modal').val();
+	var h1_handle = $('#h1_handle_modal').val();
+
+	const data = {
+			'domain_name': domain_name,
+			'h1_team_handle': h1_handle,
+			'description': description
+	};
+	add_target(domain_name, h1_handle=h1_handle, description=description);
+}
+
+
+function add_target(domain_name, h1_handle=null, description=null){
 	// this function will add domain_name as target
 	const add_api = '/api/add/target/?format=json';
-	const data = {'domain_name': domain_name};
+	const data = {
+			'domain_name': domain_name,
+			'h1_team_handle': h1_handle,
+			'description': description
+		};
 
 	swal.queue([{
 		title: 'Add Target',
