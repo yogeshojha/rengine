@@ -1686,7 +1686,7 @@ function show_quick_add_target_modal(){
 
 function add_quick_target(){
 	// this function will be a onclick for add target button on add_target modal
-
+	$('#modal_dialog').modal('hide');
 	var domain_name = $('#target_name_modal').val();
 	var description = $('#target_description_modal').val();
 	var h1_handle = $('#h1_handle_modal').val();
