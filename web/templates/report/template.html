@@ -407,6 +407,11 @@
         border-color: #90CAF9 !important;
       }
 
+      a{
+        color: #007bff!important;
+        text-decoration: none;
+      }
+
     </style>
   </head>
 
@@ -818,27 +823,7 @@
                   <ul>
                     {% for vulnerability in vuln_list %}
                       <li>
-                        {{ vulnerability.grouper }}
-                        {% regroup vulnerability.list by http_url as vuln_http_url_list %}
-                        <ul>
-                          {% for vuln_urls in vuln_http_url_list %}
-                            <li>
-                              {{vuln_urls.grouper}}
-                              <br>
-                              {% for vuln_url in vuln_urls.list %}
-                                <span>
-                                  {% if vuln_url.extracted_results %}
-                                    {% if not forloop.first %}•{% endif %} {{vuln_url.exextracted_results}}
-                                    <br>
-                                  {% endif %}
-                                  {% if vuln_url.matcher_name %}
-                                    {% if not forloop.first %} • {% endif %} {{vuln_url.matcher_name}}
-                                  {% endif %}
-                                </span>
-                              {% endfor %}
-                            </li>
-                          {% endfor %}
-                        </ul>
+                        <a href="#vuln_{{vulnerability.list.0.id}}">{{ vulnerability.grouper }}</a>
                       </li>
                     {% endfor %}
                   </ul>
@@ -915,7 +900,7 @@
           {% regroup all_vulnerabilities by name as grouped_vulnerabilities %}
           {% for vulnerability in grouped_vulnerabilities %}
             <div>
-              <h4 class="content-heading">
+              <h4 class="content-heading" id="vuln_{{vulnerability.list.0.id}}">
                 {{vulnerability.grouper}}
                 {% if vulnerability.list.0.severity == 0 %}
                   <span style="float: right;" class="badge bg-info">INFO</span>
