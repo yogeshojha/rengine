@@ -408,7 +408,7 @@
       }
 
       a{
-        color: #007bff!important;
+        color: #007bff;
         text-decoration: none;
       }
 
@@ -656,7 +656,7 @@
                 {{ forloop.counter }}
               </div>
               <div class="cell" style="width: 50%">
-                {{vulnerability.name}}
+                <a href="#vuln_{{vulnerability.name.split|join:'_'}}">{{vulnerability.name}}</a>
               </div>
               <div class="cell" style="float: right; width: 19%;">
                 {{vulnerability.count}}
@@ -900,7 +900,7 @@
           {% regroup all_vulnerabilities by name as grouped_vulnerabilities %}
           {% for vulnerability in grouped_vulnerabilities %}
             <div>
-              <h4 class="content-heading" id="vuln_{{vulnerability.list.0.id}}">
+              <h4 class="content-heading" id="vuln_{{vulnerability.list.0.name.split|join:'_'}}">
                 {{vulnerability.grouper}}
                 {% if vulnerability.list.0.severity == 0 %}
                   <span style="float: right;" class="badge bg-info">INFO</span>
