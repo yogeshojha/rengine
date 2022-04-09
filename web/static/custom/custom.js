@@ -1661,6 +1661,7 @@ function show_quick_add_target_modal(){
 	$('#modal_title').html('Add target');
 	$('#modal-content').empty();
 	$('#modal-content').append(`
+		If you would like to add IP/CIDRs, multiple domain, Please <a href="/target/add/target">click here.</a>
 		<div class="mb-3">
 			<label for="target_name_modal" class="form-label">Target Name</label>
 			<input class="form-control" type="text" id="target_name_modal" required="" placeholder="yourdomain.com">
