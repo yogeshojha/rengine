@@ -738,9 +738,53 @@ Scan Findings
 							</div>
 							<div class="col-6">
 								<div class="btn-group mb-2 float-end dropstart">
+									<button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
+										<i class="fe-filter"></i>
+									</button>
+									<div class="dropdown-menu" style="">
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="http_status_filter_checkbox" name="http_status_filter_checkbox" checked>
+												<label class="form-check-label" for="http_status_filter_checkbox">HTTP Status</label>
+											</div>
+										</div>
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="page_title_filter_checkbox" name="page_title_filter_checkbox" checked>
+												<label class="form-check-label" for="page_title_filter_checkbox">Page Title</label>
+											</div>
+										</div>
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="ip_filter_checkbox" name="ip_filter_checkbox" checked>
+												<label class="form-check-label" for="ip_filter_checkbox">IP Address</label>
+											</div>
+										</div>
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="ports_filter_checkbox" name="ports_filter_checkbox" checked>
+												<label class="form-check-label" for="ports_filter_checkbox">Ports</label>
+											</div>
+										</div>
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="content_length_filter_checkbox" name="content_length_filter_checkbox" checked>
+												<label class="form-check-label" for="content_length_filter_checkbox">Content Length</label>
+											</div>
+										</div>
+										<div class="dropdown-item">
+											<div class="form-check">
+												<input type="checkbox" class="form-check-input" id="response_time_filter_checkbox" name="response_time_filter_checkbox" checked>
+												<label class="form-check-label" for="response_time_filter_checkbox">Response Time</label>
+											</div>
+										</div>
+
+									</div>
+
 									<a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="Reload Subdomains" id="reload_subdomain_table_btn">
 										<i class="fe-refresh-cw"></i>
 									</a>
+
 									<button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Download Subdomains">
 										<i class="fe-download"></i>
 									</button>
@@ -749,6 +793,7 @@ Scan Findings
 										<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
 										<a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
 									</div>
+
 								</div>
 							</div>
 						</div>
@@ -1860,6 +1905,49 @@ $(document).ready(function(){
 
 			$('#subdomain-search-button').click(function () {
 				subdomain_datatables.search($("#subdomains-search").val()).draw() ;
+			});
+
+			$('input[name=http_status_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(4).visible(true);
+				} else {
+					subdomain_datatables.column(4).visible(false);
+				}
+			});
+			$('input[name=page_title_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(5).visible(true);
+				} else {
+					subdomain_datatables.column(5).visible(false);
+				}
+			});
+			$('input[name=ip_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(6).visible(true);
+				} else {
+					subdomain_datatables.column(6).visible(false);
+				}
+			});
+			$('input[name=ports_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(7).visible(true);
+				} else {
+					subdomain_datatables.column(7).visible(false);
+				}
+			});
+			$('input[name=content_length_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(8).visible(true);
+				} else {
+					subdomain_datatables.column(8).visible(false);
+				}
+			});
+			$('input[name=response_time_filter_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					subdomain_datatables.column(10).visible(true);
+				} else {
+					subdomain_datatables.column(10).visible(false);
+				}
 			});
 
 			$("#subdomain_scan_results").on('click', '.btn-delete-subdomain', function () {
