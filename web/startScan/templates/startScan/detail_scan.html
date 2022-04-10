@@ -93,7 +93,6 @@ Scan Findings
 <div class="tab-content no-padding-tab">
 	<!-- start tab contents  -->
 	<div class="tab-pane show active" id="summary-tab">
-	{# <div class="tab-pane" id="summary-tab"> #}
 		<div class="row">
 			<div class="col-xl-3 col-lg-4">
 				<div class="card">
@@ -223,7 +222,7 @@ Scan Findings
 										{% for scan in most_recent_scans %}
 										<li class="completed">
 											<a href="{% url 'detail_scan' scan.id %}">
-												<h5 class="mt-0 mb-1">{{activity.title}}
+												<h5 class="mt-0 mb-1">
 													{% if history.id == scan.id %}
 													<span class="active-dot dot"></span>
 													<span class="float-start badge badge-soft-primary ms-1 me-1">Current Scan</span>
@@ -243,6 +242,7 @@ Scan Findings
 													<span class="badge badge-soft-danger float-end">Unknown</span>
 													{% endif %}
 												</h5>
+												<br>
 												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
 												<p class="text-primary">
 													{{scan.get_subdomain_count}} Subdomains Discovered
