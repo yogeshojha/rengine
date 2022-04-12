@@ -97,6 +97,7 @@ Targets
               <td class="text-center">
                 <div class="btn-group mb-2 dropstart">
                   <div class="btn-group">
+                    <a class="btn btn-soft-primary" href="{% url 'target_summary' domain.id %}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
                     <a href="{% url 'start_scan' domain.id %}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
                     <div class="btn-group dropstart" role="group">
                       <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -104,8 +105,6 @@ Targets
                       </button>
                       <div class="dropdown-menu" style="">
                         <a class="dropdown-item" href="{% url 'schedule_scan' domain.id %}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="{% url 'target_summary' domain.id %}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{% url 'update_target' domain.id %}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
                         <a class="dropdown-item text-danger" href="#" onclick="delete_target({{ domain.id }}, '{{ domain.name }}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
