@@ -293,7 +293,7 @@ class EndPoint(models.Model):
 	matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
 	technologies = models.ManyToManyField('Technology', related_name='technology')
 	# used for subscans
-	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids')
+	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids', blank=True)
 
 	def __str__(self):
 		return self.http_url
@@ -356,7 +356,7 @@ class Vulnerability(models.Model):
 	open_status = models.BooleanField(null=True, blank=True, default=True)
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
 	# used for subscans
-	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids')
+	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
 	def __str__(self):
 		return self.name
