@@ -551,5 +551,23 @@ $(document).ready(function() {
 	// });
 
 });
+
+var vulnerability_cols = [
+		'vuln_type_checkbox',
+		'vuln_severity_checkbox',
+		'vuln_cvss_score_checkbox',
+		'vuln_cve_cwe_checkbox',
+		'vuln_vulnerable_url_checkbox',
+		'vuln_description_checkbox',
+		'vuln_discovered_on_checkbox',
+		'vuln_status_checkbox'
+	];
+
+	for (var col in vulnerability_cols) {
+		if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
+			$('#' + vulnerability_cols[col]).prop('checked', false);
+		}
+	}
+
 </script>
 {% endblock page_level_script %}
