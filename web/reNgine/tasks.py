@@ -1587,12 +1587,14 @@ def vulnerability_scan(
 
     if domain:
         urls_path = '/alive.txt'
-        if scan_history.scan_type.fetch_url:
-            os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
-            os.system(
-                'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
-            urls_path = '/unfurl_urls.txt'
 
+        # TODO: create a object in scan engine, to say deep scan then only use unfurl, otherwise it is time consuming
+
+        # if scan_history.scan_type.fetch_url:
+        #     os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
+        #     os.system(
+        #         'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
+        #     urls_path = '/unfurl_urls.txt'
 
         vulnerability_scan_input_file = results_dir + urls_path
 
@@ -1600,8 +1602,9 @@ def vulnerability_scan(
             vulnerability_scan_input_file, vulnerability_result_path)
     else:
         url_to_scan = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-        nuclei_command = 'nuclei -json -u {} -o {}'.format(
-            url_to_scan, vulnerability_result_path)
+        nuclei_command = 'nuclei -json -u {} -o {}'.format(url_to_scan, vulnerability_result_path)
+        domain_id = scan_history.domain.id
+        domain = Domain.objects.get(id=domain_id)
 
     # check nuclei config
     if USE_NUCLEI_CONFIG in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[VULNERABILITY_SCAN][USE_NUCLEI_CONFIG]:
