@@ -1052,7 +1052,7 @@ Scan Findings
 						<div class="autocom-box mt-container mx-auto vulnerability-search" id="autocom-box">
 						</div>
 					</div>
-				</div>
+			</div>
 			</div>
 		</div>
 		<div class="row">
@@ -1062,9 +1062,71 @@ Scan Findings
 						<table id="vulnerability_results" class="table style-3 table-hover">
 							<thead>
 								<tr>
+									<div class="col-12">
+										<div class="btn-group mb-2 float-end dropstart">
+											<button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
+												<i class="fe-filter"></i>
+											</button>
+											<div class="dropdown-menu" style="">
+												<div class="dropdown-item">
+													<div class="form-check">
+														<input type="checkbox" class="form-check-input" id="vuln_type_checkbox" name="vuln_type_checkbox" checked>
+														<label class="form-check-label" for="vuln_type_checkbox">Vulnerability Type</label>
+													</div>
+												</div>
+
+												<div class="dropdown-item">
+													<div class="form-check">
+														<input type="checkbox" class="form-check-input" id="vuln_severity_checkbox" name="vuln_severity_checkbox" checked>
+														<label class="form-check-label" for="vuln_severity_checkbox">Severity</label>
+													</div>
+												</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_cvss_score_checkbox" name="vuln_cvss_score_checkbox" checked>
+													<label class="form-check-label" for="vuln_cvss_score_checkbox">CVSS Score</label>
+												</div>
+											</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_cve_cwe_checkbox" name="vuln_cve_cwe_checkbox" checked>
+													<label class="form-check-label" for="vuln_cve_cwe_checkbox">CVE/CWE</label>
+												</div>
+											</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_vulnerable_url_checkbox" name="vuln_vulnerable_url_checkbox" checked>
+													<label class="form-check-label" for="vuln_vulnerable_url_checkbox">Vulnerable URL </label>
+												</div>
+											</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_description_checkbox" name="vuln_description_checkbox" checked>
+													<label class="form-check-label" for="vuln_description_checkbox">Description</label>
+												</div>
+											</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_discovered_on_checkbox" name="vuln_discovered_on_checkbox" checked>
+													<label class="form-check-label" for="vuln_discovered_on_checkbox">Discovered On</label>
+												</div>
+											</div>
+
+											<div class="dropdown-item">
+												<div class="form-check">
+													<input type="checkbox" class="form-check-input" id="vuln_status_checkbox" name="vuln_status_checkbox" checked>
+													<label class="form-check-label" for="vuln_status_checkbox">Status</label>
+												</div>
+											</div>
+
+
 									<th class="checkbox-column">Status</th>
 									<th>Type</th>
-
 									<th>Title</th>
 									<th>CVSS Metrics</th>
 									<th>Tags</th>
@@ -2528,7 +2590,35 @@ $(document).ready(function(){
 						"targets": 15,
 					},
 				],
-				drawCallback: function () {
+				drawCallback: function (settings) {
+					drawCallback_api = this.api();
+
+					if(!$('#vuln_type_checkbox').is(":checked")){
+						vulnerability_table.column(1).visible(false);
+					}
+
+					if(!$('#vuln_severity_checkbox').is(":checked")){
+						vulnerability_table.column(6).visible(false);
+					}
+					if(!$('#vuln_cvss_score_checkbox').is(":checked")){
+						vulnerability_table.column(7).visible(false);
+					}
+					if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
+						vulnerability_table.column(8).visible(false);
+					}
+					if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
+						vulnerability_table.column(10).visible(false);
+					}
+					if(!$('#vuln_description_checkbox').is(":checked")){
+						vulnerability_table.column(11).visible(false);
+					}
+					if(!$('#vuln_discovered_on_checkbox').is(":checked")){
+						vulnerability_table.column(13).visible(false);
+					}
+					if(!$('#vuln_status_checkbox').is(":checked")){
+						vulnerability_table.column(14).visible(false);
+					}
+
 				},
 				createdRow: function( row, data, dataIndex ) {
 					if (!data['open_status']){
@@ -2539,8 +2629,99 @@ $(document).ready(function(){
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
+			$('#vulnerability-search-button').click(function () {
+				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
+			});
+
+			$('input[name=vuln_type_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(1).visible(true);
+				} else {
+					vulnerability_table.column(1).visible(false);
+				}
+				window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_severity_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(6).visible(true);
+				} else {
+					vulnerability_table.column(6).visible(false);
+				}
+				window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_cvss_score_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(7).visible(true);
+				} else {
+					vulnerability_table.column(7).visible(false);
+				}
+				window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_cve_cwe_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(8).visible(true);
+				} else {
+					vulnerability_table.column(8).visible(false);
+				}
+				window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_vulnerable_url_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(10).visible(true);
+				} else {
+					vulnerability_table.column(10).visible(false);
+				}
+				window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_description_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(11).visible(true);
+				} else {
+					vulnerability_table.column(11).visible(false);
+				}
+				window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_discovered_on_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(13).visible(true);
+				} else {
+					vulnerability_table.column(13).visible(false);
+				}
+				window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
+			});
+
+			$('input[name=vuln_status_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(14).visible(true);
+				} else {
+					vulnerability_table.column(14).visible(false);
+				}
+				window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
+			});
 		});
 		{% endif %}
+		var vulnerability_cols = [
+				'vuln_type_checkbox',
+				'vuln_severity_checkbox',
+				'vuln_cvss_score_checkbox',
+				'vuln_cve_cwe_checkbox',
+				'vuln_vulnerable_url_checkbox',
+				'vuln_description_checkbox',
+				'vuln_discovered_on_checkbox',
+				'vuln_status_checkbox'
+			];
+
+			for (var col in vulnerability_cols) {
+				if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
+					$('#' + vulnerability_cols[col]).prop('checked', false);
+				}
+			}
 
 		// get osint
 		$("#pills-osint-tab").click(function() {
