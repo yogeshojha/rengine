@@ -289,6 +289,7 @@ Scan Findings
 								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Subdomains Discovered by reNgine during this scan"></i>
 								<h4 class="mt-0 font-16">Subdomains Discovered</h4>
 								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{subdomain_count|intcomma}}</span></h2>
+								<br>
 								<p class="mb-0"><span class="badge badge-soft-success">Alive Subdomains: {{alive_count}}</span></p>
 							</div>
 						</div>
@@ -300,6 +301,7 @@ Scan Findings
 								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Endpoints discovered by reNgine during this scan. This includes any URLs discovered."></i>
 								<h4 class="mt-0 font-16">Endpoints Discovered</h4>
 								<h2 class="text-primary my-3 text-center"><span data-plugin="counterup">{{endpoint_count|intcomma}}</span></h2>
+								<br>
 								<p class="text-success mb-0"><span class="badge badge-soft-success">Alive Endpoints: {{endpoint_alive_count}}</span></p>
 							</div>
 						</div>
@@ -314,10 +316,12 @@ Scan Findings
 								{% if history.vulnerability_scan %}
 								<p class="text-muted mb-0">
 									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
-									<span class="w-title text-warning">and {{low_count}} Low Vulnerabilities</span>
+									<br>
+									<span class="w-title text-primary">{{low_count}} Low Vulnerabilities and {{info_count}} Informational Vulnerabilities</span>
 								</p>
 								{% else %}
 								<p class="text-muted mb-0 small">Vulnerability scan hasn't been performed.</p>
+								<br>
 								{% endif %}
 							</div>
 						</div>
@@ -337,6 +341,7 @@ Scan Findings
 								<h5 class="text-warning">&nbsp;</h5>
 								<p class="text-muted mb-0">OSINT hasn't been performed.</p>
 								<p class="text-muted mb-0">&nbsp;</p>
+								<br>
 								<br>
 								{% endif %}
 							</div>
