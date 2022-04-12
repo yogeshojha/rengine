@@ -439,6 +439,33 @@ $(document).ready(function() {
 		],
 		drawCallback: function (settings) {
 			drawCallback_api = this.api();
+
+			if(!$('#vuln_type_checkbox').is(":checked")){
+				vulnerability_table.column(1).visible(false);
+			}
+
+			if(!$('#vuln_severity_checkbox').is(":checked")){
+				vulnerability_table.column(6).visible(false);
+			}
+			if(!$('#vuln_cvss_score_checkbox').is(":checked")){
+				vulnerability_table.column(7).visible(false);
+			}
+			if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
+				vulnerability_table.column(8).visible(false);
+			}
+			if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
+				vulnerability_table.column(10).visible(false);
+			}
+			if(!$('#vuln_description_checkbox').is(":checked")){
+				vulnerability_table.column(11).visible(false);
+			}
+			if(!$('#vuln_discovered_on_checkbox').is(":checked")){
+				vulnerability_table.column(13).visible(false);
+			}
+			if(!$('#vuln_status_checkbox').is(":checked")){
+				vulnerability_table.column(14).visible(false);
+			}
+
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
