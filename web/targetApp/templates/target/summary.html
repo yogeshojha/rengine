@@ -65,7 +65,9 @@ Target Summary
 										Target <span class="badge badge-soft-primary">{{target.name}}</span> has been scanned <b>{{scan_count}}</b> times.
 										<br>
 										<br>
-										The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+										{% if scan_count %}
+											The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+										{% endif %}
 									</small>
 								</div>
 								<div class="track-order-list mt-3">
@@ -171,7 +173,7 @@ Target Summary
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<div class="card-widgets">
-									<a href="javascript: fetch_whois('{{target}}', true);" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
+									<a href="javascript: fetch_whois('{{target.name}}', true);" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
 								</div>
 								<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
 								<div class="row mt-3">

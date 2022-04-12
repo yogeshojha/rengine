@@ -1382,7 +1382,7 @@ function fetch_whois(domain_name, save_db){
 	});
 	$("#whois_not_fetched_alert").hide();
 	$("#whois_fetching_alert").show();
-	fetch(``, {}).then(res => res.json())
+	fetch(url, {}).then(res => res.json())
 	.then(function (response) {
 		$("#whois_fetching_alert").hide();
 		document.getElementById('domain_age').innerHTML = response['domain']['domain_age'] + ' ' + response['domain']['date_created'];
@@ -1408,6 +1408,8 @@ function fetch_whois(domain_name, save_db){
 			$("#whois_fetched_alert").slideUp(500);
 		});
 
+	}).catch(function(error) {
+		console.log(error);
 	});
 }
 
