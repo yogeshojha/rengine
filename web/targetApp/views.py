@@ -283,6 +283,8 @@ def target_summary(request, id):
     context['vulnerability_list'] = Vulnerability.objects.filter(
         target_domain__id=id).order_by('-severity').all()[:20]
 
+    context['http_status_breakdown'] = Subdomain.objects.filter(target_domain=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
+
     return render(request, 'target/summary.html', context)
 
 def add_organization(request):
