@@ -1938,6 +1938,7 @@ $(document).ready(function(){
 				}
 				window.localStorage.setItem('sub_http_status_filter_checkbox', $(this).is(':checked'));
 			});
+
 			$('input[name=sub_page_title_filter_checkbox]').change(function() {
 				if ($(this).is(':checked')) {
 					subdomain_datatables.column(5).visible(true);
