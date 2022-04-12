@@ -326,6 +326,14 @@ Target Summary
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-5 col-lg-5 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<h4 class="header-title mb-0">HTTP Status Breakdown</h4>
+								<div id="http_status_chart" class="apex-charts"></div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -335,7 +343,70 @@ Target Summary
 {% endblock main_content %}
 
 {% block page_level_script %}
-<script type="text/javascript">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
+<script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
 
+<script type="text/javascript">
+// depending on http_status_breakdown, generate color
+var colors = [
+	{% for status in http_status_breakdown %}
+	{% if status.http_status >= 200 and status.http_status < 300 %}
+	'#4CAF50',
+	{% elif status.http_status >= 300 and status.http_status < 400 %}
+	'#FFC107',
+	{% else %}
+	'#F44336',
+	{% endif %}
+	{% endfor %}
+];
+
+// http_status chart
+var options = {
+	series: [{
+		name: 'Subdomains',
+		data: [{% for status in http_status_breakdown %}
+			{{status.http_status__count}},
+			{% endfor %}]
+		}],
+		chart: {
+			height: 350,
+			type: 'bar',
+			events: {
+				click: function(chart, w, e) {
+					// console.log(chart, w, e)
+				}
+			}
+		},
+		colors: colors,
+		plotOptions: {
+			bar: {
+				columnWidth: '45%',
+				distributed: true,
+			}
+		},
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			show: false
+		},
+		xaxis: {
+			categories: [
+				{% for status in http_status_breakdown %}
+				'{{status.http_status}}',
+				{% endfor %}
+			],
+			labels: {
+				style: {
+					colors: colors,
+					fontSize: '12px'
+				}
+			}
+		}
+	};
+
+	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
+	chart.render();
 </script>
 {% endblock page_level_script %}
