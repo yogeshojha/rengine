@@ -120,7 +120,10 @@ class ListSubScans(APIView):
 		data = req.data
 
 		subdomain_id = data.get('subdomain_id', None)
+
 		scan_history = data.get('scan_history_id', None)
+
+		domain_id = data.get('domain_id', None)
 
 		response = {}
 
@@ -136,6 +139,14 @@ class ListSubScans(APIView):
 
 		elif scan_history:
 			subscans = SubScan.objects.filter(scan_history__id=scan_history).order_by('-stop_scan_date')
+			subscan_results = SubScanSerializer(subscans, many=True).data
+
+			if subscans:
+				response['status'] = True
+				response['results'] = subscan_results
+
+		elif domain_id:
+			subscans = SubScan.objects.filter(scan_history__in=ScanHistory.objects.filter(domain__id=domain_id)).order_by('-stop_scan_date')
 			subscan_results = SubScanSerializer(subscans, many=True).data
 
 			if subscans:

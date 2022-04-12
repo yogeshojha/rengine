@@ -113,6 +113,21 @@ Target Summary
 						</div>
 					</div>
 				</div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									<span id="sub_scan_history_count"></span> Sub Scans</span>
+								</h5>
+								<div data-simplebar style="max-height: 510px;" class="p-2">
+									<div id="subscan_history_widget">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="col-xl-9 col-lg-8">
 				<div class="row">
@@ -589,6 +604,9 @@ $(document).ready(function(){
 
 		var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
 		chart.render();
+
+		// load scan history widget
+		loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
 });
 </script>
 {% endblock page_level_script %}
