@@ -1953,7 +1953,12 @@ function get_ports(scan_id=null, domain_id=null){
 		for (var val in data['ports']){
 			port = data['ports'][val]
 			badge_color = port['is_uncommon'] ? 'danger' : 'primary';
-			$("#ports").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', ${scan_id})">${port['number']}/${port['service_name']}</span>`);
+			if (scan_id) {
+				$("#ports").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', scan_id=${scan_id}, domain_id=null)">${port['number']}/${port['service_name']}</span>`);
+			}
+			else if (domain_id){
+				$("#ports").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${port['description']}" onclick="get_port_details('${port['number']}', scan_id=null, domain_id=${domain_id})">${port['number']}/${port['service_name']}</span>`);
+			}
 		}
 		$('#ports-count').html(`<span class="badge badge-soft-primary me-1">${data['ports'].length}</span>`);
 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
@@ -2049,14 +2054,22 @@ function get_ip_details(ip_address, scan_id=null, domain_id=null){
 }
 
 function get_port_details(port, scan_id=null, domain_id=null){
+
+	var ip_url = `/api/queryIps/?port=${port}`;
+	var subdomain_url = `/api/querySubdomains/?port=${port}`;
+
 	if (scan_id) {
-		ip_url = `/api/queryIps/?scan_id=${scan_id}&port=${port}&format=json`;
-		subdomain_url = `/api/querySubdomains/?scan_id=${scan_id}&port=${port}&format=json`;
+		ip_url += `&scan_id=${scan_id}`;
+		subdomain_url += `&scan_id=${scan_id}`;
 	}
-	else{
-		ip_url = `/api/queryIps/?&port=${port}&format=json`;
-		subdomain_url = `/api/querySubdomains/?&port=${port}&format=json`;
+	else if(domain_id){
+		ip_url += `&target_id=${domain_id}`;
+		subdomain_url += `&target_id=${domain_id}`;
 	}
+
+	ip_url += `&format=json`;
+	subdomain_url += `&format=json`;
+
 	var interesting_badge = `<span class="m-1 badge  badge-soft-danger bs-tooltip" title="Interesting Subdomain">Interesting</span>`;
 	var ip_spinner = `<span class="spinner-border spinner-border-sm me-1" id="ip-modal-loader"></span>`;
 	var subdomain_spinner = `<span class="spinner-border spinner-border-sm me-1" id="subdomain-modal-loader"></span>`;
