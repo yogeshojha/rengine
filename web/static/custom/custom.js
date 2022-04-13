@@ -1927,7 +1927,12 @@ function get_technologies(scan_id=null, domain_id=null){
 		$('#technologies-count').empty();
 		for (var val in data['technologies']){
 			tech = data['technologies'][val]
-			$("#technologies").append(`<span class='badge badge-soft-primary  m-1 badge-link' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', ${scan_id})">${tech['name']}</span>`);
+			if (scan_id) {
+				$("#technologies").append(`<span class='badge badge-soft-primary  m-1 badge-link' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', scan_id=${scan_id}, domain_id=null)">${tech['name']}</span>`);
+			}
+			else if (domain_id) {
+				$("#technologies").append(`<span class='badge badge-soft-primary  m-1 badge-link' data-toggle="tooltip" title="${tech['count']} Subdomains use this technology." onclick="get_tech_details('${tech['name']}', scan_id=null, domain_id=${domain_id})">${tech['name']}</span>`);
+			}
 		}
 		$('#technologies-count').html(`<span class="badge badge-soft-primary me-1">${data['technologies'].length}</span>`);
 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
@@ -2138,12 +2143,18 @@ function get_port_details(port, scan_id=null, domain_id=null){
 }
 
 function get_tech_details(tech, scan_id=null, domain_id=null){
+
+	var url = `/api/querySubdomains/?tech=${tech}`;
+
 	if (scan_id) {
-		url = `/api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`
+		url += `&scan_id=${scan_id}`;
 	}
-	else {
-		url = `/api/querySubdomains/?&tech=${tech}&format=json`
+	else if(domain_id){
+		url += `&target_id=${domain_id}`;
 	}
+
+	url += `&format=json`;
+
 	var interesting_badge = `<span class="m-1 badge  badge-soft-danger bs-tooltip" title="Interesting Subdomain">Interesting</span>`;
 	// render tab modal
 	$('.modal-title').html('Details for Technology: <b>' + tech + '</b>');
