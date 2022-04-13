@@ -461,6 +461,104 @@ Target Summary
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-6 col-lg-6 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="important-count"><span class="spinner-border spinner-border-sm me-1"></span></span>Important Subdomains</h4>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="important-subdomains-list">
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="tasks-count"><span class="spinner-border spinner-border-sm me-1"></span></span>
+									Recon Note/Todo
+									<!--<span class="text-primary float-end" data-toggle="tooltip" data-placement="top" title="Add Recon Todo" onclick="add_todo_for_scanhistory_modal({{history.id}})">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+									</span>-->
+								</h4>
+								<div class="p-2">
+									<div style="max-height: 210px;min-height: 210px;" data-simplebar>
+										<ul class="list-group list-group-flush todo-list" id="todo-list"></ul>
+									</div>
+								</div>
+								<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+										<div class="modal-content">
+											<div class="modal-body">
+												<div class="compose-box">
+													<div class="compose-content" id="addTaskModalTitle">
+														<h4 class="header-title">Add Recon Todo</h4>
+														<form>
+															<input type="hidden" name="summary_identifier" value="{{history.id}}" id="summary_identifier_val">
+
+															<div class="mt-2">
+																<label for="todoTitle" class="form-label">Todo Title</label>
+																<input id="todoTitle" type="text" placeholder="Todo Title" class="form-control" name="task">
+															</div>
+
+															<div class="mt-2">
+																<label for="todoSubdomainDropdown" class="form-label">Select Subdomain (Optional)</label>
+																<span id="selectedSubdomainCount"></span>
+																<select class="w-100 form-control" data-toggle="select2" data-width="100%" id="todoSubdomainDropdown">
+																	<option>Choose Subdomain...</option>
+																</select>
+															</div>
+
+															<div class="">
+																<label for="todoDescription" class="form-label">Todo Description (Optional)</label>
+																<textarea class="form-control" id="todoDescription" rows="5" spellcheck="false" placeholder="Todo Description"></textarea>
+															</div>
+														</form>
+													</div>
+												</div>
+											</div>
+											<div class="modal-footer">
+												<button class="btn btn-primary add-scan-history-todo">Add Recon Todo</button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="ip-address-count"><span class="spinner-border spinner-border-sm me-1"></span></span> IP Addresses</h4>
+								<span class="text-warning float-end">*IP Addresses highlighted with yellow are CDN IP</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="ip-address" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="ports-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Ports</h4>
+								<span class="text-danger float-end">*Ports highlighted with red are uncommon Ports</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="ports" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-4 col-lg-4 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span id="technologies-count"><span class="spinner-border spinner-border-sm me-1"></span></span> Discovered Technologies</h4>
+								<span class="text-warning float-end">&nbsp;</span>
+								<div class="p-2" data-simplebar style="max-height: 235px; min-height: 235px;">
+									<div id="technologies" class="mt-2"></div>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -473,7 +571,11 @@ Target Summary
 <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
 <script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
-
+<script src="{% static 'custom/custom.js' %}"></script>
+<script src="{% static 'custom/todo.js' %}"></script>
+<script src="{% static 'note/js/todo.js' %}"></script>
+<script src="{% static 'assets/js/clipboard.min.js' %}"></script>
+<script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script type="text/javascript">
 
 $(document).ready(function(){
@@ -630,6 +732,11 @@ $(document).ready(function(){
 
 		// load scan history widget
 		loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
+
+		get_ips(scan_id=null, domain_id={{target.id}});
+		get_technologies(scan_id=null, domain_id={{target.id}});
+		get_ports(scan_id=null, domain_id={{target.id}});
+
 	});
 </script>
 {% endblock page_level_script %}

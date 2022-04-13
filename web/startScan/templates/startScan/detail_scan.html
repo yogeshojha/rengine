@@ -1720,9 +1720,10 @@ $(document).ready(function(){
 		//populate widgets
 		get_important_subdomains(null, {{scan_history_id}});
 		get_recon_notes(null, {{scan_history_id}});
-		get_ips({{scan_history_id}});
-		get_technologies({{scan_history_id}});
-		get_ports({{scan_history_id}});
+
+		get_ips(scan_id={{scan_history_id}}, domain_id=null);
+		get_technologies(scan_id={{scan_history_id}}, domain_id=null);
+		get_ports(scan_id={{scan_history_id}}, domain_id=null);
 
 		// if clicked on pills get subdomains
 		$("#pills-subdomain-tab").click(function() {
