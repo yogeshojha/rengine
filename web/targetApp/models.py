@@ -14,6 +14,14 @@ class AssociatedDomain(models.Model):
         return self.name
 
 
+class RelatedTLD(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=250, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class RegistrantInfo(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=250, null=True, blank=True)
@@ -28,7 +36,8 @@ class RegistrantInfo(models.Model):
     fax = models.CharField(max_length=50, null=True, blank=True)
     organization_association_href = models.CharField(max_length=100, null=True, blank=True)
     email_association_href = models.CharField(max_length=100, null=True, blank=True)
-    associated_domains = models.ManyToManyField(AssociatedDomain)
+    associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
+    related_tld = models.ManyToManyField(RelatedTLD, blank=True)
 
     def __str__(self):
         return self.name if self.name else ''

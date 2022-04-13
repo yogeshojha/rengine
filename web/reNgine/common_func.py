@@ -336,6 +336,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             #finding domain association using email
             email_association_href = tree.xpath('//*[@id="trRegistrantEmail"]/td[2]/a/@href')
 
+            # related tlds
+            related_tlds = tree.xpath('//*[@id="divListOtherTLD"]/descendant::*/text()')
 
             # whois model
             whois = tree.xpath('//*[@id="whois"]/div/div[3]/text()')
@@ -373,6 +375,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             # association
             organization_association_href = organization_association_href[0].strip() if organization_association_href else None
             email_association_href = email_association_href[0].strip() if email_association_href else None
+
+            # other tlds
+            related_tlds = [ tld for tld in related_tlds if "\r\n" not in tld ]
 
             dns_history_xpath = tree.xpath("//*[@id='MainMaster_divNSHistory']/table/tbody/tr")
             dns_history = []
@@ -472,6 +477,16 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         ass_domain.name = domain
                         ass_domain.save()
                     registrant.associated_domains.add(ass_domain)
+
+                # save related TLDs
+                for tld in related_tlds:
+                    if RelatedTLD.objects.filter(name=tld).exists():
+                        rel_tld = RelatedTLD.objects.get(name=tld)
+                    else:
+                        rel_tld = RelatedTLD()
+                        rel_tld.name = tld
+                        rel_tld.save()
+                    registrant.related_tld.add(rel_tld)
 
             ns_records = []
             for i in range(4):
@@ -582,6 +597,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                     'email_association_url': final_email_association_url,
                 },
                 'related_domains': unique_associated_domains,
+                'related_tlds': related_tlds,
                 'whois': whois if whois else None
             }
         except Exception as e:
@@ -597,6 +613,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             unique_associated_domains = []
             if domain.domain_info and domain.domain_info.whois and domain.domain_info.whois.registrant and domain.domain_info.whois.registrant.associated_domains:
                 unique_associated_domains = [d.name for d in domain.domain_info.whois.registrant.associated_domains.all()]
+            unique_related_tlds = []
+            if domain.domain_info and domain.domain_info.whois and domain.domain_info.whois.registrant and domain.domain_info.whois.registrant.related_tld:
+                unique_related_tlds = [d.name for d in domain.domain_info.whois.registrant.related_tld.all()]
             if domain.domain_info:
                 return {
                     'status': True,
@@ -625,6 +644,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         'fax': domain.domain_info.whois.registrant.fax,
                     },
                     'related_domains': unique_associated_domains,
+                    'related_tlds': unique_related_tlds,
                     'whois': domain.domain_info.whois.details
                 }
             return {
