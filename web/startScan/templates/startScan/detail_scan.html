@@ -347,7 +347,7 @@ Scan Findings
 					<div class="col-6 interesting-tab-show" style="display: none">
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
 							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-							<i class="mdi mdi-fire-alert me-2"></i> reNgine identified <span id="interesting_subdomain_alert_count"></span> <span id="interesting_endpoint_alert_count"></span> <a class="alert-link" id="interesting-tab-btn" href="#">Check it out!</a>
+							<i class="mdi mdi-fire-alert me-2"></i> reNgine identified <span id="interesting_subdomain_alert_count"></span> <span id="interesting_endpoint_alert_count"></span> <a class="" id="interesting-tab-btn" href="#">Check it out!</a>
 						</div>
 					</div>
 					<div class="col-6 recon-changes-tab-show" style="display: none">
@@ -360,7 +360,7 @@ Scan Findings
 					<div class="col-6 related-domains-tab-show">
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
 							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-							<i class="fe-trending-up me-2"></i> reNgine has identified {{history.domain.domain_info.associated_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').prev().tab('show');">Check it out!</a>
+							<i class="fe-trending-up me-2"></i> reNgine identified {{history.domain.domain_info.associated_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').prev().tab('show');">Check it out!</a>
 						</div>
 					</div>
 					{% endif %}
@@ -368,7 +368,7 @@ Scan Findings
 					<div class="col-6 related-domains-tab-show">
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
 							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-							<i class="fe-trending-up me-2"></i>{{history.domain.name}} also has {{history.domain.domain_info.related_tlds.count}} registered TLDs.<a href="#" onclick="$('#v-pills-tab a:last').tab('show');">Check it out!</a>
+							<i class="fe-trending-up me-2"></i>{{history.domain.name}} has {{history.domain.domain_info.related_tlds.count}} registered TLDs. <a href="#" onclick="$('#v-pills-tab a:last').tab('show');">Check it out!</a>
 						</div>
 					</div>
 					{% endif %}
