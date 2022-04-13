@@ -1895,7 +1895,12 @@ function get_ips(scan_id=null, domain_id=null){
 		for (var val in data['ips']){
 			ip = data['ips'][val]
 			badge_color = ip['is_cdn'] ? 'warning' : 'primary';
-			$("#ip-address").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', ${scan_id})">${ip['address']}</span>`);
+			if (scan_id) {
+				$("#ip-address").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', scan_id=${scan_id}, domain_id=null)">${ip['address']}</span>`);
+			}
+			else if (domain_id) {
+				$("#ip-address").append(`<span class='badge badge-soft-${badge_color}  m-1 badge-link' data-toggle="tooltip" title="${ip['ports'].length} Ports Open." onclick="get_ip_details('${ip['address']}', scan_id=null, domain_id=${domain_id})">${ip['address']}</span>`);
+			}
 			// $("#ip-address").append(`<span class='badge badge-soft-${badge_color}  m-1' data-toggle="modal" data-target="#tabsModal">${ip['address']}</span>`);
 		}
 		$('#ip-address-count').html(`<span class="badge badge-soft-primary me-1">${data['ips'].length}</span>`);
@@ -1956,15 +1961,22 @@ function get_ports(scan_id=null, domain_id=null){
 }
 
 
-function get_ip_details(ip_address, scan_id){
+function get_ip_details(ip_address, scan_id=null, domain_id=null){
+	var port_url = `/api/queryPorts/?ip_address=${ip_address}`;
+	var subdomain_url = `/api/querySubdomains/?ip_address=${ip_address}`;
+
 	if (scan_id) {
-		port_url =  `/api/queryPorts/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`
-		subdomain_url = `/api/querySubdomains/?scan_id=${scan_id}&ip_address=${ip_address}&format=json`
+		port_url += `&scan_id=${scan_id}`;
+		subdomain_url += `&scan_id=${scan_id}`;
 	}
-	else {
-		port_url =  `/api/queryPorts/?&ip_address=${ip_address}&format=json`
-		subdomain_url = `/api/querySubdomains/?&ip_address=${ip_address}&format=json`
+	else if(domain_id){
+		port_url += `&target_id=${domain_id}`;
+		subdomain_url += `&target_id=${domain_id}`;
 	}
+
+	port_url += `&format=json`;
+	subdomain_url += `&format=json`;
+
 	var interesting_badge = `<span class="m-1 badge  badge-soft-danger bs-tooltip" title="Interesting Subdomain">Interesting</span>`;
 
 	var port_loader = `<span class="inner-div spinner-border text-primary align-self-center loader-sm" id="port-modal-loader"></span>`;
@@ -2036,7 +2048,7 @@ function get_ip_details(ip_address, scan_id){
 	});
 }
 
-function get_port_details(port, scan_id){
+function get_port_details(port, scan_id=null, domain_id=null){
 	if (scan_id) {
 		ip_url = `/api/queryIps/?scan_id=${scan_id}&port=${port}&format=json`;
 		subdomain_url = `/api/querySubdomains/?scan_id=${scan_id}&port=${port}&format=json`;
@@ -2112,7 +2124,7 @@ function get_port_details(port, scan_id){
 	});
 }
 
-function get_tech_details(tech, scan_id){
+function get_tech_details(tech, scan_id=null, domain_id=null){
 	if (scan_id) {
 		url = `/api/querySubdomains/?scan_id=${scan_id}&tech=${tech}&format=json`
 	}
