@@ -34,10 +34,6 @@ class RegistrantInfo(models.Model):
     country_iso = models.CharField(max_length=4, null=True, blank=True)
     phone_number = models.CharField(max_length=50, null=True, blank=True)
     fax = models.CharField(max_length=50, null=True, blank=True)
-    organization_association_href = models.CharField(max_length=100, null=True, blank=True)
-    email_association_href = models.CharField(max_length=100, null=True, blank=True)
-    associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
-    related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
     def __str__(self):
         return self.name if self.name else ''
@@ -86,6 +82,10 @@ class DomainInfo(models.Model):
     whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
     nameserver_history = models.ManyToManyField(NameServerHistory)
     nameserver_record = models.ManyToManyField(NSRecord)
+    organization_association_href = models.CharField(max_length=100, null=True, blank=True)
+    email_association_href = models.CharField(max_length=100, null=True, blank=True)
+    associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
+    related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
     def __str__(self):
         return self.ip_address
