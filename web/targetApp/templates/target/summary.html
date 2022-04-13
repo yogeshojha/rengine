@@ -733,6 +733,9 @@ $(document).ready(function(){
 		// load scan history widget
 		loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
 
+		get_important_subdomains(target_id={{target.id}}, scan_history_id=null);
+		get_recon_notes(target_id={{target.id}}, scan_history_id=null);
+
 		get_ips(scan_id=null, domain_id={{target.id}});
 		get_technologies(scan_id=null, domain_id={{target.id}});
 		get_ports(scan_id=null, domain_id={{target.id}});

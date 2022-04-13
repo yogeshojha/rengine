@@ -1718,8 +1718,8 @@ $(document).ready(function(){
 		chart.render();
 
 		//populate widgets
-		get_important_subdomains(null, {{scan_history_id}});
-		get_recon_notes(null, {{scan_history_id}});
+		get_important_subdomains(target_id=null, scan_history_id={{scan_history_id}});
+		get_recon_notes(target_id=null, scan_history_id={{scan_history_id}});
 
 		get_ips(scan_id={{scan_history_id}}, domain_id=null);
 		get_technologies(scan_id={{scan_history_id}}, domain_id=null);
