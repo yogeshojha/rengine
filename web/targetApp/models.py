@@ -37,7 +37,7 @@ class RegistrantInfo(models.Model):
     organization_association_href = models.CharField(max_length=100, null=True, blank=True)
     email_association_href = models.CharField(max_length=100, null=True, blank=True)
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
-    related_tld = models.ManyToManyField(RelatedTLD, blank=True)
+    related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
     def __str__(self):
         return self.name if self.name else ''
