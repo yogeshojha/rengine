@@ -343,9 +343,13 @@ Target Summary
 							<div class="card-body">
 								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.whois.registrant.associated_domains.all.count}}</span> Related Domains</h4>
 								<div class="row mt-3">
-									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 250px;">
+									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 10px;">
 										{% for domain in target.domain_info.whois.registrant.associated_domains.all %}
 										<span class="btn btn-primary rounded-pill waves-effect waves-light me-1 mb-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+										{% empty %}
+										<div class="alert alert-warning" role="alert">
+											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related domains.
+										</div>
 										{% endfor %}
 									</div>
 								</div>
