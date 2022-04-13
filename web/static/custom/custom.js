@@ -660,10 +660,11 @@ function get_interesting_endpoint(target_id, scan_history_id) {
 }
 
 function get_important_subdomains(target_id, scan_history_id) {
+	var url = `/api/querySubdomains/?only_important&no_lookup_interesting&format=json`;
 	if (target_id) {
-		url = `/api/querySubdomains/?target_id=${target_id}&only_important&no_lookup_interesting&format=json`;
+		url += `&target_id=${target_id}`;
 	} else if (scan_history_id) {
-		url = `/api/querySubdomains/?scan_id=${scan_history_id}&only_important&no_lookup_interesting&format=json`;
+		url += `&scan_id=${scan_history_id}`;
 	}
 	$.getJSON(url, function(data) {
 		$('#important-count').empty();

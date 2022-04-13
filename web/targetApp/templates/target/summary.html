@@ -740,6 +740,12 @@ $(document).ready(function(){
 		get_technologies(scan_id=null, domain_id={{target.id}});
 		get_ports(scan_id=null, domain_id={{target.id}});
 
+		var clipboard = new Clipboard('.copyable');
+		clipboard.on('success', function(e) {
+			setTooltip(e.trigger, 'Copied!');
+			hideTooltip(e.trigger);
+		});
+
 	});
 </script>
 {% endblock page_level_script %}
