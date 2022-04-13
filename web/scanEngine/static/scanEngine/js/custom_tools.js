@@ -7,10 +7,10 @@ function load_gf_template(pattern_name){
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
+    $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
   }).fail(function(){
     $('#modal-loader').empty();
-    $("#modal-text-content").append(`<p class='text-danger'>Error loading GF Pattern</p>`);
+    $("#modal-content").append(`<p class='text-danger'>Error loading GF Pattern</p>`);
   });
 }
 
@@ -24,10 +24,10 @@ function load_nuclei_template(pattern_name){
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?nuclei_template&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
+    $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
   }).fail(function(){
     $('#modal-loader').empty();
-    $("#modal-text-content").append(`<p class='text-danger'>Error loading Nuclei Template</p>`);
+    $("#modal-content").append(`<p class='text-danger'>Error loading Nuclei Template</p>`);
   });
 }
 

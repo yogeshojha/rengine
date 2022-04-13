@@ -136,8 +136,8 @@ function get_task_details(todo_id){
     if (note['subdomain_name']) {
       subdomain_name = '<small class="text-success"> Subdomain: ' + note['subdomain_name'] + '</small></br>';
     }
-    $('.modal-title').html(`<b>${split(htmlEncode(note['title']), 80)}</b>`);
-    $('#modal-text-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
+    $('.modal-title').html(`<b>${htmlEncode(note['title'])}</b>`);
+    $('#modal-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
   });
 }
 

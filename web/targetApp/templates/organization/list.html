@@ -123,14 +123,14 @@ function get_target_modal(organization_id){
     organization_name = htmlEncode(data['organization'][0]['name']);
     $('#modal-loader').empty();
     $('.modal-title').html(`${data['domains'].length} targets in organization ${organization_name}`);
-    $('#modal-text-content').append(`<ul id="target-detail-modal-ul"></ul>`);
+    $('#modal-content').append(`<ul id="target-detail-modal-ul"></ul>`);
     for (domain in data['domains']){
       domain_obj = data['domains'][domain];
       $("#target-detail-modal-ul").append(`<li>${domain_obj['name']}</li>`);
     }
   }).fail(function(){
     $('#modal-loader').empty();
-    $("#modal-text-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
+    $("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
   });
 }
 
