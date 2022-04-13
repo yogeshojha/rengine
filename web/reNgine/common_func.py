@@ -476,7 +476,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         ass_domain = AssociatedDomain()
                         ass_domain.name = domain
                         ass_domain.save()
-                    registrant.associated_domains.add(ass_domain)
+                    domain_info.associated_domains.add(ass_domain)
 
                 # save related TLDs
                 for tld in related_tlds:
@@ -486,7 +486,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         rel_tld = RelatedTLD()
                         rel_tld.name = tld
                         rel_tld.save()
-                    registrant.related_tlds.add(rel_tld)
+                    domain_info.related_tlds.add(rel_tld)
 
             ns_records = []
             for i in range(4):
@@ -611,11 +611,15 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
         if Domain.objects.filter(name=ip_domain).exists():
             domain = Domain.objects.get(name=ip_domain)
             unique_associated_domains = []
-            if domain.domain_info and domain.domain_info.whois and domain.domain_info.whois.registrant and domain.domain_info.whois.registrant.associated_domains:
-                unique_associated_domains = [d.name for d in domain.domain_info.whois.registrant.associated_domains.all()]
+
+            if domain.domain_info and domain.domain_info.associated_domains:
+                unique_associated_domains = [d.name for d in domain.domain_info.associated_domains.all()]
+
+
             unique_related_tlds = []
-            if domain.domain_info and domain.domain_info.whois and domain.domain_info.whois.registrant and domain.domain_info.whois.registrant.related_tlds:
-                unique_related_tlds = [d.name for d in domain.domain_info.whois.registrant.related_tlds.all()]
+            if domain.domain_info and domain.domain_info.related_tlds:
+                unique_related_tlds = [d.name for d in domain.domain_info.related_tlds.all()]
+
             if domain.domain_info:
                 return {
                     'status': True,
