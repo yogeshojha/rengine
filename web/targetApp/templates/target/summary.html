@@ -66,7 +66,7 @@ Target Summary
 										<br>
 										<br>
 										{% if scan_count %}
-											The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
+										The most recent scan was performed on <span class="text-primary">&nbsp;{{recent_scans.0.start_scan_date}} , {{recent_scans.0.start_scan_date|naturaltime}}</span>
 										{% endif %}
 									</small>
 								</div>
@@ -190,7 +190,7 @@ Target Summary
 								<div class="card-widgets">
 									<a href="javascript: fetch_whois('{{target.name}}', true);" data-toggle="tooltip" title="Reload Whois"><i class="mdi mdi-refresh"></i></a>
 								</div>
-								<h4 class="header-title mb-0"><i class="fe-activity"></i>&nbsp;Target Information</h4>
+								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-activity"></i></span>&nbsp;Target Information</h4>
 								<div class="row mt-3">
 									<div class="col-sm-3">
 										<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
@@ -198,12 +198,6 @@ Target Summary
 											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
 											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
-											<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">
-												Related Domains
-												{% if target.domain_info.whois.registrant.associated_domains.count %}
-													<span class="badge badge-soft-primary float-end">{{target.domain_info.whois.registrant.associated_domains.count}}</span>
-												{% endif %}
-												</a>
 										</div>
 									</div> <!-- end col-->
 									<div class="col-sm-9">
@@ -330,11 +324,6 @@ Target Summary
 												No DNS history records found.
 												{% endif %}
 											</div>
-											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for domain in target.domain_info.whois.registrant.associated_domains.all %}
-													<span class="btn btn-primary rounded-pill waves-effect waves-light me-1 mb-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-												{% endfor %}
-											</div>
 										</div>
 									</div>
 								</div>
@@ -349,8 +338,22 @@ Target Summary
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="row">
+					<div class="col-xl-6 col-lg-6 col-12">
+						<div class="card" style="height: 95%">
+							<div class="card-body">
+								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.whois.registrant.associated_domains.all.count}}</span> Related Domains</h4>
+								<div class="row mt-3">
+									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 250px;">
+										{% for domain in target.domain_info.whois.registrant.associated_domains.all %}
+										<span class="btn btn-primary rounded-pill waves-effect waves-light me-1 mb-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+										{% endfor %}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-12">
+					</div>
 					<div class="col-xl-5 col-lg-5 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
@@ -407,10 +410,10 @@ Target Summary
 												<td>
 													{{vulnerability.name}}
 													{% if vulnerability.cve_ids %}
-														<br>
-														{% for cve in vulnerability.cve_ids %}
-															<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="CVE ID">{{cve}}</span>
-														{% endfor %}
+													<br>
+													{% for cve in vulnerability.cve_ids %}
+													<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="CVE ID">{{cve}}</span>
+													{% endfor %}
 													{% endif %}
 													<br>
 													<small class="text-muted">Discovered: {{vulnerability.discovered_date|naturaltime}}</small>
@@ -514,6 +517,9 @@ $(document).ready(function(){
 			}
 		};
 
+		var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
+		chart.render();
+
 		// vulnerability pie chart
 		var options = {
 			chart: {
@@ -602,11 +608,8 @@ $(document).ready(function(){
 
 		chart.render()
 
-		var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
-		chart.render();
-
 		// load scan history widget
 		loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
-});
+	});
 </script>
 {% endblock page_level_script %}
