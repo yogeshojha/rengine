@@ -142,13 +142,17 @@ function get_task_details(todo_id){
 }
 
 function get_recon_notes(target_id, scan_id){
+  var url = `/api/listTodoNotes/?`;
+
   if (target_id) {
-    console.log('Hello');
-    url = `/api/listTodoNotes/?target_id=${target_id}&format=json`;
+    url += `target_id=${target_id}`;
   }
   else if (scan_id) {
-    url = `/api/listTodoNotes/?scan_id=${scan_id}&format=json`
+    url += `scan_id=${scan_id}`;
   }
+
+  url += `&format=json`;
+
   // <li class="list-group-item border-0 ps-0"><div class="form-check"><input type="checkbox" class="form-check-input todo-done" id="8"><label class="form-check-label" for="8">dd</label></div></li>
   $.getJSON(url, function(data) {
     $('#tasks-count').empty();
