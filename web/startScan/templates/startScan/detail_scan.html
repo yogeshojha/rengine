@@ -739,144 +739,7 @@ Scan Findings
 		</div>
 	</div>
 	<div class="tab-pane" id="subdomain-tab">
-		<div class="row justify-content-center">
-			<div class="col-xl-8 col-lg-8 col-sm-8">
-				<div class="wrapper">
-					<div class="search-input">
-						<a href="" target="_blank" hidden></a>
-						<div class="input-group">
-							<input type="text" class="form-control" placeholder="Filter Subdomains" aria-label="Filter Subdomains" id="subdomains-search">
-							<div class="input-group-append">
-								<button id="subdomain-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
-							</div>
-						</div>
-						<div class="autocom-box mt-container mx-auto" id="autocom-box">
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col-12">
-				<div class="card">
-					<div class="card-body">
-						<div class="row">
-							<div class="col-6 float-start">
-								<a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
-									<i class="fe-zap"></i>
-								</a>
-								<a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
-									<i class="fe-download"></i>
-								</a>
-								<a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
-									<i class="fe-trash"></i>
-								</a>
-								<div class="ms-2 mt-2" id="">
-									<a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
-								</div>
-							</div>
-							<div class="col-6">
-								<div class="btn-group mb-2 float-end dropstart">
-									<button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
-										<i class="fe-filter"></i>
-									</button>
-									<div class="dropdown-menu" style="">
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_http_status_filter_checkbox" name="sub_http_status_filter_checkbox" checked>
-												<label class="form-check-label" for="http_status_filter_checkbox">HTTP Status</label>
-											</div>
-										</div>
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_page_title_filter_checkbox" name="sub_page_title_filter_checkbox" checked>
-												<label class="form-check-label" for="page_title_filter_checkbox">Page Title</label>
-											</div>
-										</div>
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_ip_filter_checkbox" name="sub_ip_filter_checkbox" checked>
-												<label class="form-check-label" for="ip_filter_checkbox">IP Address</label>
-											</div>
-										</div>
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_ports_filter_checkbox" name="sub_ports_filter_checkbox" checked>
-												<label class="form-check-label" for="ports_filter_checkbox">Ports</label>
-											</div>
-										</div>
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_content_length_filter_checkbox" name="sub_content_length_filter_checkbox" checked>
-												<label class="form-check-label" for="content_length_filter_checkbox">Content Length</label>
-											</div>
-										</div>
-										<div class="dropdown-item">
-											<div class="form-check">
-												<input type="checkbox" class="form-check-input" id="sub_response_time_filter_checkbox" name="sub_response_time_filter_checkbox" checked>
-												<label class="form-check-label" for="response_time_filter_checkbox">Response Time</label>
-											</div>
-										</div>
-
-									</div>
-
-									<a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="Reload Subdomains" id="reload_subdomain_table_btn">
-										<i class="fe-refresh-cw"></i>
-									</a>
-
-									<button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Download Subdomains">
-										<i class="fe-download"></i>
-									</button>
-									<div class="dropdown-menu" style="">
-										<a class="dropdown-item" href="javascript:download_subdomains({{scan_history_id}}, '{{history.domain.name}}')">Download All Subdomains</a>
-										<a class="dropdown-item" href="javascript:download_interesting_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Interesting Subdomains</a>
-										<a class="dropdown-item" href="javascript:download_important_subdomains({{scan_history_id}}, '{{history.domain.name}}');">Download Important Subdomains</a>
-									</div>
-
-								</div>
-							</div>
-						</div>
-						<div class="row mt-1">
-							<div class="col-12">
-								<table id="subdomain_scan_results" class="table style-3 table-hover">
-									<thead>
-										<tr>
-											<th class="checkbox-column">Status</th>
-											<th>Subdomain</th>
-											<th class="text-center">Endpoints</th>
-											<th class="text-center">Vulnerabilities</th>
-											<th class="text-center">Status</th>
-											<th class="text-center">Title</th>
-											<th class="text-center">IP</th>
-											<th class="text-center">Ports</th>
-											<th class="text-center">Content Length</th>
-											<th class="text-center">Screenshot</th>
-											<th class="text-center">Response Time</th>
-											<th>Technology</th>
-											<th>Checked</th>
-											<th>HTTP URL</th>
-											<th>CNAME</th>
-											<th>is_interesting</th>
-											<th>Info</th>
-											<th>Low</th>
-											<th>Medium</th>
-											<th>High</th>
-											<th>Critical</th>
-											<th>Todos</th>
-											<th>Is Important</th>
-											<th>Webserver</th>
-											<th>Action</th>
-											<th>Directories Count</th>
-											<th>Subscan Count</th>
-										</tr>
-									</thead>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+		{% include 'base/_items/subdomain_tab_content.html' %}
 	</div>
 	{% if history.screenshot %}
 	<div class="tab-pane" id="screenshot-tab">
@@ -1806,7 +1669,7 @@ $(document).ready(function(){
 								content_type = '';
 								web_server = '';
 								if (row['technologies']){
-									tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{scan_history_id}}) + '</div>';
+									tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{scan_history_id}}, domain_id=null) + '</div>';
 								}
 								if(row['is_interesting'])
 								{
@@ -1838,12 +1701,12 @@ $(document).ready(function(){
 								}
 
 								vuln_count_badge = '';
-								total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, null, ${row['id']}, '${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
-								info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 0, ${row['id']}, '${row['name']}')">${row['info_count']} Info</span>`;
-								low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 1, ${row['id']}, '${row['name']}')">${row['low_count']} Low</span>`;
-								medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 2, ${row['id']}, '${row['name']}')">${row['medium_count']} Med</span>`;
-								high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 3, ${row['id']}, '${row['name']}')">${row['high_count']} High</span>`;
-								critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal({{history.id}}, 4, ${row['id']}, '${row['name']}')">${row['critical_count']} Critical</span>`;
+								total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
+								info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
+								low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} Low</span>`;
+								medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} Med</span>`;
+								high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} High</span>`;
+								critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(scan_id={{history.id}}, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} Critical</span>`;
 								vuln_count_badge = `<div class="">` + (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '') + `</div>`;
 
 								vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0? total_vuln_badge : '') + vuln_count_badge;
@@ -1854,7 +1717,7 @@ $(document).ready(function(){
 
 								var directory_count_badge = '';
 								if (row['directories_count']){
-									directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+									directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id={{history.id}}, subdomain_id${row['id']}, subdomain_name'${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
 								}
 
 								var subscan_count_badge = '';
@@ -1985,7 +1848,7 @@ $(document).ready(function(){
 								<div class="mt-2">
 								<a href="javascript:void(0);" class="action-icon btn-scan-subdomain" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="text-primary mdi mdi-lightning-bolt-outline"></i></a>
 								<a href="#" onclick="add_task_for_subdomain(${row['id']}, '${data}')" class="action-icon" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" id="${row['id']}"> <i class="text-success mdi mdi-notebook-plus-outline"></i></a>
-								<a href="#" onclick="mark_important_subdomain(row=this, subdomain_id=${row['id']})" class="action-icon" data-toggle="tooltip" data-placement="top" title="Toggle Important Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-alert-rhombus-outline"></i></a>
+								<a href="#" onclick="mark_important_subdomain(this, ${row['id']})" class="action-icon" data-toggle="tooltip" data-placement="top" title="Toggle Important Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-alert-rhombus-outline"></i></a>
 								<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-delete-forever-outline"></i></a>
 								</div>
 								`;
