@@ -40,6 +40,44 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class AddReconNote(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		subdomain_id = data.get('subdomain_id')
+		scan_history_id = data.get('scan_history_id')
+		title = data.get('title')
+		description = data.get('description')
+
+		try:
+			note = TodoNote()
+			note.title = title
+			note.description = description
+
+			if scan_history_id:
+				scan_history = ScanHistory.objects.get(id=scan_history_id)
+				note.scan_history = scan_history
+
+			# get scan history for subdomain_id
+			if subdomain_id:
+				subdomain = Subdomain.objects.get(id=subdomain_id)
+				note.subdomain = subdomain
+
+				# also get scan history
+				scan_history_id = subdomain.scan_history.id
+				scan_history = ScanHistory.objects.get(id=scan_history_id)
+				note.scan_history = scan_history
+
+			note.save()
+			response = {'status': True}
+		except Exception as e:
+			response = {'status': False, 'message': str(e)}
+
+		return Response(response)
+
+
+
 class ToggleSubdomainImportantStatus(APIView):
 	def post(self, request):
 		req = self.request

@@ -33,6 +33,10 @@ urlpatterns = [
         AddTarget.as_view(),
         name='addTarget'),
     path(
+        'add/recon_note/',
+        AddReconNote.as_view(),
+        name='addReconNote'),
+    path(
         'queryTechnologies/',
         ListTechnology.as_view(),
         name='listTechnologies'),
@@ -163,7 +167,7 @@ urlpatterns = [
     path(
         'toggle/subdomain/important/',
         ToggleSubdomainImportantStatus.as_view(),
-        name='delete_rows'),
+        name='toggle_subdomain'),
     path(
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),

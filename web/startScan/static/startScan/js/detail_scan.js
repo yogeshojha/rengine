@@ -935,38 +935,48 @@ $(".add-scan-history-todo").click(function(){
 		'description': description
 	}
 
+
 	scan_id = parseInt(document.getElementById('summary_identifier_val').value);
-	data['scan_history'] = scan_id;
+	data['scan_history_id'] = scan_id;
 
 	if ($("#todoSubdomainDropdown").val() != 'Choose Subdomain...') {
-		data['subdomain'] = parseInt($("#todoSubdomainDropdown").val());
+		data['subdomain_id'] = parseInt($("#todoSubdomainDropdown").val());
 	}
 
-	fetch('../../recon_note/add_note', {
+	fetch('/api/add/recon_note/', {
 		method: 'post',
 		headers: {
-			"X-CSRFToken": getCookie("csrftoken")
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(data)
 	}).then(res => res.json())
 	.then(function (response) {
-		Snackbar.show({
-			text: 'Todo Added.',
-			pos: 'top-right',
-			duration: 1500,
-		});
+		console.log(response);
+		if (response.status) {
+			Snackbar.show({
+				text: 'Todo Added.',
+				pos: 'top-right',
+				duration: 1500,
+			});
+		}
+		else{
+			swal.fire("Error!", "Could not add recon note, " + response.message, "warning", {
+				button: "Okay",
+			});
+		}
 		$('#addTaskModal').modal('hide');
 		get_recon_notes(null, scan_id);
 	});
 });
 
 
-function add_task_for_subdomain(subdomain_id, subdomain_name){
+function add_note_for_subdomain(subdomain_id, subdomain_name){
 	$('#todo-modal-subdomain-name').html(subdomain_name);
 	$("#subdomainTodoTitle").val('');
 	$("#subdomainTodoDescription").val('');
 
-	$('#add-todo-subdomain-submit-button').attr('onClick', `add_task_for_subdomain_handler(${subdomain_id});`);
+	$('#add-todo-subdomain-submit-button').attr('onClick', `add_note_for_subdomain_handler(${subdomain_id});`);
 
 
 	$('#addSubdomainTaskModal').modal('show');
@@ -974,36 +984,38 @@ function add_task_for_subdomain(subdomain_id, subdomain_name){
 }
 
 
-function add_task_for_subdomain_handler(subdomain_id){
+function add_note_for_subdomain_handler(subdomain_id){
 	var title = document.getElementById('subdomainTodoTitle').value;
 	var description = document.getElementById('subdomainTodoDescription').value;
 
 	data = {
 		'title': title,
-		'description': description
+		'description': description,
+		'subdomain_id': subdomain_id
 	}
 
-	scan_id = 0;
-	if (document.getElementById("summary_identifier_val")) {
-		scan_id = parseInt(document.getElementById('summary_identifier_val').value);
-	}
-
-	data['scan_history'] = scan_id;
-	data['subdomain'] = subdomain_id;
-
-	fetch('../../recon_note/add_note', {
+	fetch('/api/add/recon_note/', {
 		method: 'post',
 		headers: {
-			"X-CSRFToken": getCookie("csrftoken")
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(data)
 	}).then(res => res.json())
 	.then(function (response) {
-		Snackbar.show({
-			text: 'Todo Added.',
-			pos: 'top-right',
-			duration: 1500,
-		});
+
+		if (response.status) {
+			Snackbar.show({
+				text: 'Todo Added.',
+				pos: 'top-right',
+				duration: 1500,
+			});
+		}
+		else{
+			swal.fire("Error!", response.message, "warning", {
+				button: "Okay",
+			});
+		}
 		$('#subdomain_scan_results').DataTable().ajax.reload();
 		$('#addSubdomainTaskModal').modal('hide');
 	});
