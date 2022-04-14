@@ -31,7 +31,7 @@ class ScanHistory(models.Model):
 	screenshot = models.BooleanField(null=True, default=True)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
-
+	error_message = models.CharField(max_length=300, blank=True, null=True)
 	# osint is directly linked to scan history and not subdomains
 	emails = models.ManyToManyField('Email', related_name='emails', blank=True)
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
@@ -243,6 +243,7 @@ class SubScan(models.Model):
 	vulnerability_scan = models.BooleanField(null=True, default=False)
 	osint = models.BooleanField(null=True, default=False)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
+	error_message = models.CharField(max_length=300, blank=True, null=True)
 
 
 	def get_completed_ago(self):
@@ -375,6 +376,7 @@ class ScanActivity(models.Model):
 	title = models.CharField(max_length=1000)
 	time = models.DateTimeField()
 	status = models.IntegerField()
+	error_message = models.CharField(max_length=300, blank=True, null=True)
 
 	def __str__(self):
 		return str(self.title)
