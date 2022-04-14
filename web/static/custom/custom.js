@@ -1322,14 +1322,14 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 			for (var result in data['results']) {
 
 				var result_obj = data['results'][result];
-
-
+				var error_message = '';
 				var task_name = get_task_name(result_obj);
 
 				if (result_obj.status == 0) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';
 					status_badge = '<span class="float-end badge bg-danger">Failed</span>';
+					error_message = `</br><span class="text-danger">Error: ${result_obj.error_message}`;
 				} else if (result_obj.status == 3) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';
@@ -1353,6 +1353,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 					Task Completed ${result_obj.completed_ago} ago
 					</span>
 					Took ${result_obj.time_taken}
+					${error_message}
 					</p>
 					</div>
 					</a>
@@ -1821,13 +1822,14 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 				<span class="badge badge-soft-primary me-1">${data['results'].length}</span>
 			`)
 			for (var result in data['results']) {
-
+				var error_message = '';
 				var result_obj = data['results'][result];
 				var task_name = get_task_name(result_obj);
 				if (result_obj.status == 0) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';
 					status_badge = '<span class="float-end badge bg-danger">Failed</span>';
+					error_message = `</br><span class="text-danger">Error: ${result_obj.error_message}`;
 				} else if (result_obj.status == 3) {
 					color = 'danger';
 					bg_color = 'bg-soft-danger';
@@ -1855,6 +1857,7 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 					Task Completed ${result_obj.completed_ago} ago
 					</span>
 					Took ${result_obj.time_taken}
+					${error_message}
 					</p>
 					</div>
 					</a>

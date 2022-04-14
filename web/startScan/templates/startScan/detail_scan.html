@@ -134,6 +134,11 @@ Scan Findings
 								</div>
 							</div>
 						</div>
+						{% if history.scan_status == 0 %}
+						{% if history.error_message %}
+							<p class="badge badge-soft-danger">Scan failed due to error: {{history.error_message}}</p>
+						{% endif %}
+						{% endif %}
 						<h6 class="font-13 text-muted text-uppercase">Scan Engine <span class="badge badge-soft-primary float-end">{{history.scan_type.engine_name}}</span></h6>
 						<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration </h6>
 						{% if history.scan_status == -1 %}
@@ -200,6 +205,11 @@ Scan Findings
 											</span>
 										</h5>
 										<p class="text-muted">{{activity.time|naturaltime}}<br><small class="text-muted">{{activity.time}}</small> </p>
+										{% if activity.status == 0 %}
+											{% if activity.error_message %}
+												<p class="badge badge-soft-danger">Error: {{activity.error_message}}</p>
+											{% endif %}
+										{% endif %}
 									</li>
 									{% endfor %}
 								</ul>
@@ -253,6 +263,11 @@ Scan Findings
 														{% endwith %}
 													</span>
 												</p>
+												{% if scan.scan_status == 0 %}
+													{% if scan.error_message %}
+														<p class="badge badge-soft-danger">Error: {{scan.error_message}}</p>
+													{% endif %}
+												{% endif %}
 											</a>
 										</li>
 										{% endfor %}

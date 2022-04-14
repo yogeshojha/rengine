@@ -121,10 +121,10 @@ function getScanStatusSidebar(reload) {
       if (tasks['running'].length > 0){
         $('#current_task_count').html(`${tasks['running'].length} Tasks are currently running`)
         for (var task in tasks['running']) {
-          task_object = tasks['running'][task];
-          task_name = get_task_name(task_object);
-          bg_color = 'bg-soft-info';
-          status_badge = '<span class="float-end badge bg-info">Running</span>';
+          var task_object = tasks['running'][task];
+          var task_name = get_task_name(task_object);
+          var bg_color = 'bg-soft-info';
+          var status_badge = '<span class="float-end badge bg-info">Running</span>';
 
           $('#currently_running_tasks').append(`
             <div class="card border-primary border mini-card">
@@ -156,12 +156,15 @@ function getScanStatusSidebar(reload) {
 
       if (tasks['completed'].length > 0){
         for (var task in tasks['completed']) {
-          task_object = tasks['completed'][task];
-          task_name = get_task_name(task_object);
+          var task_object = tasks['completed'][task];
+          var task_name = get_task_name(task_object);
+          var error_message = '';
+
           if (task_object.status == 0 ) {
             color = 'danger';
             bg_color = 'bg-soft-danger';
             status_badge = '<span class="float-end badge bg-danger">Failed</span>';
+            error_message = `</br><span class="text-danger">Error: ${task_object.error_message}`;
           }
           else if (task_object.status == 3) {
             color = 'danger';
@@ -187,6 +190,7 @@ function getScanStatusSidebar(reload) {
             Task Completed ${task_object.completed_ago} ago
             </span>
             Took ${task_object.time_taken}
+            ${error_message}
             </p>
             </div>
             </a>

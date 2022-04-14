@@ -161,6 +161,7 @@ def initiate_subtask(
     except Exception as e:
         logger.error(e)
         task_status = FAILED_TASK
+        sub_scan.error_message = str(e)
     finally:
         sub_scan.stop_scan_date = timezone.now()
         sub_scan.status = task_status
@@ -276,7 +277,7 @@ def initiate_scan(
                     )
             except Exception as e:
                 logger.error(e)
-                update_last_activity(activity_id, 0)
+                update_last_activity(activity_id, 0, error_message=str(e))
         else:
             skip_subdomain_scan(task, domain, results_dir)
 
@@ -302,7 +303,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if(task.port_scan):
@@ -311,7 +314,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.osint:
@@ -320,7 +325,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
 
         try:
@@ -336,7 +343,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.fetch_url:
@@ -351,7 +360,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.vulnerability_scan:
@@ -366,7 +377,9 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     if notification and notification[0].send_scan_status_notif:
@@ -1817,7 +1830,7 @@ def vulnerability_scan(
                                 else:
                                     cwe_obj = CweId(name=cwe)
                                     cwe_obj.save()
-                                vulnerability.cve_ids.add(cwe_obj)
+                                vulnerability.cwe_ids.add(cwe_obj)
 
                         if 'classification' in json_st['info']:
                             if 'cvss-metrics' in json_st['info']['classification']:
@@ -1912,10 +1925,11 @@ def create_scan_activity(scan_history, message, status):
     return scan_activity.id
 
 
-def update_last_activity(id, activity_status):
+def update_last_activity(id, activity_status, error_message=None):
     ScanActivity.objects.filter(
         id=id).update(
         status=activity_status,
+        error_message=error_message,
         time=timezone.now())
 
 
