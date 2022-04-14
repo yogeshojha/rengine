@@ -1268,6 +1268,12 @@ def fetch_endpoints(
         but, when subdomain is given, subtask is running, deep or normal scan should
         not work, it should simply fetch urls for that subdomain
     '''
+
+    if GF_PATTERNS in yaml_configuration[FETCH_URL]:
+        scan_history.used_gf_patterns = ','.join(
+            pattern for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS])
+        scan_history.save()
+
     logger.info('Initiated Endpoint Fetching')
     domain_name = domain.name if domain else subdomain
     output_file_name = file_name if file_name else 'all_urls.txt'
