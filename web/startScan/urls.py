@@ -88,10 +88,6 @@ urlpatterns = [
         views.change_vuln_status,
         name='change_vuln_status'),
     path(
-        'toggle/subdomain/important/<int:id>',
-        views.change_subdomain_important_status,
-        name='change_subdomain_important_status'),
-    path(
         'start/multiple/',
         views.start_multiple_scan,
         name='start_multiple_scan'),

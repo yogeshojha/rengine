@@ -40,6 +40,23 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class ToggleSubdomainImportantStatus(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		subdomain_id = data.get('subdomain_id')
+
+		response = {'status': False, 'message': 'No subdomain_id provided'}
+
+		name = Subdomain.objects.get(id=subdomain_id)
+		name.is_important = not name.is_important
+		name.save()
+
+		response = {'status': True}
+
+		return Response(response)
+
 class AddTarget(APIView):
 	def post(self, request):
 		req = self.request
