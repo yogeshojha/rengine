@@ -566,6 +566,9 @@ Target Summary
 <div class="tab-pane" id="subdomain-tab">
 	{% include 'base/_items/subdomain_tab_content.html' %}
 </div>
+<div class="tab-pane" id="endpoints-tab">
+	{% include 'base/_items/endpoint_tab_content.html' %}
+</div>
 </div>
 
 {% include "base/_items/recon_note_modal.html" %}
@@ -585,11 +588,13 @@ Target Summary
 <script src="{% static 'targetApp/js/target_summary.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
+<script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script type="text/javascript">
 
 $(document).ready(function(){
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
+	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
 	$('[data-toggle="tooltip"]').tooltip();
 	// HTTP STATUS Breakdown chart
 	// depending on http_status_breakdown, generate color
@@ -1181,6 +1186,10 @@ $(document).ready(function(){
 					$('#btn-initiate-subtask').attr('multiple-subscan', false);
 				});
 
+			});
+
+			$("#pills-endpoints-tab").click(function() {
+				get_endpoints(scan_history=null, domain_id={{target.id}}, gf_tags=null);
 			});
 
 		});
