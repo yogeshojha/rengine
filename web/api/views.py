@@ -19,6 +19,9 @@ from targetApp.models import *
 from recon_note.models import *
 
 from reNgine.common_func import is_safe_path
+from django import http
+from django.shortcuts import get_object_or_404
+
 
 class VulnerabilityReport(APIView):
     def get(self, request):
@@ -1201,3 +1204,10 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
                     Q(extracted_results__icontains=lookup_content) |
                     Q(matcher_name__icontains=lookup_content))
         return qs
+
+def scanStatus(request, scanId):
+    scan = get_object_or_404(ScanHistory, pk=scanId)
+    return http.JsonResponse({
+        "error": "false",
+        "scanStatus": scan.scan_status
+    })

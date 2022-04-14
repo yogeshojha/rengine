@@ -114,6 +114,10 @@ urlpatterns = [
         'vulnerability/report/',
         VulnerabilityReport.as_view(),
         name='vulnerability_report'),
+    path(
+        'scan/status/<int:scanId>',
+        scanStatus,
+        name='scan_status'),
 ]
 
 urlpatterns += router.urls

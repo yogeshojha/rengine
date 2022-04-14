@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [ ! $# -eq 6 ]; then
-    echo "Usage: $0 <rengine_url> <target_domain> <rengine_username> <rengine_password> <scan_engine> <included_subdomains_file>"
+if [ $# -lt 6 ]; then
+    echo "Usage: $0 <rengine_url> <target_domain> <rengine_username> <rengine_password> <scan_engine> <included_subdomains_file> [--wait]"
     exit 1
 fi
 
@@ -33,6 +33,18 @@ trigger () {
 
 }
 
+wait () {
+    last_scan_id=$(curl -b cookiejar -s http://localhost:8000/api/listScanHistory/ | jq '.scan_histories[] | .id'  | head -n 1)
+    scan_status=-1
+    sleepTime=60  # seconds
+    while [ ! $scan_status -eq 2 ]
+    do
+        sleep $sleepTime
+        scan_status=$(curl -s -b cookiejar http://localhost:8000/api/scan/status/$last_scan_id | jq '.scanStatus')
+        echo "Scan status = $scan_status"
+    done
+}
+
 get_targets $1
 get_target_id $2
 echo "DEBUG: Target ID: $target_id"
@@ -41,6 +53,10 @@ get_engine_id $1 "$5"
 echo "DEBUG: Engine ID: $engine_id"
 
 trigger $1 $target_id $engine_id $6
+
+if [ $7 = "--wait" ]; then
+    wait
+fi
 rm cookiejar
 
 echo "INFO: Done"
