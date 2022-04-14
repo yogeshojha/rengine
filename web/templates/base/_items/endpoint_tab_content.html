@@ -20,13 +20,13 @@
     <div class="card">
       <div class="card-body">
         <div class="row">
-          {% if detail_scan %}
           <div class="col-12">
             <div class="btn-group mb-2 float-end dropstart">
               <button class="btn btn-primary dropdown-toggle " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i class="fe-download"></i>
               </button>
               <div class="dropdown-menu" style="">
+                {% if detail_scan %}
                 <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
                 {% if history.fetch_url and history.used_gf_patterns%}
                 {% for key,value in matched_gf_count.items %}
@@ -35,10 +35,12 @@
                 {% endif %}
                 {% endfor %}
                 {% endif %}
+                {% else %}
+                <a class="dropdown-item" href="javascript:download_endpoints(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}', pattern=null)">Download All Endpoints</a>
+                {% endif %}
               </div>
             </div>
           </div>
-          {% endif %}
           <div class="col-12">
             <table id="endpoint_results" class="table style-3 table-hover">
               <thead>
