@@ -161,6 +161,10 @@ urlpatterns = [
         DeleteMultipleRows.as_view(),
         name='delete_rows'),
     path(
+        'toggle/subdomain/important/',
+        ToggleSubdomainImportantStatus.as_view(),
+        name='delete_rows'),
+    path(
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),
         name='initiate_subtask'),
