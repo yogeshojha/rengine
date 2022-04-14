@@ -972,6 +972,7 @@ $(".add-scan-history-todo").click(function(){
 
 
 function add_note_for_subdomain(subdomain_id, subdomain_name){
+	console.log(subdomain_name);
 	$('#todo-modal-subdomain-name').html(subdomain_name);
 	$("#subdomainTodoTitle").val('');
 	$("#subdomainTodoDescription").val('');
