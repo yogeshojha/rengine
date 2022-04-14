@@ -1376,6 +1376,12 @@ def fetch_endpoints(
     '''
     Store all the endpoints and then run the httpx
     '''
+    domain_obj = None
+    if domain:
+        domain_obj = domain
+    elif subdomain:
+        domain_obj = subdomain.target_domain
+
     try:
         endpoint_final_url = results_dir + '/{}'.format(output_file_name)
         if not os.path.isfile(endpoint_final_url):
@@ -1401,13 +1407,13 @@ def fetch_endpoints(
                             'Subdomain {} not found, adding...'.format(_subdomain))
                         subdomain_dict = DottedDict({
                             'scan_history': scan_history,
-                            'target_domain': domain,
+                            'target_domain': domain_obj,
                             'name': _subdomain,
                         })
                         subdomain = save_subdomain(subdomain_dict)
                     endpoint_dict = DottedDict({
                         'scan_history': scan_history,
-                        'target_domain': domain,
+                        'target_domain': domain_obj,
                         'subdomain': subdomain,
                         'http_url': http_url,
                         'subscan': subscan
