@@ -186,6 +186,9 @@ Dashboard
   </div>
 </div>
 <div class="row">
+  {% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
+</div>
+<div class="row">
   <div class="col-xl-4">
     <div class="card">
       <div class="card-body">
@@ -321,6 +324,9 @@ Dashboard
 <script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
 <script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
 <script type="text/javascript">
+
+{% include 'base/_items/most_common_cve_cwe_tags.js' %}
+
 var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
 
 var fill_options = {

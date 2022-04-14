@@ -136,6 +136,10 @@ def index(request):
     context['most_used_ip'] = IpAddress.objects.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
     context['most_used_tech'] = Technology.objects.annotate(count=Count('technologies')).order_by('-count')[:7]
 
+    context['most_common_cve'] = CveId.objects.annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_cwe'] = CweId.objects.annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_tags'] = VulnerabilityTags.objects.annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
     return render(request, 'dashboard/index.html', context)
 
 
