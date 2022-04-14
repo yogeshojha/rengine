@@ -758,7 +758,7 @@ function get_dork_details(dork_type, scan_id){
 }
 
 
-function get_vulnerability_modal(scan_id, severity, subdomain_id, subdomain_name){
+function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null, subdomain_name=null){
 	var url = `/api/listVulnerability/?&format=json`;
 
 	if (scan_id) {
@@ -866,7 +866,7 @@ function get_endpoint_modal(scan_id, subdomain_id, subdomain_name){
 
 }
 
-function get_directory_modal(scan_id, subdomain_id, subdomain_name){
+function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=null){
 	// This function will display a xl modal with datatable for displaying endpoints
 	// associated with the subdomain
 	$('#xl-modal-title').empty();

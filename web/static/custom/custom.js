@@ -344,18 +344,14 @@ function get_response_time_text(response_time) {
 	return '';
 }
 
-function parse_technology(data, color, outline = null, scan_id = null) {
-	if (outline) {
-		var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-` + color + ` mt-1 me-1'`;
-	} else {
-		var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-` + color + ` mt-1 me-1'`;
-	}
+function parse_technology(data, color, scan_id = null, domain_id=null) {
+	var badge = `<span data-toggle="tooltip" title="Technology" class='badge-link badge badge-soft-` + color + ` mt-1 me-1'`;
 	var data_with_span = "";
 	for (var key in data) {
 		if (scan_id) {
-			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id})">` + data[key]['name'] + "</span>";
-		} else {
-			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}')">` + data[key]['name'] + "</span>";
+			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', ${scan_id}, domain_id=null)">` + data[key]['name'] + "</span>";
+		} else if (domain_id) {
+			data_with_span += badge + ` onclick="get_tech_details('${data[key]['name']}', scan_id=null, domain_id=domain_id)">` + data[key]['name'] + "</span>";
 		}
 	}
 	return data_with_span;
@@ -696,7 +692,7 @@ function get_important_subdomains(target_id, scan_history_id) {
 	});
 }
 
-function mark_important_subdomain(row, subdomain_id, target_summary) {
+function mark_important_subdomain(row, subdomain_id) {
 	if (row) {
 		parentNode = row.parentNode.parentNode.parentNode;
 		if (parentNode.classList.contains('table-danger')) {
@@ -705,11 +701,11 @@ function mark_important_subdomain(row, subdomain_id, target_summary) {
 			parentNode.className = "table-danger";
 		}
 	}
-	if (target_summary) {
-		subdomainImpApi = "../../scan/toggle/subdomain/important/" + subdomain_id;
-	} else {
-		subdomainImpApi = "../toggle/subdomain/important/" + subdomain_id;
-	}
+
+	var data = {'subdomain_id': subdomain_id}
+
+	const subdomainImpApi = "/api/toggle/subdomain/important/";
+
 	if ($("#important_subdomain_" + subdomain_id).length == 0) {
 		$("#subdomain-" + subdomain_id).prepend(`<span id="important_subdomain_${subdomain_id}"></span>`);
 		setTooltip("#subdomain-" + subdomain_id, 'Marked Important!');
@@ -721,8 +717,10 @@ function mark_important_subdomain(row, subdomain_id, target_summary) {
 		method: 'POST',
 		credentials: "same-origin",
 		headers: {
-			"X-CSRFToken": getCookie("csrftoken")
-		}
+			"X-CSRFToken": getCookie("csrftoken"),
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(data)
 	});
 }
 
