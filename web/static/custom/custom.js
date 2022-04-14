@@ -1125,7 +1125,7 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		if (vuln_obj['tags']) {
 			tags = '<div>';
 			vuln_obj['tags'].forEach(tag => {
-				tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag}</span>`;
+				tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
 			});
 			tags += '</div>';
 		}
@@ -1148,12 +1148,12 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		var cve_cwe_badge = '<div>';
 		if (vuln_obj['cve_ids']) {
 			vuln_obj['cve_ids'].forEach(cve => {
-				cve_cwe_badge += `<a href="https://google.com/search?q=${cve.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.toUpperCase()}</a>`;
+				cve_cwe_badge += `<a href="https://google.com/search?q=${cve.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 			});
 		}
 		if (vuln_obj['cwe_ids']) {
 			vuln_obj['cwe_ids'].forEach(cwe => {
-				cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.toUpperCase()}</a>`;
+				cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 			});
 		}
 		cve_cwe_badge += '</div>';
@@ -1175,7 +1175,7 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${vuln_obj['id']}" aria-expanded="false" aria-controls="references_${vuln_obj['id']}">References <i class="fe-chevron-down"></i></a>`;
 			description += `<div class="collapse" id="references_${vuln_obj['id']}"><ul>`;
 			vuln_obj['references'].forEach(reference => {
-				description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+				description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
 			});
 			description += '</ul></div>';
 		}
