@@ -140,7 +140,7 @@ $(document).ready(function() {
 					if (row['tags']) {
 						tags = '<div>';
 						row['tags'].forEach(tag => {
-								tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag}</span>`;
+							tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
 						});
 						tags += '</div>';
 					}
@@ -203,12 +203,12 @@ $(document).ready(function() {
 
 					if (row['cve_ids']) {
 						row['cve_ids'].forEach(cve => {
-								cve_cwe_badge += `<a href="https://google.com/search?q=${cve.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cve.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="https://google.com/search?q=${cve.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 						});
 					}
 					if (row['cwe_ids']) {
 						row['cwe_ids'].forEach(cwe => {
-								cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1">${cwe.toUpperCase()}</a>`;
+							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 						});
 					}
 					return cve_cwe_badge + '</div>';
@@ -245,7 +245,7 @@ $(document).ready(function() {
 						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
 						description += `<div class="collapse" id="references_${row['id']}"><ul>`;
 						row['references'].forEach(reference => {
-							description += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+							description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
 						});
 						description += '</ul></div>';
 					}
