@@ -144,15 +144,15 @@ function populateTodofunction(){
     }
 
 
-    fetch('add_note', {
+    fetch('/api/add/recon_note/', {
       method: 'post',
       headers: {
-        "X-CSRFToken": getCookie("csrftoken")
+        "X-CSRFToken": getCookie("csrftoken"),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     }).then(res => res.json())
     .then(res => console.log(res));
-
   });
 
   $('.tab-title .nav-pills a.nav-link').on('click', function(event) {
