@@ -1010,24 +1010,27 @@ function add_task_for_subdomain_handler(subdomain_id){
 
 }
 
-function download_subdomains(scan_id, domain_name){
+function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
+	var url = `/api/querySubdomains?format=json&no_lookup_interesting`;
 	if (scan_id) {
-		url = `/api/querySubdomains?format=json&no_lookup_interesting&scan_id=${scan_id}`;
+		url += `&scan_id=${scan_id}`;
 	}
-	else{
-		url = `/api/querySubdomains?format=json&no_lookup_interesting`;
+	else if(domain_id){
+		url += `&target_id=${domain_id}`;
 	}
+
 	if (domain_name) {
 		$('.modal-title').html(count + ' Subdomains for : <b>' + domain_name + '</b>');
 	}
 	else{
 		$('.modal-title').html(count + ' Subdomains');
 	}
+
 	$('.modal-text').empty(); $('#modal-footer').empty();
 	$('.modal-text').append(`<div class='outer-div' id="modal-loader"></div>`);
 	// query subdomains

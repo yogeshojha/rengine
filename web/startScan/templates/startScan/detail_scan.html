@@ -739,7 +739,7 @@ Scan Findings
 		</div>
 	</div>
 	<div class="tab-pane" id="subdomain-tab">
-		{% include 'base/_items/subdomain_tab_content.html' %}
+		{% include 'base/_items/subdomain_tab_content.html' with detail_scan=True%}
 	</div>
 	{% if history.screenshot %}
 	<div class="tab-pane" id="screenshot-tab">
@@ -1396,6 +1396,7 @@ Scan Findings
 <script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
+<script src="{% static 'custom/subdomain.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
@@ -2655,45 +2656,5 @@ $(document).ready(function(){
 				}
 			}
 
-			function checkedCount() {
-				// this function will count the number of boxes checked
-				item = document.getElementsByClassName("subdomain_checkbox");
-				count = 0;
-				for (var i = 0; i < item.length; i++) {
-					if (item[i].checked) {
-						count++;
-					}
-				}
-				return count;
-			}
-
-			function mainCheckBoxSelected(checkbox) {
-				if (checkbox.checked) {
-					$("[data-button=subdomain_btns]").removeClass("disabled");
-					$(".subdomain_checkbox").prop('checked', true);
-					$('#subdomain_selected_count').text(checkedCount() + ' Subdomains Selected x');
-				} else {
-					uncheckSubdomains();
-				}
-			}
-
-			function toggleMultipleSubdomainButton() {
-				var checked_count = checkedCount();
-				if (checked_count > 0) {
-					$("[data-button=subdomain_btns]").removeClass("disabled");
-					$('#subdomain_selected_count').text(checked_count + ' Subdomains Selected x');
-				} else {
-					$("[data-button=subdomain_btns]").addClass("disabled");
-					$('#subdomain_selected_count').empty();
-				}
-			}
-
-			function uncheckSubdomains(){
-				$("[data-button=subdomain_btns]").addClass("disabled");
-				$(".subdomain_checkbox").prop('checked', false);
-				$("#head_checkbox").prop('checked', false);
-				$('#subdomain_selected_count').empty();
-			}
-
-			</script>
-			{% endblock page_level_script %}
+</script>
+{% endblock page_level_script %}
