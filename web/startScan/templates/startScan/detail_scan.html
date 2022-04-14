@@ -654,6 +654,7 @@ Scan Findings
 							</div>
 						</div>
 					</div>
+					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
 					{% endif %}
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
@@ -1328,8 +1329,13 @@ $(document).ready(function(){
 			}
 		};
 
+
 		var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
 		chart.render();
+
+		{% if history.vulnerability_scan %}
+			{% include 'base/_items/most_common_cve_cwe_tags.js' %}
+		{% endif %}
 
 		//populate widgets
 		get_important_subdomains(target_id=null, scan_history_id={{scan_history_id}});

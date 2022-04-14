@@ -99,6 +99,10 @@ def detail_scan(request, id=None):
 
         context['http_status_breakdown'] = Subdomain.objects.filter(scan_history=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
 
+        context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+        context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+        context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
         if domain_id:
             domain_id = domain_id[0].domain.id
             scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
