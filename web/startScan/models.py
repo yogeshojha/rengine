@@ -304,20 +304,32 @@ class VulnerabilityTags(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
 
+	def __str__(self):
+		return self.name
+
 
 class VulnerabilityReference(models.Model):
 	id = models.AutoField(primary_key=True)
 	url = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.url
 
 
 class CveId(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
 
+	def __str__(self):
+		return self.name
+
 
 class CweId(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
+
+	def __str__(self):
+		return self.name
 
 
 class Vulnerability(models.Model):

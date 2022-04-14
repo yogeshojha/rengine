@@ -770,3 +770,4 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Vulnerability
         fields = '__all__'
+        depth = 2
