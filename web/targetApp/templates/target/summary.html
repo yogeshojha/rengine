@@ -470,6 +470,7 @@ Target Summary
 							</div>
 						</div>
 					</div>
+					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
 							<div class="card-body">
@@ -608,6 +609,7 @@ Target Summary
 <script type="text/javascript">
 
 $(document).ready(function(){
+	{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
