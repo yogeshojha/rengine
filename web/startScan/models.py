@@ -309,6 +309,16 @@ class VulnerabilityReference(models.Model):
 	url = models.CharField(max_length=500)
 
 
+class CveId(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=100)
+
+
+class CweId(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=100)
+
+
 class Vulnerability(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
@@ -335,18 +345,12 @@ class Vulnerability(models.Model):
 	extracted_results = ArrayField(
 		models.CharField(max_length=1000), blank=True, null=True
 	)
-	references = ArrayField(
-		models.CharField(max_length=500), blank=True, null=True
-	)
-	tags = ArrayField(
-		models.CharField(max_length=50), blank=True, null=True
-	)
-	cve_ids = ArrayField(
-		models.CharField(max_length=50), blank=True, null=True
-	)
-	cwe_ids = ArrayField(
-		models.CharField(max_length=50), blank=True, null=True
-	)
+
+	tags = models.ManyToManyField('VulnerabilityTags', related_name='vuln_tags', blank=True)
+	references = models.ManyToManyField('VulnerabilityReference', related_name='vuln_reference', blank=True)
+	cve_ids = models.ManyToManyField('CveId', related_name='cve_ids', blank=True)
+	cwe_ids = models.ManyToManyField('CweId', related_name='cwe_ids', blank=True)
+
 	cvss_metrics = models.CharField(max_length=150, null=True, blank=True)
 	cvss_score = models.FloatField(null=True, blank=True, default=None)
 	curl_command = models.CharField(max_length=1500, null=True, blank=True)

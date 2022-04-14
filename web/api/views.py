@@ -1783,15 +1783,15 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			Q(severity__icontains=search_value) |
 			Q(description__icontains=search_value) |
 			Q(extracted_results__icontains=search_value) |
-			Q(references__icontains=search_value) |
-			Q(cve_ids__icontains=search_value) |
-			Q(cwe_ids__icontains=search_value) |
+			Q(references__url__icontains=search_value) |
+			Q(cve_ids__name__icontains=search_value) |
+			Q(cwe_ids__name__icontains=search_value) |
 			Q(cvss_metrics__icontains=search_value) |
 			Q(cvss_score__icontains=search_value) |
 			Q(type__icontains=search_value) |
 			Q(open_status__icontains=search_value) |
 			Q(hackerone_report_id__icontains=search_value) |
-			Q(tags__icontains=search_value))
+			Q(tags__name__icontains=search_value))
 		return qs
 
 	def special_lookup(self, search_value):
@@ -1823,9 +1823,9 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			elif 'template_id' in lookup_title:
 				qs = self.queryset.filter(template_id__icontains=lookup_content)
 			elif 'cve_id' in lookup_title or 'cve' in lookup_title:
-				qs = self.queryset.filter(cve_ids__icontains=lookup_content)
+				qs = self.queryset.filter(cve_ids__name__icontains=lookup_content)
 			elif 'cwe_id' in lookup_title or 'cwe' in lookup_title:
-				qs = self.queryset.filter(cwe_ids__icontains=lookup_content)
+				qs = self.queryset.filter(cwe_ids__name__icontains=lookup_content)
 			elif 'cvss_metrics' in lookup_title:
 				qs = self.queryset.filter(cvss_metrics__icontains=lookup_content)
 			elif 'cvss_score' in lookup_title:
@@ -1833,7 +1833,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			elif 'type' in lookup_title:
 				qs = self.queryset.filter(type__icontains=lookup_content)
 			elif 'tag' in lookup_title:
-				qs = self.queryset.filter(tags__icontains=lookup_content)
+				qs = self.queryset.filter(tags__name__icontains=lookup_content)
 			elif 'status' in lookup_title:
 				if lookup_content == 'open':
 					qs = self.queryset.filter(open_status=True)
