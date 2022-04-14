@@ -1761,14 +1761,8 @@ def vulnerability_scan(
                             severity = 0
                         vulnerability.severity = severity
 
-                        if 'tags' in json_st['info']:
-                            vulnerability.tags = json_st['info']['tags']
-
                         if 'description' in json_st['info']:
                             vulnerability.description = json_st['info']['description']
-
-                        if 'reference' in json_st['info']:
-                            vulnerability.references = json_st['info']['reference']
 
                         if 'matcher-name' in json_st:
                             vulnerability.matcher_name = json_st['matcher-name']
@@ -1793,19 +1787,53 @@ def vulnerability_scan(
                         if 'extracted-results' in json_st:
                             vulnerability.extracted_results = json_st['extracted-results']
 
+                        vulnerability.type = json_st['type']
+                        vulnerability.discovered_date = timezone.now()
+                        vulnerability.open_status = True
+                        vulnerability.save()
+
+                        if 'tags' in json_st['info'] and json_st['info']['tags']:
+                            for tag in json_st['info']['tags']:
+                                if VulnerabilityTags.objects.filter(name=tag).exists():
+                                    tag = VulnerabilityTags.objects.get(name=tag)
+                                else:
+                                    tag = VulnerabilityTags(name=tag)
+                                    tag.save()
+                                vulnerability.tags.add(tag)
+
+                        if 'classification' in json_st['info'] and 'cve-id' in json_st['info']['classification'] and json_st['info']['classification']['cve-id']:
+                            for cve in json_st['info']['classification']['cve-id']:
+                                if CveId.objects.filter(name=cve).exists():
+                                    cve_obj = CveId.objects.get(name=cve)
+                                else:
+                                    cve_obj = CveId(name=cve)
+                                    cve_obj.save()
+                                vulnerability.cve_ids.add(cve_obj)
+
+                        if 'classification' in json_st['info'] and 'cwe-id' in json_st['info']['classification'] and json_st['info']['classification']['cwe-id']:
+                            for cwe in json_st['info']['classification']['cwe-id']:
+                                if CweId.objects.filter(name=cwe).exists():
+                                    cwe_obj = CweId.objects.get(name=cwe)
+                                else:
+                                    cwe_obj = CweId(name=cwe)
+                                    cwe_obj.save()
+                                vulnerability.cve_ids.add(cwe_obj)
+
                         if 'classification' in json_st['info']:
-                            if 'cve-id' in json_st['info']['classification']:
-                                vulnerability.cve_ids = json_st['info']['classification']['cve-id']
-                            if 'cwe-id' in json_st['info']['classification']:
-                                vulnerability.cwe_ids = json_st['info']['classification']['cwe-id']
                             if 'cvss-metrics' in json_st['info']['classification']:
                                 vulnerability.cvss_metrics = json_st['info']['classification']['cvss-metrics']
                             if 'cvss-score' in json_st['info']['classification']:
                                 vulnerability.cvss_score = json_st['info']['classification']['cvss-score']
 
-                        vulnerability.type = json_st['type']
-                        vulnerability.discovered_date = timezone.now()
-                        vulnerability.open_status = True
+                        if 'reference' in json_st['info'] and json_st['info']['reference']:
+                            for ref_url in json_st['info']['reference']:
+                                if VulnerabilityReference.objects.filter(url=ref_url).exists():
+                                    reference = VulnerabilityReference.objects.get(url=ref_url)
+                                else:
+                                    reference = VulnerabilityReference(url=ref_url)
+                                    reference.save()
+                                vulnerability.references.add(reference)
+
                         vulnerability.save()
 
                         if subscan:

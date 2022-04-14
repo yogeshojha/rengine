@@ -589,6 +589,11 @@ Scan Findings
 								<h4 class="header-title mb-3">Vulnerability Highlights</h4>
 								<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
 									<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+										{% if not vulnerability_list %}
+										<div class="alert alert-warning alert-dismissible fade show" role="alert">
+											Not enough data!
+										</div>
+										{% else %}
 										<thead class="table-light">
 											<tr>
 												<th style="width: 10%">Type</th>
@@ -605,8 +610,8 @@ Scan Findings
 													{{vulnerability.name}}
 													{% if vulnerability.cve_ids %}
 													<br>
-													{% for cve in vulnerability.cve_ids %}
-													<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="CVE ID">{{cve}}</span>
+													{% for cve in vulnerability.cve_ids.all %}
+														<span class="badge badge-soft-danger" data-toggle="tooltip" data-placement="top" title="CVE ID">{{cve.name}}</span>
 													{% endfor %}
 													{% endif %}
 													<br>
@@ -626,10 +631,9 @@ Scan Findings
 												</td>
 												<td><a href="{{vulnerability.http_url}}" target="_blank" class="text-danger bs-tooltip" title="{{vulnerability.http_url}}">{{vulnerability.http_url|truncatechars:50}}</a></td>
 											</tr>
-											{% empty %}
-											Not enough data.
 											{% endfor %}
 										</tbody>
+										{% endif %}
 									</table>
 								</div>
 							</div>
