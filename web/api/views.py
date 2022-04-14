@@ -1434,12 +1434,17 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 class ListEndpoints(APIView):
 	def get(self, request, format=None):
 		req = self.request
+
 		scan_id = req.query_params.get('scan_id')
+		target_id = req.query_params.get('target_id')
 		subdomain_name = req.query_params.get('subdomain_name')
 		pattern = req.query_params.get('pattern')
 
 		if scan_id:
 			endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+		elif target_id:
+			endpoints = EndPoint.objects.filter(
+				target_domain__id=target_id).distinct()
 		else:
 			endpoints = EndPoint.objects.all()
 
@@ -1456,6 +1461,7 @@ class ListEndpoints(APIView):
 			endpoints_serializer = EndpointSerializer(endpoints, many=True)
 
 		return Response({'endpoints': endpoints_serializer.data})
+
 
 class EndPointViewSet(viewsets.ModelViewSet):
 	queryset = EndPoint.objects.none()

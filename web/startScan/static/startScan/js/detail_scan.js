@@ -42,13 +42,16 @@ function render_ips(data)
 }
 
 
-function get_endpoints(scan_history_id, gf_tags){
+function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
+	var lookup_url = '/api/listEndpoints/?format=datatables';
+
 	if (scan_history_id) {
-		var lookup_url = `/api/listEndpoints/?scan_history=${scan_history_id}&format=datatables`;
+		lookup_url += `&scan_history=${scan_history_id}`;
 	}
-	else{
-		var lookup_url = `/api/listEndpoints/?&format=datatables`;
+	else if (domain_id) {
+		lookup_url += `&target_id=${domain_id}`;
 	}
+
 	if (gf_tags){
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
