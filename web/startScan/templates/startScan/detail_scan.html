@@ -567,7 +567,7 @@ Scan Findings
 					<div class="col-xl-5 col-lg-5 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
-								<h4 class="header-title mb-0">Vulnerability Breakdown by Severity</h4>
+								<h4 class="header-title mb-0"><span class="text-danger me-1"><i class="fas fa-bug"></i></span>Vulnerability Breakdown by Severity</h4>
 								<div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
 									<div class="row mt-3 text-center">
 										<div class="col-1">
@@ -601,7 +601,7 @@ Scan Findings
 					<div class="col-xl-7 col-lg-7 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
-								<h4 class="header-title mb-3">Vulnerability Highlights</h4>
+								<h4 class="header-title mb-3"><span class="text-danger me-1"><i class="fas fa-bug"></i></span>Vulnerability Highlights</h4>
 								<div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
 									<table class="table table-borderless table-nowrap table-hover table-centered m-0">
 										{% if not vulnerability_list %}
@@ -655,6 +655,12 @@ Scan Findings
 						</div>
 					</div>
 					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
+					<div class="col-xl-6 col-lg-6 col-12">
+				    {% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Subdomain'%}
+				  </div>
+				  <div class="col-xl-6 col-lg-6 col-12">
+				    {% include 'base/_items/most_common_vuln.html' %}
+				  </div>
 					{% endif %}
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
