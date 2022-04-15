@@ -72,7 +72,7 @@ def detail_scan(request, id=None):
         critical_count = Vulnerability.objects.filter(
             scan_history__id=id, severity=4).count()
         context['vulnerability_list'] = Vulnerability.objects.filter(
-            scan_history__id=id).order_by('-severity').all()[:20]
+            scan_history__id=id).order_by('-severity').all()[:50]
         context['total_vulnerability_count'] = info_count + low_count + \
             medium_count + high_count + critical_count
         context['info_count'] = info_count
@@ -80,6 +80,8 @@ def detail_scan(request, id=None):
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
+        context['total_vul_ignore_info_count'] = low_count + \
+            medium_count + high_count + critical_count
         context['scan_history_active'] = 'active'
 
         emails = Email.objects.filter(
@@ -102,6 +104,9 @@ def detail_scan(request, id=None):
         context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
         context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
         context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
+        context['most_vulnerable_target'] = Subdomain.objects.filter(scan_history__id=id).annotate(num_vul=Count('vulnerability__name', filter=~Q(vulnerability__severity=0))).order_by('-num_vul')[:10]
+        context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
         if domain_id:
             domain_id = domain_id[0].domain.id
