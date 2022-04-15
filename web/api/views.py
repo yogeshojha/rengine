@@ -544,6 +544,19 @@ class Whois(APIView):
 		return Response({'status': False})
 
 
+class CMSDetector(APIView):
+	def get(self, request):
+		req = self.request
+		url = req.query_params.get('url')
+		#save_db = True if 'save_db' in req.query_params else False
+		response = {'status': False}
+		try:
+			response = get_cms_details(url)
+		except Exception as e:
+			response = {'status': False, 'message': str(e)}
+		return Response(response)
+
+
 class IPToDomain(APIView):
 	def get(self, request):
 		req = self.request

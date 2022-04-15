@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import random
 import requests
@@ -659,3 +660,25 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             'status': False,
             'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
         }
+
+
+def get_cms_details(url):
+    # this function will fetch cms details using cms_detector
+    response = {}
+    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch'.format(url)
+    output_lines = os.popen(cms_detector_command).read().splitlines()
+    result = [r for r in output_lines if "Result:" in r]
+
+    response['status'] = False
+    response['message'] = 'Could not detect CMS!'
+
+    if result:
+        result_path = re.search('32m(.*)0m', result[0])
+        if result_path:
+            cms_json_path =  result_path.group(1)[:-2]
+            cms_file_content = json.loads(open(cms_json_path, 'r').read())
+            response = {}
+            response = cms_file_content
+            response['status'] = True
+
+    return response

@@ -129,4 +129,11 @@ then
   wget https://raw.githubusercontent.com/NagliNagli/BountyTricks/main/ssrf.yaml -O ~/nuclei-templates/ssrf_nagli.yaml
 fi
 
+if [ ! -d "/usr/src/github/CMSeeK" ]
+then
+  echo "Cloning CMSeeK"
+  git clone https://github.com/Tuhinshubhra/CMSeeK /usr/src/github/CMSeeK
+  pip install -r /usr/src/github/CMSeeK/requirements.txt
+fi
+
 exec "$@"
