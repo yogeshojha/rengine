@@ -237,7 +237,7 @@ $(document).ready(function() {
     }).fail(function() {});
 
     // filtering for scan status
-    var status_types = ['Pending', 'Scanning', 'Aborted', 'Successful', 'Failed'];
+    var status_types = ['Pending', 'In Progress', 'Aborted', 'Successful', 'Failed'];
     for (status in status_types) {
       select = document.getElementById('filterByScanStatus');
       var option = document.createElement('option');
