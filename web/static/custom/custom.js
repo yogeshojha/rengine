@@ -1459,13 +1459,14 @@ function get_target_whois(domain_name) {
 	});
 }
 
-function get_domain_whois(domain_name) {
+function get_domain_whois(domain_name, show_add_target_btn=false) {
 	// this function will get whois for domains that are not targets, this will
 	// not store whois into db nor create target
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
 	Swal.fire({
 		title: `Fetching WHOIS details for ${domain_name}...`
 	});
+	$('.modal').modal('hide');
 	swal.showLoading();
 	fetch(url, {
 		method: 'GET',
@@ -1478,7 +1479,7 @@ function get_domain_whois(domain_name) {
 		console.log(response);
 		if (response.status) {
 			swal.close();
-			display_whois_on_modal(response);
+			display_whois_on_modal(response, show_add_target_btn=show_add_target_btn);
 		} else {
 			Swal.fire({
 				title: 'Oops!',
@@ -1489,13 +1490,11 @@ function get_domain_whois(domain_name) {
 	});
 }
 
-function display_whois_on_modal(response) {
+function display_whois_on_modal(response, show_add_target_btn=false) {
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
 	$("#modal-footer").empty();
-
-	console.log(response);
 
 	content = `<div class="row mt-3">
 		<div class="col-sm-3">
@@ -1679,6 +1678,12 @@ function display_whois_on_modal(response) {
 			</div>
 		</div>
 	</div>`;
+
+	if (show_add_target_btn) {
+		content += `<div class="text-center">
+			<button class="btn btn-primary float-end" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
+		</div>`
+	}
 
 	$('#modal-content').append(content);
 	$('[data-toggle="tooltip"]').tooltip();
