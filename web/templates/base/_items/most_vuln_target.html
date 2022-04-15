@@ -16,7 +16,7 @@
         </thead>
         <tbody>
           {% for item in most_vulnerable_target %}
-          <tr onclick="window.location='scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
+          <tr onclick="window.location='/scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
             <td>
               <h5 class="m-0 fw-normal">{{item.name}}</h5>
             </td>

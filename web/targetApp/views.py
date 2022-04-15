@@ -255,16 +255,28 @@ def target_summary(request, id):
     context['endpoint_count'] = endpoints.count()
     context['endpoint_alive_count'] = endpoints.filter(http_status__exact=200).count()
 
-    context['info_count'] = Vulnerability.objects.filter(
+    info_count = Vulnerability.objects.filter(
         target_domain=id).filter(severity=0).count()
-    context['low_count'] = Vulnerability.objects.filter(
+    low_count = Vulnerability.objects.filter(
         target_domain=id).filter(severity=1).count()
-    context['medium_count'] = Vulnerability.objects.filter(
+    medium_count = Vulnerability.objects.filter(
         target_domain=id).filter(severity=2).count()
-    context['high_count'] = Vulnerability.objects.filter(
+    high_count = Vulnerability.objects.filter(
         target_domain=id).filter(severity=3).count()
-    context['critical_count'] = Vulnerability.objects.filter(
+    critical_count = Vulnerability.objects.filter(
         target_domain=id).filter(severity=4).count()
+
+    context['info_count'] = info_count
+    context['low_count'] = low_count
+    context['medium_count'] = medium_count
+    context['high_count'] = high_count
+    context['critical_count'] = critical_count
+
+    context['total_vul_ignore_info_count'] = low_count + \
+        medium_count + high_count + critical_count
+
+    context['most_vulnerable_target'] = Subdomain.objects.filter(target_domain__id=id).annotate(num_vul=Count('vulnerability__name', filter=~Q(vulnerability__severity=0))).order_by('-num_vul')[:10]
+    context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(target_domain__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
     emails = Email.objects.filter(emails__in=ScanHistory.objects.filter(domain__id=id).distinct())
 

@@ -343,7 +343,7 @@ Target Summary
 							</div>
 						</div>
 					</div>
-					<div class="col-xl-6 col-lg-6 col-12">
+					<div class="col-xl-6 col-lg-6 col-12 mb-2">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.associated_domains.all.count}}</span> Related Domains</h4>
@@ -361,7 +361,7 @@ Target Summary
 							</div>
 						</div>
 					</div>
-					<div class="col-xl-6 col-lg-6 col-12">
+					<div class="col-xl-6 col-lg-6 col-12 mb-2">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.related_tlds.all.count}}</span> Related TLDs</h4>
@@ -471,6 +471,12 @@ Target Summary
 						</div>
 					</div>
 					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
+					<div class="col-xl-6 col-lg-6 col-12">
+				    {% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Subdomain'%}
+				  </div>
+				  <div class="col-xl-6 col-lg-6 col-12">
+				    {% include 'base/_items/most_common_vuln.html' %}
+				  </div>
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
 							<div class="card-body">
