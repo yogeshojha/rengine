@@ -1647,7 +1647,9 @@ $(document).ready(function(){
 						if(!$('#sub_response_time_filter_checkbox').is(":checked")){
 							subdomain_datatables.column(10).visible(false);
 						}
-
+						if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
+							subdomain_datatables.column(9).visible(false);
+						}
 					},
 					"rowCallback": function( row, data, dataIndex ) {
 						if (data['is_important']){
@@ -1712,6 +1714,14 @@ $(document).ready(function(){
 						subdomain_datatables.column(10).visible(false);
 					}
 					window.localStorage.setItem('sub_response_time_filter_checkbox', $(this).is(':checked'));
+				});
+				$('input[name=sub_screenshot_filter_checkbox]').change(function() {
+					if ($(this).is(':checked')) {
+						subdomain_datatables.column(9).visible(true);
+					} else {
+						subdomain_datatables.column(9).visible(false);
+					}
+					window.localStorage.setItem('sub_screenshot_filter_checkbox', $(this).is(':checked'));
 				});
 
 				$("#subdomain_scan_results").on('click', '.btn-delete-subdomain', function () {
@@ -2409,7 +2419,8 @@ $(document).ready(function(){
 				'sub_ip_filter_checkbox',
 				'sub_ports_filter_checkbox',
 				'sub_content_length_filter_checkbox',
-				'sub_response_time_filter_checkbox'
+				'sub_response_time_filter_checkbox',
+				'sub_screenshot_filter_checkbox'
 			];
 
 			for (var col in subdomain_cols) {
