@@ -172,10 +172,76 @@ function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
 				setTooltip(e.trigger, 'Copied!');
 				hideTooltip(e.trigger);
 			});
+			if(!$('#end_http_status_filter_checkbox').is(":checked")){
+				endpoint_table.column(2).visible(false);
+			}
+			if(!$('#end_page_title_filter_checkbox').is(":checked")){
+				endpoint_table.column(3).visible(false);
+			}
+			if(!$('#end_tags_filter_checkbox').is(":checked")){
+				endpoint_table.column(4).visible(false);
+			}
+			if(!$('#end_content_type_filter_checkbox').is(":checked")){
+				endpoint_table.column(5).visible(false);
+			}
+			if(!$('#end_content_length_filter_checkbox').is(":checked")){
+				endpoint_table.column(6).visible(false);
+			}
+			if(!$('#end_response_time_filter_checkbox').is(":checked")){
+				endpoint_table.column(9).visible(false);
+			}
 		}
 	});
 	$('#endpoint-search-button').click(function () {
 		endpoint_table.search($('#endpoints-search').val()).draw() ;
+	});
+	$('input[name=end_http_status_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(2).visible(true);
+		} else {
+			endpoint_table.column(2).visible(false);
+		}
+		window.localStorage.setItem('end_http_status_filter_checkbox', $(this).is(':checked'));
+	});
+	$('input[name=end_page_title_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(3).visible(true);
+		} else {
+			endpoint_table.column(3).visible(false);
+		}
+		window.localStorage.setItem('end_page_title_filter_checkbox', $(this).is(':checked'));
+	});
+	$('input[name=end_tags_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(4).visible(true);
+		} else {
+			endpoint_table.column(4).visible(false);
+		}
+		window.localStorage.setItem('end_tags_filter_checkbox', $(this).is(':checked'));
+	});
+	$('input[name=end_content_type_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(5).visible(true);
+		} else {
+			endpoint_table.column(5).visible(false);
+		}
+		window.localStorage.setItem('end_content_type_filter_checkbox', $(this).is(':checked'));
+	});
+	$('input[name=end_content_length_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(6).visible(true);
+		} else {
+			endpoint_table.column(6).visible(false);
+		}
+		window.localStorage.setItem('end_content_length_filter_checkbox', $(this).is(':checked'));
+	});
+	$('input[name=end_response_time_filter_checkbox]').change(function() {
+		if ($(this).is(':checked')) {
+			endpoint_table.column(9).visible(true);
+		} else {
+			endpoint_table.column(9).visible(false);
+		}
+		window.localStorage.setItem('end_response_time_filter_checkbox', $(this).is(':checked'));
 	});
 }
 
