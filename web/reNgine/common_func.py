@@ -669,7 +669,7 @@ def get_cms_details(url):
     # this function will fetch cms details using cms_detector
     response = {}
     cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch --follow-redirect'.format(url)
-    output_lines = os.popen(cms_detector_command).read().splitlines()
+    os.system(cms_detector_command)
 
     response['status'] = False
     response['message'] = 'Could not detect CMS!'
@@ -681,7 +681,7 @@ def get_cms_details(url):
 
     if os.path.isfile(cms_json_path):
         cms_file_content = json.loads(open(cms_json_path, 'r').read())
-        if not cms_file_content.get('cmd_id'):
+        if not cms_file_content.get('cms_id'):
             return response
         response = {}
         response = cms_file_content

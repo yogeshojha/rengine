@@ -60,7 +60,8 @@ function cms_detector_api_call(url){
 	var api_url = `/api/tools/cms_detector/?format=json&url=${url}`
 	Swal.fire({
 		title: `Detecting CMS`,
-		text: `reNgine is detecting CMS on ${url} and this may take a while. Please wait...`
+		text: `reNgine is detecting CMS on ${url} and this may take a while. Please wait...`,
+		allowOutsideClick: false
 	});
 	swal.showLoading();
 	fetch(api_url, {
@@ -186,6 +187,11 @@ function cms_detector_api_call(url){
 				<a href="${response.user_registration_url}" target="_blank">${response.user_registration_url}</a>
 				</p>`;
 			}
+
+			content += `<br><a class="mt-2" data-bs-toggle="collapse" href="#response_json" aria-expanded="false" aria-controls="response_json">Response Json <i class="fe-terminal"></i></a>`;
+			content += `<div class="collapse" id="response_json"><ul>`;
+			content += `<li><code>${htmlEncode(JSON.stringify(response))}</code></li>`;
+			content += '</ul></div>';
 
 
 			content += '</div>'
