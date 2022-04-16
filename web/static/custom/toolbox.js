@@ -71,7 +71,6 @@ function cms_detector_api_call(url){
 			"Content-Type": "application/json"
 		},
 	}).then(response => response.json()).then(function(response) {
-		console.log(response);
 		if (response.status) {
 			swal.close();
 			$('#modal_title').html('CMS Details for ' + url);
