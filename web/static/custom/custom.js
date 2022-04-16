@@ -1476,9 +1476,8 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 			'Content-Type': 'application/json'
 		},
 	}).then(response => response.json()).then(function(response) {
-		console.log(response);
+		swal.close();
 		if (response.status) {
-			swal.close();
 			display_whois_on_modal(response, show_add_target_btn=show_add_target_btn);
 		} else {
 			Swal.fire({
