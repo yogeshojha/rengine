@@ -5,8 +5,11 @@ import random
 import requests
 import tldextract
 import logging
+import shutil
 
 from threading import Thread
+
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 from lxml import html
@@ -665,20 +668,26 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
     response = {}
-    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch'.format(url)
+    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch --follow-redirect'.format(url)
     output_lines = os.popen(cms_detector_command).read().splitlines()
-    result = [r for r in output_lines if "Result:" in r]
 
     response['status'] = False
     response['message'] = 'Could not detect CMS!'
 
-    if result:
-        result_path = re.search('32m(.*)0m', result[0])
-        if result_path:
-            cms_json_path =  result_path.group(1)[:-2]
-            cms_file_content = json.loads(open(cms_json_path, 'r').read())
-            response = {}
-            response = cms_file_content
-            response['status'] = True
+    domain_name = urlparse(url).netloc
+
+    cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(domain_name)
+    cms_json_path =  cms_dir_path + '/cms.json'
+
+    if os.path.isfile(cms_json_path):
+        cms_file_content = json.loads(open(cms_json_path, 'r').read())
+        response = {}
+        response = cms_file_content
+        response['status'] = True
+        # remove cms dir path
+        try:
+            shutil.rmtree(cms_dir_path)
+        except Exception as e:
+            print(e)
 
     return response
