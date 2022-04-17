@@ -1546,7 +1546,7 @@ function deleteMultipleSubdomains(){
 					}
 				});
 			}
-		});;
+		});
 	}
 }
 
@@ -1556,4 +1556,31 @@ function initiateMultipleSubscan(){
 		$('a[data-toggle="tooltip"]').tooltip("hide")
 		// to distinguish multiple subscan or single, put a extra attribute on button
 		$('#btn-initiate-subtask').attr('multiple-subscan', true);
+}
+
+
+function detect_subdomain_cms(http_url, http_status){
+	if (http_status == 0) {
+		var message = `reNgine has earlier identified that this subdomain did not return any HTTP status and likely the subdomain is not alive. reNgine may not be able to detect any CMS, would you still like to continue?`;
+	}
+	else if (http_status != 200) {
+		var message = `reNgine has earlier identified that this subdomain has HTTP status as ${http_status} and likely that reNgine will not detect any CMS, would you still like to continue?`;
+	}
+
+	if (http_status != 200 || http_status == 0) {
+		Swal.fire({
+			showCancelButton: true,
+			title: 'Detect CMS',
+			text: message,
+			icon: 'warning',
+			confirmButtonText: 'Detect CMS',
+		}).then((result) => {
+			if (result.isConfirmed) {
+				cms_detector_api_call(http_url);
+			}
+		});
+	}
+	else{
+		cms_detector_api_call(http_url);
+	}
 }

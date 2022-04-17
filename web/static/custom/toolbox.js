@@ -190,7 +190,7 @@ function cms_detector_api_call(url){
 
 			content += `<br><a class="mt-2" data-bs-toggle="collapse" href="#response_json" aria-expanded="false" aria-controls="response_json">Response Json <i class="fe-terminal"></i></a>`;
 			content += `<div class="collapse" id="response_json"><ul>`;
-			content += `<li><code>${htmlEncode(JSON.stringify(response))}</code></li>`;
+			content += `<li><code>${htmlEncode(JSON.stringify(response, null, 4))}</code></li>`;
 			content += '</ul></div>';
 
 

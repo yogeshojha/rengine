@@ -674,9 +674,23 @@ def get_cms_details(url):
     response['status'] = False
     response['message'] = 'Could not detect CMS!'
 
-    domain_name = urlparse(url).netloc
+    parsed_url = urlparse(url)
 
-    cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(domain_name)
+    domain_name = parsed_url.hostname
+    port = parsed_url.port
+
+    find_dir = domain_name
+
+    if port:
+        find_dir += '_{}'.format(port)
+
+
+    print(url)
+    print(find_dir)
+
+    # subdomain may also have port number, and is stored in dir as _port
+
+    cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
     cms_json_path =  cms_dir_path + '/cms.json'
 
     if os.path.isfile(cms_json_path):

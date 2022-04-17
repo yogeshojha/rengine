@@ -1607,12 +1607,17 @@ $(document).ready(function(){
 						// Action
 						{
 							"render": function ( data, type, row ) {
+								const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 								return `
-								<div class="mt-2">
-								<a href="javascript:void(0);" class="action-icon btn-scan-subdomain" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="text-primary mdi mdi-lightning-bolt-outline"></i></a>
-								<a href="#" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')" class="action-icon" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" id="${row['id']}"> <i class="text-success mdi mdi-notebook-plus-outline"></i></a>
-								<a href="#" onclick="mark_important_subdomain(this, ${row['id']})" class="action-icon" data-toggle="tooltip" data-placement="top" title="Toggle Important Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-alert-rhombus-outline"></i></a>
-								<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-delete-forever-outline"></i></a>
+								<div class="btn-group mt-2">
+									<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+									<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+									<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
+									<div class="dropdown-menu dropdown-menu-end">
+									<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
+									<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
+									<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+									</div>
 								</div>
 								`;
 							},
@@ -1754,7 +1759,7 @@ $(document).ready(function(){
 							.then(function (response) {
 								swal.close();
 								if (response['status']) {
-									$(row).parent().parent().parent().remove();
+									$(row).parent().parent().parent().parent().remove();
 									Snackbar.show({
 										text: 'Subdomain successfully deleted!',
 										pos: 'top-right',
@@ -1764,7 +1769,7 @@ $(document).ready(function(){
 								else{
 									Swal.fire({
 										title:  'Could not delete Subdomain!',
-										icon: 'fail',
+										icon: 'error',
 									});
 								}
 							});
