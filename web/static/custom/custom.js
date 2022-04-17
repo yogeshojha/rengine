@@ -694,7 +694,7 @@ function get_important_subdomains(target_id, scan_history_id) {
 
 function mark_important_subdomain(row, subdomain_id) {
 	if (row) {
-		parentNode = row.parentNode.parentNode.parentNode;
+		parentNode = row.parentNode.parentNode.parentNode.parentNode;
 		if (parentNode.classList.contains('table-danger')) {
 			parentNode.classList.remove('table-danger');
 		} else {
