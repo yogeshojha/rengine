@@ -139,6 +139,20 @@ function cms_detector_api_call(url){
 				</p>`;
 			}
 
+			if (response.wp_plugins) {
+				content += `<h4 class="font-13 text-muted text-uppercase mb-1">Wordpress Plugins :</h4>
+				<p class="mb-3">
+				${response.wp_plugins}
+				</p>`;
+			}
+
+			if (response.wp_themes) {
+				content += `<h4 class="font-13 text-muted text-uppercase mb-1">Wordpress Themes :</h4>
+				<p class="mb-3">
+				${response.wp_themes}
+				</p>`;
+			}
+
 			if (response.joomla_version) {
 				content += `<h4 class="font-13 text-muted text-uppercase mb-1">Joomla Version :</h4>
 				<p class="mb-3">
@@ -190,7 +204,7 @@ function cms_detector_api_call(url){
 
 			content += `<br><a class="mt-2" data-bs-toggle="collapse" href="#response_json" aria-expanded="false" aria-controls="response_json">Response Json <i class="fe-terminal"></i></a>`;
 			content += `<div class="collapse" id="response_json"><ul>`;
-			content += `<li><code>${htmlEncode(JSON.stringify(response, null, 4))}</code></li>`;
+			content += `<pre><code>${htmlEncode(JSON.stringify(response, null, 4))}</code></pre>`;
 			content += '</ul></div>';
 
 
