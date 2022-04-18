@@ -100,3 +100,20 @@ $("#amass_config_text_area").dblclick(function() {
     $("#amass-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="amass-config-submit">');
   }
 });
+
+// get theharvester config
+$.getJSON(`/api/getFileContents?theharvester_config&format=json`, function(data) {
+  $("#theharvester_config_text_area").attr("rows", 14);
+  $("textarea#theharvester_config_text_area").html(htmlEncode(data['content']));
+}).fail(function(){
+  $("#theharvester_config_text_area").removeAttr("readonly");
+  $("textarea#theharvester_config_text_area").html(`# Your the Harvester configuration here.`);
+  $("#theHarvester-config-form").append('<input type="submit" class="btn btn-info mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
+});
+
+$("#theharvester_config_text_area").dblclick(function() {
+  if (!document.getElementById('theharvester-config-submit')) {
+    $("#theharvester_config_text_area").removeAttr("readonly");
+    $("#theharvester-config-form").append('<input type="submit" class="btn btn-info mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
+  }
+});
