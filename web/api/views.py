@@ -641,11 +641,18 @@ class GetFileContents(APIView):
 			return Response({'content': f.read()})
 
 		if 'naabu_config' in req.query_params:
-			path = "/root/.config/naabu/naabu.conf"
+			path = "/root/.config/naabu/config.yaml"
 			if not os.path.exists(path):
 				os.system('touch {}'.format(path))
 			f = open(path, "r")
 			return Response({'content': f.read()})
+		
+		if 'theharvester_config' in req.query_params:
+                       path = "/usr/src/github/theHarvester/api-keys.yaml"
+                       if not os.path.exists(path):
+                       os.system('touch {}'.format(path))
+                       f = open(path, "r")
+                       return Response({'content': f.read()})
 
 		if 'amass_config' in req.query_params:
 			path = "/root/.config/amass.ini"
