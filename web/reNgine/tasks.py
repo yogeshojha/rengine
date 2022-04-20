@@ -70,6 +70,7 @@ def initiate_subtask(
     # TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
     logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
+    print(subdomain_id)
     subdomain = Subdomain.objects.get(id=subdomain_id)
     scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
 
