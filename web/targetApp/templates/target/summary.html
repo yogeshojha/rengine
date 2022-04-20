@@ -595,6 +595,9 @@ Target Summary
 {% include "base/_items/recon_note_modal.html" %}
 {% include "base/_items/subscan_modal.html" %}
 
+{# for passing subdomain id to initiate subtask scan #}
+<input type="hidden" name="subtask_subdomain_id" id="subtask_subdomain_id" value="0">
+
 {% endblock main_content %}
 
 {% block page_level_script %}
