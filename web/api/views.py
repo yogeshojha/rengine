@@ -40,6 +40,26 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class CVEDetails(APIView):
+	def get(self, request):
+		req = self.request
+
+		cve_id = req.query_params.get('cve_id')
+
+		if not cve_id:
+			return Response({'status': False, 'message': 'CVE ID not provided'})
+
+		response = requests.get('https://cve.circl.lu/api/cve/' + cve_id)
+
+		if response.status_code != 200:
+			return  Response({'status': False, 'message': 'Unknown Error Occured!'})
+
+		if not response.json():
+			return  Response({'status': False, 'message': 'CVE ID does not exists.'})
+
+		return Response({'status': True, 'result': response.json()})
+
+
 class AddReconNote(APIView):
 	def post(self, request):
 		req = self.request
