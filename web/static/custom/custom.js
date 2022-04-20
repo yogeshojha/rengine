@@ -2333,6 +2333,15 @@ function get_and_render_cve_details(cve_id){
 
 				content += `</ul></div>`;
 
+				content += `<div class="tab-pane fade" id="v-pills-affected-versions" role="tabpanel" aria-labelledby="v-pills-affected-versions-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+				<ul>`;
+
+				for (var conf in response.result.vulnerable_configuration) {
+					content += `<li>${response.result.vulnerable_configuration[conf]['id']}</li>`;
+				}
+
+				content += `</ul></div>`;
+
 				content += `</div></div></div>`;
 
 			$('#xl-modal-content').append(content);
