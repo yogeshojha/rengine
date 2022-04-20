@@ -939,6 +939,8 @@ function show_subscan_results(subscan_id) {
 			scan_status = 'Unknown';
 		}
 		$('#xl-modal-content').append(`<div>Scan Status: <span class="badge bg-${badge_color}">${scan_status}</span></div>`);
+		console.log(response);
+		$('#xl-modal-content').append(`<div class="mt-1">Engine Used: <span class="badge bg-primary">${response['subscan']['engine']}</span></div>`);
 		if (response['result'].length > 0) {
 			if (response['subscan']['task'] == 'port_scan') {
 				$('#xl-modal-content').append(`<div id="port_results_li"></div>`);

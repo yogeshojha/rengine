@@ -130,7 +130,7 @@ function getScanStatusSidebar(reload) {
             <div class="card border-primary border mini-card">
             <a href="#" onclick="show_subscan_results(${task_object['id']})" class="text-reset item-hovered">
             <div class="card-header bg-soft-primary text-primary mini-card-header">
-            ${task_name} on ${task_object.subdomain_name}
+            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${task_object.engine}</b>
             </div>
             <div class="card-body mini-card-body">
             <p class="card-text">
@@ -181,7 +181,7 @@ function getScanStatusSidebar(reload) {
             <div class="card border-${color} border mini-card">
             <a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${task_object['id']})">
             <div class="card-header ${bg_color} text-${color} mini-card-header">
-            ${task_name} on <b>${task_object.subdomain_name}</b>
+            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${task_object.engine}</b>
             </div>
             <div class="card-body mini-card-body">
             <p class="card-text">
