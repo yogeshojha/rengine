@@ -595,6 +595,9 @@ Target Summary
 {% include "base/_items/recon_note_modal.html" %}
 {% include "base/_items/subscan_modal.html" %}
 
+{# for passing subdomain id to initiate subtask scan #}
+<input type="hidden" name="subtask_subdomain_id" id="subtask_subdomain_id" value="0">
+
 {% endblock main_content %}
 
 {% block page_level_script %}
@@ -1044,12 +1047,17 @@ $(document).ready(function(){
 						// Action
 						{
 							"render": function ( data, type, row ) {
+								const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 								return `
-								<div class="mt-2">
-								<a href="javascript:void(0);" class="action-icon btn-scan-subdomain" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" id="${row['id']}"> <i class="text-primary mdi mdi-lightning-bolt-outline"></i></a>
-								<a href="#" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')" class="action-icon" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" id="${row['id']}"> <i class="text-success mdi mdi-notebook-plus-outline"></i></a>
-								<a href="#" onclick="mark_important_subdomain(row=this, subdomain_id=${row['id']})" class="action-icon" data-toggle="tooltip" data-placement="top" title="Toggle Important Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-alert-rhombus-outline"></i></a>
-								<a href="javascript:void(0);" class="action-icon btn-delete-subdomain" data-toggle="tooltip" data-placement="top" title="Delete Subdomain" id="${row['id']}"> <i class="text-danger mdi mdi-delete-forever-outline"></i></a>
+								<div class="btn-group mt-2">
+									<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+									<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+									<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
+									<div class="dropdown-menu dropdown-menu-end">
+									<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
+									<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
+									<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+									</div>
 								</div>
 								`;
 							},
@@ -1378,7 +1386,7 @@ $(document).ready(function(){
 
 								if (row['cve_ids']) {
 									row['cve_ids'].forEach(cve => {
-										cve_cwe_badge += `<a href="https://google.com/search?q=${cve.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+										cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 									});
 								}
 								if (row['cwe_ids']) {
@@ -1580,39 +1588,33 @@ $(document).ready(function(){
 				});
 			});
 
-
-			// checkbox for filtering render
-
-			var vulnerability_cols = [
-					'vuln_type_checkbox',
-					'vuln_severity_checkbox',
-					'vuln_cvss_score_checkbox',
-					'vuln_cve_cwe_checkbox',
-					'vuln_vulnerable_url_checkbox',
-					'vuln_description_checkbox',
-					'vuln_discovered_on_checkbox',
-					'vuln_status_checkbox'
-				];
-
-				for (var col in vulnerability_cols) {
-					if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
-						$('#' + vulnerability_cols[col]).prop('checked', false);
-					}
-				}
-
-			var subdomain_cols = [
+			var filter_cols = [
 				'sub_http_status_filter_checkbox',
 				'sub_page_title_filter_checkbox',
 				'sub_ip_filter_checkbox',
 				'sub_ports_filter_checkbox',
 				'sub_content_length_filter_checkbox',
 				'sub_response_time_filter_checkbox',
-				'sub_screenshot_filter_checkbox'
+				'sub_screenshot_filter_checkbox',
+				'vuln_type_checkbox',
+				'vuln_severity_checkbox',
+				'vuln_cvss_score_checkbox',
+				'vuln_cve_cwe_checkbox',
+				'vuln_vulnerable_url_checkbox',
+				'vuln_description_checkbox',
+				'vuln_discovered_on_checkbox',
+				'vuln_status_checkbox',
+				'end_http_status_filter_checkbox',
+				'end_page_title_filter_checkbox',
+				'end_tags_filter_checkbox',
+				'end_content_type_filter_checkbox',
+				'end_content_length_filter_checkbox',
+				'end_response_time_filter_checkbox',
 			];
 
-			for (var col in subdomain_cols) {
-				if(window.localStorage.getItem(subdomain_cols[col]) != null && window.localStorage.getItem(subdomain_cols[col]) === 'false'){
-					$('#' + subdomain_cols[col]).prop('checked', false);
+			for (var col in filter_cols) {
+				if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
+					$('#' + filter_cols[col]).prop('checked', false);
 				}
 			}
 

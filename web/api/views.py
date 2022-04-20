@@ -40,6 +40,26 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class CVEDetails(APIView):
+	def get(self, request):
+		req = self.request
+
+		cve_id = req.query_params.get('cve_id')
+
+		if not cve_id:
+			return Response({'status': False, 'message': 'CVE ID not provided'})
+
+		response = requests.get('https://cve.circl.lu/api/cve/' + cve_id)
+
+		if response.status_code != 200:
+			return  Response({'status': False, 'message': 'Unknown Error Occured!'})
+
+		if not response.json():
+			return  Response({'status': False, 'message': 'CVE ID does not exists.'})
+
+		return Response({'status': True, 'result': response.json()})
+
+
 class AddReconNote(APIView):
 	def post(self, request):
 		req = self.request
@@ -264,36 +284,37 @@ class InitiateSubTask(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
+		engine_id = data.get('engine_id')
 		for subdomain_id in data['subdomain_ids']:
 			# initiate subtask for every task types
 			if data['port_scan']:
 				celery_task = initiate_subtask.apply_async(args=(
 					subdomain_id,
-					True, False, False, False, False,
+					True, False, False, False, False, engine_id
 				))
 
 			if data['osint']:
 				celery_task = initiate_subtask.apply_async(args=(
 					subdomain_id,
-					False, True, False, False, False,
+					False, True, False, False, False, engine_id
 				))
 
 			if data['endpoint']:
 				celery_task = initiate_subtask.apply_async(args=(
 					subdomain_id,
-					False, False, True, False, False,
+					False, False, True, False, False, engine_id
 				))
 
 			if data['dir_fuzz']:
 				celery_task = initiate_subtask.apply_async(args=(
 					subdomain_id,
-					False, False, False, True, False,
+					False, False, False, True, False, engine_id
 				))
 
 			if data['vuln_scan']:
 				celery_task = initiate_subtask.apply_async(args=(
 					subdomain_id,
-					False, False, False, False, True,
+					False, False, False, False, True, engine_id
 				))
 		return Response({'status': True})
 

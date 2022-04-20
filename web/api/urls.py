@@ -141,6 +141,10 @@ urlpatterns = [
         CMSDetector.as_view(),
         name='cms_detector'),
     path(
+        'tools/cve_details/',
+        CVEDetails.as_view(),
+        name='cve_details'),
+    path(
         'github/tool/get_latest_releases/',
         GithubToolCheckGetLatestRelease.as_view(),
         name='github_tool_latest_release'),
