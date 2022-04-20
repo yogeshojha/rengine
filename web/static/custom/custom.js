@@ -195,6 +195,8 @@ function get_severity_badge(severity) {
 		case 'Critical':
 			return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
 			break;
+		case 'Unknown':
+		return "<span class='badge badge-soft-info'>&nbsp;&nbsp;UNKNOWN&nbsp;&nbsp;</span>";
 		default:
 			return "";
 	}

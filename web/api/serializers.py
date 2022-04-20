@@ -378,6 +378,16 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
                     'description': 'Informational',
                     'children': info_serializer.data
                 })
+            uknown = vulnerability.filter(severity=-1)
+            if uknown:
+                uknown_serializer = VisualiseVulnerabilitySerializer(
+                    uknown,
+                    many=True
+                )
+                vulnerability_data.append({
+                    'description': 'Unknown',
+                    'children': uknown_serializer.data
+                })
 
             if vulnerability_data:
                 return_data.append({
@@ -779,6 +789,10 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
             return "High"
         elif Vulnerability.severity == 4:
             return "Critical"
+        elif Vulnerability.severity == -1:
+            return "Unknown"
+        else:
+            return "Unknown"
 
     class Meta:
         model = Vulnerability

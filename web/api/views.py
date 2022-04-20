@@ -1855,6 +1855,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					severity_value = 3
 				elif lookup_content == 'critical':
 					severity_value = 4
+				elif lookup_content == 'unknown':
+					severity_value = -1
 				if severity_value:
 					qs = self.queryset.filter(severity=severity_value)
 			elif 'name' in lookup_title:
@@ -1903,6 +1905,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					severity_value = 3
 				elif lookup_content == 'critical':
 					severity_value = 4
+				elif lookup_content == 'unknown':
+					severity_value = -1
 				if severity_value:
 					qs = self.queryset.exclude(severity=severity_value)
 			elif 'name' in lookup_title:
