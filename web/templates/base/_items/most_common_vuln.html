@@ -35,6 +35,8 @@
                 <span class='badge badge-soft-danger'>High</span>
                 {% elif item.severity == 4 %}
                 <span class='badge badge-critical'>Critical</span>
+                {% elif item.severity == -1 %}
+                <span class='badge badge-soft-info'>Uknown</span>
                 {% endif %}
               </div>
             </td>
