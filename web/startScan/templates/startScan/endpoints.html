@@ -15,59 +15,7 @@ All Endpoints
 
 {% block main_content %}
 <div class="row justify-content-center">
-  <div class="col-xl-8 col-lg-8 col-sm-8">
-    <div class="wrapper">
-      <div class="search-input" id="endpoint-search-input">
-        <a href="" target="_blank" hidden></a>
-        <div class="input-group">
-          <input type="text" class="form-control" placeholder="Filter Endpoints" aria-label="Filter Endpoints" id="endpoints-search">
-          <div class="input-group-append">
-            <button id="endpoint-search-button" class="btn btn-primary" type="button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Search</button>
-          </div>
-        </div>
-        <div class="autocom-box mt-container mx-auto endpoint-search" id="autocom-box">
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<div class="row mt-4">
-  <div class="col-12">
-    <div class="card">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-12">
-            <div class="btn-group mb-2 float-end dropstart">
-              <button class="btn btn-primary dropdown-toggle " data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fe-download"></i>
-              </button>
-              <div class="dropdown-menu" style="">
-                <a class="dropdown-item" href="javascript:download_endpoints()">Download All Endpoints</a>
-              </div>
-            </div>
-          </div>
-          <div class="col-12">
-            <table id="endpoint_results" class="table style-3 table-hover">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>HTTP URL</th>
-                  <th>Status</th>
-                  <th>Page Title</th>
-                  <th>Tags</th>
-                  <th>Content Type</th>
-                  <th>Content Length</th>
-                  <th>Technology</th>
-                  <th>Webserver</th>
-                  <th>Response time</th>
-                </tr>
-              </thead>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include 'base/_items/endpoint_tab_content.html' with detail_scan=False%}
 </div>
 {% endblock main_content %}
 
@@ -82,6 +30,20 @@ All Endpoints
 $(document).ready(function() {
   const ps = new PerfectScrollbar(document.querySelector('.endpoint-search'));
   get_endpoints(null, null);
+  var filter_cols = [
+    'end_http_status_filter_checkbox',
+    'end_page_title_filter_checkbox',
+    'end_tags_filter_checkbox',
+    'end_content_type_filter_checkbox',
+    'end_content_length_filter_checkbox',
+    'end_response_time_filter_checkbox',
+  ];
+
+  for (var col in filter_cols) {
+    if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
+      $('#' + filter_cols[col]).prop('checked', false);
+    }
+  }
 });
 </script>
 {% endblock page_level_script %}
