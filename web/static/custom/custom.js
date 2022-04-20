@@ -2224,3 +2224,118 @@ function get_http_badge(http_status){
 		return badge
 	}
 }
+
+
+function get_and_render_cve_details(cve_id){
+	var api_url = `/api/tools/cve_details/?cve_id=${cve_id}&format=json`;
+	Swal.fire({
+		title: 'Fetching CVE Details...'
+	});
+	swal.showLoading();
+	fetch(api_url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			"Content-Type": "application/json"
+		},
+	}).then(response => response.json()).then(function(response) {
+		console.log(response);
+		swal.close();
+		if (response.status) {
+			$('#xl-modal-title').empty();
+			$('#xl-modal-content').empty();
+			$('#xl-modal-footer').empty();
+			$('#xl-modal_title').html(`CVE Details of ${cve_id}`);
+
+			var cvss_score_badge = 'danger';
+
+			if (response.result.cvss > 0.1 && response.result.cvss <= 3.9) {
+				cvss_score_badge = 'info';
+			}
+			else if (response.result.cvss > 3.9 && response.result.cvss <= 6.9) {
+				cvss_score_badge = 'warning';
+			}
+
+			content = `<div class="row mt-3">
+				<div class="col-sm-3">
+				<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+				<a class="nav-link active show mb-1" id="v-pills-cve-details-tab" data-bs-toggle="pill" href="#v-pills-cve-details" role="tab" aria-controls="v-pills-cve-details-tab" aria-selected="true">CVE Details</a>
+				<a class="nav-link mb-1" id="v-pills-affected-products-tab" data-bs-toggle="pill" href="#v-pills-affected-products" role="tab" aria-controls="v-pills-affected-products-tab" aria-selected="true">Affected Products</a>
+				<a class="nav-link mb-1" id="v-pills-affected-versions-tab" data-bs-toggle="pill" href="#v-pills-affected-versions" role="tab" aria-controls="v-pills-affected-versions-tab" aria-selected="true">Affected Versions</a>
+				<a class="nav-link mb-1" id="v-pills-cve-references-tab" data-bs-toggle="pill" href="#v-pills-cve-references" role="tab" aria-controls="v-pills-cve-references-tab" aria-selected="true">References</a>
+				</div>
+				</div>
+				<div class="col-sm-9">
+				<div class="tab-content pt-0">`;
+
+				content += `
+				<div class="tab-pane fade active show" id="v-pills-cve-details" role="tabpanel" aria-labelledby="v-pills-cve-details-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+					<h4 class="header-title">${cve_id}</h4>
+					<div class="alert alert-warning" role="alert">
+						${response.result.summary}
+					</div>
+					<span class="badge badge-soft-primary">Assigner: ${response.result.assigner}</span>
+					<span class="badge badge-outline-primary">CVSS Vector: ${response.result['cvss-vector']}</span>
+					<table class="domain_details_table table table-hover table-borderless">
+						<tr style="display: none">
+							<th>&nbsp;</th>
+							<th>&nbsp;</th>
+						</tr>
+						<tr>
+							<td>CVSS Score</td>
+							<td><span class="badge badge-soft-${cvss_score_badge}">${response.result.cvss ? response.result.cvss: "-"}</span></td>
+						</tr>
+						<tr>
+							<td>Confidentiality Impact</td>
+							<td>${response.result.impact.confidentiality ? response.result.impact.confidentiality: "N/A"}</td>
+						</tr>
+						<tr>
+							<td>Integrity Impact</td>
+							<td>${response.result.impact.integrity ? response.result.impact.integrity: "N/A"}</td>
+						</tr>
+						<tr>
+							<td>Availability Impact</td>
+							<td>${response.result.impact.availability ? response.result.impact.availability: "N/A"}</td>
+						</tr>
+						<tr>
+							<td>Access Complexity</td>
+							<td>${response.result.access.complexity ? response.result.access.complexity: "N/A"}</td>
+						</tr>
+						<tr>
+							<td>Authentication</td>
+							<td>${response.result.access.authentication ? response.result.access.authentication: "N/A"}</td>
+						</tr>
+						<tr>
+							<td>CWE ID</td>
+							<td><span class="badge badge-outline-danger">${response.result.cwe ? response.result.cwe: "N/A"}</span></td>
+						</tr>
+					</table>
+				</div>
+				`;
+
+				content += `<div class="tab-pane fade" id="v-pills-cve-references" role="tabpanel" aria-labelledby="v-pills-cve-references-tab" data-simplebar style="max-height: 600px; min-height: 600px;">
+				<ul>`;
+
+				for (var reference in response.result.references) {
+					content += `<li><a href="${response.result.references[reference]}" target="_blank">${response.result.references[reference]}</a></li>`;
+				}
+
+				content += `</ul></div>`;
+
+				content += `</div></div></div>`;
+
+			$('#xl-modal-content').append(content);
+
+			$('#modal_xl_scroll_dialog').modal('show');
+			$("body").tooltip({
+				selector: '[data-toggle=tooltip]'
+			});
+		}
+		else{
+			swal.fire("Error!", response.message, "error", {
+				button: "Okay",
+			});
+		}
+	});
+}
