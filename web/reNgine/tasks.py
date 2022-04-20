@@ -557,7 +557,7 @@ def subdomain_scan(
                         amass_command = amass_command + \
                             ' -brute -w {}'.format(wordlist_path)
                         #fix amass active
-                       # 2 times add config in line 536 and 552 with wrong path 
+                       # 2 times add config in line 536 and 552 with wrong path
                  #   if amass_config_path:
                   #      amass_command = amass_command + \
                    #         ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
@@ -1780,6 +1780,8 @@ def vulnerability_scan(
                                 severity = 3
                             elif json_st['info']['severity'] == 'critical':
                                 severity = 4
+                            elif json_st['info']['severity'] == 'unknown':
+                                severity = -1
                             else:
                                 severity = 0
                         else:
@@ -1905,7 +1907,9 @@ def vulnerability_scan(
             scan_history__id=scan_history.id, severity=3).count()
         critical_count = Vulnerability.objects.filter(
             scan_history__id=scan_history.id, severity=4).count()
-        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
+        unknown_count = Vulnerability.objects.filter(
+            scan_history__id=scan_history.id, severity=-1).count()
+        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
 
         message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
             domain.name,
@@ -1917,6 +1921,7 @@ def vulnerability_scan(
         message += '\nMedium: {}'.format(medium_count)
         message += '\nLow: {}'.format(low_count)
         message += '\nInfo: {}'.format(info_count)
+        message += '\nUnknown: {}'.format(unknown_count)
 
         send_notification(message)
 
