@@ -134,6 +134,8 @@ def all_subdomains(request):
     context['important_count'] = Subdomain.objects.values('name').distinct().filter(
         is_important=True).count()
 
+    context['scan_engines'] = EngineType.objects.all()
+
     context['scan_history_active'] = 'active'
 
     return render(request, 'startScan/subdomains.html', context)
