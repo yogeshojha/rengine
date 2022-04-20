@@ -147,35 +147,24 @@ Settings, API Keys & Tool Settings
         </form>
       </div>
     </div>
-  </div>
-</div>
-
-
-<div class="col-xl-12 col-lg-12 col-md-6 col-sm-12 col-12 layout-top-spacing">
-  <div class="statbox widget box box-shadow">
-    <div class="widget-header">
-      <div class="row">
-        <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-          <h4><a href="https://github.com/laramies/theHarvester" class="text-info" target="_blank">the Harvester</a></h4>
-        </div>
-      </div>
-    </div>
-    <div class="widget-content widget-content-area">
-      <p>
-        This section lets you modify <a href="https://github.com/laramies/theHarvester" class="text-info" target="_blank">the Harvester</a> config file. You can find more information about the <a href="https://github.com/laramies/theHarvester/blob/master/api-keys.yaml" class="text-info" target="_blank">the Harvester config here.</a><br>
-        <span class="text-danger">Please note that only YAML config is supported.</span>
-      </p>
-      <div class="form-group mb-4" id="text-area-theharvester-config">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">theHarvester</h4>
+        <p>
+          This section lets you modify <a href="https://github.com/laramies/theHarvester" class="text-info" target="_blank">the Harvester</a> config file. You can find more information about the <a href="https://github.com/laramies/theHarvester/blob/master/api-keys.yaml" class="text-info" target="_blank">the Harvester config here.</a><br>
+          <br>
+          <span class="text-danger">Please note that only YAML config is supported.</span>
+        </p>
         <form method="post" enctype="multipart/form-data" id="theharvester-config-form">
           {% csrf_token %}
-          <label for="theharvester_config">Current the Harvester Configuration</label>
-          <br>
-          <label for="theharvester_config_text_area" class="text-info">Double click the configuration to edit.</label>
+          <h4 class="header-title">Current theHarvester Configuration</h4>
+          <label for="naabu_config_text_area">Double click the configuration to edit.</label>
           <textarea class="form-control" id="theharvester_config_text_area" spellcheck="false" readonly="true" name="theharvester_config_text_area"></textarea>
         </form>
       </div>
     </div>
   </div>
+
 </div>
 
 {% endblock main_content %}
