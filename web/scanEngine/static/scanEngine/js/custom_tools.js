@@ -4,7 +4,7 @@ function load_gf_template(pattern_name){
   $('.modal-title').html(`GF Pattern ` + htmlEncode(pattern_name));
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
@@ -21,7 +21,7 @@ function load_nuclei_template(pattern_name){
   $('.modal-title').html(`Nuclei Pattern ` + htmlEncode(pattern_name));
   $('#exampleModal').modal('show');
   $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/getFileContents?nuclei_template&name=${pattern_name}&format=json`, function(data) {
     $('#modal-loader').empty();
     $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
@@ -108,12 +108,12 @@ $.getJSON(`/api/getFileContents?theharvester_config&format=json`, function(data)
 }).fail(function(){
   $("#theharvester_config_text_area").removeAttr("readonly");
   $("textarea#theharvester_config_text_area").html(`# Your the Harvester configuration here.`);
-  $("#theHarvester-config-form").append('<input type="submit" class="btn btn-info mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
+  $("#theHarvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
 });
 
 $("#theharvester_config_text_area").dblclick(function() {
   if (!document.getElementById('theharvester-config-submit')) {
     $("#theharvester_config_text_area").removeAttr("readonly");
-    $("#theharvester-config-form").append('<input type="submit" class="btn btn-info mt-2 float-right" value="Save Changes" id="theharvester-config-submit">');
+    $("#theharvester-config-form").append('<input type="submit" class="btn btn-primary mt-2 float-end" value="Save Changes" id="theharvester-config-submit">');
   }
 });
