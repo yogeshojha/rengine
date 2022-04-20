@@ -1386,7 +1386,7 @@ $(document).ready(function(){
 
 								if (row['cve_ids']) {
 									row['cve_ids'].forEach(cve => {
-										cve_cwe_badge += `<a href="https://google.com/search?q=${cve.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+										cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 									});
 								}
 								if (row['cwe_ids']) {
