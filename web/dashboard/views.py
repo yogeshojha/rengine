@@ -26,16 +26,20 @@ def index(request):
         Subdomain.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
         EndPoint.objects.filter(http_status__exact=200).count()
-    info_count = Vulnerability.objects.filter(severity=0).count()
-    low_count = Vulnerability.objects.filter(severity=1).count()
-    medium_count = Vulnerability.objects.filter(severity=2).count()
-    high_count = Vulnerability.objects.filter(severity=3).count()
-    critical_count = Vulnerability.objects.filter(severity=4).count()
+
+    vulnerabilities = Vulnerability.objects.all()
+    info_count = vulnerabilities.filter(severity=0).count()
+    low_count = vulnerabilities.filter(severity=1).count()
+    medium_count = vulnerabilities.filter(severity=2).count()
+    high_count = vulnerabilities.filter(severity=3).count()
+    critical_count = vulnerabilities.filter(severity=4).count()
+    unknown_count = vulnerabilities.filter(severity=-1).count()
+
     vulnerability_feed = Vulnerability.objects.all().order_by(
         '-discovered_date')[:20]
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
-        medium_count + high_count + critical_count
+        medium_count + high_count + critical_count + unknown_count
     total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
     most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
@@ -120,6 +124,7 @@ def index(request):
         'medium_count': medium_count,
         'high_count': high_count,
         'critical_count': critical_count,
+        'unknown_count': unknown_count,
         'most_vulnerable_target': most_vulnerable_target,
         'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
