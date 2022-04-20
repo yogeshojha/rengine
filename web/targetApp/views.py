@@ -248,8 +248,9 @@ def target_summary(request, id):
         target_domain__id=id).values('name').distinct()
     endpoints = EndPoint.objects.filter(
         target_domain__id=id).values('http_url').distinct()
-    vulnerability_count = Vulnerability.objects.filter(
-        target_domain__id=id).count()
+
+    vulnerabilities = Vulnerability.objects.filter(target_domain__id=id)
+    vulnerability_count = vulnerabilities.count()
     context['subdomain_count'] = subdomains.count()
     context['alive_count'] = subdomains.filter(http_status__exact=200).count()
     context['endpoint_count'] = endpoints.count()
@@ -257,17 +258,14 @@ def target_summary(request, id):
 
     context['scan_engines'] = EngineType.objects.all()
 
-    info_count = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=0).count()
-    low_count = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=1).count()
-    medium_count = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=2).count()
-    high_count = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=3).count()
-    critical_count = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=4).count()
+    unknown_count = vulnerabilities.filter(severity=-1).count()
+    info_count = vulnerabilities.filter(severity=0).count()
+    low_count = vulnerabilities.filter(severity=1).count()
+    medium_count = vulnerabilities.filter(severity=2).count()
+    high_count = vulnerabilities.filter(severity=3).count()
+    critical_count = vulnerabilities.filter(severity=4).count()
 
+    context['unknown_count'] = unknown_count
     context['info_count'] = info_count
     context['low_count'] = low_count
     context['medium_count'] = medium_count
