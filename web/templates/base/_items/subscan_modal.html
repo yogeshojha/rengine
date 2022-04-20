@@ -6,13 +6,6 @@
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
-				{% if detail_scan %}
-				<div class="alert alert-info">
-					reNgine will use the configuration from Engine: <b>{{history.scan_type.engine_name}}</b> for this subscan. You can <a href="/scanEngine/update/{{history.scan_type.id}}" target="_blank">change the configuration for the engine here.</a>
-				</div>
-				{% else %}
-				Do something
-				{% endif %}
 				<h5>Select the subtasks to perform</h5>
 				<div class="mt-1">
 					<div class="form-check">
@@ -37,6 +30,19 @@
 						<input type="checkbox" class="form-check-input" id="vuln_subtask">
 						<label class="form-check-label" for="vuln_subtask">Vulnerability Scan</label>
 					</div>
+				</div>
+				<div class="mt-2">
+					<h5>Select the Scan Engine <small>(Default Engine Selected)</small></h5>
+					<select class="form-select" id="subtaskScanEngine" name="subtaskScanEngine">
+						{% for engine in scan_engines %}
+							{% if engine.engine_name == history.scan_type.engine_name %}
+								<option value="{{engine.id}}" selected>{{engine}}</option>
+								{% else %}
+								<option value="{{engine.id}}">{{engine}}</option>
+							{% endif %}
+						{% endfor %}
+						<option>Custom Engine</option>
+					</select>
 				</div>
 			</div>
 			<!-- OSINT IS NOT YET SUPPORTED!!! -->
