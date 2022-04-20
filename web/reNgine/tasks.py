@@ -65,13 +65,14 @@ def initiate_subtask(
         endpoint=False,
         dir_fuzz=False,
         vuln_scan=False,
+        engine_id=None
     ):
     # TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
     logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
     subdomain = Subdomain.objects.get(id=subdomain_id)
     scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
-    engine = EngineType.objects.get(id=scan_history.scan_type.id)
+
     # create scan activity of SubScan Model
     current_scan_time = timezone.now()
     sub_scan = SubScan()
@@ -85,6 +86,14 @@ def initiate_subtask(
     sub_scan.dir_file_fuzz = dir_fuzz
     sub_scan.vulnerability_scan = vuln_scan
     sub_scan.status = INITIATED_TASK
+    sub_scan.save()
+
+    if engine_id:
+        engine = EngineType.objects.get(id=engine_id)
+    else:
+        engine = EngineType.objects.get(id=scan_history.scan_type.id)
+
+    sub_scan.engine = engine
     sub_scan.save()
 
     results_dir = '/usr/src/scan_results/' + scan_history.results_dir

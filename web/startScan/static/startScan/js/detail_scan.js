@@ -1352,6 +1352,7 @@ function initiate_subtask(subdomain_ids){
 	var endpoint = $('#endpoint_subtask').is(':checked');
 	var dir_fuzz = $('#dir_fuzz_subtask').is(':checked');
 	var vuln_scan = $('#vuln_subtask').is(':checked');
+	var engine_id = $('#subtaskScanEngine').val();
 	if (!port_scan && !osint && !endpoint && !dir_fuzz && !vuln_scan) {
 		Swal.fire({
 			title: 'Oops!',
@@ -1367,6 +1368,7 @@ function initiate_subtask(subdomain_ids){
 		'endpoint': endpoint,
 		'dir_fuzz': dir_fuzz,
 		'vuln_scan': vuln_scan,
+		'engine_id': engine_id,
 	};
 	Swal.fire({
 		title: 'Initiating Subtask...',

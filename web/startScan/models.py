@@ -244,6 +244,7 @@ class SubScan(models.Model):
 	osint = models.BooleanField(null=True, default=False)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	error_message = models.CharField(max_length=300, blank=True, null=True)
+	engine = models.ForeignKey(EngineType, on_delete=models.CASCADE, blank=True, null=True)
 
 
 	def get_completed_ago(self):

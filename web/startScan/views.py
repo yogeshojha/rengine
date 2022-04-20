@@ -84,6 +84,8 @@ def detail_scan(request, id=None):
             medium_count + high_count + critical_count
         context['scan_history_active'] = 'active'
 
+        context['scan_engines'] = EngineType.objects.all()
+
         emails = Email.objects.filter(
             emails__in=ScanHistory.objects.filter(
                 id=id))
