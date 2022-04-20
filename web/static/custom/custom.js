@@ -1346,7 +1346,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 					<div class="card border-${color} border mini-card">
 					<a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${result_obj['id']})">
 					<div class="card-header ${bg_color} text-${color} mini-card-header">
-					${task_name} on <b>${result_obj.subdomain_name}</b>
+					${task_name} on <b>${result_obj.subdomain_name}</b> using engine <b>${result_obj.engine}</b>
 					</div>
 					<div class="card-body mini-card-body">
 					<p class="card-text">
