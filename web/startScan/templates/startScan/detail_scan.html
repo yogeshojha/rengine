@@ -329,7 +329,7 @@ Scan Findings
 								<p class="text-muted mb-0">
 									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
 									<br>
-									<span class="w-title text-primary">{{low_count}} Low and {{info_count}} Info Vulnerabilities</span>
+									<span class="w-title text-primary">{{low_count}} Low {{info_count}} Info and {{unknown_count}} Uknown Vulnerabilities</span>
 								</p>
 								{% else %}
 								<p class="text-muted mb-0 small">Vulnerability scan hasn't been performed.</p>
@@ -565,38 +565,7 @@ Scan Findings
 					</div>
 					{% if history.vulnerability_scan %}
 					<div class="col-xl-5 col-lg-5 col-12">
-						<div class="card" style="height: 95%">
-							<div class="card-body">
-								<h4 class="header-title mb-0"><span class="text-danger me-1"><i class="fas fa-bug"></i></span>Vulnerability Breakdown by Severity</h4>
-								<div id="cardCollpase19" class="collapse pt-3 show" dir="ltr">
-									<div class="row mt-3 text-center">
-										<div class="col-1">
-										</div>
-										<div class="col-2">
-											<p class="text-critical font-15 mb-1 text-truncate">Critical</p>
-											<h4 class="text-critical">{{critical_count}}</h4>
-										</div>
-										<div class="col-2">
-											<p class="text-danger font-15 mb-1 text-truncate">High</p>
-											<h4 class="text-danger">{{high_count}}</h4>
-										</div>
-										<div class="col-2">
-											<p class="text-warning font-15 mb-1 text-truncate">Medium</p>
-											<h4 class="text-warning">{{medium_count}}</h4>
-										</div>
-										<div class="col-2">
-											<p class="text-low font-15 mb-1 text-truncate">Low</p>
-											<h4 class="text-low">{{low_count}}</h4>
-										</div>
-										<div class="col-2">
-											<p class="text-low font-15 mb-1 text-truncate">Info</p>
-											<h4 class="text-primary">{{info_count}}</h4>
-										</div>
-									</div>
-									<div id="vulnerability-pie-chart" class="apex-charts"></div>
-								</div>
-							</div>
-						</div>
+						{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
 					</div>
 					<div class="col-xl-7 col-lg-7 col-12">
 						<div class="card" style="height: 95%">
@@ -1194,7 +1163,7 @@ $(document).ready(function(){
 			type: 'donut',
 			height: 280,
 		},
-		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF'],
+		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
 		dataLabels: {
 			enabled: false
 		},
@@ -1247,8 +1216,8 @@ $(document).ready(function(){
 				}
 			}
 		},
-		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
+		labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
 		responsive: [{
 			breakpoint: 1599,
 			options: {
