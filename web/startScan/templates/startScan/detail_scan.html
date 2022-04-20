@@ -1970,7 +1970,7 @@ $(document).ready(function(){
 										});
 										item_pos++;
 										html_treeview += '</div>';
-								        });   
+								        });
 									html_treeview += `</ul>`;
 									return html_treeview;
 								}
@@ -2096,24 +2096,28 @@ $(document).ready(function(){
 								var cvss_metrics_badge = '';
 								switch (row['severity']) {
 									case 'Info':
-									color = 'primary'
-									badge_color = 'soft-primary'
+									color = 'primary';
+									badge_color = 'soft-primary';
 									break;
 									case 'Low':
-									color = 'low'
-									badge_color = 'soft-warning'
+									color = 'low';
+									badge_color = 'soft-warning';
 									break;
 									case 'Medium':
-									color = 'warning'
-									badge_color = 'soft-warning'
+									color = 'warning';
+									badge_color = 'soft-warning';
 									break;
 									case 'High':
-									color = 'danger'
-									badge_color = 'soft-danger'
+									color = 'danger';
+									badge_color = 'soft-danger';
 									break;
 									case 'Critical':
-									color = 'critical'
-									badge_color = 'critical'
+									color = 'critical';
+									badge_color = 'critical';
+									break;
+									case 'Unknown':
+									color = 'info';
+									badge_color = 'soft-info';
 									break;
 									default:
 								}
@@ -2430,7 +2434,7 @@ $(document).ready(function(){
 					$('#' + filter_cols[col]).prop('checked', false);
 				}
 			}
-		
+
 
 </script>
 {% endblock page_level_script %}

@@ -116,24 +116,28 @@ $(document).ready(function() {
 					var cvss_metrics_badge = '';
 					switch (row['severity']) {
 						case 'Info':
-						color = 'primary'
-						badge_color = 'soft-primary'
+						color = 'primary';
+						badge_color = 'soft-primary';
 						break;
 						case 'Low':
-						color = 'low'
-						badge_color = 'soft-warning'
+						color = 'low';
+						badge_color = 'soft-warning';
 						break;
 						case 'Medium':
-						color = 'warning'
-						badge_color = 'soft-warning'
+						color = 'warning';
+						badge_color = 'soft-warning';
 						break;
 						case 'High':
-						color = 'danger'
-						badge_color = 'soft-danger'
+						color = 'danger';
+						badge_color = 'soft-danger';
 						break;
 						case 'Critical':
-						color = 'critical'
-						badge_color = 'critical'
+						color = 'critical';
+						badge_color = 'critical';
+						break;
+						case 'Unknown':
+						color = 'info';
+						badge_color = 'soft-info';
 						break;
 						default:
 					}
@@ -154,25 +158,7 @@ $(document).ready(function() {
 			},
 			{
 				"render": function ( data, type, row ) {
-					switch (data) {
-						case 'Info':
-						return "<span class='badge badge-soft-primary'>&nbsp;&nbsp;INFO&nbsp;&nbsp;</span>";
-						break;
-						case 'Low':
-						return "<span class='badge badge-low'>&nbsp;&nbsp;LOW&nbsp;&nbsp;</span>";
-						break;
-						case 'Medium':
-						return "<span class='badge badge-soft-warning'>&nbsp;&nbsp;MEDIUM&nbsp;&nbsp;</span>";
-						break;
-						case 'High':
-						return "<span class='badge badge-soft-danger'>&nbsp;&nbsp;HIGH&nbsp;&nbsp;</span>";
-						break;
-						case 'Critical':
-						return "<span class='badge badge-critical'>&nbsp;&nbsp;CRITICAL&nbsp;&nbsp;</span>";
-						break;
-						default:
-						return "";
-					}
+					return get_severity_badge(data);
 				},
 				"targets": 6,
 			},
