@@ -2165,7 +2165,7 @@ $(document).ready(function(){
 
 								if (row['cve_ids']) {
 									row['cve_ids'].forEach(cve => {
-										cve_cwe_badge += `<a href="https://google.com/search?q=${cve.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+										cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 									});
 								}
 								if (row['cwe_ids']) {
@@ -2368,23 +2368,6 @@ $(document).ready(function(){
 			});
 			{% endif %}
 
-			var vulnerability_cols = [
-				'vuln_type_checkbox',
-				'vuln_severity_checkbox',
-				'vuln_cvss_score_checkbox',
-				'vuln_cve_cwe_checkbox',
-				'vuln_vulnerable_url_checkbox',
-				'vuln_description_checkbox',
-				'vuln_discovered_on_checkbox',
-				'vuln_status_checkbox'
-			];
-
-			for (var col in vulnerability_cols) {
-				if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
-					$('#' + vulnerability_cols[col]).prop('checked', false);
-				}
-			}
-
 			// get osint
 			$("#pills-osint-tab").click(function() {
 				get_metadata({{scan_history_id}});
@@ -2417,22 +2400,37 @@ $(document).ready(function(){
 			// load scan history widget
 			loadSubscanHistoryWidget(scan_history_id={{scan_history_id}}, domain_id=null);
 
-			// check the checkbox for filtering subdomains in localStorage
-			var subdomain_cols = [
+
+			var filter_cols = [
 				'sub_http_status_filter_checkbox',
 				'sub_page_title_filter_checkbox',
 				'sub_ip_filter_checkbox',
 				'sub_ports_filter_checkbox',
 				'sub_content_length_filter_checkbox',
 				'sub_response_time_filter_checkbox',
-				'sub_screenshot_filter_checkbox'
+				'sub_screenshot_filter_checkbox',
+				'vuln_type_checkbox',
+				'vuln_severity_checkbox',
+				'vuln_cvss_score_checkbox',
+				'vuln_cve_cwe_checkbox',
+				'vuln_vulnerable_url_checkbox',
+				'vuln_description_checkbox',
+				'vuln_discovered_on_checkbox',
+				'vuln_status_checkbox',
+				'end_http_status_filter_checkbox',
+				'end_page_title_filter_checkbox',
+				'end_tags_filter_checkbox',
+				'end_content_type_filter_checkbox',
+				'end_content_length_filter_checkbox',
+				'end_response_time_filter_checkbox',
 			];
 
-			for (var col in subdomain_cols) {
-				if(window.localStorage.getItem(subdomain_cols[col]) != null && window.localStorage.getItem(subdomain_cols[col]) === 'false'){
-					$('#' + subdomain_cols[col]).prop('checked', false);
+			for (var col in filter_cols) {
+				if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
+					$('#' + filter_cols[col]).prop('checked', false);
 				}
 			}
+		
 
 </script>
 {% endblock page_level_script %}

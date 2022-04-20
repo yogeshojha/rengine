@@ -12,6 +12,7 @@ class SubScanResultSerializer(serializers.ModelSerializer):
 
     task = serializers.SerializerMethodField('get_task_name')
     subdomain_name = serializers.SerializerMethodField('get_subdomain_name')
+    engine = serializers.SerializerMethodField('get_engine_name')
 
     class Meta:
         model = SubScan
@@ -25,7 +26,8 @@ class SubScanResultSerializer(serializers.ModelSerializer):
             'celery_id',
             'status',
             'subdomain_name',
-            'task'
+            'task',
+            'engine'
         ]
 
     def get_subdomain_name(self, subscan):
@@ -44,6 +46,11 @@ class SubScanResultSerializer(serializers.ModelSerializer):
             return 'osint'
         else:
             return 'Unknown'
+
+    def get_engine_name(self, subscan):
+        if subscan.engine:
+            return subscan.engine.engine_name
+        return ''
 
 
 class ReconNoteSerializer(serializers.ModelSerializer):
@@ -81,6 +88,7 @@ class SubScanSerializer(serializers.ModelSerializer):
     time_taken = serializers.SerializerMethodField('get_total_time_taken')
     elapsed_time = serializers.SerializerMethodField('get_elapsed_time')
     completed_ago = serializers.SerializerMethodField('get_completed_ago')
+    engine = serializers.SerializerMethodField('get_engine_name')
 
     class Meta:
         model = SubScan
@@ -97,6 +105,11 @@ class SubScanSerializer(serializers.ModelSerializer):
 
     def get_completed_ago(self, sub_scan):
         return sub_scan.get_completed_ago()
+
+    def get_engine_name(self, sub_scan):
+        if sub_scan.engine:
+            return sub_scan.engine.engine_name
+        return ''
 
 
 class ScanHistorySerializer(serializers.ModelSerializer):
