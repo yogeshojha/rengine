@@ -651,7 +651,6 @@ class GetFileContents(APIView):
 
 		response = {}
 		response['status'] = False
-		response['message'] = 'Invalid Query Params'
 
 		if 'nuclei_config' in req.query_params:
 			path = "/root/.config/nuclei/config.yaml"
@@ -728,6 +727,7 @@ class GetFileContents(APIView):
 				response['status'] = False
 			return Response(response)
 
+		response['message'] = 'Invalid Query Params'
 		return Response(response)
 
 
