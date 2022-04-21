@@ -636,53 +636,84 @@ class IPToDomain(APIView):
 			'message': 'IP Address Required'
 		})
 
+
 class VulnerabilityReport(APIView):
 	def get(self, request):
 		req = self.request
 		vulnerability_id = req.query_params.get('vulnerability_id')
 		return Response({"status": send_hackerone_report(vulnerability_id)})
 
+
 class GetFileContents(APIView):
 	def get(self, request, format=None):
 		req = self.request
 		name = req.query_params.get('name')
 
+		response = {}
+		response['status'] = False
+		response['message'] = 'Invalid Query Params'
+
 		if 'nuclei_config' in req.query_params:
 			path = "/root/.config/nuclei/config.yaml"
 			if not os.path.exists(path):
 				os.system('touch {}'.format(path))
+				response['message'] = 'File Created!'
 			f = open(path, "r")
-			return Response({'content': f.read()})
+			response['status'] = True
+			response['content'] = f.read()
+			return Response(response)
 
 		if 'subfinder_config' in req.query_params:
 			path = "/root/.config/subfinder/config.yaml"
 			if not os.path.exists(path):
 				os.system('touch {}'.format(path))
+				response['message'] = 'File Created!'
 			f = open(path, "r")
-			return Response({'content': f.read()})
+			response['status'] = True
+			response['content'] = f.read()
+			return Response(response)
 
 		if 'naabu_config' in req.query_params:
-			path = "/root/.config/naabu/naabu.conf"
+			path = "/root/.config/naabu/config.yaml"
 			if not os.path.exists(path):
 				os.system('touch {}'.format(path))
+				response['message'] = 'File Created!'
 			f = open(path, "r")
-			return Response({'content': f.read()})
+			response['status'] = True
+			response['content'] = f.read()
+			return Response(response)
+
+		if 'theharvester_config' in req.query_params:
+			path = "/usr/src/github/theHarvester/api-keys.yaml"
+			if not os.path.exists(path):
+				os.system('touch {}'.format(path))
+				response['message'] = 'File Created!'
+			f = open(path, "r")
+			response['status'] = True
+			response['content'] = f.read()
+			return Response(response)
 
 		if 'amass_config' in req.query_params:
 			path = "/root/.config/amass.ini"
 			if not os.path.exists(path):
 				os.system('touch {}'.format(path))
+				response['message'] = 'File Created!'
 			f = open(path, "r")
-			return Response({'content': f.read()})
+			response['status'] = True
+			response['content'] = f.read()
+			return Response(response)
 
 		if 'gf_pattern' in req.query_params:
 			basedir = '/root/.gf'
 			path = '/root/.gf/{}.json'.format(name)
 			if is_safe_path(basedir, path) and os.path.exists(path):
 				content = open(path, "r").read()
+				response['status'] = True
+				response['content'] = content
 			else:
-				content = "Invalid path!"
-			return Response({'content': content})
+				response['message'] = "Invalid path!"
+				response['status'] = False
+			return Response(response)
 
 
 		if 'nuclei_template' in req.query_params:
@@ -690,11 +721,14 @@ class GetFileContents(APIView):
 			path = '/root/nuclei-templates/{}'.format(name)
 			if is_safe_path(safe_dir, path) and os.path.exists(path):
 				content = open(path.format(name), "r").read()
+				response['status'] = True
+				response['content'] = content
 			else:
-				content = 'Invalid Path!'
-			return Response({'content': content})
+				response['message'] = 'Invalid Path!'
+				response['status'] = False
+			return Response(response)
 
-		return Response({'content': "ping-pong"})
+		return Response(response)
 
 
 class ListTodoNotes(APIView):
@@ -1846,6 +1880,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					severity_value = 3
 				elif lookup_content == 'critical':
 					severity_value = 4
+				elif lookup_content == 'unknown':
+					severity_value = -1
 				if severity_value:
 					qs = self.queryset.filter(severity=severity_value)
 			elif 'name' in lookup_title:
@@ -1894,6 +1930,8 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					severity_value = 3
 				elif lookup_content == 'critical':
 					severity_value = 4
+				elif lookup_content == 'unknown':
+					severity_value = -1
 				if severity_value:
 					qs = self.queryset.exclude(severity=severity_value)
 			elif 'name' in lookup_title:

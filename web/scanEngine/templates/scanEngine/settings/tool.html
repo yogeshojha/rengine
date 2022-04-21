@@ -147,8 +147,26 @@ Settings, API Keys & Tool Settings
         </form>
       </div>
     </div>
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">theHarvester</h4>
+        <p>
+          This section lets you modify <a href="https://github.com/laramies/theHarvester" class="text-primary" target="_blank">the Harvester</a> config file. You can find more information about the <a href="https://github.com/laramies/theHarvester/blob/master/api-keys.yaml" class="text-primary" target="_blank">the Harvester config here.</a><br>
+          <br>
+          <span class="text-danger">Please note that only YAML config is supported.</span>
+        </p>
+        <form method="post" enctype="multipart/form-data" id="theharvester-config-form">
+          {% csrf_token %}
+          <h4 class="header-title">Current theHarvester Configuration</h4>
+          <label for="naabu_config_text_area">Double click the configuration to edit.</label>
+          <textarea class="form-control" id="theharvester_config_text_area" spellcheck="false" readonly="true" name="theharvester_config_text_area"></textarea>
+        </form>
+      </div>
+    </div>
   </div>
+
 </div>
+
 {% endblock main_content %}
 
 

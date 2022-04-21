@@ -556,9 +556,11 @@ def subdomain_scan(
                                 wordlist_path = '/usr/src/' + AMASS_WORDLIST
                         amass_command = amass_command + \
                             ' -brute -w {}'.format(wordlist_path)
-                    if amass_config_path:
-                        amass_command = amass_command + \
-                            ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
+                        #fix amass active
+                       # 2 times add config in line 536 and 552 with wrong path
+                 #   if amass_config_path:
+                  #      amass_command = amass_command + \
+                   #         ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
 
                     # Run Amass Active
                     logging.info(amass_command)
@@ -988,9 +990,9 @@ def port_scanning(
         naabu_command = naabu_command + \
             ' -rate {}'.format(
                 yaml_configuration[PORT_SCAN][NAABU_RATE])
-
+            #new format for naabu config
     if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
-        naabu_command += ' -config /root/.config/naabu/naabu.conf'
+        naabu_command += ' -config /root/.config/naabu/config.yaml'
 
     # run naabu
     logger.info(naabu_command)
@@ -1701,13 +1703,13 @@ def vulnerability_scan(
         # Update nuclei command with concurrent
         nuclei_command = nuclei_command + ' -retries ' + str(retries)
 
-    # for severity
+    # for severity and new severity in nuclei
     if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
         _severity = ','.join(
             [str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]])
         severity = _severity.replace(" ", "")
     else:
-        severity = "critical, high, medium, low, info"
+        severity = "critical, high, medium, low, info, unknown"
 
     # update nuclei templates before running scan
     logger.info('Updating Nuclei Templates!')
@@ -1778,6 +1780,8 @@ def vulnerability_scan(
                                 severity = 3
                             elif json_st['info']['severity'] == 'critical':
                                 severity = 4
+                            elif json_st['info']['severity'] == 'unknown':
+                                severity = -1
                             else:
                                 severity = 0
                         else:
@@ -1903,7 +1907,9 @@ def vulnerability_scan(
             scan_history__id=scan_history.id, severity=3).count()
         critical_count = Vulnerability.objects.filter(
             scan_history__id=scan_history.id, severity=4).count()
-        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
+        unknown_count = Vulnerability.objects.filter(
+            scan_history__id=scan_history.id, severity=-1).count()
+        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
 
         message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
             domain.name,
@@ -1915,6 +1921,7 @@ def vulnerability_scan(
         message += '\nMedium: {}'.format(medium_count)
         message += '\nLow: {}'.format(low_count)
         message += '\nInfo: {}'.format(info_count)
+        message += '\nUnknown: {}'.format(unknown_count)
 
         send_notification(message)
 

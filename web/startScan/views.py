@@ -61,25 +61,23 @@ def detail_scan(request, id=None):
             scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
         history = get_object_or_404(ScanHistory, id=id)
         context['history'] = history
-        info_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=0).count()
-        low_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=1).count()
-        medium_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=2).count()
-        high_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=3).count()
-        critical_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=4).count()
+        vulnerabilities = Vulnerability.objects.filter(scan_history__id=id)
+        info_count = vulnerabilities.filter(severity=0).count()
+        low_count = vulnerabilities.filter(severity=1).count()
+        medium_count = vulnerabilities.filter(severity=2).count()
+        high_count = vulnerabilities.filter(severity=3).count()
+        critical_count = vulnerabilities.filter(severity=4).count()
+        unknown_count = vulnerabilities.filter(severity=-1).count()
         context['vulnerability_list'] = Vulnerability.objects.filter(
             scan_history__id=id).order_by('-severity').all()[:50]
         context['total_vulnerability_count'] = info_count + low_count + \
-            medium_count + high_count + critical_count
+            medium_count + high_count + critical_count + unknown_count
         context['info_count'] = info_count
         context['low_count'] = low_count
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
+        context['unknown_count'] = unknown_count
         context['total_vul_ignore_info_count'] = low_count + \
             medium_count + high_count + critical_count
         context['scan_history_active'] = 'active'
