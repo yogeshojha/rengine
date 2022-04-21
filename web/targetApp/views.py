@@ -274,8 +274,7 @@ def target_summary(request, id):
 
     context['total_vul_ignore_info_count'] = low_count + \
         medium_count + high_count + critical_count
-
-    context['most_vulnerable_target'] = Subdomain.objects.filter(target_domain__id=id).annotate(num_vul=Count('vulnerability__name', filter=~Q(vulnerability__severity=0))).order_by('-num_vul')[:10]
+        
     context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(target_domain__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
     emails = Email.objects.filter(emails__in=ScanHistory.objects.filter(domain__id=id).distinct())

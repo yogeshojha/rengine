@@ -2363,3 +2363,68 @@ function get_and_render_cve_details(cve_id){
 		}
 	});
 }
+
+
+function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false, limit=20){
+	$('#most_vulnerable_target_div').empty();
+	$('#most_vulnerable_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
+	var data = {};
+	if (scan_id) {
+		data['scan_history_id'] = scan_id;
+	}
+	else if (target_id) {
+		data['target_id'] = target_id;
+	}
+	data['ignore_info'] = ignore_info;
+	data['limit'] = limit;
+
+	fetch('/api/fetch/most_vulnerable?format=json', {
+		method: 'POST',
+		credentials: "same-origin",
+		body: JSON.stringify(data),
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			"Content-Type": 'application/json',
+		}
+	}).then(function(response) {
+		return response.json();
+	}).then(function(response) {
+		$('#most_vulnerable_spinner').empty();
+		if (response.status) {
+			$('#most_vulnerable_target_div').append(`
+				<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+				<thead>
+				<tr>
+				<th style="width: 60%">Target</th>
+				<th style="width: 30%">Vulnerabilities Count</th>
+				</tr>
+				</thead>
+				<tbody id="most_vulnerable_target_tbody">
+				</tbody>
+				</table>
+				`);
+
+			for (var res in response.result) {
+				var targ_obj = response.result[res];
+				$('#most_vulnerable_target_tbody').append(`
+					<tr onclick="window.location='/scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
+						<td>
+							<h5 class="m-0 fw-normal">${targ_obj.name}</h5>
+						</td>
+						<td>
+							<span class="badge badge-outline-danger">${targ_obj.vuln_count} Vulnerabilities</span>
+						</td>
+					</tr>
+				`);
+			}
+		}
+		else{
+			$('#most_vulnerable_target_div').append(`
+				<div class="mt-4 alert alert-warning">
+				Could not find most vulnerable targets.
+				</br>
+				Once the vulnerability scan is performed, reNgine will identify the most vulnerable targets.</div>
+			`);
+		}
+	});
+}
