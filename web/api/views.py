@@ -252,31 +252,42 @@ class StopScan(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		try:
-			celery_id = data['celery_id']
-			is_scan = data['is_scan']
-			if is_scan:
-				scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
-				app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+		scan_id = data.get('scan_id')
+		subscan_id = data.get('subscan_id')
+		response = {}
+		if scan_id:
+			try:
+				scan_history = get_object_or_404(ScanHistory, id=scan_id)
+				app.control.revoke(
+					scan_history.celery_id,
+					terminate=True,
+					signal='SIGKILL'
+				)
 				scan_history.scan_status = 3
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
+
 				last_activity = ScanActivity.objects.filter(
 					scan_of=scan_history).order_by('-pk')[0]
 				last_activity.status = 0
 				last_activity.time = timezone.now()
 				last_activity.save()
 				create_scan_activity(scan_history, "Scan aborted", 0)
-			else:
-				task = get_object_or_404(SubScan, celery_id=celery_id)
-				app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+				response['status'] = True
+			except Exception as e:
+				logging.error(e)
+				response = {'status': False, 'message': str(e)}
+		elif subscan_id:
+			try:
+				task = get_object_or_404(SubScan, id=subscan_id)
+				app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
 				task.status = 3
 				task.stop_scan_date = timezone.now()
 				task.save()
-			response = {'status': True}
-		except Exception as e:
-			logging.error(e)
-			response = {'status': False}
+				response['status'] = True
+			except Exception as e:
+				logging.error(e)
+				response = {'status': False, 'message': str(e)}
 		return Response(response)
 
 

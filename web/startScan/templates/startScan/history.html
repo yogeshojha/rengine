@@ -171,7 +171,7 @@ Quick Scan History
                           <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                           {% endif %}
                           {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
-                          <a href="#" class="dropdown-item text-danger" onclick="stop_scan('{{ scan_history.celery_id }}', is_scan=true, reload_scan_bar=false, reload_location=true)">
+                          <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id={{ scan_history.id }}, subscan_id=null, reload_scan_bar=false, reload_location=true)">
                             <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
                             {% endif %}
                             {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}

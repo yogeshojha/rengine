@@ -57,7 +57,7 @@ function getScanStatusSidebar(reload) {
           <div class="progress mt-2" style="height: 4px;">
           <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" aria-valuenow="${scan_object.current_progress}" aria-valuemin="0" aria-valuemax="100" style="width: ${scan_object.current_progress}%"></div>
           </div>
-          <a href="#" onclick="stop_scan('${scan_object.celery_id }', true, false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Stop</a>
+          <a href="#" onclick="stop_scan(scan_id=${scan_object.id}, subscan_id=null, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Stop</a>
           </div>
           </a>
           </div>
@@ -143,7 +143,7 @@ function getScanStatusSidebar(reload) {
             </p>
             <div>
             </div>
-            <a href="#" onclick="stop_scan('${task_object.celery_id }', is_scan=false, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Stop</a>
+            <a href="#" onclick="stop_scan(scan_id=null, subscan_id=${task_object.id}, reload_scan_bar=true, reload_location=false)" class="btn btn-xs btn-soft-danger waves-effect waves-light mt-1 float-end"><i class="fe-alert-triangle"></i> Stop</a>
             </div>
             </a>
             </div>

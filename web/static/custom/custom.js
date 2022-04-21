@@ -758,11 +758,14 @@ function delete_scan(id) {
 	}]);
 }
 
-function stop_scan(celery_id, is_scan = true, reload_scan_bar = true, reload_location = false) {
+function stop_scan(scan_id=null, subscan_id=null, reload_scan_bar=true, reload_location=false) {
 	const stopAPI = "/api/action/stop/scan/";
-	data = {
-		'celery_id': celery_id,
-		'is_scan': is_scan
+
+	if (scan_id) {
+		var data = {'scan_id': scan_id}
+	}
+	else if (subscan_id) {
+		var data = {'subscan_id': subscan_id}
 	}
 	swal.queue([{
 		title: 'Are you sure you want to stop this scan?',
@@ -799,7 +802,7 @@ function stop_scan(celery_id, is_scan = true, reload_scan_bar = true, reload_loc
 					}
 				} else {
 					Snackbar.show({
-						text: 'Oops! Could not abort the scan.',
+						text: 'Oops! Could not abort the scan. ' + data.message,
 						pos: 'top-right',
 						duration: 1500
 					});
