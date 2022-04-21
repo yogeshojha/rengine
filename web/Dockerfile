@@ -87,6 +87,8 @@ RUN GO111MODULE=on go install -v github.com/projectdiscovery/subfinder/v2/cmd/su
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
 RUN GO111MODULE=on go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 
+RUN GO111MODULE=on go install -v github.com/gwen001/github-endpoints@latest
+RUN GO111MODULE=on go install -v github.com/gwen001/github-subdomains@latest
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
