@@ -188,6 +188,10 @@ urlpatterns = [
         'fetch/results/subscan',
         FetchSubscanResults.as_view(),
         name='fetch_subscan_results'),
+    path(
+        'fetch/most_vulnerable',
+        FetchMostVulnerable.as_view(),
+        name='fetch_most_vulnerable'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

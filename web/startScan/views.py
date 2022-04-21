@@ -105,7 +105,6 @@ def detail_scan(request, id=None):
         context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
         context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
-        context['most_vulnerable_target'] = Subdomain.objects.filter(scan_history__id=id).annotate(num_vul=Count('vulnerability__name', filter=~Q(vulnerability__severity=0))).order_by('-num_vul')[:10]
         context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
         if domain_id:
