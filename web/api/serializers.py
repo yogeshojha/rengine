@@ -8,6 +8,20 @@ from recon_note.models import *
 from django.db.models import F, JSONField, Value
 
 
+class DomainSerializer(serializers.ModelSerializer):
+    vuln_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Domain
+        fields = '__all__'
+
+    def get_vuln_count(self, obj):
+        try:
+            return obj.vuln_count
+        except:
+            return None
+
+
 class SubScanResultSerializer(serializers.ModelSerializer):
 
     task = serializers.SerializerMethodField('get_task_name')
@@ -700,6 +714,8 @@ class IpSubdomainSerializer(serializers.ModelSerializer):
 
 class SubdomainSerializer(serializers.ModelSerializer):
 
+    vuln_count = serializers.SerializerMethodField('get_vuln_count')
+
     is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
     endpoint_count = serializers.SerializerMethodField('get_endpoint_count')
@@ -751,6 +767,12 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
     def get_todos_count(self, subdomain):
         return len(subdomain.get_todos)
+
+    def get_vuln_count(self, obj):
+        try:
+            return obj.vuln_count
+        except:
+            return None
 
 
 class EndpointSerializer(serializers.ModelSerializer):

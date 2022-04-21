@@ -40,6 +40,83 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class FetchMostVulnerable(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		scan_history_id = data.get('scan_history_id')
+		target_id = data.get('target_id')
+		limit = data.get('limit', 20)
+		is_ignore_info = data.get('ignore_info', False)
+
+		response = {}
+		response['status'] = False
+
+		if scan_history_id:
+			if is_ignore_info:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					scan_history__id=scan_history_id).annotate(
+						vuln_count=Count('vulnerability__name',
+							filter=~Q(vulnerability__severity=0)
+						)).order_by('-vuln_count')[:limit]
+			else:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+				scan_history__id=scan_history_id).annotate(
+				vuln_count=Count('vulnerability__name'
+				)).order_by('-vuln_count')[:limit]
+
+			if most_vulnerable_subdomains:
+				response['status'] = True
+				response['result'] = SubdomainSerializer(
+					most_vulnerable_subdomains, many=True
+				).data
+
+		elif target_id:
+			if is_ignore_info:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					target_domain__id=target_id
+				).annotate(
+					num_vul=Count(
+						'vulnerability__name',
+						filter=~Q(vulnerability__severity=0)
+					)).order_by('-num_vul')[:limit]
+			else:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					target_domain__id=target_id
+				).annotate(
+					num_vul=Count(
+						'vulnerability__name'
+					)).order_by('-num_vul')[:limit]
+
+			if most_vulnerable_subdomains:
+				response['status'] = True
+				response['result'] = SubdomainSerializer(
+					most_vulnerable_subdomains, many=True
+				).data
+		else:
+			if is_ignore_info:
+				most_vulnerable_targets = Domain.objects.annotate(
+					vuln_count=Count(
+						'subdomain__vulnerability__name',
+						filter=~Q(subdomain__vulnerability__severity=0))
+					).order_by('-vuln_count')[:limit]
+			else:
+				most_vulnerable_targets = Domain.objects.annotate(
+				vuln_count=Count(
+				'subdomain__vulnerability__name'
+				)).order_by('-vuln_count')[:limit]
+
+			if most_vulnerable_targets:
+				response['status'] = True
+				response['result'] = DomainSerializer(
+					most_vulnerable_targets,
+					many=True
+				).data
+
+		return Response(response)
+
+
 class CVEDetails(APIView):
 	def get(self, request):
 		req = self.request

@@ -42,8 +42,6 @@ def index(request):
         medium_count + high_count + critical_count + unknown_count
     total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
-    most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
-        'subdomain__vulnerability__name', filter=~Q(subdomain__vulnerability__severity=0))).order_by('-num_vul')[:10]
     most_common_vulnerability = Vulnerability.objects.exclude(severity=0).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
     last_week = timezone.now() - timedelta(days=7)
 
@@ -125,7 +123,6 @@ def index(request):
         'high_count': high_count,
         'critical_count': critical_count,
         'unknown_count': unknown_count,
-        'most_vulnerable_target': most_vulnerable_target,
         'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
         'total_vul_ignore_info_count': total_vul_ignore_info_count,
