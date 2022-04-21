@@ -26,7 +26,8 @@
       interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect,
       sqli, ssrf, ssti, xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit:
       150\r\n  timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 2
@@ -56,7 +57,8 @@
       interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect,
       sqli, ssrf, ssti, xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit:
       150\r\n  timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n""
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3
@@ -86,7 +88,8 @@
       interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect,
       sqli, ssrf, ssti, xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit:
       150\r\n  timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n""
     default_engine: true
 - model: scanEngine.enginetype
   pk: 4
@@ -116,7 +119,8 @@
       interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect,
       sqli, ssrf, ssti, xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit:
       150\r\n  timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n""
     default_engine: true
 - model: scanEngine.enginetype
   pk: 5
@@ -146,7 +150,8 @@
       interestingparams, interestingsubs, jsvar, lfi, rce, redirect, sqli, ssrf, ssti,
       xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit: 150\r\n
       \ timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n""
     default_engine: true
 - model: scanEngine.enginetype
   pk: 6
@@ -176,5 +181,6 @@
       interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect,
       sqli, ssrf, ssti, xss]\r\n\r\nvulnerability_scan:\r\n  concurrency: 10\r\n  rate_limit:
       150\r\n  timeout: 5\r\n  retries: 1\r\n  templates: [ all ]\r\n  # custom_templates:
-      []\r\n  severity: [ critical, high, medium, low, info ]"
+      []\r\n  severity: [ critical, high, medium, low, info ]\r\n\r\apikeys:\r\n  github:\r\n 
+       \ github1:\r\n github2:\r\n""
     default_engine: true
