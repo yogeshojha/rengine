@@ -1,16 +1,25 @@
 function load_gf_template(pattern_name){
-  $('#modal-size').removeClass('modal-xl');
-  $('#modal-size').addClass('modal-lg');
-  $('.modal-title').html(`GF Pattern ` + htmlEncode(pattern_name));
-  $('#exampleModal').modal('show');
-  $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
+  Swal.fire({
+		title: `Fetching GF template ${pattern_name}...`,
+	});
+	swal.showLoading();
+
   $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(data) {
-    $('#modal-loader').empty();
+    console.log(data);
+    swal.close();
+    $('#modal_title').empty();
+    $('#modal-content').empty();
+  	$("#modal-footer").empty();
+
+    $('#modal_title').html(`GF Pattern ` + htmlEncode(pattern_name));
+
     $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
+    $('#modal_dialog').modal('show');
+
   }).fail(function(){
-    $('#modal-loader').empty();
-    $("#modal-content").append(`<p class='text-danger'>Error loading GF Pattern</p>`);
+    swal.fire("Error!", 'Error loading gf pattern!', "error", {
+      button: "Okay",
+    });
   });
 }
 
