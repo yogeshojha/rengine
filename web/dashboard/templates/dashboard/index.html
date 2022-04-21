@@ -169,7 +169,7 @@ Dashboard
           {% for item in vulnerability_feed %}
           <div class="d-flex align-items-start mt-3">
             <i class="mdi mdi-checkbox-blank-circle-outline me-1 {% if item.severity == 0 %}
-            text-info
+            text-primary
             {% elif item.severity == 1 %}
             text-low
             {% elif item.severity == 2 %}
@@ -178,12 +178,14 @@ Dashboard
             text-danger
             {% elif item.severity == 4 %}
             text-critical
+            {% elif item.severity == -1 %}
+            text-info
             {% endif %}"></i>
             <div class="w-100">
               <a href='scan/detail/vuln?query={{item.id}}' class="text-muted mt-1 font-14 text-muted">
                 <strong class="
                 {% if item.severity == 0 %}
-                badge badge-soft-info
+                badge badge-soft-primary
                 {% elif item.severity == 1 %}
                 badge badge-low
                 {% elif item.severity == 2 %}
@@ -192,12 +194,14 @@ Dashboard
                 badge badge-soft-danger
                 {% elif item.severity == 4 %}
                 badge badge-critical
+                {% elif item.severity == -1 %}
+                badge badge-soft-info
                 {% endif %}
                 ">{{item.name}}</strong>
                 detected on
                 {{item.subdomain.name}}, {{item.discovered_date|naturaltime}}
                 {% if item.severity == 0 %}
-    						<span class='float-end badge badge-soft-info'>Info</span>
+    						<span class='float-end badge badge-soft-primary'>Info</span>
     						{% elif item.severity == 1 %}
     						<span class='float-end badge badge-low'>Low</span>
     						{% elif item.severity == 2 %}
@@ -206,12 +210,14 @@ Dashboard
     						<span class='float-end badge badge-soft-danger'>High</span>
     						{% elif item.severity == 4 %}
     						<span class='float-end badge badge-critical'>Critical</span>
+    						{% elif item.severity == -1 %}
+    						<span class='float-end badge badge-soft-info'>Unknoen</span>
     						{% endif %}
               </a>
             </div>
           </div>
           {% empty %}
-          Feed will be automatically generated while the scan is running.
+          Feed will be automatically generated once the vulnerability scan is completed.
           {% endfor %}
         </div>
       </div>
