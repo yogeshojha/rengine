@@ -505,7 +505,7 @@ def subdomain_scan(
     # check for all the tools and add them into string
     # if tool selected is all then make string, no need for loop
     if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
-        tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
+        tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall github-subdomains'
         # also put all custom subdomain tools
         custom_tools = ' '.join(tool for tool in custom_subdomain_tools)
         if custom_tools:
@@ -609,6 +609,25 @@ def subdomain_scan(
                     # remove the results from oneforall directory
                     os.system(
                         'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
+                    
+                    try:
+                        if 'github-subdomains' in tools:
+                            github_command = 'github-subdomains -d {} -o {}/from_github.txt'.format(
+                                             domain.name, results_dir)
+                        if GITHUB in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB]:
+                           github_api = yaml_configuration[API_KEY][GITHUB]
+                           github_command += ' -t {}'.format(github_api)
+                        if GITHUB1 in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB1]:
+                           github1_api = yaml_configuration[API_KEY][GITHUB1]
+                           github_command += ',{}'.format(github1_api)
+                        if GITHUB2 in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB2]:
+                           github2_api = yaml_configuration[API_KEY][GITHUB2]
+                           github_command += ',{}'.format(github2_api)
+                         # Run github subdomain
+                        logging.info(github_command)
+                        os.system(github_command)
+                    except Exception as e:
+                          logger.error(e)
 
             elif tool in custom_subdomain_tools:
                 # this is for all the custom tools, and tools runs based on instalaltion steps provided
@@ -1309,7 +1328,7 @@ def fetch_endpoints(
 
     # check yaml settings
     if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
-        tools = 'gauplus hakrawler waybackurls gospider'
+        tools = 'gauplus hakrawler waybackurls gospider github-endpoints'
     else:
         tools = ' '.join(
             str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
@@ -1325,7 +1344,7 @@ def fetch_endpoints(
     sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
 
     for tool in tools.split(' '):
-        if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
+        if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls' or tool == 'github-endpoints':
             if subdomain:
                 subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
                 input_target = 'echo {}'.format(subdomain_url)
@@ -1361,6 +1380,26 @@ def fetch_endpoints(
             )
             logger.info(waybackurls_command)
             os.system(waybackurls_command)
+            
+        elif tool == 'github-endpoints':
+            logger.info('Running github-endpoints')
+            if GITHUB in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB]:
+               github_api = yaml_configuration[API_KEY][GITHUB]
+               github_endpoint = '{}'.format(github_api)
+            if GITHUB1 in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB1]:
+               github1_api = yaml_configuration[API_KEY][GITHUB1]
+               github_endpoint += ',{}'.format(github1_api)
+            if GITHUB2 in yaml_configuration[API_KEY] and yaml_configuration[API_KEY][GITHUB2]:
+               github2_api = yaml_configuration[API_KEY][GITHUB2]
+               github_endpoint += ',{}'.format(github2_api)
+            githubendpoint_command = 'github-endpoints -d {} -t {}| grep -Eo {} > {}/urls_gau.txt'.format(
+                input_target,
+                github_endpoint,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(githubendpoint_command)
+            os.system(githubendpoint_command)
         elif tool == 'gospider':
             logger.info('Running gospider')
             if subdomain:
