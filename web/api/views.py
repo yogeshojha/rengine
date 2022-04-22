@@ -59,12 +59,12 @@ class FetchMostVulnerable(APIView):
 					scan_history__id=scan_history_id).annotate(
 						vuln_count=Count('vulnerability__name',
 							filter=~Q(vulnerability__severity=0)
-						)).order_by('-vuln_count')[:limit]
+						)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
 				most_vulnerable_subdomains = Subdomain.objects.filter(
 				scan_history__id=scan_history_id).annotate(
 				vuln_count=Count('vulnerability__name'
-				)).order_by('-vuln_count')[:limit]
+				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_subdomains:
 				response['status'] = True
@@ -80,14 +80,14 @@ class FetchMostVulnerable(APIView):
 					num_vul=Count(
 						'vulnerability__name',
 						filter=~Q(vulnerability__severity=0)
-					)).order_by('-num_vul')[:limit]
+					)).order_by('-num_vul').exclude(vuln_count=0)[:limit]
 			else:
 				most_vulnerable_subdomains = Subdomain.objects.filter(
 					target_domain__id=target_id
 				).annotate(
 					num_vul=Count(
 						'vulnerability__name'
-					)).order_by('-num_vul')[:limit]
+					)).order_by('-num_vul').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_subdomains:
 				response['status'] = True
@@ -100,12 +100,12 @@ class FetchMostVulnerable(APIView):
 					vuln_count=Count(
 						'subdomain__vulnerability__name',
 						filter=~Q(subdomain__vulnerability__severity=0))
-					).order_by('-vuln_count')[:limit]
+					).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
 				most_vulnerable_targets = Domain.objects.annotate(
 				vuln_count=Count(
 				'subdomain__vulnerability__name'
-				)).order_by('-vuln_count')[:limit]
+				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_targets:
 				response['status'] = True

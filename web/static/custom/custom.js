@@ -2365,7 +2365,7 @@ function get_and_render_cve_details(cve_id){
 }
 
 
-function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false, limit=20){
+function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false, limit=50){
 	$('#most_vulnerable_target_div').empty();
 	$('#most_vulnerable_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2406,8 +2406,12 @@ function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=fa
 
 			for (var res in response.result) {
 				var targ_obj = response.result[res];
+				var tr = `<tr onclick="window.location='/scan/detail/vuln?domain=${targ_obj.name}';" style="cursor: pointer;">`;
+				if (scan_id || target_id) {
+					tr = `<tr onclick="window.location='/scan/detail/vuln?subdomain=${targ_obj.name}';" style="cursor: pointer;">`;
+				}
 				$('#most_vulnerable_target_tbody').append(`
-					<tr onclick="window.location='/scan/detail/vuln?domain={{item.name}}';" style="cursor: pointer;">
+					${tr}
 						<td>
 							<h5 class="m-0 fw-normal">${targ_obj.name}</h5>
 						</td>
