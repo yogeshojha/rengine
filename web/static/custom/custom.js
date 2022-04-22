@@ -2432,3 +2432,95 @@ function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=fa
 		}
 	});
 }
+
+
+function get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=false, limit=50){
+	$('#most_common_vuln_div').empty();
+	$('#most_common_vuln_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
+	var data = {};
+	if (scan_id) {
+		data['scan_history_id'] = scan_id;
+	}
+	else if (target_id) {
+		data['target_id'] = target_id;
+	}
+	data['ignore_info'] = ignore_info;
+	data['limit'] = limit;
+
+	fetch('/api/fetch/most_common_vulnerability?format=json', {
+		method: 'POST',
+		credentials: "same-origin",
+		body: JSON.stringify(data),
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			"Content-Type": 'application/json',
+		}
+	}).then(function(response) {
+		return response.json();
+	}).then(function(response) {
+		$('#most_common_vuln_spinner').empty();
+		if (response.status) {
+			$('#most_common_vuln_div').append(`
+				<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+					<thead>
+						<tr>
+							<th style="width: 60%">Vulnerability Name</th>
+							<th style="width: 20%">Count</th>
+							<th style="width: 20%">Severity</th>
+						</tr>
+					</thead>
+				<tbody id="most_common_vuln_tbody">
+				</tbody>
+				</table>
+			`);
+
+			for (var res in response.result) {
+				var vuln_obj = response.result[res];
+				var vuln_badge = '';
+				switch (vuln_obj.severity) {
+					case -1:
+						vuln_badge = get_severity_badge('Unknown');
+						break;
+					case 0:
+						vuln_badge = get_severity_badge('Info');
+						break;
+					case 1:
+						vuln_badge = get_severity_badge('Low');
+						break;
+					case 2:
+						vuln_badge = get_severity_badge('Medium');
+						break;
+					case 3:
+						vuln_badge = get_severity_badge('High');
+						break;
+					case 4:
+						vuln_badge = get_severity_badge('Critical');
+						break;
+					default:
+						vuln_badge = get_severity_badge('Unknown');
+				}
+				$('#most_common_vuln_tbody').append(`
+					<tr onclick="window.location='/scan/detail/vuln?vulnerability_name=${vuln_obj.name}';" style="cursor: pointer;">
+						<td>
+							<h5 class="m-0 fw-normal">${vuln_obj.name}</h5>
+						</td>
+						<td>
+							<span class="badge badge-outline-danger">${vuln_obj.count}</span>
+						</td>
+						<td>
+							${vuln_badge}
+						</td>
+					</tr>
+				`);
+			}
+		}
+		else{
+			$('#most_common_vuln_div').append(`
+				<div class="mt-4 alert alert-warning">
+				Could not find Most Common Vulnerabilities.
+				</br>
+				Once the vulnerability scan is performed, reNgine will identify the Most Common Vulnerabilities.</div>
+			`);
+		}
+	});
+}
