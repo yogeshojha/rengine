@@ -1105,511 +1105,511 @@ $(document).ready(function() {
 	//populate charts
 	// http_status breakdown chart
 	var colors = [
-    {% for status in http_status_breakdown %}
-    {% if status.http_status >= 200 and status.http_status < 300 %}
-    '#4CAF50',
-    {% elif status.http_status >= 300 and status.http_status < 400 %}
-    '#FFC107',
-    {% else %}
-    '#F44336',
-    {% endif %}
-    {% endfor %}
-  ];
+		{% for status in http_status_breakdown %}
+		{% if status.http_status >= 200 and status.http_status < 300 %}
+		'#4CAF50',
+		{% elif status.http_status >= 300 and status.http_status < 400 %}
+		'#FFC107',
+		{% else %}
+		'#F44336',
+		{% endif %}
+		{% endfor %}
+	];
 
 	// http_status chart
-  var options = {
-    series: [{
-      name: 'Subdomains',
-      data: [{% for status in http_status_breakdown %}
-        {{status.http_status__count}},
-        {% endfor %}]
-      }],
-      chart: {
-        height: 350,
-        type: 'bar',
-        events: {
-          click: function(chart, w, e) {
-            // console.log(chart, w, e)
-          }
-        }
-      },
-      colors: colors,
-      plotOptions: {
-        bar: {
-          columnWidth: '45%',
-          distributed: true,
-        }
-      },
-      dataLabels: {
-        enabled: false
-      },
-      legend: {
-        show: false
-      },
-      xaxis: {
-        categories: [
-          {% for status in http_status_breakdown %}
-          '{{status.http_status}}',
-          {% endfor %}
-        ],
-        labels: {
-          style: {
-            colors: colors,
-            fontSize: '12px'
-          }
-        }
-      }
-  };
+	var options = {
+		series: [{
+			name: 'Subdomains',
+			data: [{% for status in http_status_breakdown %}
+				{{status.http_status__count}},
+				{% endfor %}]
+			}],
+			chart: {
+				height: 350,
+				type: 'bar',
+				events: {
+					click: function(chart, w, e) {
+						// console.log(chart, w, e)
+					}
+				}
+			},
+			colors: colors,
+			plotOptions: {
+				bar: {
+					columnWidth: '45%',
+					distributed: true,
+				}
+			},
+			dataLabels: {
+				enabled: false
+			},
+			legend: {
+				show: false
+			},
+			xaxis: {
+				categories: [
+					{% for status in http_status_breakdown %}
+					'{{status.http_status}}',
+					{% endfor %}
+				],
+				labels: {
+					style: {
+						colors: colors,
+						fontSize: '12px'
+					}
+				}
+			}
+	};
 	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
 	chart.render();
-  // vulnerability summary pie chart
-  {% if history.vulnerability_scan %}
+	// vulnerability summary pie chart
+	{% if history.vulnerability_scan %}
 		{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 	// chart
 		var options = {
-	    chart: {
-	      type: 'donut',
-	      height: 280,
-	    },
-	    colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
-	    dataLabels: {
-	      enabled: false
-	    },
-	    legend: {
-	      show: !0,
-	      position: "bottom",
-	      horizontalAlign: "center",
-	      verticalAlign: "middle",
-	      floating: !1,
-	      fontSize: "15px",
-	      offsetX: 0,
-	      offsetY: 7
-	    },
-	    plotOptions: {
-	      pie: {
-	        donut: {
-	          size: '70%',
-	          background: 'transparent',
-	          labels: {
-	            show: true,
-	            name: {
-	              show: true,
-	              fontSize: '29px',
-	              fontFamily: 'Nunito, sans-serif',
-	              color: undefined,
-	              offsetY: -10
-	            },
-	            value: {
-	              show: true,
-	              fontSize: '26px',
-	              fontFamily: 'Nunito, sans-serif',
-	              color: '20',
-	              offsetY: 16,
-	              formatter: function (val) {
-	                return val
-	              }
-	            },
-	            total: {
-	              show: true,
-	              showAlways: true,
-	              label: 'Total',
-	              color: '#888ea8',
-	              formatter: function (w) {
-	                return w.globals.seriesTotals.reduce( function(a, b) {
-	                  return a + b
-	                }, 0)
-	              }
-	            }
-	          }
-	        }
-	      }
-	    },
-	    series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
-	    labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
-	    responsive: [{
-	      breakpoint: 1599,
-	      options: {
-	        chart: {
-	          height: 240
-	        },
-	        legend: {
-	          position: 'bottom'
-	        }
-	      },
-	      breakpoint: 1439,
-	      options: {
-	        chart: {
-	          width: '250px',
-	          height: '390px'
-	        },
-	      },
-	    }],
-	  }
+			chart: {
+				type: 'donut',
+				height: 280,
+			},
+			colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
+			dataLabels: {
+				enabled: false
+			},
+			legend: {
+				show: !0,
+				position: "bottom",
+				horizontalAlign: "center",
+				verticalAlign: "middle",
+				floating: !1,
+				fontSize: "15px",
+				offsetX: 0,
+				offsetY: 7
+			},
+			plotOptions: {
+				pie: {
+					donut: {
+						size: '70%',
+						background: 'transparent',
+						labels: {
+							show: true,
+							name: {
+								show: true,
+								fontSize: '29px',
+								fontFamily: 'Nunito, sans-serif',
+								color: undefined,
+								offsetY: -10
+							},
+							value: {
+								show: true,
+								fontSize: '26px',
+								fontFamily: 'Nunito, sans-serif',
+								color: '20',
+								offsetY: 16,
+								formatter: function (val) {
+									return val
+								}
+							},
+							total: {
+								show: true,
+								showAlways: true,
+								label: 'Total',
+								color: '#888ea8',
+								formatter: function (w) {
+									return w.globals.seriesTotals.reduce( function(a, b) {
+										return a + b
+									}, 0)
+								}
+							}
+						}
+					}
+				}
+			},
+			series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
+			labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
+			responsive: [{
+				breakpoint: 1599,
+				options: {
+					chart: {
+						height: 240
+					},
+					legend: {
+						position: 'bottom'
+					}
+				},
+				breakpoint: 1439,
+				options: {
+					chart: {
+						width: '250px',
+						height: '390px'
+					},
+				},
+			}],
+		}
 
-	  var chart = new ApexCharts(
-	    document.querySelector("#vulnerability-pie-chart"),
-	    options
-	  );
+		var chart = new ApexCharts(
+			document.querySelector("#vulnerability-pie-chart"),
+			options
+		);
 
-	  chart.render()
+		chart.render()
 
 		// vulnerability datatable
 		const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 		$("#pills-vulnerabilities-tab").click(function() {
-		  var vulnerability_table = $('#vulnerability_results').DataTable({
-		    "destroy": true,
-		    "oLanguage": {
-		      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-		      "sInfo": "Showing page _PAGE_ of _PAGES_",
-		      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-		      "sSearchPlaceholder": "Search...",
-		      "sLengthMenu": "Results :  _MENU_",
-		    },
-		    "processing": true,
-		    "dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
-		    "<'table-responsive'tr>" +
-		    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-		    "stripeClasses": [],
-		    "lengthMenu": [20, 50, 100, 500, 1000],
-		    "pageLength": 100,
-		    'serverSide': true,
-		    "ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-		    "order": [[ 4, "desc" ]],
-		    "columns": [
-		      {'data': 'id'},
-		      {'data': 'type'},
+			var vulnerability_table = $('#vulnerability_results').DataTable({
+				"destroy": true,
+				"oLanguage": {
+					"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+					"sInfo": "Showing page _PAGE_ of _PAGES_",
+					"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+					"sSearchPlaceholder": "Search...",
+					"sLengthMenu": "Results :  _MENU_",
+				},
+				"processing": true,
+				"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+				"<'table-responsive'tr>" +
+				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+				"stripeClasses": [],
+				"lengthMenu": [20, 50, 100, 500, 1000],
+				"pageLength": 100,
+				'serverSide': true,
+				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+				"order": [[ 4, "desc" ]],
+				"columns": [
+					{'data': 'id'},
+					{'data': 'type'},
 
-		      {'data': 'name'},
-		      {'data': 'cvss_metrics'},
-		      {'data': 'tags'},
-		      {'data': 'hackerone_report_id'},
+					{'data': 'name'},
+					{'data': 'cvss_metrics'},
+					{'data': 'tags'},
+					{'data': 'hackerone_report_id'},
 
-		      {'data': 'severity'},
-		      {'data': 'cvss_score'},
-		      {'data': 'cve_ids'},
-		      {'data': 'cwe_ids'},
-		      {'data': 'http_url'},
+					{'data': 'severity'},
+					{'data': 'cvss_score'},
+					{'data': 'cve_ids'},
+					{'data': 'cwe_ids'},
+					{'data': 'http_url'},
 
-		      {'data': 'description'},
-		      {'data': 'references'},
+					{'data': 'description'},
+					{'data': 'references'},
 
-		      {'data': 'discovered_date'},
+					{'data': 'discovered_date'},
 
-		      {'data': 'open_status'},
+					{'data': 'open_status'},
 
-		      {'data': 'hackerone_report_id'},
+					{'data': 'hackerone_report_id'},
 
-		      // extras
-		      {'data': 'extracted_results'},
-		      {'data': 'curl_command'},
-		      {'data': 'matcher_name'},
-		    ],
-		    "columnDefs": [
-		      { "orderable": false, "targets": [8, 11]},
-		      {
-		        "targets": [3, 4, 5, 9, 12, 16, 17, 18],
-		        "visible": false,
-		        "searchable": true,
-		      },
-		      {"className": "text-center", "targets": []},
-		      {
-		        "render": function ( data, type, row ) {
-		          if(row['open_status']){
-		            return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-		          }
-		          else{
-		            return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-		          }
-		        },
-		        "targets": 0,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          if (data) {
-		            return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
-		          }
-		        },
-		        "targets": 1,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          var tags = '';
-		          var cvss_metrics_badge = '';
-		          switch (row['severity']) {
-		            case 'Info':
-		            color = 'primary';
-		            badge_color = 'soft-primary';
-		            break;
-		            case 'Low':
-		            color = 'low';
-		            badge_color = 'soft-warning';
-		            break;
-		            case 'Medium':
-		            color = 'warning';
-		            badge_color = 'soft-warning';
-		            break;
-		            case 'High':
-		            color = 'danger';
-		            badge_color = 'soft-danger';
-		            break;
-		            case 'Critical':
-		            color = 'critical';
-		            badge_color = 'critical';
-		            break;
-		            case 'Unknown':
-		            color = 'info';
-		            badge_color = 'soft-info';
-		            break;
-		            default:
-		          }
-		          if (row['tags']) {
-		            tags = '<div>';
-		            row['tags'].forEach(tag => {
-		              tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
-		            });
-		            tags += '</div>';
-		          }
-		          if (row['cvss_metrics']) {
-		            cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
-		          }
-		          hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
-		          return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
-		        },
-		        "targets": 2,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          return get_severity_badge(data);
-		        },
-		        "targets": 6,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          if (data) {
-		            if (data > 0.1 && data <= 3.9) {
-		              badge = 'info';
-		            }
-		            else if (data > 3.9 && data <= 6.9) {
-		              badge = 'warning';
-		            }
-		            else if (data > 6.9 && data <= 8.9) {
-		              badge = 'danger';
-		            }
-		            else{
-		              badge = 'danger';
-		            }
-		            return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
-		          }
-		          return '';
-		        },
-		        "targets": 7,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          cve_cwe_badge = '<div>';
+					// extras
+					{'data': 'extracted_results'},
+					{'data': 'curl_command'},
+					{'data': 'matcher_name'},
+				],
+				"columnDefs": [
+					{ "orderable": false, "targets": [8, 11]},
+					{
+						"targets": [3, 4, 5, 9, 12, 16, 17, 18],
+						"visible": false,
+						"searchable": true,
+					},
+					{"className": "text-center", "targets": []},
+					{
+						"render": function ( data, type, row ) {
+							if(row['open_status']){
+								return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+							}
+							else{
+								return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+							}
+						},
+						"targets": 0,
+					},
+					{
+						"render": function ( data, type, row ) {
+							if (data) {
+								return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
+							}
+						},
+						"targets": 1,
+					},
+					{
+						"render": function ( data, type, row ) {
+							var tags = '';
+							var cvss_metrics_badge = '';
+							switch (row['severity']) {
+								case 'Info':
+								color = 'primary';
+								badge_color = 'soft-primary';
+								break;
+								case 'Low':
+								color = 'low';
+								badge_color = 'soft-warning';
+								break;
+								case 'Medium':
+								color = 'warning';
+								badge_color = 'soft-warning';
+								break;
+								case 'High':
+								color = 'danger';
+								badge_color = 'soft-danger';
+								break;
+								case 'Critical':
+								color = 'critical';
+								badge_color = 'critical';
+								break;
+								case 'Unknown':
+								color = 'info';
+								badge_color = 'soft-info';
+								break;
+								default:
+							}
+							if (row['tags']) {
+								tags = '<div>';
+								row['tags'].forEach(tag => {
+									tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
+								});
+								tags += '</div>';
+							}
+							if (row['cvss_metrics']) {
+								cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+							}
+							hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+							return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
+						},
+						"targets": 2,
+					},
+					{
+						"render": function ( data, type, row ) {
+							return get_severity_badge(data);
+						},
+						"targets": 6,
+					},
+					{
+						"render": function ( data, type, row ) {
+							if (data) {
+								if (data > 0.1 && data <= 3.9) {
+									badge = 'info';
+								}
+								else if (data > 3.9 && data <= 6.9) {
+									badge = 'warning';
+								}
+								else if (data > 6.9 && data <= 8.9) {
+									badge = 'danger';
+								}
+								else{
+									badge = 'danger';
+								}
+								return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+							}
+							return '';
+						},
+						"targets": 7,
+					},
+					{
+						"render": function ( data, type, row ) {
+							cve_cwe_badge = '<div>';
 
-		          if (row['cve_ids']) {
-		            row['cve_ids'].forEach(cve => {
-		              cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
-		            });
-		          }
-		          if (row['cwe_ids']) {
-		            row['cwe_ids'].forEach(cwe => {
-		              cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
-		            });
-		          }
-		          return cve_cwe_badge + '</div>';
-		        },
-		        "targets": 8,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          if (data.includes('http')) {
-		            return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-		          }
-		          return data;
-		        },
-		        "targets": 10,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          description = row['description'] ? `<div>${row['description']}</div>` : '';
-		          // show extracted results, and show matcher names, matcher names can be in badges
-		          if (row['matcher_name']) {
-		            description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
-		          }
+							if (row['cve_ids']) {
+								row['cve_ids'].forEach(cve => {
+									cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+								});
+							}
+							if (row['cwe_ids']) {
+								row['cwe_ids'].forEach(cwe => {
+									cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+								});
+							}
+							return cve_cwe_badge + '</div>';
+						},
+						"targets": 8,
+					},
+					{
+						"render": function ( data, type, row ) {
+							if (data.includes('http')) {
+								return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+							}
+							return data;
+						},
+						"targets": 10,
+					},
+					{
+						"render": function ( data, type, row ) {
+							description = row['description'] ? `<div>${row['description']}</div>` : '';
+							// show extracted results, and show matcher names, matcher names can be in badges
+							if (row['matcher_name']) {
+								description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
+							}
 
-		          if (row['extracted_results'] && row['extracted_results'].length > 0) {
-		            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-		            description += `<div class="collapse" id="results_${row['id']}"><ul>`;
-		            row['extracted_results'].forEach(results => {
-		              description += `<li>${results}</li>`;
-		            });
-		            description += '</ul></div>';
-		          }
+							if (row['extracted_results'] && row['extracted_results'].length > 0) {
+								description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
+								description += `<div class="collapse" id="results_${row['id']}"><ul>`;
+								row['extracted_results'].forEach(results => {
+									description += `<li>${results}</li>`;
+								});
+								description += '</ul></div>';
+							}
 
-		          if (row['references'] && row['references'].length > 0) {
-		            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
-		            description += `<div class="collapse" id="references_${row['id']}"><ul>`;
-		            row['references'].forEach(reference => {
-		              description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
-		            });
-		            description += '</ul></div>';
-		          }
+							if (row['references'] && row['references'].length > 0) {
+								description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
+								description += `<div class="collapse" id="references_${row['id']}"><ul>`;
+								row['references'].forEach(reference => {
+									description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
+								});
+								description += '</ul></div>';
+							}
 
-		          if (row['curl_command']) {
-		            description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
-		            description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
-		            description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
-		            description += '</ul></div>';
-		          }
+							if (row['curl_command']) {
+								description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
+								description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
+								description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
+								description += '</ul></div>';
+							}
 
-		          return description;
-		        },
-		        "targets": 11,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          if (data){
-		            return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
-		          }
-		          else{
-		            return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
-		          }
-		        },
-		        "targets": 14,
-		      },
-		      {
-		        "render": function ( data, type, row ) {
-		          if (!data){
-		            return `
-		            <div class="btn-group mb-2 dropstart">
-		            <a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-		            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-		            </a>
-		            <div class="dropdown-menu" style="">
-		            <a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
-		            </div>
-		            </div>`;
-		          }
-		          else{
-		            return '';
-		          }
-		        },
-		        "targets": 15,
-		      },
-		    ],
-		    drawCallback: function () {
-		      if(!$('#vuln_type_checkbox').is(":checked")){
-		        vulnerability_table.column(1).visible(false);
-		      }
+							return description;
+						},
+						"targets": 11,
+					},
+					{
+						"render": function ( data, type, row ) {
+							if (data){
+								return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
+							}
+							else{
+								return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
+							}
+						},
+						"targets": 14,
+					},
+					{
+						"render": function ( data, type, row ) {
+							if (!data){
+								return `
+								<div class="btn-group mb-2 dropstart">
+								<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+								</a>
+								<div class="dropdown-menu" style="">
+								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								</div>
+								</div>`;
+							}
+							else{
+								return '';
+							}
+						},
+						"targets": 15,
+					},
+				],
+				drawCallback: function () {
+					if(!$('#vuln_type_checkbox').is(":checked")){
+						vulnerability_table.column(1).visible(false);
+					}
 
-		      if(!$('#vuln_severity_checkbox').is(":checked")){
-		        vulnerability_table.column(6).visible(false);
-		      }
-		      if(!$('#vuln_cvss_score_checkbox').is(":checked")){
-		        vulnerability_table.column(7).visible(false);
-		      }
-		      if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
-		        vulnerability_table.column(8).visible(false);
-		      }
-		      if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-		        vulnerability_table.column(10).visible(false);
-		      }
-		      if(!$('#vuln_description_checkbox').is(":checked")){
-		        vulnerability_table.column(11).visible(false);
-		      }
-		      if(!$('#vuln_discovered_on_checkbox').is(":checked")){
-		        vulnerability_table.column(13).visible(false);
-		      }
-		      if(!$('#vuln_status_checkbox').is(":checked")){
-		        vulnerability_table.column(14).visible(false);
-		      }
-		    },
-		    createdRow: function( row, data, dataIndex ) {
-		      if (!data['open_status']){
-		        $(row).addClass('table-success text-strike');
-		      }
-		    },
-		  });
-		  $('#vulnerability-search-button').click(function () {
-		    vulnerability_table.search($('#vulnerability-search').val()).draw() ;
-		  });
-		  $('#vulnerability-search-button').click(function () {
-		    vulnerability_table.search($('#vulnerability-search').val()).draw() ;
-		  });
+					if(!$('#vuln_severity_checkbox').is(":checked")){
+						vulnerability_table.column(6).visible(false);
+					}
+					if(!$('#vuln_cvss_score_checkbox').is(":checked")){
+						vulnerability_table.column(7).visible(false);
+					}
+					if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
+						vulnerability_table.column(8).visible(false);
+					}
+					if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
+						vulnerability_table.column(10).visible(false);
+					}
+					if(!$('#vuln_description_checkbox').is(":checked")){
+						vulnerability_table.column(11).visible(false);
+					}
+					if(!$('#vuln_discovered_on_checkbox').is(":checked")){
+						vulnerability_table.column(13).visible(false);
+					}
+					if(!$('#vuln_status_checkbox').is(":checked")){
+						vulnerability_table.column(14).visible(false);
+					}
+				},
+				createdRow: function( row, data, dataIndex ) {
+					if (!data['open_status']){
+						$(row).addClass('table-success text-strike');
+					}
+				},
+			});
+			$('#vulnerability-search-button').click(function () {
+				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
+			});
+			$('#vulnerability-search-button').click(function () {
+				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
+			});
 
-		  $('input[name=vuln_type_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(1).visible(true);
-		    } else {
-		      vulnerability_table.column(1).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_type_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(1).visible(true);
+				} else {
+					vulnerability_table.column(1).visible(false);
+				}
+				window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_severity_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(6).visible(true);
-		    } else {
-		      vulnerability_table.column(6).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_severity_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(6).visible(true);
+				} else {
+					vulnerability_table.column(6).visible(false);
+				}
+				window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_cvss_score_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(7).visible(true);
-		    } else {
-		      vulnerability_table.column(7).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_cvss_score_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(7).visible(true);
+				} else {
+					vulnerability_table.column(7).visible(false);
+				}
+				window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_cve_cwe_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(8).visible(true);
-		    } else {
-		      vulnerability_table.column(8).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_cve_cwe_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(8).visible(true);
+				} else {
+					vulnerability_table.column(8).visible(false);
+				}
+				window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_vulnerable_url_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(10).visible(true);
-		    } else {
-		      vulnerability_table.column(10).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_vulnerable_url_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(10).visible(true);
+				} else {
+					vulnerability_table.column(10).visible(false);
+				}
+				window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_description_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(11).visible(true);
-		    } else {
-		      vulnerability_table.column(11).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_description_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(11).visible(true);
+				} else {
+					vulnerability_table.column(11).visible(false);
+				}
+				window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_discovered_on_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(13).visible(true);
-		    } else {
-		      vulnerability_table.column(13).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_discovered_on_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(13).visible(true);
+				} else {
+					vulnerability_table.column(13).visible(false);
+				}
+				window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
+			});
 
-		  $('input[name=vuln_status_checkbox]').change(function() {
-		    if ($(this).is(':checked')) {
-		      vulnerability_table.column(14).visible(true);
-		    } else {
-		      vulnerability_table.column(14).visible(false);
-		    }
-		    window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
-		  });
+			$('input[name=vuln_status_checkbox]').change(function() {
+				if ($(this).is(':checked')) {
+					vulnerability_table.column(14).visible(true);
+				} else {
+					vulnerability_table.column(14).visible(false);
+				}
+				window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
+			});
 		});
 	{% endif %}
 
