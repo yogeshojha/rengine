@@ -77,17 +77,17 @@ class FetchMostVulnerable(APIView):
 				most_vulnerable_subdomains = Subdomain.objects.filter(
 					target_domain__id=target_id
 				).annotate(
-					num_vul=Count(
+					vuln_count=Count(
 						'vulnerability__name',
 						filter=~Q(vulnerability__severity=0)
-					)).order_by('-num_vul').exclude(vuln_count=0)[:limit]
+					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
 				most_vulnerable_subdomains = Subdomain.objects.filter(
 					target_domain__id=target_id
 				).annotate(
-					num_vul=Count(
+					vuln_count=Count(
 						'vulnerability__name'
-					)).order_by('-num_vul').exclude(vuln_count=0)[:limit]
+					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_subdomains:
 				response['status'] = True
