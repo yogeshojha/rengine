@@ -40,6 +40,97 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class FetchMostCommonVulnerability(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		limit = data.get('limit', 20)
+		scan_history_id = data.get('scan_history_id')
+		target_id = data.get('target_id')
+		is_ignore_info = data.get('ignore_info', False)
+
+		response = {}
+		response['status'] = False
+
+		if scan_history_id:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+		elif target_id:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+		else:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+
+		most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+
+		if most_common_vulnerabilities:
+			response['status'] = True
+			response['result'] = most_common_vulnerabilities
+
+		return Response(response)
+
+
 class FetchMostVulnerable(APIView):
 	def post(self, request):
 		req = self.request
