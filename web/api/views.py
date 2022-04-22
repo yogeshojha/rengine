@@ -1856,6 +1856,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		domain = req.query_params.get('domain')
 		severity = req.query_params.get('severity')
 		subdomain_id = req.query_params.get('subdomain_id')
+		subdomain_name = req.query_params.get('subdomain')
 		vulnerability_name = req.query_params.get('vulnerability_name')
 
 		if scan_id:
@@ -1864,6 +1865,11 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		elif target_id:
 			vulnerability_queryset = Vulnerability.objects.filter(
 				target_domain__id=target_id).distinct()
+		elif subdomain_name:
+			vulnerability_queryset = Vulnerability.objects.filter(
+				subdomain__in=Subdomain.objects.filter(
+					name=subdomain_name)
+				).distinct()
 		else:
 			vulnerability_queryset = Vulnerability.objects.distinct()
 
