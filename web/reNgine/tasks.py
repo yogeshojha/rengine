@@ -1098,7 +1098,7 @@ def directory_fuzz(
     if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
         not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
-        wordlist_location = '/usr/src/wordlist/dicc.txt'
+        wordlist_location = '/usr/src/wordlist/dicc1.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
             yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
@@ -1210,7 +1210,7 @@ def directory_fuzz(
                 proxy
             )
 
-        command = '{} -u {} -o {} -of json -or'.format(
+        command = '{} -u {} -o {} -of json'.format(
             ffuf_command,
             http_url,
             dirs_results
