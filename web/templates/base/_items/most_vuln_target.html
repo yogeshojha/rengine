@@ -1,13 +1,22 @@
 {% load mathfilters %}
 <div class="card" style="height: 95%">
   <div class="card-body">
-    <h4 class="header-title mb-3"><span class="text-danger me-1"><i class="fas fa-bug"></i></span>{{most_vuln_widget_title}}<span class="float-end"><span class="badge badge-soft-danger rounded-pill">{{total_vul_ignore_info_count}} Vulnerabilities</span></span></h4>
+    <div class="header-title mb-3">
+      <div class="row">
+        <div class="col-6">
+          <h4><span class="text-danger me-1"><i class="fas fa-bug"></i></span>{{most_vuln_widget_title}}</h4>
+        </div>
+        <div class="col-6">
+          <div class="form-check float-end">
+            <input type="checkbox" class="form-check-input" id="show_info_most_vuln_checkbox">
+            <label class="form-check-label" for="show_info_most_vuln_checkbox">Ignore Info Vulnerabilities</label>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="row">
       <div class="col-12">
-        <div class="form-check float-end">
-          <input type="checkbox" class="form-check-input" id="show_info_most_vuln_checkbox">
-          <label class="form-check-label" for="show_info_most_vuln_checkbox">Ignore Info Vulnerabilities</label>
-        </div>
+
       </div>
       <div class="col-12 mt-1">
         <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
