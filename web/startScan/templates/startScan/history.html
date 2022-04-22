@@ -115,7 +115,7 @@ Quick Scan History
                 <span class="badge badge-soft-warning" data-placement="top" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
                 {% elif scan_history.scan_status == 0 %}
                 <span class="badge badge-soft-danger">Failed</span>
-                {% if scan_history.error_message %}</br><span class="text-danger">Scan Failed due to: {{scan_history.error_message}}</span>{% endif %}
+                {% if scan_history.error_message %}</br><p class="text-danger">Scan Failed due to: {{scan_history.error_message}}</p>{% endif %}
                 {% elif scan_history.scan_status == 1 %}
                 <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> In Progress</span>
                 {% elif scan_history.scan_status == 2 %}

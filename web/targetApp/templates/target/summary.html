@@ -94,7 +94,7 @@ Target Summary
 												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
 												{% if scan.scan_status == 0 %}
 													{% if scan.error_message %}
-														<p class="badge badge-soft-danger">Error: {{scan.error_message}}</p>
+														<p class="text-danger">ERROR: {{scan.error_message}}</p>
 													{% endif %}
 												{% endif %}
 												<p class="text-primary">
