@@ -50,6 +50,8 @@ $(document).ready(function() {
 		"ajax": '/api/listVulnerability/?format=datatables&domain={{request.GET.domain}}',
 		{% elif request.GET.vulnerability_name %}
 		"ajax": '/api/listVulnerability/?format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
+		{% elif request.GET.subdomain %}
+		"ajax": '/api/listVulnerability/?format=datatables&subdomain={{request.GET.subdomain}}',
 		{% else %}
 		"ajax": '/api/listVulnerability/?format=datatables',
 		{% endif %}
