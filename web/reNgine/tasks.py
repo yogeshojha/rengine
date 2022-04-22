@@ -70,7 +70,6 @@ def initiate_subtask(
     # TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
     logger.info('Initiating Subtask')
     # get scan history and yaml Configuration for this subdomain
-    print(subdomain_id)
     subdomain = Subdomain.objects.get(id=subdomain_id)
     scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
 
@@ -98,6 +97,10 @@ def initiate_subtask(
     sub_scan.save()
 
     results_dir = '/usr/src/scan_results/' + scan_history.results_dir
+
+    # if not results_dir exists, create one
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
 
     try:
         yaml_configuration = yaml.load(
@@ -139,7 +142,7 @@ def initiate_subtask(
             )
         elif endpoint:
             rand_name = str(time.time()).split('.')[0]
-            file_name = 'alive_{}_{}.txt'.format(subdomain.name, rand_name)
+            file_name = 'endpoints_{}_{}.txt'.format(subdomain.name, rand_name)
             scan_history.fetch_url = True
             scan_history.save()
             fetch_endpoints(
@@ -153,7 +156,7 @@ def initiate_subtask(
             )
         elif vuln_scan:
             rand_name = str(time.time()).split('.')[0]
-            file_name = 'alive_{}_{}.txt'.format(subdomain.name, rand_name)
+            file_name = 'vuln_{}_{}.txt'.format(subdomain.name, rand_name)
             scan_history.vulnerability_scan = True
             scan_history.save()
             vulnerability_scan(
@@ -1608,9 +1611,13 @@ def vulnerability_scan(
         file_name=None,
         subscan=None
     ):
+    logger.info('Initiating Vulnerability Scan')
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
+        if domain:
+            send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
+        elif subdomain:
+            send_notification('Vulnerability scan has been initiated for {}.'.format(subdomain.name))
     '''
     This function will run nuclei as a vulnerability scanner
     ----
