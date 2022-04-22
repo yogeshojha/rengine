@@ -1210,7 +1210,7 @@ def directory_fuzz(
                 proxy
             )
 
-        command = '{} -u {} -o {} -of json -or'.format(
+        command = '{} -u {} -o {} -of json'.format(
             ffuf_command,
             http_url,
             dirs_results
