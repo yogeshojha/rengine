@@ -885,18 +885,18 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
         output_screenshots_path
     )
 
-    if EYEWITNESS in yaml_configuration \
-        and TIMEOUT in yaml_configuration[EYEWITNESS] \
-        and yaml_configuration[EYEWITNESS][TIMEOUT] > 0:
+    if SCREENSHOT in yaml_configuration \
+        and TIMEOUT in yaml_configuration[SCREENSHOT] \
+        and yaml_configuration[SCREENSHOT][TIMEOUT] > 0:
         eyewitness_command += ' --timeout {}'.format(
-            yaml_configuration[EYEWITNESS][TIMEOUT]
+            yaml_configuration[SCREENSHOT][TIMEOUT]
         )
 
-    if EYEWITNESS in yaml_configuration \
-        and THREADS in yaml_configuration[EYEWITNESS] \
-        and yaml_configuration[EYEWITNESS][THREADS] > 0:
+    if SCREENSHOT in yaml_configuration \
+        and THREADS in yaml_configuration[SCREENSHOT] \
+        and yaml_configuration[SCREENSHOT][THREADS] > 0:
             eyewitness_command += ' --threads {}'.format(
-                yaml_configuration[EYEWITNESS][THREADS]
+                yaml_configuration[SCREENSHOT][THREADS]
             )
 
     logger.info(eyewitness_command)
