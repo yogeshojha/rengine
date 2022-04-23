@@ -130,7 +130,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 20
+  pk: 8
   fields:
     logo_url: null
     name: assetfinder
@@ -147,7 +147,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 21
+  pk: 9
   fields:
     logo_url: null
     name: sublist3r
@@ -169,7 +169,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 22
+  pk: 10
   fields:
     logo_url: null
     name: hakrawler
@@ -187,7 +187,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 23
+  pk: 11
   fields:
     logo_url: null
     name: gauplus
@@ -204,7 +204,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 24
+  pk: 12
   fields:
     logo_url: null
     name: OneForAll
@@ -219,4 +219,25 @@
     is_subdomain_gathering: true
     is_github_cloned: false
     github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 13
+  fields:
+    logo_url: https://raw.githubusercontent.com/laramies/theHarvester/master/theHarvester-logo.png
+    name: theHarvester
+    description: theHarvester is a very simple to use, yet powerful and effective
+      tool designed to be used in the early stages of a penetration test or red team
+      engagement. Use it for open source intelligence (OSINT) gathering to help determine
+      a company's external threat landscape on the internet. The tool gathers emails,
+      names, subdomains, IPs and URLs using multiple public data sources.
+    github_url: https://github.com/laramies/theHarvester
+    license_url: null
+    version_lookup_command: python3 /usr/src/github/theHarvester/theHarvester.py
+    update_command: git pull
+    install_command: git clone https://github.com/laramies/theHarvester
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/theHarvester
     subdomain_gathering_command: null

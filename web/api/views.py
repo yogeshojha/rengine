@@ -700,12 +700,16 @@ class GetExternalToolCurrentVersion(APIView):
 		tool_id = req.query_params.get('tool_id')
 		tool_name = req.query_params.get('name')
 		# can supply either tool id or tool_name
-		if not InstalledExternalTool.objects.filter(id=tool_id).exists():
-			return Response({'status': False, 'message': 'Tool Not found'})
+
+		tool = None
 
 		if tool_id:
+			if not InstalledExternalTool.objects.filter(id=tool_id).exists():
+				return Response({'status': False, 'message': 'Tool Not found'})
 			tool = InstalledExternalTool.objects.get(id=tool_id)
 		elif tool_name:
+			if not InstalledExternalTool.objects.filter(name=tool_name).exists():
+				return Response({'status': False, 'message': 'Tool Not found'})
 			tool = InstalledExternalTool.objects.get(name=tool_name)
 
 		if not tool.version_lookup_command:
