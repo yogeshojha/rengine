@@ -713,6 +713,7 @@ def create_report(request, id):
         description = description.replace('{medium_count}', str(all_vulnerabilities.filter(severity=2).count()))
         description = description.replace('{low_count}', str(all_vulnerabilities.filter(severity=1).count()))
         description = description.replace('{info_count}', str(all_vulnerabilities.filter(severity=0).count()))
+        description = description.replace('{unknown_count}', str(all_vulnerabilities.filter(severity=-1).count()))
 
         # convert to html
         data['executive_summary_description'] = markdown.markdown(description)

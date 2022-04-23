@@ -656,6 +656,7 @@ The breakdown of the Vulnerabilities Identified in **{target_name}** by severity
 * Medium : {medium_count}
 * Low : {low_count}
 * Info : {info_count}
+* Unknown : {unknown_count}
 
 **{company_name}** recommends that these issues be addressed in timely manner.
 
@@ -748,7 +749,7 @@ class ExternalToolForm(forms.ModelForm):
             "id": "is_subdomain_gathering",
             "class": "switch",
         }))
-        
+
     subdomain_gathering_command = forms.CharField(
         required=False,
         widget=forms.TextInput(
