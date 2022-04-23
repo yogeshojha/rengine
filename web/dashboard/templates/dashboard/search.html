@@ -54,19 +54,19 @@ Search Results
 				<div id="search-result-content-div">
 					<ul class="nav nav-tabs nav-bordered">
 						<li class="nav-item subdomains">
-							<a href="#subdomains-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
+							<a href="#subdomains-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link" id="nav-item-subdomains">
 								Subdomains <span class="badge bg-primary ms-1" id="search-subdomains-count-badge"></span>
 							</a>
 						</li>
 
 						<li class="nav-item endpoints">
-							<a href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+							<a href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-endpoints">
 								Endpoints <span class="badge bg-primary ms-1" id="search-endpoints-count-badge"></span>
 							</a>
 						</li>
 
 						<li class="nav-item vulnerabilities">
-							<a href="#vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+							<a href="#vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" id="nav-item-vulnerabilities">
 								Vulnerabilities <span class="badge bg-primary ms-1" id="search-vulnerabilities-count-badge"></span>
 							</a>
 						</li>
@@ -79,7 +79,7 @@ Search Results
 					</ul>
 				</div>
 				<div class="tab-content">
-					<div class="tab-pane active" id="subdomains-tab">
+					<div class="tab-pane" id="subdomains-tab">
 					</div>
 					<div class="tab-pane" id="endpoints-tab">
 					</div>
@@ -123,8 +123,14 @@ $(document).ready(function() {
 		}).then(function(response) {
 			$('#search-spinner').hide();
 			if (response.status) {
+				var is_active_tab_set = false;
 				if (response.results.subdomains.length) {
 					$('.subdomains').show();
+					if (!is_active_tab_set) {
+						$('#subdomains-tab').addClass('active');
+						$('#nav-item-subdomains').addClass('active');
+						is_active_tab_set = true;
+					}
 					$('#search-subdomains-count-badge').append(`${response.results.subdomains.length}`);
 
 					for (var subdomain in response.results.subdomains) {
@@ -160,6 +166,11 @@ $(document).ready(function() {
 				}
 				if (response.results.endpoints.length) {
 					$('.endpoints').show();
+					if (!is_active_tab_set) {
+						$('#endpoints-tab').addClass('active');
+						$('#nav-item-endpoints').addClass('active');
+						is_active_tab_set = true;
+					}
 					$('#search-endpoints-count-badge').append(`${response.results.endpoints.length}`);
 
 					for (var endpoint in response.results.endpoints) {
@@ -183,6 +194,11 @@ $(document).ready(function() {
 				}
 				if (response.results.vulnerabilities.length) {
 					$('.vulnerabilities').show();
+					if (!is_active_tab_set) {
+						$('#vulnerabilities-tab').addClass('active');
+						$('#nav-item-vulnerabilities').addClass('active');
+						is_active_tab_set = true;
+					}
 					$('#search-vulnerabilities-count-badge').append(`${response.results.vulnerabilities.length}`);
 
 					for (var vuln in response.results.vulnerabilities) {

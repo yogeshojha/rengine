@@ -30,6 +30,7 @@ from reNgine.common_func import *
 from .serializers import *
 from scanEngine.models import *
 from startScan.models import *
+from dashboard.models import *
 from targetApp.models import *
 from recon_note.models import *
 
@@ -53,6 +54,11 @@ class UniversalSearch(APIView):
 			return Response(response)
 
 		response['results'] = {}
+
+		# search history to be saved
+		SearchHistory.objects.get_or_create(
+			query=query
+		)
 
 		# lookup query in subdomain
 		subdomain = Subdomain.objects.filter(
