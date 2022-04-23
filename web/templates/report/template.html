@@ -838,7 +838,7 @@
                   <ul>
                     {% for vulnerability in vuln_list %}
                       <li>
-                        <a href="#vuln_{{vulnerability.list.0.id}}">{{ vulnerability.grouper }}</a>
+                        <a href="#vuln_{{vulnerability.list.0.name.split|join:'_'}}">{{ vulnerability.grouper }}</a>
                       </li>
                     {% endfor %}
                   </ul>
