@@ -73,14 +73,8 @@ class UniversalSearch(APIView):
 
 		vulnerability = Vulnerability.objects.filter(
 			Q(http_url__icontains=query) |
-			Q(target_domain__name__icontains=query) |
-			Q(template__icontains=query) |
 			Q(name__icontains=query) |
-			Q(description__icontains=query) |
-			Q(extracted_results__icontains=query) |
-			Q(references__url__icontains=query) |
-			Q(cve_ids__name__icontains=query) |
-			Q(cwe_ids__name__icontains=query)
+			Q(description__icontains=query)
 		).distinct()
 		vulnerability_data = VulnerabilitySerializer(vulnerability, many=True).data
 		response['results']['vulnerabilities'] = vulnerability_data
