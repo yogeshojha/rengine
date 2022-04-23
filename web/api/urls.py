@@ -185,21 +185,25 @@ urlpatterns = [
         StopScan.as_view(),
         name='stop_scan'),
     path(
-        'fetch/results/subscan',
+        'fetch/results/subscan/',
         FetchSubscanResults.as_view(),
         name='fetch_subscan_results'),
     path(
-        'fetch/most_vulnerable',
+        'fetch/most_vulnerable/',
         FetchMostVulnerable.as_view(),
         name='fetch_most_vulnerable'),
     path(
-        'fetch/most_common_vulnerability',
+        'fetch/most_common_vulnerability/',
         FetchMostCommonVulnerability.as_view(),
         name='fetch_most_common_vulnerability'),
     path(
-        'search',
+        'search/',
         UniversalSearch.as_view(),
         name='search'),
+    path(
+        'search/history/',
+        SearchHistoryView.as_view(),
+        name='search_history'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

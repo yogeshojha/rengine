@@ -887,7 +887,7 @@ function delete_subscan(subscan_id) {
 function show_subscan_results(subscan_id) {
 	// This function will popup a modal and show the subscan results
 	// modal being used is from base
-	var api_url = '/api/fetch/results/subscan?format=json';
+	var api_url = '/api/fetch/results/subscan/?format=json';
 	var data = {
 		'subscan_id': subscan_id
 	};
@@ -2378,7 +2378,7 @@ function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=fa
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
 
-	fetch('/api/fetch/most_vulnerable?format=json', {
+	fetch('/api/fetch/most_vulnerable/?format=json', {
 		method: 'POST',
 		credentials: "same-origin",
 		body: JSON.stringify(data),
@@ -2447,7 +2447,7 @@ function get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
 
-	fetch('/api/fetch/most_common_vulnerability?format=json', {
+	fetch('/api/fetch/most_common_vulnerability/?format=json', {
 		method: 'POST',
 		credentials: "same-origin",
 		body: JSON.stringify(data),
