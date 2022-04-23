@@ -41,6 +41,23 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class SearchHistoryView(APIView):
+	def get(self, request):
+		req = self.request
+
+		response = {}
+		response['status'] = False
+
+		scan_history = SearchHistory.objects.all().order_by('-id')[:5]
+		print(scan_history)
+
+		if scan_history:
+			response['status'] = True
+			response['results'] = SearchHistorySerializer(scan_history, many=True).data
+
+		return Response(response)
+
+
 class UniversalSearch(APIView):
 	def get(self, request):
 		req = self.request

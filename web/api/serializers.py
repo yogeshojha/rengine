@@ -3,9 +3,16 @@ from startScan.models import *
 from reNgine.common_func import *
 from targetApp.models import *
 from scanEngine.models import *
+from dashboard.models import *
 from recon_note.models import *
 
 from django.db.models import F, JSONField, Value
+
+
+class SearchHistorySerializer(serializers.ModelSerializer):
+	class Meta:
+		model = SearchHistory
+		fields = ['query']
 
 
 class DomainSerializer(serializers.ModelSerializer):

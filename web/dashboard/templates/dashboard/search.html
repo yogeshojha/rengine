@@ -111,7 +111,7 @@ $(document).ready(function() {
 	function search(search_val){
 		// hide all contents
 		$('#search-spinner').show();
-		fetch(`/api/search?format=json&query=${search_val}`, {
+		fetch(`/api/search/?format=json&query=${search_val}`, {
 			method: 'GET',
 			credentials: "same-origin",
 			headers: {
