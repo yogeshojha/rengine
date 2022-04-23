@@ -49,7 +49,6 @@ class SearchHistoryView(APIView):
 		response['status'] = False
 
 		scan_history = SearchHistory.objects.all().order_by('-id')[:5]
-		print(scan_history)
 
 		if scan_history:
 			response['status'] = True
