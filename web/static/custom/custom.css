@@ -372,3 +372,8 @@ tr.group:hover {
 .navbar-custom .app-search{
   max-width: 300px !important;
 }
+
+mark{
+  background-color: #FFEB3B;
+  color: #000;
+}

@@ -59,19 +59,15 @@ class UniversalSearch(APIView):
 			Q(name__icontains=query) |
 			Q(cname__icontains=query) |
 			Q(page_title__icontains=query) |
-			Q(http_url__icontains=query) |
-			Q(ip_addresses__address__icontains=query) |
-			Q(ip_addresses__ports__number__icontains=query) |
-			Q(ip_addresses__ports__service_name__icontains=query) |
-			Q(ip_addresses__ports__description__icontains=query)
-		)
+			Q(http_url__icontains=query)
+		).distinct('name')
 		subdomain_data = SubdomainSerializer(subdomain, many=True).data
 		response['results']['subdomains'] = subdomain_data
 
 		endpoint = EndPoint.objects.filter(
 			Q(http_url__icontains=query) |
 			Q(page_title__icontains=query)
-		)
+		).distinct('http_url')
 		endpoint_data = EndpointSerializer(endpoint, many=True).data
 		response['results']['endpoints'] = endpoint_data
 
@@ -85,11 +81,14 @@ class UniversalSearch(APIView):
 			Q(references__url__icontains=query) |
 			Q(cve_ids__name__icontains=query) |
 			Q(cwe_ids__name__icontains=query)
-		)
+		).distinct()
 		vulnerability_data = VulnerabilitySerializer(vulnerability, many=True).data
 		response['results']['vulnerabilities'] = vulnerability_data
 
+		response['results']['others'] = {}
 
+		if subdomain_data or endpoint_data or vulnerability_data:
+			response['status'] = True
 
 		return Response(response)
 
