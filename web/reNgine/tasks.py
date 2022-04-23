@@ -763,10 +763,14 @@ def http_crawler(task, domain, results_dir, activity_id):
     httpx_command = 'httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
 
     proxy = get_random_proxy()
-    if proxy:
-        httpx_command += " --http-proxy '{}'".format(proxy)
 
-    httpx_command += ' -json -o {}'.format(
+    if proxy:
+        httpx_command += " --http-proxy '{}' ".format(proxy)
+
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        httpx_command += ' -H {} '.format(yaml_configuration[CUSTOM_HEADER])
+
+    httpx_command += ' -json -o {} '.format(
         httpx_results_file
     )
     httpx_command = 'cat {} | {}'.format(subdomain_scan_results_file, httpx_command)
@@ -880,7 +884,7 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 
     eyewitness_command = 'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py'
 
-    eyewitness_command += ' -f {} -d {} --no-prompt'.format(
+    eyewitness_command += ' -f {} -d {} --no-prompt '.format(
         alive_subdomains_path,
         output_screenshots_path
     )
@@ -888,14 +892,14 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
     if SCREENSHOT in yaml_configuration \
         and TIMEOUT in yaml_configuration[SCREENSHOT] \
         and yaml_configuration[SCREENSHOT][TIMEOUT] > 0:
-        eyewitness_command += ' --timeout {}'.format(
+        eyewitness_command += ' --timeout {} '.format(
             yaml_configuration[SCREENSHOT][TIMEOUT]
         )
 
     if SCREENSHOT in yaml_configuration \
         and THREADS in yaml_configuration[SCREENSHOT] \
         and yaml_configuration[SCREENSHOT][THREADS] > 0:
-            eyewitness_command += ' --threads {}'.format(
+            eyewitness_command += ' --threads {} '.format(
                 yaml_configuration[SCREENSHOT][THREADS]
             )
 
@@ -961,7 +965,7 @@ def port_scanning(
             port_results_file
         )
     elif subdomain:
-        naabu_command = 'naabu -host {} -o {} -json'.format(
+        naabu_command = 'naabu -host {} -o {} -json '.format(
             subdomain,
             port_results_file
         )
@@ -974,28 +978,28 @@ def port_scanning(
         if 'full' in all_ports:
             naabu_command += ' -p -'
         elif 'top-100' in all_ports:
-            naabu_command += ' -top-ports 100'
+            naabu_command += ' -top-ports 100 '
         elif 'top-1000' in all_ports:
-            naabu_command += ' -top-ports 1000'
+            naabu_command += ' -top-ports 1000 '
         else:
             scan_ports = ','.join(
                 str(port) for port in all_ports)
-            naabu_command += ' -p {}'.format(scan_ports)
+            naabu_command += ' -p {} '.format(scan_ports)
 
     # check for exclude ports
     if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
         exclude_ports = ','.join(
             str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
         naabu_command = naabu_command + \
-            ' -exclude-ports {}'.format(exclude_ports)
+            ' -exclude-ports {} '.format(exclude_ports)
 
     if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
         naabu_command = naabu_command + \
-            ' -rate {}'.format(
+            ' -rate {} '.format(
                 yaml_configuration[PORT_SCAN][NAABU_RATE])
             #new format for naabu config
     if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
-        naabu_command += ' -config /root/.config/naabu/config.yaml'
+        naabu_command += ' -config /root/.config/naabu/config.yaml '
 
     # run naabu
     logger.info(naabu_command)
@@ -1118,7 +1122,7 @@ def directory_fuzz(
         if EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ]:
             extensions = ','.join('.' + str(ext) for ext in yaml_configuration[DIR_FILE_FUZZ][EXTENSIONS])
 
-            ffuf_command = ' {} -e {}'.format(
+            ffuf_command = ' {} -e {} '.format(
                 ffuf_command,
                 extensions
             )
@@ -1126,7 +1130,7 @@ def directory_fuzz(
     if THREADS in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][THREADS] > 0:
         threads = yaml_configuration[DIR_FILE_FUZZ][THREADS]
-        ffuf_command = ' {} -t {}'.format(
+        ffuf_command = ' {} -t {} '.format(
             ffuf_command,
             threads
         )
@@ -1134,7 +1138,7 @@ def directory_fuzz(
     if RECURSIVE in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][RECURSIVE]:
         recursive_level = yaml_configuration[DIR_FILE_FUZZ][RECURSIVE_LEVEL]
-        ffuf_command = '{} -recursion -recursion-depth {}'.format(
+        ffuf_command = ' {} -recursion -recursion-depth {} '.format(
             ffuf_command,
             recursive_level
         )
@@ -1147,20 +1151,20 @@ def directory_fuzz(
 
     if FOLLOW_REDIRECT in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][FOLLOW_REDIRECT]:
-        ffuf_command = '{} -fr'.format(
+        ffuf_command = ' {} -fr '.format(
             ffuf_command
         )
 
     if AUTO_CALIBRATION in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][AUTO_CALIBRATION]:
-        ffuf_command = '{} -ac'.format(
+        ffuf_command = ' {} -ac '.format(
             ffuf_command
         )
 
     if TIMEOUT in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][TIMEOUT] > 0:
         timeout = yaml_configuration[DIR_FILE_FUZZ][TIMEOUT]
-        ffuf_command = '{} -timeout {}'.format(
+        ffuf_command = ' {} -timeout {} '.format(
             ffuf_command,
             timeout
         )
@@ -1168,7 +1172,7 @@ def directory_fuzz(
     if DELAY in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][DELAY] > 0:
         delay = yaml_configuration[DIR_FILE_FUZZ][DELAY]
-        ffuf_command = '{} -p {}'.format(
+        ffuf_command = ' {} -p {} '.format(
             ffuf_command,
             delay
         )
@@ -1178,7 +1182,7 @@ def directory_fuzz(
     else:
         mc = '200,204'
 
-    ffuf_command = ' {} -mc {}'.format(
+    ffuf_command = ' {} -mc {} '.format(
         ffuf_command,
         mc
     )
@@ -1186,10 +1190,13 @@ def directory_fuzz(
     if MAX_TIME in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][MAX_TIME] > 0:
         max_time = yaml_configuration[DIR_FILE_FUZZ][MAX_TIME]
-        ffuf_command = '{} -maxtime {}'.format(
+        ffuf_command = ' {} -maxtime {} '.format(
             ffuf_command,
             max_time
         )
+
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        ffuf_command += ' -H {}'.format(yaml_configuration[CUSTOM_HEADER])
 
     for subdomain in subdomains_fuzz:
         command = None
@@ -1471,6 +1478,9 @@ def fetch_endpoints(
     if proxy:
         httpx_command += " --http-proxy '{}'".format(proxy)
 
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        httpx_command += ' -H {}'.format(yaml_configuration[CUSTOM_HEADER])
+
     logger.info(httpx_command)
     os.system(httpx_command)
 
@@ -1710,6 +1720,9 @@ def vulnerability_scan(
         # Update nuclei command with concurrent
         nuclei_command = nuclei_command + ' -retries ' + str(retries)
 
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        nuclei_command += ' -H {} '.format(yaml_configuration[CUSTOM_HEADER])
+
     # for severity and new severity in nuclei
     if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
         _severity = ','.join(
@@ -1731,7 +1744,7 @@ def vulnerability_scan(
 
         proxy = get_random_proxy()
         if proxy:
-            final_nuclei_command += " --proxy-url '{}'".format(proxy)
+            final_nuclei_command += " --proxy-url '{}' ".format(proxy)
 
         logger.info('Running Nuclei Scanner!')
         logger.info(final_nuclei_command)
