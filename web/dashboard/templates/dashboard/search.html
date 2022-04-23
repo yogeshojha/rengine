@@ -126,11 +126,11 @@ $(document).ready(function() {
 
 					for (var subdomain in response.results.subdomains) {
 						var subdomain_obj = response.results.subdomains[subdomain];
-						var http_url = subdomain_obj.http_url ? subdomain_obj.http_url : 'https://' + subdomain.name;
+						var http_url = subdomain_obj.http_url ? subdomain_obj.http_url : 'https://' + subdomain_obj.name;
 
-						var append_content = '<div class="search-item">';
+						var append_content = `<div class="search-item"><a href="/scan/all/subdomains?name=${subdomain_obj.name}" target="_blank">`;
 
-						append_content += `<h4 class="mb-1"><a href="${http_url}" target="_blank" class="me-2">${highlight_search(search_val, subdomain_obj.name)}</a>${get_http_status_badge(subdomain_obj.http_status)}</h4>`;
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, subdomain_obj.name)}</span>${get_http_status_badge(subdomain_obj.http_status)}</h4>`;
 
 						if (subdomain_obj.page_title) {
 							append_content += `<div class="font-13 text-dark mb-2 text-truncate">
@@ -149,7 +149,7 @@ $(document).ready(function() {
 							append_content += `<span class="text-muted">CNAME: ${highlight_search(search_val, subdomain_obj.cname)}</span>`
 						}
 
-						append_content += '</div>'
+						append_content += '</a></div>';
 
 						$('#subdomains-tab').append(append_content);
 					}

@@ -1524,6 +1524,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		ip_address = req.query_params.get('ip_address')
 
+		name = req.query_params.get('name')
+
 		if target_id:
 			self.queryset = Subdomain.objects.filter(
 				target_domain__id=target_id).distinct()
@@ -1541,6 +1543,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		if ip_address:
 			self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
+
+		if name:
+			self.queryset = self.queryset.filter(name=name)
 
 		return self.queryset
 
