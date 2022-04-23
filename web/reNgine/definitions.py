@@ -70,6 +70,8 @@ USE_SUBFINDER_CONFIG = 'use_subfinder_config'
 USE_NUCLEI_CONFIG = 'use_nuclei_config'
 USE_NAABU_CONFIG = 'use_naabu_config'
 
+CUSTOM_HEADER = 'custom_header'
+
 ###############################################################################
 # Wordlist DEFINITIONS
 ###############################################################################
