@@ -40,6 +40,174 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class FetchMostCommonVulnerability(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		limit = data.get('limit', 20)
+		scan_history_id = data.get('scan_history_id')
+		target_id = data.get('target_id')
+		is_ignore_info = data.get('ignore_info', False)
+
+		response = {}
+		response['status'] = False
+
+		if scan_history_id:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					scan_history__id=scan_history_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+		elif target_id:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.filter(
+					target_domain__id=target_id
+				).values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+		else:
+			if is_ignore_info:
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).exclude(
+					severity=0
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+			else:
+				most_common_vulnerabilities = Vulnerability.objects.values(
+					"name", "severity"
+				).annotate(
+					count=Count('name')
+				).order_by(
+					"-count"
+				)[:limit]
+
+
+		most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+
+		if most_common_vulnerabilities:
+			response['status'] = True
+			response['result'] = most_common_vulnerabilities
+
+		return Response(response)
+
+
+class FetchMostVulnerable(APIView):
+	def post(self, request):
+		req = self.request
+		data = req.data
+
+		scan_history_id = data.get('scan_history_id')
+		target_id = data.get('target_id')
+		limit = data.get('limit', 20)
+		is_ignore_info = data.get('ignore_info', False)
+
+		response = {}
+		response['status'] = False
+
+		if scan_history_id:
+			if is_ignore_info:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					scan_history__id=scan_history_id).annotate(
+						vuln_count=Count('vulnerability__name',
+							filter=~Q(vulnerability__severity=0)
+						)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+			else:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+				scan_history__id=scan_history_id).annotate(
+				vuln_count=Count('vulnerability__name'
+				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+
+			if most_vulnerable_subdomains:
+				response['status'] = True
+				response['result'] = SubdomainSerializer(
+					most_vulnerable_subdomains, many=True
+				).data
+
+		elif target_id:
+			if is_ignore_info:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					target_domain__id=target_id
+				).annotate(
+					vuln_count=Count(
+						'vulnerability__name',
+						filter=~Q(vulnerability__severity=0)
+					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+			else:
+				most_vulnerable_subdomains = Subdomain.objects.filter(
+					target_domain__id=target_id
+				).annotate(
+					vuln_count=Count(
+						'vulnerability__name'
+					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+
+			if most_vulnerable_subdomains:
+				response['status'] = True
+				response['result'] = SubdomainSerializer(
+					most_vulnerable_subdomains, many=True
+				).data
+		else:
+			if is_ignore_info:
+				most_vulnerable_targets = Domain.objects.annotate(
+					vuln_count=Count(
+						'subdomain__vulnerability__name',
+						filter=~Q(subdomain__vulnerability__severity=0))
+					).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+			else:
+				most_vulnerable_targets = Domain.objects.annotate(
+				vuln_count=Count(
+				'subdomain__vulnerability__name'
+				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+
+			if most_vulnerable_targets:
+				response['status'] = True
+				response['result'] = DomainSerializer(
+					most_vulnerable_targets,
+					many=True
+				).data
+
+		return Response(response)
+
+
 class CVEDetails(APIView):
 	def get(self, request):
 		req = self.request
@@ -252,31 +420,42 @@ class StopScan(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		try:
-			celery_id = data['celery_id']
-			is_scan = data['is_scan']
-			if is_scan:
-				scan_history = get_object_or_404(ScanHistory, celery_id=celery_id)
-				app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+		scan_id = data.get('scan_id')
+		subscan_id = data.get('subscan_id')
+		response = {}
+		if scan_id:
+			try:
+				scan_history = get_object_or_404(ScanHistory, id=scan_id)
+				app.control.revoke(
+					scan_history.celery_id,
+					terminate=True,
+					signal='SIGKILL'
+				)
 				scan_history.scan_status = 3
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
+
 				last_activity = ScanActivity.objects.filter(
 					scan_of=scan_history).order_by('-pk')[0]
 				last_activity.status = 0
 				last_activity.time = timezone.now()
 				last_activity.save()
 				create_scan_activity(scan_history, "Scan aborted", 0)
-			else:
-				task = get_object_or_404(SubScan, celery_id=celery_id)
-				app.control.revoke(celery_id, terminate=True, signal='SIGKILL')
+				response['status'] = True
+			except Exception as e:
+				logging.error(e)
+				response = {'status': False, 'message': str(e)}
+		elif subscan_id:
+			try:
+				task = get_object_or_404(SubScan, id=subscan_id)
+				app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
 				task.status = 3
 				task.stop_scan_date = timezone.now()
 				task.save()
-			response = {'status': True}
-		except Exception as e:
-			logging.error(e)
-			response = {'status': False}
+				response['status'] = True
+			except Exception as e:
+				logging.error(e)
+				response = {'status': False, 'message': str(e)}
 		return Response(response)
 
 
@@ -651,7 +830,6 @@ class GetFileContents(APIView):
 
 		response = {}
 		response['status'] = False
-		response['message'] = 'Invalid Query Params'
 
 		if 'nuclei_config' in req.query_params:
 			path = "/root/.config/nuclei/config.yaml"
@@ -728,6 +906,7 @@ class GetFileContents(APIView):
 				response['status'] = False
 			return Response(response)
 
+		response['message'] = 'Invalid Query Params'
 		return Response(response)
 
 
@@ -1768,6 +1947,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		domain = req.query_params.get('domain')
 		severity = req.query_params.get('severity')
 		subdomain_id = req.query_params.get('subdomain_id')
+		subdomain_name = req.query_params.get('subdomain')
 		vulnerability_name = req.query_params.get('vulnerability_name')
 
 		if scan_id:
@@ -1776,6 +1956,11 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		elif target_id:
 			vulnerability_queryset = Vulnerability.objects.filter(
 				target_domain__id=target_id).distinct()
+		elif subdomain_name:
+			vulnerability_queryset = Vulnerability.objects.filter(
+				subdomain__in=Subdomain.objects.filter(
+					name=subdomain_name)
+				).distinct()
 		else:
 			vulnerability_queryset = Vulnerability.objects.distinct()
 

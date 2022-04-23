@@ -94,7 +94,7 @@ Target Summary
 												<p class="text-muted">{{scan.start_scan_date|naturaltime}}<br><small class="text-muted">{{scan.start_scan_date}}</small></p>
 												{% if scan.scan_status == 0 %}
 													{% if scan.error_message %}
-														<p class="badge badge-soft-danger">Error: {{scan.error_message}}</p>
+														<p class="text-danger">ERROR: {{scan.error_message}}</p>
 													{% endif %}
 												{% endif %}
 												<p class="text-primary">
@@ -531,13 +531,14 @@ Target Summary
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 <script type="text/javascript">
-
 $(document).ready(function(){
 	{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	const ps1 = new PerfectScrollbar(document.querySelector('.endpoint-search'));
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 	$('[data-toggle="tooltip"]').tooltip();
+
+
 	// HTTP STATUS Breakdown chart
 	// depending on http_status_breakdown, generate color
 	var colors = [
@@ -597,946 +598,1086 @@ $(document).ready(function(){
 			}
 		};
 
-		var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
-		chart.render();
+	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
+	chart.render();
 
-		// vulnerability pie chart
-		var options = {
-			chart: {
-				type: 'donut',
-				height: 280,
-			},
-			colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
-			dataLabels: {
-				enabled: false
-			},
-			legend: {
-				show: !0,
-				position: "bottom",
-				horizontalAlign: "center",
-				verticalAlign: "middle",
-				floating: !1,
-				fontSize: "15px",
-				offsetX: 0,
-				offsetY: 7
-			},
-			plotOptions: {
-				pie: {
-					donut: {
-						size: '70%',
-						background: 'transparent',
-						labels: {
+	// vulnerability pie chart
+	var options = {
+		chart: {
+			type: 'donut',
+			height: 280,
+		},
+		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
+		dataLabels: {
+			enabled: false
+		},
+		legend: {
+			show: !0,
+			position: "bottom",
+			horizontalAlign: "center",
+			verticalAlign: "middle",
+			floating: !1,
+			fontSize: "15px",
+			offsetX: 0,
+			offsetY: 7
+		},
+		plotOptions: {
+			pie: {
+				donut: {
+					size: '70%',
+					background: 'transparent',
+					labels: {
+						show: true,
+						name: {
 							show: true,
-							name: {
-								show: true,
-								fontSize: '29px',
-								fontFamily: 'Nunito, sans-serif',
-								color: undefined,
-								offsetY: -10
-							},
-							value: {
-								show: true,
-								fontSize: '26px',
-								fontFamily: 'Nunito, sans-serif',
-								color: '20',
-								offsetY: 16,
-								formatter: function (val) {
-									return val
-								}
-							},
-							total: {
-								show: true,
-								showAlways: true,
-								label: 'Total',
-								color: '#888ea8',
-								formatter: function (w) {
-									return w.globals.seriesTotals.reduce( function(a, b) {
-										return a + b
-									}, 0)
-								}
+							fontSize: '29px',
+							fontFamily: 'Nunito, sans-serif',
+							color: undefined,
+							offsetY: -10
+						},
+						value: {
+							show: true,
+							fontSize: '26px',
+							fontFamily: 'Nunito, sans-serif',
+							color: '20',
+							offsetY: 16,
+							formatter: function (val) {
+								return val
+							}
+						},
+						total: {
+							show: true,
+							showAlways: true,
+							label: 'Total',
+							color: '#888ea8',
+							formatter: function (w) {
+								return w.globals.seriesTotals.reduce( function(a, b) {
+									return a + b
+								}, 0)
 							}
 						}
 					}
 				}
-			},
-			series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
-			labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
-			responsive: [{
-				breakpoint: 1599,
-				options: {
-					chart: {
-						height: 240
-					},
-					legend: {
-						position: 'bottom'
-					}
-				},
-				breakpoint: 1439,
-				options: {
-					chart: {
-						width: '250px',
-						height: '390px'
-					},
-				},
-			}],
-		}
-
-		var chart = new ApexCharts(
-			document.querySelector("#vulnerability-pie-chart"),
-			options
-		);
-
-		chart.render()
-
-		// load scan history widget
-		loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
-
-		get_important_subdomains(target_id={{target.id}}, scan_history_id=null);
-		get_recon_notes(target_id={{target.id}}, scan_history_id=null);
-
-		get_ips(scan_id=null, domain_id={{target.id}});
-		get_technologies(scan_id=null, domain_id={{target.id}});
-		get_ports(scan_id=null, domain_id={{target.id}});
-
-		var clipboard = new Clipboard('.copyable');
-		clipboard.on('success', function(e) {
-			setTooltip(e.trigger, 'Copied!');
-			hideTooltip(e.trigger);
-		});
-
-
-		// load all datatables
-
-		$("#pills-subdomain-tab").click(function() {
-			var subdomain_datatables = $('#subdomain_scan_results').DataTable({
-				"headerCallback": function(e, a, t, n, s) {
-					e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
-				},
-				"destroy": true,
-				"processing": true,
-				"oLanguage": {
-					"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-					"sInfo": "Showing page _PAGE_ of _PAGES_",
-					"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-					"sSearchPlaceholder": "Search...",
-					"sLengthMenu": "Results :  _MENU_",
-					"sProcessing": "Fetching Subdomains... Please wait..."
-				},
-				"fnCreatedRow": function (nRow, aData, iDataIndex) {
-					$(nRow).attr('id', 'subdomain_row_' + aData['id']);
-				},
-				"stripeClasses": [],
-				"lengthMenu": [50, 100, 500, 1000],
-				"pageLength": 50,
-				'serverSide': true,
-				"ajax": '/api/listDatatableSubdomain/?target_id={{target.id}}&format=datatables',
-				"order": [[ 8, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'name'},
-					{'data': 'endpoint_count'},
-					{'data': 'endpoint_count'},
-					{'data': 'http_status'},
-					{'data': 'page_title'},
-					{'data': 'ip_addresses'},
-					{'data': 'ip_addresses'},
-					{'data': 'content_length', 'searchable': false},
-					{'data': 'screenshot_path', 'searchable': false},
-					{'data': 'response_time'},
-					{'data': 'technologies'},
-					{'data': 'http_url'},
-					{'data': 'cname'},
-					{'data': 'is_interesting'},
-					{'data': 'info_count'},
-					{'data': 'low_count'},
-					{'data': 'medium_count'},
-					{'data': 'high_count'},
-					{'data': 'critical_count'},
-					{'data': 'todos_count'},
-					{'data': 'is_important'},
-					{'data': 'webserver'},
-					{'data': 'content_type'},
-					{'data': 'id'},
-					{'data': 'directories_count'},
-					{'data': 'subscan_count'},
-				],
-				"columnDefs": [
-					{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
-					{
-						"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
-						"visible": false,
-						"searchable": false,
-					},
-					{
-						"targets": [ 11, 13, 21, 22, 23 ],
-						"visible": false,
-						"searchable": true,
-					},
-					{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
-					// checkbox
-					{
-						"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
-							return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
-						}},
-						// subdomain Name
-						{
-							"render": function ( data, type, row ) {
-								badges = '';
-								tech_badge = '';
-								interesting_badge = '';
-								content_type = '';
-								web_server = '';
-								if (row['technologies']){
-									tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id=null, domain_id={{target.id}}) + '</div>';
-								}
-								if(row['is_interesting'])
-								{
-									interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
-								}
-
-								if (row['content_type']) {
-									content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
-								}
-
-								if (row['webserver']) {
-									web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
-								}
-
-								if (interesting_badge) {
-									badges =   interesting_badge;
-								}
-
-								todo_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7515a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
-								todo_badge = '';
-
-								if (row['todos_count']) {
-									todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
-								}
-
-								endpoint_count_badge = '';
-								if (row['endpoint_count']) {
-									endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal(scan_id=null, subdomain_id=${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
-								}
-
-								vuln_count_badge = '';
-								total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
-								info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
-								low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} Low</span>`;
-								medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} Med</span>`;
-								high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} High</span>`;
-								critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} Critical</span>`;
-								vuln_count_badge = `<div class="">` + (row['info_count'] > 0? info_badge : '') + (row['low_count'] > 0? low_badge : '') + (row['medium_count'] > 0? medium_badge : '') + (row['high_count'] > 0? high_badge : '') + (row['critical_count'] > 0? critical_badge : '') + `</div>`;
-
-								vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0? total_vuln_badge : '') + vuln_count_badge;
-
-								copy_icon = `
-								<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
-								`;
-
-								var directory_count_badge = '';
-								if (row['directories_count']){
-									directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
-								}
-
-								var subscan_count_badge = '';
-								if (row['subscan_count']){
-									subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
-								}
-
-								tech_badge += content_type;
-								tech_badge += web_server;
-
-								end_vuln_badge = '<div class="">' + subscan_count_badge + endpoint_count_badge + directory_count_badge + vuln_count_badge + '</div>';
-
-								if (row['http_url']) {
-									if (row['cname']) {
-										cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
-										return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ `</div>` + cname_badge + end_vuln_badge + tech_badge + todo_badge;
-									}
-									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
-								}
-								return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
-							},
-							"targets": 1
-						},
-						// http_status
-						{
-							"render": function ( data, type, row ) {
-								// display badge based on http status
-								// green for http status 2XX, orange for 3XX and warning for everything else
-								if (data >= 200 && data < 300) {
-									return "<span class='badge bg-success'>"+data+"</span>";
-								}
-								else if (data >= 300 && data < 400) {
-									return "<span class='badge bg-warning'>"+data+"</span>";
-								}
-								else if (data == 0){
-									// datatable throws error when no data is returned
-									return "";
-								}
-								return `<span class='badge bg-danger'>`+data+`</span>`;
-							},
-							"targets": 4,
-						},
-						// page title
-						{
-							"render": function ( data, type, row ) {
-								if (data){
-									return htmlEncode(data);
-								}
-								return "";
-							},
-							"targets": 5,
-						},
-						// ip address
-						{
-							"render": function ( data, type, row ) {
-								ip_badge = ''
-								if (data)
-								{
-									Object.entries(data).forEach(([key, value]) => {
-										if (value['is_cdn']) {
-											ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', scan_id=null, domain_id={{target.id}})">${value.address}</span>`
-										}
-										else{
-											ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', scan_id=null, domain_id={{target.id}})">${value.address}</span>`
-										}
-									});
-									return ip_badge;
-								}
-								return "";
-							},
-							"targets": 6,
-						},
-						// open ports
-						{
-							"render": function ( data, type, row ) {
-								port_badge = ''
-								if (data){
-									for (ip in data){
-										ports = data[ip]['ports']
-										for (port in ports){
-											port_obj = data[ip]['ports'][port]
-											badge_color = port_obj['is_uncommon'] ? 'danger' : 'primary';
-											title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
-											port_badge += `<span class='m-1 badge badge-soft-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, scan_id=null, domain_id={{target.id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
-										}
-									}
-									return port_badge;
-								}
-								return "";
-							},
-							"targets": 7,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (data){
-									//return lightbox with caption as http link
-									return data;
-								}
-								return 0;
-							},
-							"targets": 8,
-						},
-						// screenshot
-						{
-							"render": function ( data, type, row ) {
-								if (data){
-									//return lightbox with caption as http link
-									return `<a href="/media/`+data+`" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='`+row['http_url']+`'&gt;&lt;h3 style=&quot;color:white&quot;&gt;`+row['name']+`&lt;/h3&gt;&lt;/a&gt;"><img src="/media/`+data+`" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
-								}
-								return "";
-							},
-							"targets": 9,
-						},
-						// response_time
-						{
-							"render": function ( data, type, row ) {
-								if (data){
-									return get_response_time_text(data);
-								}
-								return "";
-							},
-							"targets": 10,
-						},
-						// Action
-						{
-							"render": function ( data, type, row ) {
-								const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
-								return `
-								<div class="btn-group mt-2">
-									<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
-									<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
-									<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
-									<div class="dropdown-menu dropdown-menu-end">
-									<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
-									<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
-									<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
-									</div>
-								</div>
-								`;
-							},
-							"targets": 24,
-						},
-					],
-					"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
-					"<'table-responsive'tr>" +
-					"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-					drawCallback: function () {
-						$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-						$('.bs-tooltip').tooltip();
-
-						if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(4).visible(false);
-						}
-						if(!$('#sub_page_title_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(5).visible(false);
-						}
-						if(!$('#sub_ip_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(6).visible(false);
-						}
-						if(!$('#sub_ports_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(7).visible(false);
-						}
-						if(!$('#sub_content_length_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(8).visible(false);
-						}
-						if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(8).visible(false);
-						}
-						if(!$('#sub_response_time_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(10).visible(false);
-						}
-						if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
-							subdomain_datatables.column(9).visible(false);
-						}
-
-					},
-					"rowCallback": function( row, data, dataIndex ) {
-						if (data['is_important']){
-							$(row).addClass('table-danger');
-						}
-					},
-				});
-
-				$('#reload_subdomain_table_btn').click(function () {
-					subdomain_datatables.ajax.reload();
-				});
-
-				$('#subdomain-search-button').click(function () {
-					subdomain_datatables.search($("#subdomains-search").val()).draw() ;
-				});
-
-				$('input[name=sub_http_status_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(4).visible(true);
-					} else {
-						subdomain_datatables.column(4).visible(false);
-					}
-					window.localStorage.setItem('sub_http_status_filter_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=sub_page_title_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(5).visible(true);
-					} else {
-						subdomain_datatables.column(5).visible(false);
-					}
-					window.localStorage.setItem('sub_page_title_filter_checkbox', $(this).is(':checked'));
-				});
-				$('input[name=sub_ip_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(6).visible(true);
-					} else {
-						subdomain_datatables.column(6).visible(false);
-					}
-					window.localStorage.setItem('sub_ip_filter_checkbox', $(this).is(':checked'));
-				});
-				$('input[name=sub_ports_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(7).visible(true);
-					} else {
-						subdomain_datatables.column(7).visible(false);
-					}
-					window.localStorage.setItem('sub_ports_filter_checkbox', $(this).is(':checked'));
-				});
-				$('input[name=sub_content_length_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(8).visible(true);
-					} else {
-						subdomain_datatables.column(8).visible(false);
-					}
-					window.localStorage.setItem('sub_content_length_filter_checkbox', $(this).is(':checked'));
-				});
-				$('input[name=sub_response_time_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(10).visible(true);
-					} else {
-						subdomain_datatables.column(10).visible(false);
-					}
-					window.localStorage.setItem('sub_response_time_filter_checkbox', $(this).is(':checked'));
-				});
-				$('input[name=sub_screenshot_filter_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						subdomain_datatables.column(9).visible(true);
-					} else {
-						subdomain_datatables.column(9).visible(false);
-					}
-					window.localStorage.setItem('sub_screenshot_filter_checkbox', $(this).is(':checked'));
-				});
-
-				$("#subdomain_scan_results").on('click', '.btn-delete-subdomain', function () {
-					var subdomain_id = $(this).attr('id');
-					var data = {'subdomain_ids': [subdomain_id]};
-					var row = this;
-					Swal.fire({
-						showCancelButton: true,
-						title: 'Delete Subdomain!',
-						text: 'Do you really want to delete this subdomain? This action cannot be undone.',
-						icon: 'error',
-						confirmButtonText: 'Delete',
-					}).then((result) => {
-						if (result.isConfirmed) {
-							Swal.fire({
-								title: 'Deleting Subdomain...',
-								allowOutsideClick: false
-							});
-							swal.showLoading();
-							fetch('/api/action/subdomain/delete/', {
-								method: 'POST',
-								credentials: "same-origin",
-								headers: {
-									"X-CSRFToken": getCookie("csrftoken"),
-									'Content-Type': 'application/json'
-								},
-								body: JSON.stringify(data)
-							})
-							.then(response => response.json())
-							.then(function (response) {
-								swal.close();
-								if (response['status']) {
-									$(row).parent().parent().parent().remove();
-									Snackbar.show({
-										text: 'Subdomain successfully deleted!',
-										pos: 'top-right',
-										duration: 2500
-									});
-								}
-								else{
-									Swal.fire({
-										title:  'Could not delete Subdomain!',
-										icon: 'fail',
-									});
-								}
-							});
-						}
-					});;
-					$('a[data-toggle="tooltip"]').tooltip("hide")
-				});
-
-				$("#subdomain_scan_results").on('click', '.btn-scan-subdomain', function () {
-					$('input[type=checkbox]').prop('checked',false);
-					$('#subscan-modal').modal('show');
-					var subdomain_id = $(this).attr('id');
-					$('a[data-toggle="tooltip"]').tooltip("hide")
-					$('#subtask_subdomain_id').val(subdomain_id);
-					// to distinguish multiple subscan or single, put a extra attribute on button
-					$('#btn-initiate-subtask').attr('multiple-subscan', false);
-				});
-
-			});
-
-			$("#pills-endpoints-tab").click(function() {
-				get_endpoints(scan_history=null, domain_id={{target.id}}, gf_tags=null);
-			});
-
-			$("#pills-vulnerabilities-tab").click(function() {
-				var vulnerability_table = $('#vulnerability_results').DataTable({
-					"destroy": true,
-					"oLanguage": {
-						"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-						"sInfo": "Showing page _PAGE_ of _PAGES_",
-						"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-						"sSearchPlaceholder": "Search...",
-						"sLengthMenu": "Results :  _MENU_",
-					},
-					"processing": true,
-					"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
-					"<'table-responsive'tr>" +
-					"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-					"stripeClasses": [],
-					"lengthMenu": [20, 50, 100, 500, 1000],
-					"pageLength": 100,
-					'serverSide': true,
-					"ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
-					"order": [[ 4, "desc" ]],
-					"columns": [
-						{'data': 'id'},
-						{'data': 'type'},
-
-						{'data': 'name'},
-						{'data': 'cvss_metrics'},
-						{'data': 'tags'},
-						{'data': 'hackerone_report_id'},
-
-						{'data': 'severity'},
-						{'data': 'cvss_score'},
-						{'data': 'cve_ids'},
-						{'data': 'cwe_ids'},
-						{'data': 'http_url'},
-
-						{'data': 'description'},
-						{'data': 'references'},
-
-						{'data': 'discovered_date'},
-
-						{'data': 'open_status'},
-
-						{'data': 'hackerone_report_id'},
-
-						// extras
-						{'data': 'extracted_results'},
-						{'data': 'curl_command'},
-						{'data': 'matcher_name'},
-					],
-					"columnDefs": [
-						{ "orderable": false, "targets": [8, 11]},
-						{
-							"targets": [3, 4, 5, 9, 12, 16, 17, 18],
-							"visible": false,
-							"searchable": true,
-						},
-						{"className": "text-center", "targets": []},
-						{
-							"render": function ( data, type, row ) {
-								if(row['open_status']){
-									return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-								}
-								else{
-									return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, `+data+`);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
-								}
-							},
-							"targets": 0,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (data) {
-									return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
-								}
-							},
-							"targets": 1,
-						},
-						{
-							"render": function ( data, type, row ) {
-								var tags = '';
-								var cvss_metrics_badge = '';
-								switch (row['severity']) {
-									case 'Info':
-									color = 'primary';
-									badge_color = 'soft-primary';
-									break;
-									case 'Low':
-									color = 'low';
-									badge_color = 'soft-warning';
-									break;
-									case 'Medium':
-									color = 'warning';
-									badge_color = 'soft-warning';
-									break;
-									case 'High':
-									color = 'danger';
-									badge_color = 'soft-danger';
-									break;
-									case 'Critical':
-									color = 'critical';
-									badge_color = 'critical';
-									break;
-									case 'Unknown':
-									color = 'info';
-									badge_color = 'soft-info';
-									break;
-									default:
-								}
-								if (row['tags']) {
-									tags = '<div>';
-									row['tags'].forEach(tag => {
-										tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
-									});
-									tags += '</div>';
-								}
-								if (row['cvss_metrics']) {
-									cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
-								}
-								hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
-								return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
-							},
-							"targets": 2,
-						},
-						{
-							"render": function ( data, type, row ) {
-								return get_severity_badge(data);
-							},
-							"targets": 6,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (data) {
-									if (data > 0.1 && data <= 3.9) {
-										badge = 'info';
-									}
-									else if (data > 3.9 && data <= 6.9) {
-										badge = 'warning';
-									}
-									else if (data > 6.9 && data <= 8.9) {
-										badge = 'danger';
-									}
-									else{
-										badge = 'danger';
-									}
-									return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
-								}
-								return '';
-							},
-							"targets": 7,
-						},
-						{
-							"render": function ( data, type, row ) {
-								cve_cwe_badge = '<div>';
-
-								if (row['cve_ids']) {
-									row['cve_ids'].forEach(cve => {
-										cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
-									});
-								}
-								if (row['cwe_ids']) {
-									row['cwe_ids'].forEach(cwe => {
-										cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
-									});
-								}
-								return cve_cwe_badge + '</div>';
-							},
-							"targets": 8,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (data.includes('http')) {
-									return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
-								}
-								return data;
-							},
-							"targets": 10,
-						},
-						{
-							"render": function ( data, type, row ) {
-								description = row['description'] ? `<div>${row['description']}</div>` : '';
-								// show extracted results, and show matcher names, matcher names can be in badges
-								if (row['matcher_name']) {
-									description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
-								}
-
-								if (row['extracted_results'] && row['extracted_results'].length > 0) {
-									description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-									description += `<div class="collapse" id="results_${row['id']}"><ul>`;
-									row['extracted_results'].forEach(results => {
-										description += `<li>${results}</li>`;
-									});
-									description += '</ul></div>';
-								}
-
-								if (row['references'] && row['references'].length > 0) {
-									description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
-									description += `<div class="collapse" id="references_${row['id']}"><ul>`;
-									row['references'].forEach(reference => {
-										description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
-									});
-									description += '</ul></div>';
-								}
-
-								if (row['curl_command']) {
-									description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
-									description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
-									description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
-									description += '</ul></div>';
-								}
-
-								return description;
-							},
-							"targets": 11,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (data){
-									return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
-								}
-								else{
-									return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
-								}
-							},
-							"targets": 14,
-						},
-						{
-							"render": function ( data, type, row ) {
-								if (!data){
-									return `
-									<div class="btn-group mb-2 dropstart">
-									<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-									<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
-									</a>
-									<div class="dropdown-menu" style="">
-									<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
-									</div>
-									</div>`;
-								}
-								else{
-									return '';
-								}
-							},
-							"targets": 15,
-						},
-					],
-					drawCallback: function () {
-						if(!$('#vuln_type_checkbox').is(":checked")){
-							vulnerability_table.column(1).visible(false);
-						}
-
-						if(!$('#vuln_severity_checkbox').is(":checked")){
-							vulnerability_table.column(6).visible(false);
-						}
-						if(!$('#vuln_cvss_score_checkbox').is(":checked")){
-							vulnerability_table.column(7).visible(false);
-						}
-						if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
-							vulnerability_table.column(8).visible(false);
-						}
-						if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-							vulnerability_table.column(10).visible(false);
-						}
-						if(!$('#vuln_description_checkbox').is(":checked")){
-							vulnerability_table.column(11).visible(false);
-						}
-						if(!$('#vuln_discovered_on_checkbox').is(":checked")){
-							vulnerability_table.column(13).visible(false);
-						}
-						if(!$('#vuln_status_checkbox').is(":checked")){
-							vulnerability_table.column(14).visible(false);
-						}
-					},
-					createdRow: function( row, data, dataIndex ) {
-						if (!data['open_status']){
-							$(row).addClass('table-success text-strike');
-						}
-					},
-				});
-				$('#vulnerability-search-button').click(function () {
-					vulnerability_table.search($('#vulnerability-search').val()).draw() ;
-				});
-				$('#vulnerability-search-button').click(function () {
-					vulnerability_table.search($('#vulnerability-search').val()).draw() ;
-				});
-
-				$('input[name=vuln_type_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(1).visible(true);
-					} else {
-						vulnerability_table.column(1).visible(false);
-					}
-					window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_severity_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(6).visible(true);
-					} else {
-						vulnerability_table.column(6).visible(false);
-					}
-					window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_cvss_score_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(7).visible(true);
-					} else {
-						vulnerability_table.column(7).visible(false);
-					}
-					window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_cve_cwe_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(8).visible(true);
-					} else {
-						vulnerability_table.column(8).visible(false);
-					}
-					window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_vulnerable_url_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(10).visible(true);
-					} else {
-						vulnerability_table.column(10).visible(false);
-					}
-					window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_description_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(11).visible(true);
-					} else {
-						vulnerability_table.column(11).visible(false);
-					}
-					window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_discovered_on_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(13).visible(true);
-					} else {
-						vulnerability_table.column(13).visible(false);
-					}
-					window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
-				});
-
-				$('input[name=vuln_status_checkbox]').change(function() {
-					if ($(this).is(':checked')) {
-						vulnerability_table.column(14).visible(true);
-					} else {
-						vulnerability_table.column(14).visible(false);
-					}
-					window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
-				});
-			});
-
-			var filter_cols = [
-				'sub_http_status_filter_checkbox',
-				'sub_page_title_filter_checkbox',
-				'sub_ip_filter_checkbox',
-				'sub_ports_filter_checkbox',
-				'sub_content_length_filter_checkbox',
-				'sub_response_time_filter_checkbox',
-				'sub_screenshot_filter_checkbox',
-				'vuln_type_checkbox',
-				'vuln_severity_checkbox',
-				'vuln_cvss_score_checkbox',
-				'vuln_cve_cwe_checkbox',
-				'vuln_vulnerable_url_checkbox',
-				'vuln_description_checkbox',
-				'vuln_discovered_on_checkbox',
-				'vuln_status_checkbox',
-				'end_http_status_filter_checkbox',
-				'end_page_title_filter_checkbox',
-				'end_tags_filter_checkbox',
-				'end_content_type_filter_checkbox',
-				'end_content_length_filter_checkbox',
-				'end_response_time_filter_checkbox',
-			];
-
-			for (var col in filter_cols) {
-				if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
-					$('#' + filter_cols[col]).prop('checked', false);
-				}
 			}
+		},
+		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
+		labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
+		responsive: [{
+			breakpoint: 1599,
+			options: {
+				chart: {
+					height: 240
+				},
+				legend: {
+					position: 'bottom'
+				}
+			},
+			breakpoint: 1439,
+			options: {
+				chart: {
+					width: '250px',
+					height: '390px'
+				},
+			},
+		}],
+	}
 
+	var chart = new ApexCharts(
+		document.querySelector("#vulnerability-pie-chart"),
+		options
+	);
+	chart.render()
+
+	$("#pills-subdomain-tab").click(function() {
+		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
+			"headerCallback": function(e, a, t, n, s) {
+				e.getElementsByTagName("th")[0].innerHTML = '<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+			},
+			"destroy": true,
+			"processing": true,
+			"oLanguage": {
+				"oPaginate": {
+					"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+					"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+				},
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+				"sProcessing": "Fetching Subdomains... Please wait..."
+			},
+			"fnCreatedRow": function(nRow, aData, iDataIndex) {
+				$(nRow).attr('id', 'subdomain_row_' + aData['id']);
+			},
+			"stripeClasses": [],
+			"lengthMenu": [50, 100, 500, 1000],
+			"pageLength": 50,
+			'serverSide': true,
+			"ajax": '/api/listDatatableSubdomain/?target_id={{target.id}}&format=datatables',
+			"order": [
+				[8, "desc"]
+			],
+			"columns": [{
+					'data': 'id'
+				},
+				{
+					'data': 'name'
+				},
+				{
+					'data': 'endpoint_count'
+				},
+				{
+					'data': 'endpoint_count'
+				},
+				{
+					'data': 'http_status'
+				},
+				{
+					'data': 'page_title'
+				},
+				{
+					'data': 'ip_addresses'
+				},
+				{
+					'data': 'ip_addresses'
+				},
+				{
+					'data': 'content_length',
+					'searchable': false
+				},
+				{
+					'data': 'screenshot_path',
+					'searchable': false
+				},
+				{
+					'data': 'response_time'
+				},
+				{
+					'data': 'technologies'
+				},
+				{
+					'data': 'http_url'
+				},
+				{
+					'data': 'cname'
+				},
+				{
+					'data': 'is_interesting'
+				},
+				{
+					'data': 'info_count'
+				},
+				{
+					'data': 'low_count'
+				},
+				{
+					'data': 'medium_count'
+				},
+				{
+					'data': 'high_count'
+				},
+				{
+					'data': 'critical_count'
+				},
+				{
+					'data': 'todos_count'
+				},
+				{
+					'data': 'is_important'
+				},
+				{
+					'data': 'webserver'
+				},
+				{
+					'data': 'content_type'
+				},
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'directories_count'
+				},
+				{
+					'data': 'subscan_count'
+				},
+			],
+			"columnDefs": [{
+					"orderable": false,
+					"targets": [2, 3, 6, 7, 9]
+				},
+				{
+					"targets": [2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
+					"visible": false,
+					"searchable": false,
+				},
+				{
+					"targets": [11, 13, 21, 22, 23],
+					"visible": false,
+					"searchable": true,
+				},
+				{
+					"className": "text-center",
+					"targets": [2, 3, 4, 8, 10]
+				},
+				// checkbox
+				{
+					"targets": 0,
+					"width": "20px",
+					"className": "",
+					"orderable": !1,
+					render: function(e, a, t, n) {
+						return '<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox[' + e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
+					}
+				},
+				// subdomain Name
+				{
+					"render": function(data, type, row) {
+						badges = '';
+						tech_badge = '';
+						interesting_badge = '';
+						content_type = '';
+						web_server = '';
+						if (row['technologies']) {
+							tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id = null, domain_id = {{target.id}}) + '</div>';
+						}
+						if (row['is_interesting']) {
+							interesting_badge = `<div><span class='me-1 badge badge-soft-danger' data-toggle="tooltip" data-placement="top" title="Interesting Subdomain">Interesting</span></div>`;
+						}
+
+						if (row['content_type']) {
+							content_type = `<div><span class='mt-1 badge badge-soft-blue bs-tooltip' title="Content Type">${row['content_type']}</span></div>`;
+						}
+
+						if (row['webserver']) {
+							web_server = `<div><span class='mt-1 badge badge-soft-info bs-tooltip' title="Web Server">${row['webserver']}</span></div>`;
+						}
+
+						if (interesting_badge) {
+							badges = interesting_badge;
+						}
+
+						todo_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e7515a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`;
+						todo_badge = '';
+
+						if (row['todos_count']) {
+							todo_badge = `<span class="text-danger badge badge-link badge-soft-danger float-end mt-1" onclick="list_subdomain_todos(${row['id']}, '${row['name']}')">${todo_icon}&nbsp;${row['todos_count']} Todos&nbsp;</span>`
+						}
+
+						endpoint_count_badge = '';
+						if (row['endpoint_count']) {
+							endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal(scan_id=null, subdomain_id=${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
+						}
+
+						vuln_count_badge = '';
+						total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
+						info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
+						low_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-low bs-tooltip badge-link' title=" Low Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=1, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['low_count']} Low</span>`;
+						medium_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-warning bs-tooltip badge-link' title="Medium Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=2, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['medium_count']} Med</span>`;
+						high_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-danger bs-tooltip badge-link' title="High Severity Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=3, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['high_count']} High</span>`;
+						critical_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="Critical Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=4, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['critical_count']} Critical</span>`;
+						vuln_count_badge = `<div class="">` + (row['info_count'] > 0 ? info_badge : '') + (row['low_count'] > 0 ? low_badge : '') + (row['medium_count'] > 0 ? medium_badge : '') + (row['high_count'] > 0 ? high_badge : '') + (row['critical_count'] > 0 ? critical_badge : '') + `</div>`;
+
+						vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0 ? total_vuln_badge : '') + vuln_count_badge;
+
+						copy_icon = `
+	            <a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
+	            `;
+
+						var directory_count_badge = '';
+						if (row['directories_count']) {
+							directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+						}
+
+						var subscan_count_badge = '';
+						if (row['subscan_count']) {
+							subscan_count_badge = `<span class="badge me-1 badge-soft-blue badge-link bs-tooltip" title="SubScans" onclick="get_and_render_subscan_history(${row['id']}, '${row['name']}')">${row['subscan_count']} <i class="fas fa-history"></i></span>`;
+						}
+
+						tech_badge += content_type;
+						tech_badge += web_server;
+
+						end_vuln_badge = '<div class="">' + subscan_count_badge + endpoint_count_badge + directory_count_badge + vuln_count_badge + '</div>';
+
+						if (row['http_url']) {
+							if (row['cname']) {
+								cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
+								return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + cname_badge + end_vuln_badge + tech_badge + todo_badge;
+							}
+							return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+						}
+						return badges + `<div class="clipboard copy-txt"><a href="https://` + data + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+					},
+					"targets": 1
+				},
+				// http_status
+				{
+					"render": function(data, type, row) {
+						// display badge based on http status
+						// green for http status 2XX, orange for 3XX and warning for everything else
+						if (data >= 200 && data < 300) {
+							return "<span class='badge bg-success'>" + data + "</span>";
+						} else if (data >= 300 && data < 400) {
+							return "<span class='badge bg-warning'>" + data + "</span>";
+						} else if (data == 0) {
+							// datatable throws error when no data is returned
+							return "";
+						}
+						return `<span class='badge bg-danger'>` + data + `</span>`;
+					},
+					"targets": 4,
+				},
+				// page title
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							return htmlEncode(data);
+						}
+						return "";
+					},
+					"targets": 5,
+				},
+				// ip address
+				{
+					"render": function(data, type, row) {
+						ip_badge = ''
+						if (data) {
+							Object.entries(data).forEach(([key, value]) => {
+								if (value['is_cdn']) {
+									ip_badge += `<span class='m-1 badge badge-soft-warning badge-link' title="CDN IP Address" onclick="get_ip_details('${value.address}', scan_id=null, domain_id={{target.id}})">${value.address}</span>`
+								} else {
+									ip_badge += `<span class='m-1 badge badge-soft-primary badge-link' onclick="get_ip_details('${value.address}', scan_id=null, domain_id={{target.id}})">${value.address}</span>`
+								}
+							});
+							return ip_badge;
+						}
+						return "";
+					},
+					"targets": 6,
+				},
+				// open ports
+				{
+					"render": function(data, type, row) {
+						port_badge = ''
+						if (data) {
+							for (ip in data) {
+								ports = data[ip]['ports']
+								for (port in ports) {
+									port_obj = data[ip]['ports'][port]
+									badge_color = port_obj['is_uncommon'] ? 'danger' : 'primary';
+									title = port_obj['is_uncommon'] ? 'Uncommon Port - ' + port_obj['description'] : port_obj['description'];
+									port_badge += `<span class='m-1 badge badge-soft-${badge_color} bs-tooltip badge-link' title='${title}' onclick="get_port_details(${port_obj['number']}, scan_id=null, domain_id={{target.id}})">${port_obj['number']}/${port_obj['service_name']}</span>`
+								}
+							}
+							return port_badge;
+						}
+						return "";
+					},
+					"targets": 7,
+				},
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							//return lightbox with caption as http link
+							return data;
+						}
+						return 0;
+					},
+					"targets": 8,
+				},
+				// screenshot
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							//return lightbox with caption as http link
+							return `<a href="/media/` + data + `" data-lightbox="screenshots" data-title="&lt;a target='_blank' href='` + row['http_url'] + `'&gt;&lt;h3 style=&quot;color:white&quot;&gt;` + row['name'] + `&lt;/h3&gt;&lt;/a&gt;"><img src="/media/` + data + `" class="img-fluid rounded mb-4 mt-4 screenshot" onerror="removeImageElement(this)"></a>`;
+						}
+						return "";
+					},
+					"targets": 9,
+				},
+				// response_time
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							return get_response_time_text(data);
+						}
+						return "";
+					},
+					"targets": 10,
+				},
+				// Action
+				{
+					"render": function(data, type, row) {
+						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
+						return `
+	            <div class="btn-group mt-2">
+	            <button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+	            <button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+	            <button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
+	            <div class="dropdown-menu dropdown-menu-end">
+	            <a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
+	            <a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
+	            <a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+	            </div>
+	            </div>
+	            `;
+					},
+					"targets": 24,
+				},
+			],
+			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+				"<'table-responsive'tr>" +
+				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			drawCallback: function() {
+				$('.badge').tooltip({
+					template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+				})
+				$('.bs-tooltip').tooltip();
+
+				if (!$('#sub_http_status_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(4).visible(false);
+				}
+				if (!$('#sub_page_title_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(5).visible(false);
+				}
+				if (!$('#sub_ip_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(6).visible(false);
+				}
+				if (!$('#sub_ports_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(7).visible(false);
+				}
+				if (!$('#sub_content_length_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(8).visible(false);
+				}
+				if (!$('#sub_http_status_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(8).visible(false);
+				}
+				if (!$('#sub_response_time_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(10).visible(false);
+				}
+				if (!$('#sub_screenshot_filter_checkbox').is(":checked")) {
+					subdomain_datatables.column(9).visible(false);
+				}
+
+			},
+			"rowCallback": function(row, data, dataIndex) {
+				if (data['is_important']) {
+					$(row).addClass('table-danger');
+				}
+			},
 		});
-		</script>
-		{% endblock page_level_script %}
+
+		$('#reload_subdomain_table_btn').click(function() {
+			subdomain_datatables.ajax.reload();
+		});
+
+		$('#subdomain-search-button').click(function() {
+			subdomain_datatables.search($("#subdomains-search").val()).draw();
+		});
+
+		$('input[name=sub_http_status_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(4).visible(true);
+			} else {
+				subdomain_datatables.column(4).visible(false);
+			}
+			window.localStorage.setItem('sub_http_status_filter_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=sub_page_title_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(5).visible(true);
+			} else {
+				subdomain_datatables.column(5).visible(false);
+			}
+			window.localStorage.setItem('sub_page_title_filter_checkbox', $(this).is(':checked'));
+		});
+		$('input[name=sub_ip_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(6).visible(true);
+			} else {
+				subdomain_datatables.column(6).visible(false);
+			}
+			window.localStorage.setItem('sub_ip_filter_checkbox', $(this).is(':checked'));
+		});
+		$('input[name=sub_ports_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(7).visible(true);
+			} else {
+				subdomain_datatables.column(7).visible(false);
+			}
+			window.localStorage.setItem('sub_ports_filter_checkbox', $(this).is(':checked'));
+		});
+		$('input[name=sub_content_length_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(8).visible(true);
+			} else {
+				subdomain_datatables.column(8).visible(false);
+			}
+			window.localStorage.setItem('sub_content_length_filter_checkbox', $(this).is(':checked'));
+		});
+		$('input[name=sub_response_time_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(10).visible(true);
+			} else {
+				subdomain_datatables.column(10).visible(false);
+			}
+			window.localStorage.setItem('sub_response_time_filter_checkbox', $(this).is(':checked'));
+		});
+		$('input[name=sub_screenshot_filter_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				subdomain_datatables.column(9).visible(true);
+			} else {
+				subdomain_datatables.column(9).visible(false);
+			}
+			window.localStorage.setItem('sub_screenshot_filter_checkbox', $(this).is(':checked'));
+		});
+
+		$("#subdomain_scan_results").on('click', '.btn-delete-subdomain', function() {
+			var subdomain_id = $(this).attr('id');
+			var data = {
+				'subdomain_ids': [subdomain_id]
+			};
+			var row = this;
+			Swal.fire({
+				showCancelButton: true,
+				title: 'Delete Subdomain!',
+				text: 'Do you really want to delete this subdomain? This action cannot be undone.',
+				icon: 'error',
+				confirmButtonText: 'Delete',
+			}).then((result) => {
+				if (result.isConfirmed) {
+					Swal.fire({
+						title: 'Deleting Subdomain...',
+						allowOutsideClick: false
+					});
+					swal.showLoading();
+					fetch('/api/action/subdomain/delete/', {
+							method: 'POST',
+							credentials: "same-origin",
+							headers: {
+								"X-CSRFToken": getCookie("csrftoken"),
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(data)
+						})
+						.then(response => response.json())
+						.then(function(response) {
+							swal.close();
+							if (response['status']) {
+								$(row).parent().parent().parent().remove();
+								Snackbar.show({
+									text: 'Subdomain successfully deleted!',
+									pos: 'top-right',
+									duration: 2500
+								});
+							} else {
+								Swal.fire({
+									title: 'Could not delete Subdomain!',
+									icon: 'fail',
+								});
+							}
+						});
+				}
+			});;
+			$('a[data-toggle="tooltip"]').tooltip("hide")
+		});
+
+		$("#subdomain_scan_results").on('click', '.btn-scan-subdomain', function() {
+			$('input[type=checkbox]').prop('checked', false);
+			$('#subscan-modal').modal('show');
+			var subdomain_id = $(this).attr('id');
+			$('a[data-toggle="tooltip"]').tooltip("hide")
+			$('#subtask_subdomain_id').val(subdomain_id);
+			// to distinguish multiple subscan or single, put a extra attribute on button
+			$('#btn-initiate-subtask').attr('multiple-subscan', false);
+		});
+
+	});
+
+	$("#pills-endpoints-tab").click(function() {
+		get_endpoints(scan_history=null, domain_id={{target.id}}, gf_tags=null);
+	});
+
+	$("#pills-vulnerabilities-tab").click(function() {
+		var vulnerability_table = $('#vulnerability_results').DataTable({
+			"destroy": true,
+			"oLanguage": {
+				"oPaginate": {
+					"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+					"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+				},
+				"sInfo": "Showing page _PAGE_ of _PAGES_",
+				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+				"sSearchPlaceholder": "Search...",
+				"sLengthMenu": "Results :  _MENU_",
+			},
+			"processing": true,
+			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+				"<'table-responsive'tr>" +
+				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			"stripeClasses": [],
+			"lengthMenu": [20, 50, 100, 500, 1000],
+			"pageLength": 100,
+			'serverSide': true,
+			"ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
+			"order": [
+				[4, "desc"]
+			],
+			"columns": [{
+					'data': 'id'
+				},
+				{
+					'data': 'type'
+				},
+
+				{
+					'data': 'name'
+				},
+				{
+					'data': 'cvss_metrics'
+				},
+				{
+					'data': 'tags'
+				},
+				{
+					'data': 'hackerone_report_id'
+				},
+
+				{
+					'data': 'severity'
+				},
+				{
+					'data': 'cvss_score'
+				},
+				{
+					'data': 'cve_ids'
+				},
+				{
+					'data': 'cwe_ids'
+				},
+				{
+					'data': 'http_url'
+				},
+
+				{
+					'data': 'description'
+				},
+				{
+					'data': 'references'
+				},
+
+				{
+					'data': 'discovered_date'
+				},
+
+				{
+					'data': 'open_status'
+				},
+
+				{
+					'data': 'hackerone_report_id'
+				},
+
+				// extras
+				{
+					'data': 'extracted_results'
+				},
+				{
+					'data': 'curl_command'
+				},
+				{
+					'data': 'matcher_name'
+				},
+			],
+			"columnDefs": [{
+					"orderable": false,
+					"targets": [8, 11]
+				},
+				{
+					"targets": [3, 4, 5, 9, 12, 16, 17, 18],
+					"visible": false,
+					"searchable": true,
+				},
+				{
+					"className": "text-center",
+					"targets": []
+				},
+				{
+					"render": function(data, type, row) {
+						if (row['open_status']) {
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						} else {
+							return `<div class="form-check mb-2 form-check-primary"><input type="checkbox" checked name="targets_checkbox['+ e + ']" class="float-start form-check-input" onchange="vuln_status_change(this, ` + data + `);">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>`;
+						}
+					},
+					"targets": 0,
+				},
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
+						}
+					},
+					"targets": 1,
+				},
+				{
+					"render": function(data, type, row) {
+						var tags = '';
+						var cvss_metrics_badge = '';
+						switch (row['severity']) {
+							case 'Info':
+								color = 'primary';
+								badge_color = 'soft-primary';
+								break;
+							case 'Low':
+								color = 'low';
+								badge_color = 'soft-warning';
+								break;
+							case 'Medium':
+								color = 'warning';
+								badge_color = 'soft-warning';
+								break;
+							case 'High':
+								color = 'danger';
+								badge_color = 'soft-danger';
+								break;
+							case 'Critical':
+								color = 'critical';
+								badge_color = 'critical';
+								break;
+							case 'Unknown':
+								color = 'info';
+								badge_color = 'soft-info';
+								break;
+							default:
+						}
+						if (row['tags']) {
+							tags = '<div>';
+							row['tags'].forEach(tag => {
+								tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
+							});
+							tags += '</div>';
+						}
+						if (row['cvss_metrics']) {
+							cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+						}
+						hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
+						return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
+					},
+					"targets": 2,
+				},
+				{
+					"render": function(data, type, row) {
+						return get_severity_badge(data);
+					},
+					"targets": 6,
+				},
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							if (data > 0.1 && data <= 3.9) {
+								badge = 'info';
+							} else if (data > 3.9 && data <= 6.9) {
+								badge = 'warning';
+							} else if (data > 6.9 && data <= 8.9) {
+								badge = 'danger';
+							} else {
+								badge = 'danger';
+							}
+							return `<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${data}</span>`;
+						}
+						return '';
+					},
+					"targets": 7,
+				},
+				{
+					"render": function(data, type, row) {
+						cve_cwe_badge = '<div>';
+
+						if (row['cve_ids']) {
+							row['cve_ids'].forEach(cve => {
+								cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+							});
+						}
+						if (row['cwe_ids']) {
+							row['cwe_ids'].forEach(cwe => {
+								cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+							});
+						}
+						return cve_cwe_badge + '</div>';
+					},
+					"targets": 8,
+				},
+				{
+					"render": function(data, type, row) {
+						if (data.includes('http')) {
+							return "<a href='" + htmlEncode(data) + "' target='_blank' class='text-danger'>" + htmlEncode(data) + "</a>";
+						}
+						return data;
+					},
+					"targets": 10,
+				},
+				{
+					"render": function(data, type, row) {
+						description = row['description'] ? `<div>${row['description']}</div>` : '';
+						// show extracted results, and show matcher names, matcher names can be in badges
+						if (row['matcher_name']) {
+							description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
+						}
+
+						if (row['extracted_results'] && row['extracted_results'].length > 0) {
+							description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
+							description += `<div class="collapse" id="results_${row['id']}"><ul>`;
+							row['extracted_results'].forEach(results => {
+								description += `<li>${results}</li>`;
+							});
+							description += '</ul></div>';
+						}
+
+						if (row['references'] && row['references'].length > 0) {
+							description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
+							description += `<div class="collapse" id="references_${row['id']}"><ul>`;
+							row['references'].forEach(reference => {
+								description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
+							});
+							description += '</ul></div>';
+						}
+
+						if (row['curl_command']) {
+							description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
+							description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
+							description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
+							description += '</ul></div>';
+						}
+
+						return description;
+					},
+					"targets": 11,
+				},
+				{
+					"render": function(data, type, row) {
+						if (data) {
+							return '<span class="badge badge-soft-danger">&nbsp;&nbsp;OPEN&nbsp;&nbsp;</span>'
+						} else {
+							return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
+						}
+					},
+					"targets": 14,
+				},
+				{
+					"render": function(data, type, row) {
+						if (!data) {
+							return `
+										<div class="btn-group mb-2 dropstart">
+										<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+										</a>
+										<div class="dropdown-menu" style="">
+										<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+										</div>
+										</div>`;
+						} else {
+							return '';
+						}
+					},
+					"targets": 15,
+				},
+			],
+			drawCallback: function() {
+				if (!$('#vuln_type_checkbox').is(":checked")) {
+					vulnerability_table.column(1).visible(false);
+				}
+
+				if (!$('#vuln_severity_checkbox').is(":checked")) {
+					vulnerability_table.column(6).visible(false);
+				}
+				if (!$('#vuln_cvss_score_checkbox').is(":checked")) {
+					vulnerability_table.column(7).visible(false);
+				}
+				if (!$('#vuln_cve_cwe_checkbox').is(":checked")) {
+					vulnerability_table.column(8).visible(false);
+				}
+				if (!$('#vuln_vulnerable_url_checkbox').is(":checked")) {
+					vulnerability_table.column(10).visible(false);
+				}
+				if (!$('#vuln_description_checkbox').is(":checked")) {
+					vulnerability_table.column(11).visible(false);
+				}
+				if (!$('#vuln_discovered_on_checkbox').is(":checked")) {
+					vulnerability_table.column(13).visible(false);
+				}
+				if (!$('#vuln_status_checkbox').is(":checked")) {
+					vulnerability_table.column(14).visible(false);
+				}
+			},
+			createdRow: function(row, data, dataIndex) {
+				if (!data['open_status']) {
+					$(row).addClass('table-success text-strike');
+				}
+			},
+		});
+		$('#vulnerability-search-button').click(function() {
+			vulnerability_table.search($('#vulnerability-search').val()).draw();
+		});
+		$('#vulnerability-search-button').click(function() {
+			vulnerability_table.search($('#vulnerability-search').val()).draw();
+		});
+
+		$('input[name=vuln_type_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(1).visible(true);
+			} else {
+				vulnerability_table.column(1).visible(false);
+			}
+			window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_severity_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(6).visible(true);
+			} else {
+				vulnerability_table.column(6).visible(false);
+			}
+			window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_cvss_score_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(7).visible(true);
+			} else {
+				vulnerability_table.column(7).visible(false);
+			}
+			window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_cve_cwe_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(8).visible(true);
+			} else {
+				vulnerability_table.column(8).visible(false);
+			}
+			window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_vulnerable_url_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(10).visible(true);
+			} else {
+				vulnerability_table.column(10).visible(false);
+			}
+			window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_description_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(11).visible(true);
+			} else {
+				vulnerability_table.column(11).visible(false);
+			}
+			window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_discovered_on_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(13).visible(true);
+			} else {
+				vulnerability_table.column(13).visible(false);
+			}
+			window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
+		});
+
+		$('input[name=vuln_status_checkbox]').change(function() {
+			if ($(this).is(':checked')) {
+				vulnerability_table.column(14).visible(true);
+			} else {
+				vulnerability_table.column(14).visible(false);
+			}
+			window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
+		});
+	});
+
+	// load scan history widget
+	loadSubscanHistoryWidget(scan_history_id=null, domain_id={{target.id}});
+
+	get_important_subdomains(target_id={{target.id}}, scan_history_id=null);
+	get_recon_notes(target_id={{target.id}}, scan_history_id=null);
+
+	get_ips(scan_id=null, domain_id={{target.id}});
+	get_technologies(scan_id=null, domain_id={{target.id}});
+	get_ports(scan_id=null, domain_id={{target.id}});
+
+	var clipboard = new Clipboard('.copyable');
+	clipboard.on('success', function(e) {
+	  setTooltip(e.trigger, 'Copied!');
+	  hideTooltip(e.trigger);
+	});
+
+	get_most_vulnerable_target(scan_id=null, target_id={{target.id}}, ignore_info=false);
+	// listener for info checkbox on most vulnerable target
+	$('#ignore_info_most_vuln_checkbox').change(function() {
+		if (this.checked) {
+			var text_msg = 'Informational Vulnerabilities ignored in Most Vulnerable Targets.';
+		}
+		else{
+			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
+		}
+		get_most_vulnerable_target(scan_id=null, target_id={{target.id}}, ignore_info=this.checked);
+		Snackbar.show({
+			text: text_msg,
+			pos: 'top-right',
+			duration: 2500
+		});
+	});
+
+	get_most_common_vulnerability(scan_id=null, target_id={{target.id}}, ignore_info=false);
+	// listener for info checkbox on most vulnerable target
+	$('#ignore_info_most_common_vuln_checkbox').change(function() {
+		if (this.checked) {
+			var text_msg = 'Informational Vulnerabilities ignored for Most Common Vulnerabilities.';
+		}
+		else{
+			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
+		}
+		get_most_common_vulnerability(scan_id=null, target_id={{target.id}}, ignore_info=this.checked);
+		Snackbar.show({
+			text: text_msg,
+			pos: 'top-right',
+			duration: 2500
+		});
+	});
+
+
+	var filter_cols = [
+		'sub_http_status_filter_checkbox',
+		'sub_page_title_filter_checkbox',
+		'sub_ip_filter_checkbox',
+		'sub_ports_filter_checkbox',
+		'sub_content_length_filter_checkbox',
+		'sub_response_time_filter_checkbox',
+		'sub_screenshot_filter_checkbox',
+		'vuln_type_checkbox',
+		'vuln_severity_checkbox',
+		'vuln_cvss_score_checkbox',
+		'vuln_cve_cwe_checkbox',
+		'vuln_vulnerable_url_checkbox',
+		'vuln_description_checkbox',
+		'vuln_discovered_on_checkbox',
+		'vuln_status_checkbox',
+		'end_http_status_filter_checkbox',
+		'end_page_title_filter_checkbox',
+		'end_tags_filter_checkbox',
+		'end_content_type_filter_checkbox',
+		'end_content_length_filter_checkbox',
+		'end_response_time_filter_checkbox',
+	];
+
+	for (var col in filter_cols) {
+		if(window.localStorage.getItem(filter_cols[col]) != null && window.localStorage.getItem(filter_cols[col]) === 'false'){
+			$('#' + filter_cols[col]).prop('checked', false);
+		}
+	}
+
+});
+</script>
+{% endblock page_level_script %}

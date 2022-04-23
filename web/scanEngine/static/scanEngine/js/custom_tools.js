@@ -4,17 +4,23 @@ function load_gf_template(pattern_name){
 	});
 	swal.showLoading();
 
-  $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(data) {
-    console.log(data);
+  $.getJSON(`/api/getFileContents?gf_pattern&name=${pattern_name}&format=json`, function(response) {
     swal.close();
-    $('#modal_title').empty();
-    $('#modal-content').empty();
-  	$("#modal-footer").empty();
+    if (response.status) {
+      $('#modal_title').empty();
+      $('#modal-content').empty();
+      $("#modal-footer").empty();
 
-    $('#modal_title').html(`GF Pattern ` + htmlEncode(pattern_name));
+      $('#modal_title').html(`GF Pattern ` + htmlEncode(pattern_name));
 
-    $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
-    $('#modal_dialog').modal('show');
+      $('#modal-content').append(`<pre>${htmlEncode(response['content'])}</pre>`);
+      $('#modal_dialog').modal('show');
+    }
+    else{
+      swal.fire("Error!", response.message, "error", {
+        button: "Okay",
+      });
+    }
 
   }).fail(function(){
     swal.fire("Error!", 'Error loading gf pattern!', "error", {
@@ -23,20 +29,34 @@ function load_gf_template(pattern_name){
   });
 }
 
-
 function load_nuclei_template(pattern_name){
-  $('#modal-size').removeClass('modal-lg');
-  $('#modal-size').addClass('modal-xl');
-  $('.modal-title').html(`Nuclei Pattern ` + htmlEncode(pattern_name));
-  $('#exampleModal').modal('show');
-  $('.modal-text').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-primary align-self-center loader-sm"></span></div>`);
-  $.getJSON(`/api/getFileContents?nuclei_template&name=${pattern_name}&format=json`, function(data) {
-    $('#modal-loader').empty();
-    $('#modal-content').append(`<pre>${htmlEncode(data['content'])}</pre>`);
+  Swal.fire({
+		title: `Fetching Nuclei template ${pattern_name}...`,
+	});
+	swal.showLoading();
+
+  $.getJSON(`/api/getFileContents?nuclei_template&name=${pattern_name}&format=json`, function(response) {
+    swal.close();
+    if (response.status) {
+      $('#modal_title').empty();
+      $('#modal-content').empty();
+      $("#modal-footer").empty();
+
+      $('#modal_title').html(`Nuclei Template: ` + htmlEncode(pattern_name));
+
+      $('#modal-content').append(`<pre>${htmlEncode(response['content'])}</pre>`);
+      $('#modal_dialog').modal('show');
+    }
+    else{
+      swal.fire("Error!", response.message, "error", {
+        button: "Okay",
+      });
+    }
+
   }).fail(function(){
-    $('#modal-loader').empty();
-    $("#modal-content").append(`<p class='text-danger'>Error loading Nuclei Template</p>`);
+    swal.fire("Error!", 'Error loading Nuclei Template!', "error", {
+      button: "Okay",
+    });
   });
 }
 

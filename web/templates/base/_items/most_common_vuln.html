@@ -1,54 +1,26 @@
 <div class="card" style="height: 95%">
   <div class="card-body">
-    <h4 class="header-title mb-3"><span class="text-danger me-1"><i class="fas fa-bug"></i></span>Most Common Vulnerabilities
-      <br>
-      <small class="text-info">(Informational Vulnerability are ignored)</small>
-    </h4>
-    <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
-      {% if most_common_vulnerability %}
-      <table class="table table-borderless table-nowrap table-hover table-centered m-0">
-        <thead class="">
-          <tr>
-            <th style="width: 40%">Vulnerability Name</th>
-            <th style="width: 10%">Count</th>
-            <th style="width: 50%">Severity</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in most_common_vulnerability %}
-          <tr onclick="window.location='/scan/detail/vuln?vulnerability_name={{item.name}}';" style="cursor: pointer;">
-            <td>
-              <h5 class="m-0 fw-normal">{{item.name}}</h5>
-            </td>
-            <td class="text-center">
-              {{item.count}}
-            </td>
-            <td>
-              <div class="t-rate">
-                {% if item.severity == 0 %}
-                <span class='badge badge-soft-info'>Info</span>
-                {% elif item.severity == 1 %}
-                <span class='badge badge-low'>Low</span>
-                {% elif item.severity == 2 %}
-                <span class='badge badge-soft-warning'>Medium</span>
-                {% elif item.severity == 3 %}
-                <span class='badge badge-soft-danger'>High</span>
-                {% elif item.severity == 4 %}
-                <span class='badge badge-critical'>Critical</span>
-                {% elif item.severity == -1 %}
-                <span class='badge badge-soft-info'>Uknown</span>
-                {% endif %}
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      {% else %}
-      <div class="alert alert-primary border-0 mb-4" role="alert">
-        Not enough data, once Vulnerability Scan is performed this section will be auto populated.
+    <div class="header-title mb-3">
+      <div class="row">
+        <div class="col-6">
+          <h4><span class="text-danger me-1"><i class="fas fa-bug"></i></span>Most Common Vulnerabilities</h4>
+        </div>
+        <div class="col-6">
+          <div class="form-check float-end">
+            <input type="checkbox" class="form-check-input" id="ignore_info_most_common_vuln_checkbox">
+            <label class="form-check-label" for="ignore_info_most_common_vuln_checkbox">Ignore Info Vulnerabilities</label>
+          </div>
+        </div>
       </div>
-      {% endif %}
+    </div>
+    <div class="row">
+      <div class="col-12 mt-1">
+        <div class="inbox-widget table-responsive" data-simplebar style="max-height: 407px;">
+          <div class="d-flex justify-content-center" id="most_common_vuln_spinner"></div>
+          <div id="most_common_vuln_div">
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
