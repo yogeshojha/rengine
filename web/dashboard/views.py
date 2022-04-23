@@ -184,3 +184,7 @@ def on_user_logged_in(sender, request, **kwargs):
         'Hi @' +
         request.user.username +
         ' welcome back!')
+
+
+def search(request):
+    return render(request, 'dashboard/search.html')

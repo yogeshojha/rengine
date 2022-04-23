@@ -2,6 +2,27 @@
 <div class="navbar-custom">
   <div class="container-fluid">
     <ul class="list-unstyled topnav-menu float-end mb-0">
+      <li class="d-none d-lg-block">
+      <form class="app-search" method="get" action="/search">
+        <div class="app-search-box dropdown">
+          <div class="input-group">
+            <input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query">
+            <button class="btn input-group-text" type="submit">
+              <i class="fe-search"></i>
+            </button>
+          </div>
+          <div class="dropdown-menu dropdown-lg" id="search-dropdown">
+            <div class="dropdown-header noti-title">
+              <h5 class="text-overflow mb-2">Search History</h5>
+            </div>
+            <!--<a href="javascript:void(0);" class="dropdown-item notify-item">
+              <i class="fe-home me-1"></i>
+              <span>Analytics Report</span>
+            </a>-->
+          </div>
+        </div>
+      </form>
+      </li>
       <li class="dropdown d-none d-xl-block">
         <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
           <i class="fe-plus me-1"></i> Quick Add
