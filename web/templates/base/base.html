@@ -130,7 +130,7 @@
           if (response.status) {
             for (var history in response.results) {
               $('#search-history-items').append(`
-                <a href="javascript:void(0);" class="dropdown-item notify-item">
+                <a href="/search/?query=${response.results[history].query}" class="dropdown-item notify-item">
                   <span>${response.results[history].query}</span>
                 </a>
               `);
