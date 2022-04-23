@@ -63,6 +63,8 @@ $(document).ready(function() {
 		'serverSide': true,
 		{% if request.GET.ip_address %}
 		"ajax": '/api/listDatatableSubdomain/?&format=datatables&ip_address={{request.GET.ip_address}}',
+		{% elif request.GET.name %}
+		"ajax": '/api/listDatatableSubdomain/?&format=datatables&name={{request.GET.name}}',
 		{% else %}
 		"ajax": '/api/listDatatableSubdomain/?&format=datatables',
 		{% endif %}
