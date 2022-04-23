@@ -196,6 +196,10 @@ urlpatterns = [
         'fetch/most_common_vulnerability',
         FetchMostCommonVulnerability.as_view(),
         name='fetch_most_common_vulnerability'),
+    path(
+        'search',
+        UniversalSearch.as_view(),
+        name='search'),
     # API for fetching currently ongoing scans and upcoming scans
     path(
         'scan_status/',

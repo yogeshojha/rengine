@@ -40,6 +40,60 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class UniversalSearch(APIView):
+	def get(self, request):
+		req = self.request
+		query = req.query_params.get('query')
+
+		response = {}
+		response['status'] = False
+
+		if not query:
+			response['message'] = 'No query parameter provided!'
+			return Response(response)
+
+		response['results'] = {}
+
+		# lookup query in subdomain
+		subdomain = Subdomain.objects.filter(
+			Q(name__icontains=query) |
+			Q(cname__icontains=query) |
+			Q(page_title__icontains=query) |
+			Q(http_url__icontains=query) |
+			Q(ip_addresses__address__icontains=query) |
+			Q(ip_addresses__ports__number__icontains=query) |
+			Q(ip_addresses__ports__service_name__icontains=query) |
+			Q(ip_addresses__ports__description__icontains=query)
+		)
+		subdomain_data = SubdomainSerializer(subdomain, many=True).data
+		response['results']['subdomains'] = subdomain_data
+
+		endpoint = EndPoint.objects.filter(
+			Q(http_url__icontains=query) |
+			Q(page_title__icontains=query)
+		)
+		endpoint_data = EndpointSerializer(endpoint, many=True).data
+		response['results']['endpoints'] = endpoint_data
+
+		vulnerability = Vulnerability.objects.filter(
+			Q(http_url__icontains=query) |
+			Q(target_domain__name__icontains=query) |
+			Q(template__icontains=query) |
+			Q(name__icontains=query) |
+			Q(description__icontains=query) |
+			Q(extracted_results__icontains=query) |
+			Q(references__url__icontains=query) |
+			Q(cve_ids__name__icontains=query) |
+			Q(cwe_ids__name__icontains=query)
+		)
+		vulnerability_data = VulnerabilitySerializer(vulnerability, many=True).data
+		response['results']['vulnerabilities'] = vulnerability_data
+
+
+
+		return Response(response)
+
+
 class FetchMostCommonVulnerability(APIView):
 	def post(self, request):
 		req = self.request
