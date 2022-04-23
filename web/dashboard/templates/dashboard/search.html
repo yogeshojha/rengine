@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+Universal Search
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+Search Results
+{% endblock page_title %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active">Universal Search</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-lg-12">
+    <div class="search-result-box card">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8 offset-md-2">
+            <div class="pt-3 pb-4">
+              <div class="input-group">
+                <input type="text" class="form-control" value="Admin Dashboard">
+                <button type="button" class="input-group-text btn waves-effect waves-light btn-primary"><i class="fa fa-search me-1"></i> Search</button>
+              </div>
+              <div class="mt-3 text-center">
+                <h4>Search Results For "Subdomain"</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ul class="nav nav-tabs nav-bordered">
+          <li class="nav-item">
+            <a href="#subdomains" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
+              Subdomains <span class="badge bg-primary ms-1" id="search-subdomains-badge"></span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="#endpoints" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+              Endpoints <span class="badge bg-primary ms-1" id="search-endpoints-badge"></span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="#vulnerabilities" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+              Vulnerabilities <span class="badge bg-primary ms-1" id="search-vulnerabilities-badge"></span>
+            </a>
+          </li>
+
+          <li class="nav-item">
+            <a href="#others" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+              Others <span class="badge bg-primary ms-1" id="search-others-badge"></span>
+            </a>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+{% endblock page_level_script %}
