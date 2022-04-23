@@ -962,13 +962,13 @@
                 <br>
                 <span class="mini-heading">CVSS Score:</span>&nbsp;<span class="high-color">{{vulnerability.list.0.cvss_score}}</span>
               {% endif %}
-              {% if vulnerability.list.0.cve_ids %}
+              {% if vulnerability.list.0.cve_ids.all %}
               <br>
               <br>
               <span class="mini-heading">CVE IDs</span><br>
                 &nbsp;&nbsp;&nbsp;&nbsp;{% for cve in vulnerability.list.0.cve_ids.all %} {{cve}}{% if not forloop.last %}, {% endif %} {% endfor %}
               {% endif %}
-              {% if vulnerability.list.0.cwe_ids %}
+              {% if vulnerability.list.0.cwe_ids.all %}
               <br>
               <br>
               <span class="mini-heading">CWE IDs</span><br>
@@ -994,7 +994,7 @@
                   {% endfor %}
                 {% endfor %}
               </ul>
-              {% if vulnerability.list.0.references %}
+              {% if vulnerability.list.0.references.all %}
                 <br>
                 <br>
                 <span class="mini-heading">References</span><br>
