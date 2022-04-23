@@ -80,7 +80,10 @@ Search Results
 				</div>
 				<div class="tab-content">
 					<div class="tab-pane active" id="subdomains-tab">
-
+					</div>
+					<div class="tab-pane" id="endpoints-tab">
+					</div>
+					<div class="tab-pane" id="vulnerabilities-tab">
 					</div>
 				</div>
 			</div>
@@ -158,10 +161,49 @@ $(document).ready(function() {
 				if (response.results.endpoints.length) {
 					$('.endpoints').show();
 					$('#search-endpoints-count-badge').append(`${response.results.endpoints.length}`);
+
+					for (var endpoint in response.results.endpoints) {
+						var endpoint_obj = response.results.endpoints[endpoint];
+
+						var append_content = `<div class="search-item"><a href="/scan/detail/all/endpoint?url=${endpoint_obj.http_url}" target="_blank">`;
+
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, endpoint_obj.http_url)}</span>${get_http_status_badge(endpoint_obj.http_status)}</h4>`;
+
+						if (endpoint_obj.page_title) {
+							append_content += `<div class="font-13 text-dark mb-2 text-truncate">
+								${highlight_search(search_val, endpoint_obj.page_title)}
+							</div>`;
+						}
+
+						append_content += '</a></div>';
+
+						$('#endpoints-tab').append(append_content);
+					}
+
 				}
 				if (response.results.vulnerabilities.length) {
 					$('.vulnerabilities').show();
 					$('#search-vulnerabilities-count-badge').append(`${response.results.vulnerabilities.length}`);
+
+					for (var vuln in response.results.vulnerabilities) {
+						var vuln_obj = response.results.vulnerabilities[vuln];
+						var append_content = `<div class="search-item"><a href="/scan/detail/vuln?vulnerability_name=${vuln_obj.name}" target="_blank">`;
+
+						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, vuln_obj.name)}</span>${get_severity_badge(vuln_obj.severity)}</h4>`;
+
+						if (vuln_obj.http_url) {
+							append_content += `<span class="text-muted">Vulnerable URL: ${highlight_search(search_val, vuln_obj.http_url)}</span>`
+						}
+
+						if (vuln_obj.description) {
+							append_content += `<p class="text-dark mt-2">Description: ${highlight_search(search_val, vuln_obj.description)}</p>`;
+						}
+
+						append_content += '</a></div>';
+
+						$('#vulnerabilities-tab').append(append_content);
+					}
+
 				}
 				if (response.results.others.length) {
 					$('.others').show();

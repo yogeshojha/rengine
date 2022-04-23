@@ -2528,5 +2528,6 @@ function get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info
 
 function highlight_search(search_keyword, content){
 	// this function will send the highlighted text from search keyword
-	return content.replaceAll(search_keyword, '<mark>' + search_keyword + '</mark>')
+	var reg = new RegExp('('+search_keyword+')', 'gi');
+	return content.replace(reg, '<mark>$1</mark>');
 }
