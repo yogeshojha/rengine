@@ -30,7 +30,7 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 
 Dashboard             |  Scan Results
 :-------------------------:|:-------------------------:
-![](.github/screenshots/1.gif)  |  ![](.github/screenshots/2.gif)
+![](.github/screenshots/dashboard.gif)  |  ![](.github/screenshots/scan_results.gif)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -67,7 +67,7 @@ Dashboard             |  Scan Results
 
 ## About reNgine
 
-<img src=".github/screenshots/rengine_1.jpeg">
+<img src="https://user-images.githubusercontent.com/17223002/164993688-50eb95f2-3653-4ef7-bd3b-ef7a096824ea.jpeg">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -126,40 +126,29 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 ## Screenshots
 
 **General Usage**
-<img src=".github/screenshots/3.gif">
 
+<img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
 
-**Dark Mode**
-<img src=".github/screenshots/dark.gif">
+**Initiating Subscan**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
 
 **Recon Data filtering**
-<img src=".github/screenshots/filtering.gif">
 
-<details>
-  <summary>Other Screenshots (Click to Expand!)</summary>
+<img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
 
-  **Auto Report Vulnerability to hackerone with customizable vulnerability report template**
-  <img src=".github/screenshots/hackerone1.gif">
+**Report Generation**
 
-  **Report Vulnerability Manually**
-  <img src=".github/screenshots/hackerone.gif">
+<img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
 
-  **Customizable Notification**
-  <img src=".github/screenshots/notif.gif">
+**Toolbox**
 
-  **Tagging Organization**
-  <img src=".github/screenshots/organization.gif">
+<img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
 
-  **Recon data Visualization**
-  <img src=".github/screenshots/visualization.gif">
+**Adding Custom tool in Tools Arsenal**
 
-  **Upload custom GF and Nuclei patterns, with option to edit tool configuration**
-  <img src=".github/screenshots/tool.gif">
+<img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
 
-  **Recon TODO**
-  <img src=".github/screenshots/todo.gif">
-
-</details>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
