@@ -15,11 +15,18 @@
 <a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461" alt="" /></a>&nbsp;
 </p>
 
-<p align="left">An automated reconnaissance framework for web applications with focus on highly configurable streamlined recon process via Engines, recon data correlation and organization, continuous monitoring, backed by database and simple yet intuitive User Interface.</p>
+<h3>reNgine 1.1<br>More than just recon!</h3>
+<h4>The only web application recon tool you will ever need!</h4>
 
-<p align="left">
-reNgine makes is easy for penetration testers to gather reconnaissance with minimal configuration and with the help of reNgine's correlation, it just makes recon effortless.
+<p>Quickly discover the attack surface, identify vulnerabilities using extremely customizable and powerful scan engines.
+Enjoy peace of mind with reNgine's continous monitoring, deeper reconnaissance and open-source powered Vulnerability Scanner.</p>
+
+<h4>What is reNgine?</h4>
+<p align="left">reNgine is a web application reconnaissance suite with focus on highly configurable streamlined recon process via Engines, recon data correlation, continuous monitoring, recon data backed by database and simple yet intuitive User Interface. With features such as subscan, deeper co-relation, report generation, etc reNgine aims to fix the gap in the traditional recon tools and probably a better alternative for commercial tools.
+
+reNgine makes it easy for penetration testers and security auditors to gather reconnaissance data with bare minimal configuration.
 </p>
+
 
 Dashboard             |  Scan Results
 :-------------------------:|:-------------------------:
@@ -65,44 +72,51 @@ Dashboard             |  Scan Results
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-reNgine is an automated reconnaissance framework with a focus on a highly configurable streamlined recon process. reNgine is backed by a database, with data correlation and organization, the custom query “like” language for recon data filtering, reNgine aims to address the shortcomings of traditional recon workflow. Developers behind the reNgine understand that recon data can be huge, manually looking up for entries to attack could be cumbersome, with features like Auto Interesting Subdomains discovery, reNgine automatically identifies interesting subdomains to attack based on certain keywords (both built-in and custom) and helps penetration testers focus on attack rather than recon.
+reNgine is a web application reconnaissance suite with a focus on a highly configurable streamlined recon process. reNgine is backed by a database, with data correlation and organization, the custom query “like” language for recon data filtering, reNgine aims to address the shortcomings of traditional recon workflow.
+
+Developers behind the reNgine understand that recon data can be huge, manually looking up for entries to attack could be cumbersome, with features like identifying Interesting Subdomains, it helps penetration testers focus on attack rather than recon.
 
 reNgine is also focused on continuous monitoring. Penetration testers can choose to schedule the scan at periodic intervals, get notified on notification channels like Discord, Slack, and Telegram for any new subdomains or vulnerabilities identified, or any recon data changes.
 
 Interoperability is something every recon tool needs, and reNgine is no different. Beginning reNgine 1.0, we additionally developed features such as import and export subdomains, endpoints, GF pattern matched endpoints, etc. This will allow you to use your favourite recon workflow in conjunction with reNgine.
 
+PDF reports are something every individual or a team needs. Beginning reNgine 1.1, reNgine also comes with option to download PDF reports. One can also choose the type of report, Full Scan Report or just reconnaissance report. Also, we understand that PDF reports needs to be customizable. Choose the color of report you like, customize the executive summary, etc.
+
 reNgine features Highly configurable scan engines based on YAML, that allows penetration testers to create as many recon engines as they want of their choice, configure as they wish, and use it against any targets for the scan. These engines allow penetration testers to use tools of their choice, the configuration of their choice. Out of the box, reNgine comes with several scan engines like Full Scan, Passive Scan, Screenshot gathering, OSINT Engine, etc.
 
-Our focus has always been on finding the right recon data with very minimal effort. While having a discussion with fellow hackers/pentesters, screenshots gallery was a must, reNgine 1.0 also comes with a screenshot gallery, and what's exciting than having a screenshot gallery with filters, filter screenshots with HTTP status, technology, ports, and services.
+Our focus has always been on finding the right recon data with very minimal effort. After having several discussions with fellow hackers/pentesters, screenshots gallery was a must, reNgine also comes with a screenshot gallery, and what's exciting than having a screenshot gallery with filters, filter screenshots with HTTP status, technology, ports, and services.
 
-We also want our fellow hackers to stay ahead of the game, reNgine 1.0 introduces automatic vulnerability reporting (currently only Hackerone is supported, other platforms *may* come soon). This allows hackers to define their own vulnerability report template and reNgine will do the rest of the job to report vulnerability as soon as it is identified.
+We also want our fellow hackers to stay ahead of the game, reNgine also comes with automatic vulnerability reporting (currently only Hackerone is supported, other platforms may come soon). This allows hackers to define their own vulnerability report template and reNgine will do the rest of the job to report vulnerability as soon as it is identified.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Features
 
-- Perform Recon: Subdomain Discovery, Ports Discovery, Endpoints Discovery, Directory Bruteforce, Screenshot gathering
-- IP Discovery, CNAME discovery, Vulnerability scan using Nuclei
-- Ability to Automatically report Vulnerabilities to Hackerone
-- Support for Parallel Scans
+- Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification etc.
+- Highly configurable YAML based Scan Engines
+- Support for Parallel Scans and Subscans
+- Automatically report Vulnerabilities to Hackerone
 - Recon Data visualization
-- Highly configurable scan engines
-- OSINT Capabilities (Metainfo Gathering, Employees Gathering, Email Address with option to look password in leaked database, dorks etc)
+- OSINT Capabilities (Metainfo Gathering, Employees Gathering, Email Address with option to look password in leaked database, - dorks etc)
 - Customizable Alerts/Notification on Slack, Discord and Telegram
 - Perform Advanced Query lookup using natural language alike and, or, not operations
-- Support for Recon Notes and Todos
-- Support for Clocked Scans (Run reconnaissance exactly at X Hours and Y minutes) and Periodic Scans (Runs reconnaissance every X minutes/hours/days/week)
+- Recon Notes and Todos
+- Clocked Scans (Run reconnaissance exactly at X Hours and Y minutes) and Periodic Scans (Runs reconnaissance every X minutes/- hours/days/week)
 - Proxy Support
 - Screenshot Gallery with Filters
 - Powerful recon data filtering with auto suggestions
 - Recon Data changes, finds new/removed subdomains/endpoints
-- Support for tagging targets into Organization
-- Ability to identify Interesting Subdomains
-- Support for custom GF patterns and custom Nuclei Templates
-- Support for editing tool related configuration files (Nuclei, Subfinder, Naabu, amass)
-- Ability to Mark Important Subdomains
+- Tag targets into Organization
+- Identify Interesting Subdomains
+- Custom GF patterns and custom Nuclei Templates
+- Edit tool related configuration files (Nuclei, Subfinder, Naabu, amass)
+- Add external tools from Github/Go
 - Interoperable with other tools, Import/Export Subdomains/Endpoints
-- Option to send scan data directly to discord
+- Import Targets via IP and/or CIDRs
+- Report Generation
+- Toolbox : Comes bundled with most commonly used tools such as whois lookup, CMS detector, CVE lookup etc.
+- Identification of related domains and related TLDs for targets
+- Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain etc.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -153,7 +167,7 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 
 ## Changelog
 
-You can watch [reNgine 1.0 release trailer here.](https://www.youtube.com/watch?v=_jBf_9qEG3U) (Recommended)
+You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=_jBf_9qEG3U) (Recommended)
 
 [Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
 
@@ -187,7 +201,7 @@ if `./install.sh` does not have install permission, please change it, `chmod +x 
 
 ## Installation (Mac/Windows/Other)
 
-Installation instructions can be found at [https://reNgine.wiki](https://reNgine.wiki)
+Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
 
 ## reNgine Bug Bounty Program
 
