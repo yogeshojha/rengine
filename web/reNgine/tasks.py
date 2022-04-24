@@ -560,11 +560,6 @@ def subdomain_scan(
                                 wordlist_path = '/usr/src/' + AMASS_WORDLIST
                         amass_command = amass_command + \
                             ' -brute -w {}'.format(wordlist_path)
-                        #fix amass active
-                       # 2 times add config in line 536 and 552 with wrong path
-                 #   if amass_config_path:
-                  #      amass_command = amass_command + \
-                   #         ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
 
                     # Run Amass Active
                     logging.info(amass_command)
@@ -769,7 +764,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
         httpx_command += " --http-proxy '{}' ".format(proxy)
 
     if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-        httpx_command += ' -H {} '.format(yaml_configuration[CUSTOM_HEADER])
+        httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
     httpx_command += ' -json -o {} '.format(
         httpx_results_file
@@ -1103,7 +1098,7 @@ def directory_fuzz(
     if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
         not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
             'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
-        wordlist_location = '/usr/src/wordlist/dicc1.txt'
+        wordlist_location = '/usr/src/wordlist/dicc.txt'
     else:
         wordlist_location = '/usr/src/wordlist/' + \
             yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
@@ -1173,7 +1168,7 @@ def directory_fuzz(
     if DELAY in yaml_configuration[DIR_FILE_FUZZ] \
         and yaml_configuration[DIR_FILE_FUZZ][DELAY] > 0:
         delay = yaml_configuration[DIR_FILE_FUZZ][DELAY]
-        ffuf_command = ' {} -p {} '.format(
+        ffuf_command = ' {} -p "{}" '.format(
             ffuf_command,
             delay
         )
@@ -1197,7 +1192,7 @@ def directory_fuzz(
         )
 
     if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-        ffuf_command += ' -H {}'.format(yaml_configuration[CUSTOM_HEADER])
+        ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
     for subdomain in subdomains_fuzz:
         command = None
@@ -1480,7 +1475,7 @@ def fetch_endpoints(
         httpx_command += " --http-proxy '{}'".format(proxy)
 
     if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-        httpx_command += ' -H {}'.format(yaml_configuration[CUSTOM_HEADER])
+        httpx_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
     logger.info(httpx_command)
     os.system(httpx_command)
@@ -1722,7 +1717,7 @@ def vulnerability_scan(
         nuclei_command = nuclei_command + ' -retries ' + str(retries)
 
     if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-        nuclei_command += ' -H {} '.format(yaml_configuration[CUSTOM_HEADER])
+        nuclei_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
     # for severity and new severity in nuclei
     if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
