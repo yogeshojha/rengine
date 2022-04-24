@@ -367,3 +367,13 @@ tr.group,
 tr.group:hover {
     background-color: #ddd !important;
 }
+
+
+.navbar-custom .app-search{
+  max-width: 300px !important;
+}
+
+mark{
+  background-color: #FFEB3B;
+  color: #000;
+}

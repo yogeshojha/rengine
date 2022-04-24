@@ -354,6 +354,10 @@
         border-bottom: 3px solid #90CAF9 !important;
       }
 
+      .grey-hr-line {
+        border-bottom: 3px solid #212121 !important;
+      }
+
       .inside-box-counter {
         font-size: 28pt;
       }
@@ -519,7 +523,7 @@
         <br>
         <h4 id="vulnerability-summary" class="subheading">Vulnerability Summary</h4>
         <div id="boxes">
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-critical">Critical
               <br>
               <span class="inside-box-counter">
@@ -527,7 +531,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-high">High
               <br>
               <span class="inside-box-counter">
@@ -535,7 +539,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-medium">Medium
               <br>
               <span class="inside-box-counter">
@@ -543,7 +547,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width:30%">
             <p class="bg-low">Low
               <br>
               <span class="inside-box-counter">
@@ -551,11 +555,19 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-info">Info
               <br>
               <span class="inside-box-counter">
                 {{scan_object.get_info_vulnerability_count}}
+              </span>
+            </p>
+          </section>
+          <section style="width: 30%">
+            <p class="bg-grey">Unknown
+              <br>
+              <span class="inside-box-counter">
+                {{scan_object.get_unknown_vulnerability_count}}
               </span>
             </p>
           </section>
@@ -661,7 +673,10 @@
               <div class="cell" style="float: right; width: 19%;">
                 {{vulnerability.count}}
               </div>
-              {% if vulnerability.severity == 0 %}
+              {% if vulnerability.severity == -1 %}
+                <div class="cell bg-grey" style="width: 15%">
+                  <span class="severity-title-box">Unknown</span>
+              {% elif vulnerability.severity == 0 %}
                 <div class="cell bg-info" style="width: 15%">
                   <span class="severity-title-box">Informational</span>
               {% elif vulnerability.severity == 1 %}
@@ -823,7 +838,7 @@
                   <ul>
                     {% for vulnerability in vuln_list %}
                       <li>
-                        <a href="#vuln_{{vulnerability.list.0.id}}">{{ vulnerability.grouper }}</a>
+                        <a href="#vuln_{{vulnerability.list.0.name.split|join:'_'}}">{{ vulnerability.grouper }}</a>
                       </li>
                     {% endfor %}
                   </ul>
@@ -847,10 +862,11 @@
           {{scan_object.get_medium_vulnerability_count}} of them were Medium severity,
           {{scan_object.get_low_vulnerability_count}} of them were Low severity, and
           {{scan_object.get_info_vulnerability_count}} of them were Informational.
+          {{scan_object.get_unknown_vulnerability_count}} of them were Unknown Severity.
         </p>
         <h4 class="subheading">Vulnerability Breakdown by Severity</h4>
         <div id="boxes">
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-critical">Critical
               <br>
               <span class="inside-box-counter">
@@ -858,7 +874,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-high">High
               <br>
               <span class="inside-box-counter">
@@ -866,7 +882,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-medium">Medium
               <br>
               <span class="inside-box-counter">
@@ -874,7 +890,7 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-low">Low
               <br>
               <span class="inside-box-counter">
@@ -882,11 +898,19 @@
               </span>
             </p>
           </section>
-          <section style="width: 18%">
+          <section style="width: 30%">
             <p class="bg-info">Info
               <br>
               <span class="inside-box-counter">
                 {{scan_object.get_info_vulnerability_count}}
+              </span>
+            </p>
+          </section>
+          <section style="width: 30%">
+            <p class="bg-grey">Unknown
+              <br>
+              <span class="inside-box-counter">
+                {{scan_object.get_unknown_vulnerability_count}}
               </span>
             </p>
           </section>
@@ -902,7 +926,10 @@
             <div>
               <h4 class="content-heading" id="vuln_{{vulnerability.list.0.name.split|join:'_'}}">
                 {{vulnerability.grouper}}
-                {% if vulnerability.list.0.severity == 0 %}
+                {% if vulnerability.list.0.severity == -1 %}
+                  <span style="float: right;" class="badge bg-grey">Unknown</span>
+                  <div class="grey-hr-line" ></div>
+                {% elif vulnerability.list.0.severity == 0 %}
                   <span style="float: right;" class="badge bg-info">INFO</span>
                   <div class="info-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 1 %}
@@ -935,17 +962,17 @@
                 <br>
                 <span class="mini-heading">CVSS Score:</span>&nbsp;<span class="high-color">{{vulnerability.list.0.cvss_score}}</span>
               {% endif %}
-              {% if vulnerability.list.0.cve_ids %}
+              {% if vulnerability.list.0.cve_ids.all %}
               <br>
               <br>
               <span class="mini-heading">CVE IDs</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{% for cve in vulnerability.list.0.cve_ids %} {{cve}}{% if not forloop.last %}, {% endif %} {% endfor %}
+                &nbsp;&nbsp;&nbsp;&nbsp;{% for cve in vulnerability.list.0.cve_ids.all %} {{cve}}{% if not forloop.last %}, {% endif %} {% endfor %}
               {% endif %}
-              {% if vulnerability.list.0.cwe_ids %}
+              {% if vulnerability.list.0.cwe_ids.all %}
               <br>
               <br>
               <span class="mini-heading">CWE IDs</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{% for cwe in vulnerability.list.0.cwe_ids %} {{cwe}}{% if not forloop.last %}, {% endif %} {% endfor %}
+                &nbsp;&nbsp;&nbsp;&nbsp;{% for cwe in vulnerability.list.0.cwe_ids.all %} {{cwe}}{% if not forloop.last %}, {% endif %} {% endfor %}
               {% endif %}
               <br>
               <br>
@@ -967,12 +994,12 @@
                   {% endfor %}
                 {% endfor %}
               </ul>
-              {% if vulnerability.list.0.references %}
+              {% if vulnerability.list.0.references.all %}
                 <br>
                 <br>
                 <span class="mini-heading">References</span><br>
                 <ul>
-                  {% for ref in vulnerability.list.0.references %}
+                  {% for ref in vulnerability.list.0.references.all %}
                   <li>
                     <span class="text-blue"> {{ref}} </span>
                   </li>

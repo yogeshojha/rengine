@@ -19,7 +19,7 @@ ALL = 'all'
 
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 PORT_SCAN = 'port_scan'
-EYEWITNESS = 'eyewitness'
+SCREENSHOT = 'screenshot'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FETCH_URL = 'fetch_url'
 INTENSITY = 'intensity'
@@ -69,6 +69,8 @@ USE_AMASS_CONFIG = 'use_amass_config'
 USE_SUBFINDER_CONFIG = 'use_subfinder_config'
 USE_NUCLEI_CONFIG = 'use_nuclei_config'
 USE_NAABU_CONFIG = 'use_naabu_config'
+
+CUSTOM_HEADER = 'custom_header'
 
 ###############################################################################
 # Wordlist DEFINITIONS

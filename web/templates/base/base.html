@@ -98,6 +98,8 @@
     <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
     <script type="text/javascript">
       $(document).ready(function(){
+        render_search_history();
+
         // rengine will also check everyday if update exists for rengine
         checkDailyUpdate();
 
@@ -120,6 +122,27 @@
           $('#dark-mode-check').prop("checked", false).change();
         }
       });
+
+      function render_search_history(){
+        fetch('/api/search/history/')
+        .then(response => response.json())
+        .then(function (response) {
+          if (response.status) {
+            for (var history in response.results) {
+              $('#search-history-items').append(`
+                <a href="/search/?query=${response.results[history].query}" class="dropdown-item notify-item">
+                  <span>${response.results[history].query}</span>
+                </a>
+              `);
+            }
+          }
+          else{
+            $('#search-history-items').append(`
+              <span class="ms-2">No recent searches.</span>
+            `);
+          }
+        });
+      }
 
       function check_rengine_update(){
         if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {

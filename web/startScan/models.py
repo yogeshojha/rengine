@@ -68,6 +68,11 @@ class ScanHistory(models.Model):
 		return Vulnerability.objects.filter(
 			scan_history__id=self.id).count()
 
+	def get_unknown_vulnerability_count(self):
+		return Vulnerability.objects.filter(
+			scan_history__id=self.id).filter(
+			severity=-1).count()
+
 	def get_info_vulnerability_count(self):
 		return Vulnerability.objects.filter(
 			scan_history__id=self.id).filter(

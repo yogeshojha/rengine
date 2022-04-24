@@ -30,6 +30,7 @@ from reNgine.common_func import *
 from .serializers import *
 from scanEngine.models import *
 from startScan.models import *
+from dashboard.models import *
 from targetApp.models import *
 from recon_note.models import *
 
@@ -38,6 +39,74 @@ from reNgine.tasks import run_system_commands, initiate_subtask, create_scan_act
 from packaging import version
 from reNgine.celery import app
 from django.utils import timezone
+
+
+class SearchHistoryView(APIView):
+	def get(self, request):
+		req = self.request
+
+		response = {}
+		response['status'] = False
+
+		scan_history = SearchHistory.objects.all().order_by('-id')[:5]
+
+		if scan_history:
+			response['status'] = True
+			response['results'] = SearchHistorySerializer(scan_history, many=True).data
+
+		return Response(response)
+
+
+class UniversalSearch(APIView):
+	def get(self, request):
+		req = self.request
+		query = req.query_params.get('query')
+
+		response = {}
+		response['status'] = False
+
+		if not query:
+			response['message'] = 'No query parameter provided!'
+			return Response(response)
+
+		response['results'] = {}
+
+		# search history to be saved
+		SearchHistory.objects.get_or_create(
+			query=query
+		)
+
+		# lookup query in subdomain
+		subdomain = Subdomain.objects.filter(
+			Q(name__icontains=query) |
+			Q(cname__icontains=query) |
+			Q(page_title__icontains=query) |
+			Q(http_url__icontains=query)
+		).distinct('name')
+		subdomain_data = SubdomainSerializer(subdomain, many=True).data
+		response['results']['subdomains'] = subdomain_data
+
+		endpoint = EndPoint.objects.filter(
+			Q(http_url__icontains=query) |
+			Q(page_title__icontains=query)
+		).distinct('http_url')
+		endpoint_data = EndpointSerializer(endpoint, many=True).data
+		response['results']['endpoints'] = endpoint_data
+
+		vulnerability = Vulnerability.objects.filter(
+			Q(http_url__icontains=query) |
+			Q(name__icontains=query) |
+			Q(description__icontains=query)
+		).distinct()
+		vulnerability_data = VulnerabilitySerializer(vulnerability, many=True).data
+		response['results']['vulnerabilities'] = vulnerability_data
+
+		response['results']['others'] = {}
+
+		if subdomain_data or endpoint_data or vulnerability_data:
+			response['status'] = True
+
+		return Response(response)
 
 
 class FetchMostCommonVulnerability(APIView):
@@ -630,12 +699,16 @@ class GetExternalToolCurrentVersion(APIView):
 		tool_id = req.query_params.get('tool_id')
 		tool_name = req.query_params.get('name')
 		# can supply either tool id or tool_name
-		if not InstalledExternalTool.objects.filter(id=tool_id).exists():
-			return Response({'status': False, 'message': 'Tool Not found'})
+
+		tool = None
 
 		if tool_id:
+			if not InstalledExternalTool.objects.filter(id=tool_id).exists():
+				return Response({'status': False, 'message': 'Tool Not found'})
 			tool = InstalledExternalTool.objects.get(id=tool_id)
 		elif tool_name:
+			if not InstalledExternalTool.objects.filter(name=tool_name).exists():
+				return Response({'status': False, 'message': 'Tool Not found'})
 			tool = InstalledExternalTool.objects.get(name=tool_name)
 
 		if not tool.version_lookup_command:
@@ -1471,6 +1544,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		ip_address = req.query_params.get('ip_address')
 
+		name = req.query_params.get('name')
+
 		if target_id:
 			self.queryset = Subdomain.objects.filter(
 				target_domain__id=target_id).distinct()
@@ -1488,6 +1563,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		if ip_address:
 			self.queryset = self.queryset.filter(ip_addresses__address__icontains=ip_address)
+
+		if name:
+			self.queryset = self.queryset.filter(name=name)
 
 		return self.queryset
 
