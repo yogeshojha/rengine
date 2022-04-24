@@ -299,6 +299,7 @@ def initiate_scan(
         http_crawler(
             task,
             domain,
+            yaml_configuration,
             results_dir,
             activity_id)
         update_last_activity(activity_id, 2)
@@ -746,7 +747,7 @@ def get_removed_subdomain(scan_id, domain_id):
                 name__in=removed_subdomains)
 
 
-def http_crawler(task, domain, results_dir, activity_id):
+def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     This function is runs right after subdomain gathering, and gathers important
     like page title, http status, etc
