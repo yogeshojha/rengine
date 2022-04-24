@@ -27,11 +27,6 @@ Enjoy peace of mind with reNgine's continous monitoring, deeper reconnaissance a
 reNgine makes it easy for penetration testers and security auditors to gather reconnaissance data with bare minimal configuration.
 </p>
 
-
-Dashboard             |  Scan Results
-:-------------------------:|:-------------------------:
-![](.github/screenshots/dashboard.gif)  |  ![](.github/screenshots/scan_results.gif)
-
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 <p align="center">
@@ -124,6 +119,14 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 You can find reNgine documentation at [https://rengine.wiki](https://rengine.wiki)
 
 ## Screenshots
+
+**Dashboard**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993945-aabdbb4a-2b9d-4951-ba27-5f2f5abd1d8b.gif">
+
+**Scan Results**
+
+![](.github/screenshots/scan_results.gif)
 
 **General Usage**
 
