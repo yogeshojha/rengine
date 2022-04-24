@@ -51,4 +51,4 @@ vulnerability_scan:
   # custom_templates: []
   severity: [ critical, high, medium, low, info, unknown ]
 
-custom_header: 'name: value'
+# custom_header: 'name: value'

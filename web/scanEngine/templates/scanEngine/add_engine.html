@@ -58,12 +58,13 @@ Add Scan Engine
 $(document).ready(function() {
 	$('.ace_text-input').attr('id','editor');
 	document.getElementById("editor").innerHTML = `subdomain_discovery:
-  uses_tools: [ amass-passive, assetfinder, sublist3r, subfinder, oneforall ]
+  uses_tools: [ amass-passive, assetfinder, sublist3r, subfinder ]
   threads: 10
   use_amass_config: false
   use_subfinder_config: false
+  # amass_wordlist: default
 
-visual_identification:
+screenshot:
   timeout: 10
   threads: 5
 
@@ -80,11 +81,18 @@ port_scan:
   # exclude_ports: [80, 8080]
 
 dir_file_fuzz:
+  wordlist: default
   extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf, sql, json ]
   threads: 100
   recursive: false
   recursive_level: 1
-  wordlist: default
+  stop_on_error: false
+  follow_redirect: false
+  auto_calibration: false
+  timeout: 10
+  # delay: "0.1-0.2"
+  # match_http_status: '200, 204'
+  # max_time: 0
 
 fetch_url:
   uses_tools: [ gauplus, hakrawler, waybackurls, gospider ]
@@ -100,7 +108,7 @@ vulnerability_scan:
   retries: 1
   templates: [ all ]
   # custom_templates: []
-  severity: [ critical, high, medium, low, info ]
+  severity: [ critical, high, medium, low, info, unknown ]
 `;
 });
 </script>
