@@ -60,8 +60,7 @@ Dashboard             |  Scan Results
 * [Contributing](#contributing)
 * [reNgine Support](#reNgine-support)
 * [Related Projects](#related-projects)
-* [Support and Sponsor](#support-and-sponsoring)
-* [Acknowledgements & Credits](#acknowledgements-and-credits)
+* [Support and Sponsoring](#support-and-sponsoring)
 * [License](#license)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -262,66 +261,28 @@ Please do not raise any github issues for support requests. Instead, [join our d
 There are many other great reconnaissance frameworks, you may use reNgine in conjunction with these tools. But, they themselves are great, and may sometimes even produce better results than reNgine.
 
 - [ReconFTW](https://github.com/six2dez/reconftw#sample-video)
-- [Osmedeus](https://github.com/j3ssie/Osmedeus)
-- [EchoPwn](https://github.com/hackerspider1/EchoPwn)
 - [Reconmap](https://github.com/reconmap/reconmap)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Support and Sponsoring
 
-If reNgine has helped you in any way, and you love this project and/or support active development of reNgine, please consider any of these options:
+Over the last few years I have been working insane on reNgine to bring new features with the only goal to make this as De-facto standard for reconnaissance. Most of my out of office hours and weeknds are spent on working on reNgine. I do this with addition to my primary job. I am happy to have received such an overwhelming support from community. But to keep this project alive, I am seeking financial support.
+
+|                                                                       Paypal                                                                       |                                                            Bitcoin                                                             |                                                            Ethereum                                                            |
+| :-------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
+|[https://www.paypal.com/paypalme/yogeshojha11](https://www.paypal.com/paypalme/yogeshojha11)                                 |                                              `35AiKyNswNZ4TZUSdriHopSCjNMPi63BCX`                                              |                                          `0xe7A337Da6ff98A28513C26A7Fec8C9b42A63d346`  
+
+OR
 
 - Add a [GitHub Star](https://github.com/yogeshojha/rengine) to the project.
 - Tweet about this project, or maybe blogs?
-- Sponsor financially via Github or Paypal. https://paypal.me/yogeshojha11
-- Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features. ps. Please consider running reNgine/any recon on VPS!
-- If you are looking for Proxies, please use [this referral](https://app.privateproxy.me/from/27103) link to purchase. Or you can also use coupon `rengine` here on [PrivateProxy](https://privateproxy.me/), using coupon `rengine`, you'll get additional 25% off.
+- Maybe nominate me for [github stars?](https://stars.github.com/nominate/)
+- Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features.
 
-Together, we can make reNgine **better** every day!
+It takes a considerable amount of time to add new features and make sure everything is working. A donation is your way saying: **reNgine is awesome**
 
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-## Acknowledgements and Credits
-reNgine would not have been possible without the following individuals/organizations. Thanks to these amazing devs/hackers!
-
-- Project Discovery
-  - nuclei, httpx, naabu, subfinder
-- Tom Hudson
-  - gf, assetfinder, waybackurls, unfurl
-- OWASP
-  - amass
-- Ahmed Aboul-Ela
-  - Sublist3r
-- Mauro Soria
-  - dirsearch
-- Corben Leo
-  - gau
-- Luke Stephens
-  - hakrawler
-- Jaeles Project
-  - gospider
-- Jing Ling
-  - OneForAll
-- FortyNorthSecurity
-  - EyeWitness
-- Christian Martorella
-  - theHarvester
-- Davidtavarez
-  - pwndb
-- Deepseagirl
-  - degoogle
-- Josué Encinar
-  - Metafinder, Emailfinder
-- Bp0lr
-  - gauplus
-- Nicolas Crocfer
-  - whatportis
-- Helmut Wandl
-  - Gridzy.js
-
-<div>reNgine official Icon is made by <a href="https://www.freepik.com" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon">www.flaticon.com</a></div>
+Any support is greatly appreciated! Thank you!
 
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
