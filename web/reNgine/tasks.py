@@ -609,9 +609,9 @@ def subdomain_scan(
                     os.system(
                         'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
 
-            elif tool in custom_subdomain_tools:
+            elif tool.lower() in custom_subdomain_tools:
                 # this is for all the custom tools, and tools runs based on instalaltion steps provided
-                if InstalledExternalTool.objects.filter(name__icontains=tool).exists():
+                if InstalledExternalTool.objects.filter(name__icontains=tool.lower()).exists():
                     custom_tool = InstalledExternalTool.objects.get(name__icontains=tool)
                     execution_command = custom_tool.subdomain_gathering_command
                     print(execution_command)
