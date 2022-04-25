@@ -8,7 +8,7 @@ class AddTargetForm(forms.Form):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "domainName",
                 "placeholder": "example.com"
             }
@@ -17,8 +17,9 @@ class AddTargetForm(forms.Form):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "domainDescription",
+                "placeholder": "Target Description"
             }
         ))
 
@@ -26,7 +27,7 @@ class AddTargetForm(forms.Form):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg ",
                 "id": "h1_team_handle",
                 "placeholder": "team_handle"
             }
@@ -48,7 +49,7 @@ class AddOrganizationForm(forms.Form):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "organizationName",
                 "placeholder": "Organization Name"
             }
@@ -58,7 +59,7 @@ class AddOrganizationForm(forms.Form):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "organizationDescription",
             }
         ))
@@ -67,8 +68,12 @@ class AddOrganizationForm(forms.Form):
         required=True,
         widget=forms.Select(
             attrs={
-                "class": "form-control tagging",
+                "class": "form-control select2-multiple",
                 "multiple": "multiple",
+                "data-toggle": "select2",
+                "data-width": "100%",
+                "multiple": "multiple",
+                "data-placeholder": "Choose Targets",
                 "id": "domains",
             }
         )
@@ -150,7 +155,7 @@ class UpdateOrganizationForm(forms.ModelForm):
         required=True,
         widget=forms.Select(
             attrs={
-                "class": "form-control tagging",
+                "class": "form-control form-control-lg tagging",
                 "multiple": "multiple",
                 "id": "domains",
             }

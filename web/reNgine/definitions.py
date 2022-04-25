@@ -19,8 +19,8 @@ ALL = 'all'
 
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 PORT_SCAN = 'port_scan'
-EYEWITNESS = 'eyewitness'
-DIR_FILE_SEARCH = 'dir_file_search'
+SCREENSHOT = 'screenshot'
+DIR_FILE_FUZZ = 'dir_file_fuzz'
 FETCH_URL = 'fetch_url'
 INTENSITY = 'intensity'
 
@@ -31,18 +31,27 @@ NAABU_RATE = 'rate'
 PORT = 'port'
 PORTS = 'ports'
 EXCLUDE_PORTS = 'exclude_ports'
+
 EXTENSIONS = 'extensions'
+USE_EXTENSIONS = 'use_extensions'
 EXCLUDE_EXTENSIONS = 'exclude_extensions'
+STOP_ON_ERROR = 'stop_on_error'
+DELAY = 'delay'
+MATCH_HTTP_STATUS = 'match_http_status'
+AUTO_CALIBRATION = 'auto_calibration'
+FOLLOW_REDIRECT = 'follow_redirect'
+
 RECURSIVE = 'recursive'
 RECURSIVE_LEVEL = 'recursive_level'
 WORDLIST = 'wordlist'
+
 TIMEOUT = 'timeout'
-SCREENSHOT_TIMEOUT = 'screenshot_timeout'
-SCAN_TIMEOUT = 'scan_timeout'
+MAX_TIME = 'max_time'
 EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 EXCLUDE_TEXT = 'exclude_text'
 IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 GF_PATTERNS = 'gf_patterns'
+
 VULNERABILITY_SCAN = 'vulnerability_scan'
 CUSTOM_NUCLEI_TEMPLATE = 'custom_templates'
 NUCLEI_TEMPLATE = 'templates'
@@ -50,14 +59,18 @@ NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
 RATE_LIMIT = 'rate_limit'
 RETRIES = 'retries'
+
 OSINT = 'osint'
 OSINT_DOCUMENTS_LIMIT = 'documents_limit'
 OSINT_DISCOVER = 'discover'
 OSINT_DORK = 'dork'
+
 USE_AMASS_CONFIG = 'use_amass_config'
 USE_SUBFINDER_CONFIG = 'use_subfinder_config'
 USE_NUCLEI_CONFIG = 'use_nuclei_config'
 USE_NAABU_CONFIG = 'use_naabu_config'
+
+CUSTOM_HEADER = 'custom_header'
 
 ###############################################################################
 # Wordlist DEFINITIONS
@@ -86,6 +99,14 @@ XLARGE = '500px'
 MATCHED_SUBDOMAIN = 'Subdomain'
 MATCHED_PAGE_TITLE = 'Page Title'
 
+###############################################################################
+# Celery Task Status CODES
+###############################################################################
+INITIATED_TASK = -1
+FAILED_TASK = 0
+RUNNING_TASK = 1
+SUCCESS_TASK = 2
+ABORTED_TASK = 3
 ###############################################################################
 # Uncommon Ports
 # Source: https://github.com/six2dez/reconftw/blob/main/reconftw.cfg
@@ -179,3 +200,18 @@ UNCOMMON_WEB_PORTS = [
     32000,
     55440,
     55672]
+
+###############################################################################
+# WHOIS DEFINITIONS
+# IGNORE_WHOIS_RELATED_KEYWORD: To ignore and disable finding generic related domains
+###############################################################################
+
+IGNORE_WHOIS_RELATED_KEYWORD = [
+    'Registration Private',
+    'Domains By Proxy Llc',
+    'Redacted For Privacy',
+    'Digital Privacy Corporation',
+    'Private Registrant',
+    'Domain Administrator',
+    'Administrator',
+]

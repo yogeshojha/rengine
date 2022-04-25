@@ -7,40 +7,27 @@ Scheduled Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/switches.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
 <li class="breadcrumb-item active" aria-current="page">Scheduled Scans</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Scheduled Scans
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row" style="margin-top: 2%">
-      <div class="col-6">
-        <h4>Scheduled Scans</h4>
-      </div>
-      <div class="col-6">
-        <a href="{% url 'list_target' %}" class="btn btn-outline-primary mb-2 float-right">Schedule New Scan</a>
-      </div>
-    </div>
-  </div>
-  <div class="widget-content widget-content-area">
-    <div class="table-responsive mb-4">
-      <table id="style-2" class="table style-2  table-hover">
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <table id="scheduled_scan_table" class="table style-3 table-hover">
         <thead>
           <tr>
-            <th class="checkbox-column">Serial Number</th>
             <th>Description</th>
             <th>Frequency</th>
             <th>Last Run</th>
@@ -53,9 +40,8 @@ Scheduled Scan
         <tbody>
           {% for task in scheduled_tasks %}
           <tr>
-            <td class="checkbox-column"> {{ task.id }} </td>
             {% with task_name=task.name|split:":" %}
-            <td>{{ task_name.0|title }}</td>
+            <td>{{ task_name.0 }}</td>
             {% endwith %}
             <td>
               {% if task.interval %}
@@ -76,12 +62,12 @@ Scheduled Scan
             <td class="text-center">
               <label class="switch s-icons s-outline s-outline-info">
                 <input type="hidden" name="task_id" value="task.id" />
-                <input type="checkbox" name="task_enabled" {% if task.enabled %}checked{% endif %} onchange="change_scheduled_task_status({{task.id}})">
+                <input type="checkbox" name="task_enabled" {% if task.enabled %}checked{% endif %} onchange="change_scheduled_task_status({{task.id}}, this)" data-plugin="switchery">
                 <span class="slider round"></span>
               </label>
             </td>
             <td class="text-center">
-              <a onclick="deleteScheduledScan({{ task.id }})" class="bs-tooltip btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
+              <a onclick="deleteScheduledScan({{ task.id }})" class="text-danger btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -97,37 +83,26 @@ Scheduled Scan
   </div>
 </div>
 {% endblock main_content %}
-
-
 {% block page_level_script %}
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 // var e;
-c1 = $('#style-2').DataTable({
-  headerCallback:function(e, a, t, n, s) {
-    e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-  },
-  columnDefs:[ {
-    targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-      return'<label class="new-control new-checkbox checkbox-outline-info  m-auto">\n<input type="checkbox" class="new-control-input child-chk select-customers-info" id="customer-all-info">\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-    }
-  }],
-  "oLanguage": {
-    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-    "sInfo": "Showing page _PAGE_ of _PAGES_",
-    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-    "sSearchPlaceholder": "Search...",
-    "sLengthMenu": "Results :  _MENU_",
-  },
-  "lengthMenu": [5, 10, 20, 30, 50, 100],
-  "pageLength": 10,
-  "dom": "<'row'<'col-lg-10 col-md-10 col-12'f><'col-lg-2 col-md-2 col-12'l>>" +
-  "<'row'<'col'tr>>" +
-  "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+$(document).ready(function() {
+  var scheduled_scan_table = $('#scheduled_scan_table').DataTable({
+    "oLanguage": {
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearchPlaceholder": "Search...",
+      "sLengthMenu": "Results :  _MENU_",
+    },
+    "lengthMenu": [5, 10, 20, 30, 50, 100],
+    "pageLength": 10,
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+  });
+  multiCheck(scheduled_scan_table);
 });
-multiCheck(c1);
 </script>
 {% endblock page_level_script %}

@@ -107,10 +107,12 @@ function mainCheckBoxSelected() {
   if (input.checked) {
     $("#scan_multiple_button").removeClass("disabled");
     $("#delete_multiple_button").removeClass("disabled");
+    $(".targets_checkbox").prop('checked', true);
   }
   else
   {
     $("#scan_multiple_button").addClass("disabled");
     $("#delete_multiple_button").addClass("disabled");
+    $(".targets_checkbox").prop('checked', false);
   }
 }

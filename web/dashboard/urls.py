@@ -12,4 +12,8 @@ urlpatterns = [
         'profile/',
         views.profile,
         name='profile'),
+    path(
+        'search/',
+        views.search,
+        name='search'),
 ]

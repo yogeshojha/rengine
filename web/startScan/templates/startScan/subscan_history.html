@@ -1,0 +1,424 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}
+Subscan History
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item active" aria-current="page">Scan History</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+SubScan History
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="p-2">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
+              Filter <i class="fe-filter"></i>
+            </button>
+            <div id="filteringText" class="mt-2">
+            </div>
+            <div class="dropdown-menu" style="width: 30%">
+              <div class="px-4 py-3">
+                <h4 class="headline-title">Filters</h4>
+                <div class="">
+                  <label for="filterByOrganization" class="form-label">Filter by Organization</label>
+                  <select class="form-control" id="filterByOrganization">
+                  </select>
+                </div>
+                <div class="">
+                  <label for="filterByTarget" class="form-label">Filter by Targets</label>
+                  <select class="form-control" id="filterByTarget">
+                  </select>
+                </div>
+                <div class="">
+                  <label for="filterByScanType" class="form-label">Filter by Scan Type</label>
+                  <select class="form-control" id="filterByScanType">
+                  </select>
+                </div>
+                <div class="">
+                  <label for="filterByScanStatus" class="form-label">Filter by Scan Status</label>
+                  <select class="form-control" id="filterByScanStatus">
+                  </select>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+            </div>
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">Delete Multiple SubScans</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <table id="subscan_history_table" class="table style-3 table-hover">
+        <thead>
+          <tr>
+            <th class="checkbox-column text-center">Serial Number</th>
+            <th class="text-center">Serial Number</th>
+            <th>Scanned Subdomain</th>
+            <th class="text-center">Task</th>
+            <th class="text-center">Engine</th>
+            <th>Scan Started</th>
+            <th class="text-center">Status</th>
+            <th class="text-center no-sorting">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for subscan in subscans.all %}
+          <tr id="subscan_history_table_row_{{subscan.id}}">
+            <td class="checkbox-column"> {{ subscan.id }} </td>
+            <td class=""> {{ subscan.id }} </td>
+            <td class="">
+              <span class="" data-toggle="tooltip" data-placement="top" title="Scanned Subdomain">{{ subscan.subdomain.name }}</span>
+            </br>
+            <span class="badge bg-dark text-light" data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span>
+            {% for organization in subscan.scan_history.domain.get_organization %}
+              <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
+            {% endfor %}
+          </br>
+          <a href="{% url 'detail_scan' subscan.scan_history.id %}" class="text-info">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>< svg></a>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-soft-primary">{{ subscan.get_task_name_str }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge badge-soft-primary">{{ subscan.engine.engine_name }}</span>
+          </td>
+          <td class="">
+            <span data-toggle="tooltip" data-placement="top" title="{{subscan.start_scan_date}}">{{subscan.start_scan_date|naturaltime}}</br><small>({{subscan.start_scan_date}})</small></span>
+          </td>
+          <td class="text-center">
+            {% if subscan.status == -1 %}
+            <span class="badge badge-soft-warning" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
+            {% elif subscan.status == 0 %}
+            <span class="badge badge-soft-danger">Failed</span>
+            {% elif subscan.status == 1 %}
+            <span class="badge badge-soft-info"><span class="spinner-border spinner-border-sm"></span> In Progress</span>
+            {% elif subscan.status == 2 %}
+            <span class="badge badge-soft-success">Successful</span>
+            {% elif subscan.status == 3 %}
+            <span class="badge badge-soft-danger">Aborted</span>
+            {% else %}
+            <span class="badge badge-soft-danger">Unknown</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <div class="btn-group mb-2 dropstart">
+              <div class="btn-group">
+                <a href="#" class="btn btn-soft-primary" onclick="show_subscan_results({{subscan.id}})">View Results</a>
+                <div class="btn-group dropstart" role="group">
+                  <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="mdi mdi-chevron-right"></i>
+                  </button>
+                  <div class="dropdown-menu" style="">
+                    {% if subscan.status == 1 %}
+                      <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                    {% endif %}
+                    <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
+<script>
+$(document).ready(function() {
+  var table = $('#subscan_history_table').DataTable({
+    headerCallback: function(e, a, t, n, s) {
+      e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+    },
+    "columnDefs":[
+      { 'visible': false, 'targets': [1] },
+      {
+        "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+          return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
+        },
+
+      }],
+      "order": [[1, 'desc']],
+      "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+      "<'table-responsive'tr>" +
+      "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+      "oLanguage": {
+        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+        "sInfo": "Showing page _PAGE_ of _PAGES_",
+        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+        "sSearchPlaceholder": "Search...",
+        "sLengthMenu": "Results :  _MENU_",
+      },
+      "stripeClasses": [],
+      "lengthMenu": [5, 10, 20, 30, 40, 50],
+      "pageLength": 20,
+      "initComplete": function(settings, json) {
+        $('[data-toggle="tooltip"]').tooltip();
+        table = settings.oInstance.api();
+        var rows = table.rows({
+          selected: true
+        }).indexes();
+
+        // populate filter menu from datatables
+        // populate targets
+        var selectedData = table.cells(rows, 2).data();
+        var target_array = [];
+        for (var i = 0; i < selectedData.length; i++) {
+          col1_data = selectedData[i];
+          domain_name = col1_data.match(/([^\n]+)/g)[0];
+          target_array.push(domain_name);
+        }
+
+        target_array = Array.from(new Set(target_array));
+        for (target in target_array) {
+          select = document.getElementById('filterByTarget');
+          var option = document.createElement('option');
+          option.value = target_array[target];
+          option.innerHTML = target_array[target];
+          select.appendChild(option);
+        }
+
+        // populate Scan Type
+        var selectedData = table.cells(rows, 3).data();
+        var scan_type_array = [];
+        for (var i = 0; i < selectedData.length; i++) {
+          col1_data = extractContent(selectedData[i]);
+          scan_type_array.push(col1_data);
+        }
+
+        scan_type_array = Array.from(new Set(scan_type_array));
+        for (engine in scan_type_array) {
+          select = document.getElementById('filterByScanType');
+          var option = document.createElement('option');
+          option.value = scan_type_array[engine];
+          option.innerHTML = scan_type_array[engine];
+          select.appendChild(option);
+        }
+      }
+    });
+    multiCheck(table);
+
+    // filter organization populate
+    $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
+      data = data['organizations']
+      for (organization in data) {
+        name = htmlEncode(data[organization]['name']);
+        select = document.getElementById('filterByOrganization');
+        var option = document.createElement('option');
+        option.value = name;
+        option.innerHTML = name;
+        select.appendChild(option);
+      }
+    }).fail(function() {});
+
+    // filtering for scan status
+    var status_types = ['Pending', 'In Progress', 'Aborted', 'Successful', 'Failed'];
+    for (status in status_types) {
+      select = document.getElementById('filterByScanStatus');
+      var option = document.createElement('option');
+      option.value = status_types[status];
+      option.innerHTML = status_types[status];
+      select.appendChild(option);
+    }
+
+    var org_filter = document.getElementById('filterByOrganization');
+    org_filter.addEventListener('click', function() {
+      table.search(this.value).draw();
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Organization: ${this.value}
+      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+      </span>`;
+      Snackbar.show({
+        text: `Filtering by organization ${this.value}`,
+        pos: 'top-center'
+      });
+    }, false);
+
+    var status_filter = document.getElementById('filterByScanStatus');
+    status_filter.addEventListener('click', function() {
+      table.search(this.value).draw();
+      switch (this.value) {
+        case 'Pending':
+        badge_color = 'warning';
+        break;
+        case 'Scanning':
+        badge_color = 'info';
+        break;
+        case 'Aborted':
+        badge_color = 'danger';
+        break;
+        case 'Failed':
+        badge_color = 'danger';
+        break;
+        case 'Successful':
+        badge_color = 'success';
+        break;
+        default:
+        badge_color = 'primary'
+      }
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-${badge_color}">Scan Status: ${this.value}
+      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+      </span>`;
+      Snackbar.show({
+        text: `Filtering by scan status ${this.value}`,
+        pos: 'top-center'
+      });
+    }, false);
+
+    var engine_filter = document.getElementById('filterByScanType');
+    engine_filter.addEventListener('click', function() {
+      table.search(this.value).draw();
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Scan Engine: ${this.value}
+      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+      </span>`;
+      Snackbar.show({
+        text: `Filtering by Engine ${this.value}`,
+        pos: 'top-center'
+      });
+    }, false);
+
+    var target_filter = document.getElementById('filterByTarget');
+    target_filter.addEventListener('click', function() {
+      table.search(extractContent(this.value)).draw();
+      document.getElementById('filteringText').innerHTML = `<span class="badge badge-soft-primary">Target/Domain: ${this.value}
+      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+      </span>`;
+      Snackbar.show({
+        text: `Filtering by Engine ${this.value}`,
+        pos: 'top-center'
+      });
+    }, false);
+
+    // reset filtering
+    var reset_filter = document.getElementById('resetFilters');
+    reset_filter.addEventListener('click', function() {
+      resetFilters(table);
+    }, false);
+
+  });
+
+  function resetFilters(table_obj) {
+    table_obj.search("").draw();
+    Snackbar.show({
+      text: `Filters Reset`,
+      pos: 'top-center'
+    });
+    document.getElementById('filteringText').innerHTML = '';
+  }
+
+  function checkedCount() {
+    // this function will count the number of boxes checked
+    item = document.getElementsByClassName("targets_checkbox");
+    count = 0;
+    for (var i = 0; i < item.length; i++) {
+      if (item[i].checked) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+
+  function toggleMultipleTargetButton() {
+    if (checkedCount() > 0) {
+      $("#delete_multiple_button").removeClass("disabled");
+    } else {
+      $("#delete_multiple_button").addClass("disabled");
+    }
+  }
+
+  function mainCheckBoxSelected(checkbox) {
+    if (checkbox.checked) {
+      $("#delete_multiple_button").removeClass("disabled");
+      $(".targets_checkbox").prop('checked', true);
+    } else {
+      $("#delete_multiple_button").addClass("disabled");
+      $(".targets_checkbox").prop('checked', false);
+    }
+  }
+
+  function deleteMultipleSubScan() {
+    if (!checkedCount()) {
+      swal({
+        title: '',
+        text: "Oops! No targets has been selected!",
+        type: 'error',
+        padding: '2em'
+      })
+    } else {
+      // atleast one target is selected
+      swal.queue([{
+        title: 'Are you sure you want to delete ' + checkedCount() + ' SubScans?',
+        text: "This action is irreversible.",
+        type: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        padding: '2em',
+        showLoaderOnConfirm: true,
+        preConfirm: function() {
+          var selectedRows = [];
+
+          document.querySelectorAll('.targets_checkbox').forEach(function(row) {
+            if (row.checked) {
+              selectedRows.push(row.value);
+            }
+          });
+
+          var data = {'type': 'subscan', 'rows': selectedRows}
+
+          fetch('/api/action/rows/delete/', {
+            method: 'post',
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken"),
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(data)
+          }).then(res => res.json())
+          .then(function (response) {
+            if (response['status']) {
+              delete_datatable_rows('#subscan_history_table', selectedRows, show_snackbar=true, `${selectedRows.length} Subscans Deleted!`)
+            }
+            else{
+              Snackbar.show({
+                text: 'Oops! failed to delete subscan!',
+                pos: 'top-right',
+                duration: 1500,
+                actionTextColor: '#fff',
+                backgroundColor: '#e7515a',
+              });
+            }
+          });
+        }
+      }])
+    }
+  }
+  </script>
+  {% endblock page_level_script %}
