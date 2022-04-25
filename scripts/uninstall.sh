@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cat ../web/art/1.0.txt
+cat ../web/art/1.1.txt
 echo "Uninstalling reNgine"
 
 if [ "$EUID" -ne 0 ]
