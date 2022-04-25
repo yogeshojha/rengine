@@ -158,7 +158,9 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 
 ## Changelog
 
-You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=_jBf_9qEG3U) (Recommended)
+reNgine 1.1 is out now. Please note that reNgine 1.1 is not backwards compatible.
+
+You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=iy_6F7Vq8Lo) (Recommended)
 
 [Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
 
