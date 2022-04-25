@@ -945,7 +945,7 @@ function show_subscan_results(subscan_id) {
 		}
 		$('#xl-modal-content').append(`<div>Scan Status: <span class="badge bg-${badge_color}">${scan_status}</span></div>`);
 		console.log(response);
-		$('#xl-modal-content').append(`<div class="mt-1">Engine Used: <span class="badge bg-primary">${response['subscan']['engine']}</span></div>`);
+		$('#xl-modal-content').append(`<div class="mt-1">Engine Used: <span class="badge bg-primary">${htmlEncode(response['subscan']['engine'])}</span></div>`);
 		if (response['result'].length > 0) {
 			if (response['subscan']['task'] == 'port_scan') {
 				$('#xl-modal-content').append(`<div id="port_results_li"></div>`);
@@ -1351,7 +1351,7 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 					<div class="card border-${color} border mini-card">
 					<a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${result_obj['id']})">
 					<div class="card-header ${bg_color} text-${color} mini-card-header">
-					${task_name} on <b>${result_obj.subdomain_name}</b> using engine <b>${result_obj.engine}</b>
+					${task_name} on <b>${result_obj.subdomain_name}</b> using engine <b>${htmlEncode(result_obj.engine)}</b>
 					</div>
 					<div class="card-body mini-card-body">
 					<p class="card-text">
