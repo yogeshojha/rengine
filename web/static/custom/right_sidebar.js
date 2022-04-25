@@ -18,7 +18,7 @@ function getScanStatusSidebar(reload) {
       for (var scan in scans['pending']) {
         scan_object = scans['pending'][scan];
         $('#upcoming_scans').append(`
-          <div class="alert alert-warning" role="alert">${scan_object.scan_type.engine_name} on ${scan_object.domain.name}</div>
+          <div class="alert alert-warning" role="alert">${htmlEncode(scan_object.scan_type.engine_name)} on ${scan_object.domain.name}</div>
           `);
       }
     }
@@ -35,7 +35,7 @@ function getScanStatusSidebar(reload) {
           <div class="card border-primary border mini-card">
           <a href="/scan/detail/${scan_object.id}" class="text-reset item-hovered">
           <div class="card-header bg-soft-primary text-primary mini-card-header">
-          ${scan_object.scan_type.engine_name} on ${scan_object.domain.name}
+          ${htmlEncode(scan_object.scan_type.engine_name)} on ${scan_object.domain.name}
           <span class="badge badge-soft-primary float-end">
           ${scan_object.current_progress}%
           </span>
@@ -91,7 +91,7 @@ function getScanStatusSidebar(reload) {
             <div class="card border-${color} border mini-card">
             <a href="/scan/detail/${scan_object.id}" class="text-reset item-hovered float-end">
             <div class="card-header ${bg_color} text-${color} mini-card-header">
-            ${scan_object.scan_type.engine_name} on ${scan_object.domain.name}
+            ${htmlEncode(scan_object.scan_type.engine_name)} on ${scan_object.domain.name}
             </div>
             <div class="card-body mini-card-body">
             <p class="card-text">
@@ -130,7 +130,7 @@ function getScanStatusSidebar(reload) {
             <div class="card border-primary border mini-card">
             <a href="#" onclick="show_subscan_results(${task_object['id']})" class="text-reset item-hovered">
             <div class="card-header bg-soft-primary text-primary mini-card-header">
-            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${task_object.engine}</b>
+            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${htmlEncode(task_object.engine)}</b>
             </div>
             <div class="card-body mini-card-body">
             <p class="card-text">
@@ -181,7 +181,7 @@ function getScanStatusSidebar(reload) {
             <div class="card border-${color} border mini-card">
             <a href="#" class="text-reset item-hovered" onclick="show_subscan_results(${task_object['id']})">
             <div class="card-header ${bg_color} text-${color} mini-card-header">
-            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${task_object.engine}</b>
+            ${task_name} on <b>${task_object.subdomain_name}</b> using engine <b>${htmlEncode(task_object.engine)}</b>
             </div>
             <div class="card-body mini-card-body">
             <p class="card-text">
