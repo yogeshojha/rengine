@@ -7,7 +7,6 @@ Update Organization
 
 
 {% block custom_js_css_link %}
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
 {% endblock custom_js_css_link %}
 
@@ -16,52 +15,53 @@ Update Organization
 <li class="breadcrumb-item active">Update Organization</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Update Organization
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row">
-      <div class="col-12">
-        <h4>Update Organization</h4>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row">
+            <div class="col-6">
+              <label for="organizationName" class="form-label">Organization name</label>
+              {{ form.name }}
+              {% if form.errors %}
+              <div class="invalid-feedback" style="display: block;">
+                {{ form.errors.name|striptags }}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-6">
+              <label for="organizationDescription" class="form-label">Description (Optional)</label>
+              {{ form.description }}
+            </div>
+            <div class="col-12 mt-3">
+              <label for="targets" class="form-label">Select Targets</label>
+              {{form.domains}}
+              {% if form.errors.domains %}
+              <div class="invalid-feedback text-danger" style="display: block;">
+                <p class="text-danger">
+                  {{ form.errors.domains|striptags }}
+                </p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit">Add Organization</button>
+        </form>
       </div>
     </div>
   </div>
-  <div class="widget-content widget-content-area">
-    <form method="POST">
-      {% csrf_token %}
-      <div class="form-row">
-        <div class="col-md-6 mb-4">
-          <label for="organizationName">Organization name</label>
-          {{ form.name }}
-          {% if form.errors %}
-          <div class="invalid-feedback" style="display: block;">
-            {{ form.errors.name|striptags }}
-          </div>
-          {% endif %}
-        </div>
-        <div class="col-md-6 mb-4">
-          <label for="organizationDescription">Description (Optional)</label>
-          {{ form.description }}
-        </div>
-      </div>
-      <div class="col-md-12 mb-4">
-        <label for="targets">Select Targets</label>
-        {{form.domains}}
-        {% if form.errors %}
-        <div class="invalid-feedback" style="display: block;">
-          {{ form.errors.name|striptags }}
-        </div>
-        {% endif %}
-      </div>
-      <button class="btn btn-primary submit-fn mt-2 float-right" type="submit">Update Organization</button>
-    </form>
-  </div>
 </div>
-
 {% endblock main_content %}
 
 
 {% block page_level_script %}
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script type="text/javascript">
 $( document ).ready(function() {
@@ -70,7 +70,5 @@ $( document ).ready(function() {
   });
   $('#domains').val({{domain_list}}).change();
 });
-
-
 </script>
 {% endblock page_level_script %}

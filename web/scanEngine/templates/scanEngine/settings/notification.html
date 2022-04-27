@@ -2,7 +2,7 @@
 {% load static %}
 {% load custom_tags %}
 {% block title %}
-reNgine Settings
+Notification Settings
 {% endblock title %}
 
 {% block custom_js_css_link %}
@@ -16,168 +16,140 @@ reNgine Settings
 <li class="breadcrumb-item active">Notification Settings</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Notification Settings
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row h-100 justify-content-center align-items-center">
-      <div class="col-xl-12 col-md-12 col-sm-12 col-12">
-        <h4>Notification Settings</h4>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">Send Notifications to: </h4>
+        <form method="POST">
+          {% csrf_token %}
+          <div class="row">
+            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Slack</label>
+            <div class="col-xl-10 col-lg-9 col-sm-10">
+              <div class="input-group mb-4">
+                <div class="input-group-prepend">
+                  <span class="input-group-text" style="height: 100%">
+                    <div class="form-check form-switch">
+                      {{form.send_to_slack}}
+                    </div>
+                  </span>
+                </div>
+                {{form.slack_hook_url}}
+                <div class="input-group-append">
+                  <span class="input-group-text" id="basic-addon2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-slack"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"></path><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"></path><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"></path><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"></path><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"></path><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"></path><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"></path></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <a href="https://api.slack.com/messaging/webhooks" target="_blank" class="float-end text-primary">Slack Webhook API Documentation</a>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Discord<br>(Recommended)</label>
+            <div class="col-xl-10 col-lg-9 col-sm-10">
+              <div class="input-group mb-4">
+                <div class="input-group-prepend">
+                  <span class="input-group-text" style="height: 100%">
+                    <div class="form-check form-switch">
+                      {{form.send_to_discord}}
+                    </div>
+                  </span>
+                </div>
+                {{form.discord_hook_url}}
+                <div class="input-group-append">
+                  <span class="input-group-text" id="basic-addon2">
+                    <svg fill="#000000" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 47 47" width="24px" height="24px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M 18.90625 7 C 18.90625 7 12.539063 7.4375 8.375 10.78125 C 8.355469 10.789063 8.332031 10.800781 8.3125 10.8125 C 7.589844 11.480469 7.046875 12.515625 6.375 14 C 5.703125 15.484375 4.992188 17.394531 4.34375 19.53125 C 3.050781 23.808594 2 29.058594 2 34 C 1.996094 34.175781 2.039063 34.347656 2.125 34.5 C 3.585938 37.066406 6.273438 38.617188 8.78125 39.59375 C 11.289063 40.570313 13.605469 40.960938 14.78125 41 C 15.113281 41.011719 15.429688 40.859375 15.625 40.59375 L 18.0625 37.21875 C 20.027344 37.683594 22.332031 38 25 38 C 27.667969 38 29.972656 37.683594 31.9375 37.21875 L 34.375 40.59375 C 34.570313 40.859375 34.886719 41.011719 35.21875 41 C 36.394531 40.960938 38.710938 40.570313 41.21875 39.59375 C 43.726563 38.617188 46.414063 37.066406 47.875 34.5 C 47.960938 34.347656 48.003906 34.175781 48 34 C 48 29.058594 46.949219 23.808594 45.65625 19.53125 C 45.007813 17.394531 44.296875 15.484375 43.625 14 C 42.953125 12.515625 42.410156 11.480469 41.6875 10.8125 C 41.667969 10.800781 41.644531 10.789063 41.625 10.78125 C 37.460938 7.4375 31.09375 7 31.09375 7 C 31.019531 6.992188 30.949219 6.992188 30.875 7 C 30.527344 7.046875 30.234375 7.273438 30.09375 7.59375 C 30.09375 7.59375 29.753906 8.339844 29.53125 9.40625 C 27.582031 9.09375 25.941406 9 25 9 C 24.058594 9 22.417969 9.09375 20.46875 9.40625 C 20.246094 8.339844 19.90625 7.59375 19.90625 7.59375 C 19.734375 7.203125 19.332031 6.964844 18.90625 7 Z M 18.28125 9.15625 C 18.355469 9.359375 18.40625 9.550781 18.46875 9.78125 C 16.214844 10.304688 13.746094 11.160156 11.4375 12.59375 C 11.074219 12.746094 10.835938 13.097656 10.824219 13.492188 C 10.816406 13.882813 11.039063 14.246094 11.390625 14.417969 C 11.746094 14.585938 12.167969 14.535156 12.46875 14.28125 C 17.101563 11.410156 22.996094 11 25 11 C 27.003906 11 32.898438 11.410156 37.53125 14.28125 C 37.832031 14.535156 38.253906 14.585938 38.609375 14.417969 C 38.960938 14.246094 39.183594 13.882813 39.175781 13.492188 C 39.164063 13.097656 38.925781 12.746094 38.5625 12.59375 C 36.253906 11.160156 33.785156 10.304688 31.53125 9.78125 C 31.59375 9.550781 31.644531 9.359375 31.71875 9.15625 C 32.859375 9.296875 37.292969 9.894531 40.3125 12.28125 C 40.507813 12.460938 41.1875 13.460938 41.8125 14.84375 C 42.4375 16.226563 43.09375 18.027344 43.71875 20.09375 C 44.9375 24.125 45.921875 29.097656 45.96875 33.65625 C 44.832031 35.496094 42.699219 36.863281 40.5 37.71875 C 38.5 38.496094 36.632813 38.84375 35.65625 38.9375 L 33.96875 36.65625 C 34.828125 36.378906 35.601563 36.078125 36.28125 35.78125 C 38.804688 34.671875 40.15625 33.5 40.15625 33.5 C 40.570313 33.128906 40.605469 32.492188 40.234375 32.078125 C 39.863281 31.664063 39.226563 31.628906 38.8125 32 C 38.8125 32 37.765625 32.957031 35.46875 33.96875 C 34.625 34.339844 33.601563 34.707031 32.4375 35.03125 C 32.167969 35 31.898438 35.078125 31.6875 35.25 C 29.824219 35.703125 27.609375 36 25 36 C 22.371094 36 20.152344 35.675781 18.28125 35.21875 C 18.070313 35.078125 17.8125 35.019531 17.5625 35.0625 C 16.394531 34.738281 15.378906 34.339844 14.53125 33.96875 C 12.234375 32.957031 11.1875 32 11.1875 32 C 10.960938 31.789063 10.648438 31.699219 10.34375 31.75 C 9.957031 31.808594 9.636719 32.085938 9.53125 32.464844 C 9.421875 32.839844 9.546875 33.246094 9.84375 33.5 C 9.84375 33.5 11.195313 34.671875 13.71875 35.78125 C 14.398438 36.078125 15.171875 36.378906 16.03125 36.65625 L 14.34375 38.9375 C 13.367188 38.84375 11.5 38.496094 9.5 37.71875 C 7.300781 36.863281 5.167969 35.496094 4.03125 33.65625 C 4.078125 29.097656 5.0625 24.125 6.28125 20.09375 C 6.90625 18.027344 7.5625 16.226563 8.1875 14.84375 C 8.8125 13.460938 9.492188 12.460938 9.6875 12.28125 C 12.707031 9.894531 17.140625 9.296875 18.28125 9.15625 Z M 18.5 21 C 15.949219 21 14 23.316406 14 26 C 14 28.683594 15.949219 31 18.5 31 C 21.050781 31 23 28.683594 23 26 C 23 23.316406 21.050781 21 18.5 21 Z M 31.5 21 C 28.949219 21 27 23.316406 27 26 C 27 28.683594 28.949219 31 31.5 31 C 34.050781 31 36 28.683594 36 26 C 36 23.316406 34.050781 21 31.5 21 Z M 18.5 23 C 19.816406 23 21 24.265625 21 26 C 21 27.734375 19.816406 29 18.5 29 C 17.183594 29 16 27.734375 16 26 C 16 24.265625 17.183594 23 18.5 23 Z M 31.5 23 C 32.816406 23 34 24.265625 34 26 C 34 27.734375 32.816406 29 31.5 29 C 30.183594 29 29 27.734375 29 26 C 29 24.265625 30.183594 23 31.5 23 Z"/></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" class="float-end text-primary">Discord Webhook API Documentation</a>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Telegram</label>
+            <div class="col-xl-10 col-lg-9 col-sm-10">
+              <div class="input-group mb-4">
+                <div class="input-group-prepend">
+                  <span class="input-group-text" style="height: 100%">
+                    <div class="form-check form-switch">
+                      {{form.send_to_telegram}}
+                    </div>
+                  </span>
+                </div>
+                {{form.telegram_bot_token}}
+                {{form.telegram_bot_chat_id}}
+                <div class="input-group-append">
+                  <span class="input-group-text" id="basic-addon2">
+                    <svg fill="#000000" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 47 47" width="24px" height="24px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M 44.376953 5.9863281 C 43.889905 6.0076957 43.415817 6.1432497 42.988281 6.3144531 C 42.565113 6.4845113 40.128883 7.5243408 36.53125 9.0625 C 32.933617 10.600659 28.256963 12.603668 23.621094 14.589844 C 14.349356 18.562196 5.2382813 22.470703 5.2382812 22.470703 L 5.3046875 22.445312 C 5.3046875 22.445312 4.7547875 22.629122 4.1972656 23.017578 C 3.9185047 23.211806 3.6186028 23.462555 3.3730469 23.828125 C 3.127491 24.193695 2.9479735 24.711788 3.015625 25.259766 C 3.2532479 27.184511 5.2480469 27.730469 5.2480469 27.730469 L 5.2558594 27.734375 L 14.158203 30.78125 C 14.385177 31.538434 16.858319 39.792923 17.402344 41.541016 C 17.702797 42.507484 17.984013 43.064995 18.277344 43.445312 C 18.424133 43.635633 18.577962 43.782915 18.748047 43.890625 C 18.815627 43.933415 18.8867 43.965525 18.957031 43.994141 C 18.958531 43.994806 18.959437 43.99348 18.960938 43.994141 C 18.969579 43.997952 18.977708 43.998295 18.986328 44.001953 L 18.962891 43.996094 C 18.979231 44.002694 18.995359 44.013801 19.011719 44.019531 C 19.043456 44.030655 19.062905 44.030268 19.103516 44.039062 C 20.123059 44.395042 20.966797 43.734375 20.966797 43.734375 L 21.001953 43.707031 L 26.470703 38.634766 L 35.345703 45.554688 L 35.457031 45.605469 C 37.010484 46.295216 38.415349 45.910403 39.193359 45.277344 C 39.97137 44.644284 40.277344 43.828125 40.277344 43.828125 L 40.310547 43.742188 L 46.832031 9.7519531 C 46.998903 8.9915162 47.022612 8.334202 46.865234 7.7402344 C 46.707857 7.1462668 46.325492 6.6299361 45.845703 6.34375 C 45.365914 6.0575639 44.864001 5.9649605 44.376953 5.9863281 z M 44.429688 8.0195312 C 44.627491 8.0103707 44.774102 8.032983 44.820312 8.0605469 C 44.866523 8.0881109 44.887272 8.0844829 44.931641 8.2519531 C 44.976011 8.419423 45.000036 8.7721605 44.878906 9.3242188 L 44.875 9.3359375 L 38.390625 43.128906 C 38.375275 43.162926 38.240151 43.475531 37.931641 43.726562 C 37.616914 43.982653 37.266874 44.182554 36.337891 43.792969 L 26.632812 36.224609 L 26.359375 36.009766 L 26.353516 36.015625 L 23.451172 33.837891 L 39.761719 14.648438 A 1.0001 1.0001 0 0 0 38.974609 13 A 1.0001 1.0001 0 0 0 38.445312 13.167969 L 14.84375 28.902344 L 5.9277344 25.849609 C 5.9277344 25.849609 5.0423771 25.356927 5 25.013672 C 4.99765 24.994652 4.9871961 25.011869 5.0332031 24.943359 C 5.0792101 24.874869 5.1948546 24.759225 5.3398438 24.658203 C 5.6298218 24.456159 5.9609375 24.333984 5.9609375 24.333984 L 5.9941406 24.322266 L 6.0273438 24.308594 C 6.0273438 24.308594 15.138894 20.399882 24.410156 16.427734 C 29.045787 14.44166 33.721617 12.440122 37.318359 10.902344 C 40.914175 9.3649615 43.512419 8.2583658 43.732422 8.1699219 C 43.982886 8.0696253 44.231884 8.0286918 44.429688 8.0195312 z M 33.613281 18.792969 L 21.244141 33.345703 L 21.238281 33.351562 A 1.0001 1.0001 0 0 0 21.183594 33.423828 A 1.0001 1.0001 0 0 0 21.128906 33.507812 A 1.0001 1.0001 0 0 0 20.998047 33.892578 A 1.0001 1.0001 0 0 0 20.998047 33.900391 L 19.386719 41.146484 C 19.35993 41.068197 19.341173 41.039555 19.3125 40.947266 L 19.3125 40.945312 C 18.800713 39.30085 16.467362 31.5161 16.144531 30.439453 L 33.613281 18.792969 z M 22.640625 35.730469 L 24.863281 37.398438 L 21.597656 40.425781 L 22.640625 35.730469 z"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <a href="https://medium.com/shibinco/create-a-telegram-bot-using-botfather-and-get-the-api-token-900ba00e0f39" target="_blank" class="float-end text-primary">How to Create Telegram Bot</a>
+            </div>
+          </div>
+          <div class="row">
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Send me notification for</h4>
+            <div class="col-xl-9 col-lg-9 col-sm-10">
+              {{form.send_scan_status_notif}}
+              <label class="form-label" for="send_scan_status_notif">Scan related updates (e.g. Scan Initiated, Scan Completed)</label>
+              <br>
+              {{form.send_interesting_notif}}
+              <label class="form-label" for="send_interesting_notif">Interesting Subdomains</label>
+              <br>
+              {{form.send_vuln_notif}}
+              <label class="form-label" for="send_vuln_notif">Vulnerabilities Found</label>
+              <br>
+              <span class="text-muted">*Informational Vulnerabilities will not be notified.</span>
+              <br>
+              {{form.send_subdomain_changes_notif}}
+              <label class="form-label" for="send_subdomain_changes_notif">
+                Subdomain Changes
+                <br>
+                <span class="text-muted">
+                  (e.g. when new Subdomains are discovered or subdomains are no longer available)
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Upload Scan Results<br>(Recommended)</h4>
+            <div class="col-xl-9 col-lg-9 col-sm-10">
+              {{form.send_scan_output_file}}
+              <label class="form-label" for="send_scan_output_file">
+                Send Scan Output (e.g. Subdomain gathered file)
+                <br>
+                <span class="text-primary">Only discord is supported!</span>
+                <br>
+                <span class="text-muted">
+                  (This lets you upload scan results like list of subdomains to your discord)
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary mt-3 float-end">Save & Test Notification</button>
+            </div>
+            <div class="col-12">
+              <p class="text-muted float-end">*Once saved, a test message will be sent to all the enabled services.</p>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
-  <div class="widget-content widget-content-area">
-    <form method="POST">
-      {% csrf_token %}
-      <div class="form-group row mb-4">
-        <label for="slack_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Slack</label>
-        <div class="col-xl-10 col-lg-9 col-sm-10">
-          <div class="input-group mb-4">
-            <div class="input-group-prepend">
-              <div class="input-group-text" style="background: #fafafa">
-                <label class="switch s-primary mb-0">
-                  {{form.send_to_slack}}
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-            {{form.slack_hook_url}}
-            <div class="input-group-append">
-              <span class="input-group-text" id="basic-addon2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-slack"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"></path><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"></path><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"></path><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"></path><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"></path><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"></path><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"></path><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"></path></svg>
-              </span>
-            </div>
-          </div>
-          <a href="https://api.slack.com/messaging/webhooks" target="_blank" class="float-right text-info">Slack Webhook API Documentation</a>
-        </div>
-      </div>
-
-      <div class="form-group row mb-4">
-        <label for="discord_url" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">
-          Discord
-          <br>
-          <span class="">(Recommended)</span>
-          <span class="text-info bs-popover badge-link" data-container="body" data-trigger="hover" data-content="Discord allows you to upload discovered subdomains as text file. It is then easier to pass this recon result/text file to any other recon tools.">Why?</span>
-        </label>
-        <div class="col-xl-10 col-lg-9 col-sm-10">
-          <div class="input-group mb-4">
-            <div class="input-group-prepend">
-              <div class="input-group-text" style="background: #fafafa">
-                <label class="switch s-primary mb-0">
-                  {{form.send_to_discord}}
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-            {{form.discord_hook_url}}
-            <div class="input-group-append">
-              <span class="input-group-text" id="basic-addon2">
-                <svg fill="#000000" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 47 47" width="24px" height="24px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M 18.90625 7 C 18.90625 7 12.539063 7.4375 8.375 10.78125 C 8.355469 10.789063 8.332031 10.800781 8.3125 10.8125 C 7.589844 11.480469 7.046875 12.515625 6.375 14 C 5.703125 15.484375 4.992188 17.394531 4.34375 19.53125 C 3.050781 23.808594 2 29.058594 2 34 C 1.996094 34.175781 2.039063 34.347656 2.125 34.5 C 3.585938 37.066406 6.273438 38.617188 8.78125 39.59375 C 11.289063 40.570313 13.605469 40.960938 14.78125 41 C 15.113281 41.011719 15.429688 40.859375 15.625 40.59375 L 18.0625 37.21875 C 20.027344 37.683594 22.332031 38 25 38 C 27.667969 38 29.972656 37.683594 31.9375 37.21875 L 34.375 40.59375 C 34.570313 40.859375 34.886719 41.011719 35.21875 41 C 36.394531 40.960938 38.710938 40.570313 41.21875 39.59375 C 43.726563 38.617188 46.414063 37.066406 47.875 34.5 C 47.960938 34.347656 48.003906 34.175781 48 34 C 48 29.058594 46.949219 23.808594 45.65625 19.53125 C 45.007813 17.394531 44.296875 15.484375 43.625 14 C 42.953125 12.515625 42.410156 11.480469 41.6875 10.8125 C 41.667969 10.800781 41.644531 10.789063 41.625 10.78125 C 37.460938 7.4375 31.09375 7 31.09375 7 C 31.019531 6.992188 30.949219 6.992188 30.875 7 C 30.527344 7.046875 30.234375 7.273438 30.09375 7.59375 C 30.09375 7.59375 29.753906 8.339844 29.53125 9.40625 C 27.582031 9.09375 25.941406 9 25 9 C 24.058594 9 22.417969 9.09375 20.46875 9.40625 C 20.246094 8.339844 19.90625 7.59375 19.90625 7.59375 C 19.734375 7.203125 19.332031 6.964844 18.90625 7 Z M 18.28125 9.15625 C 18.355469 9.359375 18.40625 9.550781 18.46875 9.78125 C 16.214844 10.304688 13.746094 11.160156 11.4375 12.59375 C 11.074219 12.746094 10.835938 13.097656 10.824219 13.492188 C 10.816406 13.882813 11.039063 14.246094 11.390625 14.417969 C 11.746094 14.585938 12.167969 14.535156 12.46875 14.28125 C 17.101563 11.410156 22.996094 11 25 11 C 27.003906 11 32.898438 11.410156 37.53125 14.28125 C 37.832031 14.535156 38.253906 14.585938 38.609375 14.417969 C 38.960938 14.246094 39.183594 13.882813 39.175781 13.492188 C 39.164063 13.097656 38.925781 12.746094 38.5625 12.59375 C 36.253906 11.160156 33.785156 10.304688 31.53125 9.78125 C 31.59375 9.550781 31.644531 9.359375 31.71875 9.15625 C 32.859375 9.296875 37.292969 9.894531 40.3125 12.28125 C 40.507813 12.460938 41.1875 13.460938 41.8125 14.84375 C 42.4375 16.226563 43.09375 18.027344 43.71875 20.09375 C 44.9375 24.125 45.921875 29.097656 45.96875 33.65625 C 44.832031 35.496094 42.699219 36.863281 40.5 37.71875 C 38.5 38.496094 36.632813 38.84375 35.65625 38.9375 L 33.96875 36.65625 C 34.828125 36.378906 35.601563 36.078125 36.28125 35.78125 C 38.804688 34.671875 40.15625 33.5 40.15625 33.5 C 40.570313 33.128906 40.605469 32.492188 40.234375 32.078125 C 39.863281 31.664063 39.226563 31.628906 38.8125 32 C 38.8125 32 37.765625 32.957031 35.46875 33.96875 C 34.625 34.339844 33.601563 34.707031 32.4375 35.03125 C 32.167969 35 31.898438 35.078125 31.6875 35.25 C 29.824219 35.703125 27.609375 36 25 36 C 22.371094 36 20.152344 35.675781 18.28125 35.21875 C 18.070313 35.078125 17.8125 35.019531 17.5625 35.0625 C 16.394531 34.738281 15.378906 34.339844 14.53125 33.96875 C 12.234375 32.957031 11.1875 32 11.1875 32 C 10.960938 31.789063 10.648438 31.699219 10.34375 31.75 C 9.957031 31.808594 9.636719 32.085938 9.53125 32.464844 C 9.421875 32.839844 9.546875 33.246094 9.84375 33.5 C 9.84375 33.5 11.195313 34.671875 13.71875 35.78125 C 14.398438 36.078125 15.171875 36.378906 16.03125 36.65625 L 14.34375 38.9375 C 13.367188 38.84375 11.5 38.496094 9.5 37.71875 C 7.300781 36.863281 5.167969 35.496094 4.03125 33.65625 C 4.078125 29.097656 5.0625 24.125 6.28125 20.09375 C 6.90625 18.027344 7.5625 16.226563 8.1875 14.84375 C 8.8125 13.460938 9.492188 12.460938 9.6875 12.28125 C 12.707031 9.894531 17.140625 9.296875 18.28125 9.15625 Z M 18.5 21 C 15.949219 21 14 23.316406 14 26 C 14 28.683594 15.949219 31 18.5 31 C 21.050781 31 23 28.683594 23 26 C 23 23.316406 21.050781 21 18.5 21 Z M 31.5 21 C 28.949219 21 27 23.316406 27 26 C 27 28.683594 28.949219 31 31.5 31 C 34.050781 31 36 28.683594 36 26 C 36 23.316406 34.050781 21 31.5 21 Z M 18.5 23 C 19.816406 23 21 24.265625 21 26 C 21 27.734375 19.816406 29 18.5 29 C 17.183594 29 16 27.734375 16 26 C 16 24.265625 17.183594 23 18.5 23 Z M 31.5 23 C 32.816406 23 34 24.265625 34 26 C 34 27.734375 32.816406 29 31.5 29 C 30.183594 29 29 27.734375 29 26 C 29 24.265625 30.183594 23 31.5 23 Z"/></svg>
-              </span>
-            </div>
-          </div>
-          <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks" target="_blank" class="float-right text-info">Discord Webhook API Documentation</a>
-        </div>
-      </div>
-
-      <div class="form-group row mb-4">
-        <label for="telegram_bot_token" class="col-xl-2 col-sm-3 col-sm-2 col-form-label">Telegram</label>
-        <div class="col-xl-10 col-lg-9 col-sm-10">
-          <div class="input-group mb-4">
-            <div class="input-group-prepend">
-              <div class="input-group-text" style="background: #fafafa">
-                <label class="switch s-primary mb-0">
-                  {{form.send_to_telegram}}
-                  <span class="slider round"></span>
-                </label>
-              </div>
-            </div>
-            {{form.telegram_bot_token}}
-            {{form.telegram_bot_chat_id}}
-            <div class="input-group-append">
-              <span class="input-group-text" id="basic-addon2">
-                <svg fill="#000000" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 47 47" width="24px" height="24px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M 44.376953 5.9863281 C 43.889905 6.0076957 43.415817 6.1432497 42.988281 6.3144531 C 42.565113 6.4845113 40.128883 7.5243408 36.53125 9.0625 C 32.933617 10.600659 28.256963 12.603668 23.621094 14.589844 C 14.349356 18.562196 5.2382813 22.470703 5.2382812 22.470703 L 5.3046875 22.445312 C 5.3046875 22.445312 4.7547875 22.629122 4.1972656 23.017578 C 3.9185047 23.211806 3.6186028 23.462555 3.3730469 23.828125 C 3.127491 24.193695 2.9479735 24.711788 3.015625 25.259766 C 3.2532479 27.184511 5.2480469 27.730469 5.2480469 27.730469 L 5.2558594 27.734375 L 14.158203 30.78125 C 14.385177 31.538434 16.858319 39.792923 17.402344 41.541016 C 17.702797 42.507484 17.984013 43.064995 18.277344 43.445312 C 18.424133 43.635633 18.577962 43.782915 18.748047 43.890625 C 18.815627 43.933415 18.8867 43.965525 18.957031 43.994141 C 18.958531 43.994806 18.959437 43.99348 18.960938 43.994141 C 18.969579 43.997952 18.977708 43.998295 18.986328 44.001953 L 18.962891 43.996094 C 18.979231 44.002694 18.995359 44.013801 19.011719 44.019531 C 19.043456 44.030655 19.062905 44.030268 19.103516 44.039062 C 20.123059 44.395042 20.966797 43.734375 20.966797 43.734375 L 21.001953 43.707031 L 26.470703 38.634766 L 35.345703 45.554688 L 35.457031 45.605469 C 37.010484 46.295216 38.415349 45.910403 39.193359 45.277344 C 39.97137 44.644284 40.277344 43.828125 40.277344 43.828125 L 40.310547 43.742188 L 46.832031 9.7519531 C 46.998903 8.9915162 47.022612 8.334202 46.865234 7.7402344 C 46.707857 7.1462668 46.325492 6.6299361 45.845703 6.34375 C 45.365914 6.0575639 44.864001 5.9649605 44.376953 5.9863281 z M 44.429688 8.0195312 C 44.627491 8.0103707 44.774102 8.032983 44.820312 8.0605469 C 44.866523 8.0881109 44.887272 8.0844829 44.931641 8.2519531 C 44.976011 8.419423 45.000036 8.7721605 44.878906 9.3242188 L 44.875 9.3359375 L 38.390625 43.128906 C 38.375275 43.162926 38.240151 43.475531 37.931641 43.726562 C 37.616914 43.982653 37.266874 44.182554 36.337891 43.792969 L 26.632812 36.224609 L 26.359375 36.009766 L 26.353516 36.015625 L 23.451172 33.837891 L 39.761719 14.648438 A 1.0001 1.0001 0 0 0 38.974609 13 A 1.0001 1.0001 0 0 0 38.445312 13.167969 L 14.84375 28.902344 L 5.9277344 25.849609 C 5.9277344 25.849609 5.0423771 25.356927 5 25.013672 C 4.99765 24.994652 4.9871961 25.011869 5.0332031 24.943359 C 5.0792101 24.874869 5.1948546 24.759225 5.3398438 24.658203 C 5.6298218 24.456159 5.9609375 24.333984 5.9609375 24.333984 L 5.9941406 24.322266 L 6.0273438 24.308594 C 6.0273438 24.308594 15.138894 20.399882 24.410156 16.427734 C 29.045787 14.44166 33.721617 12.440122 37.318359 10.902344 C 40.914175 9.3649615 43.512419 8.2583658 43.732422 8.1699219 C 43.982886 8.0696253 44.231884 8.0286918 44.429688 8.0195312 z M 33.613281 18.792969 L 21.244141 33.345703 L 21.238281 33.351562 A 1.0001 1.0001 0 0 0 21.183594 33.423828 A 1.0001 1.0001 0 0 0 21.128906 33.507812 A 1.0001 1.0001 0 0 0 20.998047 33.892578 A 1.0001 1.0001 0 0 0 20.998047 33.900391 L 19.386719 41.146484 C 19.35993 41.068197 19.341173 41.039555 19.3125 40.947266 L 19.3125 40.945312 C 18.800713 39.30085 16.467362 31.5161 16.144531 30.439453 L 33.613281 18.792969 z M 22.640625 35.730469 L 24.863281 37.398438 L 21.597656 40.425781 L 22.640625 35.730469 z"/>
-                </svg>
-              </span>
-            </div>
-          </div>
-          <a href="https://medium.com/shibinco/create-a-telegram-bot-using-botfather-and-get-the-api-token-900ba00e0f39" target="_blank" class="float-right text-info">How to Create Telegram Bot</a>
-        </div>
-      </div>
-
-      <fieldset class="form-group mb-4">
-        <div class="row">
-          <label class="col-form-label col-xl-3 col-sm-3 col-sm-2 pt-0">Send me notification for</label>
-          <div class="col-xl-9 col-lg-9 col-sm-10">
-            <div class="form-check pl-0 mt-1">
-              <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_scan_status_notif}}
-                <label class="custom-control-label text-dark" for="send_scan_status_notif">Scan related updates (e.g. Scan Initiated, Scan Completed)</label>
-              </div>
-            </div>
-            <div class="form-check pl-0 mt-1">
-              <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_interesting_notif}}
-                <label class="custom-control-label text-dark" for="send_interesting_notif">Interesting Subdomains</label>
-              </div>
-            </div>
-            <div class="form-check pl-0 mt-1">
-              <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_vuln_notif}}
-                <label class="custom-control-label text-dark" for="send_vuln_notif">Vulnerabilities Found</label>
-                <br>
-                <span class="text-muted">*Informational Vulnerabilities will not be notified.</span>
-              </div>
-            </div>
-            <div class="form-check pl-0 mt-1">
-              <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_subdomain_changes_notif}}
-                <label class="custom-control-label text-dark" for="send_subdomain_changes_notif">
-                  Subdomain Changes
-                  <br>
-                  <span class="text-muted">
-                    (e.g. when new Subdomains are discovered or subdomains are no longer available)
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <fieldset class="form-group mb-4">
-        <div class="row">
-          <label class="col-form-label col-xl-3 col-sm-3 col-sm-2 pt-0">
-            Upload Scan Results
-            <br>
-            <span>(Recommended)</span>
-            <br>
-            <span class="text-info bs-popover badge-link" data-container="body" data-trigger="hover" data-content="If you want the list of discovered subdomains, list of endpoints etc, as a text file, then selecting this option will upload the recon result to your discord channel. But, You must have discord web hook setup.">Why?</span>
-          </label>
-          <div class="col-xl-9 col-lg-9 col-sm-10">
-            <div class="form-check pl-0 mt-1">
-              <div class="custom-control custom-checkbox checkbox-info">
-                {{form.send_scan_output_file}}
-                <label class="custom-control-label text-dark" for="send_scan_output_file">
-                  Send Scan Output (e.g. Subdomain gathered file)
-                  <br>
-                  <span class="text-info">Only discord is supported!</span>
-                  <br>
-                  <span class="text-muted">
-                    (This lets you upload scan results like list of subdomains to your discord)
-                  </span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </fieldset>
-      <div class="form-group row">
-        <div class="col-sm-12">
-          <button type="submit" class="btn btn-primary mt-3 float-right">Save & Test Notification</button>
-        </div>
-      </div>
-      <p class="text-muted float-right">*Once saved, a test message will be sent to all the enabled services.</p>
-    </form>
   </div>
 </div>
 {% endblock main_content %}

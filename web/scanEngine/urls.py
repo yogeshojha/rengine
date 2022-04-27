@@ -21,6 +21,10 @@ urlpatterns = [
         views.update_engine,
         name='update_engine'),
     path(
+        'tool_arsenal/update/<int:id>',
+        views.modify_tool_in_arsenal,
+        name='update_tool_in_arsenal'),
+    path(
         'wordlist/',
         views.wordlist_list,
         name='wordlist_list'),
@@ -28,6 +32,10 @@ urlpatterns = [
         'wordlist/add/',
         views.add_wordlist,
         name='add_wordlist'),
+    path(
+        'tool_arsenal/add/',
+        views.add_tool,
+        name='add_tool'),
     path(
         'wordlist/delete/<int:id>',
         views.delete_wordlist,
@@ -40,6 +48,10 @@ urlpatterns = [
         'tool_settings',
         views.tool_specific_settings,
         name='tool_settings'),
+    path(
+        'tool_arsenal',
+        views.tool_arsenal_section,
+        name='tool_arsenal'),
     path(
         'rengine_settings',
         views.rengine_settings,
@@ -56,6 +68,10 @@ urlpatterns = [
         'hackerone_settings',
         views.hackerone_settings,
         name='hackerone_settings'),
+    path(
+        'report_settings',
+        views.report_settings,
+        name='report_settings'),
     path(
         'testHackerone/',
         views.test_hackerone,

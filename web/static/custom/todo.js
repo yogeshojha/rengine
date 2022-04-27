@@ -1,5 +1,5 @@
 function todoCheckboxListener(){
-  $('input[type="checkbox"]').click(function() {
+  $('.detail-scan-todo-item').click(function() {
     var note_id = parseInt(this.id.split('_')[1]);
     console.log(note_id);
     if ($(this).is(":checked")) {
@@ -48,7 +48,7 @@ function delete_todo(todo_id){
           pos: 'top-right',
           duration: 1500,
         });
-        get_recon_notes(scan_id);
+        get_recon_notes(null, scan_id);
       })
       .catch(function() {
         swal.insertQueueStep({
@@ -83,21 +83,22 @@ function change_todo_priority(todo_id, imp_type){
       pos: 'top-right',
       duration: 1500,
     });
-    get_recon_notes(scan_id);
+    get_recon_notes(null, scan_id);
   });
 }
 
 
 function list_subdomain_todos(subdomain_id, subdomain_name){
   $('.modal-title').html(`Todos for subdomain ${subdomain_name}`);
-  $('#exampleModal').modal('show');
-  $('.modal-text').empty(); $('#modal-footer').empty();
-  $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
+  $('#modal_dialog').modal('show');
+  $('#modal-content').empty();
+   $('#modal-footer').empty();
+  $('#modal-content').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   // query subdomains
   $.getJSON(`/api/listTodoNotes/?subdomain_id=${subdomain_id}&format=json`, function(data) {
     $('#modal-loader').empty();
-    $('#modal-text-content').empty();
-    $('#modal-text-content').append(`<ul id="todo-modal-content-ul"></ul>`);
+    $('#modal-content').empty();
+    $('#modal-content').append(`<ul id="todo-modal-content-ul"></ul>`);
     for (todo in data['notes']){
       todo_obj = data['notes'][todo];
       important_badge = '';
@@ -125,7 +126,7 @@ function list_subdomain_todos(subdomain_id, subdomain_name){
 }
 
 function get_task_details(todo_id){
-  $('#exampleModal').modal('show');
+  $('#modal_dialog').modal('show');
   $('.modal-text').empty(); $('#modal-footer').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/listTodoNotes/?todo_id=${todo_id}&format=json`, function(data) {
@@ -133,73 +134,78 @@ function get_task_details(todo_id){
     note = data['notes'][0];
     subdomain_name = '';
     if (note['subdomain_name']) {
-      subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+      subdomain_name = '<small class="text-success"> Subdomain: ' + note['subdomain_name'] + '</small></br>';
     }
-    $('.modal-title').html(`<b>${split(htmlEncode(note['title']), 80)}</b>`);
-    $('#modal-text-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
+    $('.modal-title').html(`<b>${htmlEncode(note['title'])}</b>`);
+    $('#modal-content').append(`<p>${subdomain_name} ${htmlEncode(note['description'])}</p>`);
   });
 }
 
 function get_recon_notes(target_id, scan_id){
+  var url = `/api/listTodoNotes/?`;
+
   if (target_id) {
-    url = `/api/listTodoNotes/?target_id=${target_id}&format=json`;
+    url += `target_id=${target_id}`;
   }
   else if (scan_id) {
-    url = `/api/listTodoNotes/?scan_id=${scan_id}&format=json`
+    url += `scan_id=${scan_id}`;
   }
+
+  url += `&format=json`;
+
+  // <li class="list-group-item border-0 ps-0"><div class="form-check"><input type="checkbox" class="form-check-input todo-done" id="8"><label class="form-check-label" for="8">dd</label></div></li>
   $.getJSON(url, function(data) {
     $('#tasks-count').empty();
-    $('#recon-task-list').empty();
+    $('#todo-list').empty();
     if (data['notes'].length > 0){
-      $('#recon-task-list').append(`<div id="todo_list_${target_id}"></div>`);
+      $('#todo-list').append(`<li class="list-group-item border-0 ps-0" id="todo_list_${target_id}"></li>`);
       for (var val in data['notes']){
         note = data['notes'][val];
         div_id = 'todo_' + note['id'];
         subdomain_name = '';
         if (note['subdomain_name']) {
-          subdomain_name = '<small class="text-success">Subdomain: ' + note['subdomain_name'] + '</small></br>';
+          subdomain_name = '<small class="text-success"> Subdomain: ' + note['subdomain_name'] + '</small></br>';
         }
-        done_strike = '';
+        strike_tag = 'span';
         checked = '';
         if (note['is_done']) {
-          done_strike = 'text-strike';
+          strike_tag = 'del';
           checked = 'checked';
         }
         important_badge = '';
         mark_important = ''
         if (note['is_important']) {
-          important_badge = `<span class="text-danger bs-tooltip" title="" data-original-title="Important Task">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-          </span>`;
-          mark_important = `<span class="text-dark float-right bs-tooltip" title="" data-original-title="Mark Unimportant" onclick="change_todo_priority(${note['id']}, 0)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-          </span>`;
+          important_badge = `<i class="fe-alert-triangle text-danger me-1"></i>&nbsp;`;
+          mark_important = `<a class="dropdown-item" onclick="change_todo_priority(${note['id']}, 0)">Mark UnImportant</a>`;
         }
         else{
-          mark_important = `<span class="text-warning float-right bs-tooltip" title="" data-original-title="Mark Important" onclick="change_todo_priority(${note['id']}, 1)">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
-          </span>`;
+          mark_important = `<a class="dropdown-item" onclick="change_todo_priority(${note['id']}, 1)">Mark Important</a>`;
         }
         $(`#todo_list_${target_id}`).append(`<div id="todo_parent_${note['id']}">
-        <div class="badge-link custom-control custom-checkbox">
-        <input type="checkbox" class="custom-control-input todo-item" ${checked} name="${div_id}" id="${div_id}">
-        <label for="${div_id}" class="${done_strike} custom-control-label text-dark">${important_badge}<b>${truncate(htmlEncode(note['title']), 20)}</b>
-        </label>
-        <span class="float-right text-danger bs-tooltip" title="Delete Todo" onclick="delete_todo(${note['id']})">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-        </span>
+        <div class="d-flex align-items-start">
+        <div class="w-100" onclick="get_task_details(${note['id']})">
+        <input type="checkbox" class="me-1 form-check-input todo-done todo-item detail-scan-todo-item" ${checked} name="${div_id}" id="${div_id}">
+        <label for="${div_id}" class="form-check-label">${important_badge}<${strike_tag}>${htmlEncode(note['title'])}</${strike_tag}></label>
+        <${strike_tag}><p>${subdomain_name} <small>${truncate(htmlEncode(note['description']), 150)}</small></p></${strike_tag}>
+        </div>
+        <div class="btn-group dropstart float-end">
+        <a href="#" class="text-dark dropdown-toggle float-start" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <i class="fe-more-vertical"></i>
+        </a>
+        <div class="dropdown-menu" style="">
         ${mark_important}
-        <p class="${done_strike}" onclick="get_task_details(${note['id']})">${subdomain_name} ${truncate(htmlEncode(note['description']), 100)}
-        </p>
+        <a class="dropdown-item" onclick="delete_todo(${note['id']})">Delete Todo</a>
         </div>
         </div>
-        <hr/>`);
+        </div>
+        <hr/>
+        `);
       }
-      $('#tasks-count').html(`<span class="badge outline-badge-dark">${data['notes'].length}</span>`);
+      $('#tasks-count').html(`<span class="badge badge-soft-primary">${data['notes'].length}</span>`);
     }
     else{
-      $('#tasks-count').html(`<span class="badge outline-badge-dark">0</span>`);
-      $('#recon-task-list').append(`<p>No todos or notes...</p>`);
+      $('#tasks-count').html(`<span class="badge badge-soft-primary me-1">0</span>`);
+      $('#todo-list').append(`<p>No todos or notes...</br>You can add todo for individual subdomains or you can also add using + symbol above.</p>`);
     }
     $('.bs-tooltip').tooltip();
     todoCheckboxListener();

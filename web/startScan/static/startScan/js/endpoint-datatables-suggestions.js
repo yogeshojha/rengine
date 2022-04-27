@@ -1,7 +1,7 @@
 var endpointSearchWrapper = document.querySelector("#endpoint-search-input");
 var endpointInputBox = endpointSearchWrapper.querySelector("input");
 var endpointSuggBox = endpointSearchWrapper.querySelector(".autocom-box");
-var endpoint_filter_icon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-filter"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>`;
+var endpoint_filter_icon = `<i class="fe-filter"></i>`;
 
 var endpoint_col_suggestions = [
   'http_url',
@@ -36,28 +36,28 @@ endpointInputBox.onclick = (event) => {
   emptyArray = emptyArray.map((data)=>{
     switch (data) {
       case "=":
-      title = `Filters endpoint <span class="badge badge-success">Equals</span> Some Value`;
+      title = `Filters endpoint <span class="badge badge-soft-success">Equals</span> Some Value`;
       break;
       case "!":
-      title = `Filters endpoint <span class="badge badge-danger">Not Equals</span> Some Value`;
+      title = `Filters endpoint <span class="badge badge-soft-danger">Not Equals</span> Some Value`;
       break;
       case ">":
-      title = `Filters endpoint <span class="badge badge-dark">Greater than</span> Some Value`;
+      title = `Filters endpoint <span class="badge badge-soft-dark">Greater than</span> Some Value`;
       break;
       case "<":
-      title = `Filters endpoint <span class="badge badge-dark">Less than</span> Some Value`;
+      title = `Filters endpoint <span class="badge badge-soft-dark">Less than</span> Some Value`;
       break;
       case "&":
-      title = `<span class="badge badge-danger">& and</span> Match endpoint if <span class="badge badge-danger">all args</span> are true`;
+      title = `<span class="badge badge-soft-danger">& and</span> Match endpoint if <span class="badge badge-soft-danger">all args</span> are true`;
       break;
       case "|":
-      title = `<span class="badge badge-warning">| or</span> Match endpoint if <span class="badge badge-warning">either of one</span> is true`;
+      title = `<span class="badge badge-soft-warning">| or</span> Match endpoint if <span class="badge badge-soft-warning">either of one</span> is true`;
       break;
       default:
       badge_color = "info";
-      title = `Filter endpoint that contains <span class="badge badge-dark">${data}</span>`;
+      title = `Filter endpoint that contains <span class="badge badge-soft-blue">${data}</span>`;
     }
-    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${endpoint_filter_icon}</span>${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
+    return data = `<li id="dropdown-li" class="text-dark"><div class="row"><div class="col-6" id="filter_name"><span class="text-${badge_color}">${endpoint_filter_icon}</span>&nbsp;${data}</div><div class="col-6 text-dark" id="filter_name"> ${title}</span></div></div></li>`;
   });
 
   endpointSearchWrapper.classList.add("active");
