@@ -14,7 +14,10 @@ from django import http
 from django.urls import reverse
 from django.conf import settings
 from django.core.files.storage import default_storage
+
 from reNgine.common_func import *
+from reNgine.tasks import run_system_commands
+
 
 def index(request):
     engine_type = EngineType.objects.all().order_by('id')
@@ -121,13 +124,16 @@ def add_wordlist(request):
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
-        os.remove(
-            settings.TOOL_LOCATION +
+        obj.delete()
+        try:
+            os.remove(
+            '/usr/src/' +
             'wordlist/' +
             obj.short_name +
             '.txt')
-        obj.delete()
-        responseData = {'status': 'true'}
+            responseData = {'status': True}
+        except Exception as e:
+            responseData = {'status': False}
         messages.add_message(
             request,
             messages.INFO,
@@ -140,66 +146,6 @@ def delete_wordlist(request, id):
             'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
 
-
-def configuration_list(request):
-    configurations = Configuration.objects.all().order_by('id')
-    context = {
-            'configuration_nav_active':
-            'true', 'configurations': configurations}
-    return render(request, 'scanEngine/configuration/index.html', context)
-
-
-def add_configuration(request):
-    context = {'configuration_nav_active': 'true'}
-    form = ConfigurationForm(request.POST or None)
-    if request.method == "POST":
-        if form.is_valid():
-            form.save()
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Configuration added successfully')
-            return http.HttpResponseRedirect(reverse('configuration_list'))
-    context['form'] = form
-    return render(request, 'scanEngine/configuration/add.html', context)
-
-
-def delete_configuration(request, id):
-    obj = get_object_or_404(Configuration, id=id)
-    if request.method == "POST":
-        obj.delete()
-        responseData = {'status': 'true'}
-        messages.add_message(
-            request,
-            messages.INFO,
-            'Configuration successfully deleted!')
-    else:
-        responseData = {'status': 'false'}
-        messages.add_message(
-                request,
-                messages.ERROR,
-                'Oops! Configuration could not be deleted!')
-    return http.JsonResponse(responseData)
-
-
-def update_configuration(request, id):
-    configuration = get_object_or_404(Configuration, id=id)
-    form = ConfigurationForm()
-    if request.method == "POST":
-        form = ConfigurationForm(request.POST, instance=configuration)
-        if form.is_valid():
-            form.save()
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Configuration edited successfully')
-            return http.HttpResponseRedirect(reverse('configuration_list'))
-    else:
-        form.set_value(configuration)
-    context = {
-            'configuration_nav_active':
-            'true', 'form': form}
-    return render(request, 'scanEngine/configuration/update.html', context)
 
 def interesting_lookup(request):
     lookup_keywords = None
@@ -239,6 +185,7 @@ def tool_specific_settings(request):
     # check for incoming form requests
     if request.method == "POST":
 
+        print(request.FILES)
         if 'gfFileUpload' in request.FILES:
             gf_file = request.FILES['gfFileUpload']
             file_extension = gf_file.name.split('.')[len(gf_file.name.split('.'))-1]
@@ -281,7 +228,7 @@ def tool_specific_settings(request):
             return http.HttpResponseRedirect(reverse('tool_settings'))
 
         elif 'naabu_config_text_area' in request.POST:
-            with open('/root/.config/naabu/naabu.conf', "w") as fhandle:
+            with open('/root/.config/naabu/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('naabu_config_text_area'))
             messages.add_message(request, messages.INFO, 'Naabu config updated!')
             return http.HttpResponseRedirect(reverse('tool_settings'))
@@ -290,6 +237,12 @@ def tool_specific_settings(request):
             with open('/root/.config/amass.ini', "w") as fhandle:
                 fhandle.write(request.POST.get('amass_config_text_area'))
             messages.add_message(request, messages.INFO, 'Amass config updated!')
+            return http.HttpResponseRedirect(reverse('tool_settings'))
+        
+        elif 'theharvester_config_text_area' in request.POST:
+            with open('/usr/src/github/theHarvester/api-keys.yaml', "w") as fhandle:
+                fhandle.write(request.POST.get('theharvester_config_text_area'))
+            messages.add_message(request, messages.INFO, 'theHarvester config updated!')
             return http.HttpResponseRedirect(reverse('tool_settings'))
 
     context['settings_nav_active'] = 'active'
@@ -436,3 +389,107 @@ def hackerone_settings(request):
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/hackerone.html', context)
+
+
+def report_settings(request):
+    context = {}
+    form = ReportForm()
+    context['form'] = form
+
+    primary_color = '#FFB74D'
+    secondary_color = '#212121'
+
+    report = None
+    if VulnerabilityReportSetting.objects.all().exists():
+        report = VulnerabilityReportSetting.objects.all()[0]
+        primary_color = report.primary_color
+        secondary_color = report.secondary_color
+        form.set_value(report)
+    else:
+        form.set_initial()
+
+    if request.method == "POST":
+        if report:
+            form = ReportForm(request.POST, instance=report)
+        else:
+            form = ReportForm(request.POST or None)
+
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Report Settings updated.')
+            return http.HttpResponseRedirect(reverse('report_settings'))
+
+
+    context['settings_nav_active'] = 'active'
+    context['report_settings_li'] = 'active'
+    context['settings_ul_show'] = 'show'
+    context['primary_color'] = primary_color
+    context['secondary_color'] = secondary_color
+
+    return render(request, 'scanEngine/settings/report.html', context)
+
+
+def tool_arsenal_section(request):
+    context = {}
+    tools = InstalledExternalTool.objects.all().order_by('id')
+    context['installed_tools'] = tools
+    return render(request, 'scanEngine/settings/tool_arsenal.html', context)
+
+
+def add_tool(request):
+    form = ExternalToolForm()
+    if request.method == "POST":
+        form = ExternalToolForm(request.POST)
+        print(form.errors)
+        if form.is_valid():
+            # add tool
+            install_command = form.data['install_command']
+            github_clone_path = None
+            if 'git clone' in install_command:
+                project_name = install_command.split('/')[-1]
+                install_command = install_command + ' /usr/src/github/' + project_name + ' && pip install -r /usr/src/github/' + project_name + '/requirements.txt'
+                github_clone_path = '/usr/src/github/' + project_name
+                # if github cloned we also need to install requirements, atleast found in the main dir
+                install_command = 'pip3 install -r /usr/src/github/' + project_name + '/requirements.txt'
+
+            os.system(install_command)
+            run_system_commands.apply_async(args=(install_command,))
+            saved_form = form.save()
+            if github_clone_path:
+                tool = InstalledExternalTool.objects.get(id=saved_form.pk)
+                tool.github_clone_path = github_clone_path
+                tool.save()
+
+            messages.add_message(
+                request,
+                messages.INFO,
+                'External Tool Successfully Added!')
+            return http.HttpResponseRedirect(reverse('tool_arsenal'))
+    context = {
+            'settings_nav_active': 'active',
+            'form': form
+        }
+    return render(request, 'scanEngine/settings/add_tool.html', context)
+
+
+def modify_tool_in_arsenal(request, id):
+    external_tool = get_object_or_404(InstalledExternalTool, id=id)
+    form = ExternalToolForm()
+    if request.method == "POST":
+        form = ExternalToolForm(request.POST, instance=external_tool)
+        if form.is_valid():
+            form.save()
+            messages.add_message(
+                request,
+                messages.INFO,
+                'Tool modified successfully')
+            return http.HttpResponseRedirect(reverse('tool_arsenal'))
+    else:
+        form.set_value(external_tool)
+    context = {
+            'scan_engine_nav_active':
+            'active', 'form': form}
+    return render(request, 'scanEngine/settings/update_tool.html', context)

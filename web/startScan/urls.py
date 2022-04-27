@@ -4,9 +4,13 @@ from . import views
 
 urlpatterns = [
     path(
-        'history/',
+        'history/scan',
         views.scan_history,
         name="scan_history"),
+    path(
+        'history/subscan',
+        views.subscan_history,
+        name="subscan_history"),
     path(
         'scheduled/',
         views.scheduled_scan_view,
@@ -15,6 +19,10 @@ urlpatterns = [
         'detail/<int:id>',
         views.detail_scan,
         name='detail_scan'),
+    path(
+        'create_report/<int:id>',
+        views.create_report,
+        name='create_report'),
     path(
         'all/subdomains',
         views.all_subdomains,
@@ -79,14 +87,6 @@ urlpatterns = [
         'toggle/vuln_status/<int:id>',
         views.change_vuln_status,
         name='change_vuln_status'),
-    path(
-        'toggle/subdomain_status/<int:id>',
-        views.change_subdomain_status,
-        name='change_subdomain_status'),
-    path(
-        'toggle/subdomain/important/<int:id>',
-        views.change_subdomain_important_status,
-        name='change_subdomain_important_status'),
     path(
         'start/multiple/',
         views.start_multiple_scan,

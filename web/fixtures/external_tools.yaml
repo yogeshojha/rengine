@@ -1,0 +1,243 @@
+- model: scanEngine.installedexternaltool
+  pk: 1
+  fields:
+    logo_url: https://raw.githubusercontent.com/projectdiscovery/subfinder/master/static/subfinder-logo.png
+    name: subfinder
+    description: Subfinder is a subdomain discovery tool that discovers valid subdomains
+      for websites by using passive online sources.
+    github_url: https://github.com/projectdiscovery/subfinder
+    license_url: https://github.com/projectdiscovery/subfinder/blob/master/LICENSE.md
+    version_lookup_command: subfinder -version
+    update_command: go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+    install_command: go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 2
+  fields:
+    logo_url: https://raw.githubusercontent.com/projectdiscovery/nuclei/master/static/nuclei-logo.png
+    name: Nuclei
+    description: Nuclei is used to send requests across targets based on a template
+      leading to zero false positives and providing fast scanning on large number
+      of hosts. Nuclei offers scanning for a variety of protocols including TCP, DNS,
+      HTTP, File, etc. With powerful and flexible templating, all kinds of security
+      checks can be modelled with Nuclei.
+    github_url: https://github.com/projectdiscovery/nuclei
+    license_url: https://github.com/projectdiscovery/nuclei/blob/master/LICENSE.md
+    version_lookup_command: nuclei -version
+    update_command: nuclei -update
+    install_command: go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 3
+  fields:
+    logo_url: https://raw.githubusercontent.com/projectdiscovery/httpx/master/static/httpx-logo.png
+    name: httpx
+    description: httpx is a fast and multi-purpose HTTP toolkit allow to run multiple
+      probers using retryablehttp library, it is designed to maintain the result reliability
+      with increased threads.
+    github_url: https://github.com/projectdiscovery/httpx
+    license_url: https://github.com/projectdiscovery/httpx/blob/master/LICENSE.md
+    version_lookup_command: httpx -version
+    update_command: go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+    install_command: go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 4
+  fields:
+    logo_url: https://raw.githubusercontent.com/projectdiscovery/naabu/master/static/naabu-logo.png
+    name: naabu
+    description: Naabu is a port scanning tool written in Go that allows you to enumerate
+      valid ports for hosts in a fast and reliable manner. It is a really simple tool
+      that does fast SYN/CONNECT scans on the host/list of hosts and lists all ports
+      that return a reply.
+    github_url: https://github.com/projectdiscovery/naabu
+    license_url: null
+    version_lookup_command: naabu -version
+    update_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+    install_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 5
+  fields:
+    logo_url: null
+    name: gospider
+    description: Fast web spider written in Go
+    github_url: https://github.com/jaeles-project/gospider
+    license_url: https://github.com/jaeles-project/gospider/blob/master/LICENSE
+    version_lookup_command: gospider --version
+    update_command: go install -v github.com/jaeles-project/gospider@latest
+    install_command: go install -v github.com/jaeles-project/gospider@latest
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 6
+  fields:
+    logo_url: https://raw.githubusercontent.com/OWASP/Amass/master/images/amass_logo.png
+    name: amass
+    description: The OWASP Amass Project performs network mapping of attack surfaces
+      and external asset discovery using open source information gathering and active
+      reconnaissance techniques.
+    github_url: https://github.com/OWASP/Amass
+    license_url: https://github.com/OWASP/Amass/blob/master/LICENSE
+    version_lookup_command: amass -version
+    update_command: go install -v github.com/OWASP/Amass/v3/...@latest
+    install_command: go install -v github.com/OWASP/Amass/v3/...@latest
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 7
+  fields:
+    logo_url: null
+    name: ffuf
+    description: A fast web fuzzer written in Go.
+    github_url: https://github.com/ffuf/ffuf
+    license_url: https://github.com/ffuf/ffuf/blob/master/LICENSE
+    version_lookup_command: ffuf -V
+    update_command: go install -v github.com/ffuf/ffuf@latest
+    install_command: ''
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 8
+  fields:
+    logo_url: null
+    name: assetfinder
+    description: Find domains and subdomains potentially related to a given domain.
+    github_url: https://github.com/tomnomnom/assetfinder
+    license_url: https://github.com/tomnomnom/assetfinder/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: go install -v github.com/tomnomnom/assetfinder@latest
+    install_command: go install -v github.com/tomnomnom/assetfinder@latest
+    version_match_regex: null
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 9
+  fields:
+    logo_url: null
+    name: sublist3r
+    description: Sublist3r is a python tool designed to enumerate subdomains of websites
+      using OSINT. It helps penetration testers and bug hunters collect and gather
+      subdomains for the domain they are targeting. Sublist3r enumerates subdomains
+      using many search engines such as Google, Yahoo, Bing, Baidu and Ask. Sublist3r
+      also enumerates subdomains using Netcraft, Virustotal, ThreatCrowd, DNSdumpster,
+      and ReverseDNS.
+    github_url: https://github.com/aboul3la/Sublist3r
+    license_url: https://github.com/aboul3la/Sublist3r/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: git pull
+    install_command: git clone https://github.com/aboul3la/Sublist3r.git
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 10
+  fields:
+    logo_url: null
+    name: hakrawler
+    description: Fast golang web crawler for gathering URLs and JavaSript file locations.
+      This is basically a simple implementation of the awesome Gocolly library.
+    github_url: https://github.com/hakluke/hakrawler
+    license_url: https://github.com/hakluke/hakrawler/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: go install -v github.com/hakluke/hakrawler@latest
+    install_command: go install -v github.com/hakluke/hakrawler@latest
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 11
+  fields:
+    logo_url: null
+    name: gauplus
+    description: Get all URLs
+    github_url: https://github.com/bp0lr/gauplus
+    license_url: https://github.com/bp0lr/gauplus/blob/main/LICENSE
+    version_lookup_command: null
+    update_command: go install -v -v github.com/bp0lr/gauplus@latest
+    install_command: go install -v -v github.com/bp0lr/gauplus@latest
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 12
+  fields:
+    logo_url: null
+    name: OneForAll
+    description: A powerful subdomain integration tool.
+    github_url: https://github.com/shmilylty/OneForAll
+    license_url: https://github.com/shmilylty/OneForAll/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: git pull
+    install_command: git clone https://github.com/shmilylty/OneForAll
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 13
+  fields:
+    logo_url: https://raw.githubusercontent.com/laramies/theHarvester/master/theHarvester-logo.png
+    name: theHarvester
+    description: theHarvester is a very simple to use, yet powerful and effective
+      tool designed to be used in the early stages of a penetration test or red team
+      engagement. Use it for open source intelligence (OSINT) gathering to help determine
+      a company's external threat landscape on the internet. The tool gathers emails,
+      names, subdomains, IPs and URLs using multiple public data sources.
+    github_url: https://github.com/laramies/theHarvester
+    license_url: null
+    version_lookup_command: python3 /usr/src/github/theHarvester/theHarvester.py
+    update_command: git pull
+    install_command: git clone https://github.com/laramies/theHarvester
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/theHarvester
+    subdomain_gathering_command: null

@@ -1,0 +1,379 @@
+/* make container 100% */
+body[data-layout-mode=horizontal] .container-fluid {
+  max-width: 100% !important;
+}
+
+.navbar-light .navbar-nav .nav-link.active, .navbar-light .navbar-nav .show>.nav-link{
+  color: #3283f6;
+}
+
+.text-sm-logo{
+  color:#fff;
+  font-size: 21px;
+  margin-left: 5px !important;
+}
+
+.text-lg-logo{
+  color:#fff;
+  font-size: 30px;
+}
+
+.vertical-center{
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+.text-low {
+  color: #FDD835;
+}
+
+.text-critical {
+  color: #E53935;
+}
+
+.badge-critical {
+  color: #E53935;
+  background-color: #FFCDD2;
+}
+
+.badge-low {
+  color: #FFB300;
+  background-color: #FFE082;
+}
+
+.form-control:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="date"]:focus,
+input[type="month"]:focus,
+input[type="time"]:focus,
+input[type="week"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+input[type="color"]:focus,
+.uneditable-input:focus {
+  border-color: rgba(33, 150, 243, 0.8);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 8px rgba(126, 239, 104, 0.6);
+  outline: 0 none;
+}
+
+input[type="text"][disabled] {
+  background-color: #dddddd;
+}
+
+form-control:disabled, .form-control[readonly]{
+  background-color: #dddddd;
+}
+
+.accordion-item{
+  margin-top: -10px;
+}
+
+/* jquery steps for scan engine  */
+.wizard > .content > .body{
+  padding: 1% !important;
+}
+
+/* select2 badges */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered li{
+  list-style: none;
+}
+
+
+.select2-container .select2-selection--multiple .select2-selection__choice{
+  background-color: #3283f6 !important;
+  border: none !important;
+  color: #fff !important;
+  border-radius: 3px !important;
+  padding: 0 7px !important;
+  margin-top: 6px !important;
+}
+
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove{
+  color: #fff !important;
+}
+
+.select2-selection__rendered {
+  line-height: 31px !important;
+}
+.select2-container .select2-selection--single {
+  height: 35px !important;
+}
+.select2-selection__arrow {
+  height: 34px !important;
+}
+
+.badge {
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  padding: 3px 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease-out !important;
+  -webkit-transition: all 0.3s ease-out !important;
+}
+
+/* grow datatables search section */
+div.dataTables_wrapper div.dataTables_filter input {
+  width: 100%;
+  float: left;
+  transition: all .2s ease-in-out;
+}
+
+div.dataTables_wrapper div.dataTables_filter input:focus {
+  width: 300%;
+  transform: scale(1);
+}
+
+.badge-link {
+  cursor: pointer;
+}
+
+.right-bar{
+  width: 460px;
+  right: -470px;
+}
+
+/* theme toggle theme-switch */
+.toggle-theme-switch {
+  vertical-align: middle;
+  margin-top: 3px;
+}
+
+
+/* fe icon sizes */
+.icon-sml {
+  width: 15px;
+  height: 15px;
+}
+
+.icon-med {
+  font-size: 25px;
+}
+
+.icon-lrg {
+  width: 35px;
+  height: 35px;
+}
+
+/* domain details table */
+.domain_details_table{
+  padding: 3px;
+}
+
+table.domain_details_table{
+  width: 100%;
+}
+
+table.domain_details_table tr {
+  width: 465px;
+  padding-top: 5px;
+}
+
+
+table.domain_details_table td {
+  border-radius: 2px;
+  padding: 4px;
+}
+
+table.domain_details_table td:nth-child(1) {
+  width: 125px;
+  font-weight: bold;
+}
+
+/* for autocom dropdown suggestion */
+/* Source https://www.codingnepalweb.com/search-bar-autocomplete-search-suggestions-javascript/ */
+.wrapper{
+  margin-bottom: 20px;
+}
+
+.wrapper .search-input{
+  background: #fff;
+  width: 100%;
+  border-radius: 6px;
+  position: relative;
+  box-shadow: 0px 1px 5px 3px rgba(0,0,0,0.12);
+}
+
+.search-input input{
+  height: 55px;
+  width: 100%;
+  outline: none;
+  border: none;
+  border-radius: 4px;
+  padding: 0 60px 0 20px;
+  font-size: 16px;
+  box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.search-input button{
+  height: 55px;
+  font-size: 16px;
+}
+
+.search-input.active input{
+  border-radius: 5px 5px 0 0;
+}
+
+.search-input .autocom-box{
+  max-height: 250px;
+  position: absolute;
+  z-index: 1000000;
+  background: #fff;
+  opacity: 0;
+  width: 100%;
+  box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.search-input.active .autocom-box{
+  padding: 10px 8px;
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: 0px 1px 5px rgba(0,0,0,0.1);
+}
+
+.autocom-box li{
+  list-style: none;
+  padding: 8px 12px;
+  display: none;
+  width: 100%;
+  cursor: default;
+  border-radius: 3px;
+}
+
+.search-input.active .autocom-box li{
+  display: block;
+}
+.autocom-box li:hover{
+  background: #efefef;
+}
+
+.search-input .icon{
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  height: 55px;
+  width: 55px;
+  text-align: center;
+  line-height: 55px;
+  font-size: 20px;
+  color: #644bff;
+  cursor: pointer;
+}
+
+
+div.dataTables_wrapper div.dataTables_processing {
+  top: 5%;
+}
+
+/* border radius for input */
+.br-30{
+  border-radius: 30px !important;
+}
+
+/* no padding tab content */
+.no-padding-tab{
+  padding: 0px !important;
+}
+
+/* visualisation */
+.node {
+  cursor: pointer;
+}
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font-size:14px;
+  font-family:sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+.templink {
+  fill: none;
+  stroke: red;
+  stroke-width: 3px;
+}
+
+#visualisation-svg{
+  background-color: #fff;
+}
+
+
+.svg-text-primary {
+  fill: #0d6efd;
+}
+
+.svg-text-success {
+  fill: #198754;
+}
+
+.svg-text-danger {
+  fill: #dc3545;
+}
+
+.svg-text-critical {
+  fill: #dc3545;
+}
+
+.svg-text-warning {
+  fill: #ffc107;
+}
+
+.svg-text-low {
+  fill: #ffc107;
+}
+
+.alert-text-fit {
+  display:inline-block;
+}
+
+div.dataTables_wrapper div.dataTables_processing {
+   top: 5%;
+}
+
+.mini-card-body{
+  flex: 1 1 auto;
+  padding: 0.5rem 1.5rem;
+}
+
+.mini-card-header{
+  padding: 0.3rem 1rem;
+}
+
+.mini-card{
+  margin-bottom: 10px;
+}
+
+tr.group,
+tr.group:hover {
+    background-color: #ddd !important;
+}
+
+
+.navbar-custom .app-search{
+  max-width: 300px !important;
+}
+
+mark{
+  background-color: #FFEB3B;
+  color: #000;
+}

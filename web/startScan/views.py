@@ -1,8 +1,14 @@
 import os
+import logging
 import requests
 import itertools
+import tempfile
+import markdown
 
 from datetime import datetime
+
+from django.template.loader import get_template
+from weasyprint import HTML
 
 from django.shortcuts import render, get_object_or_404
 from django.contrib import messages
@@ -12,6 +18,7 @@ from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSch
 from django.utils import timezone
 from django.conf import settings
 from django.core import serializers
+from django.db.models import Count
 
 from startScan.models import *
 from targetApp.models import *
@@ -28,6 +35,12 @@ def scan_history(request):
     return render(request, 'startScan/history.html', context)
 
 
+def subscan_history(request):
+    subscans = SubScan.objects.all().order_by('-start_scan_date')
+    context = {'scan_history_active': 'active', "subscans": subscans}
+    return render(request, 'startScan/subscan_history.html', context)
+
+
 def detail_scan(request, id=None):
     context = {}
     if id:
@@ -41,33 +54,35 @@ def detail_scan(request, id=None):
             scan_history__id=id).values('name').distinct().filter(
             is_important=True).count()
         context['scan_activity'] = ScanActivity.objects.filter(
-            scan_of__id=id).order_by('-time')
+            scan_of__id=id).order_by('time')
         context['endpoint_count'] = EndPoint.objects.filter(
             scan_history__id=id).values('http_url').distinct().count()
         context['endpoint_alive_count'] = EndPoint.objects.filter(
             scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
         history = get_object_or_404(ScanHistory, id=id)
         context['history'] = history
-        info_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=0).count()
-        low_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=1).count()
-        medium_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=2).count()
-        high_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=3).count()
-        critical_count = Vulnerability.objects.filter(
-            scan_history__id=id, severity=4).count()
+        vulnerabilities = Vulnerability.objects.filter(scan_history__id=id)
+        info_count = vulnerabilities.filter(severity=0).count()
+        low_count = vulnerabilities.filter(severity=1).count()
+        medium_count = vulnerabilities.filter(severity=2).count()
+        high_count = vulnerabilities.filter(severity=3).count()
+        critical_count = vulnerabilities.filter(severity=4).count()
+        unknown_count = vulnerabilities.filter(severity=-1).count()
         context['vulnerability_list'] = Vulnerability.objects.filter(
-            scan_history__id=id).order_by('-severity').all()[:20]
+            scan_history__id=id).order_by('-severity').all()[:50]
         context['total_vulnerability_count'] = info_count + low_count + \
-            medium_count + high_count + critical_count
+            medium_count + high_count + critical_count + unknown_count
         context['info_count'] = info_count
         context['low_count'] = low_count
         context['medium_count'] = medium_count
         context['high_count'] = high_count
         context['critical_count'] = critical_count
+        context['unknown_count'] = unknown_count
+        context['total_vul_ignore_info_count'] = low_count + \
+            medium_count + high_count + critical_count
         context['scan_history_active'] = 'active'
+
+        context['scan_engines'] = EngineType.objects.all()
 
         emails = Email.objects.filter(
             emails__in=ScanHistory.objects.filter(
@@ -83,6 +98,14 @@ def detail_scan(request, id=None):
         domain_id = ScanHistory.objects.filter(id=id)
 
         context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:5]
+
+        context['http_status_breakdown'] = Subdomain.objects.filter(scan_history=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
+
+        context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+        context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+        context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
+        context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
         if domain_id:
             domain_id = domain_id[0].domain.id
@@ -107,6 +130,8 @@ def all_subdomains(request):
         http_status__exact=200).count()
     context['important_count'] = Subdomain.objects.values('name').distinct().filter(
         is_important=True).count()
+
+    context['scan_engines'] = EngineType.objects.all()
 
     context['scan_history_active'] = 'active'
 
@@ -171,7 +196,6 @@ def start_scan_ui(request, domain_id):
 
 def start_multiple_scan(request):
     # domain = get_object_or_404(Domain, id=host_id)
-    domain_text = ""
     if request.method == "POST":
         if request.POST.get('scan_mode', 0):
             # if scan mode is available, then start the scan
@@ -197,12 +221,10 @@ def start_multiple_scan(request):
             list_of_domain_name = []
             list_of_domain_id = []
             for key, value in request.POST.items():
-                print(value)
                 if key != "list_target_table_length" and key != "csrfmiddlewaretoken":
                     domain = get_object_or_404(Domain, id=value)
                     list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
-            domain_text = ", ".join(list_of_domain_name)
             domain_ids = ",".join(list_of_domain_id)
     engine = EngineType.objects
     custom_engine_count = EngineType.objects.filter(
@@ -210,7 +232,7 @@ def start_multiple_scan(request):
     context = {
         'scan_history_active': 'active',
         'engines': engine,
-        'domain_list': domain_text,
+        'domain_list': list_of_domain_name,
         'domain_ids': domain_ids,
         'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/start_multiple_scan_ui.html', context)
@@ -414,22 +436,6 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
-def change_subdomain_status(request, id):
-    if request.method == 'POST':
-        name = Subdomain.objects.get(id=id)
-        name.checked = not name.checked
-        name.save()
-    return HttpResponse('')
-
-
-def change_subdomain_important_status(request, id):
-    if request.method == 'POST':
-        name = Subdomain.objects.get(id=id)
-        name.is_important = not name.is_important
-        name.save()
-    return HttpResponse('')
-
-
 def create_scan_object(host_id, engine_type):
     '''
     create task with pending status so that celery task will execute when
@@ -620,3 +626,108 @@ def delete_scans(request):
             messages.INFO,
             'All Scans deleted!')
     return HttpResponseRedirect(reverse('scan_history'))
+
+
+def customize_report(request, id):
+    scan_history = ScanHistory.objects.get(id=id)
+    context = {
+        'scan_id': id,
+        'scan_history': scan_history,
+    }
+    return render(request, 'startScan/customize_report.html', context)
+
+
+def create_report(request, id):
+    primary_color = '#FFB74D'
+    secondary_color = '#212121'
+
+    # get report type
+    report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
+
+    if report_type == 'recon':
+        show_recon = True
+        show_vuln = False
+        report_name = 'Reconnaissance Report'
+    elif report_type == 'vulnerability':
+        show_recon = False
+        show_vuln = True
+        report_name = 'Vulnerability Report'
+    else:
+        # default
+        show_recon = True
+        show_vuln = True
+        report_name = 'Full Scan Report'
+
+    scan_object = ScanHistory.objects.get(id=id)
+    unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
+    all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')
+    subdomains = Subdomain.objects.filter(scan_history=scan_object).order_by('-content_length')
+    subdomain_alive_count = Subdomain.objects.filter(
+        scan_history__id=id).values('name').distinct().filter(
+        http_status__exact=200).count()
+    interesting_subdomains = get_interesting_subdomains(scan_history=id)
+    ip_addresses = IpAddress.objects.filter(
+        ip_addresses__in=Subdomain.objects.filter(
+            scan_history__id=id)).distinct()
+
+    data = {
+        'scan_object': scan_object,
+        'unique_vulnerabilities': unique_vulnerabilities,
+        'all_vulnerabilities': all_vulnerabilities,
+        'subdomain_alive_count': subdomain_alive_count,
+        'interesting_subdomains': interesting_subdomains,
+        'subdomains': subdomains,
+        'ip_addresses': ip_addresses,
+        'show_recon': show_recon,
+        'show_vuln': show_vuln,
+        'report_name': report_name,
+    }
+
+    # get report related config
+    if VulnerabilityReportSetting.objects.all().exists():
+        report = VulnerabilityReportSetting.objects.all()[0]
+        data['company_name'] = report.company_name
+        data['company_address'] = report.company_address
+        data['company_email'] = report.company_email
+        data['company_website'] = report.company_website
+        data['show_rengine_banner'] = report.show_rengine_banner
+        data['show_footer'] = report.show_footer
+        data['footer_text'] = report.footer_text
+        data['show_executive_summary'] = report.show_executive_summary
+
+        primary_color = report.primary_color
+        secondary_color = report.secondary_color
+
+        description = report.executive_summary_description
+
+        # replace executive_summary_description with template syntax!
+        description = description.replace('{scan_date}', scan_object.start_scan_date.strftime('%d %B, %Y'))
+        description = description.replace('{company_name}', report.company_name)
+        description = description.replace('{target_name}', scan_object.domain.name)
+        if scan_object.domain.description:
+            description = description.replace('{target_description}', scan_object.domain.description)
+        description = description.replace('{subdomain_count}', str(subdomains.count()))
+        description = description.replace('{vulnerability_count}', str(all_vulnerabilities.count()))
+        description = description.replace('{critical_count}', str(all_vulnerabilities.filter(severity=4).count()))
+        description = description.replace('{high_count}', str(all_vulnerabilities.filter(severity=3).count()))
+        description = description.replace('{medium_count}', str(all_vulnerabilities.filter(severity=2).count()))
+        description = description.replace('{low_count}', str(all_vulnerabilities.filter(severity=1).count()))
+        description = description.replace('{info_count}', str(all_vulnerabilities.filter(severity=0).count()))
+        description = description.replace('{unknown_count}', str(all_vulnerabilities.filter(severity=-1).count()))
+
+        # convert to html
+        data['executive_summary_description'] = markdown.markdown(description)
+
+    data['primary_color'] = primary_color
+    data['secondary_color'] = secondary_color
+
+    template = get_template('report/template.html')
+    html = template.render(data)
+    pdf = HTML(string=html).write_pdf()
+
+    if 'download' in request.GET:
+        response = HttpResponse(pdf, content_type='application/octet-stream')
+    else:
+        response = HttpResponse(pdf, content_type='application/pdf')
+
+    return response

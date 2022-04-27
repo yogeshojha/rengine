@@ -1,6 +1,49 @@
 # Changelog
 
-## 🏷️ 1.0.1 [Current Release]
+## 🏷️ 1.1 [Current Release]
+**Release Date: Apr 24, 2022**
+
+- Redeigned UI
+- Added Subscan Feature
+
+    Subscan allows further scanning any subdomains. Assume from a normal recon process you identified a subdomain that you wish to do port scan. Earlier, you had to add that subdomain as a target. Now you can just select the subdomain and initiate subscan.
+
+- Ability to Download reconnaissance or vulnerability report
+- Added option to customize report, customization includes the look and feel of report, executive summary etc.
+
+- Add IP Address from IP
+- WHOIS Addition on Detail Scan and fetch whois automatically on Adding Single Targets
+- Universal Search Box
+- Addition of Quick Add menus
+- Added ToolBox Feature
+
+    ToolBox will feature most commonly used recon tools. One can use these tools to identify whois, CMSDetection etc without adding targets. Currently, Whois, CMSDetector and CVE ID lookup is supported. More tools to follow up.
+
+- Notify New Releases on reNgine if available
+- Tools Arsenal Section to feature preinstalled and custom tools
+- Ability to Update preinstalled tools from Tools Arsenal Section
+- Ability to download/add custom tools
+- Added option for Custom Header on Scan Engine
+- Added CVE_ID, CWE_ID, CVSS Score, CVSS Metrics on Vulnerability Section, this also includes lookup using cve_id, cwe_id, cvss_score etc
+- Added curl command and references on Vulnerability Section
+- Added Columns Filtering Option on Subdomain, Vulnerability and Endpoints Tables
+- Added Error Handling for Failed Scans, reason for failure scan will be displayed
+- Added Related Domains using WHOIS
+- Added Related TLDs
+- Added HTTP Status Breakdown Widget
+- Added CMS Detector
+- Updated Visualization
+- Option to Download Selected Subdomains
+- Added additional Nuclei Templates from https://github.com/geeknik/the-nuclei-templates
+- Added SSRF check from Nagli Nuclei Template
+- Added option to fetch CVE_ID details
+- Added option to Delete Multiple Scans
+- Added ffuf as Directory and Files fuzzer
+- Added widgets such as Most vulnerable Targets, Most Common Vulnerabilities, Most Common CVE IDs, Most Common CWE IDs, Most Common Vulnerability Tags
+
+And more...
+
+## 🏷️ 1.0.1
 
 **Release Date: Aug 29, 2021**
 

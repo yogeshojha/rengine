@@ -6,11 +6,7 @@ Start Scan
 {% endblock title %}
 
 
-{% block custom_js_css_link %}>
-<link href="{% static 'assets/css/components/custom-list-group.css' %}" rel="stylesheet" type="text/css">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/elements/alert.css' %}">
-<link href="{% static 'assets/css/components/tabs/custom-accordions.css' %}" rel="stylesheet" type="text/css" />
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/custom.css' %}">
+{% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -18,48 +14,37 @@ Start Scan
 <li class="breadcrumb-item active">Initiate Multiple Scans</li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Initiate Scan for Multiple Targets
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row">
-      <div class="col-12">
-        <h4 class="text-info">Start Scan for <span class="text-danger">{{ domain_list }}</span></h4>
-      </div>
-    </div>
-  </div>
-  <div class="widget-content widget-content-area">
-    <form method="POST">
-      {% csrf_token %}
-      <div class="form-row">
-        <div class="col-md-12 mb-4">
-          <h6>Select the scan type</h6>
-          {% if custom_engine_count == 0 %}
-          <div class="alert custom-alert-1 mb-4" role="alert">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"  data-dismiss="alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x close"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <div class="media">
-              <div class="alert-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-bell"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-              </div>
-              <div class="media-body">
-                <div class="alert-text">
-                  <span><b>Tips! </b>You don't have any custom engines! Did you know you can create your own scan engine?</span>
-                </div>
-                <div class="alert-btn">
-                  <a href="{% url 'add_engine' %}" class="btn btn-default btn-dismiss">Create Engine</a>
-                </div>
-              </div>
+<div class="row">
+  <div class="col-xl-12">
+    <div class="card">
+      <div class="card-body">
+        <h4 class="header-title">Initiating multiple scan for {{ domain_list|length }} targets: </h4>
+        {% for domain in domain_list %}
+        <span class="badge badge-soft-primary m-1">{{domain}}</span>
+        {% endfor %}
+        <form method="POST">
+          {% csrf_token %}
+          <h4 class="header-title mt-4">Select the scan type</h4>
+          <div class="mt-4">
+            {% if custom_engine_count == 0 %}
+            <div class="alert bg-soft-primary border-0 mb-4" role="alert">
+              <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
+              <a href="{% url 'add_engine' %}" class="text-primary">Create Custom Scan Engine</a>
             </div>
+            {% endif %}
+            <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
+            {% include "startScan/_items/scanEngine_select.html" %}
           </div>
-          {% endif %}
-          {% include "startScan/_items/scanEngine_select.html" %}
-          <div style=" position: fixed; bottom: 40px; right: 40px; z-index:1000;">
-            <button class="btn btn-primary submit-fn mt-2 float-right" style="z-index:1000; " type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-            </svg> Start Scan</button>
-          </div>
-        </div>
-        <input type="hidden" name="list_of_domain_id" value="{{domain_ids}}">
-      </form>
+          <button class="btn btn-primary submit-fn mt-2 float-end" type="submit"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg> Start Scan</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -67,5 +52,4 @@ Start Scan
 
 
 {% block page_level_script %}
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 {% endblock page_level_script %}
