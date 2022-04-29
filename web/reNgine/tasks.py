@@ -1351,11 +1351,22 @@ def fetch_endpoints(
 
         elif tool == 'hakrawler':
             logger.info('Running hakrawler')
-            hakrawler_command = '{} | hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
-                input_target,
-                valid_url_of_domain_regex,
-                results_dir
-            )
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                hakrawler_command = 'echo {}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                  subdomain_url,
+                  valid_url_of_domain_regex,
+                  results_dir)
+            elif scan_type == 'deep' and domain:
+                hakrawler_command = 'cat {}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                 alive_subdomains_path,
+                 valid_url_of_domain_regex,
+                 results_dir)
+            else:
+                hakrawler_command = 'echo https://{}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                 domain_name,
+                 valid_url_of_domain_regex,
+                 results_dir)
             logger.info(hakrawler_command)
             os.system(hakrawler_command)
         elif tool == 'waybackurls':
