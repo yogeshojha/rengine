@@ -1779,8 +1779,8 @@ def vulnerability_scan(
                             logger.info('Endpoint {} created!'.format(host))
 
                         vulnerability.endpoint = endpoint
-                        vulnerability.template = json_st['template']
-                        vulnerability.template_url = json_st['template-url']
+                        vulnerability.template = '' #json_st['template']
+                        vulnerability.template_url = '' #json_st['template-url']
                         vulnerability.template_id = json_st['template-id']
 
                         if 'name' in json_st['info']:
