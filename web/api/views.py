@@ -504,11 +504,12 @@ class StopScan(APIView):
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
 
-				last_activity = ScanActivity.objects.filter(
+				if ScanActivity.objects.filter(scan_of=scan_history).exists():
+					last_activity = ScanActivity.objects.filter(
 					scan_of=scan_history).order_by('-pk')[0]
-				last_activity.status = 0
-				last_activity.time = timezone.now()
-				last_activity.save()
+					last_activity.status = 0
+					last_activity.time = timezone.now()
+					last_activity.save()
 				create_scan_activity(scan_history, "Scan aborted", 0)
 				response['status'] = True
 			except Exception as e:
