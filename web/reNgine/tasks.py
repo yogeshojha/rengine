@@ -265,135 +265,145 @@ def initiate_scan(
         extract_imported_subdomain(
             imported_subdomains, task, domain, results_dir)
 
-    if yaml_configuration:
-        '''
-        a target in itself is a subdomain, some tool give subdomains as
-        www.yogeshojha.com but url and everything else resolves to yogeshojha.com
-        In that case, we would already need to store target itself as subdomain
-        '''
-        initial_subdomain_file = '/target_domain.txt' if task.subdomain_discovery else '/sorted_subdomain_collection.txt'
+    if not yaml_configuration:
+        return
+    '''
+    a target in itself is a subdomain, some tool give subdomains as
+    www.yogeshojha.com but url and everything else resolves to yogeshojha.com
+    In that case, we would already need to store target itself as subdomain
+    '''
+    initial_subdomain_file = '/target_domain.txt' if task.subdomain_discovery else '/sorted_subdomain_collection.txt'
 
-        subdomain_file = open(results_dir + initial_subdomain_file, "w")
-        subdomain_file.write(domain.name + "\n")
-        subdomain_file.close()
+    subdomain_file = open(results_dir + initial_subdomain_file, "w")
+    subdomain_file.write(domain.name + "\n")
+    subdomain_file.close()
 
-        if(task.subdomain_discovery):
-            activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-            try:
-                subdomain_scan(
-                    task,
-                    domain,
-                    yaml_configuration,
-                    results_dir,
-                    activity_id,
-                    out_of_scope_subdomains
-                    )
-            except Exception as e:
-                logger.error(e)
-                update_last_activity(activity_id, 0, error_message=str(e))
-        else:
-            skip_subdomain_scan(task, domain, results_dir)
-
-        update_last_activity(activity_id, 2)
-        activity_id = create_scan_activity(task, "HTTP Crawler", 1)
-        http_crawler(
-            task,
-            domain,
-            yaml_configuration,
-            results_dir,
-            activity_id)
-        update_last_activity(activity_id, 2)
-
+    if(task.subdomain_discovery):
+        activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
         try:
-            if task.screenshot:
-                activity_id = create_scan_activity(
-                    task, "Visual Recon - Screenshot", 1)
-                grab_screenshot(
-                    task,
-                    domain,
-                    yaml_configuration,
-                    current_scan_dir,
-                    activity_id)
-                update_last_activity(activity_id, 2)
-        except Exception as e:
-            logger.error(e)
-            update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
-
-        try:
-            if(task.port_scan):
-                activity_id = create_scan_activity(task, "Port Scanning", 1)
-                port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
-                update_last_activity(activity_id, 2)
-        except Exception as e:
-            logger.error(e)
-            update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
-
-        try:
-            if task.osint:
-                activity_id = create_scan_activity(task, "OSINT Running", 1)
-                perform_osint(task, domain, yaml_configuration, results_dir)
-                update_last_activity(activity_id, 2)
-        except Exception as e:
-            logger.error(e)
-            update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
-
-
-        try:
-            if task.dir_file_fuzz:
-                activity_id = create_scan_activity(task, "Directory Search", 1)
-                directory_fuzz(
-                    task,
-                    activity_id,
-                    yaml_configuration,
-                    results_dir,
-                    domain=domain,
+            subdomain_scan(
+                task,
+                domain,
+                yaml_configuration,
+                results_dir,
+                activity_id,
+                out_of_scope_subdomains
                 )
-                update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
             update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
 
-        try:
-            if task.fetch_url:
-                activity_id = create_scan_activity(task, "Fetching endpoints", 1)
-                fetch_endpoints(
-                    task,
-                    activity_id,
-                    yaml_configuration,
-                    results_dir,
-                    domain=domain,
-                    )
-                update_last_activity(activity_id, 2)
-        except Exception as e:
-            logger.error(e)
-            update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
+    else:
+        skip_subdomain_scan(task, domain, results_dir)
 
-        try:
-            if task.vulnerability_scan:
-                activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
-                vulnerability_scan(
-                    task,
-                    activity_id,
-                    yaml_configuration,
-                    results_dir,
-                    domain=domain,
+    update_last_activity(activity_id, 2)
+    activity_id = create_scan_activity(task, "HTTP Crawler", 1)
+    http_crawler(
+        task,
+        domain,
+        yaml_configuration,
+        results_dir,
+        activity_id)
+    update_last_activity(activity_id, 2)
+
+    # start wafw00f
+    try:
+        activity_id = create_scan_activity(task, "Detecting WAF", 1)
+        check_waf(task, results_dir)
+        update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+    try:
+        if task.screenshot:
+            activity_id = create_scan_activity(
+                task, "Visual Recon - Screenshot", 1)
+            grab_screenshot(
+                task,
+                domain,
+                yaml_configuration,
+                current_scan_dir,
+                activity_id)
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
+
+    try:
+        if(task.port_scan):
+            activity_id = create_scan_activity(task, "Port Scanning", 1)
+            port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
+
+    try:
+        if task.osint:
+            activity_id = create_scan_activity(task, "OSINT Running", 1)
+            perform_osint(task, domain, yaml_configuration, results_dir)
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
+
+
+    try:
+        if task.dir_file_fuzz:
+            activity_id = create_scan_activity(task, "Directory Search", 1)
+            directory_fuzz(
+                task,
+                activity_id,
+                yaml_configuration,
+                results_dir,
+                domain=domain,
+            )
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
+
+    try:
+        if task.fetch_url:
+            activity_id = create_scan_activity(task, "Fetching endpoints", 1)
+            fetch_endpoints(
+                task,
+                activity_id,
+                yaml_configuration,
+                results_dir,
+                domain=domain,
                 )
-                update_last_activity(activity_id, 2)
-        except Exception as e:
-            logger.error(e)
-            update_last_activity(activity_id, 0, error_message=str(e))
-            task.error_message = str(e)
-            task.save()
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
+
+    try:
+        if task.vulnerability_scan:
+            activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
+            vulnerability_scan(
+                task,
+                activity_id,
+                yaml_configuration,
+                results_dir,
+                domain=domain,
+            )
+            update_last_activity(activity_id, 2)
+    except Exception as e:
+        logger.error(e)
+        update_last_activity(activity_id, 0, error_message=str(e))
+        task.error_message = str(e)
+        task.save()
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     if notification and notification[0].send_scan_status_notif:
@@ -409,7 +419,7 @@ def initiate_scan(
     task.stop_scan_date = timezone.now()
     task.save()
     # cleanup results
-    delete_scan_data(results_dir)
+    # delete_scan_data(results_dir)
     return {"status": True}
 
 
@@ -734,8 +744,6 @@ def get_removed_subdomain(scan_id, domain_id):
         scanned_host_q2 = Subdomain.objects.filter(
             scan_history__id=last_scan.id).values('name')
         removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
-
-        print()
 
         return Subdomain.objects.filter(
             scan_history=last_scan).filter(
@@ -1064,11 +1072,69 @@ def port_scanning(
         send_files_to_discord(results_dir + '/ports.json')
 
 
-def check_waf():
+def check_waf(scan_history, results_dir):
     '''
     This function will check for the WAF being used in subdomains using wafw00f
+    and this is done using passing alive.txt to the wafw00f
+    Check if alive.txt exits, chances are that during the http crawling, none of
+    the subdomains are alive, http_200
     '''
-    pass
+    alive_file = results_dir + '/alive.txt'
+    output_file_name = results_dir + '/wafw00f.txt'
+    if os.path.isfile(alive_file):
+        wafw00f_command = 'wafw00f -i {} -o {}'.format(
+            alive_file,
+            output_file_name
+        )
+
+        logger.info(wafw00f_command)
+
+        os.system(wafw00f_command)
+
+        # check if wafw00f has generated output file
+        if os.path.isfile(output_file_name):
+            with open(output_file_name) as file:
+                lines = file.readlines()
+                for line in lines:
+                    # split by 3 space!
+                    splitted = line.split('   ')
+                    # remove all empty strings
+                    strs = [string for string in splitted if string]
+                    # 0th pos is url and 1st pos is waf, remove /n from waf
+                    waf = strs[1].strip()
+                    waf_name = waf[:waf.find('(')].strip()
+                    waf_manufacturer = waf[waf.find('(')+1:waf.find(')')].strip()
+                    http_url = strs[0].strip()
+                    if waf_name != 'None':
+                        if Waf.objects.filter(
+                            name=waf_name,
+                            manufacturer=waf_manufacturer
+                            ).exists():
+                            waf_obj = Waf.objects.get(
+                                name=waf_name,
+                                manufacturer=waf_manufacturer
+                            )
+                        else:
+                            waf_obj = Waf(
+                                name=waf_name,
+                                manufacturer=waf_manufacturer
+                            )
+                            waf_obj.save()
+
+                        if Subdomain.objects.filter(
+                            scan_history=scan_history,
+                            http_url=http_url
+                            ).exists():
+
+                            subdomain = Subdomain.objects.get(
+                                http_url=http_url,
+                                scan_history=scan_history
+                            )
+
+                            subdomain.waf.add(waf_obj)
+
+
+
 
 
 def directory_fuzz(
@@ -1482,70 +1548,74 @@ def fetch_endpoints(
 
     url_results_file = results_dir + '/final_httpx_urls.json'
     try:
-        urls_json_result = open(url_results_file, 'r')
-        lines = urls_json_result.readlines()
-        for line in lines:
-            json_st = json.loads(line.strip())
-            http_url = json_st['url']
-            _subdomain = get_subdomain_from_url(http_url)
+        if os.path.isfile(url_results_file):
+            urls_json_result = open(url_results_file, 'r')
+            lines = urls_json_result.readlines()
+            for line in lines:
+                json_st = json.loads(line.strip())
+                http_url = json_st['url']
+                _subdomain = get_subdomain_from_url(http_url)
 
-            if Subdomain.objects.filter(
-                    scan_history=scan_history).filter(
-                    name=_subdomain).exists():
-                subdomain_obj = Subdomain.objects.get(
-                    scan_history=scan_history, name=_subdomain)
-            else:
-                subdomain_dict = DottedDict({
-                    'scan_history': scan_history,
-                    'target_domain': domain,
-                    'name': _subdomain,
-                })
-                subdomain_obj = save_subdomain(subdomain_dict)
+                if Subdomain.objects.filter(
+                        scan_history=scan_history).filter(
+                        name=_subdomain).exists():
+                    subdomain_obj = Subdomain.objects.get(
+                        scan_history=scan_history, name=_subdomain)
+                else:
+                    subdomain_dict = DottedDict({
+                        'scan_history': scan_history,
+                        'target_domain': domain,
+                        'name': _subdomain,
+                    })
+                    subdomain_obj = save_subdomain(subdomain_dict)
 
-            if EndPoint.objects.filter(
-                    scan_history=scan_history).filter(
-                    http_url=http_url).exists():
+                if EndPoint.objects.filter(
+                        scan_history=scan_history).filter(
+                        http_url=http_url).exists():
 
-                endpoint = EndPoint.objects.get(
-                    scan_history=scan_history, http_url=http_url)
-            else:
-                endpoint = EndPoint()
-                endpoint_dict = DottedDict({
-                    'scan_history': scan_history,
-                    'target_domain': domain,
-                    'http_url': http_url,
-                    'subdomain': subdomain_obj
-                })
-                endpoint = save_endpoint(endpoint_dict)
+                    endpoint = EndPoint.objects.get(
+                        scan_history=scan_history, http_url=http_url)
+                else:
+                    endpoint = EndPoint()
+                    endpoint_dict = DottedDict({
+                        'scan_history': scan_history,
+                        'target_domain': domain,
+                        'http_url': http_url,
+                        'subdomain': subdomain_obj
+                    })
+                    endpoint = save_endpoint(endpoint_dict)
 
-            if 'title' in json_st:
-                endpoint.page_title = json_st['title']
-            if 'webserver' in json_st:
-                endpoint.webserver = json_st['webserver']
-            if 'content-length' in json_st:
-                endpoint.content_length = json_st['content-length']
-            if 'content-type' in json_st:
-                endpoint.content_type = json_st['content-type']
-            if 'status-code' in json_st:
-                endpoint.http_status = json_st['status-code']
-            if 'response-time' in json_st:
-                response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
-                if json_st['response-time'][-2:] == 'ms':
-                    response_time = response_time / 1000
-                endpoint.response_time = response_time
-            endpoint.save()
-            if 'technologies' in json_st:
-                for _tech in json_st['technologies']:
-                    if Technology.objects.filter(name=_tech).exists():
-                        tech = Technology.objects.get(name=_tech)
-                    else:
-                        tech = Technology(name=_tech)
-                        tech.save()
-                    endpoint.technologies.add(tech)
-                    # get subdomain object
-                    subdomain = Subdomain.objects.get(scan_history=scan_history, name=_subdomain)
-                    subdomain.technologies.add(tech)
-                    subdomain.save()
+                if 'title' in json_st:
+                    endpoint.page_title = json_st['title']
+                if 'webserver' in json_st:
+                    endpoint.webserver = json_st['webserver']
+                if 'content-length' in json_st:
+                    endpoint.content_length = json_st['content-length']
+                if 'content-type' in json_st:
+                    endpoint.content_type = json_st['content-type']
+                if 'status-code' in json_st:
+                    endpoint.http_status = json_st['status-code']
+                if 'response-time' in json_st:
+                    response_time = float(''.join(ch for ch in json_st['response-time'] if not ch.isalpha()))
+                    if json_st['response-time'][-2:] == 'ms':
+                        response_time = response_time / 1000
+                    endpoint.response_time = response_time
+                endpoint.save()
+                if 'technologies' in json_st:
+                    for _tech in json_st['technologies']:
+                        if Technology.objects.filter(name=_tech).exists():
+                            tech = Technology.objects.get(name=_tech)
+                        else:
+                            tech = Technology(name=_tech)
+                            tech.save()
+                        endpoint.technologies.add(tech)
+                        # get subdomain object
+                        subdomain = Subdomain.objects.get(
+                            scan_history=scan_history,
+                            name=_subdomain
+                        )
+                        subdomain.technologies.add(tech)
+                        subdomain.save()
     except Exception as exception:
         logging.error(exception)
         if not subscan:
@@ -1573,7 +1643,12 @@ def fetch_endpoints(
                 gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
                     results_dir, pattern)
                 gf_command = 'cat {0}/{3} | gf {1} | grep -Eo {4} >> {2} '.format(
-                    results_dir, pattern, gf_output_file_path, output_file_name, valid_url_of_domain_regex)
+                    results_dir,
+                    pattern,
+                    gf_output_file_path,
+                    output_file_name,
+                    valid_url_of_domain_regex
+                )
                 logger.info(gf_command)
                 os.system(gf_command)
                 if os.path.exists(gf_output_file_path):
@@ -1596,7 +1671,9 @@ def fetch_endpoints(
                                 endpoint.scan_history = scan_history
                                 try:
                                     _subdomain = Subdomain.objects.get(
-                                        scan_history=scan_history, name=get_subdomain_from_url(url))
+                                        scan_history=scan_history,
+                                        name=get_subdomain_from_url(url)
+                                    )
                                     endpoint.subdomain = _subdomain
                                 except Exception as e:
                                     continue

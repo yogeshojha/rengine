@@ -32,3 +32,4 @@ validators==0.18.2
 watchdog
 whatportis==0.8.2
 weasyprint==53.3
+wafw00f
