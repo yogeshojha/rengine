@@ -1938,11 +1938,12 @@ $(document).ready(function() {
 				{'data': 'id'},
 				{'data': 'directories_count'},
 				{'data': 'subscan_count'},
+				{'data': 'waf'},
 			],
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
-					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
+					"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27],
 					"visible": false,
 					"searchable": false,
 				},
@@ -1960,11 +1961,12 @@ $(document).ready(function() {
 					// subdomain Name
 					{
 						"render": function ( data, type, row ) {
-							badges = '';
-							tech_badge = '';
-							interesting_badge = '';
-							content_type = '';
-							web_server = '';
+							var badges = '';
+							var tech_badge = '';
+							var interesting_badge = '';
+							var content_type = '';
+							var web_server = '';
+							var waf_badge = '';
 							if (row['technologies']){
 								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{scan_history_id}}, domain_id=null) + '</div>';
 							}
@@ -1995,6 +1997,15 @@ $(document).ready(function() {
 							endpoint_count_badge = '';
 							if (row['endpoint_count']) {
 								endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal({{history.id}}, ${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
+							}
+
+							if(row['waf'].length){
+								waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Detected by wafw00f!""><i class="fe-cloud-lightning mx-1"></i>WAF Detected</span>`;
+								for (var waf in row['waf']) {
+									var waf_object = row['waf'][waf];
+									waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Manufacturer: ${waf_object.manufacturer}">${waf_object.name}</span>`;
+								}
+								waf_badge += `</div>`;
 							}
 
 							vuln_count_badge = '';
@@ -2030,11 +2041,11 @@ $(document).ready(function() {
 							if (row['http_url']) {
 								if (row['cname']) {
 									cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
-									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ `</div>` + cname_badge + end_vuln_badge + tech_badge + todo_badge;
+									return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data  +`${copy_icon} </span></a>`+ `</div>` + cname_badge + waf_badge  + end_vuln_badge + tech_badge + todo_badge;
 								}
-								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+								return badges + `<div class="clipboard copy-txt"><a href="`+row['http_url']+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 							}
-							return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+							return badges + `<div class="clipboard copy-txt"><a href="https://`+data+`" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 						},
 						"targets": 1
 					},
