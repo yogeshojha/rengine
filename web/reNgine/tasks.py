@@ -447,7 +447,7 @@ def skip_subdomain_scan(task, domain, results_dir):
         'cat {0}/target_domain.txt > {0}/subdomain_collection.txt'.format(results_dir))
 
     os.system(
-        'cat {0}/from_imported.txt > {0}/subdomain_collection.txt'.format(results_dir))
+        'cat {0}/from_imported.txt >> {0}/subdomain_collection.txt'.format(results_dir))
 
     os.system('rm -f {}/from_imported.txt'.format(results_dir))
 
