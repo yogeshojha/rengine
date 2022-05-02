@@ -1325,7 +1325,7 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
+    valid_url_of_domain_regex = "\'https?://([a-z0-9.-]+[.])*{}.*\'".format(domain_name)
 
     alive_subdomains_path = results_dir + '/' + output_file_name
     sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
