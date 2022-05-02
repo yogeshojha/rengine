@@ -447,7 +447,7 @@ def skip_subdomain_scan(task, domain, results_dir):
         'cat {0}/target_domain.txt > {0}/subdomain_collection.txt'.format(results_dir))
 
     os.system(
-        'cat {0}/from_imported.txt > {0}/subdomain_collection.txt'.format(results_dir))
+        'cat {0}/from_imported.txt >> {0}/subdomain_collection.txt'.format(results_dir))
 
     os.system('rm -f {}/from_imported.txt'.format(results_dir))
 
@@ -1325,7 +1325,7 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
+    valid_url_of_domain_regex = "\'https?://([a-z0-9.-]+[.])*{}.*\'".format(domain_name)
 
     alive_subdomains_path = results_dir + '/' + output_file_name
     sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
@@ -1351,11 +1351,22 @@ def fetch_endpoints(
 
         elif tool == 'hakrawler':
             logger.info('Running hakrawler')
-            hakrawler_command = '{} | hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
-                input_target,
-                valid_url_of_domain_regex,
-                results_dir
-            )
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                hakrawler_command = 'echo {}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                  subdomain_url,
+                  valid_url_of_domain_regex,
+                  results_dir)
+            elif scan_type == 'deep' and domain:
+                hakrawler_command = 'cat {}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                 alive_subdomains_path,
+                 valid_url_of_domain_regex,
+                 results_dir)
+            else:
+                hakrawler_command = 'echo https://{}| hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                 domain_name,
+                 valid_url_of_domain_regex,
+                 results_dir)
             logger.info(hakrawler_command)
             os.system(hakrawler_command)
         elif tool == 'waybackurls':
@@ -1779,8 +1790,8 @@ def vulnerability_scan(
                             logger.info('Endpoint {} created!'.format(host))
 
                         vulnerability.endpoint = endpoint
-                        vulnerability.template = json_st['template']
-                        vulnerability.template_url = json_st['template-url']
+                        vulnerability.template = '' #json_st['template']
+                        vulnerability.template_url = '' #json_st['template-url']
                         vulnerability.template_id = json_st['template-id']
 
                         if 'name' in json_st['info']:

@@ -667,8 +667,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
 
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
+    urls = url.replace(';','').replace('$','').replace('|','').replace('&','')
     response = {}
-    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch --follow-redirect'.format(url)
+    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py -u {} --random-agent --batch --follow-redirect'.format(urls)
     os.system(cms_detector_command)
 
     response['status'] = False

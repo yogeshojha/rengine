@@ -133,7 +133,7 @@ if [ ! -d "/usr/src/github/CMSeeK" ]
 then
   echo "Cloning CMSeeK"
   git clone https://github.com/Tuhinshubhra/CMSeeK /usr/src/github/CMSeeK
-  pip install -r /usr/src/github/CMSeeK/requirements.txt
+  python3 -m pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
 exec "$@"
