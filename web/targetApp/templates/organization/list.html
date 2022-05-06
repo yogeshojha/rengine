@@ -1,79 +1,77 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}
 Organizations
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/dt-global_style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/table/datatable/custom_dt_custom.css' %}">
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/components/custom-modal.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'assets/css/custom.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
 <li class="breadcrumb-item active"><a href="{% url 'list_organization' %}">Organization</a></li>
 {% endblock breadcrumb_title %}
 
+{% block page_title %}
+Organizations
+{% endblock page_title %}
+
 {% block main_content %}
-<div class="statbox widget box box-shadow">
-  <div class="widget-header">
-    <div class="row">
-      <div class="col-6 mt-2">
-        <h4>All Organizations</h4>
-      </div>
-      <div class="col-6">
-        <div class="float-right mt-2">
-          <a href="{% url 'add_organization' %}" class="btn btn-primary mb-4">Add Organization</a>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="p-2">
+        <div class="row">
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+          </div>
+          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
+          </div>
         </div>
       </div>
-
     </div>
   </div>
-  <div class="widget-content widget-content-area">
-    <div class="table-responsive mb-4">
-      <table id="style-2" class="table style-2  table-hover">
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <table id="list_organization_table" class="table style-3 table-hover">
         <thead>
           <tr>
-            <th class="checkbox-column">Serial Number</th>
-            <th class="text-center">Organization</th>
+            <th class="">Organization</th>
             <th class="text-center">Description</th>
             <th class="text-center">Total Targets</th>
-            <th class="text-center">Added on</th>
+            <th class="text-center">Added</th>
             <th class="text-center">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for organization in organizations.all %}
           <tr>
-            <td class="checkbox-column"> {{ organization.id }} </td>
             <td class="">{{ organization.name|capfirst }}</td>
             <td class="text-center">{% if organization.description %}{{organization.description}}{% endif %}</td>
-            <td class="text-center"><span class="badge badge-pills badge-info badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
-            <td class="text-center">{{ organization.insert_date }}</td>
+            <td class="text-center"><span class="badge bg-primary badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
+            <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td></td>
             <td class="text-center">
-              <a href="{% url 'start_organization_scan' organization.id %}" class="bs-tooltip" data-toggle="tooltip" data-placement="top" title="" data-original-title="Quick Scan Entire Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
+              <a href="{% url 'start_organization_scan' organization.id %}" data-toggle="tooltip" data-placement="top" title="Quick Scan Entire Organization">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                 </svg>
               </a>
-              <a href="{% url 'schedule_organization_scan' organization.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Schedule Scan">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
+              <a href="{% url 'schedule_organization_scan' organization.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Schedule Scan">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
               </a>
-              <a href="{% url 'update_organization' organization.id %}" class="bs-tooltip open-domain" data-placement="top" title="" data-original-title="Update Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
+              <a href="{% url 'update_organization' organization.id %}" class="text-primary open-domain" data-toggle="tooltip" data-placement="top" title="Update Organization">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
               </a>
-              <a onclick="delete_organization({{ organization.id }})" class="bs-tooltip" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Organization">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+              <a onclick="delete_organization({{ organization.id }})" class="text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete Organization">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>
                   <line x1="9" y1="9" x2="15" y2="15"></line>
@@ -87,60 +85,52 @@ Organizations
     </div>
   </div>
 </div>
-{# modal #}
-{% include 'base/_items/tab_modal.html' %}
 {% endblock main_content %}
 
 
 {% block page_level_script %}
+<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_organization.js' %}"></script>
-<script src="{% static 'plugins/table/datatable/datatables.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
 <script>
-table = $('#style-2').DataTable({
-  headerCallback:function(e, a, t, n, s) {
-    e.getElementsByTagName("th")[0].innerHTML='<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" class="new-control-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
-  },
-  columnDefs:[ {
-    targets:0, width:"30px", className:"", orderable:!1, render:function(e, a, t, n) {
-      return'<label class="new-control new-checkbox checkbox-outline-info m-auto">\n<input type="checkbox" name="targets_checkbox['+ e + ']" class="new-control-input child-chk targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span>\n</label>'
+$(document).ready(function() {
+  list_organization_table = $('#list_organization_table').DataTable({
+    "oLanguage": {
+      "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+      "sInfo": "Showing page _PAGE_ of _PAGES_",
+      "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+      "sSearchPlaceholder": "Search...",
+      "sLengthMenu": "Results :  _MENU_",
+    },
+    "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+    "<'table-responsive'tr>" +
+    "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+    "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
+    "pageLength": 10,
+    "initComplete": function(settings, json) {
+      $('[data-toggle="tooltip"]').tooltip();
     }
-  }],
-  "oLanguage": {
-    "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-    "sInfo": "Showing page _PAGE_ of _PAGES_",
-    "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-    "sSearchPlaceholder": "Search...",
-    "sLengthMenu": "Results :  _MENU_",
-  },
-  "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'l><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center mt-sm-0 mt-3'f>>>" +
-  "<'table-responsive'tr>" +
-  "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-  "lengthMenu": [5, 10, 20, 30, 50, 100, 500, 1000],
-  "pageLength": 10
+  });
+  multiCheck(list_organization_table);
 });
-multiCheck(table);
-
 
 function get_target_modal(organization_id){
   $('.modal-title').html(`<b>Loading targets...</b>`);
-  $('#exampleModal').modal('show');
+  $('#modal_dialog').modal('show');
   $('.modal-text').empty();
   $('.modal-text').append(`<div class='outer-div' id="modal-loader"><span class="inner-div spinner-border text-info align-self-center loader-sm"></span></div>`);
   $.getJSON(`/api/queryTargetsInOrganization/?organization_id=${organization_id}&format=json`, function(data) {
     organization_name = htmlEncode(data['organization'][0]['name']);
     $('#modal-loader').empty();
-    $('.modal-title').html(`<h6>${data['domains'].length} targets in organization ${organization_name}</h6>`);
-    $('#modal-text-content').append(`<ul id="target-detail-modal-ul"></ul>`);
+    $('.modal-title').html(`${data['domains'].length} targets in organization ${organization_name}`);
+    $('#modal-content').append(`<ul id="target-detail-modal-ul"></ul>`);
     for (domain in data['domains']){
       domain_obj = data['domains'][domain];
       $("#target-detail-modal-ul").append(`<li>${domain_obj['name']}</li>`);
     }
   }).fail(function(){
     $('#modal-loader').empty();
-    $("#modal-text-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
+    $("#modal-content").append(`<p class='text-danger'>Error loading Vulnerabilities Summary</p>`);
   });
 }
 

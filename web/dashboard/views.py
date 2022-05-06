@@ -26,25 +26,23 @@ def index(request):
         Subdomain.objects.all().exclude(http_status__exact=0).count()
     endpoint_alive_count = \
         EndPoint.objects.filter(http_status__exact=200).count()
-    recent_completed_scans = ScanHistory.objects.all().order_by(
-        '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
-    currently_scanning = ScanHistory.objects.order_by(
-        '-start_scan_date').filter(scan_status=1)[:5]
-    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
-    info_count = Vulnerability.objects.filter(severity=0).count()
-    low_count = Vulnerability.objects.filter(severity=1).count()
-    medium_count = Vulnerability.objects.filter(severity=2).count()
-    high_count = Vulnerability.objects.filter(severity=3).count()
-    critical_count = Vulnerability.objects.filter(severity=4).count()
+
+    vulnerabilities = Vulnerability.objects.all()
+    info_count = vulnerabilities.filter(severity=0).count()
+    low_count = vulnerabilities.filter(severity=1).count()
+    medium_count = vulnerabilities.filter(severity=2).count()
+    high_count = vulnerabilities.filter(severity=3).count()
+    critical_count = vulnerabilities.filter(severity=4).count()
+    unknown_count = vulnerabilities.filter(severity=-1).count()
+
     vulnerability_feed = Vulnerability.objects.all().order_by(
         '-discovered_date')[:20]
     activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
+        medium_count + high_count + critical_count + unknown_count
+    total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
-    most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
-        'subdomain__vulnerability__name')).order_by('-num_vul')[:7]
-    most_common_vulnerability = Vulnerability.objects.values("name", "severity").exclude(
-        severity=0).annotate(count=Count('name')).order_by("-count")[:7]
+    most_common_vulnerability = Vulnerability.objects.values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
     last_week = timezone.now() - timedelta(days=7)
 
     count_targets_by_date = Domain.objects.filter(
@@ -119,17 +117,15 @@ def index(request):
         'subdomain_with_ip_count': subdomain_with_ip_count,
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
-        'recent_completed_scans': recent_completed_scans,
-        'pending_scans': pending_scans,
-        'currently_scanning': currently_scanning,
         'info_count': info_count,
         'low_count': low_count,
         'medium_count': medium_count,
         'high_count': high_count,
         'critical_count': critical_count,
-        'most_vulnerable_target': most_vulnerable_target,
+        'unknown_count': unknown_count,
         'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
+        'total_vul_ignore_info_count': total_vul_ignore_info_count,
         'vulnerability_feed': vulnerability_feed,
         'activity_feed': activity_feed,
         'targets_in_last_week': targets_in_last_week,
@@ -144,6 +140,10 @@ def index(request):
     context['most_used_port'] = Port.objects.annotate(count=Count('ports')).order_by('-count')[:7]
     context['most_used_ip'] = IpAddress.objects.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
     context['most_used_tech'] = Technology.objects.annotate(count=Count('technologies')).order_by('-count')[:7]
+
+    context['most_common_cve'] = CveId.objects.annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_cwe'] = CweId.objects.annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_tags'] = VulnerabilityTags.objects.annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
     return render(request, 'dashboard/index.html', context)
 
@@ -184,3 +184,7 @@ def on_user_logged_in(sender, request, **kwargs):
         'Hi @' +
         request.user.username +
         ' welcome back!')
+
+
+def search(request):
+    return render(request, 'dashboard/search.html')

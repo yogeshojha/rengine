@@ -1,0 +1,55 @@
+<div id="subscan-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h4 class="modal-title" id="standard-modalLabel">Initiate Subscan</h4>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+				<h5>Select the subtasks to perform</h5>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="port_scan_subtask">
+						<label class="form-check-label" for="port_scan_subtask">Port Scan</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="dir_fuzz_subtask">
+						<label class="form-check-label" for="dir_fuzz_subtask">Directory & Files Fuzzing</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="endpoint_subtask">
+						<label class="form-check-label" for="endpoint_subtask">Endpoint Gathering</label>
+					</div>
+				</div>
+				<div class="mt-1">
+					<div class="form-check">
+						<input type="checkbox" class="form-check-input" id="vuln_subtask">
+						<label class="form-check-label" for="vuln_subtask">Vulnerability Scan</label>
+					</div>
+				</div>
+				<div class="mt-2">
+					<h5>Select the Scan Engine <small>(Default Engine Selected)</small></h5>
+					<select class="form-select" id="subtaskScanEngine" name="subtaskScanEngine">
+						{% for engine in scan_engines %}
+							{% if engine.engine_name == history.scan_type.engine_name %}
+								<option value="{{engine.id}}" selected>{{engine}}</option>
+								{% else %}
+								<option value="{{engine.id}}">{{engine}}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+			</div>
+			<!-- OSINT IS NOT YET SUPPORTED!!! -->
+			<!-- TODO: SUPPORT OSINT -->
+			<div class="modal-footer">
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary" id="btn-initiate-subtask"><i class="fe-zap ms-1 me-1"></i>Initiate Subscan</button>
+			</div>
+		</div>
+	</div>
+</div>

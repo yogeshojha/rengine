@@ -2,6 +2,8 @@ import validators
 import csv
 import io
 import os
+import requests
+import threading
 
 from datetime import timedelta
 from operator import and_, or_
@@ -31,7 +33,7 @@ def index(request):
 def add_target(request):
     add_target_form = AddTargetForm(request.POST or None)
     if request.method == "POST":
-        if 'add-target' in request.POST and add_target_form.is_valid():
+        if 'add-single-target' in request.POST and add_target_form.is_valid():
             Domain.objects.create(
                 **add_target_form.cleaned_data,
                 insert_date=timezone.now())
@@ -41,7 +43,40 @@ def add_target(request):
                 'Target domain ' +
                 add_target_form.cleaned_data['name'] +
                 ' added successfully')
+            if 'fetch_whois_checkbox' in request.POST and request.POST['fetch_whois_checkbox'] == 'on':
+                thread = threading.Thread(
+                    target=get_whois,
+                    args=[add_target_form.cleaned_data['name'], True, False]
+                )
+                thread.setDaemon(True)
+                thread.start()
             return http.HttpResponseRedirect(reverse('list_target'))
+        if 'add-ip-target' in request.POST:
+            domains = request.POST.getlist('resolved_ip_domains')
+            description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
+            ip_address_cidr = request.POST['ip_address'] if 'ip_address' in request.POST else ''
+            h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
+            added_target_count = 0
+            for domain in domains:
+                if not Domain.objects.filter(
+                        name=domain).exists() and validators.domain(domain):
+                    Domain.objects.create(
+                        name=domain,
+                        description=description,
+                        h1_team_handle=h1_team_handle,
+                        ip_address_cidr=ip_address_cidr,
+                        insert_date=timezone.now())
+                    added_target_count += 1
+            if added_target_count:
+                messages.add_message(request, messages.SUCCESS, str(
+                    added_target_count) + ' targets added successfully!')
+                return http.HttpResponseRedirect(reverse('list_target'))
+            else:
+                messages.add_message(
+                    request,
+                    messages.ERROR,
+                    'Oops! Could not import any targets, either targets already exists or is not a valid target.')
+                return http.HttpResponseRedirect(reverse('add_target'))
         elif 'add-multiple-targets' in request.POST:
             bulk_targets = [target.rstrip()
                             for target in request.POST['addTargets'].split('\n')]
@@ -213,23 +248,34 @@ def target_summary(request, id):
         target_domain__id=id).values('name').distinct()
     endpoints = EndPoint.objects.filter(
         target_domain__id=id).values('http_url').distinct()
-    vulnerability_count = Vulnerability.objects.filter(
-        target_domain__id=id).count()
+
+    vulnerabilities = Vulnerability.objects.filter(target_domain__id=id)
+    vulnerability_count = vulnerabilities.count()
     context['subdomain_count'] = subdomains.count()
     context['alive_count'] = subdomains.filter(http_status__exact=200).count()
     context['endpoint_count'] = endpoints.count()
     context['endpoint_alive_count'] = endpoints.filter(http_status__exact=200).count()
 
-    context['info_count'] = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=0).count()
-    context['low_count'] = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=1).count()
-    context['medium_count'] = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=2).count()
-    context['high_count'] = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=3).count()
-    context['critical_count'] = Vulnerability.objects.filter(
-        target_domain=id).filter(severity=4).count()
+    context['scan_engines'] = EngineType.objects.all()
+
+    unknown_count = vulnerabilities.filter(severity=-1).count()
+    info_count = vulnerabilities.filter(severity=0).count()
+    low_count = vulnerabilities.filter(severity=1).count()
+    medium_count = vulnerabilities.filter(severity=2).count()
+    high_count = vulnerabilities.filter(severity=3).count()
+    critical_count = vulnerabilities.filter(severity=4).count()
+
+    context['unknown_count'] = unknown_count
+    context['info_count'] = info_count
+    context['low_count'] = low_count
+    context['medium_count'] = medium_count
+    context['high_count'] = high_count
+    context['critical_count'] = critical_count
+
+    context['total_vul_ignore_info_count'] = low_count + \
+        medium_count + high_count + critical_count
+        
+    context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(target_domain__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
     emails = Email.objects.filter(emails__in=ScanHistory.objects.filter(domain__id=id).distinct())
 
@@ -246,7 +292,13 @@ def target_summary(request, id):
     context['vulnerability_count'] = vulnerability_count
 
     context['vulnerability_list'] = Vulnerability.objects.filter(
-        target_domain__id=id).order_by('-severity').all()[:20]
+        target_domain__id=id).order_by('-severity').all()[:30]
+
+    context['http_status_breakdown'] = Subdomain.objects.filter(target_domain=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
+
+    context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
     return render(request, 'target/summary.html', context)
 

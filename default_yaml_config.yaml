@@ -1,0 +1,54 @@
+subdomain_discovery:
+  uses_tools: [ amass-passive, assetfinder, sublist3r, subfinder ]
+  threads: 10
+  use_amass_config: false
+  use_subfinder_config: false
+  # amass_wordlist: default
+
+screenshot:
+  timeout: 10
+  threads: 5
+
+port_scan:
+  ports: [ top-1000 ]
+  rate: 1000
+  use_naabu_config: false
+  # exclude_ports: [80, 8080]
+
+osint:
+  discover: [ emails, metainfo, employees ]
+  intensity: normal
+  # intensity: deep
+  dork: [ stackoverflow, 3rdparty, social_media, project_management, code_sharing, config_files, jenkins, wordpress_files, cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik, git_exposed ]
+
+dir_file_fuzz:
+  wordlist: default
+  use_extensions: [ php, git, yaml, conf, db, mysql, bak, asp, aspx, txt, conf, sql, json ]
+  threads: 100
+  stop_on_error: false
+  follow_redirect: false
+  auto_calibration: false
+  timeout: 10
+  # delay: "0.1-0.2"
+  # match_http_status: '200, 204'
+  # max_time: 0
+  recursive: false
+  recursive_level: 1
+
+fetch_url:
+  uses_tools: [ gauplus, hakrawler, waybackurls, gospider ]
+  intensity: normal
+  # intensity: deep
+  ignore_file_extension: [jpg, png, jpeg, gif]
+  gf_patterns: [ debug_logic, idor, img-traversal, interestingEXT, interestingparams, interestingsubs, jsvar, lfi, rce, redirect, sqli, ssrf, ssti, xss]
+
+vulnerability_scan:
+  concurrency: 10
+  rate_limit: 150
+  timeout: 5
+  retries: 1
+  templates: [ all ]
+  # custom_templates: []
+  severity: [ critical, high, medium, low, info, unknown ]
+
+# custom_header: 'name: value'

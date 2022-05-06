@@ -6,68 +6,57 @@
 Recon Todo
 {% endblock title %}
 
-
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/forms/theme-checkbox-radio.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'assets/css/apps/todolist.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/todo/todolist.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/select2/select2.min.css' %}">
-<link href="{% static 'plugins/sweetalerts/sweetalert2.min.css' %}" rel="stylesheet" type="text/css" />
-<link href="{% static 'plugins/sweetalerts/sweetalert.css' %}" rel="stylesheet" type="text/css" />
-<script src="{% static 'plugins/sweetalerts/promise-polyfill.js' %}"></script>
+<link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
-{% block breadcrumb_title %}
-<li class="breadcrumb-item active">Todo</li>
-{% endblock breadcrumb_title %}
-
 {% block main_content %}
-<div class="col-xl-12 col-lg-12 col-md-12">
-  <div class="mail-box-container">
-    <div class="mail-overlay"></div>
-    <div class="tab-title">
-      <div class="row">
-        <div class="col-md-12 col-sm-12 col-12 text-center">
-          <h5 class="app-title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h5>
-        </div>
-
-        <div class="todoList-sidebar-scroll">
-          <div class="col-md-12 col-sm-12 col-12 mt-4 pl-0">
-            <ul class="nav nav-pills d-block" id="pills-tab" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link list-actions active" id="all-list" data-toggle="pill" href="#pills-inbox" role="tab" aria-selected="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg> Todo <span class="todo-badge badge"></span></a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link list-actions" id="todo-task-done" data-toggle="pill" href="#pills-sentmail" role="tab" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-thumbs-up"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> Done <span class="todo-badge badge"></span></a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link list-actions" id="todo-task-important" data-toggle="pill" href="#pills-important" role="tab" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> Important <span class="todo-badge badge"></span></a>
-              </li>
-            </ul>
+<div class="row">
+  <div class="col-12">
+    <div class="mail-box-container">
+      <div class="mail-overlay"></div>
+      <div class="tab-title">
+        <div class="row">
+          <div class="col-md-12 col-sm-12 col-12 text-center">
+            <h5 class="app-title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h5>
+            <a class="btn" id="addTask" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Task</a>
+          </div>
+          <div class="todoList-sidebar-scroll">
+            <div class="col-md-12 col-sm-12 col-12 mt-4 pl-0">
+              <ul class="nav nav-pills d-block" id="pills-tab" role="tablist">
+                <li class="nav-item">
+                  <a class="nav-link list-actions active" id="all-list" data-toggle="pill" href="#pills-inbox" role="tab" aria-selected="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-list"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3" y2="6"></line><line x1="3" y1="12" x2="3" y2="12"></line><line x1="3" y1="18" x2="3" y2="18"></line></svg> Todo <span class="todo-badge badge"></span></a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link list-actions" id="todo-task-done" data-toggle="pill" href="#pills-sentmail" role="tab" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-thumbs-up"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> Done <span class="todo-badge badge"></span></a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link list-actions" id="todo-task-important" data-toggle="pill" href="#pills-important" role="tab" aria-selected="false"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> Important <span class="todo-badge badge"></span></a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-
-        <a class="btn" id="addTask" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Task</a>
       </div>
-    </div>
-
-    <div id="todo-inbox" class="accordion todo-inbox">
-      <div class="search">
-        <input type="text" class="form-control input-search" placeholder="Search Here...">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu mail-menu d-lg-none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </div>
-
-      <div class="todo-box">
-
-        <div id="ct" class="todo-box-scroll">
+      <div id="todo-inbox" class="accordion todo-inbox">
+        <div class="search">
+          <input type="text" class="form-control input-search" placeholder="Search Here...">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-menu mail-menu d-lg-none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </div>
-        <div class="modal fade" id="todoShowListItem" tabindex="-1" role="dialog" aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-              <div class="modal-body">
-                <div class="compose-box">
-                  <div class="compose-content">
-                    <h5 class="task-heading"></h5>
-                    <p class="task-text"></p>
+        <div class="todo-box">
+          <div id="ct" class="todo-box-scroll">
+          </div>
+          <div class="modal fade" id="todoShowListItem" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+              <div class="modal-content">
+                <div class="modal-body">
+                  <div class="compose-box">
+                    <div class="compose-content">
+                      <h5 class="task-heading"></h5>
+                      <p class="task-text"></p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -77,94 +66,60 @@ Recon Todo
       </div>
     </div>
   </div>
-  <!-- Modal -->
-  <div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-      <div class="modal-content">
-        <div class="modal-body">
-          <div class="compose-box">
-            <div class="compose-content" id="addTaskModalTitle">
-              <h5 class="">Add Task</h5>
-              <form>
-                <div class="row">
-                  <div class="col-md-12">
-                    <div class="d-flex mail-to mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit-3 flaticon-notes"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                      <div class="w-100">
-                        <input id="task" type="text" placeholder="Todo Title" class="form-control" name="task">
-                      </div>
-                    </div>
-                  </div>
-                </div>
+</div>
+<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-body">
+        <div class="compose-box">
+          <div class="compose-content" id="addTaskModalTitle">
+            <h5 class="">Add Task</h5>
+            <form>
+              <input id="task" type="text" placeholder="Todo Title" class="form-control" name="task">
+              <div class="mt-2">
+                <label for="scanHistoryIDropdown" class="form-label">Select Scan History (Optional)</label>
+                <select class="w-100 form-control" id="scanHistoryIDropdown" data-toggle="select2" data-width="100%">
+                  <option>Choose Scan History...</option>
+                </select>
+              </div>
 
-                <div class="row">
-                  <div class="col-md-12">
-                    <div class="d-flex mail-to mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
-                      <div class="w-100">
-                        Select Scan History (Optional)
-                        <select class="placeholder js-states form-control" id="scanHistoryIDropdown">
-                          <option>Choose Scan History...</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div class="mt-2">
+                <label for="subdomainDropdown" class="form-label">Select Subdomain (Optional)</label>
+                <span id="selectedSubdomainCount"></span>
+                <select class="w-100 form-control" id="subdomainDropdown" data-toggle="select2" data-width="100%">
+                  <option>Choose Subdomain...</option>
+                </select>
+              </div>
 
-                <div class="row">
-                  <div class="col-md-12">
-                    <div class="d-flex mail-to mb-4">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-crosshair"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
-                      <div class="w-100">
-                        Select Subdomain (Optional)
-                        <br>
-                        <span id="selectedSubdomainCount"></span>
-                        <select class="placeholder js-states form-control" id="subdomainDropdown">
-                          <option>Choose Subdomain...</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <textarea class="form-control" id="taskdescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
 
-                <div class="d-flex  mail-subject mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text flaticon-menu-list"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                  <div class="w-100">
-                    <textarea class="form-control" id="taskdescription" rows="5" spellcheck="false" placeholder="Recon Todo/Note"></textarea>
-                  </div>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn add-tsk">Add Task</button>
-          <button class="btn edit-tsk">Save</button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn add-tsk">Add Task</button>
+        <button class="btn edit-tsk">Save</button>
       </div>
     </div>
   </div>
 </div>
 {% endblock main_content %}
 
-
 {% block page_level_script %}
-<script src="{% static 'custom/custom.js' %}"></script>
-<script src="{% static 'assets/js/scrollspyNav.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/sweetalert2.min.js' %}"></script>
-<script src="{% static 'plugins/sweetalerts/custom-sweetalert.js' %}"></script>
+<script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 <script type="text/javascript">
+$('#addTaskModal select').css('width', '100%');
 $('#scanHistoryIDropdown').select2({
   dropdownParent: $('#addTaskModal')
 });
-
 $('#subdomainDropdown').select2({
   dropdownParent: $('#addTaskModal')
 });
-
 $('#scanHistoryIDropdown').on('change', function() {
   $('#subdomainDropdown').find('option:not(:first)').remove();
   subdomain_dropdown = document.getElementById('subdomainDropdown');
@@ -179,27 +134,20 @@ $('#scanHistoryIDropdown').on('change', function() {
     }
   });
 });
-
 $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
   for (var note in data['notes']){
     var note_obj = data['notes'][note];
-
     var todo_item = document.createElement("div");
     todo_item.classList.add("todo-item");
     todo_item.classList.add("all-list");
-
     var target_text = '';
-
     if (note_obj['domain_name']) {
       target_text += 'Domain: ' + note_obj['domain_name'] + ', Scanned ' + moment.utc(note_obj['scan_started_time']).fromNow();
     }
-
     if (note_obj['subdomain_name']) {
-      target_text += '<br>Subdomain: ' + note_obj['subdomain_name'];
+      target_text += '</br> Subdomain: ' + note_obj['subdomain_name'];
     }
-
     var is_important_badge = '';
-
     if (note_obj['is_important']) {
       is_important_badge = `<div class="priority-dropdown custom-dropdown-icon" id="important-badge-${note_obj['id']}">
       <div class="dropdown p-dropdown">
@@ -209,9 +157,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
       </div>
       </div>`;
     }
-
     var badges = is_important_badge;
-
     var html = `<div class="todo-item-inner">
     <div class="n-chk text-center">
     <label class="new-control new-checkbox checkbox-primary">
@@ -219,21 +165,17 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     <span class="new-control-indicator"></span>
     </label>
     </div>
-
     <div class="todo-content">
     <h5 class="todo-heading">${htmlEncode(note_obj['title'])}</h5>
     <p class="target">${target_text}</p>
     <p class="todo-text">${htmlEncode(note_obj['description'])}</p>
     </div>
-
     ${badges}
-
     <div class="action-dropdown custom-dropdown-icon">
-    <div class="dropdown">
-    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-${note_obj['id']}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+    <div class="dropdown dropstart">
+    <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-${note_obj['id']}" data-bs-toggle="dropdown" aria-expanded="false">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
     </a>
-
     <div class="dropdown-menu" aria-labelledby="dropdownMenuLink-${note_obj['id']}">
     <a class="important dropdown-item" href="javascript:void(0);" id="importantdropdown_${note_obj['id']}">Toggle Important</a>
     <a class="dropdown-item delete" href="javascript:void(0);" id="deletedropdown_${note_obj['id']}">Delete</a>
@@ -241,20 +183,15 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     </div>
     </div>
     </div>`;
-
     todo_item.innerHTML = html;
-
     document.getElementById('ct').appendChild(todo_item);
-
     if (note_obj['is_done']) {
       todo_item.classList.add("todo-task-done");
       document.getElementById('checkbox_'+note_obj['id']).checked = true;
     }
-
     if (note_obj['is_important']) {
       todo_item.classList.add("todo-task-important");
     }
-
   };
   populateTodofunction();
   $('.bs-tooltip').tooltip();

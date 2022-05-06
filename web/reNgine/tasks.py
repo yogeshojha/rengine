@@ -6,6 +6,7 @@ import csv
 import validators
 import random
 import requests
+import time
 import logging
 import metafinder.extractor as metadata_extractor
 import whatportis
@@ -43,9 +44,141 @@ from scanEngine.models import EngineType, Configuration, Wordlist
 
 from .common_func import *
 
+
 '''
-task for background scan
+    All the background tasks to be executed in celery will be here
 '''
+
+@app.task
+def run_system_commands(system_command):
+    '''
+        This function will run system commands in celery container
+    '''
+    os.system(system_command)
+
+
+@app.task
+def initiate_subtask(
+        subdomain_id,
+        port_scan=False,
+        osint=False,
+        endpoint=False,
+        dir_fuzz=False,
+        vuln_scan=False,
+        engine_id=None
+    ):
+    # TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
+    logger.info('Initiating Subtask')
+    # get scan history and yaml Configuration for this subdomain
+    subdomain = Subdomain.objects.get(id=subdomain_id)
+    scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
+
+    # create scan activity of SubScan Model
+    current_scan_time = timezone.now()
+    sub_scan = SubScan()
+    sub_scan.start_scan_date = current_scan_time
+    sub_scan.celery_id = initiate_subtask.request.id
+    sub_scan.scan_history = scan_history
+    sub_scan.subdomain = subdomain
+    sub_scan.port_scan = port_scan
+    sub_scan.osint = osint
+    sub_scan.fetch_url = endpoint
+    sub_scan.dir_file_fuzz = dir_fuzz
+    sub_scan.vulnerability_scan = vuln_scan
+    sub_scan.status = INITIATED_TASK
+    sub_scan.save()
+
+    if engine_id:
+        engine = EngineType.objects.get(id=engine_id)
+    else:
+        engine = EngineType.objects.get(id=scan_history.scan_type.id)
+
+    sub_scan.engine = engine
+    sub_scan.save()
+
+    results_dir = '/usr/src/scan_results/' + scan_history.results_dir
+
+    # if not results_dir exists, create one
+    if not os.path.exists(results_dir):
+        os.mkdir(results_dir)
+
+    try:
+        yaml_configuration = yaml.load(
+            engine.yaml_configuration,
+            Loader=yaml.FullLoader)
+
+        sub_scan.start_scan_date = current_scan_time
+        sub_scan.status = RUNNING_TASK
+        sub_scan.save()
+
+        if port_scan:
+            # delete any existing ports.json
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
+            scan_history.port_scan = True
+            scan_history.save()
+            port_scanning(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name,
+                file_name=file_name,
+                subscan=sub_scan
+            )
+        elif dir_fuzz:
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
+            scan_history.dir_file_fuzz = True
+            scan_history.save()
+            directory_fuzz(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain.name,
+                file_name=file_name,
+                subscan=sub_scan
+            )
+        elif endpoint:
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'endpoints_{}_{}.txt'.format(subdomain.name, rand_name)
+            scan_history.fetch_url = True
+            scan_history.save()
+            fetch_endpoints(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain,
+                file_name=file_name,
+                subscan=sub_scan
+            )
+        elif vuln_scan:
+            rand_name = str(time.time()).split('.')[0]
+            file_name = 'vuln_{}_{}.txt'.format(subdomain.name, rand_name)
+            scan_history.vulnerability_scan = True
+            scan_history.save()
+            vulnerability_scan(
+                scan_history,
+                0,
+                yaml_configuration,
+                results_dir,
+                subdomain=subdomain,
+                file_name=file_name,
+                subscan=sub_scan
+            )
+        task_status = SUCCESS_TASK
+
+
+    except Exception as e:
+        logger.error(e)
+        task_status = FAILED_TASK
+        sub_scan.error_message = str(e)
+    finally:
+        sub_scan.stop_scan_date = timezone.now()
+        sub_scan.status = task_status
+        sub_scan.save()
 
 
 @app.task
@@ -80,7 +213,7 @@ def initiate_scan(
     task.scan_status = 1
     task.start_scan_date = timezone.now()
     task.subdomain_discovery = True if engine_object.subdomain_discovery else False
-    task.dir_file_search = True if engine_object.dir_file_search else False
+    task.dir_file_fuzz = True if engine_object.dir_file_fuzz else False
     task.port_scan = True if engine_object.port_scan else False
     task.fetch_url = True if engine_object.fetch_url else False
     task.osint = True if engine_object.osint else False
@@ -146,14 +279,18 @@ def initiate_scan(
 
         if(task.subdomain_discovery):
             activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
-            subdomain_scan(
-                task,
-                domain,
-                yaml_configuration,
-                results_dir,
-                activity_id,
-                out_of_scope_subdomains
-                )
+            try:
+                subdomain_scan(
+                    task,
+                    domain,
+                    yaml_configuration,
+                    results_dir,
+                    activity_id,
+                    out_of_scope_subdomains
+                    )
+            except Exception as e:
+                logger.error(e)
+                update_last_activity(activity_id, 0, error_message=str(e))
         else:
             skip_subdomain_scan(task, domain, results_dir)
 
@@ -162,6 +299,7 @@ def initiate_scan(
         http_crawler(
             task,
             domain,
+            yaml_configuration,
             results_dir,
             activity_id)
         update_last_activity(activity_id, 2)
@@ -179,16 +317,20 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if(task.port_scan):
                 activity_id = create_scan_activity(task, "Port Scanning", 1)
-                port_scanning(task, domain, yaml_configuration, results_dir)
+                port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.osint:
@@ -197,51 +339,61 @@ def initiate_scan(
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
 
         try:
-            if task.dir_file_search:
+            if task.dir_file_fuzz:
                 activity_id = create_scan_activity(task, "Directory Search", 1)
-                directory_brute(
+                directory_fuzz(
                     task,
-                    domain,
+                    activity_id,
                     yaml_configuration,
                     results_dir,
-                    activity_id
+                    domain=domain,
                 )
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.fetch_url:
                 activity_id = create_scan_activity(task, "Fetching endpoints", 1)
                 fetch_endpoints(
                     task,
-                    domain,
+                    activity_id,
                     yaml_configuration,
                     results_dir,
-                    activity_id)
+                    domain=domain,
+                    )
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
         try:
             if task.vulnerability_scan:
                 activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
                 vulnerability_scan(
                     task,
-                    domain,
+                    activity_id,
                     yaml_configuration,
                     results_dir,
-                    activity_id)
+                    domain=domain,
+                )
                 update_last_activity(activity_id, 2)
         except Exception as e:
             logger.error(e)
-            update_last_activity(activity_id, 0)
+            update_last_activity(activity_id, 0, error_message=str(e))
+            task.error_message = str(e)
+            task.save()
 
     activity_id = create_scan_activity(task, "Scan Completed", 2)
     if notification and notification[0].send_scan_status_notif:
@@ -334,10 +486,20 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
     file.close()
 
 
-def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, out_of_scope_subdomains=None):
-    '''
-    This function is responsible for performing subdomain enumeration
-    '''
+def subdomain_scan(
+        task,
+        domain,
+        yaml_configuration,
+        results_dir,
+        activity_id,
+        out_of_scope_subdomains=None,
+        subscan=None
+    ):
+
+    # get all external subdomain enum tools
+    default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
+    custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('Subdomain Gathering for target {} has been started'.format(domain.name))
@@ -348,11 +510,17 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
     # if tool selected is all then make string, no need for loop
     if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
         tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
+        # also put all custom subdomain tools
+        custom_tools = ' '.join(tool for tool in custom_subdomain_tools)
+        if custom_tools:
+            tools = tools + ' ' + custom_subdomain_tools
     else:
         tools = ' '.join(
-            str(tool) for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
+            str(tool).lower() for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
 
     logging.info(tools)
+    logging.info(default_subdomain_tools)
+    logging.info(custom_subdomain_tools)
 
     # check for THREADS, by default 10
     threads = 10
@@ -361,85 +529,103 @@ def subdomain_scan(task, domain, yaml_configuration, results_dir, activity_id, o
         if _threads > 0:
             threads = _threads
 
-    if 'amass' in tools:
-        if 'amass-passive' in tools:
-            amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
-                    domain.name, results_dir)
 
-            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
-                amass_command += ' -config /root/.config/amass.ini'
-            # Run Amass Passive
-            logging.info(amass_command)
-            os.system(amass_command)
+    try:
+        for tool in tools.split(' '):
+            if tool in default_subdomain_tools:
+                if tool == 'amass-passive':
+                    amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
+                            domain.name, results_dir)
 
-        if 'amass-active' in tools:
-            amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
-                    domain.name, results_dir)
+                    if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                        amass_command += ' -config /root/.config/amass.ini'
+                    # Run Amass Passive
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
-            if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
-                amass_command += ' -config /root/.config/amass.ini'
+                elif tool == 'amass-active':
+                    amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
+                            domain.name, results_dir)
 
-            if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-                wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
-                if wordlist == 'default':
-                    wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
-                else:
-                    wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
-                    if not os.path.exists(wordlist_path):
-                        wordlist_path = '/usr/src/' + AMASS_WORDLIST
-                amass_command = amass_command + \
-                    ' -brute -w {}'.format(wordlist_path)
-            if amass_config_path:
-                amass_command = amass_command + \
-                    ' -config {}'.format('/usr/src/scan_results/' + amass_config_path)
+                    if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
+                        amass_command += ' -config /root/.config/amass.ini'
 
-            # Run Amass Active
-            logging.info(amass_command)
-            os.system(amass_command)
+                    if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
+                        wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
+                        if wordlist == 'default':
+                            wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
+                        else:
+                            wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
+                            if not os.path.exists(wordlist_path):
+                                wordlist_path = '/usr/src/' + AMASS_WORDLIST
+                        amass_command = amass_command + \
+                            ' -brute -w {}'.format(wordlist_path)
 
-    if 'assetfinder' in tools:
-        assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
-            domain.name, results_dir)
+                    # Run Amass Active
+                    logging.info(amass_command)
+                    os.system(amass_command)
 
-        # Run Assetfinder
-        logging.info(assetfinder_command)
-        os.system(assetfinder_command)
+                elif tool == 'assetfinder':
+                    assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
+                        domain.name, results_dir)
 
-    if 'sublist3r' in tools:
-        sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
-            domain.name, threads, results_dir)
+                    # Run Assetfinder
+                    logging.info(assetfinder_command)
+                    os.system(assetfinder_command)
 
-        # Run sublist3r
-        logging.info(sublist3r_command)
-        os.system(sublist3r_command)
+                elif tool == 'sublist3r':
+                    sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
+                        domain.name, threads, results_dir)
 
-    if 'subfinder' in tools:
-        subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
-            domain.name, threads, results_dir)
+                    # Run sublist3r
+                    logging.info(sublist3r_command)
+                    os.system(sublist3r_command)
 
-        if USE_SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_SUBFINDER_CONFIG]:
-            subfinder_command += ' -config /root/.config/subfinder/config.yaml'
+                elif tool == 'subfinder':
+                    subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
+                        domain.name, threads, results_dir)
 
-        # Run Subfinder
-        logging.info(subfinder_command)
-        os.system(subfinder_command)
+                    if USE_SUBFINDER_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_SUBFINDER_CONFIG]:
+                        subfinder_command += ' -config /root/.config/subfinder/config.yaml'
 
-    if 'oneforall' in tools:
-        oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
-            domain.name, results_dir)
+                    # Run Subfinder
+                    logging.info(subfinder_command)
+                    os.system(subfinder_command)
 
-        # Run OneForAll
-        logging.info(oneforall_command)
-        os.system(oneforall_command)
+                elif tool == 'oneforall':
+                    oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
+                        domain.name, results_dir)
 
-        extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
-            domain.name, results_dir)
+                    # Run OneForAll
+                    logging.info(oneforall_command)
+                    os.system(oneforall_command)
 
-        os.system(extract_subdomain)
+                    extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
+                        domain.name, results_dir)
 
-        # remove the results from oneforall directory
-        os.system(
-            'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
+                    os.system(extract_subdomain)
+
+                    # remove the results from oneforall directory
+                    os.system(
+                        'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
+
+            elif tool.lower() in custom_subdomain_tools:
+                # this is for all the custom tools, and tools runs based on instalaltion steps provided
+                if InstalledExternalTool.objects.filter(name__icontains=tool.lower()).exists():
+                    custom_tool = InstalledExternalTool.objects.get(name__icontains=tool)
+                    execution_command = custom_tool.subdomain_gathering_command
+                    print(execution_command)
+                    # replace syntax with actual commands and path
+                    if '{TARGET}' in execution_command and '{OUTPUT}' in execution_command:
+                        execution_command = execution_command.replace('{TARGET}', domain.name)
+                        execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
+                        execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
+                        logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
+                        os.system(execution_command)
+                    else:
+                        logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
+    except Exception as e:
+        logger.error(e)
 
     '''
     All tools have gathered the list of subdomains with filename
@@ -556,7 +742,7 @@ def get_removed_subdomain(scan_id, domain_id):
                 name__in=removed_subdomains)
 
 
-def http_crawler(task, domain, results_dir, activity_id):
+def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
     '''
     This function is runs right after subdomain gathering, and gathers important
     like page title, http status, etc
@@ -573,10 +759,14 @@ def http_crawler(task, domain, results_dir, activity_id):
     httpx_command = 'httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
 
     proxy = get_random_proxy()
-    if proxy:
-        httpx_command += " --http-proxy '{}'".format(proxy)
 
-    httpx_command += ' -json -o {}'.format(
+    if proxy:
+        httpx_command += " --http-proxy '{}' ".format(proxy)
+
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
+
+    httpx_command += ' -json -o {} '.format(
         httpx_results_file
     )
     httpx_command = 'cat {} | {}'.format(subdomain_scan_results_file, httpx_command)
@@ -690,23 +880,23 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 
     eyewitness_command = 'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py'
 
-    eyewitness_command += ' -f {} -d {} --no-prompt'.format(
+    eyewitness_command += ' -f {} -d {} --no-prompt '.format(
         alive_subdomains_path,
         output_screenshots_path
     )
 
-    if EYEWITNESS in yaml_configuration \
-        and TIMEOUT in yaml_configuration[EYEWITNESS] \
-        and yaml_configuration[EYEWITNESS][TIMEOUT] > 0:
-        eyewitness_command += ' --timeout {}'.format(
-            yaml_configuration[EYEWITNESS][TIMEOUT]
+    if SCREENSHOT in yaml_configuration \
+        and TIMEOUT in yaml_configuration[SCREENSHOT] \
+        and yaml_configuration[SCREENSHOT][TIMEOUT] > 0:
+        eyewitness_command += ' --timeout {} '.format(
+            yaml_configuration[SCREENSHOT][TIMEOUT]
         )
 
-    if EYEWITNESS in yaml_configuration \
-        and THREADS in yaml_configuration[EYEWITNESS] \
-        and yaml_configuration[EYEWITNESS][THREADS] > 0:
-            eyewitness_command += ' --threads {}'.format(
-                yaml_configuration[EYEWITNESS][THREADS]
+    if SCREENSHOT in yaml_configuration \
+        and THREADS in yaml_configuration[SCREENSHOT] \
+        and yaml_configuration[SCREENSHOT][THREADS] > 0:
+            eyewitness_command += ' --threads {} '.format(
+                yaml_configuration[SCREENSHOT][THREADS]
             )
 
     logger.info(eyewitness_command)
@@ -743,54 +933,72 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
         send_notification('reNgine has finished gathering screenshots for {}'.format(domain.name))
 
 
-def port_scanning(task, domain, yaml_configuration, results_dir):
+def port_scanning(
+        scan_history,
+        activity_id,
+        yaml_configuration,
+        results_dir,
+        domain=None,
+        subdomain=None,
+        file_name=None,
+        subscan=None
+    ):
     '''
     This function is responsible for running the port scan
     '''
+    output_file_name = file_name if file_name else 'ports.json'
+    port_results_file = results_dir + '/' + output_file_name
+
+    domain_name = domain.name if domain else subdomain
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Port Scan initiated for {}'.format(domain.name))
+        send_notification('Port Scan initiated for {}'.format(domain_name))
 
-    subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-    port_results_file = results_dir + '/ports.json'
+    if domain:
+        subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+        naabu_command = 'cat {} | naabu -json -o {}'.format(
+            subdomain_scan_results_file,
+            port_results_file
+        )
+    elif subdomain:
+        naabu_command = 'naabu -host {} -o {} -json '.format(
+            subdomain,
+            port_results_file
+        )
 
     # check the yaml_configuration and choose the ports to be scanned
-
     scan_ports = '-'  # default port scan everything
     if PORTS in yaml_configuration[PORT_SCAN]:
         # TODO:  legacy code, remove top-100 in future versions
         all_ports = yaml_configuration[PORT_SCAN][PORTS]
         if 'full' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
-                subdomain_scan_results_file, port_results_file, '-')
+            naabu_command += ' -p -'
         elif 'top-100' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -top-ports 100'.format(
-                subdomain_scan_results_file, port_results_file)
+            naabu_command += ' -top-ports 100 '
         elif 'top-1000' in all_ports:
-            naabu_command = 'cat {} | naabu -json -o {} -top-ports 1000'.format(
-                subdomain_scan_results_file, port_results_file)
+            naabu_command += ' -top-ports 1000 '
         else:
             scan_ports = ','.join(
                 str(port) for port in all_ports)
-            naabu_command = 'cat {} | naabu -json -o {} -p {}'.format(
-                subdomain_scan_results_file, port_results_file, scan_ports)
+            naabu_command += ' -p {} '.format(scan_ports)
 
     # check for exclude ports
     if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
         exclude_ports = ','.join(
             str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
         naabu_command = naabu_command + \
-            ' -exclude-ports {}'.format(exclude_ports)
+            ' -exclude-ports {} '.format(exclude_ports)
 
     if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
         naabu_command = naabu_command + \
-            ' -rate {}'.format(
+            ' -rate {} '.format(
                 yaml_configuration[PORT_SCAN][NAABU_RATE])
-
+            #new format for naabu config
     if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
-        naabu_command += ' -config /root/.config/naabu/naabu.conf'
+        naabu_command += ' -config /root/.config/naabu/config.yaml '
 
     # run naabu
+    logger.info(naabu_command)
     os.system(naabu_command)
 
     # writing port results
@@ -801,6 +1009,7 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
             json_st = json.loads(line.strip())
             port_number = json_st['port']
             ip_address = json_st['ip']
+            host = json_st['host']
 
             # see if port already exists
             if Port.objects.filter(number__exact=port_number).exists():
@@ -811,24 +1020,45 @@ def port_scanning(task, domain, yaml_configuration, results_dir):
             if port_number in UNCOMMON_WEB_PORTS:
                 port.is_uncommon = True
             port_detail = whatportis.get_ports(str(port_number))
+
             if len(port_detail):
                 port.service_name = port_detail[0].name
                 port.description = port_detail[0].description
             port.save()
-            if IpAddress.objects.filter(address=json_st['ip']).exists():
-                ip = IpAddress.objects.get(address=json_st['ip'])
+
+            if IpAddress.objects.filter(address=ip_address).exists():
+                ip = IpAddress.objects.get(address=ip_address)
                 ip.ports.add(port)
                 ip.save()
+            else:
+                # create a new ip
+                ip = IpAddress()
+                ip.address = ip_address
+                ip.save()
+                ip.ports.add(port)
+
+            if subscan:
+                ip.ip_subscan_ids.add(subscan)
+                ip.save()
+
+            # if this ip does not belong to host, we also need to add to specific host
+            if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
+                subdomain = Subdomain.objects.get(scan_history=scan_history, name=host)
+                subdomain.ip_addresses.add(ip)
+                subdomain.save()
+
     except BaseException as exception:
         logging.error(exception)
-        update_last_activity(activity_id, 0)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         port_count = Port.objects.filter(
             ports__in=IpAddress.objects.filter(
                 ip_addresses__in=Subdomain.objects.filter(
-                    scan_history__id=task.id))).distinct().count()
-        send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain.name, port_count))
+                    scan_history__id=scan_history.id))).distinct().count()
+        send_notification('reNgine has finished Port Scanning on {} and has identified {} ports.'.format(domain_name, port_count))
 
     if notification and notification[0].send_scan_output_file:
         send_files_to_discord(results_dir + '/ports.json')
@@ -841,116 +1071,247 @@ def check_waf():
     pass
 
 
-def directory_brute(task, domain, yaml_configuration, results_dir, activity_id):
+def directory_fuzz(
+        scan_history,
+        activity_id,
+        yaml_configuration,
+        results_dir,
+        domain=None,
+        subdomain=None,
+        file_name=None,
+        subscan=None
+    ):
     '''
-    This function is responsible for performing directory scan
+        This function is responsible for performing directory scan, and currently
+        uses ffuf as a default tool
     '''
-    # scan directories for all the alive subdomain with http status >
-    # 200
+    output_file_name = file_name if file_name else 'dirs.json'
+    dirs_results = results_dir + '/' + output_file_name
+
+    domain_name = domain.name if domain else subdomain
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Directory Bruteforce has been initiated for {}.'.format(domain.name))
+        send_notification('Directory Bruteforce has been initiated for {}.'.format(domain_name))
 
-    alive_subdomains = Subdomain.objects.filter(
-        scan_history__id=task.id).exclude(http_url__isnull=True)
-    dirs_results = results_dir + '/dirs.json'
-
-    # check the yaml settings
-    if EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-        extensions = ','.join(
-            str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXTENSIONS])
+    # get wordlist
+    if (WORDLIST not in yaml_configuration[DIR_FILE_FUZZ] or
+        not yaml_configuration[DIR_FILE_FUZZ][WORDLIST] or
+            'default' in yaml_configuration[DIR_FILE_FUZZ][WORDLIST]):
+        wordlist_location = '/usr/src/wordlist/dicc.txt'
     else:
-        extensions = 'php,git,yaml,conf,db,mysql,bak,txt'
+        wordlist_location = '/usr/src/wordlist/' + \
+            yaml_configuration[DIR_FILE_FUZZ][WORDLIST] + '.txt'
 
-    # Threads
-    if THREADS in yaml_configuration[DIR_FILE_SEARCH] \
-        and yaml_configuration[DIR_FILE_SEARCH][THREADS] > 0:
-        threads = yaml_configuration[DIR_FILE_SEARCH][THREADS]
+    ffuf_command = 'ffuf -w ' + wordlist_location
+
+    if domain:
+        subdomains_fuzz = Subdomain.objects.filter(
+            scan_history__id=scan_history.id).exclude(http_url__isnull=True)
     else:
-        threads = 10
+        subdomains_fuzz = Subdomain.objects.filter(
+            name=subdomain).filter(
+            scan_history__id=scan_history.id)
 
-    for subdomain in alive_subdomains:
+    if USE_EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][USE_EXTENSIONS]:
+        if EXTENSIONS in yaml_configuration[DIR_FILE_FUZZ]:
+            extensions = ','.join('.' + str(ext) for ext in yaml_configuration[DIR_FILE_FUZZ][EXTENSIONS])
+
+            ffuf_command = ' {} -e {} '.format(
+                ffuf_command,
+                extensions
+            )
+
+    if THREADS in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][THREADS] > 0:
+        threads = yaml_configuration[DIR_FILE_FUZZ][THREADS]
+        ffuf_command = ' {} -t {} '.format(
+            ffuf_command,
+            threads
+        )
+
+    if RECURSIVE in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][RECURSIVE]:
+        recursive_level = yaml_configuration[DIR_FILE_FUZZ][RECURSIVE_LEVEL]
+        ffuf_command = ' {} -recursion -recursion-depth {} '.format(
+            ffuf_command,
+            recursive_level
+        )
+
+    if STOP_ON_ERROR in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][STOP_ON_ERROR]:
+        ffuf_command = '{} -se'.format(
+            ffuf_command
+        )
+
+    if FOLLOW_REDIRECT in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][FOLLOW_REDIRECT]:
+        ffuf_command = ' {} -fr '.format(
+            ffuf_command
+        )
+
+    if AUTO_CALIBRATION in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][AUTO_CALIBRATION]:
+        ffuf_command = ' {} -ac '.format(
+            ffuf_command
+        )
+
+    if TIMEOUT in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][TIMEOUT] > 0:
+        timeout = yaml_configuration[DIR_FILE_FUZZ][TIMEOUT]
+        ffuf_command = ' {} -timeout {} '.format(
+            ffuf_command,
+            timeout
+        )
+
+    if DELAY in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][DELAY] > 0:
+        delay = yaml_configuration[DIR_FILE_FUZZ][DELAY]
+        ffuf_command = ' {} -p "{}" '.format(
+            ffuf_command,
+            delay
+        )
+
+    if MATCH_HTTP_STATUS in yaml_configuration[DIR_FILE_FUZZ]:
+        mc = ','.join(str(code) for code in yaml_configuration[DIR_FILE_FUZZ][MATCH_HTTP_STATUS])
+    else:
+        mc = '200,204'
+
+    ffuf_command = ' {} -mc {} '.format(
+        ffuf_command,
+        mc
+    )
+
+    if MAX_TIME in yaml_configuration[DIR_FILE_FUZZ] \
+        and yaml_configuration[DIR_FILE_FUZZ][MAX_TIME] > 0:
+        max_time = yaml_configuration[DIR_FILE_FUZZ][MAX_TIME]
+        ffuf_command = ' {} -maxtime {} '.format(
+            ffuf_command,
+            max_time
+        )
+
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
+
+    for subdomain in subdomains_fuzz:
+        command = None
         # delete any existing dirs.json
         if os.path.isfile(dirs_results):
             os.system('rm -rf {}'.format(dirs_results))
-        dirsearch_command = 'python3 /usr/src/github/dirsearch/dirsearch.py'
 
-        dirsearch_command += ' -u {}'.format(subdomain.http_url)
-
-        if (WORDLIST not in yaml_configuration[DIR_FILE_SEARCH] or
-            not yaml_configuration[DIR_FILE_SEARCH][WORDLIST] or
-                'default' in yaml_configuration[DIR_FILE_SEARCH][WORDLIST]):
-            wordlist_location = '/usr/src/github/dirsearch/db/dicc.txt'
+        if subdomain.http_url:
+            http_url = subdomain.http_url + 'FUZZ' if subdomain.http_url[-1:] == '/' else subdomain.http_url + '/FUZZ'
         else:
-            wordlist_location = '/usr/src/wordlist/' + \
-                yaml_configuration[DIR_FILE_SEARCH][WORDLIST] + '.txt'
-
-        dirsearch_command += ' -w {}'.format(wordlist_location)
-
-        dirsearch_command += ' --format json -o {}'.format(dirs_results)
-
-        dirsearch_command += ' -e {}'.format(extensions)
-
-        dirsearch_command += ' -t {}'.format(threads)
-
-        dirsearch_command += ' --random-agent --follow-redirects --exclude-status 403,401,404'
-
-        if EXCLUDE_EXTENSIONS in yaml_configuration[DIR_FILE_SEARCH]:
-            exclude_extensions = ','.join(
-                str(ext) for ext in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_EXTENSIONS])
-            dirsearch_command += ' -X {}'.format(exclude_extensions)
-
-        if EXCLUDE_TEXT in yaml_configuration[DIR_FILE_SEARCH]:
-            exclude_text = ','.join(
-                str(text) for text in yaml_configuration[DIR_FILE_SEARCH][EXCLUDE_TEXT])
-            dirsearch_command += ' -exclude-texts {}'.format(exclude_text)
-
-        # check if recursive strategy is set to on
-
-        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
-
-        if RECURSIVE_LEVEL in yaml_configuration[DIR_FILE_SEARCH]:
-            dirsearch_command += ' --recursion-depth {}'.format(yaml_configuration[DIR_FILE_SEARCH][RECURSIVE_LEVEL])
+            http_url = subdomain
 
         # proxy
         proxy = get_random_proxy()
         if proxy:
-            dirsearch_command += " --proxy '{}'".format(proxy)
+            ffuf_command = "{} -x '{}'".format(
+                ffuf_command,
+                proxy
+            )
 
-        print(dirsearch_command)
-        os.system(dirsearch_command)
+        command = '{} -u {} -o {} -of json'.format(
+            ffuf_command,
+            http_url,
+            dirs_results
+        )
 
+        logger.info(command)
+        os.system(command)
         try:
             if os.path.isfile(dirs_results):
                 with open(dirs_results, "r") as json_file:
-                    json_string = json_file.read()
+                    json_string = json.loads(json_file.read())
                     subdomain = Subdomain.objects.get(
-                        scan_history__id=task.id, http_url=subdomain.http_url)
-                    subdomain.directory_json = json_string
-                    subdomain.save()
+                            scan_history__id=scan_history.id, http_url=subdomain.http_url)
+                    # TODO: URL Models to be created here
+                    # Create a directory Scan model
+                    directory_scan = DirectoryScan()
+                    directory_scan.scanned_date = timezone.now()
+                    directory_scan.command_line = json_string['commandline']
+                    directory_scan.save()
+
+                    for result in json_string['results']:
+                        # check if directory already exists else create a new one
+                        if DirectoryFile.objects.filter(
+                            name=result['input']['FUZZ'],
+                            length__exact=result['length'],
+                            lines__exact=result['lines'],
+                            http_status__exact=result['status'],
+                            words__exact=result['words'],
+                            url=result['url'],
+                            content_type=result['content-type'],
+                        ).exists():
+                            file = DirectoryFile.objects.get(
+                                name=result['input']['FUZZ'],
+                                length__exact=result['length'],
+                                lines__exact=result['lines'],
+                                http_status__exact=result['status'],
+                                words__exact=result['words'],
+                                url=result['url'],
+                                content_type=result['content-type'],
+                            )
+                        else:
+                            file = DirectoryFile()
+                            file.name=result['input']['FUZZ']
+                            file.length=result['length']
+                            file.lines=result['lines']
+                            file.http_status=result['status']
+                            file.words=result['words']
+                            file.url=result['url']
+                            file.content_type=result['content-type']
+                            file.save()
+
+                        directory_scan.directory_files.add(file)
+
+                    if subscan:
+                        directory_scan.dir_subscan_ids.add(subscan)
+
+                    subdomain.directories.add(directory_scan)
+
         except Exception as exception:
             logging.error(exception)
-            update_last_activity(activity_id, 0)
+            if not subscan:
+                update_last_activity(activity_id, 0)
+            raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Directory Bruteforce has been completed for {}.'.format(domain.name))
+        send_notification('Directory Bruteforce has been completed for {}.'.format(domain_name))
 
 
 def fetch_endpoints(
-        task,
-        domain,
+        scan_history,
+        activity_id,
         yaml_configuration,
         results_dir,
-        activity_id):
+        domain=None,
+        subdomain=None,
+        file_name=None,
+        subscan=None
+    ):
     '''
-    This function is responsible for fetching all the urls associated with target
-    and run HTTP probe
-    It first runs gau to gather all urls from wayback, then we will use hakrawler to identify more urls
+        This function is responsible for fetching all the urls associated with target
+        and runs HTTP probe
+        reNgine has ability to fetch deep urls, meaning url for all the subdomains
+        but, when subdomain is given, subtask is running, deep or normal scan should
+        not work, it should simply fetch urls for that subdomain
     '''
+
+    if GF_PATTERNS in yaml_configuration[FETCH_URL]:
+        scan_history.used_gf_patterns = ','.join(
+            pattern for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS])
+        scan_history.save()
+
+    logger.info('Initiated Endpoint Fetching')
+    domain_name = domain.name if domain else subdomain
+    output_file_name = file_name if file_name else 'all_urls.txt'
+
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('reNgine is currently gathering endpoints for {}.'.format(domain.name))
+        send_notification('reNgine is currently gathering endpoints for {}.'.format(domain_name))
 
     # check yaml settings
     if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
@@ -964,79 +1325,139 @@ def fetch_endpoints(
     else:
         scan_type = 'normal'
 
-    domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain.name)
+    valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
 
-    if 'deep' in scan_type:
-        # performs deep url gathering for all the subdomains present -
-        # RECOMMENDED
-        logger.info('Deep URLS Fetch')
-        os.system(settings.TOOL_LOCATION + 'get_urls.sh %s %s %s %s %s' %
-            ("None", results_dir, scan_type, domain_regex, tools))
-    else:
-        # perform url gathering only for main domain - USE only for quick scan
-        logger.info('Non Deep URLS Fetch')
-        os.system(
-            settings.TOOL_LOCATION +
-            'get_urls.sh %s %s %s %s %s' % (
-                domain.name,
-                results_dir,
-                scan_type,
-                domain_regex,
-                tools
-            ))
+    alive_subdomains_path = results_dir + '/' + output_file_name
+    sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
+
+    for tool in tools.split(' '):
+        if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                input_target = 'echo {}'.format(subdomain_url)
+            elif scan_type == 'deep' and domain:
+                input_target = 'cat {}'.format(sorted_subdomains_path)
+            else:
+                input_target = 'echo {}'.format(domain_name)
+        if tool == 'gauplus':
+            logger.info('Running Gauplus')
+            gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(gauplus_command)
+            os.system(gauplus_command)
+
+        elif tool == 'hakrawler':
+            logger.info('Running hakrawler')
+            hakrawler_command = '{} | hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(hakrawler_command)
+            os.system(hakrawler_command)
+        elif tool == 'waybackurls':
+            logger.info('Running waybackurls')
+            waybackurls_command = '{} | waybackurls | grep -Eo {} > {}/urls_waybackurls.txt'.format(
+                input_target,
+                valid_url_of_domain_regex,
+                results_dir
+            )
+            logger.info(waybackurls_command)
+            os.system(waybackurls_command)
+        elif tool == 'gospider':
+            logger.info('Running gospider')
+            if subdomain:
+                subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+                gospider_command = 'gospider -s {}'.format(subdomain_url)
+            elif scan_type == 'deep' and domain:
+                gospider_command = 'gospider -S '.format(alive_subdomains_path)
+            else:
+                gospider_command = 'gospider -s https://{} '.format(domain_name)
+
+            gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
+                valid_url_of_domain_regex,
+                results_dir
+            )
+
+            logger.info(gospider_command)
+            os.system(gospider_command)
+
+    # run cleanup of urls
+    os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
+    os.system('rm -rf {}/url*'.format(results_dir))
+    # sorting and unique urls
+    logger.info("Sort and Unique")
+    if domain:
+        os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
+    os.system('sort -u {0}/final_urls.txt -o {0}/{1}'.format(results_dir, output_file_name))
 
     if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
         ignore_extension = '|'.join(
             yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
-        logger.info('Ignore extensions' + ignore_extension)
+        logger.info('Ignore extensions ' + ignore_extension)
         os.system(
-            'cat {0}/all_urls.txt | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
-                results_dir, ignore_extension))
+            'cat {0}/{2} | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
+                results_dir, ignore_extension, output_file_name))
         os.system(
-            'rm {0}/all_urls.txt && mv {0}/temp_urls.txt {0}/all_urls.txt'.format(results_dir))
+            'rm {0}/{1} && mv {0}/temp_urls.txt {0}/{1}'.format(results_dir, output_file_name))
 
     '''
     Store all the endpoints and then run the httpx
     '''
+    domain_obj = None
+    if domain:
+        domain_obj = domain
+    elif subdomain:
+        domain_obj = subdomain.target_domain
+
     try:
-        endpoint_final_url = results_dir + '/all_urls.txt'
-        if os.path.isfile(endpoint_final_url):
-            with open(endpoint_final_url) as endpoint_list:
-                for url in endpoint_list:
-                    http_url = url.rstrip('\n')
-                    if not EndPoint.objects.filter(scan_history=task, http_url=http_url).exists():
-                        _subdomain = get_subdomain_from_url(http_url)
-                        if Subdomain.objects.filter(
-                                scan_history=task).filter(
-                                name=_subdomain).exists():
-                            subdomain = Subdomain.objects.get(
-                                scan_history=task, name=_subdomain)
-                        else:
-                            '''
+        endpoint_final_url = results_dir + '/{}'.format(output_file_name)
+        if not os.path.isfile(endpoint_final_url):
+            return
+
+        with open(endpoint_final_url) as endpoint_list:
+            for url in endpoint_list:
+                http_url = url.rstrip('\n')
+                if not EndPoint.objects.filter(scan_history=scan_history, http_url=http_url).exists():
+                    _subdomain = get_subdomain_from_url(http_url)
+                    if Subdomain.objects.filter(
+                            scan_history=scan_history).filter(
+                            name=_subdomain).exists():
+                        subdomain = Subdomain.objects.get(
+                            scan_history=scan_history, name=_subdomain)
+                    else:
+                        '''
                             gau or gosppider can gather interesting endpoints which
                             when parsed can give subdomains that were not existent from
                             subdomain scan. so storing them
-                            '''
-                            logger.error(
-                                'Subdomain {} not found, adding...'.format(_subdomain))
-                            subdomain_dict = DottedDict({
-                                'scan_history': task,
-                                'target_domain': domain,
-                                'name': _subdomain,
-                            })
-                            subdomain = save_subdomain(subdomain_dict)
-                        endpoint_dict = DottedDict({
-                            'scan_history': task,
-                            'target_domain': domain,
-                            'subdomain': subdomain,
-                            'http_url': http_url,
+                        '''
+                        logger.error(
+                            'Subdomain {} not found, adding...'.format(_subdomain))
+                        subdomain_dict = DottedDict({
+                            'scan_history': scan_history,
+                            'target_domain': domain_obj,
+                            'name': _subdomain,
                         })
-                        save_endpoint(endpoint_dict)
+                        subdomain = save_subdomain(subdomain_dict)
+                    endpoint_dict = DottedDict({
+                        'scan_history': scan_history,
+                        'target_domain': domain_obj,
+                        'subdomain': subdomain,
+                        'http_url': http_url,
+                        'subscan': subscan
+                    })
+                    save_endpoint(endpoint_dict)
     except Exception as e:
         logger.error(e)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_output_file:
-        send_files_to_discord(results_dir + '/all_urls.txt')
+        send_files_to_discord(results_dir + '/{}'.format(output_file_name))
 
     '''
     TODO:
@@ -1047,12 +1468,16 @@ def fetch_endpoints(
     '''
     logger.info('HTTP Probing on collected endpoints')
 
-    httpx_command = 'httpx -l {0}/all_urls.txt -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir)
+    httpx_command = 'httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
 
     proxy = get_random_proxy()
     if proxy:
         httpx_command += " --http-proxy '{}'".format(proxy)
 
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        httpx_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
+
+    logger.info(httpx_command)
     os.system(httpx_command)
 
     url_results_file = results_dir + '/final_httpx_urls.json'
@@ -1065,28 +1490,28 @@ def fetch_endpoints(
             _subdomain = get_subdomain_from_url(http_url)
 
             if Subdomain.objects.filter(
-                    scan_history=task).filter(
+                    scan_history=scan_history).filter(
                     name=_subdomain).exists():
                 subdomain_obj = Subdomain.objects.get(
-                    scan_history=task, name=_subdomain)
+                    scan_history=scan_history, name=_subdomain)
             else:
                 subdomain_dict = DottedDict({
-                    'scan_history': task,
+                    'scan_history': scan_history,
                     'target_domain': domain,
                     'name': _subdomain,
                 })
                 subdomain_obj = save_subdomain(subdomain_dict)
 
             if EndPoint.objects.filter(
-                    scan_history=task).filter(
+                    scan_history=scan_history).filter(
                     http_url=http_url).exists():
 
                 endpoint = EndPoint.objects.get(
-                    scan_history=task, http_url=http_url)
+                    scan_history=scan_history, http_url=http_url)
             else:
                 endpoint = EndPoint()
                 endpoint_dict = DottedDict({
-                    'scan_history': task,
+                    'scan_history': scan_history,
                     'target_domain': domain,
                     'http_url': http_url,
                     'subdomain': subdomain_obj
@@ -1118,20 +1543,22 @@ def fetch_endpoints(
                         tech.save()
                     endpoint.technologies.add(tech)
                     # get subdomain object
-                    subdomain = Subdomain.objects.get(scan_history=task, name=_subdomain)
+                    subdomain = Subdomain.objects.get(scan_history=scan_history, name=_subdomain)
                     subdomain.technologies.add(tech)
                     subdomain.save()
     except Exception as exception:
         logging.error(exception)
-        update_last_activity(activity_id, 0)
+        if not subscan:
+            update_last_activity(activity_id, 0)
+        raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         endpoint_count = EndPoint.objects.filter(
-            scan_history__id=task.id).values('http_url').distinct().count()
+            scan_history__id=scan_history.id).values('http_url').distinct().count()
         endpoint_alive_count = EndPoint.objects.filter(
-                scan_history__id=task.id, http_status__exact=200).values('http_url').distinct().count()
+                scan_history__id=scan_history.id, http_status__exact=200).values('http_url').distinct().count()
         send_notification('reNgine has finished gathering endpoints for {} and has discovered *{}* unique endpoints.\n\n{} of those endpoints reported HTTP status 200.'.format(
-            domain.name,
+            domain_name,
             endpoint_count,
             endpoint_alive_count
         ))
@@ -1140,50 +1567,63 @@ def fetch_endpoints(
     # once endpoint is saved, run gf patterns TODO: run threads
     if GF_PATTERNS in yaml_configuration[FETCH_URL]:
         for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
-            logger.info('Running GF for {}'.format(pattern))
-            gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
-                results_dir, pattern)
-            gf_command = 'cat {0}/all_urls.txt | gf {1} >> {2}'.format(
-                results_dir, pattern, gf_output_file_path)
-            os.system(gf_command)
-            if os.path.exists(gf_output_file_path):
-                with open(gf_output_file_path) as gf_output:
-                    for line in gf_output:
-                        url = line.rstrip('\n')
-                        try:
-                            endpoint = EndPoint.objects.get(
-                                scan_history=task, http_url=url)
-                            earlier_pattern = endpoint.matched_gf_patterns
-                            new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
-                            endpoint.matched_gf_patterns = new_pattern
-                        except Exception as e:
-                            # add the url in db
-                            logger.error(e)
-                            logger.info('Adding URL' + url)
-                            endpoint = EndPoint()
-                            endpoint.http_url = url
-                            endpoint.target_domain = domain
-                            endpoint.scan_history = task
+            # TODO: js var is causing issues, removing for now
+            if pattern != 'jsvar':
+                logger.info('Running GF for {}'.format(pattern))
+                gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
+                    results_dir, pattern)
+                gf_command = 'cat {0}/{3} | gf {1} | grep -Eo {4} >> {2} '.format(
+                    results_dir, pattern, gf_output_file_path, output_file_name, valid_url_of_domain_regex)
+                logger.info(gf_command)
+                os.system(gf_command)
+                if os.path.exists(gf_output_file_path):
+                    with open(gf_output_file_path) as gf_output:
+                        for line in gf_output:
+                            url = line.rstrip('\n')
                             try:
-                                _subdomain = Subdomain.objects.get(
-                                    scan_history=task, name=get_subdomain_from_url(url))
-                                endpoint.subdomain = _subdomain
+                                endpoint = EndPoint.objects.get(
+                                    scan_history=scan_history, http_url=url)
+                                earlier_pattern = endpoint.matched_gf_patterns
+                                new_pattern = earlier_pattern + ',' + pattern if earlier_pattern else pattern
+                                endpoint.matched_gf_patterns = new_pattern
                             except Exception as e:
-                                continue
-                            endpoint.matched_gf_patterns = pattern
-                        finally:
-                            endpoint.save()
+                                # add the url in db
+                                logger.error(e)
+                                logger.info('Adding URL ' + url)
+                                endpoint = EndPoint()
+                                endpoint.http_url = url
+                                endpoint.target_domain = domain
+                                endpoint.scan_history = scan_history
+                                try:
+                                    _subdomain = Subdomain.objects.get(
+                                        scan_history=scan_history, name=get_subdomain_from_url(url))
+                                    endpoint.subdomain = _subdomain
+                                except Exception as e:
+                                    continue
+                                endpoint.matched_gf_patterns = pattern
+                            finally:
+                                endpoint.save()
+
+                    os.system('rm -rf {}'.format(gf_output_file_path))
 
 
 def vulnerability_scan(
-        task,
-        domain,
+        scan_history,
+        activity_id,
         yaml_configuration,
         results_dir,
-        activity_id):
+        domain=None,
+        subdomain=None,
+        file_name=None,
+        subscan=None
+    ):
+    logger.info('Initiating Vulnerability Scan')
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
-        send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
+        if domain:
+            send_notification('Vulnerability scan has been initiated for {}.'.format(domain.name))
+        elif subdomain:
+            send_notification('Vulnerability scan has been initiated for {}.'.format(subdomain.name))
     '''
     This function will run nuclei as a vulnerability scanner
     ----
@@ -1191,19 +1631,30 @@ def vulnerability_scan(
     ignore certain file extensions
     Thanks: https://github.com/six2dez/reconftw
     '''
-    urls_path = '/alive.txt'
-    if task.scan_type.fetch_url:
-        os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
-        os.system(
-            'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
-        urls_path = '/unfurl_urls.txt'
+    output_file_name = file_name if file_name else 'vulnerability.json'
+    vulnerability_result_path = results_dir + '/' + output_file_name
 
-    vulnerability_result_path = results_dir + '/vulnerability.json'
 
-    vulnerability_scan_input_file = results_dir + urls_path
+    if domain:
+        urls_path = '/alive.txt'
 
-    nuclei_command = 'nuclei -json -l {} -o {}'.format(
-        vulnerability_scan_input_file, vulnerability_result_path)
+        # TODO: create a object in scan engine, to say deep scan then only use unfurl, otherwise it is time consuming
+
+        # if scan_history.scan_type.fetch_url:
+        #     os.system('cat {0}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {0}/unfurl_urls.txt'.format(results_dir))
+        #     os.system(
+        #         'sort -u {0}/unfurl_urls.txt -o {0}/unfurl_urls.txt'.format(results_dir))
+        #     urls_path = '/unfurl_urls.txt'
+
+        vulnerability_scan_input_file = results_dir + urls_path
+
+        nuclei_command = 'nuclei -json -l {} -o {}'.format(
+            vulnerability_scan_input_file, vulnerability_result_path)
+    else:
+        url_to_scan = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+        nuclei_command = 'nuclei -json -u {} -o {}'.format(url_to_scan, vulnerability_result_path)
+        domain_id = scan_history.domain.id
+        domain = Domain.objects.get(id=domain_id)
 
     # check nuclei config
     if USE_NUCLEI_CONFIG in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[VULNERABILITY_SCAN][USE_NUCLEI_CONFIG]:
@@ -1265,15 +1716,19 @@ def vulnerability_scan(
         # Update nuclei command with concurrent
         nuclei_command = nuclei_command + ' -retries ' + str(retries)
 
-    # for severity
+    if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
+        nuclei_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
+
+    # for severity and new severity in nuclei
     if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
         _severity = ','.join(
             [str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]])
         severity = _severity.replace(" ", "")
     else:
-        severity = "critical, high, medium, low, info"
+        severity = "critical, high, medium, low, info, unknown"
 
     # update nuclei templates before running scan
+    logger.info('Updating Nuclei Templates!')
     os.system('nuclei -update-templates')
 
     for _severity in severity.split(","):
@@ -1285,10 +1740,10 @@ def vulnerability_scan(
 
         proxy = get_random_proxy()
         if proxy:
-            final_nuclei_command += " --proxy-url '{}'".format(proxy)
+            final_nuclei_command += " --proxy-url '{}' ".format(proxy)
 
+        logger.info('Running Nuclei Scanner!')
         logger.info(final_nuclei_command)
-
         os.system(final_nuclei_command)
         try:
             if os.path.isfile(vulnerability_result_path):
@@ -1300,17 +1755,34 @@ def vulnerability_scan(
                     _subdomain = get_subdomain_from_url(host)
                     try:
                         subdomain = Subdomain.objects.get(
-                            name=_subdomain, scan_history=task)
+                            name=_subdomain, scan_history=scan_history)
                         vulnerability = Vulnerability()
                         vulnerability.subdomain = subdomain
-                        vulnerability.scan_history = task
+                        vulnerability.scan_history = scan_history
                         vulnerability.target_domain = domain
-                        try:
+
+                        if EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=host).exists():
                             endpoint = EndPoint.objects.get(
-                                scan_history=task, target_domain=domain, http_url=host)
-                            vulnerability.endpoint = endpoint
-                        except Exception as exception:
-                            logger.error(exception)
+                                scan_history=scan_history,
+                                target_domain=domain,
+                                http_url=host
+                            )
+                        else:
+                            logger.info('Creating Endpoint...')
+                            endpoint_dict = DottedDict({
+                                'scan_history': scan_history,
+                                'target_domain': domain,
+                                'http_url': host,
+                                'subdomain': subdomain
+                            })
+                            endpoint = save_endpoint(endpoint_dict)
+                            logger.info('Endpoint {} created!'.format(host))
+
+                        vulnerability.endpoint = endpoint
+                        vulnerability.template = json_st['template']
+                        vulnerability.template_url = json_st['template-url']
+                        vulnerability.template_id = json_st['template-id']
+
                         if 'name' in json_st['info']:
                             vulnerability.name = json_st['info']['name']
                         if 'severity' in json_st['info']:
@@ -1324,32 +1796,93 @@ def vulnerability_scan(
                                 severity = 3
                             elif json_st['info']['severity'] == 'critical':
                                 severity = 4
+                            elif json_st['info']['severity'] == 'unknown':
+                                severity = -1
                             else:
                                 severity = 0
                         else:
                             severity = 0
                         vulnerability.severity = severity
-                        if 'tags' in json_st['info']:
-                            vulnerability.tags = json_st['info']['tags']
+
                         if 'description' in json_st['info']:
                             vulnerability.description = json_st['info']['description']
-                        if 'reference' in json_st['info']:
-                            vulnerability.reference = json_st['info']['reference']
-                        if 'matched' in json_st:  # TODO remove in rengine 1.1. 'matched' isn't used in nuclei 2.5.3
-                            vulnerability.http_url = json_st['matched']
+
+                        if 'matcher-name' in json_st:
+                            vulnerability.matcher_name = json_st['matcher-name']
+
                         if 'matched-at' in json_st:
                             vulnerability.http_url = json_st['matched-at']
-                        if 'templateID' in json_st:
-                            vulnerability.template_used = json_st['templateID']
-                        if 'description' in json_st:
-                            vulnerability.description = json_st['description']
-                        if 'matcher_name' in json_st:
-                            vulnerability.matcher_name = json_st['matcher_name']
-                        if 'extracted_results' in json_st:
-                            vulnerability.extracted_results = json_st['extracted_results']
+                            # also save matched at as url endpoint
+                            if not EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=json_st['matched-at']).exists():
+                                logger.info('Creating Endpoint...')
+                                endpoint_dict = DottedDict({
+                                    'scan_history': scan_history,
+                                    'target_domain': domain,
+                                    'http_url': json_st['matched-at'],
+                                    'subdomain': subdomain
+                                })
+                                save_endpoint(endpoint_dict)
+                                logger.info('Endpoint {} created!'.format(json_st['matched-at']))
+
+                        if 'curl-command' in json_st:
+                            vulnerability.curl_command = json_st['curl-command']
+
+                        if 'extracted-results' in json_st:
+                            vulnerability.extracted_results = json_st['extracted-results']
+
+                        vulnerability.type = json_st['type']
                         vulnerability.discovered_date = timezone.now()
                         vulnerability.open_status = True
                         vulnerability.save()
+
+                        if 'tags' in json_st['info'] and json_st['info']['tags']:
+                            for tag in json_st['info']['tags']:
+                                if VulnerabilityTags.objects.filter(name=tag).exists():
+                                    tag = VulnerabilityTags.objects.get(name=tag)
+                                else:
+                                    tag = VulnerabilityTags(name=tag)
+                                    tag.save()
+                                vulnerability.tags.add(tag)
+
+                        if 'classification' in json_st['info'] and 'cve-id' in json_st['info']['classification'] and json_st['info']['classification']['cve-id']:
+                            for cve in json_st['info']['classification']['cve-id']:
+                                if CveId.objects.filter(name=cve).exists():
+                                    cve_obj = CveId.objects.get(name=cve)
+                                else:
+                                    cve_obj = CveId(name=cve)
+                                    cve_obj.save()
+                                vulnerability.cve_ids.add(cve_obj)
+
+                        if 'classification' in json_st['info'] and 'cwe-id' in json_st['info']['classification'] and json_st['info']['classification']['cwe-id']:
+                            for cwe in json_st['info']['classification']['cwe-id']:
+                                if CweId.objects.filter(name=cwe).exists():
+                                    cwe_obj = CweId.objects.get(name=cwe)
+                                else:
+                                    cwe_obj = CweId(name=cwe)
+                                    cwe_obj.save()
+                                vulnerability.cwe_ids.add(cwe_obj)
+
+                        if 'classification' in json_st['info']:
+                            if 'cvss-metrics' in json_st['info']['classification']:
+                                vulnerability.cvss_metrics = json_st['info']['classification']['cvss-metrics']
+                            if 'cvss-score' in json_st['info']['classification']:
+                                vulnerability.cvss_score = json_st['info']['classification']['cvss-score']
+
+                        if 'reference' in json_st['info'] and json_st['info']['reference']:
+                            for ref_url in json_st['info']['reference']:
+                                if VulnerabilityReference.objects.filter(url=ref_url).exists():
+                                    reference = VulnerabilityReference.objects.get(url=ref_url)
+                                else:
+                                    reference = VulnerabilityReference(url=ref_url)
+                                    reference.save()
+                                vulnerability.references.add(reference)
+
+                        vulnerability.save()
+
+                        if subscan:
+                            vulnerability.vuln_subscan_ids.add(subscan)
+                            vulnerability.save()
+
                         # send notification for all vulnerabilities except info
                         if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:
                             message = "*Alert: Vulnerability Identified*"
@@ -1370,27 +1903,29 @@ def vulnerability_scan(
                                 send_hackerone_report(vulnerability.id)
                             elif hackerone.send_medium and json_st['info']['severity'] == 'medium':
                                 send_hackerone_report(vulnerability.id)
-
                     except ObjectDoesNotExist:
                         logger.error('Object not found')
-                        continue
 
         except Exception as exception:
             logging.error(exception)
-            update_last_activity(activity_id, 0)
+            if not subscan:
+                update_last_activity(activity_id, 0)
+            raise Exception(exception)
 
     if notification and notification[0].send_scan_status_notif:
         info_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=0).count()
+            scan_history__id=scan_history.id, severity=0).count()
         low_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=1).count()
+            scan_history__id=scan_history.id, severity=1).count()
         medium_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=2).count()
+            scan_history__id=scan_history.id, severity=2).count()
         high_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=3).count()
+            scan_history__id=scan_history.id, severity=3).count()
         critical_count = Vulnerability.objects.filter(
-            scan_history__id=task.id, severity=4).count()
-        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count
+            scan_history__id=scan_history.id, severity=4).count()
+        unknown_count = Vulnerability.objects.filter(
+            scan_history__id=scan_history.id, severity=-1).count()
+        vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
 
         message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
             domain.name,
@@ -1402,19 +1937,20 @@ def vulnerability_scan(
         message += '\nMedium: {}'.format(medium_count)
         message += '\nLow: {}'.format(low_count)
         message += '\nInfo: {}'.format(info_count)
+        message += '\nUnknown: {}'.format(unknown_count)
 
         send_notification(message)
 
 
-def scan_failed(task):
-    task.scan_status = 0
-    task.stop_scan_date = timezone.now()
-    task.save()
+def scan_failed(scan_history):
+    scan_history.scan_status = 0
+    scan_history.stop_scan_date = timezone.now()
+    scan_history.save()
 
 
-def create_scan_activity(task, message, status):
+def create_scan_activity(scan_history, message, status):
     scan_activity = ScanActivity()
-    scan_activity.scan_of = task
+    scan_activity.scan_of = scan_history
     scan_activity.title = message
     scan_activity.time = timezone.now()
     scan_activity.status = status
@@ -1422,10 +1958,11 @@ def create_scan_activity(task, message, status):
     return scan_activity.id
 
 
-def update_last_activity(id, activity_status):
+def update_last_activity(id, activity_status, error_message=None):
     ScanActivity.objects.filter(
         id=id).update(
         status=activity_status,
+        error_message=error_message,
         time=timezone.now())
 
 
@@ -1483,23 +2020,29 @@ def save_endpoint(endpoint_dict):
     endpoint.is_default = endpoint_dict.get('is_default') if 'is_default' in endpoint_dict else False
     endpoint.save()
 
+    if endpoint_dict.get('subscan'):
+        endpoint.endpoint_subscan_ids.add(endpoint_dict.get('subscan'))
+        endpoint.save()
+
     return endpoint
 
-def perform_osint(task, domain, yaml_configuration, results_dir):
+
+def perform_osint(scan_history, domain, yaml_configuration, results_dir):
     notification = Notification.objects.all()
     if notification and notification[0].send_scan_status_notif:
         send_notification('reNgine has initiated OSINT on target {}'.format(domain.name))
 
     if 'discover' in yaml_configuration[OSINT]:
-        osint_discovery(task, domain, yaml_configuration, results_dir)
+        osint_discovery(scan_history, domain, yaml_configuration, results_dir)
 
     if 'dork' in yaml_configuration[OSINT]:
-        dorking(task, yaml_configuration)
+        dorking(scan_history, yaml_configuration)
 
     if notification and notification[0].send_scan_status_notif:
         send_notification('reNgine has completed performing OSINT on target {}'.format(domain.name))
 
-def osint_discovery(task, domain, yaml_configuration, results_dir):
+
+def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
     if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
         osint_lookup = 'emails metainfo employees'
     else:
@@ -1521,28 +2064,28 @@ def osint_discovery(task, domain, yaml_configuration, results_dir):
             meta_dict = DottedDict({
                 'osint_target': domain.name,
                 'domain': domain,
-                'scan_id': task,
+                'scan_id': scan_history,
                 'documents_limit': documents_limit
             })
             get_and_save_meta_info(meta_dict)
         elif osint_intensity == 'deep':
             # get all subdomains in scan_id
-            subdomains = Subdomain.objects.filter(scan_history=task)
+            subdomains = Subdomain.objects.filter(scan_history=scan_history)
             for subdomain in subdomains:
                 meta_dict = DottedDict({
                     'osint_target': subdomain.name,
                     'domain': domain,
-                    'scan_id': task,
+                    'scan_id': scan_history,
                     'documents_limit': documents_limit
                 })
                 get_and_save_meta_info(meta_dict)
 
     if 'emails' in osint_lookup:
-        get_and_save_emails(task, results_dir)
-        get_and_save_leaked_credentials(task, results_dir)
+        get_and_save_emails(scan_history, results_dir)
+        get_and_save_leaked_credentials(scan_history, results_dir)
 
     if 'employees' in osint_lookup:
-        get_and_save_employees(task, results_dir)
+        get_and_save_employees(scan_history, results_dir)
 
 def dorking(scan_history, yaml_configuration):
     # Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
@@ -1838,6 +2381,7 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
         )
         scan_history.dorks.add(dork)
 
+
 def get_and_save_employees(scan_history, results_dir):
     theHarvester_location = '/usr/src/github/theHarvester'
 
@@ -1938,6 +2482,7 @@ def get_and_save_emails(scan_history, results_dir):
 
     leak_target_file.close()
 
+
 def get_and_save_leaked_credentials(scan_history, results_dir):
     logger.info('OSINT: Getting leaked credentials...')
 
@@ -2006,9 +2551,3 @@ def get_and_save_meta_info(meta_dict):
                     meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
 
             meta_finder_document.save()
-
-@app.task(bind=True)
-def test_task(self):
-    print('*' * 40)
-    print('test task run')
-    print('*' * 40)

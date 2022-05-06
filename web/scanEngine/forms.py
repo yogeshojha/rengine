@@ -12,39 +12,56 @@ class AddEngineForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
-                "placeholder": "Custom Engine"}))
+                "placeholder": "Engine Name"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "class": "switch",
+        }))
     screenshot = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
-    dir_file_search = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "class": "switch",
+        }))
+    dir_file_fuzz = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={}))
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     vulnerability_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "checked": "",
+            "class": "switch",
+        }))
     osint = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput(attrs={"checked": ""}))
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
-        theme="monokai",
+        theme="tomorrow_night_eighties",
         width="100%",
         height="450px",
-        tabsize=4,
-        fontsize=13,
-        toolbar=True,
-        attrs={"id": "editor", "value": "ok"}))
+        tabsize=2,
+        fontsize='17px',
+        showinvisibles=True,
+        attrs={"id": "editor"}))
 
 
 class UpdateEngineForm(forms.ModelForm):
@@ -55,43 +72,58 @@ class UpdateEngineForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Custom Engine"}))
     subdomain_discovery = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     screenshot = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
-    dir_file_search = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
+    dir_file_fuzz = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     port_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     fetch_url = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     vulnerability_scan = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     osint = forms.BooleanField(
         required=False,
-        widget=forms.CheckboxInput())
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
-        theme="monokai",
+        theme="tomorrow_night_eighties",
         width="100%",
         height="450px",
-        tabsize=4,
-        fontsize=13,
-        toolbar=True,))
+        tabsize=2,
+        fontsize='17px',
+        showinvisibles=True,
+        attrs={"id": "editor"}))
 
     def set_value(self, engine):
         self.initial['engine_name'] = engine.engine_name
         self.initial['subdomain_discovery'] = engine.subdomain_discovery
-        self.initial['dir_file_search'] = engine.dir_file_search
+        self.initial['dir_file_fuzz'] = engine.dir_file_fuzz
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
         self.initial['yaml_configuration'] = engine.yaml_configuration
@@ -104,7 +136,7 @@ class AddWordlistForm(forms.Form):
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
-            attrs={'class': 'form-control',
+            attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
                    'placeholder': 'my awesome wordlist', }))
     short_name = forms.CharField(
@@ -112,13 +144,13 @@ class AddWordlistForm(forms.Form):
         validators=[validate_short_name],
         widget=forms.TextInput(
             attrs={
-                'class': 'form-control',
+                'class': 'form-control form-control-lg',
                 'id': 'short_name',
                 'placeholder': 'my_awesome_wordlist', }))
     upload_file = forms.FileField(
         required=True,
         widget=forms.FileInput(
-            attrs={'class': 'custom-file-input',
+            attrs={'class': 'form-control',
                    'id': 'txtFile',
                    'multiple': '',
                    'accept': '.txt', }))
@@ -131,7 +163,7 @@ class ConfigurationForm(forms.ModelForm):
     name = forms.CharField(
         required=True,
         widget=forms.TextInput(
-            attrs={'class': 'form-control',
+            attrs={'class': 'form-control form-control-lg',
                    'id': 'name',
                    'placeholder': 'Configuration Name', }))
     short_name = forms.CharField(
@@ -139,7 +171,7 @@ class ConfigurationForm(forms.ModelForm):
         validators=[validate_short_name],
         widget=forms.TextInput(
             attrs={
-                'class': 'form-control',
+                'class': 'form-control form-control-lg',
                 'id': 'short_name',
                 'placeholder': 'my_awesome_configuration', }))
     content = forms.CharField(widget=AceWidget(
@@ -165,7 +197,7 @@ class InterestingLookupForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "keywords",
                 "placeholder": "Interesting Keywords",
             }))
@@ -181,21 +213,24 @@ class InterestingLookupForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "title_lookup"
             }))
 
     url_lookup = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "url_lookup"
             }))
 
     condition_200_http_lookup = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
+                "id": "condition_200_http_lookup"
             }))
 
     def set_value(self, key):
@@ -220,7 +255,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "slack_checkbox",
             }))
 
@@ -237,7 +272,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "discord_checkbox",
             }))
 
@@ -254,7 +289,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "telegram_checkbox",
             }))
 
@@ -280,7 +315,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_scan_status_notif",
             }))
 
@@ -288,7 +323,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_interesting_notif",
             }))
 
@@ -297,7 +332,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_vuln_notif",
             }))
 
@@ -306,7 +341,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_subdomain_changes_notif",
             }))
 
@@ -315,7 +350,7 @@ class NotificationForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "custom-control-input",
+                "class": "form-check-input",
                 "id": "send_scan_output_file",
             }))
 
@@ -373,7 +408,7 @@ class ProxyForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "use_proxy",
             }))
 
@@ -409,7 +444,7 @@ class HackeroneForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "username",
                 "placeholder": "Your Hackerone Username",
             }))
@@ -418,7 +453,7 @@ class HackeroneForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "form-control",
+                "class": "form-control form-control-lg",
                 "id": "api_key",
                 "placeholder": "Hackerone API Token",
             }))
@@ -427,7 +462,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_critical",
             }))
 
@@ -435,7 +470,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_high",
             }))
 
@@ -443,7 +478,7 @@ class HackeroneForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "new-control-input",
+                "class": "form-check-input",
                 "id": "send_medium",
             }))
 
@@ -487,3 +522,252 @@ class HackeroneForm(forms.ModelForm):
 - {vulnerability_reference}
 
 Thank you'''
+
+
+class ReportForm(forms.ModelForm):
+    class Meta:
+        model = VulnerabilityReportSetting
+        fields = '__all__'
+
+    company_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "company_name",
+                "placeholder": "Company Name",
+            }))
+
+    company_address = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "company_address",
+                "placeholder": "Company Address",
+            }))
+
+    company_website = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "company_website",
+                "placeholder": "Company Website https://company.com",
+            }))
+
+    company_email = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "company_email",
+                "placeholder": "email@yourcompany.com",
+            }))
+
+    show_footer = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "show_footer",
+            }))
+
+    footer_text = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+        attrs={
+            "class": "form-control form-control-lg",
+            "id": "footer_text",
+            "aria-label": "switch",
+            "placeholder": "Footer Text © Your Company",
+        }))
+
+    show_rengine_banner = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "show_rengine_banner",
+            }))
+
+    show_executive_summary = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "show_executive_summary",
+            }))
+
+    executive_summary_description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "id": "executive_summary_description"
+            }))
+
+    primary_color = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "id": "primary_color",
+                "hidden": "true"
+            }))
+
+    secondary_color = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "id": "secondary_color",
+                "hidden": "true"
+            }))
+
+    def set_value(self, key):
+        self.initial['company_name'] = key.company_name
+        self.initial['company_address'] = key.company_address
+        self.initial['company_website'] = key.company_website
+        self.initial['company_email'] = key.company_email
+        self.initial['show_rengine_banner'] = key.show_rengine_banner
+        self.initial['show_executive_summary'] = key.show_executive_summary
+        self.initial['executive_summary_description'] = key.executive_summary_description
+        self.initial['show_footer'] = key.show_footer
+        self.initial['footer_text'] = key.footer_text
+        self.initial['primary_color'] = key.primary_color
+        self.initial['secondary_color'] = key.secondary_color
+
+    def set_initial(self):
+        self.initial['show_rengine_banner'] = True
+        self.initial['show_footer'] = False
+        self.initial['show_executive_summary'] = False
+        self.initial['primary_color'] = '#FFB74D'
+        self.initial['secondary_color'] = '#212121'
+        self.initial['executive_summary_description'] = '''On **{scan_date}**, **{target_name}** engaged **{company_name}** to perform a security audit on their Web application.
+
+**{company_name}** performed both Security Audit and Reconnaissance using automated tool reNgine. https://github.com/yogeshojha/rengine .
+
+## Observations
+
+During the course of this engagement **{company_name}** was able to discover **{subdomain_count}** Subdomains and  **{vulnerability_count}** Vulnerabilities, including informational vulnerabilities and these could pose a significant risk to the security of the application.
+
+The breakdown of the Vulnerabilities Identified in **{target_name}** by severity are as follows:
+
+* Critical : {critical_count}
+* High : {high_count}
+* Medium : {medium_count}
+* Low : {low_count}
+* Info : {info_count}
+* Unknown : {unknown_count}
+
+**{company_name}** recommends that these issues be addressed in timely manner.
+
+'''
+
+
+class ExternalToolForm(forms.ModelForm):
+    class Meta:
+        model = InstalledExternalTool
+        fields = '__all__'
+
+    name = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "tool_name",
+                "placeholder": "My Awesome Tool"}))
+
+    github_url = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "github_url",
+                "placeholder": "https://github.com/"}))
+
+    license_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "license_url",
+                "placeholder": "https://github.com/user/tool/blob/master/LICENSE.md"}))
+
+    logo_url = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "logo_url",
+                "placeholder": "http://example.com/logo.png"}))
+
+    description = forms.CharField(
+        required=True,
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "id": "tool_description",
+                "placeholder": "Explain what this tool is used for.",
+                "rows": 2
+            }
+        ))
+
+    install_command = forms.CharField(
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "install_command",
+                "placeholder": "Tool Installation Command"}))
+
+    update_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "update_command",
+                "placeholder": "Tool Update Command"}))
+
+    version_match_regex = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "version_match_regex",
+                "value": "[vV]*(\d+\.)?(\d+\.)?(\*|\d+)"
+                }))
+
+    version_lookup_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "version_lookup_command"}))
+
+    is_subdomain_gathering = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "id": "is_subdomain_gathering",
+            "class": "switch",
+        }))
+
+    subdomain_gathering_command = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "id": "subdomain_gathering_command",
+                "placeholder": "Subdomain Gathering Command",
+                "value": "tool_name -d {TARGET} -o {OUTPUT}"
+                }))
+
+    def set_value(self, key):
+        self.initial['name'] = key.name
+        self.initial['github_url'] = key.github_url
+        self.initial['license_url'] = key.license_url
+        self.initial['logo_url'] = key.logo_url
+        self.initial['description'] = key.description
+        self.initial['install_command'] = key.install_command
+        self.initial['update_command'] = key.update_command
+        self.initial['version_match_regex'] = key.version_match_regex
+        self.initial['version_lookup_command'] = key.version_lookup_command
+        self.initial['subdomain_gathering_command'] = key.subdomain_gathering_command
