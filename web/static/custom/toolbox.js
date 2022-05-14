@@ -258,7 +258,7 @@ function toolbox_waf_detector(){
 	$('#modal-content').append(`
 		<div class="mb-1">
 			<label for="cms_detector_input_url" class="form-label">HTTP URL/Domain Name</label>
-			<input class="form-control" type="text" id="waf_detector_input_url" required="" placeholder="https://yourdomain.com" value="https://yogeshojha.com">
+			<input class="form-control" type="text" id="waf_detector_input_url" required="" placeholder="https://yourdomain.com">
 		</div>
 		<small class="mb-3 float-end text-muted">(reNgine uses <a href="https://github.com/EnableSecurity/wafw00f" target="_blank">wafw00f</a> to detect WAF.)</span>
 		<div class="mt-3 mb-3 text-center">
