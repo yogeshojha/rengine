@@ -40,6 +40,28 @@ from packaging import version
 from reNgine.celery import app
 from django.utils import timezone
 
+class WafDetector(APIView):
+	def get(self, request):
+		req = self.request
+		url= req.query_params.get('url')
+		response = {}
+		response['status'] = False
+		response['results'] = 'Could not detect any WAF!'
+
+		wafw00f_command = 'wafw00f {}'.format(
+			url
+		)
+		output = subprocess.check_output(wafw00f_command, shell=True)
+		# use regex to get the waf
+		regex = "behind \\\\x1b\[1;96m(.*)\\\\x1b"
+		group = re.search(regex, str(output))
+
+		if group:
+			response['status'] = True
+			response['results'] = group.group(1)
+
+		return Response(response)
+
 
 class SearchHistoryView(APIView):
 	def get(self, request):
