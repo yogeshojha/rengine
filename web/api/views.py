@@ -46,7 +46,6 @@ class WafDetector(APIView):
 		url= req.query_params.get('url')
 		response = {}
 		response['status'] = False
-		response['results'] = 'Could not detect any WAF!'
 
 		wafw00f_command = 'wafw00f {}'.format(
 			url
@@ -59,6 +58,8 @@ class WafDetector(APIView):
 		if group:
 			response['status'] = True
 			response['results'] = group.group(1)
+		else:
+			response['message'] = 'Could not detect any WAF!'
 
 		return Response(response)
 
