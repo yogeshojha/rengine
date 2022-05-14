@@ -7,7 +7,7 @@ Thank you for your interest in reporting vulnerabilities to reNgine! If you are 
 
 **Please do not disclose any vulnerabilities via Github Issues/Blogs/Tweets after/before reporting on huntr.dev as it is explicitly against huntr.dev and reNgine disclosure policy and will not be eligible for monetary rewards.**
 
-Please note that the maintainer of reNgine does not determine the bounty amount. 
+Please note that the maintainer of reNgine does not determine the bounty amount.
 The bounty reward is determined by industry-first equation from huntr.dev to understand the popularity, impact and value of repositories to the open source community.
 
 **What do we expect from security researchers?**
@@ -31,6 +31,8 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/347) on Vulnerability Scan page via URL Parameter, Reported by [Arif Khan, payloadartist](https://twitter.com/payloadartist)
 
 * Several Instances of XSS in reNgine 1.0 (#460, #459, #458, #457, #456, #455), Reported by [Binit Ghimire](https://github.com/TheBinitGhimire)
+
+* [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
 
 **reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine safer!**
 

@@ -325,7 +325,7 @@ Add or Import Targets
   });
 
   function showname (file, id) {
-    $(id).html('Selected file: ' + file.files.item(0).name);
+    $(id).html('Selected file: ' + htmlEncode(file.files.item(0).name));
   };
 
   function show_whois(){
