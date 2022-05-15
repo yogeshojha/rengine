@@ -32,7 +32,7 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 
 * Several Instances of XSS in reNgine 1.0 (#460, #459, #458, #457, #456, #455), Reported by [Binit Ghimire](https://github.com/TheBinitGhimire)
 
-* [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
+* [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veshraj Ghimire](https://github.com/V35HR4J)
 
 **reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine safer!**
 
