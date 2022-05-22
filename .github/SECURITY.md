@@ -26,6 +26,8 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 
 ## Past Security Vulnerabilities
 
+Thanks to these individuals for reporting Security Issues in reNgine.
+
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/178) on Detail Scan Page via Page Title Parameter, Reported by [omemishra](https://github.com/omemishra)
 
 * [Stored XSS](https://github.com/yogeshojha/rengine/issues/347) on Vulnerability Scan page via URL Parameter, Reported by [Arif Khan, payloadartist](https://twitter.com/payloadartist)
@@ -33,6 +35,10 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 * Several Instances of XSS in reNgine 1.0 (#460, #459, #458, #457, #456, #455), Reported by [Binit Ghimire](https://github.com/TheBinitGhimire)
 
 * [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
+
+* [Stored XSS](https://huntr.dev/bounties/8ea5d3a6-f857-45e4-9473-e4d9cb8f7c77/) on HackerOne Markdown template, Reported by [Smaran Chand](https://github.com/smaranchand) and [Ayoub Elaich](https://github.com/sicks3c)
+
+
 
 **reNgine thanks the following people for making a responsible disclosure and helping the community make reNgine safer!**
 
