@@ -32,6 +32,8 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 
 * [HIGH] [Blind command injection](https://huntr.dev/bounties/b255cf59-9ecd-4255-b9a2-b40b5ec6c572/) in CMS Detector, Reported by [Abdulrahman Abdullah](https://github.com/ph33rr)
 
+* [HIGH] [Command Injection](https://huntr.dev/bounties/00e10ef7-ff5e-450f-84ae-88c793d1a607/) in via Proxy, Reported by [Koen Molenaar](https://github.com/k0enm)
+
 * [LOW] [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
 
 * [LOW] [Stored XSS](https://huntr.dev/bounties/8ea5d3a6-f857-45e4-9473-e4d9cb8f7c77/) on HackerOne Markdown template, Reported by [Smaran Chand](https://github.com/smaranchand) and [Ayoub Elaich](https://github.com/sicks3c)

@@ -776,17 +776,18 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 	proxy = get_random_proxy()
 
 	if proxy:
-		httpx_command += " --http-proxy '{}' ".format(proxy)
+		httpx_command += " --http-proxy {} ".format(proxy)
 
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
-	httpx_command += ' -json -o {} '.format(
-		httpx_results_file
+	httpx_command += ' -json -o {} -l {}'.format(
+		httpx_results_file,
+		subdomain_scan_results_file
 	)
-	httpx_command = 'cat {} | {}'.format(subdomain_scan_results_file, httpx_command)
-	print(httpx_command)
-	os.system(httpx_command)
+	logger.info(httpx_command)
+	process = subprocess.Popen(httpx_command.split())
+	process.wait()
 
 	# alive subdomains from httpx
 	alive_file = open(alive_file_location, 'w')
@@ -916,7 +917,8 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 
 	logger.info(eyewitness_command)
 
-	os.system(eyewitness_command)
+	process = subprocess.Popen(eyewitness_command.split())
+	process.wait()
 
 	if os.path.isfile(result_csv_path):
 		logger.info('Gathering Eyewitness results')
@@ -1014,7 +1016,8 @@ def port_scanning(
 
 	# run naabu
 	logger.info(naabu_command)
-	os.system(naabu_command)
+	process = subprocess.Popen(naabu_command.split())
+	process.wait()
 
 	# writing port results
 	try:
