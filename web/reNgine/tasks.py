@@ -1099,7 +1099,8 @@ def check_waf(scan_history, results_dir):
 
 		logger.info(wafw00f_command)
 
-		os.system(wafw00f_command)
+		process = subprocess.Popen(wafw00f_command.split())
+		process.wait()
 
 		# check if wafw00f has generated output file
 		if os.path.isfile(output_file_name):
@@ -1296,7 +1297,9 @@ def directory_fuzz(
 		)
 
 		logger.info(command)
-		os.system(command)
+		process = subprocess.Popen(command.split())
+		process.wait()
+
 		try:
 			if os.path.isfile(dirs_results):
 				with open(dirs_results, "r") as json_file:
@@ -1423,7 +1426,8 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(gauplus_command)
-			os.system(gauplus_command)
+			process = subprocess.Popen(gauplus_command.split())
+			process.wait()
 
 		elif tool == 'hakrawler':
 			logger.info('Running hakrawler')
@@ -1433,6 +1437,8 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(hakrawler_command)
+			process = subprocess.Popen(hakrawler_command.split())
+			process.wait()
 			os.system(hakrawler_command)
 		elif tool == 'waybackurls':
 			logger.info('Running waybackurls')
@@ -1442,7 +1448,9 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(waybackurls_command)
-			os.system(waybackurls_command)
+			process = subprocess.Popen(waybackurls_command.split())
+			process.wait()
+
 		elif tool == 'gospider':
 			logger.info('Running gospider')
 			if subdomain:
@@ -1457,9 +1465,9 @@ def fetch_endpoints(
 				valid_url_of_domain_regex,
 				results_dir
 			)
-
 			logger.info(gospider_command)
-			os.system(gospider_command)
+			process = subprocess.Popen(gospider_command.split())
+			process.wait()
 
 	# run cleanup of urls
 	os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
@@ -1548,13 +1556,14 @@ def fetch_endpoints(
 
 	proxy = get_random_proxy()
 	if proxy:
-		httpx_command += " --http-proxy '{}'".format(proxy)
+		httpx_command += " --http-proxy {} ".format(proxy)
 
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-		httpx_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
+		httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
 	logger.info(httpx_command)
-	os.system(httpx_command)
+	process = subprocess.Popen(httpx_command.split())
+	process.wait()
 
 	url_results_file = results_dir + '/final_httpx_urls.json'
 	try:
@@ -1831,7 +1840,9 @@ def vulnerability_scan(
 
 		logger.info('Running Nuclei Scanner!')
 		logger.info(final_nuclei_command)
-		os.system(final_nuclei_command)
+		process = subprocess.Popen(final_nuclei_command.split())
+		process.wait()
+
 		try:
 			if os.path.isfile(vulnerability_result_path):
 				urls_json_result = open(vulnerability_result_path, 'r')
