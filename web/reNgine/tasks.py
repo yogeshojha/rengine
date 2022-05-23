@@ -551,7 +551,8 @@ def subdomain_scan(
 						amass_command += ' -config /root/.config/amass.ini'
 					# Run Amass Passive
 					logging.info(amass_command)
-					os.system(amass_command)
+					process = subprocess.Popen(amass_command.split())
+					process.wait()
 
 				elif tool == 'amass-active':
 					amass_command = 'amass enum -active -d {} -o {}/from_amass_active.txt'.format(
@@ -573,7 +574,8 @@ def subdomain_scan(
 
 					# Run Amass Active
 					logging.info(amass_command)
-					os.system(amass_command)
+					process = subprocess.Popen(amass_command.split())
+					process.wait()
 
 				elif tool == 'assetfinder':
 					assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
@@ -581,7 +583,8 @@ def subdomain_scan(
 
 					# Run Assetfinder
 					logging.info(assetfinder_command)
-					os.system(assetfinder_command)
+					process = subprocess.Popen(assetfinder_command.split())
+					process.wait()
 
 				elif tool == 'sublist3r':
 					sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
@@ -589,7 +592,8 @@ def subdomain_scan(
 
 					# Run sublist3r
 					logging.info(sublist3r_command)
-					os.system(sublist3r_command)
+					process = subprocess.Popen(sublist3r_command.split())
+					process.wait()
 
 				elif tool == 'subfinder':
 					subfinder_command = 'subfinder -d {} -t {} -o {}/from_subfinder.txt'.format(
@@ -600,7 +604,8 @@ def subdomain_scan(
 
 					# Run Subfinder
 					logging.info(subfinder_command)
-					os.system(subfinder_command)
+					process = subprocess.Popen(subfinder_command.split())
+					process.wait()
 
 				elif tool == 'oneforall':
 					oneforall_command = 'python3 /usr/src/github/OneForAll/oneforall.py --target {} run'.format(
@@ -608,7 +613,8 @@ def subdomain_scan(
 
 					# Run OneForAll
 					logging.info(oneforall_command)
-					os.system(oneforall_command)
+					process = subprocess.Popen(oneforall_command.split())
+					process.wait()
 
 					extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
 						domain.name, results_dir)
@@ -631,7 +637,8 @@ def subdomain_scan(
 						execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
 						execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
 						logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
-						os.system(execution_command)
+						process = subprocess.Popen(execution_command.split())
+						process.wait()
 					else:
 						logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
 	except Exception as e:

@@ -30,6 +30,8 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 
 ### 2022
 
+* [HIGH] [Blind command injection](https://huntr.dev/bounties/b255cf59-9ecd-4255-b9a2-b40b5ec6c572/) in CMS Detector, Reported by [Abdulrahman Abdullah](https://github.com/ph33rr)
+
 * [LOW] [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
 
 * [LOW] [Stored XSS](https://huntr.dev/bounties/8ea5d3a6-f857-45e4-9473-e4d9cb8f7c77/) on HackerOne Markdown template, Reported by [Smaran Chand](https://github.com/smaranchand) and [Ayoub Elaich](https://github.com/sicks3c)
@@ -37,6 +39,7 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 * [LOW] [Stored XSS](https://huntr.dev/bounties/6e2b7f19-d457-4e05-b2d5-888110898147/) via Scan Engine Name, Reported by [nerrorsec](https://github.com/nerrorsec)
 
 * [LOW] [HTML Injection](https://huntr.dev/bounties/da2d32a1-8faf-453d-8fa8-c264fd8d7806/) in Subscan, Reported by [nerrorsec](https://github.com/nerrorsec)
+
 
 ### 2021
 * [LOW] [Stored XSS](https://github.com/yogeshojha/rengine/issues/178) on Detail Scan Page via Page Title Parameter, Reported by [omemishra](https://github.com/omemishra)
