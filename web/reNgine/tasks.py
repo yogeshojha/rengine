@@ -1836,7 +1836,7 @@ def vulnerability_scan(
 
 		proxy = get_random_proxy()
 		if proxy:
-			final_nuclei_command += " --proxy-url '{}' ".format(proxy)
+			final_nuclei_command += " -proxy {} ".format(proxy)
 
 		logger.info('Running Nuclei Scanner!')
 		logger.info(final_nuclei_command)
