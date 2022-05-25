@@ -1418,6 +1418,7 @@ def fetch_endpoints(
 				input_target = 'cat {}'.format(sorted_subdomains_path)
 			else:
 				input_target = 'echo {}'.format(domain_name)
+
 		if tool == 'gauplus':
 			logger.info('Running Gauplus')
 			gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
@@ -1426,20 +1427,18 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(gauplus_command)
-			process = subprocess.Popen(gauplus_command.split())
-			process.wait()
+			os.system(gauplus_command)
 
 		elif tool == 'hakrawler':
 			logger.info('Running hakrawler')
-			hakrawler_command = '{} | hakrawler | grep -Eo {} > {}/urls_hakrawler.txt'.format(
+			hakrawler_command = '{} | hakrawler -subs -u | grep -Eo {} > {}/urls_hakrawler.txt'.format(
 				input_target,
 				valid_url_of_domain_regex,
 				results_dir
 			)
 			logger.info(hakrawler_command)
-			process = subprocess.Popen(hakrawler_command.split())
-			process.wait()
 			os.system(hakrawler_command)
+
 		elif tool == 'waybackurls':
 			logger.info('Running waybackurls')
 			waybackurls_command = '{} | waybackurls | grep -Eo {} > {}/urls_waybackurls.txt'.format(
@@ -1448,8 +1447,7 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(waybackurls_command)
-			process = subprocess.Popen(waybackurls_command.split())
-			process.wait()
+			os.system(waybackurls_command)
 
 		elif tool == 'gospider':
 			logger.info('Running gospider')
@@ -1466,8 +1464,7 @@ def fetch_endpoints(
 				results_dir
 			)
 			logger.info(gospider_command)
-			process = subprocess.Popen(gospider_command.split())
-			process.wait()
+			os.system(gospider_command)
 
 	# run cleanup of urls
 	os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
