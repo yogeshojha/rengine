@@ -1,6 +1,23 @@
 # Changelog
 
-## 🏷️ 1.1 [Current Release]
+## 1.2.0
+**Release Date: May 27, 2022**
+
+### Added
+
+- Naabu Exclude CDN Port Scanning
+- Added WAF Detection
+
+### Fixes
+
+- Fix #630 Character Name too Long Issue
+- [Security] Fixed several instances of Command Injections, CVE-2022-28995, CVE-2022-1813
+- Hakrawler Fixed - #623
+- Fixed XSS on Hackerone report via Markdown
+- Fixed XSS on Import Target using malicious filename
+- Stop Scan Fixed #561
+
+## 🏷️ 1.1.0
 **Release Date: Apr 24, 2022**
 
 - Redeigned UI
