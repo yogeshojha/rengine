@@ -986,6 +986,9 @@ def port_scanning(
 			port_results_file
 		)
 
+	# exclude cdn port scanning
+	naabu_command += ' -exclude-cdn '
+
 	# check the yaml_configuration and choose the ports to be scanned
 	scan_ports = '-'  # default port scan everything
 	if PORTS in yaml_configuration[PORT_SCAN]:
