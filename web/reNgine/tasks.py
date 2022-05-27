@@ -12,7 +12,8 @@ import metafinder.extractor as metadata_extractor
 import whatportis
 import subprocess
 
-
+from random import randint
+from time import sleep
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium import webdriver
 from emailfinder.extractor import *
@@ -960,6 +961,8 @@ def port_scanning(
 		file_name=None,
 		subscan=None
 	):
+	# Random sleep to prevent ip and port being overwritten
+	sleep(randint(1,5))
 	'''
 	This function is responsible for running the port scan
 	'''
@@ -1035,25 +1038,26 @@ def port_scanning(
 			else:
 				port = Port()
 				port.number = port_number
-			if port_number in UNCOMMON_WEB_PORTS:
-				port.is_uncommon = True
-			port_detail = whatportis.get_ports(str(port_number))
 
-			if len(port_detail):
-				port.service_name = port_detail[0].name
-				port.description = port_detail[0].description
-			port.save()
+				if port_number in UNCOMMON_WEB_PORTS:
+					port.is_uncommon = True
+				port_detail = whatportis.get_ports(str(port_number))
+
+				if len(port_detail):
+					port.service_name = port_detail[0].name
+					port.description = port_detail[0].description
+
+				port.save()
 
 			if IpAddress.objects.filter(address=ip_address).exists():
 				ip = IpAddress.objects.get(address=ip_address)
-				ip.ports.add(port)
-				ip.save()
 			else:
 				# create a new ip
 				ip = IpAddress()
 				ip.address = ip_address
 				ip.save()
-				ip.ports.add(port)
+			ip.ports.add(port)
+			ip.save()
 
 			if subscan:
 				ip.ip_subscan_ids.add(subscan)
