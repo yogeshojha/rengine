@@ -176,6 +176,11 @@
             else{
               window.localStorage.setItem('update_available', false);
               $('.rengine_update_available').hide();
+              Swal.fire({
+                title: 'Update not available',
+                text: 'You are running the latest version of reNgine!',
+                icon: 'info'
+              });
             }
           });
         }
@@ -191,11 +196,7 @@
           cancelButtonText: 'Dismiss',
         }).then((result) => {
           if (result.isConfirmed) {
-            window.open("https://www.rengine.wiki/update","_self")
-          }
-          else{
-            window.localStorage.setItem('update_available', false);
-            $('.rengine_update_available').hide();
+            window.open("https://www.rengine.wiki/update","_blank")
           }
         });
       }
@@ -210,6 +211,7 @@
           if (response['update_available']){
             window.localStorage.setItem('update_available', true);
             $('.rengine_update_available').show();
+            update_available()
           }
           else{
             window.localStorage.setItem('update_available', false);
