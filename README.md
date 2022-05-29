@@ -5,7 +5,7 @@
 <p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.1.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/issues" target="_blank"><img src="https://img.shields.io/github/issues/yogeshojha/rengine?color=red&logo=none" alt="reNgine Issues" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;</p>
 
 
-<p align="center"><a href="https://www.youtube.com/watch?v=A1oNOIc0h5A" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-Europe--2020-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://www.youtube.com/watch?v=7uvP6MaQOX0" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-USA--2021-blue.svg?logo=none" alt="" /></a>&nbsp;<a href="https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing" target="_blank"><img src="https://img.shields.io/badge/Defcon--Demolabs--29-2021-blue.svg?logo=none" alt="" /></a>&nbsp;</p>
+<p align="center"><a href="https://www.youtube.com/watch?v=A1oNOIc0h5A" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-Europe--2020-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://www.youtube.com/watch?v=7uvP6MaQOX0" target="_blank"><img src="https://img.shields.io/badge/Black--Hat--Arsenal-USA--2021-blue.svg?logo=none" alt="" /></a>&nbsp;<a href="https://drive.google.com/file/d/1Bh8lbf-Dztt5ViHJVACyrXMiglyICPQ2/view?usp=sharing" target="_blank"><img src="https://cyberweek.ae/2021/hitb-armory/" alt="" /></a>&nbsp;<img src="https://img.shields.io/badge/HITB--Armory-2021-blue.svg?logo=none" alt="" /></a></p>
 
 <p align="center">
 <a href="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml/badge.svg" alt="" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/actions/workflows/build.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/build.yml/badge.svg" alt="" /></a>&nbsp;
@@ -62,6 +62,8 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 
 ## About reNgine
 
+You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=iy_6F7Vq8Lo) (Recommended)
+
 <img src="https://user-images.githubusercontent.com/17223002/164993688-50eb95f2-3653-4ef7-bd3b-ef7a096824ea.jpeg">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -86,7 +88,7 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 
 ## Features
 
-- Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, etc.
+- Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
 - Highly configurable YAML based Scan Engines
 - Support for Parallel Scans and Subscans
 - Automatically report Vulnerabilities to Hackerone
@@ -158,10 +160,6 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 
 ## Changelog
 
-reNgine 1.1 is out now. Please note that reNgine 1.1 is not backwards compatible.
-
-You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=iy_6F7Vq8Lo) (Recommended)
-
 [Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
@@ -191,6 +189,8 @@ sudo ./install.sh
 if `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from https://127.0.0.1 or if you're on the VPS https://your_vps_ip_address**
+
+A detailed installation guide can also be found [here](https://www.rffuste.com/2022/05/23/rengine-a-brief-overview/). Thanks to Rubén!
 
 ## Installation (Mac/Windows/Other)
 
