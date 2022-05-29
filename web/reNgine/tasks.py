@@ -976,7 +976,7 @@ def port_scanning(
 
 	if domain:
 		subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-		naabu_command = 'cat {} | naabu -json -o {}'.format(
+		naabu_command = 'naabu -list {} -json -o {}'.format(
 			subdomain_scan_results_file,
 			port_results_file
 		)
