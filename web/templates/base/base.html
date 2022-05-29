@@ -158,6 +158,7 @@
           fetch('/api/rengine/update/')
           .then(response => response.json())
           .then(function (response) {
+            console.log(response);
             swal.close();
             if (response['description'] == 'RateLimited') {
               Swal.fire({
@@ -171,7 +172,7 @@
             else if (response['update_available']){
               window.localStorage.setItem('update_available', true);
               $('.rengine_update_available').show();
-              update_available();
+              update_available(response['latest_version'], response['changelog']);
             }
             else{
               window.localStorage.setItem('update_available', false);
@@ -186,14 +187,15 @@
         }
       }
 
-      function update_available(){
+      function update_available(latest_version_number, changelog){
         Swal.fire({
           title: 'Update Available!',
-          text: 'reNgine\'s new update is available, please follow the update instructions.',
+          html: `<h5>reNgine's new update ${latest_version_number} is available, please follow the update instructions.</h5><pre>${changelog}</pre>`,
           icon: 'info',
           confirmButtonText: 'Update Instructions',
           showCancelButton: true,
           cancelButtonText: 'Dismiss',
+          width: '60%',
         }).then((result) => {
           if (result.isConfirmed) {
             window.open("https://www.rengine.wiki/update","_blank")
@@ -211,7 +213,7 @@
           if (response['update_available']){
             window.localStorage.setItem('update_available', true);
             $('.rengine_update_available').show();
-            update_available()
+            update_available(response['latest_version'], response['changelog'])
           }
           else{
             window.localStorage.setItem('update_available', false);

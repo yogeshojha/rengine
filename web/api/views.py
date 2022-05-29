@@ -615,14 +615,14 @@ class RengineUpdateCheck(APIView):
 		if 'message' in response:
 			return Response({'status': False, 'message': 'RateLimited'})
 
+		return_response = {}
+
 		# get current version_number
 		# remove quotes from current_version
 		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
-						   ])[1:] if os.environ['RENGINE_CURRENT_VERSION'
-						   ][0] == 'v'
+							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
+							][0] == 'v'
 							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
-
-
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -635,19 +635,20 @@ class RengineUpdateCheck(APIView):
 
 		if not latest_version:
 			latest_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)',
-									   ((response[0]['name'
-									   ])[1:] if response[0]['name'][0]
-									   == 'v' else response[0]['name']))
+										((response[0]['name'
+										])[1:] if response[0]['name'][0]
+										== 'v' else response[0]['name']))
 			if latest_version:
 				latest_version = latest_version.group(0)
 
+		return_response['status'] = True
+		return_response['latest_version'] = latest_version
+		return_response['current_version'] = current_version
+		return_response['update_available'] = version.parse(current_version) > version.parse(latest_version)
+		if version.parse(current_version) > version.parse(latest_version):
+			return_response['changelog'] = response[0]['body']
 
-		return Response({
-			'status': True,
-			'update_available': version.parse(current_version) > version.parse(latest_version),
-			'current_version': current_version,
-			'latest_version':latest_version,
-			})
+		return Response(return_response)
 
 
 class UninstallTool(APIView):
