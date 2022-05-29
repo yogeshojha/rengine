@@ -16,6 +16,8 @@
 - Fixed XSS on Hackerone report via Markdown
 - Fixed XSS on Import Target using malicious filename
 - Stop Scan Fixed #561
+- Fix installation issue due to missing curl
+- Updated docker-compose version
 
 ## 🏷️ 1.1.0
 **Release Date: Apr 24, 2022**
