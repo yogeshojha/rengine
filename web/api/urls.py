@@ -145,6 +145,10 @@ urlpatterns = [
         CVEDetails.as_view(),
         name='cve_details'),
     path(
+        'tools/waf_detector/',
+        WafDetector.as_view(),
+        name='waf_detector'),
+    path(
         'github/tool/get_latest_releases/',
         GithubToolCheckGetLatestRelease.as_view(),
         name='github_tool_latest_release'),

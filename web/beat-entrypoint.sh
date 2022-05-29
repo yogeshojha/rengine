@@ -4,7 +4,7 @@ if [ "$DATABASE" = "postgres" ]
 then
     echo "Waiting for postgres..."
 
-    while ! nc -z db 5432; do
+    while ! nc -z ${POSTGRES_HOST} ${POSTGRES_PORT}; do
       sleep 0.1
     done
 
@@ -15,5 +15,7 @@ echo "Waiting for Celery to start"
 while ! celery -A reNgine status; do
   sleep 0.5
 done
+
+python3 manage.py migrate
 
 exec "$@"

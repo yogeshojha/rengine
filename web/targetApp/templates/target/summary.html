@@ -387,11 +387,11 @@ Target Summary
 					</div>
 					{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
 					<div class="col-xl-6 col-lg-6 col-12">
-				    {% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Subdomain'%}
-				  </div>
-				  <div class="col-xl-6 col-lg-6 col-12">
-				    {% include 'base/_items/most_common_vuln.html' %}
-				  </div>
+						{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Subdomain'%}
+					</div>
+					<div class="col-xl-6 col-lg-6 col-12">
+						{% include 'base/_items/most_common_vuln.html' %}
+					</div>
 					<div class="col-xl-6 col-lg-6 col-12">
 						<div class="card">
 							<div class="card-body">
@@ -800,13 +800,14 @@ $(document).ready(function(){
 				{
 					'data': 'subscan_count'
 				},
+				{'data': 'waf'},
 			],
 			"columnDefs": [{
 					"orderable": false,
 					"targets": [2, 3, 6, 7, 9]
 				},
 				{
-					"targets": [2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26],
+					"targets": [2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27],
 					"visible": false,
 					"searchable": false,
 				},
@@ -832,11 +833,12 @@ $(document).ready(function(){
 				// subdomain Name
 				{
 					"render": function(data, type, row) {
-						badges = '';
-						tech_badge = '';
-						interesting_badge = '';
-						content_type = '';
-						web_server = '';
+						var badges = '';
+						var tech_badge = '';
+						var interesting_badge = '';
+						var content_type = '';
+						var web_server = '';
+						var waf_badge = '';
 						if (row['technologies']) {
 							tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id = null, domain_id = {{target.id}}) + '</div>';
 						}
@@ -868,6 +870,15 @@ $(document).ready(function(){
 							endpoint_count_badge = `<span class="pl-2 pr-2 me-1 badge badge-soft-primary badge-link bs-tooltip" title="Endpoints" onclick="get_endpoint_modal(scan_id=null, subdomain_id=${row['id']}, '${row['name']}')">${row['endpoint_count']} <i class=" fas fa-link"></i></span>`;
 						}
 
+						if(row['waf'].length){
+							waf_badge = `<div><span class="pl-2 pr-2 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Detected by wafw00f!""><i class="fe-cloud-lightning mx-1"></i>WAF Detected</span>`;
+							for (var waf in row['waf']) {
+								var waf_object = row['waf'][waf];
+								waf_badge += `<span class="mx-1 my-1 badge badge-soft-danger" bs-tooltip" title="WAF Manufacturer: ${waf_object.manufacturer}">${waf_object.name}</span>`;
+							}
+							waf_badge += `</div>`;
+						}
+
 						vuln_count_badge = '';
 						total_vuln_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-critical bs-tooltip badge-link' title="All Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count']} <i class="fas fa-bug"></i></span>`;
 						info_badge = `<span class='pl-2 pr-2 me-1 mt-1 badge badge-soft-info bs-tooltip badge-link' title="Informational Vulnerabilities" onclick="get_vulnerability_modal(scan_id=null, severity=0, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['info_count']} Info</span>`;
@@ -880,8 +891,8 @@ $(document).ready(function(){
 						vuln_count_badge = (row['info_count'] + row['low_count'] + row['high_count'] + row['medium_count'] + row['critical_count'] > 0 ? total_vuln_badge : '') + vuln_count_badge;
 
 						copy_icon = `
-	            <a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
-	            `;
+							<a href="javascript:;" data-clipboard-action="copy" class="action-icon copyable" data-toggle="tooltip" data-placement="top" title="Copy Subdomain!" data-clipboard-target="#subdomain-${row['id']}" id="#subdomain-${row['id']}" onclick="setTooltip(this.id, 'Copied!')"> <i class="text-primary mdi mdi-content-copy"></i></a>
+							`;
 
 						var directory_count_badge = '';
 						if (row['directories_count']) {
@@ -901,11 +912,11 @@ $(document).ready(function(){
 						if (row['http_url']) {
 							if (row['cname']) {
 								cname_badge = `<div><span class="text-dark">CNAME<br><span class="text-warning"> ❯ </span>` + row['cname'].replace(',', '<br><span class="text-warning"> ❯ </span>') + `</div>`;
-								return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + cname_badge + end_vuln_badge + tech_badge + todo_badge;
+								return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + cname_badge + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 							}
-							return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+							return badges + `<div class="clipboard copy-txt"><a href="` + row['http_url'] + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 						}
-						return badges + `<div class="clipboard copy-txt"><a href="https://` + data + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + end_vuln_badge + tech_badge + todo_badge;
+						return badges + `<div class="clipboard copy-txt"><a href="https://` + data + `" class="text-primary" target="_blank"><span id='subdomain-${row['id']}'>` + data + `${copy_icon} </span></a>` + `</div>` + waf_badge + end_vuln_badge + tech_badge + todo_badge;
 					},
 					"targets": 1
 				},
@@ -1010,17 +1021,17 @@ $(document).ready(function(){
 					"render": function(data, type, row) {
 						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 						return `
-	            <div class="btn-group mt-2">
-	            <button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
-	            <button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
-	            <button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
-	            <div class="dropdown-menu dropdown-menu-end">
-	            <a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
-	            <a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
-	            <a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
-	            </div>
-	            </div>
-	            `;
+							<div class="btn-group mt-2">
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
+							<div class="dropdown-menu dropdown-menu-end">
+							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
+							<a class="dropdown-item" href="#" onclick="detect_subdomain_cms('${cms_detector_http_url}', ${row['http_status']})"><i class="fe-grid me-2 text-muted font-18 vertical-middle"></i>Detect CMS</a>
+							<a class="text-danger dropdown-item btn-delete-subdomain" href="#" id="${row['id']}"><i class="text-danger mdi mdi-delete-forever-outline me-2 font-18 vertical-middle"></i>Delete Subdomain</a>
+							</div>
+							</div>
+							`;
 					},
 					"targets": 24,
 				},
@@ -1609,8 +1620,8 @@ $(document).ready(function(){
 
 	var clipboard = new Clipboard('.copyable');
 	clipboard.on('success', function(e) {
-	  setTooltip(e.trigger, 'Copied!');
-	  hideTooltip(e.trigger);
+		setTooltip(e.trigger, 'Copied!');
+		hideTooltip(e.trigger);
 	});
 
 	get_most_vulnerable_target(scan_id=null, target_id={{target.id}}, ignore_info=false);
