@@ -48,10 +48,10 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 * [About reNgine](#about-reNgine)
 * [Features](#features)
 * [Documentation](#documentation)
-* [Screenshots](#screenshots)
-* [What's new in reNgine](#changelog)
 * [Quick Installation](#quick-installation)
+* [What's new in reNgine](#changelog)
 * [reNgine Bug Bounty Program](#reNgine-bug-bounty-program)
+* [Screenshots](#screenshots)
 * [Contributing](#contributing)
 * [reNgine Support](#reNgine-support)
 * [Related Projects](#related-projects)
@@ -86,6 +86,8 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
+<img src="https://user-images.githubusercontent.com/17223002/164993945-aabdbb4a-2b9d-4951-ba27-5f2f5abd1d8b.gif">
+
 ## Features
 
 - Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
@@ -118,51 +120,9 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 
 ## Documentation
 
-You can find reNgine documentation at [https://rengine.wiki](https://rengine.wiki)
-
-## Screenshots
-
-**Dashboard**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993945-aabdbb4a-2b9d-4951-ba27-5f2f5abd1d8b.gif">
-
-**Scan Results**
-
-![](.github/screenshots/scan_results.gif)
-
-**General Usage**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
-
-**Initiating Subscan**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
-
-**Recon Data filtering**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
-
-**Report Generation**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
-
-**Toolbox**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
-
-**Adding Custom tool in Tools Arsenal**
-
-<img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
-
+You can find reNgine documentation on [https://rengine.wiki](https://rengine.wiki)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-
-## Changelog
-
-[Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
 
 ## Quick Installation
 
@@ -196,6 +156,12 @@ A detailed installation guide can also be found [here](https://www.rffuste.com/2
 
 Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
 
+## Changelog
+
+[Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
+
 ## reNgine Bug Bounty Program
 
 [![huntr](https://cdn.huntr.dev/huntr_security_badge_mono.svg)](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine)
@@ -222,6 +188,38 @@ The bounty reward is determined by an industry-first equation from huntr.dev to 
 * CVE ID(s)
 
 Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## Screenshots
+
+**Scan Results**
+
+![](.github/screenshots/scan_results.gif)
+
+**General Usage**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
+
+**Initiating Subscan**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
+
+**Recon Data filtering**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
+
+**Report Generation**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
+
+**Toolbox**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
+
+**Adding Custom tool in Tools Arsenal**
+
+<img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
