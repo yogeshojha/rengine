@@ -40,6 +40,29 @@ from packaging import version
 from reNgine.celery import app
 from django.utils import timezone
 
+class WafDetector(APIView):
+	def get(self, request):
+		req = self.request
+		url= req.query_params.get('url')
+		response = {}
+		response['status'] = False
+
+		wafw00f_command = 'wafw00f {}'.format(
+			url
+		)
+		output = subprocess.check_output(wafw00f_command, shell=True)
+		# use regex to get the waf
+		regex = "behind \\\\x1b\[1;96m(.*)\\\\x1b"
+		group = re.search(regex, str(output))
+
+		if group:
+			response['status'] = True
+			response['results'] = group.group(1)
+		else:
+			response['message'] = 'Could not detect any WAF!'
+
+		return Response(response)
+
 
 class SearchHistoryView(APIView):
 	def get(self, request):
@@ -504,11 +527,12 @@ class StopScan(APIView):
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
 
-				last_activity = ScanActivity.objects.filter(
+				if ScanActivity.objects.filter(scan_of=scan_history).exists():
+					last_activity = ScanActivity.objects.filter(
 					scan_of=scan_history).order_by('-pk')[0]
-				last_activity.status = 0
-				last_activity.time = timezone.now()
-				last_activity.save()
+					last_activity.status = 0
+					last_activity.time = timezone.now()
+					last_activity.save()
 				create_scan_activity(scan_history, "Scan aborted", 0)
 				response['status'] = True
 			except Exception as e:
@@ -591,14 +615,14 @@ class RengineUpdateCheck(APIView):
 		if 'message' in response:
 			return Response({'status': False, 'message': 'RateLimited'})
 
+		return_response = {}
+
 		# get current version_number
 		# remove quotes from current_version
 		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
-						   ])[1:] if os.environ['RENGINE_CURRENT_VERSION'
-						   ][0] == 'v'
+							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
+							][0] == 'v'
 							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
-
-
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -611,19 +635,20 @@ class RengineUpdateCheck(APIView):
 
 		if not latest_version:
 			latest_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)',
-									   ((response[0]['name'
-									   ])[1:] if response[0]['name'][0]
-									   == 'v' else response[0]['name']))
+										((response[0]['name'
+										])[1:] if response[0]['name'][0]
+										== 'v' else response[0]['name']))
 			if latest_version:
 				latest_version = latest_version.group(0)
 
+		return_response['status'] = True
+		return_response['latest_version'] = latest_version
+		return_response['current_version'] = current_version
+		return_response['update_available'] = version.parse(current_version) > version.parse(latest_version)
+		if version.parse(current_version) > version.parse(latest_version):
+			return_response['changelog'] = response[0]['body']
 
-		return Response({
-			'status': True,
-			'update_available': version.parse(current_version) > version.parse(latest_version),
-			'current_version': current_version,
-			'latest_version':latest_version,
-			})
+		return Response(return_response)
 
 
 class UninstallTool(APIView):

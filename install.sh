@@ -39,6 +39,18 @@ fi
 echo " "
 tput setaf 4;
 echo "#########################################################################"
+echo "Installing curl..."
+echo "#########################################################################"
+if [ -x "$(command -v curl)" ]; then
+  tput setaf 2; echo "CURL already installed, skipping."
+else
+  sudo apt update && sudo apt install curl -y
+  tput setaf 2; echo "CURL installed!!!"
+fi
+
+echo " "
+tput setaf 4;
+echo "#########################################################################"
 echo "Installing Docker..."
 echo "#########################################################################"
 if [ -x "$(command -v docker)" ]; then
@@ -57,7 +69,7 @@ echo "#########################################################################"
 if [ -x "$(command -v docker-compose)" ]; then
   tput setaf 2; echo "docker-compose already installed, skipping."
 else
-  curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  curl -L "https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "docker-compose installed!!!"

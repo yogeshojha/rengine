@@ -96,11 +96,15 @@ HackerOne Settings
 <script src="{% static 'custom/custom.js' %}"></script>
 <script type="text/javascript">
 
-new SimpleMDE({
+var simplemde = new SimpleMDE({
   element: document.getElementById("vulnerability-report-template"),
   toolbar: ["preview", "bold", "italic", "heading", "heading-2", "unordered-list", "link" ,"|", "code" ,"|", "quote", "|", "guide"],
   spellChecker: false,
 });
+
+simplemde.options.previewRender = function(plainText) {
+  return DOMPurify.sanitize(simplemde.markdown(plainText));
+};
 
 function test_hackerone() {
   if ($("#username").val().length == 0 || $("#api_key").val().length == 0) {
