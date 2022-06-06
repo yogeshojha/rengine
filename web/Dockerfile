@@ -9,7 +9,8 @@ LABEL \
 
 # Environment Variables
 ENV DEBIAN_FRONTEND="noninteractive" \
-    DATABASE="postgres"
+    DATABASE="postgres" \
+    GO11MODULE="on"
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
