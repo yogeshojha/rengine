@@ -10,11 +10,12 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:
       - rengine_network
+    command: -p ${POSTGRES_PORT}
 
   redis:
     image: "redis:alpine"
