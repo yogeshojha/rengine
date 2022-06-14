@@ -22,68 +22,52 @@ class RelatedTLD(models.Model):
         return self.name
 
 
-class RegistrantInfo(models.Model):
+class NameServers(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=250, null=True, blank=True)
-    organization = models.CharField(max_length=250, null=True, blank=True)
-    email = models.CharField(max_length=250, null=True, blank=True)
-    address = models.CharField(max_length=200, null=True, blank=True)
-    city = models.CharField(max_length=50, null=True, blank=True)
-    state = models.CharField(max_length=20, null=True, blank=True)
+    name = models.CharField(max_length=500, null=True, blank=True)
+
+
+class RegistrarCommonModel(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500, null=True, blank=True)
+    organization = models.CharField(max_length=500, null=True, blank=True)
+    address = models.CharField(max_length=700, null=True, blank=True)
+    city = models.CharField(max_length=300, null=True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True)
+    zip_code = models.CharField(max_length=50, null=True, blank=True)
     country = models.CharField(max_length=50, null=True, blank=True)
-    country_iso = models.CharField(max_length=4, null=True, blank=True)
-    phone_number = models.CharField(max_length=50, null=True, blank=True)
-    fax = models.CharField(max_length=50, null=True, blank=True)
-
-    def __str__(self):
-        return self.name if self.name else ''
+    email = models.CharField(max_length=500, null=True, blank=True)
+    phone = models.CharField(max_length=100, null=True, blank=True)
+    fax = models.CharField(max_length=100, null=True, blank=True)
 
 
-class WhoisDetail(models.Model):
+class DomainRegistrant(models.Model):
     id = models.AutoField(primary_key=True)
-    details = models.TextField(blank=True, null=True)
-    registrant = models.ForeignKey(RegistrantInfo, on_delete=models.CASCADE, null=True, blank=True)
-
-    def __str__(self):
-        return self.registrant.name if self.registrant.name else ''
+    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
 
 
-class NameServerHistory(models.Model):
+class DomainAdmin(models.Model):
     id = models.AutoField(primary_key=True)
-    date = models.CharField(max_length=10, null=True, blank=True)
-    action = models.CharField(max_length=50, null=True, blank=True)
-    server = models.CharField(max_length=100, null=True, blank=True)
-
-    def __str__(self):
-        return self.server if self.server else ''
+    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
 
 
-class NSRecord(models.Model):
+class DomainTechnicalContact(models.Model):
     id = models.AutoField(primary_key=True)
-    type = models.CharField(max_length=10, null=True, blank=True)
-    hostname = models.CharField(max_length=50, null=True, blank=True)
-    address = models.CharField(max_length=50, null=True, blank=True)
-    preference = models.CharField(max_length=5, null=True, blank=True)
-    ttl = models.CharField(max_length=10, null=True, blank=True)
-    ns_class = models.CharField(max_length=10, null=True, blank=True)
+    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
 
-    def __str__(self):
-        return self.hostname if self.hostname else ''
+
+class DomainAbuse(models.Model):
+    id = models.AutoField(primary_key=True)
+    email = models.CharField(max_length=500, null=True, blank=True)
+    telephone = models.CharField(max_length=100, null=True, blank=True)
 
 
 class DomainInfo(models.Model):
     id = models.AutoField(primary_key=True)
-    date_created = models.CharField(max_length=300, null=True, blank=True)
-    domain_age = models.CharField(max_length=300, null=True, blank=True)
-    ip_address = models.CharField(max_length=200, null=True, blank=True)
-    geolocation = models.CharField(max_length=50, null=True, blank=True)
-    geolocation_iso = models.CharField(max_length=4, null=True, blank=True)
-    is_private = models.BooleanField(default=False)
-    whois = models.ForeignKey(WhoisDetail, on_delete=models.CASCADE, null=True, blank=True)
-    nameserver_history = models.ManyToManyField(NameServerHistory)
-    nameserver_record = models.ManyToManyField(NSRecord)
-    organization_association_href = models.CharField(max_length=100, null=True, blank=True)
-    email_association_href = models.CharField(max_length=100, null=True, blank=True)
+    whois_raw_text = models.CharField(max_length=10000, null=True, blank=True)
+    registrant = models.ManyToManyField(DomainRegistrant, blank=True)
+    admin = models.ManyToManyField(DomainAdmin, blank=True)
+    tech = models.ManyToManyField(DomainTechnicalContact, blank=True)
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 

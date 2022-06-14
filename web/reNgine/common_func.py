@@ -8,13 +8,13 @@ import logging
 import shutil
 import subprocess
 
+from whois_parser import WhoisParser
 from threading import Thread
-
 from urllib.parse import urlparse
-
 from bs4 import BeautifulSoup
 from lxml import html
 
+from datetime import datetime, date
 from discord_webhook import DiscordWebhook
 from django.db.models import Q
 from functools import reduce
@@ -26,16 +26,16 @@ from rest_framework import serializers
 
 
 # Serializers for NS
-class NSRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NSRecord
-        fields = '__all__'
-
-
-class NameServerHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NameServerHistory
-        fields = '__all__'
+# class NSRecordSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = NSRecord
+#         fields = '__all__'
+#
+#
+# class NameServerHistorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = NameServerHistory
+#         fields = '__all__'
 
 
 class AssociatedDomainSerializer(serializers.ModelSerializer):
@@ -315,7 +315,7 @@ def send_hackerone_report(vulnerability_id):
 
         return status_code
 
-def get_whois(ip_domain, save_db=False, fetch_from_db=True):
+def get_whois_using_domainbigdata(ip_domain, save_db=False, fetch_from_db=True):
     # this function will fetch whois details for domains
     # if save_db = True, then the whois will be saved in db
     # if fetch_from_db = True then whois will be fetched from db, no lookup on
@@ -665,6 +665,63 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
         }
 
+def calculate_age(born):
+    today = date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+def return_zeorth_if_list(variable):
+    return variable[0] if type(variable) == list else variable
+
+def get_whois(ip_domain, save_db=False, fetch_from_db=True):
+    if ip_domain and not fetch_from_db:
+        response = os.popen('whois -H bbanotes.com').read()
+        print(response)
+        parser = WhoisParser()
+        record = parser.parse(response, hostname=ip_domain)
+        print(record.to_json())
+        # print(response)
+        #
+        # details = response.text
+        #
+        # # DomainInfo Model
+        # date_created = return_zeorth_if_list(response.get('creation_date'))
+        # date_expiration = return_zeorth_if_list(response.get('expiration_date'))
+        # domain_age = calculate_age(date_created)
+        # geolocation_iso = response.get('country')
+        #
+        #
+        # return {
+        #     'status': True,
+        #     'ip_domain': ip_domain,
+        #     'domain': {
+        #         'date_created': date_created,
+        #         'date_expiration': date_expiration,
+        #         'domain_age': domain_age,
+        #         # 'ip_address': ip_address,
+        #         'geolocation_iso': geolocation_iso,
+        #     },
+        #     # 'nameserver': {
+        #     #     'history': dns_history,
+        #     #     'records': ns_records
+        #     # },
+        #     # 'registrant': {
+        #     #     'name': name,
+        #     #     'organization': organization,
+        #     #     'email': email,
+        #     #     'address': address,
+        #     #     'city': city,
+        #     #     'state': state,
+        #     #     'country': country,
+        #     #     'country_iso': country_iso,
+        #     #     'tel': tel,
+        #     #     'fax': fax,
+        #     #     'organization_association_url': final_organization_association_url,
+        #     #     'email_association_url': final_email_association_url,
+        #     # },
+        #     # 'related_domains': unique_associated_domains,
+        #     # 'related_tlds': related_tlds,
+        #     'whois': details if details else None
+        # }
 
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
