@@ -27,47 +27,72 @@ class NameServers(models.Model):
     name = models.CharField(max_length=500, null=True, blank=True)
 
 
-class RegistrarCommonModel(models.Model):
+class DomainRegisterName(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500, null=True, blank=True)
-    organization = models.CharField(max_length=500, null=True, blank=True)
-    address = models.CharField(max_length=700, null=True, blank=True)
-    city = models.CharField(max_length=300, null=True, blank=True)
-    state = models.CharField(max_length=100, null=True, blank=True)
-    zip_code = models.CharField(max_length=50, null=True, blank=True)
-    country = models.CharField(max_length=50, null=True, blank=True)
-    email = models.CharField(max_length=500, null=True, blank=True)
-    phone = models.CharField(max_length=100, null=True, blank=True)
-    fax = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=500)
 
 
-class DomainRegistrant(models.Model):
+class DomainRegisterOrganization(models.Model):
     id = models.AutoField(primary_key=True)
-    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
+    name = models.CharField(max_length=500)
 
 
-class DomainAdmin(models.Model):
+class DomainAddress(models.Model):
     id = models.AutoField(primary_key=True)
-    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
+    name = models.CharField(max_length=500)
 
 
-class DomainTechnicalContact(models.Model):
+class DomainCity(models.Model):
     id = models.AutoField(primary_key=True)
-    registrant = models.ManyToManyField(RegistrarCommonModel, blank=True)
+    name = models.CharField(max_length=100)
 
 
-class DomainAbuse(models.Model):
+class DomainState(models.Model):
     id = models.AutoField(primary_key=True)
-    email = models.CharField(max_length=500, null=True, blank=True)
-    telephone = models.CharField(max_length=100, null=True, blank=True)
+    name = models.CharField(max_length=50)
+
+
+class DomainZipCode(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=20)
+
+
+class DomainCountry(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=20)
+
+
+class DomainEmail(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+
+class DomainPhone(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+
+class DomainFax(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
 
 
 class DomainInfo(models.Model):
     id = models.AutoField(primary_key=True)
-    whois_raw_text = models.CharField(max_length=10000, null=True, blank=True)
-    registrant = models.ManyToManyField(DomainRegistrant, blank=True)
-    admin = models.ManyToManyField(DomainAdmin, blank=True)
-    tech = models.ManyToManyField(DomainTechnicalContact, blank=True)
+    raw_text = models.CharField(max_length=10000, null=True, blank=True)
+
+    # registrant
+    registrant_name = models.ManyToManyField(DomainRegisterName, blank=True)
+    registrant_organization = models.ManyToManyField(DomainRegisterOrganization, blank=True)
+    registrant_address = models.ManyToManyField(DomainAddress, blank=True)
+    registrant_city = models.ManyToManyField(DomainCity, blank=True)
+    registrant_state = models.ManyToManyField(DomainState, blank=True)
+    registrant_zip_code = models.ManyToManyField(DomainZipCode, blank=True)
+    registrant_country = models.ManyToManyField(DomainCountry, blank=True)
+    registrant_email = models.ManyToManyField(DomainEmail, blank=True)
+    registrant_phone = models.ManyToManyField(DomainPhone, blank=True)
+    registrant_fax = models.ManyToManyField(DomainFax, blank=True)
+
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
