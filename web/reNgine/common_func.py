@@ -7,22 +7,22 @@ import tldextract
 import logging
 import shutil
 import subprocess
+import asyncwhois
 
-from whois_parser import WhoisParser
 from threading import Thread
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from lxml import html
-
 from datetime import datetime, date
 from discord_webhook import DiscordWebhook
-from django.db.models import Q
 from functools import reduce
+from rest_framework import serializers
+
+from django.db.models import Q
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 from reNgine.definitions import *
-from rest_framework import serializers
 
 
 # Serializers for NS
@@ -316,6 +316,7 @@ def send_hackerone_report(vulnerability_id):
         return status_code
 
 def get_whois_using_domainbigdata(ip_domain, save_db=False, fetch_from_db=True):
+    # CURRENTLY DEPRECATED!!!!!!
     # this function will fetch whois details for domains
     # if save_db = True, then the whois will be saved in db
     # if fetch_from_db = True then whois will be fetched from db, no lookup on
@@ -674,11 +675,8 @@ def return_zeorth_if_list(variable):
 
 def get_whois(ip_domain, save_db=False, fetch_from_db=True):
     if ip_domain and not fetch_from_db:
-        response = os.popen('whois -H bbanotes.com').read()
-        print(response)
-        parser = WhoisParser()
-        record = parser.parse(response, hostname=ip_domain)
-        print(record.to_json())
+        result = asyncwhois.whois_domain(ip_domain)
+        print(result.parser_output)
         # print(response)
         #
         # details = response.text
