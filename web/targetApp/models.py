@@ -82,9 +82,20 @@ class DomainWhoisStatus(models.Model):
     status = models.CharField(max_length=500)
 
 
+class DomainRegistrar(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+
+class DomainRegistrarID(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+
 class DomainInfo(models.Model):
     id = models.AutoField(primary_key=True)
     raw_text = models.CharField(max_length=10000, null=True, blank=True)
+    registrar = models.ManyToManyField(DomainRegisterName, blank=True)
 
     # registrant
     registrant_name = models.ManyToManyField(DomainRegisterName, blank=True, related_name='registrant_name')
@@ -100,6 +111,7 @@ class DomainInfo(models.Model):
 
     # Admin
     admin_name = models.ManyToManyField(DomainRegisterName, blank=True, related_name='admin_name')
+    admin_id = models.ManyToManyField(DomainRegistrarID, blank=True, related_name='admin_id')
     admin_organization = models.ManyToManyField(DomainRegisterOrganization, blank=True, related_name='admin_organization')
     admin_address = models.ManyToManyField(DomainAddress, blank=True, related_name='admin_address')
     admin_city = models.ManyToManyField(DomainCity, blank=True, related_name='admin_city')
@@ -112,6 +124,7 @@ class DomainInfo(models.Model):
 
     # Tech
     tech_name = models.ManyToManyField(DomainRegisterName, blank=True, related_name='tech_name')
+    tech_id = models.ManyToManyField(DomainRegistrarID, blank=True, related_name='tech_id')
     tech_organization = models.ManyToManyField(DomainRegisterOrganization, blank=True, related_name='tech_organization')
     tech_address = models.ManyToManyField(DomainAddress, blank=True, related_name='tech_address')
     tech_city = models.ManyToManyField(DomainCity, blank=True, related_name='tech_city')

@@ -666,60 +666,121 @@ def get_whois_using_domainbigdata(ip_domain, save_db=False, fetch_from_db=True):
             'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
         }
 
-def calculate_age(born):
+def calculate_age(created):
     today = date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+    return today.year - created.year - ((today.month, today.day) < (created.month, created.day))
 
 def return_zeorth_if_list(variable):
     return variable[0] if type(variable) == list else variable
 
 def get_whois(ip_domain, save_db=False, fetch_from_db=True):
     if ip_domain and not fetch_from_db:
-        result = asyncwhois.whois_domain(ip_domain)
-        print(result.parser_output)
-        # print(response)
-        #
-        # details = response.text
-        #
-        # # DomainInfo Model
-        # date_created = return_zeorth_if_list(response.get('creation_date'))
-        # date_expiration = return_zeorth_if_list(response.get('expiration_date'))
-        # domain_age = calculate_age(date_created)
-        # geolocation_iso = response.get('country')
-        #
-        #
-        # return {
-        #     'status': True,
-        #     'ip_domain': ip_domain,
-        #     'domain': {
-        #         'date_created': date_created,
-        #         'date_expiration': date_expiration,
-        #         'domain_age': domain_age,
-        #         # 'ip_address': ip_address,
-        #         'geolocation_iso': geolocation_iso,
-        #     },
-        #     # 'nameserver': {
-        #     #     'history': dns_history,
-        #     #     'records': ns_records
-        #     # },
-        #     # 'registrant': {
-        #     #     'name': name,
-        #     #     'organization': organization,
-        #     #     'email': email,
-        #     #     'address': address,
-        #     #     'city': city,
-        #     #     'state': state,
-        #     #     'country': country,
-        #     #     'country_iso': country_iso,
-        #     #     'tel': tel,
-        #     #     'fax': fax,
-        #     #     'organization_association_url': final_organization_association_url,
-        #     #     'email_association_url': final_email_association_url,
-        #     # },
-        #     # 'related_domains': unique_associated_domains,
-        #     # 'related_tlds': related_tlds,
-        #     'whois': details if details else None
-        # }
+
+        try:
+            result = asyncwhois.whois_domain(ip_domain)
+            whois = result.parser_output
+            if not whois.get('domain_name'):
+                raise Exception
+        except Exception as e:
+            logger.error(e)
+            return {
+            'status': False,
+            'ip_domain': ip_domain,
+            'result': 'Invalid Domain/IP, WHOIS could not be fetched from WHOIS database'
+            }
+
+        created = whois.get('created')
+        expires = whois.get('expires')
+        updated = whois.get('updated')
+
+        registrar = whois.get('registrar')
+
+        registrant_name = whois.get('registrant_name')
+        registrant_organization = whois.get('registrant_organization')
+        registrant_address = whois.get('registrant_address')
+        registrant_city = whois.get('registrant_city')
+        registrant_state = whois.get('registrant_state')
+        registrant_zipcode = whois.get('registrant_zipcode')
+        registrant_country = whois.get('registrant_country')
+        registrant_email = whois.get('registrant_email')
+
+        name_servers = whois.get('name_servers')
+
+        admin_name = whois.get('admin_name')
+        admin_id = whois.get('admin_id')
+        admin_organization = whois.get('admin_organization')
+        admin_city = whois.get('admin_city')
+        admin_address = whois.get('admin_address')
+        admin_state = whois.get('admin_state')
+        admin_zipcode = whois.get('admin_zipcode')
+        admin_country = whois.get('admin_country')
+        admin_phone = whois.get('admin_phone')
+        admin_fax = whois.get('admin_fax')
+        admin_email = whois.get('admin_email')
+
+        tech_name = whois.get('tech_name')
+        tech_id = whois.get('tech_id')
+        tech_organization = whois.get('tech_organization')
+        tech_city = whois.get('tech_city')
+        tech_address = whois.get('tech_address')
+        tech_state = whois.get('tech_state')
+        tech_zipcode = whois.get('tech_zipcode')
+        tech_country = whois.get('tech_country')
+        tech_phone = whois.get('tech_phone')
+        tech_fax = whois.get('tech_fax')
+        tech_email = whois.get('tech_email')
+
+        if save_db and Domain.objects.filter(name=ip_domain).exists():
+            domain = Domain.objects.get(name=ip_domain)
+
+        return {
+            'status': True,
+            'ip_domain': ip_domain,
+            'domain': {
+                'created': created,
+                'updated': updated,
+                'expires': expires,
+                'registrar': registrar,
+            },
+            'registrant': {
+                'registrar_name': registrant_name,
+                'registrant_organization': registrant_organization,
+                'registrant_address': registrant_address,
+                'registrant_city': registrant_city,
+                'registrant_state': registrant_state,
+                'registrant_zipcode': registrant_zipcode,
+                'registrant_country': registrant_country,
+                'registrant_email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None,
+            },
+            'admin': {
+                'admin_name': admin_name,
+                'admin_id': admin_id,
+                'admin_organization': admin_organization,
+                'admin_city': admin_city,
+                'admin_address': admin_address,
+                'admin_state': admin_state,
+                'admin_zipcode': admin_zipcode,
+                'admin_country': admin_country,
+                'admin_phone': admin_phone,
+                'admin_fax': admin_fax,
+                'admin_email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email) else None,
+            },
+            'technical_contact': {
+                'tech_name': tech_name,
+                'tech_id': tech_id,
+                'tech_organization': tech_organization,
+                'tech_city': tech_city,
+                'tech_address': tech_address,
+                'tech_state': tech_state,
+                'tech_zipcode': tech_zipcode,
+                'tech_country': tech_country,
+                'tech_phone': tech_phone,
+                'tech_fax': tech_fax,
+                'tech_email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None,
+            },
+            'nameservers': name_servers,
+            'whois': result.query_output.strip() if result.query_output else None
+        }
 
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
