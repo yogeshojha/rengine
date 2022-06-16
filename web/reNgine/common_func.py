@@ -875,10 +875,16 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
 
             # status
             for _status in status:
-                print(_status)
-                if _status: domain_info.status.add(
+                domain_info.status.add(
                     DomainWhoisStatus.objects.get_or_create(
-                        name=_status
+                        status=_status
+                )[0])
+
+            # name servers
+            for name_server in name_servers:
+                domain_info.name_servers.add(
+                    NameServers.objects.get_or_create(
+                        name=name_server
                 )[0])
 
 

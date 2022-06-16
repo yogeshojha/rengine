@@ -123,7 +123,7 @@ class DomainWhoisStatus(models.Model):
     status = models.CharField(max_length=500)
 
     def __str__(self):
-        return self.name
+        return self.status
 
 
 class DomainRegistrarID(models.Model):
@@ -140,6 +140,9 @@ class DomainInfo(models.Model):
     dnssec = models.CharField(max_length=100, null=True, blank=True)
     registrar = models.ManyToManyField(DomainRegistrar, blank=True)
     ip_address = models.CharField(max_length=200, null=True, blank=True)
+    created = models.DateTimeField()
+    expires = models.DateTimeField()
+    updated = models.DateTimeField()
 
     # registrant
     registrant_name = models.ManyToManyField(DomainRegisterName, blank=True, related_name='registrant_name')
@@ -181,6 +184,7 @@ class DomainInfo(models.Model):
 
     # status
     status = models.ManyToManyField(DomainWhoisStatus, blank=True)
+    name_servers = models.ManyToManyField(NameServers, blank=True)
 
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
