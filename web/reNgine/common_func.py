@@ -694,6 +694,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
         updated = whois.get('updated')
 
         registrar = whois.get('registrar')
+        dnssec = whois.get('dnssec')
+        status = whois.get('status')
 
         registrant_name = whois.get('registrant_name')
         registrant_organization = whois.get('registrant_organization')
@@ -703,6 +705,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
         registrant_zipcode = whois.get('registrant_zipcode')
         registrant_country = whois.get('registrant_country')
         registrant_email = whois.get('registrant_email')
+        registrant_phone = whois.get('registrant_phone')
+        registrant_fax = whois.get('registrant_fax')
 
         name_servers = whois.get('name_servers')
 
@@ -731,7 +735,156 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
         tech_email = whois.get('tech_email')
 
         if save_db and Domain.objects.filter(name=ip_domain).exists():
+            logger.info('Saving in DB!')
             domain = Domain.objects.get(name=ip_domain)
+
+            domain_info = DomainInfo()
+            domain_info.raw_text = whois
+            domain_info.dnsec = dnssec
+            domain_info.save()
+
+            # registrant
+            if registrar: domain_info.registrar.add(
+                DomainRegistrar.objects.get_or_create(
+                    name=registrar
+            )[0])
+            if registrant_name: domain_info.registrant_name.add(
+                DomainRegisterName.objects.get_or_create(
+                    name=registrant_name
+            )[0])
+            if registrant_organization: domain_info.registrant_organization.add(
+                DomainRegisterOrganization.objects.get_or_create(
+                    name=registrant_organization
+            )[0])
+            if registrant_address: domain_info.registrant_address.add(
+                DomainAddress.objects.get_or_create(
+                    name=registrant_address
+            )[0])
+            if registrant_city: domain_info.registrant_city.add(
+                DomainCity.objects.get_or_create(
+                    name=registrant_city
+            )[0])
+            if registrant_state: domain_info.registrant_state.add(
+                DomainState.objects.get_or_create(
+                    name=registrant_state
+            )[0])
+            if registrant_zipcode: domain_info.registrant_zip_code.add(
+                DomainZipCode.objects.get_or_create(
+                    name=registrant_zipcode
+            )[0])
+            if registrant_country: domain_info.registrant_country.add(
+                DomainCountry.objects.get_or_create(
+                    name=registrant_country
+            )[0])
+            if registrant_email: domain_info.registrant_email.add(
+                DomainEmail.objects.get_or_create(
+                    name=registrant_email
+            )[0])
+            if registrant_phone: domain_info.registrant_phone.add(
+                DomainPhone.objects.get_or_create(
+                    name=registrant_phone
+            )[0])
+            if registrant_fax: domain_info.registrant_fax.add(
+                DomainFax.objects.get_or_create(
+                    name=registrant_fax
+            )[0])
+
+            # admin
+            if admin_name: domain_info.admin_name.add(
+                DomainRegisterName.objects.get_or_create(
+                    name=admin_name
+            )[0])
+            if admin_organization: domain_info.admin_organization.add(
+                DomainRegisterOrganization.objects.get_or_create(
+                    name=admin_organization
+            )[0])
+            if admin_address: domain_info.admin_address.add(
+                DomainAddress.objects.get_or_create(
+                    name=admin_address
+            )[0])
+            if admin_city: domain_info.admin_city.add(
+                DomainCity.objects.get_or_create(
+                    name=admin_city
+            )[0])
+            if admin_state: domain_info.admin_state.add(
+                DomainState.objects.get_or_create(
+                    name=admin_state
+            )[0])
+            if admin_zipcode: domain_info.admin_zip_code.add(
+                DomainZipCode.objects.get_or_create(
+                    name=admin_zipcode
+            )[0])
+            if admin_country: domain_info.admin_country.add(
+                DomainCountry.objects.get_or_create(
+                    name=admin_country
+            )[0])
+            if admin_email: domain_info.admin_email.add(
+                DomainEmail.objects.get_or_create(
+                    name=admin_email
+            )[0])
+            if admin_phone: domain_info.admin_phone.add(
+                DomainPhone.objects.get_or_create(
+                    name=admin_phone
+            )[0])
+            if admin_fax: domain_info.admin_fax.add(
+                DomainFax.objects.get_or_create(
+                    name=admin_fax
+            )[0])
+
+            # tech
+            if tech_name: domain_info.tech_name.add(
+                DomainRegisterName.objects.get_or_create(
+                    name=tech_name
+            )[0])
+            if tech_organization: domain_info.tech_organization.add(
+                DomainRegisterOrganization.objects.get_or_create(
+                    name=tech_organization
+            )[0])
+            if tech_address: domain_info.tech_address.add(
+                DomainAddress.objects.get_or_create(
+                    name=tech_address
+            )[0])
+            if tech_city: domain_info.tech_city.add(
+                DomainCity.objects.get_or_create(
+                    name=tech_city
+            )[0])
+            if tech_state: domain_info.tech_state.add(
+                DomainState.objects.get_or_create(
+                    name=tech_state
+            )[0])
+            if tech_zipcode: domain_info.tech_zip_code.add(
+                DomainZipCode.objects.get_or_create(
+                    name=tech_zipcode
+            )[0])
+            if tech_country: domain_info.tech_country.add(
+                DomainCountry.objects.get_or_create(
+                    name=tech_country
+            )[0])
+            if tech_email: domain_info.tech_email.add(
+                DomainEmail.objects.get_or_create(
+                    name=tech_email
+            )[0])
+            if tech_phone: domain_info.tech_phone.add(
+                DomainPhone.objects.get_or_create(
+                    name=tech_phone
+            )[0])
+            if tech_fax: domain_info.tech_fax.add(
+                DomainFax.objects.get_or_create(
+                    name=tech_fax
+            )[0])
+
+            # status
+            for _status in status:
+                print(_status)
+                if _status: domain_info.status.add(
+                    DomainWhoisStatus.objects.get_or_create(
+                        name=_status
+                )[0])
+
+
+
+            # domain_info.registrar = registrar
+
 
         return {
             'status': True,
@@ -741,6 +894,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'updated': updated,
                 'expires': expires,
                 'registrar': registrar,
+                'geolocation_iso': registrant_country,
+                'dnssec': dnssec,
+                'status': status,
             },
             'registrant': {
                 'registrar_name': registrant_name,
@@ -750,6 +906,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'registrant_state': registrant_state,
                 'registrant_zipcode': registrant_zipcode,
                 'registrant_country': registrant_country,
+                'registrant_phone': registrant_phone,
+                'registrant_fax': registrant_fax,
                 'registrant_email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None,
             },
             'admin': {
@@ -779,7 +937,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'tech_email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None,
             },
             'nameservers': name_servers,
-            'whois': result.query_output.strip() if result.query_output else None
+            'raw_text': result.query_output.strip() if result.query_output else None
         }
 
 def get_cms_details(url):

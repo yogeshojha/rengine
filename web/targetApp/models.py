@@ -26,76 +26,120 @@ class NameServers(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500, null=True, blank=True)
 
-
-class DomainRegisterName(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500)
-
-
-class DomainRegisterOrganization(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500)
-
-
-class DomainAddress(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500)
-
-
-class DomainCity(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-
-
-class DomainState(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=50)
-
-
-class DomainZipCode(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=20)
-
-
-class DomainCountry(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=20)
-
-
-class DomainEmail(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500)
-
-
-class DomainPhone(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-
-
-class DomainFax(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=100)
-
-
-class DomainWhoisStatus(models.Model):
-    id = models.AutoField(primary_key=True)
-    status = models.CharField(max_length=500)
+    def __str__(self):
+        return self.name
 
 
 class DomainRegistrar(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
 
+    def __str__(self):
+        return self.name
+
+
+class DomainRegisterName(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainRegisterOrganization(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainAddress(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainCity(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainState(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainZipCode(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainCountry(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=20)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainEmail(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainPhone(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainFax(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class DomainWhoisStatus(models.Model):
+    id = models.AutoField(primary_key=True)
+    status = models.CharField(max_length=500)
+
+    def __str__(self):
+        return self.name
+
 
 class DomainRegistrarID(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
 
+    def __str__(self):
+        return self.name
+
 
 class DomainInfo(models.Model):
     id = models.AutoField(primary_key=True)
-    raw_text = models.CharField(max_length=10000, null=True, blank=True)
-    registrar = models.ManyToManyField(DomainRegisterName, blank=True)
+    raw_text = models.CharField(max_length=15000, null=True, blank=True)
+    dnssec = models.CharField(max_length=100, null=True, blank=True)
+    registrar = models.ManyToManyField(DomainRegistrar, blank=True)
+    ip_address = models.CharField(max_length=200, null=True, blank=True)
 
     # registrant
     registrant_name = models.ManyToManyField(DomainRegisterName, blank=True, related_name='registrant_name')
@@ -142,7 +186,7 @@ class DomainInfo(models.Model):
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
     def __str__(self):
-        return self.ip_address
+        return self.id
 
 
 class Organization(models.Model):
