@@ -189,7 +189,7 @@ Target Summary
 
 				</div>
 				<div class="row">
-					<div class="col-xl-7 col-lg-7 col-12">
+					<div class="col-xl-12 col-lg-12 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<div class="card-widgets">
@@ -222,59 +222,7 @@ Target Summary
 													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
 												</div>
 												<h4 class="header-title">Domain Information</h4>
-												<table class="domain_details_table table table-hover table-borderless">
-													<tr style="display: none">
-														<th>&nbsp;</th>
-														<th>&nbsp;</th>
-													</tr>
-													<tr>
-														<td>Domain Name</td>
-														<td>{{target.name}}</td>
-													</tr>
-													<tr>
-														<td>Domain age</td>
-														<td id="domain_age">{{target.domain_info.domain_age}}</td>
-													</tr>
-													<tr>
-														<td>IP Address</td>
-														<td id="ip_address">{{target.domain_info.ip_address}}</td>
-													</tr>
-													<tr>
-														<td>IP Geolocation</td>
-														<td id="ip_geolocation">{% if target.domain_info.geolocation_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{target.domain_info.geolocation_iso}}.png" alt="{{target.domain_info.geolocation_iso}}">{% endif %} {{target.domain_info.geolocation}}</td>
-													</tr>
-												</table>
-												<h4 class="header-title mt-3">Registrant Information</h4>
-												<table class="domain_details_table table table-hover table-borderless">
-													<tr style="display: none">
-														<th>&nbsp;</th>
-														<th>&nbsp;</th>
-													</tr>
-													<tr>
-														<td>Name</td>
-														<td id="registrant_name">{{target.domain_info.whois.registrant.name}}</td>
-													</tr>
-													<tr>
-														<td>Email</td>
-														<td id="registrant_email">{{target.domain_info.whois.registrant.email}}</td>
-													</tr>
-													<tr>
-														<td>Organization</td>
-														<td id="registrant_organization">{{target.domain_info.whois.registrant.organization}}</td>
-													</tr>
-													<tr>
-														<td>Address</td>
-														<td id="registrant_address">{% if target.domain_info.whois.registrant.country_iso %}<img src="https://domainbigdata.com/img/flags-iso/flat/24/{{target.domain_info.whois.registrant.country_iso}}.png" alt="{{target.domain_info.whois.registrant.country_iso}}">{% endif %} {{target.domain_info.whois.registrant.address}} {{target.domain_info.whois.registrant.City}} {{target.domain_info.whois.registrant.state}} {{target.domain_info.whois.registrant.country}}</td>
-													</tr>
-													<tr>
-														<td>Phone Numbers</td>
-														<td id="registrant_phone_numbers">{{target.domain_info.whois.registrant.phone_number}}</td>
-													</tr>
-													<tr>
-														<td>Fax</td>
-														<td id="registrant_fax">{{target.domain_info.whois.registrant.fax}}</td>
-													</tr>
-												</table>
+												
 											</div>
 											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 												<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{target.domain_info.whois.details}}</pre>
@@ -335,7 +283,7 @@ Target Summary
 							</div>
 						</div>
 					</div>
-					<div class="col-xl-5 col-lg-5 col-12">
+					<div class="col-xl-6 col-lg-5 col-12">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
 								<h4 class="header-title mb-0">HTTP Status Breakdown</h4>

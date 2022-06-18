@@ -1497,6 +1497,7 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 }
 
 function display_whois_on_modal(response, show_add_target_btn=false) {
+	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
@@ -1511,17 +1512,17 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
 				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">Related Domains`;
 
-	if (response['related_domains'].length) {
-		content += `<span class="badge badge-soft-info float-end">${response['related_domains'].length}</span>`
-	}
+	// if (response['related_domains'].length) {
+	// 	content += `<span class="badge badge-soft-info float-end">${response['related_domains'].length}</span>`
+	// }
 
 	content += `</a>`;
 
 	content += `<a class="nav-link mb-1" id="v-pills-related-tld-tab" data-bs-toggle="pill" href="#v-pills-related-tld" role="tab" aria-controls="v-pills-related-tld"aria-selected="false">Related TLDs`;
 
-	if (response['related_tlds'].length) {
-		content += `<span class="badge badge-soft-info float-end">${response['related_tlds'].length}</span>`
-	}
+	// if (response['related_tlds'].length) {
+	// 	content += `<span class="badge badge-soft-info float-end">${response['related_tlds'].length}</span>`
+	// }
 
 	content += `</span></a>`;
 
