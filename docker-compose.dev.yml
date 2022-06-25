@@ -25,6 +25,7 @@ services:
   celery:
     build:
       context: ./web
+    image: yogeshojha/rengine:master
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
     # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
@@ -56,6 +57,7 @@ services:
 
   celery-beat:
     build: ./web
+    image: yogeshojha/rengine:master
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     depends_on:
@@ -85,7 +87,7 @@ services:
       context: ./web
     entrypoint: /usr/src/app/entrypoint.sh
     restart: always
-    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    image: yogeshojha/rengine:master
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
