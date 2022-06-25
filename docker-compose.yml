@@ -16,13 +16,13 @@ services:
 
   redis:
     image: "redis:alpine"
+    restart: always
     hostname: redis
     networks:
       - rengine_network
 
   celery:
-    build:
-      context: ./web
+    build: ./web
     image: yogeshojha/rengine:master
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
@@ -57,6 +57,7 @@ services:
   celery-beat:
     build: ./web
     image: yogeshojha/rengine:master
+    restart: always
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
@@ -81,8 +82,7 @@ services:
       - rengine_network
 
   web:
-    build:
-      context: ./web
+    build: ./web
     entrypoint: /usr/src/app/entrypoint.sh
     restart: always
     image: yogeshojha/rengine:master
@@ -108,8 +108,6 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
-    ports:
-      - "8000:8000"
     depends_on:
       - db
       - celery
