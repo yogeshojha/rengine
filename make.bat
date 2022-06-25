@@ -9,8 +9,8 @@ set SERVICES           = db web proxy redis celery celery-beat
 if "%1" == "certs" docker compose -f docker-compose.setup.yml run --rm certs
 :: Generate certificates.
 if "%1" == "setup" docker compose -f docker-compose.setup.yml run --rm certs
-:: Build and start all services.
-if "%1" == "up" docker compose %COMPOSE_ALL_FILES% up -d --build %SERVICES%
+:: Start all services.
+if "%1" == "up" docker compose %COMPOSE_ALL_FILES% up -d %SERVICES%
 :: Build all services.
 if "%1" == "build" docker compose %COMPOSE_ALL_FILES% build %SERVICES%
 :: Generate Username (Use only after make up).

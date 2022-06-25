@@ -18,8 +18,8 @@ certs:		    ## Generate certificates.
 setup:			## Generate certificates.
 	@make certs
 
-up:				## Build and start all services.
-	${COMPOSE_PREFIX_CMD} docker compose ${COMPOSE_ALL_FILES} up -d --build ${SERVICES}
+up:				## Start all services.
+	${COMPOSE_PREFIX_CMD} docker compose ${COMPOSE_ALL_FILES} up -d ${SERVICES}
 
 build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker compose ${COMPOSE_ALL_FILES} build ${SERVICES}
