@@ -152,11 +152,11 @@ class Subdomain(models.Model):
 	name = models.CharField(max_length=1000)
 	is_imported_subdomain = models.BooleanField(default=False)
 	is_important = models.BooleanField(default=False, null=True, blank=True)
-	http_url = models.CharField(max_length=1000, null=True, blank=True)
+	http_url = models.CharField(max_length=10000, null=True, blank=True)
 	screenshot_path = models.CharField(max_length=1000, null=True, blank=True)
 	http_header_path = models.CharField(max_length=1000, null=True, blank=True)
 	discovered_date = models.DateTimeField(blank=True, null=True)
-	cname = models.CharField(max_length=1500, blank=True, null=True)
+	cname = models.CharField(max_length=5000, blank=True, null=True)
 	is_cdn = models.BooleanField(default=False, blank=True, null=True)
 	http_status = models.IntegerField(default=0)
 	content_type = models.CharField(max_length=100, null=True, blank=True)
@@ -167,6 +167,7 @@ class Subdomain(models.Model):
 	technologies = models.ManyToManyField('Technology', related_name='technologies', blank=True)
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
 	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
+	waf = models.ManyToManyField('Waf', related_name='waf', blank=True)
 
 
 	def __str__(self):
@@ -288,7 +289,7 @@ class EndPoint(models.Model):
 		on_delete=models.CASCADE,
 		null=True,
 		blank=True)
-	http_url = models.CharField(max_length=5000)
+	http_url = models.CharField(max_length=10000)
 	content_length = models.IntegerField(default=0, null=True, blank=True)
 	page_title = models.CharField(max_length=1000, null=True, blank=True)
 	http_status = models.IntegerField(default=0, null=True, blank=True)
@@ -316,7 +317,7 @@ class VulnerabilityTags(models.Model):
 
 class VulnerabilityReference(models.Model):
 	id = models.AutoField(primary_key=True)
-	url = models.CharField(max_length=500)
+	url = models.CharField(max_length=5000)
 
 	def __str__(self):
 		return self.url
@@ -354,7 +355,7 @@ class Vulnerability(models.Model):
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	template = models.CharField(max_length=100)
-	template_url = models.CharField(max_length=200, null=True, blank=True)
+	template_url = models.CharField(max_length=1500, null=True, blank=True)
 	template_id = models.CharField(max_length=200, null=True, blank=True)
 	matcher_name = models.CharField(max_length=500, null=True, blank=True)
 	name = models.CharField(max_length=500)
@@ -362,7 +363,7 @@ class Vulnerability(models.Model):
 	description = models.CharField(max_length=10000, null=True, blank=True)
 
 	extracted_results = ArrayField(
-		models.CharField(max_length=1000), blank=True, null=True
+		models.CharField(max_length=5000), blank=True, null=True
 	)
 
 	tags = models.ManyToManyField('VulnerabilityTags', related_name='vuln_tags', blank=True)
@@ -372,9 +373,9 @@ class Vulnerability(models.Model):
 
 	cvss_metrics = models.CharField(max_length=150, null=True, blank=True)
 	cvss_score = models.FloatField(null=True, blank=True, default=None)
-	curl_command = models.CharField(max_length=1500, null=True, blank=True)
+	curl_command = models.CharField(max_length=15000, null=True, blank=True)
 	type = models.CharField(max_length=50, null=True, blank=True)
-	http_url = models.CharField(max_length=1000, null=True)
+	http_url = models.CharField(max_length=5000, null=True)
 	discovered_date = models.DateTimeField(null=True)
 	open_status = models.BooleanField(null=True, blank=True, default=True)
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
@@ -398,6 +399,12 @@ class ScanActivity(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+
+class Waf(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=100)
+	manufacturer = models.CharField(max_length=100, blank=True, null=True)
 
 
 class Technology(models.Model):
@@ -447,7 +454,7 @@ class DirectoryFile(models.Model):
 
 class DirectoryScan(models.Model):
 	id = models.AutoField(primary_key=True)
-	command_line = models.CharField(max_length=1000, blank=True, null=True)
+	command_line = models.CharField(max_length=1500, blank=True, null=True)
 	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files', blank=True)
 	scanned_date = models.DateTimeField(null=True)
 	# this is used for querying which ip was discovered during subcan
@@ -465,7 +472,7 @@ class MetaFinderDocument(models.Model):
 		null=True,
 		blank=True)
 	doc_name = models.CharField(max_length=1000, null=True, blank=True)
-	url = models.CharField(max_length=5000, null=True, blank=True)
+	url = models.CharField(max_length=10000, null=True, blank=True)
 	title = models.CharField(max_length=1000, null=True, blank=True)
 	author = models.CharField(max_length=1000, null=True, blank=True)
 	producer = models.CharField(max_length=1000, null=True, blank=True)
@@ -491,4 +498,4 @@ class Dork(models.Model):
 	id = models.AutoField(primary_key=True)
 	type = models.CharField(max_length=500, null=True, blank=True)
 	description = models.CharField(max_length=1500, null=True, blank=True)
-	url = models.CharField(max_length=1500, null=True, blank=True)
+	url = models.CharField(max_length=10000, null=True, blank=True)

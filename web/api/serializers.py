@@ -718,6 +718,12 @@ class IpSubdomainSerializer(serializers.ModelSerializer):
 		fields = ['name', 'ip_addresses']
 		depth = 1
 
+class WafSerializer(serializers.ModelSerializer):
+
+	class Meta:
+		model = Waf
+		fields = '__all__'
+
 
 class SubdomainSerializer(serializers.ModelSerializer):
 
@@ -735,6 +741,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 	directories_count = serializers.SerializerMethodField('get_directories_count')
 	subscan_count = serializers.SerializerMethodField('get_subscan_count')
 	ip_addresses = IpSerializer(many=True)
+	waf = WafSerializer(many=True)
 	technologies = TechnologySerializer(many=True)
 	directories = DirectoryScanSerializer(many=True)
 

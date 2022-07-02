@@ -45,14 +45,13 @@ function cms_detector(){
 
 $(document).on('click', '#detect_cms_submit_btn', function(){
 	var url = document.getElementById("cms_detector_input_url").value;
-	if (url) {
-		cms_detector_api_call(url);
-	}
-	else{
+	if (!validURL(url)) {
 		swal.fire("Error!", 'Please enter a valid URL!', "warning", {
 			button: "Okay",
 		});
+		return;
 	}
+	cms_detector_api_call(url);
 });
 
 
@@ -251,3 +250,66 @@ $(document).on('click', '#cve_detail_submit_btn', function(){
 		});
 	}
 });
+
+
+function toolbox_waf_detector(){
+	$('#modal_title').html('WAF Detector');
+	$('#modal-content').empty();
+	$('#modal-content').append(`
+		<div class="mb-1">
+			<label for="cms_detector_input_url" class="form-label">HTTP URL/Domain Name</label>
+			<input class="form-control" type="text" id="waf_detector_input_url" required="" placeholder="https://yourdomain.com">
+		</div>
+		<small class="mb-3 float-end text-muted">(reNgine uses <a href="https://github.com/EnableSecurity/wafw00f" target="_blank">wafw00f</a> to detect WAF.)</span>
+		<div class="mt-3 mb-3 text-center">
+			<button class="btn btn-primary float-end" type="submit" id="detect_waf_submit_btn">Detect WAF</button>
+		</div>
+	`);
+	$('#modal_dialog').modal('show');
+}
+
+
+$(document).on('click', '#detect_waf_submit_btn', function(){
+	var url = document.getElementById("waf_detector_input_url").value;
+	if (!validURL(url)) {
+		swal.fire("Error!", 'Please enter a valid URL!', "warning", {
+			button: "Okay",
+		});
+		return;
+	}
+	waf_detector_api_call(url);
+});
+
+
+function waf_detector_api_call(url){
+	var api_url = `/api/tools/waf_detector/?format=json&url=${url}`
+	Swal.fire({
+		title: `Detecting WAF`,
+		text: `reNgine is detecting WAF on ${url} and this may take a while. Please wait...`,
+		allowOutsideClick: false
+	});
+	swal.showLoading();
+	fetch(api_url, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken"),
+			"Content-Type": "application/json"
+		},
+	}).then(response => response.json()).then(function(response) {
+		if (response.status) {
+			swal.close()
+			Swal.fire({
+				title: 'WAF Detected!',
+				text: `${url} is running ${response.results}`,
+				icon: 'info'
+			});
+		} else {
+			Swal.fire({
+				title: 'Oops!',
+				text: `${response['message']}`,
+				icon: 'error'
+			});
+		}
+	});
+}
