@@ -843,7 +843,6 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 )[0])
 
             domain.domain_info = domain_info
-            domain_info.registrar = registrar
             domain.save()
         return {
             'status': True,
