@@ -766,6 +766,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             domain_info.admin_name = DomainRegisterName.objects.get_or_create(
                 name=admin_name
             )[0] if admin_name else None
+            domain_info.admin_id = DomainRegistrarID.objects.get_or_create(
+                name=admin_id
+            )[0] if admin_id else None
             domain_info.admin_organization = DomainRegisterOrganization.objects.get_or_create(
                 name=admin_organization
             )[0] if admin_organization else None
@@ -798,6 +801,9 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             domain_info.tech_name = DomainRegisterName.objects.get_or_create(
                 name=tech_name
             )[0] if tech_name else None
+            domain_info.tech_id = DomainRegistrarID.objects.get_or_create(
+                name=tech_id
+            )[0] if tech_id else None
             domain_info.tech_organization = DomainRegisterOrganization.objects.get_or_create(
                 name=tech_organization
             )[0] if tech_organization else None
@@ -919,8 +925,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'created': domain.domain_info.created,
                 'updated': domain.domain_info.updated,
                 'expires': domain.domain_info.expires,
-                'registrar': DomainRegistrarSerializer(domain.domain_info.registrar).data,
-                'geolocation_iso': DomainCountrySerializer(domain.domain_info.registrant_country).data,
+                'registrar': DomainRegistrarSerializer(domain.domain_info.registrar).data['name'],
+                'geolocation_iso': DomainCountrySerializer(domain.domain_info.registrant_country).data['name'],
                 'dnssec': domain.domain_info.dnssec,
                 'status': [status['status'] for status in DomainWhoisStatusSerializer(domain.domain_info.status, many=True).data]
             },
@@ -938,6 +944,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             },
             'admin': {
                 'name': DomainRegisterNameSerializer(domain.domain_info.admin_name).data['name'],
+                'id': DomainRegistrarIDSerializer(domain.domain_info.admin_id).data['name'],
                 'organization': DomainRegisterOrganizationSerializer(domain.domain_info.admin_organization).data['name'],
                 'address': DomainAddressSerializer(domain.domain_info.admin_address).data['name'],
                 'city': DomainCitySerializer(domain.domain_info.admin_city).data['name'],
@@ -950,6 +957,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             },
             'technical_contact': {
                 'name': DomainRegisterNameSerializer(domain.domain_info.tech_name).data['name'],
+                'id': DomainRegistrarIDSerializer(domain.domain_info.tech_id).data['name'],
                 'organization': DomainRegisterOrganizationSerializer(domain.domain_info.tech_organization).data['name'],
                 'address': DomainAddressSerializer(domain.domain_info.tech_address).data['name'],
                 'city': DomainCitySerializer(domain.domain_info.tech_city).data['name'],

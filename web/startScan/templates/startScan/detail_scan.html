@@ -436,7 +436,7 @@ Scan Findings
 												<div class="alert alert-success alert-dismissible fade show" role="alert" id="whois_fetched_alert" style="display: none">
 													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
 												</div>
-												<h4 class="header-title text-primary">Contact Information</h4>
+												<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
 												<ul class="nav nav-tabs nav-bordered nav-justified">
 													<li class="nav-item">
 														<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
@@ -499,11 +499,15 @@ Scan Findings
 																		<td><b>Name</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_name}}</td>
 																	</tr>
-																	<tr class="table-primary">
+																	<tr class="table-info">
 																		<td><b>Organization</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin_organization}}</td>
 																	</tr>
-																	<tr class="">
+																	<tr>
+																		<td><b>Admin ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_id}}</td>
+																	</tr>
+																	<tr class="table-primary">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
 																			{% if history.domain.domain_info.admin_phone %}
@@ -514,11 +518,11 @@ Scan Findings
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr class="table-info">
+																	<tr>
 																		<td><b>Address</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin_address}}</td>
 																	</tr>
-																	<tr>
+																	<tr class="table-info">
 																		<td><b>Address</b></td>
 																		<td><b>City: </b>{{history.domain.domain_info.admin_city}} <b>State: </b>{{history.domain.domain_info.admin_state}} <b>Zip Code: </b>{{history.domain.domain_info.admin_zip_code}} <b>Country:
 																			</b>{{history.domain.domain_info.admin_country}} </td>
@@ -539,7 +543,11 @@ Scan Findings
 																		<td><b>Organization</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.tech_organization}}</td>
 																	</tr>
-																	<tr class="">
+																	<tr>
+																		<td><b>Tech ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_id}}</td>
+																	</tr>
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
 																			{% if history.domain.domain_info.tech_phone %}
@@ -550,11 +558,11 @@ Scan Findings
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr class="table-info">
+																	<tr>
 																		<td><b>Address</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.tech_address}}</td>
 																	</tr>
-																	<tr>
+																	<tr class="table-info">
 																		<td><b>Address</b></td>
 																		<td><b>City: </b>{{history.domain.domain_info.tech_city}} <b>State: </b>{{history.domain.domain_info.tech_state}} <b>Zip Code: </b>{{history.domain.domain_info.tech_zip_code}} <b>Country:
 																			</b>{{history.domain.domain_info.tech_country}} </td>
