@@ -1503,188 +1503,180 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 	$('#modal-content').empty();
 	$("#modal-footer").empty();
 
-	content = `<div class="row mt-3">
+	content = `
+	<div class="row mt-3">
 		<div class="col-sm-3">
 			<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 				<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
-				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
-				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
-				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">Related Domains`;
-
-	// if (response['related_domains'].length) {
-	// 	content += `<span class="badge badge-soft-info float-end">${response['related_domains'].length}</span>`
-	// }
-
-	content += `</a>`;
-
-	content += `<a class="nav-link mb-1" id="v-pills-related-tld-tab" data-bs-toggle="pill" href="#v-pills-related-tld" role="tab" aria-controls="v-pills-related-tld"aria-selected="false">Related TLDs`;
-
-	// if (response['related_tlds'].length) {
-	// 	content += `<span class="badge badge-soft-info float-end">${response['related_tlds'].length}</span>`
-	// }
-
-	content += `</span></a>`;
-
-	content += `</div></div>
+				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
+				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history" aria-selected="false">NS History</a>
+			</div>
+		</div> <!-- end col-->
 		<div class="col-sm-9">
 			<div class="tab-content pt-0">
 				<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					<h4 class="header-title">Domain Information</h4>
-					<table class="domain_details_table table table-hover table-borderless">
-						<tr style="display: none">
-							<th>&nbsp;</th>
-							<th>&nbsp;</th>
-						</tr>
-						<tr>
-							<td>Domain Name</td>
-							<td>${response['ip_domain'] ? response['ip_domain']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Domain age</td>
-							<td>${response['domain']['domain_age'] ? response['domain']['domain_age']: "-"}</td>
-						</tr>
-						<tr>
-							<td>IP Address</td>
-							<td>${response['domain']['ip_address'] ? response['domain']['ip_address']: "-" }</td>
-						</tr>
-						<tr>
-							<td>IP Geolocation</td>
-							<td>
-							${response['domain']['geolocation_iso'] ? `<img src="https://domainbigdata.com/img/flags-iso/flat/24/${response['domain']['geolocation_iso']}.png" alt="${response['domain']['geolocation_iso']}">` : ""}
-							&nbsp;&nbsp;${response['domain']['geolocation'] ? response['domain']['geolocation'] : "-"}</td>
-						</tr>
-					</table>
-					<h4 class="header-title mt-3">Registrant Information</h4>
-					<table class="domain_details_table table table-hover table-borderless">
-						<tr style="display: none">
-							<th>&nbsp;</th>
-							<th>&nbsp;</th>
-						</tr>
-						<tr>
-							<td>Name</td>
-							<td>${response['registrant']['name'] ? response['registrant']['name']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Email</td>
-							<td>${response['registrant']['email'] ? response['registrant']['email']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Organization</td>
-							<td>${response['registrant']['organization'] ? response['registrant']['organization']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Address</td>
-							<td>${response['registrant']['address'] ? response['registrant']['address']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Phone Numbers</td>
-							<td>${response['registrant']['tel'] ? response['registrant']['tel']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Fax</td>
-							<td>${response['registrant']['fax'] ? response['registrant']['fax']: "-"}</td>
-						</tr>
-					</table>
+					<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
+					<ul class="nav nav-tabs nav-bordered nav-justified">
+						<li class="nav-item">
+							<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
+								Registrant
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
+								Admin
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#technical-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+								Technical
+							</a>
+						</li>
+					</ul>
+					<div class="tab-content">
+						<div class="tab-pane active" id="registrant-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.registrant.name}</td>
+										</tr>
+										<tr class="table-primary">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.registrant.organization}</td>
+										</tr>
+										<tr class="">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												{% if history.domain.domain_info.registrant_phone %}
+												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.registrant_phone}}
+												{% endif %}
+												{% if history.domain.domain_info.registrant_fax %}
+												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.registrant_fax}}
+											</td>
+											{% endif %}
+										</tr>
+										<tr class="table-info">
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.registrant_address}}</td>
+										</tr>
+										<tr>
+											<td><b>Address</b></td>
+											<td><b>City: </b>{{history.domain.domain_info.registrant_city}} <b>State: </b>{{history.domain.domain_info.registrant_state}} <b>Zip Code: </b>{{history.domain.domain_info.registrant_zip_code}} <b>Country:
+												</b>{{history.domain.domain_info.registrant_country}} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<div class="tab-pane" id="admin-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_name}}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin_organization}}</td>
+										</tr>
+										<tr>
+											<td><b>Admin ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_id}}</td>
+										</tr>
+										<tr class="table-primary">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												{% if history.domain.domain_info.admin_phone %}
+												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.admin_phone}}
+												{% endif %}
+												{% if history.domain.domain_info.admin_fax %}
+												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.admin_fax}}
+											</td>
+											{% endif %}
+										</tr>
+										<tr>
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin_address}}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Address</b></td>
+											<td><b>City: </b>{{history.domain.domain_info.admin_city}} <b>State: </b>{{history.domain.domain_info.admin_state}} <b>Zip Code: </b>{{history.domain.domain_info.admin_zip_code}} <b>Country:
+												</b>{{history.domain.domain_info.admin_country}} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<div class="tab-pane" id="technical-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_name}}</td>
+										</tr>
+										<tr class="table-primary">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.tech_organization}}</td>
+										</tr>
+										<tr>
+											<td><b>Tech ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_id}}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												{% if history.domain.domain_info.tech_phone %}
+												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
+												{% endif %}
+												{% if history.domain.domain_info.tech_fax %}
+												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
+											</td>
+											{% endif %}
+										</tr>
+										<tr>
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.tech_address}}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Address</b></td>
+											<td><b>City: </b>{{history.domain.domain_info.tech_city}} <b>State: </b>{{history.domain.domain_info.tech_state}} <b>Zip Code: </b>{{history.domain.domain_info.tech_zip_code}} <b>Country:
+												</b>{{history.domain.domain_info.tech_country}} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 				</div>
 				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response['whois'] ? response['whois'] : "No Whois Data found!"}</pre>
+					<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.raw_text}}</pre>
 				</div>
-				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
-	if (response['nameserver']['history'].length) {
-		content += `<table class="table table-striped mb-0">
-							<thead class="table-dark">
-								<td>Date</td>
-								<td>Action</td>
-								<td>NameServer</td>
-							</thead>
-							<tbody>`;
-
-		for (var history in response['nameserver']['history']) {
-			var obj = response['nameserver']['history'][history];
-			content += `
-						<tr>
-							<td>${obj['date']? obj['date'] : '-'}</td>
-							<td>${obj['action']? obj['action'] : '-'}</td>
-							<td>${obj['server']? obj['server'] : '-'}</td>
-						</tr>
-						`;
-		}
-
-		content += `</tbody></table>`
-	} else {
-		content += 'No DNS history records found.';
-	}
-	content += `
+				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 				</div>
-				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
-
-	if (response['nameserver']['records'].length) {
-		content += `<table class="table table-striped mb-0">
-						<thead class="table-dark">
-							<td>Type</td>
-							<td>Hostname</td>
-							<td>Address</td>
-							<td>TTL</td>
-							<td>Class</td>
-							<td>Preference</td>
-						</thead>
-						<tbody>`;
-
-		for (var record in response['nameserver']['records']) {
-			var obj = response['nameserver']['records'][record];
-			content += `
-							<tr>
-								<td><span class="badge badge-soft-primary me-1 ms-1">${obj['type']? obj['type'] : '-'}</span</td>
-								<td>${obj['hostname']? obj['hostname'] : '-'}</td>
-								<td>${obj['address']? obj['address'] : '-'}</td>
-								<td>${obj['ttl']? obj['ttl'] : '-'}</td>
-								<td>${obj['ns_class']? obj['ns_class'] : '-'}</td>
-								<td>${obj['preference']? obj['preference'] : '-'}</td>
-							</tr>`;
-		}
-		content += `</tbody></table>`;
-	} else {
-		content += `No DNS history records found.`;
-	}
-
-	content += `
+				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+					{% for nameserver in history.domain.domain_info.name_servers.all %}
+					<span class="badge badge-soft-primary me-1 ms-1">{{ nameserver}}</span>
+					{% endfor %}
 				</div>
 				<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				`;
-
-	if (!response['related_domains'].length) {
-		content += `<div class="alert alert-warning" role="alert">
-			<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related domains.
-		</div>`;
-	}
-
-	for (var domain in response['related_domains']) {
-		var domain_obj = response['related_domains'][domain];
-		content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${domain_obj} as target." onclick="add_target('${domain_obj}')">${domain_obj}</span>`
-	}
-
-	content += `
+					{% for domain in history.domain.domain_info.associated_domains.all %}
+					<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+					{% endfor %}
 				</div>
 				<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				`;
-
-	if (!response['related_tlds'].length) {
-		content += `<div class="alert alert-warning" role="alert">
-			<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related TLds.
-		</div>`;
-	}
-
-	for (var domain in response['related_tlds']) {
-		var domain_obj = response['related_tlds'][domain];
-		content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${domain_obj} as target." onclick="add_target('${domain_obj}')">${domain_obj}</span>`
-	}
-
-	content += `
+					{% for domain in history.domain.domain_info.related_tlds.all %}
+					<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+					{% endfor %}
 				</div>
 			</div>
 		</div>
-	</div>`;
+	</div>
+	`;
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">

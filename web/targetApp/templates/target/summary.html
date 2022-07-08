@@ -253,6 +253,10 @@ Target Summary
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.registrant_organization}}</td>
 																	</tr>
 																	<tr class="">
+																		<td><b>Email</b></td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.registrant_email}}</td>
+																	</tr>
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
 																			{% if target.domain_info.registrant_phone %}
@@ -263,11 +267,11 @@ Target Summary
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr class="table-info">
+																	<tr class="">
 																		<td><b>Address</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.registrant_address}}</td>
 																	</tr>
-																	<tr>
+																	<tr class="table-danger">
 																		<td><b>Address</b></td>
 																		<td><b>City: </b>{{target.domain_info.registrant_city}} <b>State: </b>{{target.domain_info.registrant_state}} <b>Zip Code: </b>{{target.domain_info.registrant_zip_code}} <b>Country:
 																			</b>{{target.domain_info.registrant_country}} </td>
@@ -280,19 +284,23 @@ Target Summary
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
-																	<tr class="">
+																	<tr class="table-primary">
 																		<td><b>Name</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin_name}}</td>
 																	</tr>
-																	<tr class="table-info">
+																	<tr class="">
 																		<td><b>Organization</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin_organization}}</td>
 																	</tr>
-																	<tr>
+																	<tr class="table-info">
 																		<td><b>Admin ID</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin_id}}</td>
 																	</tr>
-																	<tr class="table-primary">
+																	<tr class="">
+																		<td><b>Email</b></td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin_email}}</td>
+																	</tr>
+																	<tr class="table-success">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
 																			{% if target.domain_info.admin_phone %}
@@ -303,11 +311,11 @@ Target Summary
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr>
+																	<tr class="">
 																		<td><b>Address</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin_address}}</td>
 																	</tr>
-																	<tr class="table-info">
+																	<tr class="table-danger">
 																		<td><b>Address</b></td>
 																		<td><b>City: </b>{{target.domain_info.admin_city}} <b>State: </b>{{target.domain_info.admin_state}} <b>Zip Code: </b>{{target.domain_info.admin_zip_code}} <b>Country:
 																			</b>{{target.domain_info.admin_country}} </td>
@@ -320,19 +328,23 @@ Target Summary
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
-																	<tr class="">
+																	<tr class="table-info">
 																		<td><b>Name</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.tech_name}}</td>
 																	</tr>
-																	<tr class="table-primary">
+																	<tr class="">
 																		<td><b>Organization</b></td>
 																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.tech_organization}}</td>
 																	</tr>
-																	<tr>
+																	<tr class="table-primary">
 																		<td><b>Tech ID</b></td>
 																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.tech_id}}</td>
 																	</tr>
-																	<tr class="table-info">
+																	<tr class="">
+																		<td><b>Email</b></td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.tech_email}}</td>
+																	</tr>
+																	<tr class="table-success">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
 																			{% if target.domain_info.tech_phone %}
@@ -347,7 +359,7 @@ Target Summary
 																		<td><b>Address</b></td>
 																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.tech_address}}</td>
 																	</tr>
-																	<tr class="table-info">
+																	<tr class="table-danger">
 																		<td><b>Address</b></td>
 																		<td><b>City: </b>{{target.domain_info.tech_city}} <b>State: </b>{{target.domain_info.tech_state}} <b>Zip Code: </b>{{target.domain_info.tech_zip_code}} <b>Country:
 																			</b>{{target.domain_info.tech_country}} </td>
