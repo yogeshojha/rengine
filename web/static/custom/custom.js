@@ -1548,24 +1548,24 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 											<td><span class="fe-briefcase"></span>&nbsp;${response.registrant.organization}</td>
 										</tr>
 										<tr class="">
-											<td><b>Phone/Fax</b></td>
-											<td>
-												{% if history.domain.domain_info.registrant_phone %}
-												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.registrant_phone}}
-												{% endif %}
-												{% if history.domain.domain_info.registrant_fax %}
-												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.registrant_fax}}
-											</td>
-											{% endif %}
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.registrant.email}</td>
 										</tr>
 										<tr class="table-info">
-											<td><b>Address</b></td>
-											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.registrant_address}}</td>
+											<td><b>Phone/Fax</b></td>
+											<td>
+												<span class="fe-phone"></span>&nbsp;${response.registrant.phone}
+												<span class="fe-printer"></span>&nbsp;${response.registrant.fax}
+											</td>
 										</tr>
-										<tr>
+										<tr class="">
 											<td><b>Address</b></td>
-											<td><b>City: </b>{{history.domain.domain_info.registrant_city}} <b>State: </b>{{history.domain.domain_info.registrant_state}} <b>Zip Code: </b>{{history.domain.domain_info.registrant_zip_code}} <b>Country:
-												</b>{{history.domain.domain_info.registrant_country}} </td>
+											<td><span class="fe-home"></span>&nbsp;${response.registrant.address}</td>
+										</tr>
+										<tr class="table-danger">
+											<td><b>Address</b></td>
+											<td><b>City: </b>${response.registrant.city} <b>State: </b>${response.registrant.state} <b>Zip Code: </b>${response.registrant.zipcode} <b>Country:
+												</b>${response.registrant.country} </td>
 										</tr>
 									</tbody>
 								</table>
@@ -1575,37 +1575,37 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							<div class="table-responsive">
 								<table class="table mb-0">
 									<tbody>
-										<tr class="">
+										<tr class="table-primary">
 											<td><b>Name</b></td>
-											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_name}}</td>
+											<td><span class="fe-user"></span>&nbsp;${response.admin.name}</td>
+										</tr>
+										<tr class="">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.admin.organization}</td>
 										</tr>
 										<tr class="table-info">
-											<td><b>Organization</b></td>
-											<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin_organization}}</td>
-										</tr>
-										<tr>
 											<td><b>Admin ID</b></td>
-											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_id}}</td>
+											<td><span class="fe-user"></span>&nbsp;${response.admin.id}</td>
 										</tr>
-										<tr class="table-primary">
+										<tr class="">
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.admin.email}</td>
+										</tr>
+										<tr class="table-success">
 											<td><b>Phone/Fax</b></td>
 											<td>
-												{% if history.domain.domain_info.admin_phone %}
-												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.admin_phone}}
-												{% endif %}
-												{% if history.domain.domain_info.admin_fax %}
-												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.admin_fax}}
+												<span class="fe-phone"></span>&nbsp;${response.admin.phone}
+												<span class="fe-printer"></span>&nbsp;${response.admin.fax}
 											</td>
-											{% endif %}
 										</tr>
-										<tr>
+										<tr class="">
 											<td><b>Address</b></td>
-											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin_address}}</td>
+											<td><span class="fe-home"></span>&nbsp;${response.admin.address}</td>
 										</tr>
-										<tr class="table-info">
+										<tr class="table-danger">
 											<td><b>Address</b></td>
-											<td><b>City: </b>{{history.domain.domain_info.admin_city}} <b>State: </b>{{history.domain.domain_info.admin_state}} <b>Zip Code: </b>{{history.domain.domain_info.admin_zip_code}} <b>Country:
-												</b>{{history.domain.domain_info.admin_country}} </td>
+											<td><b>City: </b>${response.admin.city} <b>State: </b>${response.admin.state} <b>Zip Code: </b>${response.admin.zipcode} <b>Country:
+												</b>${response.admin.country} </td>
 										</tr>
 									</tbody>
 								</table>
@@ -1615,37 +1615,37 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							<div class="table-responsive">
 								<table class="table mb-0">
 									<tbody>
-										<tr class="">
+										<tr class="table-info">
 											<td><b>Name</b></td>
-											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_name}}</td>
+											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.name}</td>
+										</tr>
+										<tr class="">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.technical_contact.organization}</td>
 										</tr>
 										<tr class="table-primary">
-											<td><b>Organization</b></td>
-											<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.tech_organization}}</td>
-										</tr>
-										<tr>
 											<td><b>Tech ID</b></td>
-											<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_id}}</td>
+											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.id}</td>
 										</tr>
-										<tr class="table-info">
+										<tr class="">
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.technical_contact.email}</td>
+										</tr>
+										<tr class="table-success">
 											<td><b>Phone/Fax</b></td>
 											<td>
-												{% if history.domain.domain_info.tech_phone %}
-												<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
-												{% endif %}
-												{% if history.domain.domain_info.tech_fax %}
-												<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
+												<span class="fe-phone"></span>&nbsp;${response.technical_contact.phone}
+												<span class="fe-printer"></span>&nbsp;${response.technical_contact.fax}
 											</td>
-											{% endif %}
 										</tr>
 										<tr>
 											<td><b>Address</b></td>
-											<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.tech_address}}</td>
+											<td><span class="fe-home"></span>&nbsp;${response.technical_contact.address}</td>
 										</tr>
-										<tr class="table-info">
+										<tr class="table-danger">
 											<td><b>Address</b></td>
-											<td><b>City: </b>{{history.domain.domain_info.tech_city}} <b>State: </b>{{history.domain.domain_info.tech_state}} <b>Zip Code: </b>{{history.domain.domain_info.tech_zip_code}} <b>Country:
-												</b>{{history.domain.domain_info.tech_country}} </td>
+											<td><b>City: </b>${response.technical_contact.city} <b>State: </b>${response.technical_contact.state} <b>Zip Code: </b>${response.technical_contact.zipcode} <b>Country:
+												</b>${response.technical_contact.country} </td>
 										</tr>
 									</tbody>
 								</table>
@@ -1654,24 +1654,25 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 					</div>
 				</div>
 				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-					<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.raw_text}}</pre>
+					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response.raw_text}</pre>
 				</div>
 				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 				</div>
 				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					{% for nameserver in history.domain.domain_info.name_servers.all %}
-					<span class="badge badge-soft-primary me-1 ms-1">{{ nameserver}}</span>
-					{% endfor %}
+				`;
+
+				for (var ns in response.nameservers) {
+					var ns_object = response.nameservers[ns];
+					content += `<span class="badge badge-soft-primary me-1 ms-1">${ns_object}</span>`;
+				}
+
+				content += `
 				</div>
 				<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					{% for domain in history.domain.domain_info.associated_domains.all %}
-					<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-					{% endfor %}
+					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
 				</div>
 				<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					{% for domain in history.domain.domain_info.related_tlds.all %}
-					<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-					{% endfor %}
+					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
 				</div>
 			</div>
 		</div>
@@ -1680,7 +1681,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">
-			<button class="btn btn-primary float-end" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
+			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
 		</div>`
 	}
 
@@ -2528,11 +2529,11 @@ function highlight_search(search_keyword, content){
 
 function validURL(str) {
 	// checks for valid http url
-  var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-    '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-    '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-    '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-    '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-    '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-  return !!pattern.test(str);
+	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+		'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+		'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+		'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+		'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+	return !!pattern.test(str);
 }
