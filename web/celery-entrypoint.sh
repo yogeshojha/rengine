@@ -137,3 +137,6 @@ then
 fi
 
 exec "$@"
+
+# httpx seems to have issue, use alias instead!!!
+echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc

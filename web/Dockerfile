@@ -108,3 +108,6 @@ RUN python3 -m pip install fuzzywuzzy \
 
 # Copy source code
 COPY . /usr/src/app/
+
+# httpx seems to have issue, use alias instead!!!
+RUN echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
