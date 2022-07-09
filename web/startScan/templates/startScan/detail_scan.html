@@ -12,6 +12,7 @@ Detailed Scan
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap-1.2.2.css' %}">
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <script src="https://d3js.org/d3.v3.min.js"></script>
@@ -614,6 +615,14 @@ Scan Findings
 							</div>
 						</div>
 					</div>
+					<div class="col-xl-12 col-lg-12 col-12">
+						<div class="card">
+							<div class="card-body">
+								<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+								<div id="world_map" style="height: 520px"></div>
+							</div>
+						</div>
+					</div>
 					{% if history.vulnerability_scan %}
 					<div class="col-xl-5 col-lg-5 col-12">
 						{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
@@ -1126,6 +1135,8 @@ Scan Findings
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="{% static 'assets/js/clipboard.min.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
+<script src="{% static 'plugins/j-map/jquery-jvectormap-1.2.2.min.js' %}"></script>
+<script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
@@ -2430,6 +2441,34 @@ $(document).ready(function() {
 			$('#' + filter_cols[col]).prop('checked', false);
 		}
 	}
+
+	var countriesData = {
+		"NE": 0,
+		"IN": 0.1,
+		"CH": 0.2
+	};
+
+	$('#world_map').vectorMap({
+		map: 'world_mill_en',
+		hoverOpacity: 0.7,
+		hoverColor: false,
+		regionStyle: {
+				initial: {
+					fill: '#d4dadd'
+				}
+			},
+		backgroundColor: 'transparent',
+		series: {
+			regions: [{
+				values: countriesData,
+				scale: ['#C8EEFF', '#0071A4'],
+				normalizeFunction: 'polynomial'
+			}]
+		},
+		onRegionTipShow: function(e, el, code){
+			el.html(el.html()+' (GDP - '+gdpData[code]+')');
+		}
+	});
 
 });
 </script>
