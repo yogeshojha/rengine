@@ -772,7 +772,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 	httpx_results_file = results_dir + '/httpx.json'
 
 	subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-	httpx_command = 'httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
+	httpx_command = '/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
 
 	proxy = get_random_proxy()
 
@@ -1556,7 +1556,7 @@ def fetch_endpoints(
 	'''
 	logger.info('HTTP Probing on collected endpoints')
 
-	httpx_command = 'httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
+	httpx_command = '/go/bin/httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
 
 	proxy = get_random_proxy()
 	if proxy:
