@@ -312,7 +312,7 @@ def initiate_scan(
 	if(task.waf_detection):
 		try:
 			activity_id = create_scan_activity(task, "Detecting WAF", 1)
-			# check_waf(task, results_dir)
+			check_waf(task, results_dir)
 			update_last_activity(activity_id, 2)
 		except Exception as e:
 			logger.error(e)
