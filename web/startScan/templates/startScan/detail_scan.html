@@ -13,6 +13,7 @@ Detailed Scan
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap-1.2.2.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
 <script src="https://d3js.org/d3.v3.min.js"></script>
@@ -618,8 +619,34 @@ Scan Findings
 					<div class="col-xl-12 col-lg-12 col-12">
 						<div class="card">
 							<div class="card-body">
-								<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
-								<div id="world_map" style="height: 520px"></div>
+								<div class="row">
+									<div class="col-9">
+										<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+										<div id="world_map" style="height: 520px"></div>
+									</div>
+									<div class="col-3">
+										<div class="table-responsive">
+											<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+												<thead class="table-light">
+													<tr>
+														<th>&nbsp;</th>
+														<th>Country</th>
+														<th>Assets</th>
+													</tr>
+												</thead>
+												<tbody>
+													{% for country in asset_countries %}
+													<tr>
+														<td><span class="fi fi-{{country.name|lower}}"></span></td>
+														<td>{{country.name}}</td>
+														<td>{{country.count}}</td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
