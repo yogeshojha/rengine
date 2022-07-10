@@ -13,6 +13,8 @@ Target Summary for {{target.name}}
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -404,6 +406,40 @@ Target Summary
 							</div>
 						</div>
 					</div>
+					<div class="col-12">
+						<div class="card">
+							<div class="card-body">
+								<div class="row">
+									<div class="col-9">
+										<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+										<div id="world_map" style="height: 520px"></div>
+									</div>
+									<div class="col-3">
+										<div class="table-responsive" data-simplebar style="max-height: 520px;">
+											<table class="table table-borderless table-hover table-centered m-0">
+												<thead class="table-light">
+													<tr>
+														<th>&nbsp;</th>
+														<th>Country</th>
+														<th>Assets</th>
+													</tr>
+												</thead>
+												<tbody>
+													{% for country in asset_countries %}
+													<tr>
+														<td><span class="fi fi-{{country.iso|lower}}"></span></td>
+														<td>{{country.name}}</td>
+														<td>{{country.count}}</td>
+													</tr>
+													{% endfor %}
+												</tbody>
+											</table>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
 					<div class="col-xl-6 col-lg-6 col-12 mb-2">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
@@ -591,6 +627,8 @@ Target Summary
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+<script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
+<script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function(){
 	{% include 'base/_items/most_common_cve_cwe_tags.js' %}
@@ -1749,6 +1787,43 @@ $(document).ready(function(){
 			$('#' + filter_cols[col]).prop('checked', false);
 		}
 	}
+
+	var countriesData = {
+		{% for country in asset_countries %}
+			"{{country.iso}}": {{country.count}},
+		{% endfor %}
+	};
+
+	$('#world_map').vectorMap({
+		map: 'world_mill_en',
+		hoverOpacity: 0.7,
+		hoverColor: false,
+		regionStyle: {
+				initial: {
+					fill: '#d4dadd'
+				}
+			},
+		backgroundColor: 'transparent',
+		series: {
+			regions: [{
+				values: countriesData,
+				scale: [
+					{% for country in asset_countries %}
+						shadeColor('#2C3E50', {{country.count}}),
+					{% endfor %}
+				],
+				normalizeFunction: 'polynomial'
+			}]
+		},
+		onRegionTipShow: function(e, el, code){
+			if (code in countriesData) {
+				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
+			}
+			else{
+				el.html(el.html()+' (Total Assets : 0)');
+			}
+		}
+	});
 
 });
 </script>
