@@ -214,6 +214,7 @@ def initiate_scan(
 	task.scan_status = 1
 	task.start_scan_date = timezone.now()
 	task.subdomain_discovery = True if engine_object.subdomain_discovery else False
+	task.waf_detection = True if engine_object.waf_detection else False
 	task.dir_file_fuzz = True if engine_object.dir_file_fuzz else False
 	task.port_scan = True if engine_object.port_scan else False
 	task.fetch_url = True if engine_object.fetch_url else False

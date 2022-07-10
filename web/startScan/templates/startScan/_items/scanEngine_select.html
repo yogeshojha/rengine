@@ -34,6 +34,18 @@
             </tr>
             <tr>
               <td>
+                <p class="mr-2 mt-1">WAF Detection</>
+              </td>
+              <td>
+                {% if engine.waf_detection %}
+                  {% include 'base/_items/green_tick.html' %}
+                {% else %}
+                  {% include 'base/_items/red_cross.html' %}
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td>
                 <p class="mr-2 mt-1">Screenshot</>
               </td>
               <td>

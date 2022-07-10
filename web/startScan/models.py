@@ -23,6 +23,7 @@ class ScanHistory(models.Model):
 	scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
 	celery_id = models.CharField(max_length=100, blank=True)
 	subdomain_discovery = models.BooleanField(null=True, default=False)
+	waf_detection = models.BooleanField(null=True, default=False)
 	dir_file_fuzz = models.BooleanField(null=True, default=False)
 	port_scan = models.BooleanField(null=True, default=False)
 	fetch_url = models.BooleanField(null=True, default=False)
