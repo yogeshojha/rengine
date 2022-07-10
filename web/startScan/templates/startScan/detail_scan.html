@@ -2443,9 +2443,9 @@ $(document).ready(function() {
 	}
 
 	var countriesData = {
-		"NE": 0,
-		"IN": 0.1,
-		"CH": 0.2
+		{% for country in asset_countries %}
+			"{{country}}": {{country.count}},
+		{% endfor %}
 	};
 
 	$('#world_map').vectorMap({

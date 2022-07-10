@@ -310,7 +310,7 @@ def initiate_scan(
 	# start wafw00f
 	try:
 		activity_id = create_scan_activity(task, "Detecting WAF", 1)
-		check_waf(task, results_dir)
+		# check_waf(task, results_dir)
 		update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -758,7 +758,7 @@ def get_removed_subdomain(scan_id, domain_id):
 				name__in=removed_subdomains)
 
 
-def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
+def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, threads=100):
 	'''
 	This function is runs right after subdomain gathering, and gathers important
 	like page title, http status, etc
@@ -772,7 +772,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 	httpx_results_file = results_dir + '/httpx.json'
 
 	subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-	httpx_command = '/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
+	httpx_command = '/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {}'.format(threads)
 
 	proxy = get_random_proxy()
 
@@ -866,10 +866,33 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 							ip = IpAddress(address=_ip)
 							if 'cdn' in json_st:
 								ip.is_cdn = json_st['cdn']
-							ip.save()
+						# add geo iso
+						country_iso = subprocess.getoutput(['geoiplookup {}'.format(_ip)]).split(':')[1].strip().split(',')[0]
+						if 'not found' not in country_iso and len(country_iso) <= 3:
+							iso_object, _ = CountryISO.objects.get_or_create(
+								name=country_iso,
+							)
+							ip.geo_iso = iso_object
+						ip.save()
 						subdomain.ip_addresses.add(ip)
-				# see if to ignore 404 or 5xx
-				alive_file.write(json_st['url'] + '\n')
+				if 'host' in json_st:
+					_ip = json_st['host']
+					if IpAddress.objects.filter(address=_ip).exists():
+						ip = IpAddress.objects.get(address=_ip)
+					else:
+						ip = IpAddress(address=_ip)
+						if 'cdn' in json_st:
+							ip.is_cdn = json_st['cdn']
+					# add geo iso
+					country_iso = subprocess.getoutput(['geoiplookup {}'.format(_ip)]).split(':')[1].strip().split(',')[0]
+					if 'not found' not in country_iso and len(country_iso) <= 3:
+						iso_object, _ = CountryISO.objects.get_or_create(
+							name=country_iso,
+						)
+						ip.geo_iso = iso_object
+					ip.save()
+				if json_st.get('status-code') < 400:
+					alive_file.write(json_st['url'] + '\n')
 				subdomain.save()
 				endpoint.save()
 			except Exception as exception:

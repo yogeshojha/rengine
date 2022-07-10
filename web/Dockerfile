@@ -37,7 +37,7 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     python3-brotli \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
-    whois
+    geoip-bin
 
 
 # Download and install go 1.17

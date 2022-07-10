@@ -406,6 +406,9 @@ class Waf(models.Model):
 	name = models.CharField(max_length=100)
 	manufacturer = models.CharField(max_length=100, blank=True, null=True)
 
+	def __str__(self):
+		return str(self.name)
+
 
 class Technology(models.Model):
 	id = models.AutoField(primary_key=True)
@@ -418,6 +421,9 @@ class Technology(models.Model):
 class CountryISO(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=10, blank=True)
+
+	def __str__(self):
+		return str(self.name)
 
 
 class IpAddress(models.Model):
