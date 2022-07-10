@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0
+**Release Date: July 11, 2022**
+
+## Added
+
+- Geographic Distribution of Assets Map
+
+## Fixes
+
+- WHOIS Provider Changed
+- Fixed Dark UI Issues
+- Fix HTTPX Issue
+
 ## 1.2.0
 **Release Date: May 27, 2022**
 
