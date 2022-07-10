@@ -46,6 +46,7 @@ Scan Engines
             <th>Engine Name</th>
             <th class="text-center">Type</th>
             <th class="text-center">Subdomain Discovery</th>
+            <th class="text-center">WAF Detection</th>
             <th class="text-center">Screenshot</th>
             <th class="text-center">OSINT</th>
             <th class="text-center">Port Scan</th>
@@ -69,6 +70,13 @@ Scan Engines
             </td>
             <td class="text-center">
               {% if engine_type.subdomain_discovery %}
+              {% include 'base/_items/green_tick.html' %}
+              {% else %}
+              {% include 'base/_items/red_cross.html' %}
+              {%endif%}
+            </td>
+            <td class="text-center">
+              {% if engine_type.waf_detection %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}

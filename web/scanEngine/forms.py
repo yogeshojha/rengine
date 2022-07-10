@@ -21,6 +21,11 @@ class AddEngineForm(forms.ModelForm):
             "checked": "",
             "class": "switch",
         }))
+    waf_detection = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     screenshot = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
@@ -80,6 +85,11 @@ class UpdateEngineForm(forms.ModelForm):
         widget=forms.CheckboxInput(attrs={
             "class": "switch",
         }))
+    waf_detection = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "switch",
+        }))
     screenshot = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={
@@ -123,6 +133,7 @@ class UpdateEngineForm(forms.ModelForm):
     def set_value(self, engine):
         self.initial['engine_name'] = engine.engine_name
         self.initial['subdomain_discovery'] = engine.subdomain_discovery
+        self.initial['waf_detection'] = engine.waf_detection
         self.initial['dir_file_fuzz'] = engine.dir_file_fuzz
         self.initial['port_scan'] = engine.port_scan
         self.initial['fetch_url'] = engine.fetch_url
