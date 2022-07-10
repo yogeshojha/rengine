@@ -12,7 +12,7 @@ Detailed Scan
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/gridzy.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/gridzy/skins/gridzySkinBlank/style.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap-1.2.2.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 <script src="{% static 'plugins/gridzy/gridzy.js' %}"></script>
@@ -1162,7 +1162,7 @@ Scan Findings
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="{% static 'assets/js/clipboard.min.js' %}"></script>
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
-<script src="{% static 'plugins/j-map/jquery-jvectormap-1.2.2.min.js' %}"></script>
+<script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
@@ -2497,7 +2497,12 @@ $(document).ready(function() {
 			}]
 		},
 		onRegionTipShow: function(e, el, code){
-			el.html(el.html() + ' (GDP - ');
+			if (code in countriesData) {
+				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
+			}
+			else{
+				el.html(el.html()+' (Total Assets : 0)');
+			}
 		}
 	});
 
