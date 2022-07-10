@@ -867,10 +867,14 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 							if 'cdn' in json_st:
 								ip.is_cdn = json_st['cdn']
 						# add geo iso
-						country_iso = subprocess.getoutput(['geoiplookup {}'.format(_ip)]).split(':')[1].strip().split(',')[0]
-						if 'not found' not in country_iso and len(country_iso) <= 3:
+						subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+						if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
+							print(subprocess_output)
+							country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
+							country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
 							iso_object, _ = CountryISO.objects.get_or_create(
-								name=country_iso,
+								iso=country_iso,
+								name=country_name
 							)
 							ip.geo_iso = iso_object
 						ip.save()
@@ -884,10 +888,14 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 						if 'cdn' in json_st:
 							ip.is_cdn = json_st['cdn']
 					# add geo iso
-					country_iso = subprocess.getoutput(['geoiplookup {}'.format(_ip)]).split(':')[1].strip().split(',')[0]
-					if 'not found' not in country_iso and len(country_iso) <= 3:
+					subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+					if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
+						print(subprocess_output)
+						country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
+						country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
 						iso_object, _ = CountryISO.objects.get_or_create(
-							name=country_iso,
+							iso=country_iso,
+							name=country_name
 						)
 						ip.geo_iso = iso_object
 					ip.save()

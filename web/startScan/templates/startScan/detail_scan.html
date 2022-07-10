@@ -622,11 +622,11 @@ Scan Findings
 								<div class="row">
 									<div class="col-9">
 										<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
-										<div id="world_map" style="height: 520px"></div>
+										<div id="world_map" style="height: 320px"></div>
 									</div>
 									<div class="col-3">
-										<div class="table-responsive">
-											<table class="table table-borderless table-nowrap table-hover table-centered m-0">
+										<div class="table-responsive" data-simplebar style="max-height: 320px;">
+											<table class="table table-borderless table-hover table-centered m-0">
 												<thead class="table-light">
 													<tr>
 														<th>&nbsp;</th>
@@ -637,7 +637,7 @@ Scan Findings
 												<tbody>
 													{% for country in asset_countries %}
 													<tr>
-														<td><span class="fi fi-{{country.name|lower}}"></span></td>
+														<td><span class="fi fi-{{country.iso|lower}}"></span></td>
 														<td>{{country.name}}</td>
 														<td>{{country.count}}</td>
 													</tr>
