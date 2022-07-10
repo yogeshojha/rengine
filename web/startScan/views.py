@@ -107,8 +107,7 @@ def detail_scan(request, id=None):
 
         context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
 
-        # context['asset_countries'] = CountryISO.objects.annotate(count=Count('ipaddress')).order_by('-count')
-        context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=id))).annotate(count=Count('name')).order_by('-count')
+        context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=id))).annotate(count=Count('iso')).order_by('-count')
 
         if domain_id:
             domain_id = domain_id[0].domain.id
