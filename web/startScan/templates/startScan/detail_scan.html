@@ -2471,7 +2471,7 @@ $(document).ready(function() {
 
 	var countriesData = {
 		{% for country in asset_countries %}
-			"{{country}}": {{country.count}},
+			"{{country.iso}}": {{country.count}},
 		{% endfor %}
 	};
 
@@ -2488,12 +2488,16 @@ $(document).ready(function() {
 		series: {
 			regions: [{
 				values: countriesData,
-				scale: ['#C8EEFF', '#0071A4'],
+				scale: [
+					{% for country in asset_countries %}
+						shadeColor('#2C3E50', {{country.count}}),
+					{% endfor %}
+				],
 				normalizeFunction: 'polynomial'
 			}]
 		},
 		onRegionTipShow: function(e, el, code){
-			el.html(el.html()+' (GDP - '+gdpData[code]+')');
+			el.html(el.html() + ' (GDP - ');
 		}
 	});
 

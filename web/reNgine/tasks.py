@@ -869,7 +869,6 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 						# add geo iso
 						subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
 						if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
-							print(subprocess_output)
 							country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
 							country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
 							iso_object, _ = CountryISO.objects.get_or_create(
@@ -890,7 +889,6 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 					# add geo iso
 					subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
 					if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
-						print(subprocess_output)
 						country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
 						country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
 						iso_object, _ = CountryISO.objects.get_or_create(
