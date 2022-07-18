@@ -214,6 +214,7 @@ def initiate_scan(
 	task.scan_status = 1
 	task.start_scan_date = timezone.now()
 	task.subdomain_discovery = True if engine_object.subdomain_discovery else False
+	task.waf_detection = True if engine_object.waf_detection else False
 	task.dir_file_fuzz = True if engine_object.dir_file_fuzz else False
 	task.port_scan = True if engine_object.port_scan else False
 	task.fetch_url = True if engine_object.fetch_url else False
@@ -308,13 +309,15 @@ def initiate_scan(
 	update_last_activity(activity_id, 2)
 
 	# start wafw00f
-	try:
-		activity_id = create_scan_activity(task, "Detecting WAF", 1)
-		check_waf(task, results_dir)
-		update_last_activity(activity_id, 2)
-	except Exception as e:
-		logger.error(e)
-		update_last_activity(activity_id, 0, error_message=str(e))
+	if(task.waf_detection):
+		try:
+			activity_id = create_scan_activity(task, "Detecting WAF", 1)
+			check_waf(task, results_dir)
+			update_last_activity(activity_id, 2)
+		except Exception as e:
+			logger.error(e)
+			update_last_activity(activity_id, 0, error_message=str(e))
+
 	try:
 		if task.screenshot:
 			activity_id = create_scan_activity(
@@ -758,7 +761,7 @@ def get_removed_subdomain(scan_id, domain_id):
 				name__in=removed_subdomains)
 
 
-def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
+def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, threads=100):
 	'''
 	This function is runs right after subdomain gathering, and gathers important
 	like page title, http status, etc
@@ -772,7 +775,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 	httpx_results_file = results_dir + '/httpx.json'
 
 	subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-	httpx_command = 'httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
+	httpx_command = '/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {}'.format(threads)
 
 	proxy = get_random_proxy()
 
@@ -787,8 +790,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 		subdomain_scan_results_file
 	)
 	logger.info(httpx_command)
-	process = subprocess.Popen(httpx_command.split())
-	process.wait()
+	os.system(remove_cmd_injection_chars(httpx_command))
 
 	# alive subdomains from httpx
 	alive_file = open(alive_file_location, 'w')
@@ -866,10 +868,39 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id):
 							ip = IpAddress(address=_ip)
 							if 'cdn' in json_st:
 								ip.is_cdn = json_st['cdn']
-							ip.save()
+						# add geo iso
+						subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+						if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
+							country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
+							country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
+							iso_object, _ = CountryISO.objects.get_or_create(
+								iso=country_iso,
+								name=country_name
+							)
+							ip.geo_iso = iso_object
+						ip.save()
 						subdomain.ip_addresses.add(ip)
-				# see if to ignore 404 or 5xx
-				alive_file.write(json_st['url'] + '\n')
+				if 'host' in json_st:
+					_ip = json_st['host']
+					if IpAddress.objects.filter(address=_ip).exists():
+						ip = IpAddress.objects.get(address=_ip)
+					else:
+						ip = IpAddress(address=_ip)
+						if 'cdn' in json_st:
+							ip.is_cdn = json_st['cdn']
+					# add geo iso
+					subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+					if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
+						country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
+						country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
+						iso_object, _ = CountryISO.objects.get_or_create(
+							iso=country_iso,
+							name=country_name
+						)
+						ip.geo_iso = iso_object
+					ip.save()
+				if json_st.get('status-code') < 400:
+					alive_file.write(json_st['url'] + '\n')
 				subdomain.save()
 				endpoint.save()
 			except Exception as exception:
@@ -1278,6 +1309,8 @@ def directory_fuzz(
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
+	logger.info(ffuf_command)
+
 	for subdomain in subdomains_fuzz:
 		command = None
 		# delete any existing dirs.json
@@ -1556,7 +1589,7 @@ def fetch_endpoints(
 	'''
 	logger.info('HTTP Probing on collected endpoints')
 
-	httpx_command = 'httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
+	httpx_command = '/go/bin/httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
 
 	proxy = get_random_proxy()
 	if proxy:
@@ -1566,8 +1599,7 @@ def fetch_endpoints(
 		httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
 	logger.info(httpx_command)
-	process = subprocess.Popen(httpx_command.split())
-	process.wait()
+	os.system(remove_cmd_injection_chars(httpx_command))
 
 	url_results_file = results_dir + '/final_httpx_urls.json'
 	try:

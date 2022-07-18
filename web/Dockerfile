@@ -36,7 +36,9 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     python3-cffi \
     python3-brotli \
     libpango-1.0-0 \
-    libpangoft2-1.0-0
+    libpangoft2-1.0-0 \
+    geoip-bin \
+    geoip-database
 
 
 # Download and install go 1.17
@@ -107,3 +109,6 @@ RUN python3 -m pip install fuzzywuzzy \
 
 # Copy source code
 COPY . /usr/src/app/
+
+# httpx seems to have issue, use alias instead!!!
+RUN echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc

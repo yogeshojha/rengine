@@ -36,7 +36,7 @@ Thanks to these individuals for reporting Security Issues in reNgine.
 
 * [HIGH] [Command Injection](https://huntr.dev/bounties/7f1f9abb-a801-444d-bd58-97e1c0b2ddb9/) in via YAML Engine, Reported by [Koen Molenaar](https://github.com/k0enm) and [zongdeiqianxing](https://github.com/zongdeiqianxing)
 
-* [LOW] [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veeshraj Ghimire](https://github.com/V35HR4J)
+* [LOW] [Stored XSS](https://huntr.dev/bounties/dfd440ba-4330-413c-8b21-a3d8bf02a67e/) on Import Targets via filename, Reported by [Veshraj Ghimire](https://github.com/V35HR4J)
 
 * [LOW] [Stored XSS](https://huntr.dev/bounties/8ea5d3a6-f857-45e4-9473-e4d9cb8f7c77/) on HackerOne Markdown template, Reported by [Smaran Chand](https://github.com/smaranchand) and [Ayoub Elaich](https://github.com/sicks3c)
 

@@ -3,6 +3,7 @@
   fields:
     engine_name: Full Scan
     subdomain_discovery: true
+    waf_detection: true
     dir_file_fuzz: true
     port_scan: true
     fetch_url: true
@@ -36,6 +37,7 @@
   fields:
     engine_name: Subdomain Only Scan
     subdomain_discovery: true
+    waf_detection: true
     dir_file_fuzz: false
     port_scan: false
     fetch_url: false
@@ -69,6 +71,7 @@
   fields:
     engine_name: OSINT Only
     subdomain_discovery: false
+    waf_detection: false
     dir_file_fuzz: false
     port_scan: false
     fetch_url: false
@@ -102,6 +105,7 @@
   fields:
     engine_name: Vulnerability Scan Only
     subdomain_discovery: true
+    waf_detection: false
     dir_file_fuzz: false
     port_scan: false
     fetch_url: false
@@ -135,6 +139,7 @@
   fields:
     engine_name: reNgine Recommended
     subdomain_discovery: true
+    waf_detection: true
     dir_file_fuzz: true
     port_scan: false
     fetch_url: false
