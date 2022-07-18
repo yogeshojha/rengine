@@ -790,8 +790,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 		subdomain_scan_results_file
 	)
 	logger.info(httpx_command)
-	process = subprocess.Popen(httpx_command.split())
-	process.wait()
+	os.system(remove_cmd_injection_chars(httpx_command))
 
 	# alive subdomains from httpx
 	alive_file = open(alive_file_location, 'w')
@@ -1310,6 +1309,8 @@ def directory_fuzz(
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
+	logger.info(ffuf_command)
+
 	for subdomain in subdomains_fuzz:
 		command = None
 		# delete any existing dirs.json
@@ -1598,8 +1599,7 @@ def fetch_endpoints(
 		httpx_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
 	logger.info(httpx_command)
-	process = subprocess.Popen(httpx_command.split())
-	process.wait()
+	os.system(remove_cmd_injection_chars(httpx_command))
 
 	url_results_file = results_dir + '/final_httpx_urls.json'
 	try:

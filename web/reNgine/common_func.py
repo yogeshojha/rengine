@@ -996,10 +996,6 @@ def get_cms_details(url):
     if port:
         find_dir += '_{}'.format(port)
 
-
-    print(url)
-    print(find_dir)
-
     # subdomain may also have port number, and is stored in dir as _port
 
     cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
@@ -1019,3 +1015,10 @@ def get_cms_details(url):
             print(e)
 
     return response
+
+
+def remove_cmd_injection_chars(command):
+    remove_chars = ['&', '<', '>', '|', ';']
+    for chrs in remove_chars:
+        command = command.replace(chrs, '')
+    return command
