@@ -292,14 +292,14 @@ class EndPoint(models.Model):
 		blank=True)
 	http_url = models.CharField(max_length=10000)
 	content_length = models.IntegerField(default=0, null=True, blank=True)
-	page_title = models.CharField(max_length=1000, null=True, blank=True)
+	page_title = models.CharField(max_length=10000, null=True, blank=True)
 	http_status = models.IntegerField(default=0, null=True, blank=True)
 	content_type = models.CharField(max_length=100, null=True, blank=True)
 	discovered_date = models.DateTimeField(blank=True, null=True)
 	response_time = models.FloatField(null=True, blank=True)
 	webserver = models.CharField(max_length=1000, blank=True, null=True)
 	is_default = models.BooleanField(null=True, blank=True, default=False)
-	matched_gf_patterns = models.CharField(max_length=2000, null=True, blank=True)
+	matched_gf_patterns = models.CharField(max_length=10000, null=True, blank=True)
 	technologies = models.ManyToManyField('Technology', related_name='technology')
 	# used for subscans
 	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids', blank=True)
@@ -356,12 +356,12 @@ class Vulnerability(models.Model):
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	template = models.CharField(max_length=100)
-	template_url = models.CharField(max_length=1500, null=True, blank=True)
+	template_url = models.CharField(max_length=2500, null=True, blank=True)
 	template_id = models.CharField(max_length=200, null=True, blank=True)
 	matcher_name = models.CharField(max_length=500, null=True, blank=True)
-	name = models.CharField(max_length=500)
+	name = models.CharField(max_length=2500)
 	severity = models.IntegerField()
-	description = models.CharField(max_length=10000, null=True, blank=True)
+	description = models.CharField(max_length=20000, null=True, blank=True)
 
 	extracted_results = ArrayField(
 		models.CharField(max_length=5000), blank=True, null=True
@@ -372,11 +372,11 @@ class Vulnerability(models.Model):
 	cve_ids = models.ManyToManyField('CveId', related_name='cve_ids', blank=True)
 	cwe_ids = models.ManyToManyField('CweId', related_name='cwe_ids', blank=True)
 
-	cvss_metrics = models.CharField(max_length=150, null=True, blank=True)
+	cvss_metrics = models.CharField(max_length=500, null=True, blank=True)
 	cvss_score = models.FloatField(null=True, blank=True, default=None)
 	curl_command = models.CharField(max_length=15000, null=True, blank=True)
-	type = models.CharField(max_length=50, null=True, blank=True)
-	http_url = models.CharField(max_length=5000, null=True)
+	type = models.CharField(max_length=100, null=True, blank=True)
+	http_url = models.CharField(max_length=10000, null=True)
 	discovered_date = models.DateTimeField(null=True)
 	open_status = models.BooleanField(null=True, blank=True, default=True)
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
@@ -404,8 +404,8 @@ class ScanActivity(models.Model):
 
 class Waf(models.Model):
 	id = models.AutoField(primary_key=True)
-	name = models.CharField(max_length=100)
-	manufacturer = models.CharField(max_length=100, blank=True, null=True)
+	name = models.CharField(max_length=500)
+	manufacturer = models.CharField(max_length=500, blank=True, null=True)
 
 	def __str__(self):
 		return str(self.name)
@@ -413,7 +413,7 @@ class Waf(models.Model):
 
 class Technology(models.Model):
 	id = models.AutoField(primary_key=True)
-	name = models.CharField(max_length=100, blank=True, null=True)
+	name = models.CharField(max_length=500, blank=True, null=True)
 
 	def __str__(self):
 		return str(self.name)
@@ -460,7 +460,7 @@ class DirectoryFile(models.Model):
 	http_status = models.IntegerField(default=0)
 	words = models.IntegerField(default=0)
 	name = models.CharField(max_length=500, blank=True, null=True)
-	url = models.CharField(max_length=2000, blank=True, null=True)
+	url = models.CharField(max_length=5000, blank=True, null=True)
 	content_type = models.CharField(max_length=100, blank=True, null=True)
 
 	def __str__(self):
@@ -469,7 +469,7 @@ class DirectoryFile(models.Model):
 
 class DirectoryScan(models.Model):
 	id = models.AutoField(primary_key=True)
-	command_line = models.CharField(max_length=1500, blank=True, null=True)
+	command_line = models.CharField(max_length=5000, blank=True, null=True)
 	directory_files = models.ManyToManyField('DirectoryFile', related_name='directory_files', blank=True)
 	scanned_date = models.DateTimeField(null=True)
 	# this is used for querying which ip was discovered during subcan
