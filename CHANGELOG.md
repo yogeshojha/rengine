@@ -6,12 +6,13 @@
 ## Added
 
 - Geographic Distribution of Assets Map
+- Added WAF Detector as an optional tool in Scan Engine
 
 ## Fixes
 
 - WHOIS Provider Changed
 - Fixed Dark UI Issues
-- Fix HTTPX Issue
+- Fix HTTPX Issue with custom Header
 
 ## 1.2.0
 **Release Date: May 27, 2022**
