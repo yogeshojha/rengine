@@ -619,10 +619,7 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
-							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
-							][0] == 'v'
-							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
+		current_version = '1.2.0'
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -630,8 +627,7 @@ class RengineUpdateCheck(APIView):
 								   ])[1:] if response[0]['name'][0] == 'v'
 									else response[0]['name']))
 
-		if latest_version:
-			latest_version = latest_version.group(0),
+		latest_version = latest_version.group(0) if latest_version else None
 
 		if not latest_version:
 			latest_version = re.search(r'(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -644,8 +640,8 @@ class RengineUpdateCheck(APIView):
 		return_response['status'] = True
 		return_response['latest_version'] = latest_version
 		return_response['current_version'] = current_version
-		return_response['update_available'] = version.parse(current_version) > version.parse(latest_version)
-		if version.parse(current_version) > version.parse(latest_version):
+		return_response['update_available'] = version.parse(current_version) < version.parse(latest_version)
+		if version.parse(current_version) < version.parse(latest_version):
 			return_response['changelog'] = response[0]['body']
 
 		return Response(return_response)
