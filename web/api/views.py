@@ -619,7 +619,10 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = '1.2.0'
+		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
+							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
+							][0] == 'v'
+							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
