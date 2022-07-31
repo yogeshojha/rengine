@@ -8,6 +8,8 @@ router = routers.DefaultRouter()
 
 router.register(r'listDatatableSubdomain', SubdomainDatatableViewSet)
 
+router.register(r'listTargets', ListTargetsDatatableViewSet)
+
 router.register(r'listSubdomains', SubdomainsViewSet)
 
 router.register(r'listEndpoints', EndPointViewSet)

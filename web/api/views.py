@@ -40,6 +40,16 @@ from packaging import version
 from reNgine.celery import app
 from django.utils import timezone
 
+
+class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
+	queryset = Domain.objects.all()
+	serializer_class = DomainSerializer
+
+	def get_queryset(self):
+		return self.queryset
+
+
+
 class WafDetector(APIView):
 	def get(self, request):
 		req = self.request
