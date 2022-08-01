@@ -17,16 +17,26 @@ class SearchHistorySerializer(serializers.ModelSerializer):
 
 class DomainSerializer(serializers.ModelSerializer):
 	vuln_count = serializers.SerializerMethodField()
+	organization = serializers.SerializerMethodField()
+	most_recent_scan = serializers.SerializerMethodField()
 
 	class Meta:
 		model = Domain
 		fields = '__all__'
+		depth = 2
 
 	def get_vuln_count(self, obj):
 		try:
 			return obj.vuln_count
 		except:
 			return None
+
+	def get_organization(self, obj):
+		if Organization.objects.filter(domains__id=obj.id).exists():
+			return [org.name for org in Organization.objects.filter(domains__id=obj.id)]
+
+	def get_most_recent_scan(self, obj):
+		return obj.get_recent_scan_id()
 
 
 class SubScanResultSerializer(serializers.ModelSerializer):

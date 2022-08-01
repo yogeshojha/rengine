@@ -64,6 +64,7 @@ Targets
 							<th>Serial Number</th>
 							<th class="text-center">Domain Name</th>
 							<th>Description</th>
+							<th class="text-center">Added On</th>
 							<th class="text-center">Last Scanned</th>
 							<th class="text-center">Action</th>
 						</tr>
@@ -88,16 +89,15 @@ $(document).ready(function(){
 		},
 		"destroy": true,
 		"processing": true,
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"<'table-responsive'tr>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 		"oLanguage": {
-			"oPaginate": {
-				"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
-				"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
-			},
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
 			"sInfo": "Showing page _PAGE_ of _PAGES_",
 			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
 			"sSearchPlaceholder": "Search...",
 			"sLengthMenu": "Results :  _MENU_",
-			"sProcessing": "Fetching Targets... Please wait..."
 		},
 		"fnCreatedRow": function(nRow, aData, iDataIndex) {
 			$(nRow).attr('id', 'target_row_' + aData['id']);
@@ -124,19 +124,47 @@ $(document).ready(function(){
 					'data': 'description'
 				},
 				{
+					'data': 'insert_date'
+				},
+				{
 					'data': 'start_scan_date'
 				},
 				{
 					'data': 'id'
 				},
+				{
+					'data': 'organization'
+				},
 			],
 			"columnDefs":[
-				{ 'visible': false, 'targets': [1] },
+				{ 'orderable': false, 'targets': [0, 3]},
+				{ 'visible': false, 'targets': [1, 6, 7] },
 				{
 					"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
 					return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
+					}
 				},
-			}]
+				{
+					"render": function(data, type, row) {
+						var content = '';
+						content += `<b>${data}</b>&nbsp;&nbsp;<a href="#" onclick="get_target_whois('${data}')">(view whois)</a>`;
+						if (row.organization) {
+							content += '<br>';
+							for (var org in row.organization) {
+								content += `<span class="badge badge-soft-primary me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Domain ${data} belongs to organization ${row.organization[org]}">${row.organization[org]}</span>`;
+							}
+						}
+						return content;
+					},
+					"targets": 2,
+				},
+			],
+			drawCallback: function() {
+				$('.badge').tooltip({
+					template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+				})
+				$('.bs-tooltip').tooltip();
+			},
 		});
 		multiCheck(table);
 		// Handle form submission event
