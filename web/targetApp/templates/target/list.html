@@ -23,55 +23,55 @@ Targets
 
 {% block main_content %}
 <div class="row">
-  <div class="col-12">
-    <div class="card">
-      <div class="p-2">
-        <div class="row">
-          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <button type="button" class="btn btn-primary dropdown-toggle mt-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
-              Filter <i class="fe-filter"></i>
-            </button>
-            <div class="dropdown-menu" style="width: 30%">
-              <div class="px-4 py-3">
-                <h4 class="headline-title">Filters</h4>
-                <label for="filterByOrganization" class="form-label">Filter by Organization</label>
-                <select class="form-control" id="filterByOrganization">
-                </select>
-              </div>
-              <div class="dropdown-divider"></div>
-              <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
-            </div>
-          </div>
-          <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
-            <a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
-            <a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+	<div class="col-12">
+		<div class="card">
+			<div class="p-2">
+				<div class="row">
+					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+						<button type="button" class="btn btn-primary dropdown-toggle mt-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" id="filterMenu">
+							Filter <i class="fe-filter"></i>
+						</button>
+						<div class="dropdown-menu" style="width: 30%">
+							<div class="px-4 py-3">
+								<h4 class="headline-title">Filters</h4>
+								<label for="filterByOrganization" class="form-label">Filter by Organization</label>
+								<select class="form-control" id="filterByOrganization">
+								</select>
+							</div>
+							<div class="dropdown-divider"></div>
+							<a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
+						</div>
+					</div>
+					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
+						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 <div class="row">
-  <div class="col-12">
-    <div class="card">
-      <form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
-        {% csrf_token %}
-        <table id="list_target_table" class="table style-3 table-hover">
-          <thead>
-            <tr>
-              <th class="checkbox-column text-center">Serial Number</th>
-              <th>Serial Number</th>
-              <th class="text-center">Domain Name</th>
-              <th>Description</th>
-              <th class="text-center">Last Scanned</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
-        </table>
-      </form>
-    </div>
-  </div>
+	<div class="col-12">
+		<div class="card">
+			<form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
+				{% csrf_token %}
+				<table id="list_target_table" class="table style-3 table-hover">
+					<thead>
+						<tr>
+							<th class="checkbox-column text-center">Serial Number</th>
+							<th>Serial Number</th>
+							<th class="text-center">Domain Name</th>
+							<th>Description</th>
+							<th class="text-center">Last Scanned</th>
+							<th class="text-center">Action</th>
+						</tr>
+					</thead>
+				</table>
+			</form>
+		</div>
+	</div>
 </div>
 {% endblock main_content %}
 
@@ -82,97 +82,125 @@ Targets
 <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function(){
-  var table = $('#list_target_table').DataTable({
-    headerCallback:function(e, a, t, n, s) {
-      e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
-    },
-    "columnDefs":[
-      { 'visible': false, 'targets': [1] },
-      {
-        "targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
-          return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
-        },
+	var table = $('#list_target_table').DataTable({
+		"headerCallback": function(e, a, t, n, s) {
+			e.getElementsByTagName("th")[0].innerHTML='<div class="form-check mb-2 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
+		},
+		"destroy": true,
+		"processing": true,
+		"oLanguage": {
+			"oPaginate": {
+				"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
+				"sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+			},
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+			"sProcessing": "Fetching Targets... Please wait..."
+		},
+		"fnCreatedRow": function(nRow, aData, iDataIndex) {
+			$(nRow).attr('id', 'target_row_' + aData['id']);
+		},
+		"stripeClasses": [],
+			"lengthMenu": [5, 10, 20, 30, 40, 50, 100, 500, 1000],
+			"pageLength": 20,
+			'serverSide': true,
+			"ajax": '/api/listTargets/?format=datatables',
+			"order": [
+				[1, "desc"]
+			],
+			"columns": [
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'id'
+				},
+				{
+					'data': 'name'
+				},
+				{
+					'data': 'description'
+				},
+				{
+					'data': 'start_scan_date'
+				},
+				{
+					'data': 'id'
+				},
+			],
+			"columnDefs":[
+				{ 'visible': false, 'targets': [1] },
+				{
+					"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+					return'<div class="form-check mb-2 form-check-primary"><input type="checkbox" name="targets_checkbox['+ e + ']" class="float-start form-check-input targets_checkbox" value="' + e + '" onchange=toggleMultipleTargetButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>'
+				},
+			}]
+		});
+		multiCheck(table);
+		// Handle form submission event
+		$('#frm-example').on('submit', function(e){
+			var form = this;
+			table.$('input[type="checkbox"]').each(function(){
+				if(!$.contains(document, this)){
+					if(this.checked){
+						$(form).append(
+							$('<input>')
+							.attr('type', 'hidden')
+							.attr('name', this.name)
+							.val(this.value)
+						);
+					}
+				}
+			});
+			e.preventDefault();
+		});
 
-      }],
-      "order": [[1, 'desc']],
-      "dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
-      "<'table-responsive'tr>" +
-      "<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-      "oLanguage": {
-        "oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-        "sInfo": "Showing page _PAGE_ of _PAGES_",
-        "sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-        "sSearchPlaceholder": "Search...",
-        "sLengthMenu": "Results :  _MENU_",
-      },
-      "stripeClasses": [],
-      "lengthMenu": [5, 10, 20, 30, 40, 50, 100, 500, 1000],
-      "pageLength": 20,
-    });
-    multiCheck(table);
-    // Handle form submission event
-    $('#frm-example').on('submit', function(e){
-      var form = this;
+		// filter organization populate
+		$.getJSON(`/api/listOrganizations?&format=json`, function(data) {
+			data = data['organizations']
+			for (organization in data) {
+				name = htmlEncode(data[organization]['name']);
+				select = document.getElementById('filterByOrganization');
+				var option = document.createElement('option');
+				option.value = name;
+				option.innerHTML = name;
+				select.appendChild(option);
+			}
+		}).fail(function(){
+		});
 
-      table.$('input[type="checkbox"]').each(function(){
-        if(!$.contains(document, this)){
-          if(this.checked){
-            $(form).append(
-              $('<input>')
-              .attr('type', 'hidden')
-              .attr('name', this.name)
-              .val(this.value)
-            );
-          }
-        }
-      });
-      e.preventDefault();
-    });
+		var a = document.getElementById('filterByOrganization');
+		a.addEventListener('click', function() {
+			table.search(this.value).draw();
+			document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
+			<span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
+			</span>`;
+			Snackbar.show({
+				text: `Filtering by organization ${this.value}`,
+				pos: 'top-center'
+			});
+		}, false);
 
-    // filter organization populate
-    $.getJSON(`/api/listOrganizations?&format=json`, function(data) {
-      data = data['organizations']
-      for (organization in data) {
-        name = htmlEncode(data[organization]['name']);
-        select = document.getElementById('filterByOrganization');
-        var option = document.createElement('option');
-        option.value = name;
-        option.innerHTML = name;
-        select.appendChild(option);
-      }
-    }).fail(function(){
-    });
+		// reset filtering
+		var reset_filter = document.getElementById('resetFilters');
+		reset_filter.addEventListener('click', function() {
+			resetFilters(table);
+		}, false);
 
-    var a = document.getElementById('filterByOrganization');
-    a.addEventListener('click', function() {
-      table.search(this.value).draw();
-      document.getElementById('filteringText').innerHTML = `<span class="badge badge-primary m-2">Organization: ${this.value}
-      <span id="clearFilterChip" class="badge-link" onclick="document.getElementById('resetFilters').click()">X</span>
-      </span>`;
-      Snackbar.show({
-        text: `Filtering by organization ${this.value}`,
-        pos: 'top-center'
-      });
-    }, false);
+		$('[data-toggle=tooltip]').tooltip();
 
-    // reset filtering
-    var reset_filter = document.getElementById('resetFilters');
-    reset_filter.addEventListener('click', function() {
-      resetFilters(table);
-    }, false);
+	});
 
-    $('[data-toggle=tooltip]').tooltip();
-
-  });
-
-  function resetFilters(table_obj) {
-    table_obj.search("").draw();
-    Snackbar.show({
-      text: `Filters Reset`,
-      pos: 'top-center'
-    });
-    document.getElementById('filteringText').innerHTML = '';
-  }
+	function resetFilters(table_obj) {
+		table_obj.search("").draw();
+		Snackbar.show({
+			text: `Filters Reset`,
+			pos: 'top-center'
+		});
+		document.getElementById('filteringText').innerHTML = '';
+	}
 
 </script>
 {% endblock page_level_script %}
