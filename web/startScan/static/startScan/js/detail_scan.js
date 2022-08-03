@@ -1346,6 +1346,9 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 		}
 		$("#modal-footer").append(`<a href="javascript:;" data-clipboard-action="copy" class="m-1 btn btn-primary copyable float-end btn-md" data-toggle="tooltip" data-placement="top" title="Copy Subdomains!" data-clipboard-target="#all_endpoints_text_area"><i class="fe-copy me-1"></i> Copy Endpoints</a>`);
 	}).fail(function(){
+		swal.fire("Error while making JSON request", "warning", {
+			button: "Okay",
+		});
 	});
 }
 

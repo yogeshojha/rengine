@@ -1,19 +1,19 @@
 import os
-from reNgine.init import first_run
-from celery.schedules import crontab
 
+from reNgine.init import first_run
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #       RENGINE CONFIGURATIONS
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-RENGINE_HOME = '/usr/src/app'
+RENGINE_HOME = os.environ.get('RENGINE_HOME', '/usr/src/app')
 SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
-DEBUG = int(os.environ.get('DEBUG', default=0))
+# DEBUG = int(os.environ.get('DEBUG', default=0))
+DEBUG = 1
 
 ALLOWED_HOSTS = ['*']
 
@@ -165,8 +165,8 @@ TOOL_LOCATION = '/usr/src/app/tools/'
 '''
 CELERY settings
 '''
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://172.17.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://172.17.0.1:6379/0")
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 

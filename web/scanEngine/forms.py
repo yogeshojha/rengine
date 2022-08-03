@@ -1,7 +1,7 @@
 from django import forms
-from scanEngine.models import *
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
+from scanEngine.models import *
 
 
 class AddEngineForm(forms.ModelForm):

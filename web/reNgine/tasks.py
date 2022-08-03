@@ -1,50 +1,32 @@
-import os
-import traceback
-import yaml
-import json
 import csv
-import validators
+import datetime
+import json
+import os
 import random
-import requests
-import time
-import logging
-import metafinder.extractor as metadata_extractor
-import whatportis
 import subprocess
-
-from random import randint
+import time
 from time import sleep
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium import webdriver
-from emailfinder.extractor import *
-from dotted_dict import DottedDict
-from celery import shared_task
-from discord_webhook import DiscordWebhook
-from reNgine.celery import app
-from startScan.models import *
-from targetApp.models import Domain
-from scanEngine.models import EngineType
-from django.conf import settings
-from django.shortcuts import get_object_or_404
 
-from celery import shared_task
-from datetime import datetime
+import metafinder.extractor as metadata_extractor
+import validators
+import whatportis
+import yaml
 from degoogle import degoogle
-
 from django.conf import settings
-from django.utils import timezone, dateformat
-from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.utils import timezone
+from dotted_dict import DottedDict
+from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
+                                   get_emails_from_google)
 from reNgine.celery import app
 from reNgine.definitions import *
-
+from scanEngine.models import EngineType
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from startScan.models import *
 from targetApp.models import Domain
-from scanEngine.models import EngineType, Configuration, Wordlist
 
 from .common_func import *
-
 
 '''
 	All the background tasks to be executed in celery will be here
@@ -61,43 +43,41 @@ def run_system_commands(system_command):
 @app.task
 def initiate_subtask(
 		subdomain_id,
-		port_scan=False,
-		osint=False,
-		endpoint=False,
-		dir_fuzz=False,
-		vuln_scan=False,
-		engine_id=None
+		scan_type,
+		engine_id=None,
 	):
-	# TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
 	logger.info('Initiating Subtask')
-	# get scan history and yaml Configuration for this subdomain
+
+	# TODO: OSINT IS NOT Currently SUPPORTED!, make it available in later releases
+	if scan_type == 'osint':
+		logger.warning('OSInt not supported yet. Skipping.')
+		return
+	
+	# Get scan history and yaml Configuration for this subdomain
 	subdomain = Subdomain.objects.get(id=subdomain_id)
 	scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
 
-	# create scan activity of SubScan Model
+	# Create scan activity of SubScan Model
 	current_scan_time = timezone.now()
-	sub_scan = SubScan()
-	sub_scan.start_scan_date = current_scan_time
-	sub_scan.celery_id = initiate_subtask.request.id
-	sub_scan.scan_history = scan_history
-	sub_scan.subdomain = subdomain
-	sub_scan.port_scan = port_scan
-	sub_scan.osint = osint
-	sub_scan.fetch_url = endpoint
-	sub_scan.dir_file_fuzz = dir_fuzz
-	sub_scan.vulnerability_scan = vuln_scan
-	sub_scan.status = INITIATED_TASK
-	sub_scan.save()
+	subscan = SubScan()
+	subscan.start_scan_date = current_scan_time
+	subscan.celery_id = initiate_subtask.request.id
+	subscan.scan_history = scan_history
+	subscan.subdomain = subdomain
+	subscan.type = scan_type
+	subscan.status = INITIATED_TASK
+	subscan.save()
 
 	if engine_id:
 		engine = EngineType.objects.get(id=engine_id)
 	else:
 		engine = EngineType.objects.get(id=scan_history.scan_type.id)
 
-	sub_scan.engine = engine
-	sub_scan.save()
+	subscan.engine = engine
+	subscan.save()
 
-	results_dir = '/usr/src/scan_results/' + scan_history.results_dir
+	results_dir = f'/usr/src/scan_results/{scan_history.results_dir}'
+	scan_name = f'{subdomain.name}_{rand_name}'
 
 	# if not results_dir exists, create one
 	if not os.path.exists(results_dir):
@@ -108,28 +88,27 @@ def initiate_subtask(
 			engine.yaml_configuration,
 			Loader=yaml.FullLoader)
 
-		sub_scan.start_scan_date = current_scan_time
-		sub_scan.status = RUNNING_TASK
-		sub_scan.save()
+		subscan.start_scan_date = current_scan_time
+		subscan.status = RUNNING_TASK
+		subscan.save()
 
-		if port_scan:
-			# delete any existing ports.json
+		if scan_type == 'port_scan':
 			rand_name = str(time.time()).split('.')[0]
-			file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
+			file_name = f'ports_{scan_name}.json'
 			scan_history.port_scan = True
 			scan_history.save()
-			port_scanning(
+			nabuu_scan(
 				scan_history,
 				0,
 				yaml_configuration,
 				results_dir,
 				subdomain=subdomain.name,
 				file_name=file_name,
-				subscan=sub_scan
+				subscan=subscan
 			)
-		elif dir_fuzz:
+		elif scan_type == 'dir_fuzz':
 			rand_name = str(time.time()).split('.')[0]
-			file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
+			file_name = f'dir_fuzz_{scan_name}.json'
 			scan_history.dir_file_fuzz = True
 			scan_history.save()
 			directory_fuzz(
@@ -139,11 +118,11 @@ def initiate_subtask(
 				results_dir,
 				subdomain=subdomain.name,
 				file_name=file_name,
-				subscan=sub_scan
+				subscan=subscan
 			)
-		elif endpoint:
+		elif scan_type == 'endpoint':
 			rand_name = str(time.time()).split('.')[0]
-			file_name = 'endpoints_{}_{}.txt'.format(subdomain.name, rand_name)
+			file_name = f'endpoints_{scan_name}.txt'
 			scan_history.fetch_url = True
 			scan_history.save()
 			fetch_endpoints(
@@ -153,11 +132,11 @@ def initiate_subtask(
 				results_dir,
 				subdomain=subdomain,
 				file_name=file_name,
-				subscan=sub_scan
+				subscan=subscan
 			)
-		elif vuln_scan:
+		elif scan_type == 'vuln_scan':
 			rand_name = str(time.time()).split('.')[0]
-			file_name = 'vuln_{}_{}.txt'.format(subdomain.name, rand_name)
+			file_name = f'vuln_{scan_name}.txt'
 			scan_history.vulnerability_scan = True
 			scan_history.save()
 			vulnerability_scan(
@@ -167,19 +146,21 @@ def initiate_subtask(
 				results_dir,
 				subdomain=subdomain,
 				file_name=file_name,
-				subscan=sub_scan
+				subscan=subscan
 			)
-		task_status = SUCCESS_TASK
+		else:
+			logger.error(f'Scan type "{scan_type}" is not supported yet.')
 
+		task_status = SUCCESS_TASK
 
 	except Exception as e:
 		logger.error(e)
 		task_status = FAILED_TASK
-		sub_scan.error_message = str(e)
+		subscan.error_message = str(e)
 	finally:
-		sub_scan.stop_scan_date = timezone.now()
-		sub_scan.status = task_status
-		sub_scan.save()
+		subscan.stop_scan_date = timezone.now()
+		subscan.status = task_status
+		subscan.save()
 
 
 @app.task
@@ -189,8 +170,7 @@ def initiate_scan(
 		scan_type,
 		engine_type,
 		imported_subdomains=None,
-		out_of_scope_subdomains=[]
-		):
+		out_of_scope_subdomains=[]):
 	'''
 	scan_type = 0 -> immediate scan, need not create scan object
 	scan_type = 1 -> scheduled scan
@@ -232,8 +212,9 @@ def initiate_scan(
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
 
+	timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S.%f")
+	current_scan_dir = domain.name + '_' + timestr
 	try:
-		current_scan_dir = domain.name + '_' + str(random.randint(100000000000, 999999999999))
 		os.mkdir(current_scan_dir)
 		task.results_dir = current_scan_dir
 		task.save()
@@ -242,8 +223,6 @@ def initiate_scan(
 		scan_failed(task)
 
 	yaml_configuration = None
-	excluded_subdomains = ''
-
 	try:
 		yaml_configuration = yaml.load(
 			task.scan_type.yaml_configuration,
@@ -338,7 +317,7 @@ def initiate_scan(
 	try:
 		if(task.port_scan):
 			activity_id = create_scan_activity(task, "Port Scanning", 1)
-			port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
+			nabuu_scan(task, activity_id, yaml_configuration, results_dir, domain)
 			update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -523,26 +502,18 @@ def subdomain_scan(
 	# check for all the tools and add them into string
 	# if tool selected is all then make string, no need for loop
 	if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
-		tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
-		# also put all custom subdomain tools
-		custom_tools = ' '.join(tool for tool in custom_subdomain_tools)
-		if custom_tools:
-			tools = tools + ' ' + custom_subdomain_tools
+		tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall '
+		tools += custom_subdomain_tools
 	else:
 		tools = ' '.join(
-			str(tool).lower() for tool in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])
+			list(map(str.lower, yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS])))
 
-	logging.info(tools)
-	logging.info(default_subdomain_tools)
-	logging.info(custom_subdomain_tools)
+	logger.info(tools)
+	logger.info(default_subdomain_tools)
+	logger.info(custom_subdomain_tools)
 
 	# check for THREADS, by default 10
-	threads = 10
-	if THREADS in yaml_configuration[SUBDOMAIN_DISCOVERY]:
-		_threads = yaml_configuration[SUBDOMAIN_DISCOVERY][THREADS]
-		if _threads > 0:
-			threads = _threads
-
+	threads = yaml_configuration.get(SUBDOMAIN_DISCOVERY, {}).get(THREADS, 20)
 
 	try:
 		for tool in tools.split(' '):
@@ -555,7 +526,7 @@ def subdomain_scan(
 					if USE_AMASS_CONFIG in yaml_configuration[SUBDOMAIN_DISCOVERY] and yaml_configuration[SUBDOMAIN_DISCOVERY][USE_AMASS_CONFIG]:
 						amass_command += ' -config /root/.config/amass.ini'
 					# Run Amass Passive
-					logging.info(amass_command)
+					logger.info(amass_command)
 					process = subprocess.Popen(amass_command.split())
 					process.wait()
 
@@ -578,7 +549,7 @@ def subdomain_scan(
 							' -brute -w {}'.format(wordlist_path)
 
 					# Run Amass Active
-					logging.info(amass_command)
+					logger.info(amass_command)
 					process = subprocess.Popen(amass_command.split())
 					process.wait()
 
@@ -587,7 +558,7 @@ def subdomain_scan(
 						domain.name, results_dir)
 
 					# Run Assetfinder
-					logging.info(assetfinder_command)
+					logger.info(assetfinder_command)
 					process = subprocess.Popen(assetfinder_command.split())
 					process.wait()
 
@@ -596,7 +567,7 @@ def subdomain_scan(
 						domain.name, threads, results_dir)
 
 					# Run sublist3r
-					logging.info(sublist3r_command)
+					logger.info(sublist3r_command)
 					process = subprocess.Popen(sublist3r_command.split())
 					process.wait()
 
@@ -608,7 +579,7 @@ def subdomain_scan(
 						subfinder_command += ' -config /root/.config/subfinder/config.yaml'
 
 					# Run Subfinder
-					logging.info(subfinder_command)
+					logger.info(subfinder_command)
 					process = subprocess.Popen(subfinder_command.split())
 					process.wait()
 
@@ -617,7 +588,7 @@ def subdomain_scan(
 						domain.name, results_dir)
 
 					# Run OneForAll
-					logging.info(oneforall_command)
+					logger.info(oneforall_command)
 					process = subprocess.Popen(oneforall_command.split())
 					process.wait()
 
@@ -907,7 +878,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 				subdomain.save()
 				endpoint.save()
 			except Exception as exception:
-				logging.error(exception)
+				logger.error(exception)
 	alive_file.close()
 
 	if notification and notification[0].send_scan_status_notif:
@@ -925,33 +896,21 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('reNgine is currently gathering screenshots for {}'.format(domain.name))
 
-	output_screenshots_path = results_dir + '/screenshots'
-	result_csv_path = results_dir + '/screenshots/Requests.csv'
-	alive_subdomains_path = results_dir + '/alive.txt'
-
+	output_screenshots_path = f'{results_dir}/screenshots'
+	result_csv_path = f'{results_dir}/screenshots/Requests.csv'
+	alive_subdomains_path = f'{results_dir}/alive.txt'
 	eyewitness_command = 'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py'
+	eyewitness_command += f' -f {alive_subdomains_path} -d {output_screenshots_path} --no-prompt '
 
-	eyewitness_command += ' -f {} -d {} --no-prompt '.format(
-		alive_subdomains_path,
-		output_screenshots_path
-	)
+	timeout = yaml_configuration.get(SCREENSHOT, {}).get(TIMEOUT, 0)
+	if timeout > 0:
+		eyewitness_command += f' --timeout {timeout}'
 
-	if SCREENSHOT in yaml_configuration \
-		and TIMEOUT in yaml_configuration[SCREENSHOT] \
-		and yaml_configuration[SCREENSHOT][TIMEOUT] > 0:
-		eyewitness_command += ' --timeout {} '.format(
-			yaml_configuration[SCREENSHOT][TIMEOUT]
-		)
-
-	if SCREENSHOT in yaml_configuration \
-		and THREADS in yaml_configuration[SCREENSHOT] \
-		and yaml_configuration[SCREENSHOT][THREADS] > 0:
-			eyewitness_command += ' --threads {} '.format(
-				yaml_configuration[SCREENSHOT][THREADS]
-			)
+	threads = yaml_configuration.get(SCREENSHOT, {}).get(THREADS, 0)
+	if threads > 0:
+		eyewitness_command += f' --threads {threads}'
 
 	logger.info(eyewitness_command)
-
 	process = subprocess.Popen(eyewitness_command.split())
 	process.wait()
 
@@ -984,44 +943,35 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('reNgine has finished gathering screenshots for {}'.format(domain.name))
 
-
-def port_scanning(
+def nabuu_scan(
 		scan_history,
 		activity_id,
 		yaml_configuration,
 		results_dir,
 		domain=None,
 		subdomain=None,
-		file_name=None,
+		filename='ports.json',
 		subscan=None
 	):
 	# Random sleep to prevent ip and port being overwritten
-	sleep(randint(1,5))
+	sleep(random.randint(1,5))
 	'''
 	This function is responsible for running the port scan
 	'''
-	output_file_name = file_name if file_name else 'ports.json'
-	port_results_file = results_dir + '/' + output_file_name
 
 	domain_name = domain.name if domain else subdomain
 	notification = Notification.objects.all()
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('Port Scan initiated for {}'.format(domain_name))
 
+	cmd = 'naabu'
 	if domain:
-		subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
-		naabu_command = 'naabu -list {} -json -o {}'.format(
-			subdomain_scan_results_file,
-			port_results_file
-		)
+		subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
+		cmd += f' -list {subdomains_path}'
 	elif subdomain:
-		naabu_command = 'naabu -host {} -o {} -json '.format(
-			subdomain,
-			port_results_file
-		)
-
-	# exclude cdn port scanning
-	naabu_command += ' -exclude-cdn '
+		cmd += f' -host {subdomain}'
+		
+	cmd += ' -exclude-cdn '
 
 	# check the yaml_configuration and choose the ports to be scanned
 	scan_ports = '-'  # default port scan everything
@@ -1029,43 +979,47 @@ def port_scanning(
 		# TODO:  legacy code, remove top-100 in future versions
 		all_ports = yaml_configuration[PORT_SCAN][PORTS]
 		if 'full' in all_ports:
-			naabu_command += ' -p -'
+			cmd += ' -p -'
 		elif 'top-100' in all_ports:
-			naabu_command += ' -top-ports 100 '
+			cmd += ' -top-ports 100 '
 		elif 'top-1000' in all_ports:
-			naabu_command += ' -top-ports 1000 '
+			cmd += ' -top-ports 1000 '
 		else:
 			scan_ports = ','.join(
 				str(port) for port in all_ports)
-			naabu_command += ' -p {} '.format(scan_ports)
+			cmd += ' -p {} '.format(scan_ports)
 
 	# check for exclude ports
 	if EXCLUDE_PORTS in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][EXCLUDE_PORTS]:
 		exclude_ports = ','.join(
 			str(port) for port in yaml_configuration['port_scan']['exclude_ports'])
-		naabu_command = naabu_command + \
+		cmd = cmd + \
 			' -exclude-ports {} '.format(exclude_ports)
 
 	if NAABU_RATE in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][NAABU_RATE] > 0:
-		naabu_command = naabu_command + \
+		cmd = cmd + \
 			' -rate {} '.format(
 				yaml_configuration[PORT_SCAN][NAABU_RATE])
 			#new format for naabu config
 	if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
-		naabu_command += ' -config /root/.config/naabu/config.yaml '
+		cmd += ' -config /root/.config/naabu/config.yaml '
+
+	# Output JSON
+	output_filepath = f'{results_dir}/{filename}'
+	cmd += ' -json -o {output_filepath}'
 
 	proxy = get_random_proxy()
 	if proxy:
 		naabu_command += ' -proxy "{}" '.format(proxy)
 
 	# run naabu
-	logger.info(naabu_command)
-	process = subprocess.Popen(naabu_command.split())
+	logger.info(cmd)
+	process = subprocess.Popen(cmd.split())
 	process.wait()
 
 	# writing port results
 	try:
-		port_json_result = open(port_results_file, 'r')
+		port_json_result = open(output_filepath, 'r')
 		lines = port_json_result.readlines()
 		for line in lines:
 			json_st = json.loads(line.strip())
@@ -1111,7 +1065,7 @@ def port_scanning(
 				subdomain.save()
 
 	except BaseException as exception:
-		logging.error(exception)
+		logger.error(exception)
 		if not subscan:
 			update_last_activity(activity_id, 0)
 		raise Exception(exception)
@@ -1399,7 +1353,7 @@ def directory_fuzz(
 					subdomain.directories.add(directory_scan)
 
 		except Exception as exception:
-			logging.error(exception)
+			logger.error(exception)
 			if not subscan:
 				update_last_activity(activity_id, 0)
 			raise Exception(exception)
@@ -1679,7 +1633,7 @@ def fetch_endpoints(
 						subdomain.technologies.add(tech)
 						subdomain.save()
 	except Exception as exception:
-		logging.error(exception)
+		logger.error(exception)
 		if not subscan:
 			update_last_activity(activity_id, 0)
 		raise Exception(exception)
@@ -2048,7 +2002,7 @@ def vulnerability_scan(
 						logger.error('Object not found')
 
 		except Exception as exception:
-			logging.error(exception)
+			logger.error(exception)
 			if not subscan:
 				update_last_activity(activity_id, 0)
 			raise Exception(exception)

@@ -1,29 +1,27 @@
-import os
-import re
 import json
-import random
-import requests
-import tldextract
 import logging
+import os
+import random
+import re
 import shutil
 import subprocess
-import asyncwhois
-
+from datetime import date
+from functools import reduce
 from threading import Thread
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup
-from lxml import html
-from datetime import datetime, date
-from discord_webhook import DiscordWebhook
-from functools import reduce
-from rest_framework import serializers
 
+import asyncwhois
+import requests
+import tldextract
+from discord_webhook import DiscordWebhook
 from django.db.models import Q
+from lxml import html
+from reNgine.common_serializers import *
+from reNgine.definitions import *
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
-from reNgine.definitions import *
-from reNgine.common_serializers import *
+
 
 def get_lookup_keywords():
     default_lookup_keywords = [
