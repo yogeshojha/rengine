@@ -1,8 +1,6 @@
+import logging
 import os
 import random
-import logging
-import sys
-import subprocess
 
 logger = logging.getLogger(__name__)
 

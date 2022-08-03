@@ -1,22 +1,20 @@
-import io
-import re
-import os
-import subprocess
 import glob
+import os
+import re
 import shutil
+import subprocess
 
-from django.shortcuts import render, get_object_or_404
-from scanEngine.models import *
-from scanEngine.forms import *
-from scanEngine.forms import ConfigurationForm
-from django.contrib import messages
 from django import http
-from django.urls import reverse
 from django.conf import settings
+from django.contrib import messages
 from django.core.files.storage import default_storage
-
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from reNgine.common_func import *
 from reNgine.tasks import run_system_commands
+from scanEngine.forms import *
+from scanEngine.forms import ConfigurationForm
+from scanEngine.models import *
 
 
 def index(request):

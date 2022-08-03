@@ -1,8 +1,6 @@
 
-from django.db import models
-from django.utils import timezone
 from django.apps import apps
-from django.contrib.postgres.fields import ArrayField
+from django.db import models
 
 
 class AssociatedDomain(models.Model):

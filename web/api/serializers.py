@@ -1,14 +1,11 @@
-from rest_framework import serializers
-from startScan.models import *
-from reNgine.common_func import *
-from targetApp.models import *
-from scanEngine.models import *
 from dashboard.models import *
-from recon_note.models import *
-
 from django.db.models import F, JSONField, Value
-from django.contrib.humanize.templatetags.humanize import naturalday, naturaltime
-
+from recon_note.models import *
+from reNgine.common_func import *
+from rest_framework import serializers
+from scanEngine.models import *
+from startScan.models import *
+from targetApp.models import *
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):
@@ -145,21 +142,21 @@ class SubScanSerializer(serializers.ModelSerializer):
 		model = SubScan
 		fields = '__all__'
 
-	def get_subdomain_name(self, sub_scan):
-		return sub_scan.subdomain.name
+	def get_subdomain_name(self, subscan):
+		return subscan.subdomain.name
 
-	def get_total_time_taken(self, sub_scan):
-		return sub_scan.get_total_time_taken()
+	def get_total_time_taken(self, subscan):
+		return subscan.get_total_time_taken()
 
-	def get_elapsed_time(self, sub_scan):
-		return sub_scan.get_elapsed_time()
+	def get_elapsed_time(self, subscan):
+		return subscan.get_elapsed_time()
 
-	def get_completed_ago(self, sub_scan):
-		return sub_scan.get_completed_ago()
+	def get_completed_ago(self, subscan):
+		return subscan.get_completed_ago()
 
-	def get_engine_name(self, sub_scan):
-		if sub_scan.engine:
-			return sub_scan.engine.engine_name
+	def get_engine_name(self, subscan):
+		if subscan.engine:
+			return subscan.engine.engine_name
 		return ''
 
 

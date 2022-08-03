@@ -1,44 +1,36 @@
-import re
 import json
 import logging
-import requests
+import re
 import subprocess
-import validators
 
-from bs4 import BeautifulSoup
-from lxml import html
+import requests
+import validators
+from dashboard.models import *
+from django.db.models import CharField, Count, Q, Value
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from packaging import version
+from recon_note.models import *
+from reNgine.celery import app
+from reNgine.common_func import *
+from reNgine.tasks import (create_scan_activity, initiate_subtask,
+                           run_system_commands)
+from reNgine.utilities import is_safe_path
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from scanEngine.models import *
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 # selenium
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-
-from django.db.models import Q, F
-from django.db.models import CharField, Value, Count
-from django.core import serializers
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import api_view, action
-from rest_framework import generics
-
-from reNgine.common_func import *
+from selenium.webdriver.support.ui import WebDriverWait
+from startScan.models import *
+from targetApp.models import *
 
 from .serializers import *
-from scanEngine.models import *
-from startScan.models import *
-from dashboard.models import *
-from targetApp.models import *
-from recon_note.models import *
 
-from reNgine.utilities import is_safe_path
-from reNgine.tasks import run_system_commands, initiate_subtask, create_scan_activity
-from packaging import version
-from reNgine.celery import app
-from django.utils import timezone
 
 
 class QueryInterestingSubdomains(APIView):
@@ -615,37 +607,12 @@ class InitiateSubTask(APIView):
 		req = self.request
 		data = req.data
 		engine_id = data.get('engine_id')
+		scan_types = []
 		for subdomain_id in data['subdomain_ids']:
-			# initiate subtask for every task types
-			if data['port_scan']:
-				celery_task = initiate_subtask.apply_async(args=(
-					subdomain_id,
-					True, False, False, False, False, engine_id
-				))
-
-			if data['osint']:
-				celery_task = initiate_subtask.apply_async(args=(
-					subdomain_id,
-					False, True, False, False, False, engine_id
-				))
-
-			if data['endpoint']:
-				celery_task = initiate_subtask.apply_async(args=(
-					subdomain_id,
-					False, False, True, False, False, engine_id
-				))
-
-			if data['dir_fuzz']:
-				celery_task = initiate_subtask.apply_async(args=(
-					subdomain_id,
-					False, False, False, True, False, engine_id
-				))
-
-			if data['vuln_scan']:
-				celery_task = initiate_subtask.apply_async(args=(
-					subdomain_id,
-					False, False, False, False, True, engine_id
-				))
+			scan_types = [stype for stype, active in data.items() if active]
+			for stype in scan_types:
+				initiate_subtask.apply_async(
+					args=(subdomain_id, stype, engine_id))
 		return Response({'status': True})
 
 
@@ -1619,13 +1586,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 	def get_queryset(self):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
-
 		target_id = req.query_params.get('target_id')
-
 		url_query = req.query_params.get('query_param')
-
 		ip_address = req.query_params.get('ip_address')
-
 		name = req.query_params.get('name')
 
 		if target_id:
