@@ -186,7 +186,6 @@ def start_scan_ui(request, domain_id):
             domain.name)
         return HttpResponseRedirect(reverse('scan_history'))
     engine = EngineType.objects.order_by('id')
-    print(engine)
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
