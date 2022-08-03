@@ -77,7 +77,8 @@ def initiate_subtask(
 	subscan.save()
 
 	results_dir = f'/usr/src/scan_results/{scan_history.results_dir}'
-	scan_name = f'{subdomain.name}_{rand_name}'
+	timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S.%f")
+	scan_name = f'{subdomain.name}_{timestr}'
 
 	# if not results_dir exists, create one
 	if not os.path.exists(results_dir):
@@ -93,8 +94,7 @@ def initiate_subtask(
 		subscan.save()
 
 		if scan_type == 'port_scan':
-			rand_name = str(time.time()).split('.')[0]
-			file_name = f'ports_{scan_name}.json'
+			filename = f'ports_{scan_name}.json'
 			scan_history.port_scan = True
 			scan_history.save()
 			nabuu_scan(
@@ -103,12 +103,11 @@ def initiate_subtask(
 				yaml_configuration,
 				results_dir,
 				subdomain=subdomain.name,
-				file_name=file_name,
+				filename=filename,
 				subscan=subscan
 			)
 		elif scan_type == 'dir_fuzz':
-			rand_name = str(time.time()).split('.')[0]
-			file_name = f'dir_fuzz_{scan_name}.json'
+			filename = f'dir_fuzz_{scan_name}.json'
 			scan_history.dir_file_fuzz = True
 			scan_history.save()
 			directory_fuzz(
@@ -117,12 +116,11 @@ def initiate_subtask(
 				yaml_configuration,
 				results_dir,
 				subdomain=subdomain.name,
-				file_name=file_name,
+				filename=filename,
 				subscan=subscan
 			)
 		elif scan_type == 'endpoint':
-			rand_name = str(time.time()).split('.')[0]
-			file_name = f'endpoints_{scan_name}.txt'
+			filename = f'endpoints_{scan_name}.txt'
 			scan_history.fetch_url = True
 			scan_history.save()
 			fetch_endpoints(
@@ -131,12 +129,11 @@ def initiate_subtask(
 				yaml_configuration,
 				results_dir,
 				subdomain=subdomain,
-				file_name=file_name,
+				filename=filename,
 				subscan=subscan
 			)
 		elif scan_type == 'vuln_scan':
-			rand_name = str(time.time()).split('.')[0]
-			file_name = f'vuln_{scan_name}.txt'
+			filename = f'vuln_{scan_name}.txt'
 			scan_history.vulnerability_scan = True
 			scan_history.save()
 			vulnerability_scan(
@@ -145,7 +142,7 @@ def initiate_subtask(
 				yaml_configuration,
 				results_dir,
 				subdomain=subdomain,
-				file_name=file_name,
+				filename=filename,
 				subscan=subscan
 			)
 		else:
@@ -1089,11 +1086,11 @@ def check_waf(scan_history, results_dir):
 	the subdomains are alive, http_200
 	'''
 	alive_file = results_dir + '/alive.txt'
-	output_file_name = results_dir + '/wafw00f.txt'
+	output_filename = results_dir + '/wafw00f.txt'
 	if os.path.isfile(alive_file):
 		wafw00f_command = 'wafw00f -i {} -o {}'.format(
 			alive_file,
-			output_file_name
+			output_filename
 		)
 
 		logger.info(wafw00f_command)
@@ -1102,8 +1099,8 @@ def check_waf(scan_history, results_dir):
 		process.wait()
 
 		# check if wafw00f has generated output file
-		if os.path.isfile(output_file_name):
-			with open(output_file_name) as file:
+		if os.path.isfile(output_filename):
+			with open(output_filename) as file:
 				lines = file.readlines()
 				for line in lines:
 					# split by 3 space!
@@ -1154,15 +1151,15 @@ def directory_fuzz(
 		results_dir,
 		domain=None,
 		subdomain=None,
-		file_name=None,
+		filename=None,
 		subscan=None
 	):
 	'''
 		This function is responsible for performing directory scan, and currently
 		uses ffuf as a default tool
 	'''
-	output_file_name = file_name if file_name else 'dirs.json'
-	dirs_results = results_dir + '/' + output_file_name
+	output_filename = filename if filename else 'dirs.json'
+	dirs_results = results_dir + '/' + output_filename
 
 	domain_name = domain.name if domain else subdomain
 
@@ -1369,7 +1366,7 @@ def fetch_endpoints(
 		results_dir,
 		domain=None,
 		subdomain=None,
-		file_name=None,
+		filename=None,
 		subscan=None
 	):
 	'''
@@ -1387,7 +1384,7 @@ def fetch_endpoints(
 
 	logger.info('Initiated Endpoint Fetching')
 	domain_name = domain.name if domain else subdomain
-	output_file_name = file_name if file_name else 'all_urls.txt'
+	output_filename = filename if filename else 'all_urls.txt'
 
 	notification = Notification.objects.all()
 	if notification and notification[0].send_scan_status_notif:
@@ -1407,7 +1404,7 @@ def fetch_endpoints(
 
 	valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
 
-	alive_subdomains_path = results_dir + '/' + output_file_name
+	alive_subdomains_path = results_dir + '/' + output_filename
 	sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
 
 	for tool in tools.split(' '):
@@ -1474,7 +1471,7 @@ def fetch_endpoints(
 	logger.info("Sort and Unique")
 	if domain:
 		os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
-	os.system('sort -u {0}/final_urls.txt -o {0}/{1}'.format(results_dir, output_file_name))
+	os.system('sort -u {0}/final_urls.txt -o {0}/{1}'.format(results_dir, output_filename))
 
 	if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
 		ignore_extension = '|'.join(
@@ -1482,9 +1479,9 @@ def fetch_endpoints(
 		logger.info('Ignore extensions ' + ignore_extension)
 		os.system(
 			'cat {0}/{2} | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
-				results_dir, ignore_extension, output_file_name))
+				results_dir, ignore_extension, output_filename))
 		os.system(
-			'rm {0}/{1} && mv {0}/temp_urls.txt {0}/{1}'.format(results_dir, output_file_name))
+			'rm {0}/{1} && mv {0}/temp_urls.txt {0}/{1}'.format(results_dir, output_filename))
 
 	'''
 	Store all the endpoints and then run the httpx
@@ -1496,7 +1493,7 @@ def fetch_endpoints(
 		domain_obj = subdomain.target_domain
 
 	try:
-		endpoint_final_url = results_dir + '/{}'.format(output_file_name)
+		endpoint_final_url = results_dir + '/{}'.format(output_filename)
 		if not os.path.isfile(endpoint_final_url):
 			return
 
@@ -1539,7 +1536,7 @@ def fetch_endpoints(
 		raise Exception(exception)
 
 	if notification and notification[0].send_scan_output_file:
-		send_files_to_discord(results_dir + '/{}'.format(output_file_name))
+		send_files_to_discord(results_dir + '/{}'.format(output_filename))
 
 	'''
 	TODO:
@@ -1550,7 +1547,7 @@ def fetch_endpoints(
 	'''
 	logger.info('HTTP Probing on collected endpoints')
 
-	httpx_command = '/go/bin/httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_file_name)
+	httpx_command = '/go/bin/httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_filename)
 
 	proxy = get_random_proxy()
 	if proxy:
@@ -1662,7 +1659,7 @@ def fetch_endpoints(
 					results_dir,
 					pattern,
 					gf_output_file_path,
-					output_file_name,
+					output_filename,
 					valid_url_of_domain_regex
 				)
 				logger.info(gf_command)
@@ -1707,7 +1704,7 @@ def vulnerability_scan(
 		results_dir,
 		domain=None,
 		subdomain=None,
-		file_name=None,
+		filename=None,
 		subscan=None
 	):
 	logger.info('Initiating Vulnerability Scan')
@@ -1724,8 +1721,8 @@ def vulnerability_scan(
 	ignore certain file extensions
 	Thanks: https://github.com/six2dez/reconftw
 	'''
-	output_file_name = file_name if file_name else 'vulnerability.json'
-	vulnerability_result_path = results_dir + '/' + output_file_name
+	output_filename = filename if filename else 'vulnerability.json'
+	vulnerability_result_path = results_dir + '/' + output_filename
 
 
 	if domain:
