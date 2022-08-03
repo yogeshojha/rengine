@@ -1,6 +1,6 @@
 from django.apps import AppConfig
-
 from reNgine.definitions import logger
+
 
 class StartscanConfig(AppConfig):
     name = 'startScan'

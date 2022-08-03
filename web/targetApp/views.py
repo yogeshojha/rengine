@@ -1,28 +1,25 @@
-import validators
 import csv
 import io
 import os
-import requests
 import threading
-
 from datetime import timedelta
-from operator import and_, or_
 from functools import reduce
+from operator import and_, or_
+
+import validators
 from django import http
-from django.shortcuts import render, get_object_or_404
-from django.contrib import messages
-from django.utils import timezone
-from django.urls import reverse
 from django.conf import settings
+from django.contrib import messages
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.safestring import mark_safe
-
-from targetApp.models import *
-from startScan.models import *
-from scanEngine.models import *
-from targetApp.forms import *
 from reNgine.common_func import *
-
+from scanEngine.models import *
+from startScan.models import *
+from targetApp.forms import *
+from targetApp.models import *
 
 
 def index(request):

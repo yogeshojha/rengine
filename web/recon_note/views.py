@@ -1,10 +1,10 @@
 import json
 
-from django.shortcuts import render
 from django.http import JsonResponse
-
+from django.shortcuts import render
 from recon_note.models import *
 from startScan.models import *
+
 
 def list_note(request):
     context = {}

@@ -1,17 +1,10 @@
-import datetime
-
-from django.db import models
-from django.db.models import JSONField
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from django.utils import timezone
 from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
-
-from targetApp.models import Domain
-from scanEngine.models import EngineType
-
+from django.db import models
+from django.utils import timezone
 from reNgine.utilities import *
+from scanEngine.models import EngineType
+from targetApp.models import Domain
 
 
 class ScanHistory(models.Model):
@@ -239,16 +232,12 @@ class Subdomain(models.Model):
 
 class SubScan(models.Model):
 	id = models.AutoField(primary_key=True)
+	type = models.CharField(max_length=100, blank=True, null=True)
 	start_scan_date = models.DateTimeField()
 	status = models.IntegerField()
 	celery_id = models.CharField(max_length=100, blank=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
-	dir_file_fuzz = models.BooleanField(null=True, default=False)
-	port_scan = models.BooleanField(null=True, default=False)
-	fetch_url = models.BooleanField(null=True, default=False)
-	vulnerability_scan = models.BooleanField(null=True, default=False)
-	osint = models.BooleanField(null=True, default=False)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	engine = models.ForeignKey(EngineType, on_delete=models.CASCADE, blank=True, null=True)
@@ -266,19 +255,14 @@ class SubScan(models.Model):
 		return get_time_taken(timezone.now(), self.start_scan_date)
 
 	def get_task_name_str(self):
-		if self.dir_file_fuzz:
-			return "Directory and File fuzzing"
-		elif self.port_scan:
-			return "Port Scan"
-		elif self.fetch_url:
-			return "Endpoint Gathering"
-		elif self.vulnerability_scan:
-			return "Vulnerability Scan"
-		elif self.osint:
-			return "OSINT"
-		else:
-			return "Unknown"
-
+		taskmap = {
+			'dir_file_fuzz': 'Directory and File fuzzing',
+			'port_scan': 'Port Scan',
+			'fetch_url': 'Endpoint Gathering',
+			'vulnerability_scan': 'Vulnerability Scan',
+			'osint': 'OSINT'
+		}
+		return taskmap.get(self.type, 'Unknown')
 
 class EndPoint(models.Model):
 	id = models.AutoField(primary_key=True)

@@ -1,6 +1,7 @@
-from django.conf.urls import url, include
+from django.conf.urls import include, url
 from django.urls import path
 from rest_framework import routers
+
 from .views import *
 
 app_name = 'api'

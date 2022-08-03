@@ -1,6 +1,6 @@
 from rest_framework import serializers
-
 from targetApp.models import *
+
 
 class AssociatedDomainSerializer(serializers.ModelSerializer):
     class Meta:
