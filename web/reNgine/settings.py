@@ -165,8 +165,8 @@ TOOL_LOCATION = '/usr/src/app/tools/'
 '''
 CELERY settings
 '''
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://172.17.0.1:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://172.17.0.1:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 
