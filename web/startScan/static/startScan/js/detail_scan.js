@@ -390,7 +390,7 @@ function get_endpoint_changes(scan_history_id){
 		"destroy": true,
 		"stripeClasses": [],
 		'serverSide': true,
-		"ajax": `/api/listEndPointChanges/?scan_id=${scan_history_id}&format=datatables`,
+		"ajax": `/api/listEndpointChanges/?scan_id=${scan_history_id}&format=datatables`,
 		"order": [[ 3, "desc" ]],
 		"columns": [
 			{'data': 'http_url'},

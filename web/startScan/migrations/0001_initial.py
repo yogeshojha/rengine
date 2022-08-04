@@ -40,7 +40,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='EndPoint',
+            name='Endpoint',
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('http_url', models.CharField(max_length=5000)),
