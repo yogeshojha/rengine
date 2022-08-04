@@ -57,6 +57,14 @@ CUSTOM_NUCLEI_TEMPLATE = 'custom_templates'
 NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
+NUCLEI_SEVERITY_MAP = {
+    'info': 0,
+    'low': 1,
+    'medium': 2,
+    'high': 3,
+    'critical': 4,
+    'unknown': -1
+}
 RATE_LIMIT = 'rate_limit'
 RETRIES = 'retries'
 
