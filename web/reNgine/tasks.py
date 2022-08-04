@@ -1,10 +1,9 @@
 import csv
-import datetime
 import json
 import os
 import random
 import subprocess
-import time
+from datetime import datetime
 from time import sleep
 
 import metafinder.extractor as metadata_extractor
@@ -72,12 +71,13 @@ def initiate_subtask(
 		engine = EngineType.objects.get(id=engine_id)
 	else:
 		engine = EngineType.objects.get(id=scan_history.scan_type.id)
+	config = engine.yaml_configuration
 
 	subscan.engine = engine
 	subscan.save()
 
 	results_dir = f'/usr/src/scan_results/{scan_history.results_dir}'
-	timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S.%f")
+	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	scan_name = f'{subdomain.name}_{timestr}'
 
 	# if not results_dir exists, create one
@@ -86,7 +86,7 @@ def initiate_subtask(
 
 	try:
 		yaml_configuration = yaml.load(
-			engine.yaml_configuration,
+			config,
 			Loader=yaml.FullLoader)
 
 		subscan.start_scan_date = current_scan_time
@@ -132,7 +132,7 @@ def initiate_subtask(
 				filename=filename,
 				subscan=subscan
 			)
-		elif scan_type == 'vuln_scan':
+		elif scan_type == 'vulnerability_scan':
 			filename = f'vuln_{scan_name}.txt'
 			scan_history.vulnerability_scan = True
 			scan_history.save()
@@ -209,7 +209,7 @@ def initiate_scan(
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('reNgine has initiated recon for target {} with engine type {}'.format(domain.name, engine_object.engine_name))
 
-	timestr = datetime.datetime.now().strftime("%Y%m%d-%H%M%S.%f")
+	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	current_scan_dir = domain.name + '_' + timestr
 	try:
 		os.mkdir(current_scan_dir)
@@ -1003,7 +1003,7 @@ def nabuu_scan(
 
 	# Output JSON
 	output_filepath = f'{results_dir}/{filename}'
-	cmd += ' -json -o {output_filepath}'
+	cmd += f' -json -o {output_filepath}'
 
 	proxy = get_random_proxy()
 	if proxy:
@@ -1024,40 +1024,38 @@ def nabuu_scan(
 			ip_address = json_st['ip']
 			host = json_st['host']
 
-			# see if port already exists
-			if Port.objects.filter(number__exact=port_number).exists():
+			# Add port to DB
+			port_query = Port.objects.filter(number__exact=port_number)
+			if port_query.exists():
 				port = Port.objects.get(number=port_number)
 			else:
 				port = Port()
 				port.number = port_number
-
-				if port_number in UNCOMMON_WEB_PORTS:
-					port.is_uncommon = True
-				port_detail = whatportis.get_ports(str(port_number))
-
-				if len(port_detail):
-					port.service_name = port_detail[0].name
-					port.description = port_detail[0].description
-
+				port.is_uncommon = port_number in UNCOMMON_WEB_PORTS
+				port_details = whatportis.get_ports(str(port_number))
+				if len(port_details) > 0:
+					port.service_name = port_details[0].name
+					port.description = port_details[0].description
 				port.save()
 
-			if IpAddress.objects.filter(address=ip_address).exists():
-				ip = IpAddress.objects.get(address=ip_address)
+			# Add IP DB
+			ip_query = IpAddress.objects.filter(address=ip_address)
+			if ip_query.exists():
+				ip = ip_query.first()
 			else:
-				# create a new ip
 				ip = IpAddress()
 				ip.address = ip_address
 				ip.save()
 			ip.ports.add(port)
 			ip.save()
-
 			if subscan:
 				ip.ip_subscan_ids.add(subscan)
 				ip.save()
 
-			# if this ip does not belong to host, we also need to add to specific host
-			if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
-				subdomain = Subdomain.objects.get(scan_history=scan_history, name=host)
+			# Add IP to Subdomain in DB
+			subdomain_query = Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address)
+			if subdomain_query.exists():
+				subdomain = subdomain_query.first()
 				subdomain.ip_addresses.add(ip)
 				subdomain.save()
 

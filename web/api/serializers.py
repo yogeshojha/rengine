@@ -66,6 +66,7 @@ class SubScanResultSerializer(serializers.ModelSerializer):
 		model = SubScan
 		fields = [
 			'id',
+			'type',
 			'subdomain_name',
 			'start_scan_date',
 			'stop_scan_date',
@@ -82,18 +83,7 @@ class SubScanResultSerializer(serializers.ModelSerializer):
 		return subscan.subdomain.name
 
 	def get_task_name(self, subscan):
-		if subscan.port_scan:
-			return 'port_scan'
-		elif subscan.fetch_url:
-			return 'fetch_url'
-		elif subscan.dir_file_fuzz:
-			return 'dir_file_fuzz'
-		elif subscan.vulnerability_scan:
-			return 'vulnerability_scan'
-		elif subscan.osint:
-			return 'osint'
-		else:
-			return 'Unknown'
+		return subscan.type
 
 	def get_engine_name(self, subscan):
 		if subscan.engine:
