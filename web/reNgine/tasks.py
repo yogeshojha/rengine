@@ -4,7 +4,9 @@ import os
 import random
 import subprocess
 from datetime import datetime
+from this import d
 from time import sleep
+from unittest.mock import DEFAULT
 
 import metafinder.extractor as metadata_extractor
 import validators
@@ -23,6 +25,7 @@ from scanEngine.models import EngineType
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from startScan.models import *
+from startScan.models import Endpoint
 from targetApp.models import Domain
 
 from .common_func import *
@@ -51,7 +54,7 @@ def initiate_subtask(
 	if scan_type == 'osint':
 		logger.warning('OSInt not supported yet. Skipping.')
 		return
-	
+
 	# Get scan history and yaml Configuration for this subdomain
 	subdomain = Subdomain.objects.get(id=subdomain_id)
 	scan_history = ScanHistory.objects.get(id=subdomain.scan_history.id)
@@ -967,7 +970,7 @@ def nabuu_scan(
 		cmd += f' -list {subdomains_path}'
 	elif subdomain:
 		cmd += f' -host {subdomain}'
-		
+
 	cmd += ' -exclude-cdn '
 
 	# check the yaml_configuration and choose the ports to be scanned
@@ -1388,60 +1391,44 @@ def fetch_endpoints(
 	if notification and notification[0].send_scan_status_notif:
 		send_notification('reNgine is currently gathering endpoints for {}.'.format(domain_name))
 
-	# check yaml settings
-	if ALL in yaml_configuration[FETCH_URL][USES_TOOLS]:
-		tools = 'gauplus hakrawler waybackurls gospider'
-	else:
-		tools = ' '.join(
-			str(tool) for tool in yaml_configuration[FETCH_URL][USES_TOOLS])
+	# Get tools for endpoint discovery
+	DEFAULT_ENDPOINT_TOOLS = ['gauplus', 'hakrawler', 'waybackurls', 'gospider']
+	tools = yaml_configuration[FETCH_URL].get(USES_TOOLS, DEFAULT_ENDPOINT_TOOLS)
 
-	if INTENSITY in yaml_configuration[FETCH_URL]:
-		scan_type = yaml_configuration[FETCH_URL][INTENSITY]
-	else:
-		scan_type = 'normal'
+	# Get scan intensity
+	DEFAULT_SCAN_INTENSITY = 'normal'
+	scan_intensity = yaml_configuration[FETCH_URL].get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 
 	valid_url_of_domain_regex = "\'https?://([a-z0-9]+[.])*{}.*\'".format(domain_name)
 
-	alive_subdomains_path = results_dir + '/' + output_filename
-	sorted_subdomains_path = results_dir + '/sorted_subdomain_collection.txt'
+	alive_subdomains_path = f'{results_dir}/{output_filename}'
+	sorted_subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
 
-	for tool in tools.split(' '):
-		if tool == 'gauplus' or tool == 'hakrawler' or tool == 'waybackurls':
+	for tool in tools:
+		if tool in ('gauplus', 'hakrawler', 'waybackurls'):
 			if subdomain:
-				subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-				input_target = 'echo {}'.format(subdomain_url)
-			elif scan_type == 'deep' and domain:
-				input_target = 'cat {}'.format(sorted_subdomains_path)
+				subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
+				input_target = f'echo {subdomain_url}'
+			elif scan_intensity == 'deep' and domain:
+				input_target = f'cat {sorted_subdomains_path}'
 			else:
-				input_target = 'echo {}'.format(domain_name)
+				input_target = f'echo {domain_name}'
 
 		if tool == 'gauplus':
 			logger.info('Running Gauplus')
-			gauplus_command = '{} | gauplus --random-agent | grep -Eo {} > {}/urls_gau.txt'.format(
-				input_target,
-				valid_url_of_domain_regex,
-				results_dir
-			)
+			gauplus_command = f'{input_target} | gauplus --random-agent | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_gau.txt'
 			logger.info(gauplus_command)
 			os.system(gauplus_command)
 
 		elif tool == 'hakrawler':
 			logger.info('Running hakrawler')
-			hakrawler_command = '{} | hakrawler -subs -u | grep -Eo {} > {}/urls_hakrawler.txt'.format(
-				input_target,
-				valid_url_of_domain_regex,
-				results_dir
-			)
+			hakrawler_command = f'{input_target} | hakrawler -subs -u | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_hakrawler.txt'
 			logger.info(hakrawler_command)
 			os.system(hakrawler_command)
 
 		elif tool == 'waybackurls':
 			logger.info('Running waybackurls')
-			waybackurls_command = '{} | waybackurls | grep -Eo {} > {}/urls_waybackurls.txt'.format(
-				input_target,
-				valid_url_of_domain_regex,
-				results_dir
-			)
+			waybackurls_command = f'{input_target} | waybackurls | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_waybackurls.txt'
 			logger.info(waybackurls_command)
 			os.system(waybackurls_command)
 
@@ -1449,37 +1436,34 @@ def fetch_endpoints(
 			logger.info('Running gospider')
 			if subdomain:
 				subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-				gospider_command = 'gospider -s {}'.format(subdomain_url)
-			elif scan_type == 'deep' and domain:
-				gospider_command = 'gospider -S '.format(alive_subdomains_path)
+				gospider_command = f'gospider -s {subdomain_url}'
+			elif scan_intensity == 'deep' and domain:
+				gospider_command = f'gospider -S {alive_subdomains_path}'
 			else:
-				gospider_command = 'gospider -s https://{} '.format(domain_name)
+				gospider_command = f'gospider -s https://{domain_name} '
 
-			gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
-				valid_url_of_domain_regex,
-				results_dir
-			)
+			gospider_command += f' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_gospider.txt'
 			logger.info(gospider_command)
 			os.system(gospider_command)
 
-	# run cleanup of urls
-	os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
-	os.system('rm -rf {}/url*'.format(results_dir))
-	# sorting and unique urls
+	# Cleanup urls files
+	os.system(f'cat {results_dir}/urls* > {results_dir}/final_urls.txt')
+	os.system(f'rm -rf {results_dir}/url*')
+
+	# Sorting and unique urls
 	logger.info("Sort and Unique")
 	if domain:
-		os.system('cat {0}/alive.txt >> {0}/final_urls.txt'.format(results_dir))
-	os.system('sort -u {0}/final_urls.txt -o {0}/{1}'.format(results_dir, output_filename))
+		os.system(f'cat {results_dir}/alive.txt >> {results_dir}/final_urls.txt')
+	os.system(f'sort -u {results_dir}/final_urls.txt -o {results_dir}/{output_filename}')
 
 	if IGNORE_FILE_EXTENSION in yaml_configuration[FETCH_URL]:
 		ignore_extension = '|'.join(
 			yaml_configuration[FETCH_URL][IGNORE_FILE_EXTENSION])
 		logger.info('Ignore extensions ' + ignore_extension)
 		os.system(
-			'cat {0}/{2} | grep -Eiv "\\.({1}).*" > {0}/temp_urls.txt'.format(
-				results_dir, ignore_extension, output_filename))
+			f'cat {results_dir}/{output_filename} | grep -Eiv "\\.({ignore_extension}).*" > {results_dir}/temp_urls.txt')
 		os.system(
-			'rm {0}/{1} && mv {0}/temp_urls.txt {0}/{1}'.format(results_dir, output_filename))
+			f'rm {results_dir}/{output_filename} && mv {results_dir}/temp_urls.txt {results_dir}/{output_filename}')
 
 	'''
 	Store all the endpoints and then run the httpx
@@ -1491,7 +1475,7 @@ def fetch_endpoints(
 		domain_obj = subdomain.target_domain
 
 	try:
-		endpoint_final_url = results_dir + '/{}'.format(output_filename)
+		endpoint_final_url = f'{results_dir}/{output_filename}'
 		if not os.path.isfile(endpoint_final_url):
 			return
 
@@ -1512,7 +1496,7 @@ def fetch_endpoints(
 							subdomain scan. so storing them
 						'''
 						logger.error(
-							'Subdomain {} not found, adding...'.format(_subdomain))
+							f'Subdomain {_subdomain} not found, adding...')
 						subdomain_dict = DottedDict({
 							'scan_history': scan_history,
 							'target_domain': domain_obj,
@@ -1545,7 +1529,7 @@ def fetch_endpoints(
 	'''
 	logger.info('HTTP Probing on collected endpoints')
 
-	httpx_command = '/go/bin/httpx -l {0}/{1} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {0}/final_httpx_urls.json'.format(results_dir, output_filename)
+	httpx_command = f'/go/bin/httpx -l {results_dir}/{output_filename} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {results_dir}/final_httpx_urls.json'
 
 	proxy = get_random_proxy()
 	if proxy:
@@ -1557,7 +1541,7 @@ def fetch_endpoints(
 	logger.info(httpx_command)
 	os.system(remove_cmd_injection_chars(httpx_command))
 
-	url_results_file = results_dir + '/final_httpx_urls.json'
+	url_results_file = f'{results_dir}/final_httpx_urls.json'
 	try:
 		if os.path.isfile(url_results_file):
 			urls_json_result = open(url_results_file, 'r')
@@ -1638,11 +1622,7 @@ def fetch_endpoints(
 			scan_history__id=scan_history.id).values('http_url').distinct().count()
 		endpoint_alive_count = EndPoint.objects.filter(
 				scan_history__id=scan_history.id, http_status__exact=200).values('http_url').distinct().count()
-		send_notification('reNgine has finished gathering endpoints for {} and has discovered *{}* unique endpoints.\n\n{} of those endpoints reported HTTP status 200.'.format(
-			domain_name,
-			endpoint_count,
-			endpoint_alive_count
-		))
+		send_notification(f'reNgine has finished gathering endpoints for {domain_name} and has discovered *{endpoint_count}* unique endpoints.\n\n{endpoint_alive_count} of those endpoints reported HTTP status 200.')
 
 
 	# once endpoint is saved, run gf patterns TODO: run threads
@@ -1650,16 +1630,9 @@ def fetch_endpoints(
 		for pattern in yaml_configuration[FETCH_URL][GF_PATTERNS]:
 			# TODO: js var is causing issues, removing for now
 			if pattern != 'jsvar':
-				logger.info('Running GF for {}'.format(pattern))
-				gf_output_file_path = '{0}/gf_patterns_{1}.txt'.format(
-					results_dir, pattern)
-				gf_command = 'cat {0}/{3} | gf {1} | grep -Eo {4} >> {2} '.format(
-					results_dir,
-					pattern,
-					gf_output_file_path,
-					output_filename,
-					valid_url_of_domain_regex
-				)
+				logger.info(f'Running GF for {pattern}')
+				gf_output_file_path = f'{results_dir}/gf_patterns_{pattern}.txt'
+				gf_command = f'cat {results_dir}/{output_filename} | gf {pattern} | grep -Eo {valid_url_of_domain_regex} >> {gf_output_file_path} '
 				logger.info(gf_command)
 				os.system(gf_command)
 				if os.path.exists(gf_output_file_path):
@@ -1692,7 +1665,7 @@ def fetch_endpoints(
 							finally:
 								endpoint.save()
 
-					os.system('rm -rf {}'.format(gf_output_file_path))
+					os.system(f'rm -rf {gf_output_file_path}')
 
 
 def vulnerability_scan(
@@ -1720,7 +1693,7 @@ def vulnerability_scan(
 	Thanks: https://github.com/six2dez/reconftw
 	'''
 	output_filename = filename if filename else 'vulnerability.json'
-	vulnerability_result_path = results_dir + '/' + output_filename
+	vulnerability_result_path = f'{results_dir}/{output_filename}'
 
 
 	if domain:
@@ -1735,17 +1708,16 @@ def vulnerability_scan(
 		#     urls_path = '/unfurl_urls.txt'
 
 		vulnerability_scan_input_file = results_dir + urls_path
-
-		nuclei_command = 'nuclei -j -l {} -o {}'.format(
-			vulnerability_scan_input_file, vulnerability_result_path)
+		nuclei_command = f'nuclei -j -l {vulnerability_scan_input_file} -o {vulnerability_result_path}'
 	else:
 		url_to_scan = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-		nuclei_command = 'nuclei -j -u {} -o {}'.format(url_to_scan, vulnerability_result_path)
+		nuclei_command = f'nuclei -j -u {url_to_scan} -o {vulnerability_result_path}'
 		domain_id = scan_history.domain.id
 		domain = Domain.objects.get(id=domain_id)
 
 	# check nuclei config
-	if USE_NUCLEI_CONFIG in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[VULNERABILITY_SCAN][USE_NUCLEI_CONFIG]:
+	use_nuclei_conf = yaml_configuration[VULNERABILITY_SCAN].get(USE_NUCLEI_CONFIG, False)
+	if use_nuclei_conf:
 		nuclei_command += ' -config /root/.config/nuclei/config.yaml'
 
 	'''
@@ -1753,86 +1725,82 @@ def vulnerability_scan(
 	Either custom template has to be supplied or default template, if neither has
 	been supplied then use all templates including custom templates
 	'''
+	custom_nuclei_template = yaml_configuration[VULNERABILITY_SCAN].get(CUSTOM_NUCLEI_TEMPLATE, None)
+	nuclei_template = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_TEMPLATE, None)
+	if custom_nuclei_template or nuclei_template:
+		if custom_nuclei_template:
+			_template = ','.join(
+				[str(element) + '.yaml' for element in yaml_configuration[VULNERABILITY_SCAN][CUSTOM_NUCLEI_TEMPLATE]])
+			template = _template.replace(',', ' -t ')
+			nuclei_command += f' -t {template}'
 
-	if CUSTOM_NUCLEI_TEMPLATE in yaml_configuration[
-			VULNERABILITY_SCAN] or NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
-		# check yaml settings for templates
-		if NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
-			if ALL in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]:
+		elif nuclei_template:
+			if ALL in nuclei_template:
 				template = NUCLEI_TEMPLATES_PATH
 			else:
 				_template = ','.join([NUCLEI_TEMPLATES_PATH + str(element)
 									  for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_TEMPLATE]])
 				template = _template.replace(',', ' -t ')
-
-			# Update nuclei command with templates
-			nuclei_command = nuclei_command + ' -t ' + template
-
-		if CUSTOM_NUCLEI_TEMPLATE in yaml_configuration[VULNERABILITY_SCAN]:
-			# add .yaml to the custom template extensions
-			_template = ','.join(
-				[str(element) + '.yaml' for element in yaml_configuration[VULNERABILITY_SCAN][CUSTOM_NUCLEI_TEMPLATE]])
-			template = _template.replace(',', ' -t ')
-			# Update nuclei command with templates
-			nuclei_command = nuclei_command + ' -t ' + template
+			nuclei_command += f' -t {template}'
 	else:
-		nuclei_command = nuclei_command + ' -t /root/nuclei-templates'
+		nuclei_command += f' -t /root/nuclei-templates'
 
-	# check yaml settings for  concurrency
-	if NUCLEI_CONCURRENCY in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
-			VULNERABILITY_SCAN][NUCLEI_CONCURRENCY] > 0:
-		concurrency = yaml_configuration[VULNERABILITY_SCAN][NUCLEI_CONCURRENCY]
-		# Update nuclei command with concurrent
-		nuclei_command = nuclei_command + ' -c ' + str(concurrency)
+	'''
+	Concurrency.
+	'''
+	concurrency = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_CONCURRENCY, 0)
+	if concurrency > 0:
+		nuclei_command += f' -c {str(concurrency)}'
 
-	if RATE_LIMIT in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
-			VULNERABILITY_SCAN][RATE_LIMIT] > 0:
-		rate_limit = yaml_configuration[VULNERABILITY_SCAN][RATE_LIMIT]
-		# Update nuclei command with concurrent
-		nuclei_command = nuclei_command + ' -rl ' + str(rate_limit)
+	'''
+	Rate limit
+	'''
+	rate_limit = yaml_configuration[VULNERABILITY_SCAN].get(RATE_LIMIT, 0)
+	if rate_limit > 0:
+		nuclei_command += f' -rl {str(rate_limit)}'
 
 
-	if TIMEOUT in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
-			VULNERABILITY_SCAN][TIMEOUT] > 0:
-		timeout = yaml_configuration[VULNERABILITY_SCAN][TIMEOUT]
-		# Update nuclei command with concurrent
-		nuclei_command = nuclei_command + ' -timeout ' + str(timeout)
+	'''
+	Timeout
+	'''
+	timeout = yaml_configuration[VULNERABILITY_SCAN].get(TIMEOUT, 0)
+	if timeout > 0:
+		nuclei_command += f' -timeout {str(timeout)}'
 
-	if RETRIES in yaml_configuration[VULNERABILITY_SCAN] and yaml_configuration[
-			VULNERABILITY_SCAN][RETRIES] > 0:
-		retries = yaml_configuration[VULNERABILITY_SCAN][RETRIES]
-		# Update nuclei command with concurrent
-		nuclei_command = nuclei_command + ' -retries ' + str(retries)
+	'''
+	Retries
+	'''
+	retries = yaml_configuration[VULNERABILITY_SCAN].get(RETRIES, 0)
+	if retries > 0:
+		nuclei_command += f' -retries {str(retries)}'
 
+	'''
+	Custom headers
+	'''
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		nuclei_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
 
-	# for severity and new severity in nuclei
-	if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
-		_severity = ','.join(
-			[str(element) for element in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]])
-		severity = _severity.replace(" ", "")
-	else:
-		severity = "critical, high, medium, low, info, unknown"
-
-	# update nuclei templates before running scan
+	'''
+	Severity
+	'''
+	severities = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_SEVERITY, ["critical", "high", "medium", "low", "info", "unknown"])
 	logger.info('Updating Nuclei Templates!')
 	os.system('nuclei -update-templates')
-
-	for _severity in severity.split(","):
+	for severity in severities:
 		# delete any existing vulnerability.json file
 		if os.path.isfile(vulnerability_result_path):
-			os.system('rm {}'.format(vulnerability_result_path))
+			os.system(f'rm {vulnerability_result_path}')
+
 		# run nuclei
-		final_nuclei_command = nuclei_command + ' -severity ' + _severity
+		cmd = f'{nuclei_command} -severity {severity}'
 
 		proxy = get_random_proxy()
 		if proxy:
-			final_nuclei_command += " -proxy {} ".format(proxy)
+			cmd += f' -proxy {proxy} '
 
 		logger.info('Running Nuclei Scanner!')
-		logger.info(final_nuclei_command)
-		process = subprocess.Popen(final_nuclei_command.split())
+		logger.info(cmd)
+		process = subprocess.Popen(cmd.split())
 		process.wait()
 
 		try:
@@ -1850,8 +1818,31 @@ def vulnerability_scan(
 						vulnerability.subdomain = subdomain
 						vulnerability.scan_history = scan_history
 						vulnerability.target_domain = domain
+						vuln_str = json_st['info'].get('severity', 'info')
 
-						if EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=host).exists():
+						# Build vulnerability object
+						vulnerability.endpoint = endpoint
+						vulnerability.template = json_st['template']
+						vulnerability.template_url = json_st['template-url']
+						vulnerability.template_id = json_st['template-id']
+						vulnerability.name = json_st['info'].get('name', '')
+						vulnerability.severity = NUCLEI_SEVERITY_MAP[vuln_str]
+						vulnerability.description = json_st['info'].get('description' ,'')
+						vulnerability.matcher_name = json_st.get('matcher-name')
+						vulnerability.http_url = json_st.get('matched-at')
+						vulnerability.curl_command = json_st.get('curl-command')
+						vulnerability.extracted_results = json_st.get('extracted-results', [])
+						vulnerability.type = json_st['type']
+						vulnerability.cvss_metrics = json_st['info'].get('classification', {}).get('cvss-metrics', '')
+						vulnerability.cvss_score = json_st['info'].get('classification', {}).get('cvss-score', '')
+						vulnerability.discovered_date = timezone.now()
+						vulnerability.open_status = True
+						vulnerability.save()
+
+						# Create endpoint from host
+						endpoint_query = Endpoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=host)
+						endpoint = None
+						if endpoint_query.exists():
 							endpoint = EndPoint.objects.get(
 								scan_history=scan_history,
 								target_domain=domain,
@@ -1866,132 +1857,87 @@ def vulnerability_scan(
 								'subdomain': subdomain
 							})
 							endpoint = save_endpoint(endpoint_dict)
-							logger.info('Endpoint {} created!'.format(host))
-
+							logger.info(f'Endpoint {host} created!')
 						vulnerability.endpoint = endpoint
-						vulnerability.template = json_st['template']
-						vulnerability.template_url = json_st['template-url']
-						vulnerability.template_id = json_st['template-id']
 
-						if 'name' in json_st['info']:
-							vulnerability.name = json_st['info']['name']
-						if 'severity' in json_st['info']:
-							if json_st['info']['severity'] == 'info':
-								severity = 0
-							elif json_st['info']['severity'] == 'low':
-								severity = 1
-							elif json_st['info']['severity'] == 'medium':
-								severity = 2
-							elif json_st['info']['severity'] == 'high':
-								severity = 3
-							elif json_st['info']['severity'] == 'critical':
-								severity = 4
-							elif json_st['info']['severity'] == 'unknown':
-								severity = -1
+						# Create endpoint from http_url
+						endpoint_query = Endpoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=vulnerability.http_url)
+						if vulnerability.http_url and not endpoint_query.exists():
+							logger.info('Creating Endpoint...')
+							endpoint_dict = DottedDict({
+								'scan_history': scan_history,
+								'target_domain': domain,
+								'http_url': vulnerability.http_url,
+								'subdomain': subdomain
+							})
+							save_endpoint(endpoint_dict)
+							logger.info('Endpoint {} created!'.format(vulnerability.http_url))
+
+						# Save tags
+						tags = json_st['info'].get('tags', [])
+						for tag in tags:
+							if VulnerabilityTags.objects.filter(name=tag).exists():
+								tag = VulnerabilityTags.objects.get(name=tag)
 							else:
-								severity = 0
-						else:
-							severity = 0
-						vulnerability.severity = severity
+								tag = VulnerabilityTags(name=tag)
+								tag.save()
+							vulnerability.tags.add(tag)
 
-						if 'description' in json_st['info']:
-							vulnerability.description = json_st['info']['description']
+						# Save CVEs
+						cve_ids = json_st['info'].get('classification', {}).get('cve-id', [])
+						for cve in cve_ids:
+							if CveId.objects.filter(name=cve).exists():
+								cve_obj = CveId.objects.get(name=cve)
+							else:
+								cve_obj = CveId(name=cve)
+								cve_obj.save()
+							vulnerability.cve_ids.add(cve_obj)
 
-						if 'matcher-name' in json_st:
-							vulnerability.matcher_name = json_st['matcher-name']
+						# Save CWEs
+						cwe_ids = json_st['info'].get('classification', {}).get('cwe-id', [])
+						for cwe in cwe_ids:
+							if CweId.objects.filter(name=cwe).exists():
+								cwe_obj = CweId.objects.get(name=cwe)
+							else:
+								cwe_obj = CweId(name=cwe)
+								cwe_obj.save()
+							vulnerability.cwe_ids.add(cwe_obj)
 
-						if 'matched-at' in json_st:
-							vulnerability.http_url = json_st['matched-at']
-							# also save matched at as url endpoint
-							if not EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=json_st['matched-at']).exists():
-								logger.info('Creating Endpoint...')
-								endpoint_dict = DottedDict({
-									'scan_history': scan_history,
-									'target_domain': domain,
-									'http_url': json_st['matched-at'],
-									'subdomain': subdomain
-								})
-								save_endpoint(endpoint_dict)
-								logger.info('Endpoint {} created!'.format(json_st['matched-at']))
+						# Save vuln reference
+						references = json_st['info'].get('reference', [])
+						for ref_url in references:
+							if VulnerabilityReference.objects.filter(url=ref_url).exists():
+								reference = VulnerabilityReference.objects.get(url=ref_url)
+							else:
+								reference = VulnerabilityReference(url=ref_url)
+								reference.save()
+							vulnerability.references.add(reference)
 
-						if 'curl-command' in json_st:
-							vulnerability.curl_command = json_st['curl-command']
-
-						if 'extracted-results' in json_st:
-							vulnerability.extracted_results = json_st['extracted-results']
-
-						vulnerability.type = json_st['type']
-						vulnerability.discovered_date = timezone.now()
-						vulnerability.open_status = True
-						vulnerability.save()
-
-						if 'tags' in json_st['info'] and json_st['info']['tags']:
-							for tag in json_st['info']['tags']:
-								if VulnerabilityTags.objects.filter(name=tag).exists():
-									tag = VulnerabilityTags.objects.get(name=tag)
-								else:
-									tag = VulnerabilityTags(name=tag)
-									tag.save()
-								vulnerability.tags.add(tag)
-
-						if 'classification' in json_st['info'] and 'cve-id' in json_st['info']['classification'] and json_st['info']['classification']['cve-id']:
-							for cve in json_st['info']['classification']['cve-id']:
-								if CveId.objects.filter(name=cve).exists():
-									cve_obj = CveId.objects.get(name=cve)
-								else:
-									cve_obj = CveId(name=cve)
-									cve_obj.save()
-								vulnerability.cve_ids.add(cve_obj)
-
-						if 'classification' in json_st['info'] and 'cwe-id' in json_st['info']['classification'] and json_st['info']['classification']['cwe-id']:
-							for cwe in json_st['info']['classification']['cwe-id']:
-								if CweId.objects.filter(name=cwe).exists():
-									cwe_obj = CweId.objects.get(name=cwe)
-								else:
-									cwe_obj = CweId(name=cwe)
-									cwe_obj.save()
-								vulnerability.cwe_ids.add(cwe_obj)
-
-						if 'classification' in json_st['info']:
-							if 'cvss-metrics' in json_st['info']['classification']:
-								vulnerability.cvss_metrics = json_st['info']['classification']['cvss-metrics']
-							if 'cvss-score' in json_st['info']['classification']:
-								vulnerability.cvss_score = json_st['info']['classification']['cvss-score']
-
-						if 'reference' in json_st['info'] and json_st['info']['reference']:
-							for ref_url in json_st['info']['reference']:
-								if VulnerabilityReference.objects.filter(url=ref_url).exists():
-									reference = VulnerabilityReference.objects.get(url=ref_url)
-								else:
-									reference = VulnerabilityReference(url=ref_url)
-									reference.save()
-								vulnerability.references.add(reference)
-
-						vulnerability.save()
-
+						# Save subscan id in vulnerability object
 						if subscan:
 							vulnerability.vuln_subscan_ids.add(subscan)
-							vulnerability.save()
 
-						# send notification for all vulnerabilities except info
-						if  json_st['info']['severity'] != "info" and notification and notification[0].send_vuln_notif:
+						# Save vulnerability object
+						vulnerability.save()
+
+						# Send notification for all vulnerabilities except info
+						if vulnerability.severity != 0 and notification and notification[0].send_vuln_notif:
+							severity_str = json_st['info'].get('severity', 'info')
 							message = "*Alert: Vulnerability Identified*"
 							message += "\n\n"
-							message += "A *{}* severity vulnerability has been identified.".format(json_st['info']['severity'])
-							message += "\nVulnerability Name: {}".format(json_st['info']['name'])
-							message += "\nVulnerable URL: {}".format(json_st['host'])
+							message += f'A *{severity_str}* severity vulnerability has been identified.'
+							message += f'\nVulnerability Name: {vulnerability.name}'
+							message += f'\nVulnerable URL: {vulnerability.host}'
 							send_notification(message)
 
-						# send report to hackerone
-						if Hackerone.objects.all().exists() and json_st['info']['severity'] != 'info' and json_st['info']['severity'] \
-							!= 'low' and vulnerability.target_domain.h1_team_handle:
+						# Send report to hackerone
+						if Hackerone.objects.all().exists() and severity_str not in ('info', 'low') and vulnerability.target_domain.h1_team_handle:
 							hackerone = Hackerone.objects.all()[0]
-
-							if hackerone.send_critical and json_st['info']['severity'] == 'critical':
+							if hackerone.send_critical and severity_str == 'critical':
 								send_hackerone_report(vulnerability.id)
-							elif hackerone.send_high and json_st['info']['severity'] == 'high':
+							elif hackerone.send_high and severity_str == 'high':
 								send_hackerone_report(vulnerability.id)
-							elif hackerone.send_medium and json_st['info']['severity'] == 'medium':
+							elif hackerone.send_medium and severity_str == 'medium':
 								send_hackerone_report(vulnerability.id)
 					except ObjectDoesNotExist:
 						logger.error('Object not found')
@@ -2017,17 +1963,14 @@ def vulnerability_scan(
 			scan_history__id=scan_history.id, severity=-1).count()
 		vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
 
-		message = 'Vulnerability scan has been completed for {} and discovered {} vulnerabilities.'.format(
-			domain.name,
-			vulnerability_count
-		)
+		message = f'Vulnerability scan has been completed for {domain.name} and discovered {vulnerability_count} vulnerabilities.'
 		message += '\n\n*Vulnerability Stats:*'
-		message += '\nCritical: {}'.format(critical_count)
-		message += '\nHigh: {}'.format(high_count)
-		message += '\nMedium: {}'.format(medium_count)
-		message += '\nLow: {}'.format(low_count)
-		message += '\nInfo: {}'.format(info_count)
-		message += '\nUnknown: {}'.format(unknown_count)
+		message += f'\nCritical: {critical_count}'
+		message += f'\nHigh: {high_count}'
+		message += f'\nMedium: {medium_count}'
+		message += f'\nLow: {low_count}'
+		message += f'\nInfo: {info_count}'
+		message += f'\nUnknown: {unknown_count}'
 
 		send_notification(message)
 
@@ -2057,10 +2000,9 @@ def update_last_activity(id, activity_status, error_message=None):
 
 
 def delete_scan_data(results_dir):
-	# remove all txt,html,json files
-	os.system('find {} -name "*.txt" -type f -delete'.format(results_dir))
-	os.system('find {} -name "*.html" -type f -delete'.format(results_dir))
-	os.system('find {} -name "*.json" -type f -delete'.format(results_dir))
+	os.system(f'find {results_dir} -name "*.txt" -type f -delete')
+	os.system(f'find {results_dir} -name "*.html" -type f -delete')
+	os.system(f'find {results_dir} -name "*.json" -type f -delete')
 
 
 def save_subdomain(subdomain_dict):
@@ -2077,19 +2019,10 @@ def save_subdomain(subdomain_dict):
 	subdomain.content_type = subdomain_dict.get('content_type')
 	subdomain.webserver = subdomain_dict.get('webserver')
 	subdomain.page_title = subdomain_dict.get('page_title')
-
-	subdomain.is_imported_subdomain = subdomain_dict.get(
-		'is_imported_subdomain') if 'is_imported_subdomain' in subdomain_dict else False
-
-	if 'http_status' in subdomain_dict:
-		subdomain.http_status = subdomain_dict.get('http_status')
-
-	if 'response_time' in subdomain_dict:
-		subdomain.response_time = subdomain_dict.get('response_time')
-
-	if 'content_length' in subdomain_dict:
-		subdomain.content_length = subdomain_dict.get('content_length')
-
+	subdomain.is_imported_subdomain = subdomain_dict.get('is_imported_subdomain', False)
+	subdomain.http_status = subdomain_dict.get('http_status', 0)
+	subdomain.response_time = subdomain_dict.get('response_time')
+	subdomain.content_length = subdomain_dict.get('content_length')
 	subdomain.save()
 	return subdomain
 
@@ -2098,16 +2031,16 @@ def save_endpoint(endpoint_dict):
 	endpoint = EndPoint()
 	endpoint.discovered_date = timezone.now()
 	endpoint.scan_history = endpoint_dict.get('scan_history')
-	endpoint.target_domain = endpoint_dict.get('target_domain') if 'target_domain' in endpoint_dict else None
-	endpoint.subdomain = endpoint_dict.get('subdomain') if 'target_domain' in endpoint_dict else None
+	endpoint.target_domain = endpoint_dict.get('target_domain')
+	endpoint.subdomain = endpoint_dict.get('subdomain')
 	endpoint.http_url = endpoint_dict.get('http_url')
-	endpoint.page_title = endpoint_dict.get('page_title') if 'page_title' in endpoint_dict else None
-	endpoint.content_type = endpoint_dict.get('content_type') if 'content_type' in endpoint_dict else None
-	endpoint.webserver = endpoint_dict.get('webserver') if 'webserver' in endpoint_dict else None
-	endpoint.response_time = endpoint_dict.get('response_time') if 'response_time' in endpoint_dict else 0
-	endpoint.http_status = endpoint_dict.get('http_status') if 'http_status' in endpoint_dict else 0
-	endpoint.content_length = endpoint_dict.get('content_length') if 'content_length' in endpoint_dict else 0
-	endpoint.is_default = endpoint_dict.get('is_default') if 'is_default' in endpoint_dict else False
+	endpoint.page_title = endpoint_dict.get('page_title')
+	endpoint.content_type = endpoint_dict.get('content_type')
+	endpoint.webserver = endpoint_dict.get('webserver')
+	endpoint.response_time = endpoint_dict.get('response_time', 0)
+	endpoint.http_status = endpoint_dict.get('http_status', 0)
+	endpoint.content_length = endpoint_dict.get('content_length', 0)
+	endpoint.is_default = endpoint_dict.get('is_default', False)
 	endpoint.save()
 
 	if endpoint_dict.get('subscan'):
@@ -2120,7 +2053,7 @@ def save_endpoint(endpoint_dict):
 def perform_osint(scan_history, domain, yaml_configuration, results_dir):
 	notification = Notification.objects.all()
 	if notification and notification[0].send_scan_status_notif:
-		send_notification('reNgine has initiated OSINT on target {}'.format(domain.name))
+		send_notification(f'reNgine has initiated OSINT on target {domain.name}')
 
 	if 'discover' in yaml_configuration[OSINT]:
 		osint_discovery(scan_history, domain, yaml_configuration, results_dir)
@@ -2129,27 +2062,16 @@ def perform_osint(scan_history, domain, yaml_configuration, results_dir):
 		dorking(scan_history, yaml_configuration)
 
 	if notification and notification[0].send_scan_status_notif:
-		send_notification('reNgine has completed performing OSINT on target {}'.format(domain.name))
+		send_notification(f'reNgine has completed performing OSINT on target {domain.name}')
 
 
 def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
-	if ALL in yaml_configuration[OSINT][OSINT_DISCOVER]:
-		osint_lookup = 'emails metainfo employees'
-	else:
-		osint_lookup = ' '.join(
-			str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DISCOVER])
+	DEFAULT_OSINT_LOOKUP = ['emails', 'metainfo', 'employees']
+	osint_lookup = yaml_configuration[OSINT].get(OSINT_DISCOVER, DEFAULT_OSINT_LOOKUP)
 
 	if 'metainfo' in osint_lookup:
-		if INTENSITY in yaml_configuration[OSINT]:
-			osint_intensity = yaml_configuration[OSINT][INTENSITY]
-		else:
-			osint_intensity = 'normal'
-
-		if OSINT_DOCUMENTS_LIMIT in yaml_configuration[OSINT]:
-			documents_limit = yaml_configuration[OSINT][OSINT_DOCUMENTS_LIMIT]
-		else:
-			documents_limit = 50
-
+		osint_intensity = yaml_configuration[OSINT].get(INTENSITY, 'normal')
+		documents_limit = yaml_configuration[OSINT].get(OSINT_DOCUMENTS_LIMIT, 50)
 		if osint_intensity == 'normal':
 			meta_dict = DottedDict({
 				'osint_target': domain.name,
@@ -2180,272 +2102,285 @@ def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
 def dorking(scan_history, yaml_configuration):
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
 	# look in stackoverflow
-	if ALL in yaml_configuration[OSINT][OSINT_DORK]:
-		dork_lookup = 'stackoverflow, 3rdparty, social_media, project_management, code_sharing, config_files, jenkins, cloud_buckets, php_error, exposed_documents, struts_rce, db_files, traefik, git_exposed'
-	else:
-		dork_lookup = ' '.join(
-			str(lookup) for lookup in yaml_configuration[OSINT][OSINT_DORK])
+	DEFAULT_DORKS = [
+		'stackoverflow',
+		'3rdparty',
+		'social_media',
+		'project_management',
+		'code_sharing',
+		'config_files',
+		'jenkins',
+		'cloud_buckets',
+		'php_error',
+		'exposed_documents',
+		'struts_rce',
+		'db_files',
+		'traefik',
+		'git_exposed'
+	]
+	dorks = yaml_configuration[OSINT].get(OSINT_DORK, DEFAULT_DORKS)
 
-	if 'stackoverflow' in dork_lookup:
-		dork = 'site:stackoverflow.com'
-		dork_type = 'stackoverflow'
-		get_and_save_dork_results(
-			dork,
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+	for dork in dorks:
+		if dork == 'stackoverflow':
+			dork_name = 'site:stackoverflow.com'
+			dork_type = 'stackoverflow'
+			get_and_save_dork_results(
+				dork,
+				dork_type,
+				scan_history,
+				in_target=False
+			)
 
-	if '3rdparty' in dork_lookup:
-		# look in 3rd party sitee
-		dork_type = '3rdparty'
-		lookup_websites = [
-			'gitter.im',
-			'papaly.com',
-			'productforums.google.com',
-			'coggle.it',
-			'replt.it',
-			'ycombinator.com',
-			'libraries.io',
-			'npm.runkit.com',
-			'npmjs.com',
-			'scribd.com',
-			'gitter.im'
-		]
-		dork = ''
-		for website in lookup_websites:
-			dork = dork + ' | ' + 'site:' + website
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+		elif dork == '3rdparty' :
+			# look in 3rd party sitee
+			dork_type = '3rdparty'
+			lookup_websites = [
+				'gitter.im',
+				'papaly.com',
+				'productforums.google.com',
+				'coggle.it',
+				'replt.it',
+				'ycombinator.com',
+				'libraries.io',
+				'npm.runkit.com',
+				'npmjs.com',
+				'scribd.com',
+				'gitter.im'
+			]
+			dork_name = ''
+			for website in lookup_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=False
+				)
 
-	if 'social_media' in dork_lookup:
-		dork_type = 'Social Media'
-		social_websites = [
-			'tiktok.com',
-			'facebook.com',
-			'twitter.com',
-			'youtube.com',
-			'pinterest.com',
-			'tumblr.com',
-			'reddit.com'
-		]
-		dork = ''
-		for website in social_websites:
-			dork = dork + ' | ' + 'site:' + website
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+		elif dork == 'social_media' :
+			dork_type = 'Social Media'
+			social_websites = [
+				'tiktok.com',
+				'facebook.com',
+				'twitter.com',
+				'youtube.com',
+				'pinterest.com',
+				'tumblr.com',
+				'reddit.com'
+			]
+			dork_name = ''
+			for website in social_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=False
+				)
 
-	if 'project_management' in dork_lookup:
-		dork_type = 'Project Management'
-		project_websites = [
-			'trello.com',
-			'*.atlassian.net'
-		]
-		dork = ''
-		for website in project_websites:
-			dork = dork + ' | ' + 'site:' + website
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+		elif dork == 'project_management' :
+			dork_type = 'Project Management'
+			project_websites = [
+				'trello.com',
+				'*.atlassian.net'
+			]
+			dork_name = ''
+			for website in project_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=False
+				)
 
-	if 'code_sharing' in dork_lookup:
-		dork_type = 'Code Sharing Sites'
-		code_websites = [
-			'github.com',
-			'gitlab.com',
-			'bitbucket.org'
-		]
-		dork = ''
-		for website in code_websites:
-			dork = dork + ' | ' + 'site:' + website
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+		elif dork == 'code_sharing' :
+			dork_type = 'Code Sharing Sites'
+			code_websites = [
+				'github.com',
+				'gitlab.com',
+				'bitbucket.org'
+			]
+			dork_name = ''
+			for website in code_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=False
+				)
 
-	if 'config_files' in dork_lookup:
-		dork_type = 'Config Files'
-		config_file_ext = [
-			'env',
-			'xml',
-			'conf',
-			'cnf',
-			'inf',
-			'rdp',
-			'ora',
-			'txt',
-			'cfg',
-			'ini'
-		]
+		elif dork == 'config_files' :
+			dork_type = 'Config Files'
+			config_file_ext = [
+				'env',
+				'xml',
+				'conf',
+				'cnf',
+				'inf',
+				'rdp',
+				'ora',
+				'txt',
+				'cfg',
+				'ini'
+			]
 
-		dork = ''
-		for extension in config_file_ext:
-			dork = dork + ' | ' + 'ext:' + extension
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for extension in config_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'jenkins' in dork_lookup:
-		dork_type = 'Jenkins'
-		dork = 'intitle:\"Dashboard [Jenkins]\"'
-		get_and_save_dork_results(
-			dork,
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+		if dork == 'jenkins' :
+			dork_type = 'Jenkins'
+			dork_name = 'intitle:\"Dashboard [Jenkins]\"'
+			get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				scan_history,
+				in_target=True
+			)
 
-	if 'wordpress_files' in dork_lookup:
-		dork_type = 'Wordpress Files'
-		inurl_lookup = [
-			'wp-content',
-			'wp-includes'
-		]
+		elif dork == 'wordpress_files' :
+			dork_type = 'Wordpress Files'
+			inurl_lookup = [
+				'wp-content',
+				'wp-includes'
+			]
 
-		dork = ''
-		for lookup in inurl_lookup:
-			dork = dork + ' | ' + 'inurl:' + lookup
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for lookup in inurl_lookup:
+				dork_name = dork + ' | ' + 'inurl:' + lookup
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'cloud_buckets' in dork_lookup:
-		dork_type = 'Cloud Buckets'
-		cloud_websites = [
-			'.s3.amazonaws.com',
-			'storage.googleapis.com',
-			'amazonaws.com'
-		]
+		elif dork == 'cloud_buckets':
+			dork_type = 'Cloud Buckets'
+			cloud_websites = [
+				'.s3.amazonaws.com',
+				'storage.googleapis.com',
+				'amazonaws.com'
+			]
 
-		dork = ''
-		for website in cloud_websites:
-			dork = dork + ' | ' + 'site:' + website
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=False
-		)
+			dork_name = ''
+			for website in cloud_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=False
+				)
 
-	if 'php_error' in dork_lookup:
-		dork_type = 'PHP Error'
-		error_words = [
-			'\"PHP Parse error\"',
-			'\"PHP Warning\"',
-			'\"PHP Error\"'
-		]
+		elif dork == 'php_error':
+			dork_type = 'PHP Error'
+			error_words = [
+				'\"PHP Parse error\"',
+				'\"PHP Warning\"',
+				'\"PHP Error\"'
+			]
 
-		dork = ''
-		for word in error_words:
-			dork = dork + ' | ' + word
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for word in error_words:
+				dork_name = dork + ' | ' + word
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'exposed_documents' in dork_lookup:
-		dork_type = 'Exposed Documents'
-		docs_file_ext = [
-			'doc',
-			'docx',
-			'odt',
-			'pdf',
-			'rtf',
-			'sxw',
-			'psw',
-			'ppt',
-			'pptx',
-			'pps',
-			'csv'
-		]
+		elif dork == 'exposed_documents':
+			dork_type = 'Exposed Documents'
+			docs_file_ext = [
+				'doc',
+				'docx',
+				'odt',
+				'pdf',
+				'rtf',
+				'sxw',
+				'psw',
+				'ppt',
+				'pptx',
+				'pps',
+				'csv'
+			]
 
-		dork = ''
-		for extension in docs_file_ext:
-			dork = dork + ' | ' + 'ext:' + extension
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for extension in docs_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'struts_rce' in dork_lookup:
-		dork_type = 'Apache Struts RCE'
-		struts_file_ext = [
-			'action',
-			'struts',
-			'do'
-		]
+		elif dork == 'struts_rce':
+			dork_type = 'Apache Struts RCE'
+			struts_file_ext = [
+				'action',
+				'struts',
+				'do'
+			]
 
-		dork = ''
-		for extension in struts_file_ext:
-			dork = dork + ' | ' + 'ext:' + extension
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for extension in struts_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'db_files' in dork_lookup:
-		dork_type = 'Database Files'
-		db_file_ext = [
-			'sql',
-			'db',
-			'dbf',
-			'mdb'
-		]
+		elif dork == 'db_files':
+			dork_type = 'Database Files'
+			db_file_ext = [
+				'sql',
+				'db',
+				'dbf',
+				'mdb'
+			]
 
-		dork = ''
-		for extension in db_file_ext:
-			dork = dork + ' | ' + 'ext:' + extension
-		get_and_save_dork_results(
-			dork[3:],
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+			dork_name = ''
+			for extension in db_file_ext:
+				dork_name = dork_name + ' | ' + 'ext:' + extension
+				get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					scan_history,
+					in_target=True
+				)
 
-	if 'traefik' in dork_lookup:
-		dork = 'intitle:traefik inurl:8080/dashboard'
-		dork_type = 'Traefik'
-		get_and_save_dork_results(
-			dork,
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+		elif dork == 'traefik':
+			dork_name = 'intitle:traefik inurl:8080/dashboard'
+			dork_type = 'Traefik'
+			get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				scan_history,
+				in_target=True
+			)
 
-	if 'git_exposed' in dork_lookup:
-		dork = 'inurl:\"/.git\"'
-		dork_type = '.git Exposed'
-		get_and_save_dork_results(
-			dork,
-			dork_type,
-			scan_history,
-			in_target=True
-		)
+		elif dork == 'git_exposed':
+			dork_name = 'inurl:\"/.git\"'
+			dork_type = '.git Exposed'
+			get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				scan_history,
+				in_target=True
+			)
 
 
 def get_and_save_dork_results(dork, type, scan_history, in_target=False):
@@ -2456,9 +2391,9 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 		os.environ['HTTPS_PROXY'] = proxy
 
 	if in_target:
-		query = dork + " site:" + scan_history.domain.name
+		query = f'{dork} site:{scan_history.domain.name}'
 	else:
-		query = dork + " \"{}\"".format(scan_history.domain.name)
+		query = f'{dork} \"{scan_history.domain.name}\"'
 	logger.info(query)
 	degoogle_obj.query = query
 	results = degoogle_obj.run()
@@ -2473,40 +2408,31 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 
 
 def get_and_save_employees(scan_history, results_dir):
-	theHarvester_location = '/usr/src/github/theHarvester'
+	theHarvester_dir = '/usr/src/github/theHarvester'
 
-	# update proxies.yaml
+	# Update proxies.yaml
 	if Proxy.objects.all().exists():
 		proxy = Proxy.objects.all()[0]
 		if proxy.use_proxy:
 			proxy_list = proxy.proxies.splitlines()
 			yaml_data = {'http' : proxy_list}
+			with open(f'{theHarvester_dir}/proxies.yaml', 'w') as file:
+				yaml.dump(yaml_data, file)
 
-			with open(theHarvester_location + '/proxies.yaml', 'w') as file:
-				documents = yaml.dump(yaml_data, file)
+	os.system(f'cd {theHarvester_dir} && python3 theHarvester.py -d {scan_history.domain.name} -b all -f {results_dir}/theHarvester.html')
 
+	file_location = f'{results_dir}/theHarvester.html'
 
-	os.system('cd {} && python3 theHarvester.py -d {} -b all -f {}/theHarvester.html'.format(
-		theHarvester_location,
-		scan_history.domain.name,
-		results_dir
-	))
-
-	file_location = results_dir + '/theHarvester.html'
-	print(file_location)
-	# delete proxy environ var
-	if os.environ.get(('https_proxy')):
-		del os.environ['https_proxy']
-
-	if os.environ.get(('HTTPS_PROXY')):
-		del os.environ['HTTPS_PROXY']
+	# Delete proxy environ var
+	os.environ.pop('https_proxy')
+	os.environ.pop('HTTPS_PROXY')
 
 	if os.path.isfile(file_location):
 		logger.info('Parsing theHarvester results')
 		options = FirefoxOptions()
 		options.add_argument("--headless")
 		driver = webdriver.Firefox(options=options)
-		driver.get('file://'+file_location)
+		driver.get(f'file://{file_location}')
 		tabledata = driver.execute_script('return tabledata')
 		# save email addresses and linkedin employees
 		for data in tabledata:
@@ -2525,13 +2451,10 @@ def get_and_save_employees(scan_history, results_dir):
 				employee, _ = Employee.objects.get_or_create(name=name, designation=designation)
 				scan_history.employees.add(employee)
 		driver.quit()
-
-
 		print(tabledata)
 
 
 def get_and_save_emails(scan_history, results_dir):
-	leak_target_path = '{}/creds_target.txt'.format(results_dir)
 
 	# get email address
 	proxy = get_random_proxy()
@@ -2553,35 +2476,30 @@ def get_and_save_emails(scan_history, results_dir):
 	except Exception as e:
 		logger.error(e)
 
-	leak_target_file = open(leak_target_path, 'w')
+	# Write to file
+	leak_target_path = f'{results_dir}/creds_target.txt'
+	with open(leak_target_path, 'w') as leak_target_file:
+		for _email in emails:
+			email, _ = Email.objects.get_or_create(address=_email)
+			scan_history.emails.add(email)
+			leak_target_file.write(f'{_email}\n')
 
-	for _email in emails:
-		email, _ = Email.objects.get_or_create(address=_email)
-		scan_history.emails.add(email)
-		leak_target_file.write('{}\n'.format(_email))
-
-	# fill leak_target_file with possible email address
-	leak_target_file.write('%@{}\n'.format(scan_history.domain.name))
-	leak_target_file.write('%@%.{}\n'.format(scan_history.domain.name))
-
-	leak_target_file.write('%.%@{}\n'.format(scan_history.domain.name))
-	leak_target_file.write('%.%@%.{}\n'.format(scan_history.domain.name))
-
-	leak_target_file.write('%_%@{}\n'.format(scan_history.domain.name))
-	leak_target_file.write('%_%@%.{}\n'.format(scan_history.domain.name))
-
-	leak_target_file.close()
+		# fill leak_target_file with possible email address
+		leak_target_file.write(f'%@{scan_history.domain.name}\n')
+		leak_target_file.write(f'%@%.{scan_history.domain.name}\n')
+		leak_target_file.write(f'%.%@{scan_history.domain.name}\n')
+		leak_target_file.write(f'%.%@%.{scan_history.domain.name}\n')
+		leak_target_file.write(f'%_%@{scan_history.domain.name}\n')
+		leak_target_file.write(f'%_%@%.{scan_history.domain.name}\n')
 
 
 def get_and_save_leaked_credentials(scan_history, results_dir):
 	logger.info('OSINT: Getting leaked credentials...')
 
-	leak_target_file = '{}/creds_target.txt'.format(results_dir)
-	leak_output_file = '{}/pwndb.json'.format(results_dir)
+	leak_target_file = f'{results_dir}/creds_target.txt'
+	leak_output_file = f'{results_dir}/pwndb.json'
 
-	pwndb_command = 'python3 /usr/src/github/pwndb/pwndb.py --proxy tor:9150 --output json --list {}'.format(
-		leak_target_file
-	)
+	pwndb_command = f'python3 /usr/src/github/pwndb/pwndb.py --proxy tor:9150 --output json --list {leak_target_file}'
 
 	try:
 		pwndb_output = subprocess.getoutput(pwndb_command)
@@ -2589,7 +2507,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 
 		for cred in creds:
 			if cred['username'] != 'donate':
-				email_id = "{}@{}".format(cred['username'], cred['domain'])
+				email_id = f"{cred['username']}@{cred['domain']}"
 
 				email_obj, _ = Email.objects.get_or_create(
 					address=email_id,
@@ -2603,41 +2521,32 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 
 
 def get_and_save_meta_info(meta_dict):
-	logger.info('Getting METADATA for {}'.format(meta_dict.osint_target))
+	logger.info(f'Getting METADATA for {meta_dict.osint_target}')
 	proxy = get_random_proxy()
 	if proxy:
 		os.environ['https_proxy'] = proxy
 		os.environ['HTTPS_PROXY'] = proxy
 	result = metadata_extractor.extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
-	if result:
-		results = result.get_metadata()
-		for meta in results:
-			meta_finder_document = MetaFinderDocument()
-			subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
-			meta_finder_document.subdomain = subdomain
-			meta_finder_document.target_domain = meta_dict.domain
-			meta_finder_document.scan_history = meta_dict.scan_id
+	if not result:
+		return
+	results = result.get_metadata()
+	for meta in results:
+		meta_finder_document = MetaFinderDocument()
+		subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
+		meta_finder_document.subdomain = subdomain
+		meta_finder_document.target_domain = meta_dict.domain
+		meta_finder_document.scan_history = meta_dict.scan_id
 
-			item = DottedDict(results[meta])
-			meta_finder_document.url = item.url
-			meta_finder_document.doc_name = meta
-			meta_finder_document.http_status = item.status_code
-
-			metadata = results[meta]['metadata']
-			for data in metadata:
-				if 'Producer' in metadata and metadata['Producer']:
-					meta_finder_document.producer = metadata['Producer'].rstrip('\x00')
-				if 'Creator' in metadata and metadata['Creator']:
-					meta_finder_document.creator = metadata['Creator'].rstrip('\x00')
-				if 'CreationDate' in metadata and metadata['CreationDate']:
-					meta_finder_document.creation_date = metadata['CreationDate'].rstrip('\x00')
-				if 'ModDate' in metadata and metadata['ModDate']:
-					meta_finder_document.modified_date = metadata['ModDate'].rstrip('\x00')
-				if 'Author' in metadata and metadata['Author']:
-					meta_finder_document.author = metadata['Author'].rstrip('\x00')
-				if 'Title' in metadata and metadata['Title']:
-					meta_finder_document.title = metadata['Title'].rstrip('\x00')
-				if 'OSInfo' in metadata and metadata['OSInfo']:
-					meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
-
-			meta_finder_document.save()
+		item = DottedDict(results[meta])
+		metadata = results[meta]['metadata']
+		meta_finder_document.url = item.url
+		meta_finder_document.doc_name = meta
+		meta_finder_document.http_status = item.status_code
+		meta_finder_document.producer = metadata.get('Producer', '').rstrip('\x00')
+		meta_finder_document.creator = metadata.get('Creator', '').rstrip('\x00')
+		meta_finder_document.creation_date = metadata.get('CreationDate', '').rstrip('\x00')
+		meta_finder_document.modified_date = metadata.get('ModDate', '').rstrip('\x00')
+		meta_finder_document.author = metadata.get('Author', '').rstrip('\x00')
+		meta_finder_document.title = metadata.get('Title', '').rstrip('\x00')
+		meta_finder_document.os = metadata.get('OSInfo', '').rstrip('\x00')
+		meta_finder_document.save()

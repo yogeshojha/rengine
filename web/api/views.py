@@ -1,4 +1,3 @@
-import json
 import logging
 import re
 import subprocess
@@ -27,6 +26,7 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from startScan.models import *
+from startScan.models import EndPoint
 from targetApp.models import *
 
 from .serializers import *
@@ -488,6 +488,10 @@ class FetchSubscanResults(APIView):
 		elif subscan_type == 'vulnerability_scan':
 			vulns_in_subscan = Vulnerability.objects.filter(vuln_subscan_ids__in=subscan)
 			subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
+
+		elif subscan_type == 'endpoint':
+			endpoints_in_subscan = Endpoint.objects.filter(endpoints_in_subscan_ids__in=subscan)
+			subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
 
 		elif subscan_type == 'dir_fuzz':
 			dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
