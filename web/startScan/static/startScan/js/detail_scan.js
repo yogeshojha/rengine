@@ -1370,11 +1370,13 @@ function initiate_subtask(subdomain_ids){
 	}
 	var data = {
 		'subdomain_ids': subdomain_ids,
-		'port_scan': port_scan,
-		'osint': osint,
-		'endpoint': endpoint,
-		'dir_fuzz': dir_fuzz,
-		'vuln_scan': vuln_scan,
+		'tasks': {
+			'port_scan': port_scan,
+			'osint': osint,
+			'endpoint': endpoint,
+			'dir_fuzz': dir_fuzz,
+			'vulnerability_scan': vuln_scan
+		},
 		'engine_id': engine_id,
 	};
 	Swal.fire({
@@ -1394,6 +1396,7 @@ function initiate_subtask(subdomain_ids){
 	.then(response => response.json())
 	.then(function (response) {
 		swal.close();
+		console.log(response);
 		if (response['status']) {
 			Snackbar.show({
 				text: 'Subtask initiated successfully!',

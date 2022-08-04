@@ -475,26 +475,23 @@ class FetchSubscanResults(APIView):
 			return Response({'status': False, 'error': 'Subscan {} does not exist'.format(subscan_id)})
 
 		subscan = SubScan.objects.filter(id=subscan_id)
-		subscan_data = SubScanResultSerializer(subscan[0], many=False).data
-
+		subscan_data = SubScanResultSerializer(subscan.first(), many=False).data
+		subscan_type = subscan_data['type']
 		subscan_results = None
 
-		if subscan[0].port_scan:
+		# TODO: Review this section as it doesn't work
+
+		if subscan_type == 'port_scan':
 			ips_in_subscan = IpAddress.objects.filter(ip_subscan_ids__in=subscan)
 			subscan_results = IpSerializer(ips_in_subscan, many=True).data
 
-		elif subscan[0].vulnerability_scan:
+		elif subscan_type == 'vulnerability_scan':
 			vulns_in_subscan = Vulnerability.objects.filter(vuln_subscan_ids__in=subscan)
 			subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
 
-		elif subscan[0].fetch_url:
-			endpoints_in_subscan = EndPoint.objects.filter(endpoint_subscan_ids__in=subscan)
-			subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
-
-		elif subscan[0].dir_file_fuzz:
+		elif subscan_type == 'dir_fuzz':
 			dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
 			subscan_results = DirectoryScanSerializer(dirs_in_subscan, many=True).data
-
 
 		return Response({'subscan': subscan_data, 'result': subscan_results})
 
@@ -505,13 +502,10 @@ class ListSubScans(APIView):
 		data = req.data
 
 		subdomain_id = data.get('subdomain_id', None)
-
 		scan_history = data.get('scan_history_id', None)
-
 		domain_id = data.get('domain_id', None)
 
 		response = {}
-
 		response['status'] = False
 
 		if subdomain_id:
@@ -607,9 +601,9 @@ class InitiateSubTask(APIView):
 		req = self.request
 		data = req.data
 		engine_id = data.get('engine_id')
-		scan_types = []
+		scan_types = [stype for stype, enabled in data['tasks'].items() if enabled]
 		for subdomain_id in data['subdomain_ids']:
-			scan_types = [stype for stype, active in data.items() if active]
+			logging.info(f'Running subscans {scan_types} on subdomain "{subdomain_id}" ...')
 			for stype in scan_types:
 				initiate_subtask.apply_async(
 					args=(subdomain_id, stype, engine_id))
