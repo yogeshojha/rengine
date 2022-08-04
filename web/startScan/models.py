@@ -22,6 +22,7 @@ class ScanHistory(models.Model):
 	fetch_url = models.BooleanField(null=True, default=False)
 	vulnerability_scan = models.BooleanField(null=True, default=False)
 	osint = models.BooleanField(null=True, default=False)
+	http_crawl = models.BooleanField(null=True, default=False)
 	screenshot = models.BooleanField(null=True, default=True)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
@@ -56,7 +57,7 @@ class ScanHistory(models.Model):
 
 
 	def get_endpoint_count(self):
-		return EndPoint.objects.filter(scan_history__id=self.id).count()
+		return Endpoint.objects.filter(scan_history__id=self.id).count()
 
 	def get_vulnerability_count(self):
 		return Vulnerability.objects.filter(
@@ -106,6 +107,7 @@ class ScanHistory(models.Model):
 			self.vulnerability_scan,
 			self.osint,
 			self.screenshot,
+			self.http_crawl,
 			True
 		])
 		steps_done = len(self.scanactivity_set.all())
@@ -169,7 +171,7 @@ class Subdomain(models.Model):
 
 	@property
 	def get_endpoint_count(self):
-		return EndPoint.objects.filter(
+		return Endpoint.objects.filter(
 			scan_history=self.scan_history).filter(
 			subdomain__name=self.name).count()
 
@@ -264,7 +266,7 @@ class SubScan(models.Model):
 		}
 		return taskmap.get(self.type, 'Unknown')
 
-class EndPoint(models.Model):
+class Endpoint(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	target_domain = models.ForeignKey(
@@ -333,7 +335,7 @@ class Vulnerability(models.Model):
 		null=True,
 		blank=True)
 	endpoint = models.ForeignKey(
-		EndPoint,
+		Endpoint,
 		on_delete=models.CASCADE,
 		blank=True,
 		null=True)

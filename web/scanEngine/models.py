@@ -4,14 +4,15 @@ from django.db import models
 class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
-    subdomain_discovery = models.BooleanField()
+    subdomain_discovery = models.BooleanField(null=True, default=False)
     waf_detection = models.BooleanField(null=True, default=False)
-    dir_file_fuzz = models.BooleanField()
-    port_scan = models.BooleanField()
-    fetch_url = models.BooleanField()
+    dir_file_fuzz = models.BooleanField(null=True, default=False)
+    port_scan = models.BooleanField(null=True, default=False)
+    fetch_url = models.BooleanField(null=True, default=False)
     vulnerability_scan = models.BooleanField(null=True, default=False)
     osint = models.BooleanField(null=True, default=False)
     screenshot = models.BooleanField(null=True, default=True)
+    http_crawl = models.BooleanField(null=True, default=True)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 
@@ -27,8 +28,9 @@ class EngineType(models.Model):
             self.fetch_url,
             self.vulnerability_scan,
             self.osint,
-            self.screenshot
-            ]
+            self.screenshot,
+            self.http_crawl
+        ]
         return sum(bool(item) for item in engine_list)
 
 
