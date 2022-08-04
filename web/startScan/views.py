@@ -89,9 +89,7 @@ def detail_scan(request, id=None):
                 id=id))
 
         context['exposed_count'] = emails.exclude(password__isnull=True).count()
-
         context['email_count'] = emails.count()
-
         context['employees_count'] = Employee.objects.filter(
             employees__in=ScanHistory.objects.filter(id=id)).count()
 
@@ -132,11 +130,8 @@ def all_subdomains(request):
         http_status__exact=200).count()
     context['important_count'] = Subdomain.objects.values('name').distinct().filter(
         is_important=True).count()
-
     context['scan_engines'] = EngineType.objects.all()
-
     context['scan_history_active'] = 'active'
-
     return render(request, 'startScan/subdomains.html', context)
 
 def detail_vuln_scan(request, id=None):
@@ -341,7 +336,7 @@ def schedule_scan(request, host_id):
         task_name = engine_object.engine_name + ' for ' + \
             domain.name + \
             ':' + \
-            str(datetime.datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+            str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         if request.POST['scheduled_mode'] == 'periodic':
             # periodic task
             frequency_value = int(request.POST['frequency'])
