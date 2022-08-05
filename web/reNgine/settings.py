@@ -1,6 +1,10 @@
+import mimetypes
 import os
 
 from reNgine.init import first_run
+
+mimetypes.add_type("text/javascript", ".js", True)
+mimetypes.add_type("text/css", ".css", True)
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #       RENGINE CONFIGURATIONS
@@ -12,8 +16,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
-# DEBUG = int(os.environ.get('DEBUG', default=0))
-DEBUG = 1
+DEBUG = int(os.environ.get('DEBUG', '0'))
 
 ALLOWED_HOSTS = ['*']
 
