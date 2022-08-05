@@ -34,16 +34,15 @@ def add_target(request):
             Domain.objects.create(
                 **add_target_form.cleaned_data,
                 insert_date=timezone.now())
+            target_domain = add_target_form.cleaned_data['name']
             messages.add_message(
                 request,
                 messages.INFO,
-                'Target domain ' +
-                add_target_form.cleaned_data['name'] +
-                ' added successfully')
+                'Target domain {target_domain} added successfully')
             if 'fetch_whois_checkbox' in request.POST and request.POST['fetch_whois_checkbox'] == 'on':
                 thread = threading.Thread(
                     target=get_whois,
-                    args=[add_target_form.cleaned_data['name'], True, False]
+                    args=[target_domain, True, False]
                 )
                 thread.setDaemon(True)
                 thread.start()

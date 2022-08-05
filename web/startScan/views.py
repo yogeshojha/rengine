@@ -55,9 +55,9 @@ def detail_scan(request, id=None):
             is_important=True).count()
         context['scan_activity'] = ScanActivity.objects.filter(
             scan_of__id=id).order_by('time')
-        context['endpoint_count'] = Endpoint.objects.filter(
+        context['endpoint_count'] = EndPoint.objects.filter(
             scan_history__id=id).values('http_url').distinct().count()
-        context['endpoint_alive_count'] = Endpoint.objects.filter(
+        context['endpoint_alive_count'] = EndPoint.objects.filter(
             scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
         history = get_object_or_404(ScanHistory, id=id)
         context['history'] = history
@@ -118,7 +118,7 @@ def detail_scan(request, id=None):
     if history.used_gf_patterns:
         count_gf = {}
         for gf in history.used_gf_patterns.split(','):
-            count_gf[gf] = Endpoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
+            count_gf[gf] = EndPoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
             context['matched_gf_count'] = count_gf
     return render(request, 'startScan/detail_scan.html', context)
 
@@ -248,7 +248,7 @@ def export_subdomains(request, scan_id):
 
 
 def export_endpoints(request, scan_id):
-    endpoint_list = Endpoint.objects.filter(scan_history__id=scan_id)
+    endpoint_list = EndPoint.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
     for endpoint in endpoint_list:
