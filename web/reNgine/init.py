@@ -23,7 +23,7 @@ def first_run(secret_file, base_dir):
             secret.write(secret_key)
             secret.close()
         except IOError:
-            raise Exception('Secret file generation failed' % secret_file)
+            raise Exception(f'Secret file generation failed. Path: {secret_file}')
     return secret_key
 
 

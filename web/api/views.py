@@ -490,7 +490,7 @@ class FetchSubscanResults(APIView):
 			subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
 
 		elif subscan_type == 'endpoint':
-			endpoints_in_subscan = Endpoint.objects.filter(endpoints_in_subscan_ids__in=subscan)
+			endpoints_in_subscan = EndPoint.objects.filter(endpoint_subscan_ids__in=subscan)
 			subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
 
 		elif subscan_type == 'dir_fuzz':
@@ -852,12 +852,12 @@ class Whois(APIView):
 		req = self.request
 		ip_domain = req.query_params.get('ip_domain')
 		if not validators.domain(ip_domain):
-			return Response({'status': False, 'message': 'Invalid Domain or IP'})
+			return Response({'status': False, 'message': 'Invalid domain or IP'})
 		save_db = True if 'save_db' in req.query_params else False
 		# fetch_from_db query param can be used to pull the whois record directly from db
 		# instead of fetching new
 		# if fetch_from_db = True, will not be queried to domainbigdata
-		fetch_from_db = True if 'fetch_from_db' in req.query_params else False
+		fetch_from_db = 'fetch_from_db' in req.query_params
 		response = get_whois(ip_domain, save_db=save_db, fetch_from_db=fetch_from_db)
 		if response:
 			return Response(response)
@@ -1437,7 +1437,7 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
 
 class EndPointChangesViewSet(viewsets.ModelViewSet):
 	'''
-		This viewset will return the EndPoint changes
+		This viewset will return the Endpoint changes
 	'''
 	queryset = EndPoint.objects.none()
 	serializer_class = EndPointChangesSerializer
@@ -1562,7 +1562,7 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
 		scan_id = req.query_params.get('scan_id')
 		target_id = req.query_params.get('target_id')
 		if 'only_endpoints' in self.request.query_params:
-			self.serializer_class = InterestingEndPointSerializer
+			self.serializer_class = InterestingEndpointSerializer
 		if scan_id:
 			return get_interesting_endpoint(scan_history=scan_id)
 		elif target_id:

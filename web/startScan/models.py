@@ -57,7 +57,7 @@ class ScanHistory(models.Model):
 
 
 	def get_endpoint_count(self):
-		return Endpoint.objects.filter(scan_history__id=self.id).count()
+		return EndPoint.objects.filter(scan_history__id=self.id).count()
 
 	def get_vulnerability_count(self):
 		return Vulnerability.objects.filter(
@@ -171,7 +171,7 @@ class Subdomain(models.Model):
 
 	@property
 	def get_endpoint_count(self):
-		return Endpoint.objects.filter(
+		return EndPoint.objects.filter(
 			scan_history=self.scan_history).filter(
 			subdomain__name=self.name).count()
 
@@ -266,7 +266,7 @@ class SubScan(models.Model):
 		}
 		return taskmap.get(self.type, 'Unknown')
 
-class Endpoint(models.Model):
+class EndPoint(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	target_domain = models.ForeignKey(
@@ -335,7 +335,7 @@ class Vulnerability(models.Model):
 		null=True,
 		blank=True)
 	endpoint = models.ForeignKey(
-		Endpoint,
+		EndPoint,
 		on_delete=models.CASCADE,
 		blank=True,
 		null=True)
