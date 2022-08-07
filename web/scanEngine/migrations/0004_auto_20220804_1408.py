@@ -30,4 +30,9 @@ class Migration(migrations.Migration):
             name='subdomain_discovery',
             field=models.BooleanField(default=False, null=True),
         ),
+        migrations.AddField(
+            model_name='enginetype',
+            name='http_crawl',
+            field=models.BooleanField(default=True, null=True),
+        ),
     ]
