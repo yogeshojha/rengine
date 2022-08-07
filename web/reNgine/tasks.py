@@ -1,21 +1,15 @@
 import csv
 import json
-from multiprocessing.sharedctypes import Value
 import os
 import random
 import subprocess
 from datetime import datetime
 from time import sleep
-from unittest.mock import DEFAULT
-from django.urls import is_valid_path
-from pkg_resources import compatible_platforms
 
 import validators
 import whatportis
 import yaml
 from degoogle import degoogle
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
@@ -30,7 +24,6 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
-from this import d
 
 from .common_func import *
 
