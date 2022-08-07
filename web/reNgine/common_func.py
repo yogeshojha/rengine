@@ -23,6 +23,22 @@ from startScan.models import *
 from targetApp.models import *
 
 
+def execute_live(cmd):
+    """Execute a command while fetching it's output live."""
+    popen = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    for stdout_line in iter(popen.stdout.readline, ""):
+        item = stdout_line.strip()
+        if item.startswith('{') and item.endswith('}'):
+            try:
+                yield json.loads(item)
+                continue
+            except Exception as e:
+                pass
+        yield item
+    popen.stdout.close()
+    return_code = popen.wait()
+    return return_code
+
 def get_lookup_keywords():
     default_lookup_keywords = [
         key.strip() for key in InterestingLookupModel.objects.get(
