@@ -745,12 +745,12 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                         # Create object in database
                         obj, created = model_cls.objects.get_or_create(name=field_content)
                         obj_json = serializer_cls(obj, many=False).data
-                        objects[field_parent] = obj_json
+                        objects[field_fullname] = obj_json
                         if created:
                             logger.info(f'Saved {obj} in DB !')
 
                         # Set attribute in domain_info
-                        setattr(domain_info, field_parent, obj)
+                        setattr(domain_info, field_fullname, obj)
                         domain_info.save()
 
             logger.info(f'Finished saving domain info {ip_domain}.')
