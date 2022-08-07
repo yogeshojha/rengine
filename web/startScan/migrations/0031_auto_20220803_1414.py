@@ -35,4 +35,9 @@ class Migration(migrations.Migration):
             name='type',
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
+        migrations.AddField(
+            model_name='scanhistory',
+            name='http_crawl',
+            field=models.BooleanField(default=False, null=True),
+        ),
     ]

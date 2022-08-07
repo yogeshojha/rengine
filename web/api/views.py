@@ -1376,7 +1376,7 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
 
 class EndPointChangesViewSet(viewsets.ModelViewSet):
 	'''
-		This viewset will return the Endpoint changes
+		This viewset will return the EndPoint changes
 	'''
 	queryset = EndPoint.objects.none()
 	serializer_class = EndPointChangesSerializer
