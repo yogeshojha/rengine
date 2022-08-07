@@ -1,11 +1,14 @@
 import csv
 import json
+from multiprocessing.sharedctypes import Value
 import os
 import random
 import subprocess
 from datetime import datetime
 from time import sleep
 from unittest.mock import DEFAULT
+from django.urls import is_valid_path
+from pkg_resources import compatible_platforms
 
 import validators
 import whatportis
@@ -174,6 +177,7 @@ def initiate_scan(
 		out_of_scope_subdomains=[],
 		results_dir='/usr/src/scan_results'):
 
+
 	if scan_type == 1: # immediate
 		task = ScanHistory()
 		task.scan_status = -1
@@ -229,7 +233,7 @@ def initiate_scan(
 	'''
 	Add GF patterns name to db for dynamic URLs menu
 	'''
-	gf_patterns = yaml_configuration[FETCH_URL].get(GF_PATTERNS, [])
+	gf_patterns = yaml_configuration.get(GF_PATTERNS, [])
 	if engine_object.fetch_url and gf_patterns:
 		task.used_gf_patterns = ','.join(gf_patterns)
 		task.save()
@@ -421,7 +425,12 @@ def subdomain_scan(
 	"""
 	Uses a set of tools (see DEFAULT_SUBDOMAIN_SCAN_TOOLS) to scan all subdomains associated with a domain.
 	"""
-	logger.info(f'Subdomain scan started for {domain.name}')
+
+	# Config
+	config = yaml_configuration[SUBDOMAIN_DISCOVERY]
+	output_path = f'{results_dir}/sorted_subdomain_collection.txt'
+	threads = config.get(THREADS, 20)
+	tools = config.get(USES_TOOLS, [])
 	default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 
@@ -436,35 +445,29 @@ def subdomain_scan(
 	if send_status:
 		send_notification(msg)
 
-	output_path = f'{results_dir}/sorted_subdomain_collection.txt'
-
 	# Gather tools to run for subdomain scan
-	tools = yaml_configuration[SUBDOMAIN_DISCOVERY].get(USES_TOOLS, [])
 	if ALL in tools:
 		tools = DEFAULT_SUBDOMAIN_SCAN_TOOLS + custom_subdomain_tools
 	tools = [t.lower() for t in tools]
 
 	# Gather threads
-	threads = yaml_configuration.get(SUBDOMAIN_DISCOVERY, {}).get(THREADS, 20)
-	use_amass_config = yaml_configuration[SUBDOMAIN_DISCOVERY].get(USE_AMASS_CONFIG, False)
-	amass_wordlist_name = yaml_configuration[SUBDOMAIN_DISCOVERY].get(AMASS_WORDLIST, 'deepmagic.com-prefixes-top50000')
 	try:
 		for tool in tools:
 			if tool in default_subdomain_tools:
 				if tool == 'amass-passive':
 					cmd = f'amass enum -passive -d {domain.name} -o {results_dir}/from_amass.txt'
-					if use_amass_config:
-						cmd += ' -config /root/.config/amass.ini'
+					cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
 					logger.info(cmd)
 					process = subprocess.Popen(cmd.split())
 					process.wait()
 
 				elif tool == 'amass-active':
 					cmd = f'amass enum -active -d {domain.name} -o {results_dir}/from_amass_active.txt'
-					if use_amass_config:
-						cmd += ' -config /root/.config/amass.ini'
+					use_amass_config = config.get(USE_AMASS_CONFIG, False)
+					cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
+					amass_wordlist_name = config.get(AMASS_WORDLIST, 'deepmagic.com-prefixes-top50000')
 					wordlist_path = f'/usr/src/wordlist/{amass_wordlist_name}.txt'
-					cmd += f' -brute -w {wordlist_path}'.format(wordlist_path)
+					cmd += f' -brute -w {wordlist_path}'
 					logger.info(cmd)
 					process = subprocess.Popen(cmd.split())
 					process.wait()
@@ -483,9 +486,8 @@ def subdomain_scan(
 
 				elif tool == 'subfinder':
 					cmd = f'subfinder -d {domain.name} -t {threads} -o {results_dir}/from_subfinder.txt'
-					use_subfinder_config = yaml_configuration[SUBDOMAIN_DISCOVERY].get(USE_SUBFINDER_CONFIG, False)
-					if use_subfinder_config:
-						cmd += ' -config /root/.config/subfinder/config.yaml'
+					use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
+					cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
 					logger.info(cmd)
 					process = subprocess.Popen(cmd.split())
 					process.wait()
@@ -578,31 +580,35 @@ def subdomain_scan(
 
 def get_new_added_subdomain(scan_id, domain_id):
 	scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id)
-	if scan_history.count() > 1:
-		last_scan = scan_history.order_by('-start_scan_date')[1]
-		scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
-		scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
-		added_subdomain = scanned_host_q1.difference(scanned_host_q2)
-		return Subdomain.objects.filter(scan_history=scan_id).filter(name__in=added_subdomain)
+	if not scan_history.count() > 1:
+		return
+	last_scan = scan_history.order_by('-start_scan_date')[1]
+	scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
+	scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
+	added_subdomain = scanned_host_q1.difference(scanned_host_q2)
+	return Subdomain.objects.filter(scan_history=scan_id).filter(name__in=added_subdomain)
 
 
 def get_removed_subdomain(scan_id, domain_id):
 	scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=scan_id)
-	if scan_history.count() > 1:
-		last_scan = scan_history.order_by('-start_scan_date')[1]
-		scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
-		scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
-		removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
-		return Subdomain.objects.filter(scan_history=last_scan).filter(name__in=removed_subdomains)
+	if not scan_history.count() > 1:
+		return
+	last_scan = scan_history.order_by('-start_scan_date')[1]
+	scanned_host_q1 = Subdomain.objects.filter(scan_history__id=scan_id).values('name')
+	scanned_host_q2 = Subdomain.objects.filter(scan_history__id=last_scan.id).values('name')
+	removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
+	return Subdomain.objects.filter(scan_history=last_scan).filter(name__in=removed_subdomains)
 
 
 def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, threads=100):
 	"""
 	Uses httpx to crawl domain for important info like page titles, http status, etc...
 	"""
-	alive_subdomain_file = f'{results_dir}/alive.txt'
+	custom_header = yaml_configuration.get(CUSTOM_HEADER)
+	alive_subdomain_file = open(f'{results_dir}/alive.txt', 'w')
 	httpx_results_file = f'{results_dir}/httpx.json'
 	subdomain_scan_results_file = f'{results_dir}/sorted_subdomain_collection.txt'
+	proxy = get_random_proxy()
 
 	# Send notification
 	notification = Notification.objects.first()
@@ -613,101 +619,93 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 		send_notification(msg)
 
 	cmd = f'/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {threads}'
-
-	# Proxy
-	proxy = get_random_proxy()
-	if proxy:
-		cmd += f' --http-proxy {proxy}'
-
-	# Custom header
-	custom_header = yaml_configuration.get(CUSTOM_HEADER)
-	if custom_header:
-		cmd += f' -H "{custom_header}"'
+	cmd += f' --http-proxy {proxy}' if proxy else ''
+	cmd += f' -H "{custom_header}"' if custom_header else ''
+	cmd += f' -json -l {subdomain_scan_results_file}'
 
 	# Run command
-	cmd += f' -json -o {httpx_results_file} -l {subdomain_scan_results_file}'
+	logger.info(f'Running httpx scan on {domain} ...')
 	cmd = remove_cmd_injection_chars(cmd)
 	logger.info(cmd)
-	os.system(cmd)
-
-	# Writing httpx results
-	if not os.path.isfile(httpx_results_file):
-		logger.error(f'Could not load "httpx" results file {httpx_results_file}')
-		return
-
-	with open(httpx_results_file, 'r') as f:
-		lines = f.readlines()
-
-	alive_file = open(alive_subdomain_file, 'w')
-	for line in lines:
-		json_st = json.loads(line.strip())
-		discovered_date = timezone.now()
+	results = []
+	for line in execute_live(cmd):
+		if not isinstance(line, dict):
+			continue
 		try:
-			# Fallback for older versions of httpx
-			if 'url' in json_st:
-				subdomain, _ = Subdomain.objects.get_or_create(scan_history=task, name=json_st['input'].strip())
-			else:
-				subdomain, _ = Subdomain.objects.get_or_create(scan_history=task, name=json_st['url'].split("//")[-1].strip())
-			subdomain.save()
-
-			# Get response time in s
-			response_time = json_st.get('response-time')
+			# Locals
+			content_length = line.get('content-length', 0)
+			host = line.get('host', '')
+			http_url = line.get('url')
+			http_status = line.get('status-code', 0)
+			page_title = line.get('title', '')
+			webserver = line.get('webserver')
+			response_time = line.get('response-time')
 			if response_time:
-				response_time = float(
-					''.join(
-						ch for ch in json_st['response-time'] if not ch.isalpha()))
-				if json_st['response-time'][-2:] == 'ms':
+				response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
+				if line['response-time'][-2:] == 'ms':
 					response_time = response_time / 1000
 
-			'''
-			Saving Default http urls to Endpoint
-			'''
+			# Save subdomain in DB
+			if 'url' in line: # fallback for older versions of httpx
+				subdomain, _ = Subdomain.objects.get_or_create(scan_history=task, name=line['input'].strip())
+			else:
+				subdomain, _ = Subdomain.objects.get_or_create(scan_history=task, name=http_url.split("//")[-1].strip())
+			discovered_date = timezone.now()
+			subdomain.discovered_date = discovered_date
+			subdomain.http_url = http_url
+			subdomain.http_status = http_status
+			subdomain.content_length = content_length
+			subdomain.page_title = page_title
+			subdomain.webserver = webserver
+			subdomain.response_time = response_time
+			subdomain.cname = ','.join(line.get('cnames', []))
+			subdomain.save()
+
+			# Save default HTTP URL to endpoint object in DB
 			endpoint = EndPoint(
 				scan_history=task,
 				target_domain=domain,
 				subdomain=subdomain,
 				discovered_date=discovered_date,
 				is_default=True,
-				http_url=json_st.get('url'),
-				http_status=json_st.get('status-code', 0),
-				page_title=json_st.get('title', ''),
-				content_length=json_st.get('content-length', 0),
-				webserver=json_st.get('webserver'),
+				http_url=http_url,
+				http_status=http_status,
+				page_title=page_title,
+				content_length=content_length,
+				webserver=webserver,
 				response_time=response_time
 			)
 			endpoint.save()
 
-			subdomain.discovered_date = discovered_date
-			subdomain.http_url = json_st.get('url')
-			subdomain.http_status = json_st.get('status-code', 0)
-			subdomain.content_length = json_st.get('content-length', 0)
-			subdomain.page_title = json_st.get('title', '')
-			subdomain.webserver = json_st.get('webserver')
-			subdomain.response_time = response_time
-			subdomain.cname = ','.join(json_st.get('cnames', []))
-			subdomain.save()
+			# Add alive endpoint URLs to file
+			if endpoint.is_alive():
+				alive_subdomain_file.write(endpoint.http_url + '\n')
 
-			technologies = json_st.get('technologies', [])
-			for _tech in technologies:
-				if Technology.objects.filter(name=_tech).exists():
-					tech = Technology.objects.get(name=_tech)
+			# Add technology objects to DB
+			technologies = line.get('technologies', [])
+			for technology in technologies:
+				if Technology.objects.filter(name=technology).exists():
+					tech = Technology.objects.get(name=technology)
 				else:
-					tech = Technology(name=_tech)
+					tech = Technology(name=technology)
 					tech.save()
 				subdomain.technologies.add(tech)
 				endpoint.technologies.add(tech)
+				subdomain.save()
+				endpoint.save()
 
-			# Add IP object in DB
-			a_records = json_st.get('a', [])
-			for _ip in a_records:
-				if IpAddress.objects.filter(address=_ip).exists():
-					ip = IpAddress.objects.get(address=_ip)
+			# Add ip objects to DB
+			a_records = line.get('a', [])
+			for ip_address in a_records:
+				if IpAddress.objects.filter(address=ip_address).exists():
+					ip = IpAddress.objects.get(address=ip_address)
 				else:
-					ip = IpAddress(address=_ip)
-					ip.is_cdn = json_st.get('cdn', False)
+					ip = IpAddress(address=ip_address)
+					ip.is_cdn = line.get('cdn', False)
+				ip.save()
 
-				# Add geo iso
-				subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+				# Add CountryISO to DB
+				subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(ip_address)])
 				if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
 					country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
 					country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
@@ -719,18 +717,19 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 
 				ip.save()
 				subdomain.ip_addresses.add(ip)
+				subdomain.save()
 
 			# Add IP object in DB
-			host = json_st.get('host', '')
 			if host:
 				if IpAddress.objects.filter(address=host).exists():
 					ip = IpAddress.objects.get(address=host)
 				else:
 					ip = IpAddress(address=host)
-					ip.is_cdn = json_st.get('cdn', False)
+					ip.is_cdn = line.get('cdn', False)
+				ip.save()
 
 				# Add geo iso
-				subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(_ip)])
+				subprocess_output = subprocess.getoutput(['geoiplookup {}'.format(host)])
 				if 'IP Address not found' not in subprocess_output and "can't resolve hostname" not in subprocess_output:
 					country_iso = subprocess_output.split(':')[1].strip().split(',')[0]
 					country_name = subprocess_output.split(':')[1].strip().split(',')[1].strip()
@@ -741,22 +740,20 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 					ip.geo_iso = iso_object
 				ip.save()
 
-			# Add url to alive file
-			status_code = json_st.get('status-code', 0)
-			url = json_st['url']
-			if 0 < status_code < 400:
-				logger.info(f'Found alive URL {url}')
-				alive_file.write(url + '\n')
-
 			# Save subdomain and endpoint
 			subdomain.save()
 			endpoint.save()
 
 		except Exception as exception:
 			logger.exception(exception)
+			continue
 
 	# Close file handle
-	alive_file.close()
+	alive_subdomain_file.close()
+
+	# Write results to JSON file
+	with open(httpx_results_file, 'w') as f:
+		json.dump(results, f)
 
 	# Send finish notification
 	if send_status:
@@ -781,9 +778,18 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 	"""
 	Uses EyeWitness to gather screenshot of a domain and/or url.
 	"""
+
+	# Config
 	screenshots_path = f'{results_dir}/screenshots'
 	result_csv_path = f'{results_dir}/screenshots/Requests.csv'
 	alive_subdomains_path = f'{results_dir}/alive.txt'
+	timeout = yaml_configuration.get(SCREENSHOT, {}).get(TIMEOUT, 0)
+	threads = yaml_configuration.get(SCREENSHOT, {}).get(THREADS, 0)
+
+	# Build cmd
+	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_subdomains_path} -d {screenshots_path} --no-prompt'
+	cmd += f' --timeout {timeout}' if timeout > 0 else ''
+	cmd += f' --threads {threads}' if threads > 0 else ''
 
 	# Send start notif
 	notification = Notification.objects.first()
@@ -791,43 +797,27 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 	if send_status:
 		send_notification(f'EyeWitness has started gathering screenshots of {domain.name}')
 
-	# Build cmd
-	cmd = 'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py'
-	cmd += f' -f {alive_subdomains_path} -d {screenshots_path} --no-prompt '
-
-	'''
-	Timeout.
-	'''
-	timeout = yaml_configuration.get(SCREENSHOT, {}).get(TIMEOUT, 0)
-	if timeout > 0:
-		cmd += f' --timeout {timeout}'
-
-	'''
-	Threads
-	'''
-	threads = yaml_configuration.get(SCREENSHOT, {}).get(THREADS, 0)
-	if threads > 0:
-		cmd += f' --threads {threads}'
-
+	# Run cmd
 	logger.info(cmd)
 	process = subprocess.Popen(cmd.split())
 	process.wait()
-
 	if not os.path.isfile(result_csv_path):
 		logger.error (f'Could not load EyeWitness results at {result_csv_path} for {domain.name}.')
 		return
 
-	logger.info('Gathering eyewitness results ...')
+	# Loop through results and save objects in DB
+	logger.info(f'Gathering EyeWitness results from {result_csv_path} ...')
 	with open(result_csv_path, 'r') as file:
 		reader = csv.reader(file)
-
-	for row in reader:
-		_, _, name, status, path = tuple(row)
-		subdomain_query = Subdomain.objects.filter(scan_history__id=task.id).filter(name=name)
-		if status == 'Successful' and subdomain_query.exists():
-			subdomain = subdomain_query.first()
-			subdomain.screenshot_path = path.replace('/usr/src/scan_results/', '')
-			subdomain.save()
+		for row in reader:
+			one, two, three, name, status, path = tuple(row)
+			logger.info(f'{one}:{two}:{three}:{name}:{status}:{path}')
+			subdomain_query = Subdomain.objects.filter(scan_history__id=task.id).filter(name=name)
+			if status == 'Successful' and subdomain_query.exists():
+				subdomain = subdomain_query.first()
+				subdomain.screenshot_path = path.replace('/usr/src/scan_results/', '')
+				subdomain.save()
+				logger.info(f'Added screenshot for {subdomain.name} to DB')
 
 	# Remove all db, html extra files in screenshot results
 	os.system('rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path))
@@ -850,9 +840,14 @@ def port_scan(
 	'''
 	This function is responsible for running the port scan
 	'''
-	domain_name = domain.name if domain else subdomain
-	output_filepath = f'{results_dir}/{filename}'
 	config = yaml_configuration[PORT_SCAN]
+	exclude_ports = config.get(EXCLUDE_PORTS, [])
+	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
+	naabu_rate = config.get(NAABU_RATE, 0)
+	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
+	domain_name = domain.name if domain else subdomain
+	subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
+	exclude_ports_str = ','.join(exclude_ports)
 
 	# Random sleep to prevent ip and port being overwritten
 	sleep(random.randint(1,5))
@@ -864,59 +859,41 @@ def port_scan(
 	if send_status:
 		send_notification(f'naabu has started gathering ports info for {domain_name}.')
 
-	# Build cmd
-	cmd = 'naabu'
+	# Build CMD
+	cmd = 'naabu -json -exclude-cdn'
 	if domain:
-		subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
 		cmd += f' -list {subdomains_path}'
 	elif subdomain:
 		cmd += f' -host {subdomain}'
+	else:
+		raise ValueError('domain or subdomain must be set')
 
-	cmd += ' -exclude-cdn '
-
-	# Ports selection
-	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
 	if 'full' in ports:
-		cmd += ' -p -'
+		ports_str = ' -p -'
 	elif 'top-100' in ports:
-		cmd += ' -top-ports 100 '
+		ports_str = ' -top-ports 100 '
 	elif 'top-1000' in ports:
-		cmd += ' -top-ports 1000'
+		ports_str = ' -top-ports 1000'
+		ports_str = ' -top-ports 1000'
 	else:
 		ports_str = ','.join(ports)
-		cmd += f' -p {ports_str}'
+		ports_str = f' -p {ports_str}'
 
-	# check for exclude ports
-	exclude_ports = config.get(EXCLUDE_PORTS, [])
-	if exclude_ports:
-		exclude_ports_str = ','.join(exclude_ports)
-		cmd += f' -exclude-ports {exclude_ports_str}'
-
-	naabu_rate = config.get(NAABU_RATE, 0)
-	if naabu_rate > 0:
-		cmd += f' -rate {naabu_rate} '
-
-	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
-	if use_naabu_config:
-		cmd += ' -config /root/.config/naabu/config.yaml '
-
-	cmd += f' -json -o {output_filepath}'
-
-	# Run command
-	logger.info(cmd)
-	process = subprocess.Popen(cmd.split())
-	process.wait()
+	cmd += ports_str
+	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
+	cmd += f' -rate {naabu_rate} ' if naabu_rate > 0 else ''
+	cmd += ' -config /root/.config/naabu/config.yaml ' if use_naabu_config else ''
 
 	# Writing port results
 	try:
-		with open(output_filepath, 'r') as f:
-			json_lines = f.readlines()
-
-		for json_line in json_lines:
-			json_st = json.loads(json_line.strip())
-			port_number = json_st['port']
-			ip_address = json_st['ip']
-			host = json_st['host']
+		logger.info(f'Running naabu port scan on {domain_name}')
+		logger.info(cmd)
+		for line in execute_live(cmd):
+			if not isinstance(line, dict):
+				continue
+			port_number = line['port']
+			ip_address = line['ip']
+			host = line['host']
 
 			# Add port to DB
 			port_query = Port.objects.filter(number__exact=port_number)
@@ -931,6 +908,7 @@ def port_scan(
 					port.service_name = port_details[0].name
 					port.description = port_details[0].description
 				port.save()
+				logger.info(f'Found port {port.number} ({port.service_name} - {port.description}) in {host}.')
 
 			# Add IP DB
 			ip_query = IpAddress.objects.filter(address=ip_address)
@@ -978,14 +956,14 @@ def check_waf(scan_history, results_dir):
 	"""
 	Uses wafw00f to check for the presence of a WAP.
 	"""
-	alive_path = f'{results_dir}/alive.txt'
+	alive_subdomain_path = f'{results_dir}/alive.txt'
 	output_path = f'{results_dir}/wafw00f.txt'
 
-	if not os.path.isfile(alive_path):
-		logger.error(f'Could not find {alive_path}')
+	if not os.path.isfile(alive_subdomain_path):
+		logger.error(f'Could not find {alive_subdomain_path}')
 		return
 
-	cmd = f'wafw00f -i {alive_path} -o {output_path}'
+	cmd = f'wafw00f -i {alive_subdomain_path} -o {output_path}'
 	logger.info(cmd)
 	process = subprocess.Popen(cmd.split())
 	process.wait()
@@ -1037,13 +1015,28 @@ def directory_fuzz(
 		filename='dirs.json',
 		subscan=None
 	):
-	'''
-		This function is responsible for performing directory scan, and currently
-		uses ffuf as a default tool
-	'''
+	"""This function is responsible for performing directory scan, and currently
+	uses ffuf as a default tool.
+	"""
+
+	# Config
 	output_path = f'{results_dir}/{filename}'
 	domain_name = domain.name if domain else subdomain
-	fuzz_config = yaml_configuration[DIR_FILE_FUZZ]
+	config = yaml_configuration[DIR_FILE_FUZZ]
+	auto_calibration = config.get(AUTO_CALIBRATION, False)
+	delay = config.get(DELAY, 0)
+	extensions = config.get(EXTENSIONS, [])
+	extensions_str = ','.join(map(str, extensions))
+	follow_redirect = config.get(FOLLOW_REDIRECT, False)
+	max_time = config.get(MAX_TIME, 0)
+	match_http_status = config.get(MATCH_HTTP_STATUS, FFUF_DEFAULT_MATCH_HTTP_STATUS)
+	mc = ','.join([str(c) for c in match_http_status])
+	recursive_level = config.get(RECURSIVE_LEVEL)
+	stop_on_error = config.get(STOP_ON_ERROR, False)
+	timeout = config.get(TIMEOUT, 0)
+	threads = config.get(THREADS, 0)
+	use_extensions = config.get(USE_EXTENSIONS)
+	wordlist_name = config.get(WORDLIST, 'dicc')
 
 	# Send start notification
 	notification = Notification.objects.first()
@@ -1052,90 +1045,29 @@ def directory_fuzz(
 		send_notification(f'ffuf directory bruteforce has started for {domain_name}.')
 
 	# Get wordlist
-	wordlist_name = fuzz_config.get(WORDLIST, 'dicc')
 	wordlist_name = 'dicc' if wordlist_name == 'default' else wordlist_name
 	wordlist_path = f'/usr/src/wordlist/{wordlist_name}.txt'
-	logger.info(f'Using ffuf wordlist {wordlist_path} ...')
+	logger.info(f'Using ffuf wordlist at {wordlist_path} ...')
 
 	# Build command
 	cmd = f'ffuf -w {wordlist_path}'
+	cmd += f' -e {extensions_str}' if extensions and use_extensions else ''
+	cmd += f' -maxtime {max_time}' if max_time > 0 else ''
+	cmd += f' -p "{delay}"' if delay > 0 else ''
+	cmd += f' -recursion -recursion-depth {recursive_level} ' if recursive_level else ''
+	cmd += f' -t {threads}' if threads > 0 else ''
+	cmd += f' -timeout {timeout}' if timeout > 0 else ''
+	cmd += ' -se' if stop_on_error else ''
+	cmd += ' -fr' if follow_redirect else ''
+	cmd += ' -ac' if auto_calibration else ''
+	cmd += f' -mc {mc}' if mc else ''
 
+    # Grab subdomains to fuzz
 	if domain:
 		subdomains_fuzz = Subdomain.objects.filter(scan_history__id=scan_history.id).exclude(http_url__isnull=True)
 	else:
 		subdomains_fuzz = Subdomain.objects.filter(name=subdomain).filter(scan_history__id=scan_history.id)
 
-	'''
-	Extensions.
-	'''
-	use_extensions = fuzz_config.get(USE_EXTENSIONS)
-	extensions = fuzz_config.get(EXTENSIONS, [])
-	if use_extensions:
-		extensions_str = ','.join(map(str, extensions))
-		cmd += f' -e {extensions_str}'
-
-	'''
-	Threads.
-	'''
-	threads = fuzz_config.get(THREADS, 0)
-	if threads > 0:
-		cmd += f' -t {threads}'
-
-	'''
-	Recursive level.
-	'''
-	recursive_level = fuzz_config.get(RECURSIVE_LEVEL)
-	if recursive_level:
-		cmd += f' -recursion -recursion-depth {recursive_level} '
-
-	'''
-	Extensions.
-	'''
-	stop_on_error = fuzz_config.get(STOP_ON_ERROR, False)
-	if stop_on_error:
-		cmd += ' -se'
-
-	'''
-	Follow redirect.
-	'''
-	follow_redirect = fuzz_config.get(FOLLOW_REDIRECT, False)
-	if follow_redirect:
-		cmd += ' -fr'
-
-	'''
-	Auto-calibration.
-	'''
-	auto_calibration = fuzz_config.get(AUTO_CALIBRATION, False)
-	if auto_calibration:
-		cmd += ' -ac'
-
-	'''
-	Timeout.
-	'''
-	timeout = fuzz_config.get(timeout, 0)
-	if timeout > 0:
-		cmd += f' -timeout {timeout}'
-
-	'''
-	Delay.
-	'''
-	delay = fuzz_config.get(DELAY, 0)
-	if delay > 0:
-		cmd += f' -p "{delay}"'
-
-	'''
-	Match HTTP status (whitelist).
-	'''
-	match_http_status = fuzz_config.get(MATCH_HTTP_STATUS, FFUF_DEFAULT_MATCH_HTTP_STATUS)
-	mc = ','.join(match_http_status)
-	cmd += f' -mc {mc}'
-
-	'''
-	Max time.
-	'''
-	max_time = fuzz_config.get(MAX_TIME, 0)
-	if max_time > 0:
-		cmd += f' -maxtime {max_time}'
 
 	'''
 	Custom headers.
@@ -1233,88 +1165,94 @@ def fetch_endpoints(
 		filename='all_urls.txt',
 		subscan=None
 	):
-	'''
-		This function is responsible for fetching all the urls associated with target
-		and runs HTTP probe
-		reNgine has ability to fetch deep urls, meaning url for all the subdomains
-		but, when subdomain is given, subtask is running, deep or normal scan should
-		not work, it should simply fetch urls for that subdomain
-	'''
+	"""
+	This function is responsible for fetching all the urls associated with target
+	and runs HTTP probe.
+
+	reNgine has ability to fetch deep urls, meaning url for all the subdomains,
+	but when a subdomain is given, subtask is running, deep or normal scan should
+	not work, it should simply fetch urls for that subdomain.
+	"""
+
+	# Config
+	config = yaml_configuration[FETCH_URL]
+	gf_patterns = config.get(GF_PATTERNS, [])
+	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
+	scan_intensity = config.get(INTENSITY, DEFAULT_ENDPOINT_SCAN_INTENSITY)
+	tools = config.get(USES_TOOLS, DEFAULT_ENDPOINT_SCAN_TOOLS)
+	custom_header = yaml_configuration.get(CUSTOM_HEADER)
+	domain_name = domain.name if domain else subdomain
+	proxy = get_random_proxy()
 	output_path = f'{results_dir}/{filename}'
-	endpoint_config = yaml_configuration[FETCH_URL]
-	gf_patterns = endpoint_config.get(GF_PATTERNS, [])
+	alive_subdomains_path = output_path
+	sorted_subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
+
+	# Combine old gf patterns with new ones
 	if gf_patterns:
 		scan_history.used_gf_patterns = ','.join(gf_patterns)
 		scan_history.save()
 
-	logger.info('Initiated endpoint scanning ...')
-	domain_name = domain.name if domain else subdomain
-
+	# Start notif
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
 	send_output_file = notification.send_scan_output_file if notification else False
 	if send_status:
 		send_notification(f'reNgine is currently gathering endpoints for {domain_name}')
 
-	'''
-	Tools.
-	'''
-	DEFAULT_ENDPOINT_TOOLS = ['gauplus', 'hakrawler', 'waybackurls', 'gospider']
-	tools = yaml_configuration[FETCH_URL].get(USES_TOOLS, DEFAULT_ENDPOINT_TOOLS)
+	# Run endpoint scanning with multiple tools
+	logger.info('Initiated endpoint scanning ...')
+	domain_regex = f"\'https?://([a-z0-9]+[.])*{domain_name}.*\'"
+	input_target = ''
 
-	'''
-	Intensity.
-	'''
-	DEFAULT_SCAN_INTENSITY = 'normal'
-	scan_intensity = yaml_configuration[FETCH_URL].get(INTENSITY, DEFAULT_SCAN_INTENSITY)
-
-	# Run each tool picked
-	valid_url_of_domain_regex = f"\'https?://([a-z0-9]+[.])*{domain_name}.*\'"
-	alive_subdomains_path = output_path
-	sorted_subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
 	for tool in tools:
-		# Set input target
-		input_target = ''
-		if tool in ('gauplus', 'hakrawler', 'waybackurls'):
-			if subdomain:
-				subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
-				input_target = f'echo {subdomain_url}'
-			elif scan_intensity == 'deep' and domain:
-				input_target = f'cat {sorted_subdomains_path}'
-			else:
-				input_target = f'echo {domain_name}'
+		try:
+			cmd = 'gospider'
 
-		if tool == 'gauplus':
-			logger.info('Running Gauplus')
-			cmd = f'{input_target} | gauplus --random-agent | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_gau.txt'
+			if tool in ('gauplus', 'hakrawler', 'waybackurls'):
+				if subdomain:
+					subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
+					input_target = f'echo {subdomain_url}'
+				elif scan_intensity == 'deep' and domain:
+					input_target = f'cat {sorted_subdomains_path}'
+				else:
+					input_target = f'echo {domain_name}'
+
+			if tool == 'gauplus':
+				logger.info('Running Gauplus')
+				cmd = f'{input_target} | gauplus --random-agent | grep -Eo {domain_regex} > {results_dir}/urls_gau.txt'
+				logger.info(cmd)
+				os.system(cmd)
+
+			elif tool == 'hakrawler':
+				logger.info('Running hakrawler')
+				cmd = f'{input_target} | hakrawler -subs -u | grep -Eo {domain_regex} > {results_dir}/urls_hakrawler.txt'
+				logger.info(cmd)
+				os.system(cmd)
+
+			elif tool == 'waybackurls':
+				logger.info('Running waybackurls')
+				cmd = f'{input_target} | waybackurls | grep -Eo {domain_regex} > {results_dir}/urls_waybackurls.txt'
+				logger.info(cmd)
+				os.system(cmd)
+
+			elif tool == 'gospider':
+				logger.info('Running gospider')
+				if subdomain:
+					subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
+					cmd += f' -s {subdomain_url}'
+				elif scan_intensity == 'deep' and domain:
+					cmd += f' -S {alive_subdomains_path}'
+				else:
+					cmd += f' -s https://{domain_name} '
+
+				cmd += f' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {domain_regex} > {results_dir}/urls_gospider.txt'
+
 			logger.info(cmd)
 			os.system(cmd)
-
-		elif tool == 'hakrawler':
-			logger.info('Running hakrawler')
-			cmd = f'{input_target} | hakrawler -subs -u | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_hakrawler.txt'
-			logger.info(cmd)
-			os.system(cmd)
-
-		elif tool == 'waybackurls':
-			logger.info('Running waybackurls')
-			cmd = f'{input_target} | waybackurls | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_waybackurls.txt'
-			logger.info(cmd)
-			os.system(cmd)
-
-		elif tool == 'gospider':
-			logger.info('Running gospider')
-			if subdomain:
-				subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
-				cmd = f'gospider -s {subdomain_url}'
-			elif scan_intensity == 'deep' and domain:
-				cmd = f'gospider -S {alive_subdomains_path}'
-			else:
-				cmd = f'gospider -s https://{domain_name} '
-
-			cmd += f' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {valid_url_of_domain_regex} > {results_dir}/urls_gospider.txt'
-			logger.info(cmd)
-			os.system(cmd)
+		except Exception as e:
+			logger.error(f'{tool} exited with an error code.')
+			logger.exception(e)
+			continue
 
 	# Cleanup urls files
 	os.system(f'cat {results_dir}/urls* > {results_dir}/final_urls.txt')
@@ -1326,16 +1264,13 @@ def fetch_endpoints(
 		os.system(f'cat {results_dir}/alive.txt >> {results_dir}/final_urls.txt')
 	os.system(f'sort -u {results_dir}/final_urls.txt -o {output_path}')
 
-	ignore_file_extension = endpoint_config.get(IGNORE_FILE_EXTENSION, [])
 	if ignore_file_extension:
 		ignore_extension = '|'.join(ignore_file_extension)
 		logger.info('Ignore extensions ' + ignore_extension)
 		os.system(f'cat {output_path} | grep -Eiv "\\.({ignore_extension}).*" > {results_dir}/temp_urls.txt')
 		os.system(f'rm {output_path} && mv {results_dir}/temp_urls.txt {output_path}')
 
-	'''
-	Store all the endpoints and then run the httpx
-	'''
+	# Store all the endpoints and run httpx
 	domain_obj = None
 	if domain:
 		domain_obj = domain
@@ -1360,11 +1295,9 @@ def fetch_endpoints(
 					if subdomain_query.exists():
 						subdomain = subdomain_query.first()
 					else:
-						'''
-							gau or gosppider can gather interesting endpoints which
-							when parsed can give subdomains that were not existent from
-							subdomain scan. so storing them
-						'''
+						# gau or gosppider can gather interesting endpoints which
+						# when parsed can give subdomains that were not existent from
+						# subdomain scan.
 						logger.error(
 							f'Subdomain {_subdomain} not found, adding...')
 						subdomain_dict = DottedDict({
@@ -1385,32 +1318,25 @@ def fetch_endpoints(
 		logger.error(e)
 		if not subscan:
 			update_last_activity(activity_id, 0)
-		raise Exception(exception)
+		raise Exception(e)
 
 	if send_output_file:
 		send_files_to_discord(output_path)
 
-	'''
-	TODO:
-	Go spider & waybackurls accumulates a lot of urls, which is good but nuclei
-	takes forever to scan even a simple website, so we will do http probing
-	and filter HTTP status 404, this way we can reduce the number of Non Existent
-	URLS
-	'''
+	# TODO:
+	# Go spider & waybackurls accumulates a lot of urls, which is good but nuclei
+	# takes forever to scan even a simple website, so we will do http probing
+	# and filter HTTP status 404, this way we can reduce the number of Non Existent
+	# URLS
+
+	# Build CMD
 	logger.info('Running httpx probing on collected endpoints ...')
 	cmd = f'/go/bin/httpx -l {output_path} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {results_dir}/final_httpx_urls.json'
-	proxy = get_random_proxy()
-	if proxy:
-		cmd += f' --http-proxy {proxy}'
-
-	'''
-	Custom headers.
-	'''
-	custom_header = yaml_configuration.get(CUSTOM_HEADER)
-	if custom_header:
-		cmd += f' -H "{custom_header}"'
+	cmd += f' --http-proxy {proxy}' if proxy else ''
+	cmd += f' -H "{custom_header}"' if custom_header else ''
+	cmd = remove_cmd_injection_chars(cmd)
 	logger.info(cmd)
-	os.system(remove_cmd_injection_chars(cmd))
+	os.system(cmd)
 	url_results_file = f'{results_dir}/final_httpx_urls.json'
 	try:
 		if not os.path.isfile(url_results_file):
@@ -1454,12 +1380,15 @@ def fetch_endpoints(
 			endpoint.content_length = json_st.get('content-length')
 			endpoint.http_status = json_st.get('status-code')
 			endpoint.webserver = json_st.get('webserver')
+			endpoint.save()
+
 			response_time = float(''.join(ch for ch in json_st.get('response-time', '0') if not ch.isalpha()))
 			if response_time > 0:
 				if json_st['response-time'][-2:] == 'ms':
 					response_time = response_time / 1000
 				endpoint.response_time = response_time
 				endpoint.save()
+
 			technologies = json_st.get('technologies', [])
 			for tech_name in technologies:
 				if Technology.objects.filter(name=tech_name).exists():
@@ -1470,25 +1399,30 @@ def fetch_endpoints(
 				endpoint.technologies.add(tech)
 				subdomain = Subdomain.objects.get(scan_history=scan_history, name=_subdomain)
 				subdomain.technologies.add(tech)
-			endpoint.save()
-			subdomain.save()
+				subdomain.save()
+				endpoint.save()
 
-	except Exception as exception:
-		logger.error(exception)
+	except Exception as e:
+		logger.exception(e)
 		if not subscan:
 			update_last_activity(activity_id, 0)
-		raise Exception(exception)
+		raise Exception(e)
 
+	# Send status notif
 	if notification and notification.send_scan_status_notif:
-		endpoint_count = EndPoint.objects.filter(
-			scan_history__id=scan_history.id).values('http_url').distinct().count()
+		endpoint_count = EndPoint.objects.filter(scan_history__id=scan_history.id).values('http_url').distinct().count()
 		endpoint_alive_count = EndPoint.objects.filter(
-				scan_history__id=scan_history.id, http_status__exact=200).values('http_url').distinct().count()
-		send_notification(f'reNgine has finished gathering endpoints for {domain_name} and has discovered *{endpoint_count}* unique endpoints.\n\n{endpoint_alive_count} of those endpoints reported HTTP status 200.')
+			scan_history__id=scan_history.id,
+			http_status__exact=200).values('http_url').distinct().count()
+		msg = f"""reNgine has finished gathering endpoints for {domain_name} and has discovered *{endpoint_count}* unique endpoints.
 
+		*{endpoint_alive_count}/{endpoint_count}* reported HTTP status 200.
+		"""
+		send_notification(msg)
 
-	# once endpoint is saved, run gf patterns TODO: run threads
-	gf_patterns = endpoint_config.get(GF_PATTERNS, [])
+	# Run gf patterns on saved endpoints
+	# TODO: add threading
+	gf_patterns = config.get(GF_PATTERNS, [])
 	for gf_pattern in gf_patterns:
 		# TODO: js var is causing issues, removing for now
 		if gf_pattern == 'jsvar':
@@ -1496,12 +1430,14 @@ def fetch_endpoints(
 			continue
 		logger.info(f'Running GF for {gf_pattern}')
 		gf_output_file_path = f'{results_dir}/gf_patterns_{gf_pattern}.txt'
-		gf_command = f'cat {output_path} | gf {gf_pattern} | grep -Eo {valid_url_of_domain_regex} >> {gf_output_file_path} '
+		gf_command = f'cat {output_path} | gf {gf_pattern} | grep -Eo {domain_regex} >> {gf_output_file_path} '
 		logger.info(gf_command)
 		os.system(gf_command)
 		if not os.path.exists(gf_output_file_path):
 			logger.error(f'Could not find GF output file {gf_output_file_path}')
 			return
+
+		# Read output file line by line and add endpoints / subdomains to DB
 		with open(gf_output_file_path) as gf_output:
 			lines = gf_output.readlines()
 			for url in gf_output:
@@ -1509,12 +1445,10 @@ def fetch_endpoints(
 					endpoint = EndPoint.objects.get(
 						scan_history=scan_history, http_url=url)
 					earlier_pattern = endpoint.matched_gf_patterns
-					pattern = gf_pattern
-					if earlier_pattern:
-						pattern = f'{earlier_pattern},{pattern}'
+					pattern = f'{earlier_pattern},{pattern}' if earlier_pattern else gf_pattern
 					endpoint.matched_gf_patterns = pattern
 				except Exception as e:
-					logger.error(e)
+					logger.exception(e)
 					logger.info(f'Adding URL {url}')
 					endpoint = EndPoint(
 						http_url=url,
@@ -1538,9 +1472,37 @@ def vulnerability_scan(
 		filename='vulns.json',
 		subscan=None
 	):
-	logger.info('Initiating Vulnerability Scan')
-	cmd = 'nuclei'
+	'''
+	This function will run nuclei as a vulnerability scanner
+	----
+	unfurl the urls to keep only domain and path, this will be sent to vuln scan
+	ignore certain file extensions
+	Thanks: https://github.com/six2dez/reconftw
+	'''
+	logger.info('Starting vulnerability scan ...')
+	cmd = 'nuclei -json'
+
+	# Config
+	alive_domains_path = f'{results_dir}/alive.txt'
+	config = yaml_configuration[VULNERABILITY_SCAN]
+	concurrency = config.get(NUCLEI_CONCURRENCY, 0)
+	custom_header = yaml_configuration.get(CUSTOM_HEADER)
+	custom_nuclei_template = config.get(NUCLEI_CUSTOM_TEMPLATE, None)
+	domain = Domain.objects.get(id=scan_history.domain.id)
+	nuclei_template = config.get(NUCLEI_TEMPLATE, None)
+	proxy = get_random_proxy()
+	rate_limit = config.get(RATE_LIMIT, 0)
+	retries = config.get(RETRIES, 0)
+	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
+	severities_str = ','.join(severities)
+	timeout = config.get(TIMEOUT, 0)
+	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	output_path = f'{results_dir}/{filename}'
+
+	# Find URL
+	url = ''
+	if subdomain:
+		url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
 
 	# Send start notification
 	notification = Notification.objects.first()
@@ -1551,303 +1513,218 @@ def vulnerability_scan(
 			send_notification(f'Vulnerability scan has been initiated for {domain.name}.')
 		elif subdomain:
 			send_notification(f'Vulnerability scan has been initiated for {subdomain.name}.')
-	'''
-	This function will run nuclei as a vulnerability scanner
-	----
-	unfurl the urls to keep only domain and path, this will be sent to vuln scan
-	ignore certain file extensions
-	Thanks: https://github.com/six2dez/reconftw
-	'''
-	if domain:
-		# TODO: create a object in scan engine, to say deep scan then only use unfurl, otherwise it is time consuming
 
-		# if scan_history.scan_type.fetch_url:
-		#     os.system(f'cat {results_dir}/all_urls.txt | grep -Eiv "\\.(eot|jpg|jpeg|gif|css|tif|tiff|png|ttf|otf|woff|woff2|ico|pdf|svg|txt|js|doc|docx)$" | unfurl -u format %s://%d%p >> {results_dir}/unfurl_urls.txt'
-		#     os.system(
-		#         f'sort -u {results_dir}/unfurl_urls.txt -o {results_dir}/unfurl_urls.txt'.format(results_dir))
-		#     urls_path = '/unfurl_urls.txt'
+	# Build templates
+	logger.info('Updating Nuclei templates ...')
+	os.system('nuclei -update-templates')
 
-		alive_domains_path = f'{results_dir}/alive.txt'
-		cmd += f' -j -l {alive_domains_path} -o {output_path}'
-	else:
-		url_to_scan = subdomain.http_url or f'https://{subdomain.name}'
-		cmd += f' -j -u {url_to_scan} -o {output_path}'
-		domain_id = scan_history.domain.id
-		domain = Domain.objects.get(id=domain_id)
-
-	'''
-	Nuclei Templates
-	Either custom template has to be supplied or default template, if neither has
-	been supplied then use all templates including custom templates
-	'''
-
-	# Check nuclei config
-	use_nuclei_conf = yaml_configuration[VULNERABILITY_SCAN].get(USE_NUCLEI_CONFIG, False)
-	if use_nuclei_conf:
-		cmd += ' -config /root/.config/nuclei/config.yaml'
-
-	# Use nuclei templates
-	custom_nuclei_template = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_CUSTOM_TEMPLATE, None)
-	nuclei_template = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_TEMPLATE, None)
-
+	templates = []
 	if not (nuclei_template or custom_nuclei_template):
 		logger.info(f'Using default nuclei templates {NUCLEI_DEFAULT_TEMPLATES_PATH}.')
-		cmd += f' -t {NUCLEI_DEFAULT_TEMPLATES_PATH}'
+		templates.append(NUCLEI_DEFAULT_TEMPLATES_PATH)
 
 	if nuclei_template:
 		if ALL in nuclei_template:
 			template = NUCLEI_TEMPLATES_PATH
 		else:
 			template = ','.join(nuclei_template).replace(',', '-t')
-		cmd += f' -t {template}'
+		templates.append(template)
 
 	if custom_nuclei_template:
 		custom_nuclei_template_paths = [f'{str(elem)}.yaml' for elem in custom_nuclei_template]
 		template = ','.join(custom_nuclei_template_paths).replace(',', '-t')
-		cmd += f' -t {template}'
+		templates.append(template)
 
-	logger.info('Updating Nuclei templates ...')
-	os.system('nuclei -update-templates')
-
-	'''
-	Concurrency.
-	'''
-	concurrency = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_CONCURRENCY, 0)
-	if concurrency > 0:
-		cmd += f' -c {str(concurrency)}'
-
-	'''
-	Rate limit
-	'''
-	rate_limit = yaml_configuration[VULNERABILITY_SCAN].get(RATE_LIMIT, 0)
-	if rate_limit > 0:
-		cmd += f' -rl {str(rate_limit)}'
-
-
-	'''
-	Timeout
-	'''
-	timeout = yaml_configuration[VULNERABILITY_SCAN].get(TIMEOUT, 0)
-	if timeout > 0:
-		cmd += f' -timeout {str(timeout)}'
-
-	'''
-	Retries
-	'''
-	retries = yaml_configuration[VULNERABILITY_SCAN].get(RETRIES, 0)
-	if retries > 0:
-		cmd += f' -retries {retries}'
-
-	'''
-	Custom headers
-	'''
-	custom_header = yaml_configuration.get(CUSTOM_HEADER)
-	if custom_header:
-		cmd += f' -H "{custom_header}"'
-
-	'''
-	Severity
-	'''
-	severities = yaml_configuration[VULNERABILITY_SCAN].get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
-	severities_str = ','.join(severities)
-	if os.path.isfile(output_path):
-		os.system(f'rm {output_path}')
-
-	# Severity
+	# Build CMD
+	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
+	cmd += ' -debug' if DEBUG > 0 else ''
+	cmd += f' -H "{custom_header}"' if custom_header else ''
+	cmd += f' -l {alive_domains_path}' if domain else f' -u {url}'
+	cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
+	cmd += f' -proxy {proxy} ' if proxy else ''
+	cmd += f' -retries {retries}' if retries > 0 else ''
+	cmd += f' -rl {str(rate_limit)}' if rate_limit > 0 else ''
 	cmd += f' -severity {severities_str}'
+	cmd += f' -timeout {str(timeout)}' if timeout > 0 else ''
+	for tpl in templates:
+		cmd += f' -t {tpl}'
 
-	# Proxy
-	proxy = get_random_proxy()
-	if proxy:
-		cmd += f' -proxy {proxy} '
-
-	# Debug
-	if DEBUG > 0:
-		cmd += ' -debug'
-
+	# Run cmd
 	logger.info('Running Nuclei scanner ...')
 	logger.info(cmd)
-	process = subprocess.Popen(cmd.split())
-	process.wait()
+	results = []
+	for line in execute_live(cmd):
+		if not isinstance(line, dict):
+			continue
 
-	if not os.path.isfile(output_path):
-		logger.error(f'Could not find Nuclei output file {output_path}.')
-		return
+		try:
+			host = line['host']
+			subdomain_str = get_subdomain_from_url(host)
+			subdomain = Subdomain.objects.get(name=subdomain_str, scan_history=scan_history)
+			vulnerability = Vulnerability(
+				name=line['info'].get('name', ''),
+				type=line['type'],
+				subdomain=subdomain,
+				scan_history=scan_history,
+				target_domain=domain,
+				template=line['template'],
+				template_url=line['template-url'],
+				template_id=line['template-id'],
+				severity=NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
+				description=line['info'].get('description' ,''),
+				matcher_name=line.get('matcher-name', ''),
+				http_url=line.get('matched-at'),
+				curl_command=line.get('curl-command'),
+				extracted_results=line.get('extracted-results', []),
+				cvss_metrics=line['info'].get('classification', {}).get('cvss-metrics', ''),
+				cvss_score=line['info'].get('classification', {}).get('cvss-score'),
+				discovered_date=timezone.now(),
+				open_status=True
+			)
+			vulnerability.save()
 
-	with open(output_path, 'r') as f:
-		lines = f.readlines()
+			# Get matching endpoint from DB
+			endpoint = None
+			endpoint_query_all = EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain)
 
-	try:
-		for line in lines:
-			json_st = json.loads(line.strip())
-			host = json_st['host']
-			_subdomain = get_subdomain_from_url(host)
-			try:
-				subdomain = Subdomain.objects.get(name=_subdomain, scan_history=scan_history)
-				vulnerability = Vulnerability(
-					name=json_st['info'].get('name', ''),
-					type=json_st['type'],
-					subdomain=subdomain,
-					scan_history=scan_history,
-					target_domain=domain,
-					template=json_st['template'],
-					template_url=json_st['template-url'],
-					template_id=json_st['template-id'],
-					severity=NUCLEI_SEVERITY_MAP[json_st['info'].get('severity', 'unknown')],
-					description=json_st['info'].get('description' ,''),
-					matcher_name=json_st.get('matcher-name'),
-					http_url=json_st.get('matched-at'),
-					curl_command=json_st.get('curl-command'),
-					extracted_results=json_st.get('extracted-results', []),
-					cvss_metrics=json_st['info'].get('classification', {}).get('cvss-metrics', ''),
-					cvss_score=json_st['info'].get('classification', {}).get('cvss-score', -1),
-					discovered_date=timezone.now(),
-					open_status=True
-				)
-				vulnerability.save()
+			# Create endpoint from host
+			endpoint_query = endpoint_query_all.filter(http_url=host)
+			if endpoint_query.exists():
+				endpoint = endpoint_query.first()
+			else:
+				endpoint_dict = DottedDict({
+					'scan_history': scan_history,
+					'target_domain': domain,
+					'http_url': host,
+					'subdomain': subdomain
+				})
+				endpoint = save_endpoint(endpoint_dict)
+				logger.info(f'EndPoint "{host}" created !')
+			vulnerability.endpoint = endpoint
 
-				# Create endpoint from host
-				endpoint_query = EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=host)
-				endpoint = None
-				if endpoint_query.exists():
-					endpoint = EndPoint.objects.get(
-						scan_history=scan_history,
-						target_domain=domain,
-						http_url=host
-					)
+			# Create endpoint from vulnerability http_url
+			endpoint_query = endpoint_query_all.filter(http_url=vulnerability.http_url)
+			if not endpoint_query.exists():
+				endpoint_dict = DottedDict({
+					'scan_history': scan_history,
+					'target_domain': domain,
+					'http_url': vulnerability.http_url,
+					'subdomain': subdomain
+				})
+				save_endpoint(endpoint_dict)
+				logger.info(f'Endpoint {vulnerability.http_url} created !')
+
+			# Save tags
+			tags = line['info'].get('tags') or []
+			for tag in tags:
+				vulntags_query = VulnerabilityTags.objects.filter(name=tag)
+				if vulntags_query.exists():
+					tag = vulntags_query.first()
 				else:
-					logger.info('Creating Endpoint in DB ...')
-					endpoint_dict = DottedDict({
-						'scan_history': scan_history,
-						'target_domain': domain,
-						'http_url': host,
-						'subdomain': subdomain
-					})
-					endpoint = save_endpoint(endpoint_dict)
-					logger.info(f'EndPoint {host} created !')
-				vulnerability.endpoint = endpoint
-
-				# Create endpoint from http_url
-				endpoint_query = EndPoint.objects.filter(scan_history=scan_history).filter(target_domain=domain).filter(http_url=vulnerability.http_url)
-				if vulnerability.http_url and not endpoint_query.exists():
-					logger.info('Creating endpoint in DB...')
-					endpoint_dict = DottedDict({
-						'scan_history': scan_history,
-						'target_domain': domain,
-						'http_url': vulnerability.http_url,
-						'subdomain': subdomain
-					})
-					save_endpoint(endpoint_dict)
-					logger.info(f'Endpoint {vulnerability.http_url} created !')
-
-				# Save tags
-				tags = json_st['info'].get('tags', [])
-				for tag in tags:
-					if VulnerabilityTags.objects.filter(name=tag).exists():
-						tag = VulnerabilityTags.objects.get(name=tag)
-					else:
-						tag = VulnerabilityTags(name=tag)
-						tag.save()
-					vulnerability.tags.add(tag)
-					vulnerability.save()
-
-				# Save CVEs
-				cve_ids = json_st['info'].get('classification', {}).get('cve-id', [])
-				for cve in cve_ids:
-					if CveId.objects.filter(name=cve).exists():
-						cve_obj = CveId.objects.get(name=cve)
-					else:
-						cve_obj = CveId(name=cve)
-						cve_obj.save()
-					vulnerability.cve_ids.add(cve_obj)
-					vulnerability.save()
-
-				# Save CWEs
-				cwe_ids = json_st['info'].get('classification', {}).get('cwe-id', [])
-				for cwe in cwe_ids:
-					if CweId.objects.filter(name=cwe).exists():
-						cwe_obj = CweId.objects.get(name=cwe)
-					else:
-						cwe_obj = CweId(name=cwe)
-						cwe_obj.save()
-					vulnerability.cwe_ids.add(cwe_obj)
-					vulnerability.save()
-
-				# Save vuln reference
-				references = json_st['info'].get('reference', [])
-				for ref_url in references:
-					vuln_reference_query = VulnerabilityReference.objects.filter(url=ref_url)
-					if vuln_reference_query.exists():
-						reference = vuln_reference_query.first()
-					else:
-						reference = VulnerabilityReference(url=ref_url)
-						reference.save()
-					vulnerability.references.add(reference)
-					vulnerability.save()
-
-				# Save subscan id in vulnerability object
-				if subscan:
-					vulnerability.vuln_subscan_ids.add(subscan)
-					vulnerability.save()
-
-				# Save vulnerability object
+					tag = VulnerabilityTags(name=tag)
+					tag.save()
+				vulnerability.tags.add(tag)
 				vulnerability.save()
 
-				# Send notification for all vulnerabilities except info
-				if vulnerability.severity != 0 and send_vuln:
-					severity_str = json_st['info'].get('severity', 'info')
-					message = "*Alert: Vulnerability Identified*"
-					message += "\n\n"
-					message += f'A *{severity_str}* severity vulnerability has been identified.'
-					message += f'\nVulnerability Name: {vulnerability.name}'
-					message += f'\nVulnerable URL: {vulnerability.host}'
-					send_notification(message)
+			# Save CVEs
+			cve_ids = line['info'].get('classification', {}).get('cve-id') or []
+			for cve in cve_ids:
+				cve_query = CveId.objects.filter(name=cve)
+				if cve_query.exists():
+					cve_obj = cve_query.first()
+				else:
+					cve_obj = CveId(name=cve)
+					cve_obj.save()
+				vulnerability.cve_ids.add(cve_obj)
+				vulnerability.save()
 
-				# Send report to hackerone
-				if Hackerone.objects.all().exists() and severity_str not in ('info', 'low') and vulnerability.target_domain.h1_team_handle:
-					hackerone = Hackerone.objects.all()[0]
-					if hackerone.send_critical and severity_str == 'critical':
-						send_hackerone_report(vulnerability.id)
-					elif hackerone.send_high and severity_str == 'high':
-						send_hackerone_report(vulnerability.id)
-					elif hackerone.send_medium and severity_str == 'medium':
-						send_hackerone_report(vulnerability.id)
+			# Save CWEs
+			cwe_ids = line['info'].get('classification', {}).get('cwe-id') or []
+			for cwe in cwe_ids:
+				cwe_query = CweId.objects.filter(name=cwe)
+				if cwe_query.exists():
+					cwe_obj = cwe_query.first()
+				else:
+					cwe_obj = CweId(name=cwe)
+					cwe_obj.save()
+				vulnerability.cwe_ids.add(cwe_obj)
+				vulnerability.save()
 
-			except ObjectDoesNotExist:
-				logger.error('Object not found')
+			# Save vuln reference
+			references = line['info'].get('reference') or []
+			for ref_url in references:
+				vulnref_query = VulnerabilityReference.objects.filter(url=ref_url)
+				if vulnref_query.exists():
+					reference = vulnref_query.first()
+				else:
+					reference = VulnerabilityReference(url=ref_url)
+					reference.save()
+				vulnerability.references.add(reference)
+				vulnerability.save()
 
-	except Exception as exception:
-		logger.exception(exception)
-		if not subscan:
-			update_last_activity(activity_id, 0)
-		raise Exception(exception)
+			# Save subscan id in vulnerability object
+			if subscan:
+				vulnerability.vuln_subscan_ids.add(subscan)
+				vulnerability.save()
 
+			# Save vulnerability object
+			vulnerability.save()
+
+			# Send notification for all vulnerabilities except info
+			logger.info(f'Found vulnerability "{vulnerability.name}" in {vulnerability.subdomain}/{vulnerability.http_url}')
+			if send_vuln:
+				severity_str = line['info'].get('severity', 'info')
+				message = f""""*Alert: Vulnerability identified*"
+
+				A *{severity_str.upper()}* severity vulnerability has been identified.'
+
+				Vulnerability Name: {vulnerability.name}'
+				Vulnerable URL: {vulnerability.host}'
+				"""
+				send_notification(message)
+
+			# Send report to hackerone
+			hackerone_query = Hackerone.objects.all()
+			if hackerone_query.exists() and severity_str not in ('info', 'low') and vulnerability.target_domain.h1_team_handle:
+				hackerone = hackerone_query.first()
+				if hackerone.send_critical and severity_str == 'critical':
+					send_hackerone_report(vulnerability.id)
+				elif hackerone.send_high and severity_str == 'high':
+					send_hackerone_report(vulnerability.id)
+				elif hackerone.send_medium and severity_str == 'medium':
+					send_hackerone_report(vulnerability.id)
+
+		except Exception as exception:
+			logger.exception(exception)
+			if not subscan:
+				update_last_activity(activity_id, 0)
+			raise Exception(exception)
+
+	# Write results to JSON file
+	with open(output_path, 'w') as f:
+		json.dump(results, f)
+
+	# Send finish notif
 	if send_status:
-		info_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=0).count()
-		low_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=1).count()
-		medium_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=2).count()
-		high_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=3).count()
-		critical_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=4).count()
-		unknown_count = Vulnerability.objects.filter(
-			scan_history__id=scan_history.id, severity=-1).count()
+		vulns_query = Vulnerability.objects.filter(scan_history__id=scan_history.id)
+		info_count = vulns_query.filter(severity=0).count()
+		low_count = vulns_query.filter(severity=1).count()
+		medium_count = vulns_query.filter(severity=2).count()
+		high_count = vulns_query.filter(severity=3).count()
+		critical_count = vulns_query.filter(severity=4).count()
+		unknown_count = vulns_query.filter(severity=-1).count()
 		vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
+		message = f"""Vulnerability scan has been completed for {domain.name} and {vulnerability_count} vulnerabilities were discovered.
 
-		# Build notif message
-		message = f'Vulnerability scan has been completed for {domain.name} and discovered {vulnerability_count} vulnerabilities.'
-		message += '\n\n*Vulnerability Stats:*'
-		message += f'\nCritical: {critical_count}'
-		message += f'\nHigh: {high_count}'
-		message += f'\nMedium: {medium_count}'
-		message += f'\nLow: {low_count}'
-		message += f'\nInfo: {info_count}'
-		message += f'\nUnknown: {unknown_count}'
+		*Vulnerability stats:*
 
-		# Send finish notif
+		Critical: {critical_count}
+		High: {high_count}
+		Medium: {medium_count}
+		Low: {low_count}
+		Info: {info_count}
+		Unknown: {unknown_count}
+		"""
 		send_notification(message)
 
 
@@ -1874,48 +1751,44 @@ def update_last_activity(id, activity_status, error_message=None):
 		time=timezone.now())
 
 
-def delete_scan_data(results_dir):
-	os.system(f'find {results_dir} -name "*.txt" -type f -delete')
-	os.system(f'find {results_dir} -name "*.html" -type f -delete')
-	os.system(f'find {results_dir} -name "*.json" -type f -delete')
-
-
-def save_subdomain(subdomain_dict):
-	subdomain = Subdomain()
-	subdomain.discovered_date = timezone.now()
-	subdomain.target_domain = subdomain_dict.get('target_domain')
-	subdomain.scan_history = subdomain_dict.get('scan_history')
-	subdomain.name = subdomain_dict.get('name')
-	subdomain.http_url = subdomain_dict.get('http_url')
-	subdomain.screenshot_path = subdomain_dict.get('screenshot_path')
-	subdomain.http_header_path = subdomain_dict.get('http_header_path')
-	subdomain.cname = subdomain_dict.get('cname')
-	subdomain.is_cdn = subdomain_dict.get('is_cdn')
-	subdomain.content_type = subdomain_dict.get('content_type')
-	subdomain.webserver = subdomain_dict.get('webserver')
-	subdomain.page_title = subdomain_dict.get('page_title')
-	subdomain.is_imported_subdomain = subdomain_dict.get('is_imported_subdomain', False)
-	subdomain.http_status = subdomain_dict.get('http_status', 0)
-	subdomain.response_time = subdomain_dict.get('response_time')
-	subdomain.content_length = subdomain_dict.get('content_length')
+def save_subdomain(subdomain):
+	subdomain = Subdomain(
+		discovered_date=timezone.now(),
+		target_domain=subdomain.get('target_domain'),
+		scan_history=subdomain.get('scan_history'),
+		name=subdomain.get('name'),
+		http_url=subdomain.get('http_url'),
+		screenshot_path=subdomain.get('screenshot_path'),
+		http_header_path=subdomain.get('http_header_path'),
+		cname=subdomain.get('cname'),
+		is_cdn=subdomain.get('is_cdn'),
+		content_type=subdomain.get('content_type'),
+		webserver=subdomain.get('webserver'),
+		page_title=subdomain.get('page_title'),
+		is_imported_subdomain=subdomain.get('is_imported_subdomain', False),
+		http_status=subdomain.get('http_status', 0),
+		response_time=subdomain.get('response_time'),
+		content_length=subdomain.get('content_length')
+	)
 	subdomain.save()
 	return subdomain
 
 
 def save_endpoint(endpoint_dict):
-	endpoint = EndPoint()
-	endpoint.discovered_date = timezone.now()
-	endpoint.scan_history = endpoint_dict.get('scan_history')
-	endpoint.target_domain = endpoint_dict.get('target_domain')
-	endpoint.subdomain = endpoint_dict.get('subdomain')
-	endpoint.http_url = endpoint_dict.get('http_url')
-	endpoint.page_title = endpoint_dict.get('page_title')
-	endpoint.content_type = endpoint_dict.get('content_type')
-	endpoint.webserver = endpoint_dict.get('webserver')
-	endpoint.response_time = endpoint_dict.get('response_time', 0)
-	endpoint.http_status = endpoint_dict.get('http_status', 0)
-	endpoint.content_length = endpoint_dict.get('content_length', 0)
-	endpoint.is_default = endpoint_dict.get('is_default', False)
+	endpoint = EndPoint(
+		discovered_date=timezone.now(),
+		scan_history=endpoint_dict.get('scan_history'),
+		target_domain=endpoint_dict.get('target_domain'),
+		subdomain=endpoint_dict.get('subdomain'),
+		http_url=endpoint_dict.get('http_url'),
+		page_title=endpoint_dict.get('page_title'),
+		content_type=endpoint_dict.get('content_type'),
+		webserver=endpoint_dict.get('webserver'),
+		response_time=endpoint_dict.get('response_time', 0),
+		http_status=endpoint_dict.get('http_status', 0),
+		content_length=endpoint_dict.get('content_length', 0),
+		is_default=endpoint_dict.get('is_default', False)
+	)
 	endpoint.save()
 	subscan = endpoint_dict.get('subscan')
 	if subscan:
@@ -1943,10 +1816,11 @@ def perform_osint(scan_history, domain, yaml_configuration, results_dir):
 def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
 	osint_config = yaml_configuration[OSINT]
 	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
+	osint_intensity = osint_config.get(INTENSITY, 'normal')
+	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
 
+	# Get and save meta info
 	if 'metainfo' in osint_lookup:
-		osint_intensity = osint_config.get(INTENSITY, 'normal')
-		documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
 		if osint_intensity == 'normal':
 			meta_dict = DottedDict({
 				'osint_target': domain.name,
@@ -2245,15 +2119,15 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 	if proxy:
 		os.environ['https_proxy'] = proxy
 		os.environ['HTTPS_PROXY'] = proxy
-
 	if in_target:
 		query = f'{dork} site:{scan_history.domain.name}'
 	else:
 		query = f'{dork} \"{scan_history.domain.name}\"'
-	logger.info(query)
 	degoogle_obj.query = query
+	logger.info(f'Running degoogle with query "{query}" ...')
 	results = degoogle_obj.run()
 	logger.info(results)
+	dorks = []
 	for result in results:
 		dork, _ = Dork.objects.get_or_create(
 			type=type,
@@ -2261,21 +2135,28 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 			url=result['url']
 		)
 		scan_history.dorks.add(dork)
-
+		dorks.append(dork)
+	return dorks
 
 def get_and_save_employees(scan_history, results_dir):
 	theHarvester_dir = '/usr/src/github/theHarvester'
+	output_filepath = f'{results_dir}/theHarvester.html'
+	logger.info(f'Running theHarvester on {scan_history.domain.name} ...')
+	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {scan_history.domain.name} -b all -f {output_filepath}'
 
 	# Update proxies.yaml
-	if Proxy.objects.all().exists():
-		proxy = Proxy.objects.all()[0]
+	proxy_query = Proxy.objects.all()
+	if proxy_query.exists():
+		proxy = proxy_query.first()
 		if proxy.use_proxy:
 			proxy_list = proxy.proxies.splitlines()
 			yaml_data = {'http' : proxy_list}
 			with open(f'{theHarvester_dir}/proxies.yaml', 'w') as file:
 				yaml.dump(yaml_data, file)
 
-	os.system(f'cd {theHarvester_dir} && python3 theHarvester.py -d {scan_history.domain.name} -b all -f {results_dir}/theHarvester.html')
+	# Run cmd
+	logger.info(cmd)
+	os.system(cmd)
 
 
 	# Delete proxy environ var
@@ -2285,28 +2166,29 @@ def get_and_save_employees(scan_history, results_dir):
 		del os.environ['HTTPS_PROXY']
 
 	# Get file location
-	file_location = f'{results_dir}/theHarvester.html'
-	if not os.path.isfile(file_location):
-		logger.error(f'Could not open {file_location}')
+	if not os.path.isfile(output_filepath):
+		logger.error(f'Could not open {output_filepath}')
 		return
 
 	# Run headless firefox and parse harvester results with it
-	logger.info('Parsing theHarvester results')
+	logger.info('Parsing theHarvester results ...')
 	options = FirefoxOptions()
 	options.add_argument("--headless")
 	driver = webdriver.Firefox(options=options)
-	driver.get(f'file://{file_location}')
+	driver.get(f'file://{output_filepath}')
 	tabledata = driver.execute_script('return tabledata')
 
 	# Save email addresses and linkedin employees
+	emails = []
+	employees = []
 	for data in tabledata:
 		if data['record'] == 'email':
-			_email = data['result']
-			email, _ = Email.objects.get_or_create(address=_email)
+			email_address = data['result']
+			email, _ = Email.objects.get_or_create(address=email_address)
 			scan_history.emails.add(email)
 		elif data['record'] == 'people':
-			_employee = data['result']
-			split_val = _employee.split('-')
+			employee_descr = data['result']
+			split_val = employee_descr.split('-')
 			name = split_val[0]
 			if len(split_val) == 2:
 				designation = split_val[1]
@@ -2315,6 +2197,10 @@ def get_and_save_employees(scan_history, results_dir):
 			employee, _ = Employee.objects.get_or_create(name=name, designation=designation)
 			scan_history.employees.add(employee)
 	driver.quit()
+	return {
+		'emails': emails,
+		'employees': employees
+	}
 
 
 def get_and_save_emails(scan_history, results_dir):
@@ -2342,10 +2228,10 @@ def get_and_save_emails(scan_history, results_dir):
 	# Write to file
 	leak_target_path = f'{results_dir}/creds_target.txt'
 	with open(leak_target_path, 'w') as leak_target_file:
-		for _email in emails:
-			email, _ = Email.objects.get_or_create(address=_email)
+		for email_address in emails:
+			email, _ = Email.objects.get_or_create(address=email_address)
 			scan_history.emails.add(email)
-			leak_target_file.write(f'{_email}\n')
+			leak_target_file.write(f'{email_address}\n')
 
 		# fill leak_target_file with possible email address
 		leak_target_file.write(f'%@{scan_history.domain.name}\n')
@@ -2355,6 +2241,8 @@ def get_and_save_emails(scan_history, results_dir):
 		leak_target_file.write(f'%_%@{scan_history.domain.name}\n')
 		leak_target_file.write(f'%_%@%.{scan_history.domain.name}\n')
 
+	return emails
+
 
 def get_and_save_leaked_credentials(scan_history, results_dir):
 	logger.info('OSINT: Getting leaked credentials...')
@@ -2362,8 +2250,18 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 	cmd = f'python3 /usr/src/github/pwndb/pwndb.py --proxy tor:9150 --output json --list {leak_target_path}'
 	# leak_output_file = f'{results_dir}/pwndb.json'
 	try:
+		logger.info(cmd)
 		out = subprocess.getoutput(cmd)
-		creds = json.loads(out)
+		logger.info(out)
+		creds = []
+		try:
+			creds = json.loads(out)
+			if not creds:
+				logger.error('No leaked credentials found in pwnd output')
+		except Exception as e:
+			logger.error('Could not read JSON output from pwndb output.')
+			pass
+
 		for cred in creds:
 			if cred['username'] != 'donate':
 				email_id = f"{cred['username']}@{cred['domain']}"
@@ -2373,9 +2271,10 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 				email_obj.password = cred['password']
 				email_obj.save()
 				scan_history.emails.add(email_obj)
+		return creds
 	except Exception as e:
 		logger.exception(e)
-		pass
+		return
 
 
 def get_and_save_meta_info(meta_dict):
@@ -2394,11 +2293,10 @@ def get_and_save_meta_info(meta_dict):
 		return
 
 	# Add metadata info to DB
+	results = []
 	for metadata_name, metadata in result.get_metadata().items():
 		subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
 		metadata = DottedDict(metadata)['metadata']
-		logger.info(metadata_name)
-		logger.info(metadata)
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
@@ -2415,3 +2313,5 @@ def get_and_save_meta_info(meta_dict):
 			os=metadata.get('OSInfo', '').rstrip('\x00')
 		)
 		meta_finder_document.save()
+		results.append(meta_finder_document)
+	return results

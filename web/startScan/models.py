@@ -293,6 +293,8 @@ class EndPoint(models.Model):
 	def __str__(self):
 		return self.http_url
 
+	def is_alive(self):
+		return 0 < self.http_status < 400
 
 class VulnerabilityTags(models.Model):
 	id = models.AutoField(primary_key=True)
