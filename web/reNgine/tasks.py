@@ -178,7 +178,7 @@ def initiate_scan(
 		task = ScanHistory.objects.get(pk=scan_history_id)
 
 	# Get engine
-	engine_object = EngineType.objects.get(pk=engine_type)
+	engine = EngineType.objects.get(pk=engine_type)
 
 	# Get domain and set last_scan_date
 	domain = Domain.objects.get(pk=domain_id)
@@ -186,29 +186,28 @@ def initiate_scan(
 	domain.save()
 
 	# Once the celery task starts, change the task status to started
-	task.scan_type = engine_object
+	task.scan_type = engine
 	task.celery_id = initiate_scan.request.id
 	task.domain = domain
 	task.scan_status = 1
 	task.start_scan_date = timezone.now()
-
 	# TODO: modify this; it should read something like
-	# task.tasks = engine_object.tasks for it to work dynamically
-	task.subdomain_discovery = engine_object.subdomain_discovery
-	task.waf_detection = engine_object.waf_detection
-	task.dir_file_fuzz = engine_object.dir_file_fuzz
-	task.port_scan = engine_object.port_scan
-	task.fetch_url = engine_object.fetch_url
-	task.osint = engine_object.osint
-	task.screenshot = engine_object.screenshot
-	task.vulnerability_scan = True if engine_object.vulnerability_scan else False
+	# task.tasks = engine.tasks for it to work dynamically
+	task.subdomain_discovery = engine.subdomain_discovery
+	task.waf_detection = engine.waf_detection
+	task.dir_file_fuzz = engine.dir_file_fuzz
+	task.port_scan = engine.port_scan
+	task.fetch_url = engine.fetch_url
+	task.osint = engine.osint
+	task.screenshot = engine.screenshot
+	task.vulnerability_scan = engine.vulnerability_scan
 	task.save()
 
 	# Send start notif
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
 	if send_status:
-		send_notification(f'reNgine has initiated recon for target {domain.name} with engine type {engine_object.engine_name}')
+		send_notification(f'reNgine has initiated recon for target {domain.name} with engine type {engine.engine_name}')
 
 	# Create results directory
 	os.chdir(results_dir)
@@ -227,7 +226,7 @@ def initiate_scan(
 	Add GF patterns name to db for dynamic URLs menu
 	'''
 	gf_patterns = yaml_configuration.get(GF_PATTERNS, [])
-	if engine_object.fetch_url and gf_patterns:
+	if engine.fetch_url and gf_patterns:
 		task.used_gf_patterns = ','.join(gf_patterns)
 		task.save()
 
