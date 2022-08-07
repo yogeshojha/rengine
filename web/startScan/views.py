@@ -1,8 +1,4 @@
 import os
-import logging
-import requests
-import itertools
-import tempfile
 import markdown
 
 from datetime import datetime
@@ -333,10 +329,8 @@ def schedule_scan(request, host_id):
         # get engine type
         engine_type = int(request.POST['scan_mode'])
         engine_object = get_object_or_404(EngineType, id=engine_type)
-        task_name = engine_object.engine_name + ' for ' + \
-            domain.name + \
-            ':' + \
-            str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+        timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+        task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
         if request.POST['scheduled_mode'] == 'periodic':
             # periodic task
             frequency_value = int(request.POST['frequency'])
@@ -531,13 +525,8 @@ def schedule_organization_scan(request, id):
         engine_type = int(request.POST['scan_mode'])
         engine_object = get_object_or_404(EngineType, id=engine_type)
         for domain in organization.get_domains():
-            task_name = engine_object.engine_name + ' for ' + \
-                domain.name + \
-                ':' + \
-                str(datetime.datetime.strftime(
-                    timezone.now(),
-                    '%Y_%m_%d_%H_%M_%S'
-                ))
+            timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
+            task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
             if request.POST['scheduled_mode'] == 'periodic':
                 # periodic task
                 frequency_value = int(request.POST['frequency'])
