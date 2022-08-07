@@ -118,6 +118,10 @@ OSINT_DEFAULT_LOOKUPS = ['emails', 'metainfo', 'employees']
 # subdomain scan
 DEFAULT_SUBDOMAIN_SCAN_TOOLS = ['amass-active', 'amass-passive', 'assetfinder', 'sublist3r', 'subfinder', 'oneforall']
 
+# endpoints scan
+DEFAULT_ENDPOINT_SCAN_TOOLS = ['gauplus', 'hakrawler', 'waybackurls', 'gospider']
+DEFAULT_ENDPOINT_SCAN_INTENSITY = 'normal'
+
 ###############################################################################
 # Logger DEFINITIONS
 ###############################################################################
@@ -147,6 +151,7 @@ FAILED_TASK = 0
 RUNNING_TASK = 1
 SUCCESS_TASK = 2
 ABORTED_TASK = 3
+
 ###############################################################################
 # Uncommon Ports
 # Source: https://github.com/six2dez/reconftw/blob/main/reconftw.cfg

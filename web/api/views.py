@@ -1562,7 +1562,7 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
 		scan_id = req.query_params.get('scan_id')
 		target_id = req.query_params.get('target_id')
 		if 'only_endpoints' in self.request.query_params:
-			self.serializer_class = InterestingEndpointSerializer
+			self.serializer_class = InterestingEndPointSerializer
 		if scan_id:
 			return get_interesting_endpoint(scan_history=scan_id)
 		elif target_id:
