@@ -28,7 +28,7 @@ def execute_live(cmd):
     popen = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(popen.stdout.readline, ""):
         item = stdout_line.strip()
-        if item.startswith('{') and item.endswith('}'):
+        if item.startswith(('{', '[')) and item.endswith(('}', ']')):
             try:
                 yield json.loads(item)
                 continue
