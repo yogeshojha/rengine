@@ -143,8 +143,7 @@ class ScanHistory(models.Model):
 class Subdomain(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-	target_domain = models.ForeignKey(
-		Domain, on_delete=models.CASCADE, null=True, blank=True)
+	target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 	name = models.CharField(max_length=1000)
 	is_imported_subdomain = models.BooleanField(default=False)
 	is_important = models.BooleanField(default=False, null=True, blank=True)
@@ -262,7 +261,7 @@ class SubScan(models.Model):
 			'port_scan': 'Port Scan',
 			'fetch_url': 'Endpoint Gathering',
 			'vulnerability_scan': 'Vulnerability Scan',
-			'osint': 'OSINT'
+			'osint': 'Open-Source Intelligence'
 		}
 		return taskmap.get(self.type, 'Unknown')
 
