@@ -618,7 +618,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 
 	# Run command
 	logger.info(f'Running httpx scan on {domain} ...')
-	cmd = remove_cmd_injection_chars(cmd)
+	cmd = sanitize_cmd(cmd)
 	logger.info(cmd)
 	results = []
 	for line in execute_live(cmd):
@@ -1327,7 +1327,7 @@ def fetch_endpoints(
 	cmd = f'/go/bin/httpx -l {output_path} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {results_dir}/final_httpx_urls.json'
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
-	cmd = remove_cmd_injection_chars(cmd)
+	cmd = sanitize_cmd(cmd)
 	logger.info(cmd)
 	os.system(cmd)
 	url_results_file = f'{results_dir}/final_httpx_urls.json'
