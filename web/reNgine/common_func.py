@@ -24,7 +24,7 @@ from targetApp.models import *
 
 
 def execute_live(cmd):
-    """Execute a command while fetching it's output live."""
+    """Execute a command while fetching it's output live"""
     popen = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(popen.stdout.readline, ""):
         item = stdout_line.strip()
@@ -116,11 +116,11 @@ def get_interesting_endpoint(scan_history=None, target=None):
             if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].url_lookup:
                 url_lookup_query |= Q(http_url__icontains=key)
             if InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].title_lookup:
-                page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+                page_title_lookup_query |= Q(page_title__iregex=f"\\y{key}\\y")
 
         else:
             url_lookup_query |= Q(http_url__icontains=key)
-            page_title_lookup_query |= Q(page_title__iregex="\\y{}\\y".format(key))
+            page_title_lookup_query |= Q(page_title__iregex=f"\\y{key}\\y")
 
     if InterestingLookupModel.objects.filter(custom_type=True) and InterestingLookupModel.objects.filter(custom_type=True).order_by('-id')[0].condition_200_http_lookup:
         url_lookup_query &= Q(http_status__exact=200)
