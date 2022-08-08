@@ -165,12 +165,12 @@ def get_domain_from_subdomain(subdomain):
     return '.'.join(ext[1:3])
 
 def send_telegram_message(message):
-    notification = Notification.objects.all()
-    if notification and notification[0].send_to_telegram \
-    and notification[0].telegram_bot_token \
-    and notification[0].telegram_bot_chat_id:
-        telegram_bot_token = notification[0].telegram_bot_token
-        telegram_bot_chat_id = notification[0].telegram_bot_chat_id
+    notification = Notification.objects.first()
+    if notification and notification.send_to_telegram \
+    and notification.telegram_bot_token \
+    and notification.telegram_bot_chat_id:
+        telegram_bot_token = notification.telegram_bot_token
+        telegram_bot_chat_id = notification.telegram_bot_chat_id
         send_text = 'https://api.telegram.org/bot' + telegram_bot_token \
             + '/sendMessage?chat_id=' + telegram_bot_chat_id \
             + '&parse_mode=Markdown&text=' + message
@@ -180,10 +180,10 @@ def send_telegram_message(message):
 def send_slack_message(message):
     headers = {'content-type': 'application/json'}
     message = {'text': message}
-    notification = Notification.objects.all()
-    if notification and notification[0].send_to_slack \
-    and notification[0].slack_hook_url:
-        hook_url = notification[0].slack_hook_url
+    notification = Notification.objects.first()
+    if notification and notification.send_to_slack \
+    and notification.slack_hook_url:
+        hook_url = notification.slack_hook_url
         thread = Thread(
             target=requests.post,
             kwargs = {
@@ -194,11 +194,11 @@ def send_slack_message(message):
         thread.start()
 
 def send_discord_message(message):
-    notification = Notification.objects.all()
-    if notification and notification[0].send_to_discord \
-    and notification[0].discord_hook_url:
+    notification = Notification.objects.first()
+    if notification and notification.send_to_discord \
+    and notification.discord_hook_url:
         webhook = DiscordWebhook(
-            url=notification[0].discord_hook_url,
+            url=notification.discord_hook_url,
             content=message,
             rate_limit_retry=True
             )
@@ -206,11 +206,11 @@ def send_discord_message(message):
         thread.start()
 
 def send_files_to_discord(file_path):
-    notification = Notification.objects.all()
-    if notification and notification[0].send_to_discord \
-    and notification[0].discord_hook_url:
+    notification = Notification.objects.first()
+    if notification and notification.send_to_discord \
+    and notification.discord_hook_url:
         webhook = DiscordWebhook(
-            url=notification[0].discord_hook_url,
+            url=notification.discord_hook_url,
             rate_limit_retry=True,
             username="Scan Results - File"
         )
@@ -296,203 +296,6 @@ def calculate_age(created):
 
 def return_zeorth_if_list(variable):
     return variable[0] if type(variable) == list else variable
-
-def get_whois(ip_domain, save_db=False, fetch_from_db=True):
-    domain_query = Domain.objects.filter(name=ip_domain)
-    if fetch_from_db:
-        if not domain_query.exists():
-            return {
-                'status': False,
-                'message': f'Domain {ip_domain} does not exist as a Domain in the Database.'
-            }
-        domain_info = domain_query.first().domain_info
-        return {
-            'status': True,
-            'ip_domain': ip_domain,
-            'domain': {
-                'created': domain_info.created,
-                'updated': domain_info.updated,
-                'expires': domain_info.expires,
-                'registrar': DomainRegistrarSerializer(domain_info.registrar).data['name'],
-                'geolocation_iso': DomainCountrySerializer(domain_info.registrant_country).data['name'],
-                'dnssec': domain_info.dnssec,
-                'status': [status['status'] for status in DomainWhoisStatusSerializer(domain_info.status, many=True).data]
-            },
-            'registrant': {
-                'name': DomainRegisterNameSerializer(domain_info.registrant_name).data['name'],
-                'organization': DomainRegisterOrganizationSerializer(domain_info.registrant_organization).data['name'],
-                'address': DomainAddressSerializer(domain_info.registrant_address).data['name'],
-                'city': DomainCitySerializer(domain_info.registrant_city).data['name'],
-                'state': DomainStateSerializer(domain_info.registrant_state).data['name'],
-                'zipcode': DomainZipCodeSerializer(domain_info.registrant_zip_code).data['name'],
-                'country': DomainCountrySerializer(domain_info.registrant_country).data['name'],
-                'phone': DomainPhoneSerializer(domain_info.registrant_phone).data['name'],
-                'fax': DomainFaxSerializer(domain_info.registrant_fax).data['name'],
-                'email': DomainEmailSerializer(domain_info.registrant_email).data['name'],
-            },
-            'admin': {
-                'name': DomainRegisterNameSerializer(domain_info.admin_name).data['name'],
-                'id': DomainRegistrarIDSerializer(domain_info.admin_id).data['name'],
-                'organization': DomainRegisterOrganizationSerializer(domain_info.admin_organization).data['name'],
-                'address': DomainAddressSerializer(domain_info.admin_address).data['name'],
-                'city': DomainCitySerializer(domain_info.admin_city).data['name'],
-                'state': DomainStateSerializer(domain_info.admin_state).data['name'],
-                'zipcode': DomainZipCodeSerializer(domain_info.admin_zip_code).data['name'],
-                'country': DomainCountrySerializer(domain_info.admin_country).data['name'],
-                'phone': DomainPhoneSerializer(domain_info.admin_phone).data['name'],
-                'fax': DomainFaxSerializer(domain_info.admin_fax).data['name'],
-                'email': DomainEmailSerializer(domain_info.admin_email).data['name'],
-            },
-            'technical_contact': {
-                'name': DomainRegisterNameSerializer(domain_info.tech_name).data['name'],
-                'id': DomainRegistrarIDSerializer(domain_info.tech_id).data['name'],
-                'organization': DomainRegisterOrganizationSerializer(domain_info.tech_organization).data['name'],
-                'address': DomainAddressSerializer(domain_info.tech_address).data['name'],
-                'city': DomainCitySerializer(domain_info.tech_city).data['name'],
-                'state': DomainStateSerializer(domain_info.tech_state).data['name'],
-                'zipcode': DomainZipCodeSerializer(domain_info.tech_zip_code).data['name'],
-                'country': DomainCountrySerializer(domain_info.tech_country).data['name'],
-                'phone': DomainPhoneSerializer(domain_info.tech_phone).data['name'],
-                'fax': DomainFaxSerializer(domain_info.tech_fax).data['name'],
-                'email': DomainEmailSerializer(domain_info.tech_email).data['name'],
-            },
-            'nameservers': [ns['name'] for ns in NameServersSerializer(domain_info.name_servers, many=True).data],
-            'raw_text': domain_info.raw_text
-        }
-
-    # Fetch from whois
-    result = asyncwhois.whois_domain(ip_domain)
-    whois = result.parser_output
-    if not whois.get('domain_name'):
-        return {
-            'status': False,
-            'ip_domain': ip_domain,
-            'result': 'Unable to fetch records from WHOIS database.'
-        }
-    created = whois.get('created')
-    expires = whois.get('expires')
-    updated = whois.get('updated')
-    dnssec = whois.get('dnssec')
-
-    # Save whois information in various tables
-    if save_db and domain_query.exists():
-        domain = domain_query.first()
-        logger.info(f'Saving domain "{domain}" info in DB!')
-        domain_info = DomainInfo(
-            raw_text=result.query_output.strip(),
-            dnsec=dnssec,
-            created=created,
-            updated=updated,
-            expires=expires)
-
-        # Record whois subfields in various DB models
-        whois_fields = {
-            ('default'): [
-                ('registrar', DomainRegistrar),
-                ('name_servers', NameServers)
-            ],
-            ('registrant'):
-                [
-                    ('name', DomainRegisterName),
-                    ('organization', DomainRegisterOrganization),
-                    ('address', DomainAddress),
-                    ('city', DomainCity),
-                    ('state', DomainState),
-                    ('zipcode', DomainZipCode),
-                    ('country', DomainCountry),
-                    ('phone', DomainPhone),
-                    ('fax', DomainFax),
-                    ('email', DomainEmail)
-                ],
-            ('admin', 'tech'): [
-                ('name', DomainRegisterName),
-                ('id', DomainRegistrarID),
-                ('organization', DomainRegisterOrganization),
-                ('address', DomainAddress),
-                ('city', DomainCity),
-                ('state', DomainState),
-                ('zipcode', DomainZipCode),
-                ('country', DomainCountry),
-                ('email', DomainEmail),
-                ('phone', DomainPhone),
-                ('fax', DomainFax)
-            ]
-        }
-        objects = {}
-        logger.info(f'Gathering domain details for {ip_domain}...')
-        for field_parents, fields in whois_fields.items():
-            for field_parent in field_parents:
-                for (field_name, model_cls) in fields:
-                    field_fullname = f'{field_parent}_{field_name}' if field_parent != 'default' else field_name
-                    field_content = whois.get(field_fullname)
-                    serializer_cls = globals()[model_cls.__name__ + 'Serializer']
-
-                    # If field is an email, parse it with a regex
-                    if field_name == 'email':
-                        email_search = EMAIL_REGEX.search(str(field_content))
-                        field_content = email_search.group(0) if email_search else None
-
-                    # Skip empty fields
-                    if not field_content:
-                        continue
-
-                    # Create object in database
-                    obj, created = model_cls.objects.get_or_create(name=field_content)
-                    obj_json = serializer_cls(obj, many=False).data
-                    objects[field_fullname] = obj_json
-                    if created:
-                        logger.info(f'Saved {obj} in DB !')
-
-                    # Set attribute in domain_info
-                    setattr(domain_info, field_fullname, obj)
-                    domain_info.save()
-
-        logger.info(f'Finished saving domain info {ip_domain}.')
-
-        # Whois status
-        whois_status = whois.get('status', [])
-        for _status in whois_status:
-            domain_whois, _ = DomainWhoisStatus.objects.get_or_create(status=_status)
-            domain_info.status.add(domain_whois)
-            domain_whois_json = DomainWhoisStatusSerializer(domain_whois, many=False).data
-            if 'whois_status' in objects:
-                objects['whois_status'].append(domain_whois_json)
-            else:
-                objects['whois_status'] = [domain_whois_json]
-
-        # Nameservers
-        nameservers = whois.get('name_servers', [])
-        for name_server in nameservers:
-            ns, _ = NameServers.objects.get_or_create(name=name_server)
-            domain_info.name_servers.add(ns)
-            ns_json = NameServersSerializer(ns, many=False).data
-            if 'name_servers' in objects:
-                objects['name_servers'].append(ns_json)
-            else:
-                objects['name_servers'] = [ns_json]
-
-        # Save domain in DB
-        domain.domain_info = domain_info
-        domain.save()
-
-        return {
-            'status': True,
-            'ip_domain': ip_domain,
-            'domain': {
-                'created': created,
-                'updated': updated,
-                'expires': expires,
-                'registrar': domain_info.registrar,
-                'geolocation_iso': objects[('registrant')]['country'],
-                'dnssec': dnssec,
-                'status': _status,
-            },
-            'registrant': objects[('registrant')],
-            'admin': objects['admin'],
-            'technical_contact': objects['tech'],
-            'nameservers': objects['name_servers'],
-            'raw_text': result.query_output.strip()
-        }
 
 
 def get_cms_details(url):

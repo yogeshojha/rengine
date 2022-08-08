@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from reNgine.common_func import *
+from reNgine.tasks import query_whois
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -40,12 +41,7 @@ def add_target(request):
                 messages.INFO,
                 'Target domain {target_domain} added successfully')
             if 'fetch_whois_checkbox' in request.POST and request.POST['fetch_whois_checkbox'] == 'on':
-                thread = threading.Thread(
-                    target=get_whois,
-                    args=[target_domain, True, False]
-                )
-                thread.setDaemon(True)
-                thread.start()
+                query_whois.apply_async(args=(target_domain, True, False))
             return http.HttpResponseRedirect(reverse('list_target'))
         if 'add-ip-target' in request.POST:
             domains = request.POST.getlist('resolved_ip_domains')
