@@ -575,18 +575,15 @@ def schedule_organization_scan(request, id):
                     task='reNgine.tasks.initiate_scan',
                     kwargs=_kwargs
                 )
+        ndomains = len(organization.get_domains())
         messages.add_message(
             request,
             messages.INFO,
-            'Scan Started for {} domains in organization {}'.format(
-                len(organization.get_domains()),
-                organization.name
-            )
+            f'Scan started for {ndomains} domains in organization {organization.name}'
         )
         return HttpResponseRedirect(reverse('scheduled_scan_view'))
     engine = EngineType.objects
-    custom_engine_count = EngineType.objects.filter(
-        default_engine=False).count()
+    custom_engine_count = EngineType.objects.filter(default_engine=False).count()
     context = {
         'scan_history_active': 'active',
         'organization': organization,

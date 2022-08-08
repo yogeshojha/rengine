@@ -1,6 +1,7 @@
 import logging
 import re
 import subprocess
+from xml.dom import INUSE_ATTRIBUTE_ERR
 
 import requests
 import validators
@@ -12,7 +13,7 @@ from packaging import version
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
-from reNgine.tasks import (create_scan_activity, initiate_subtask,
+from reNgine.tasks import (create_scan_activity, query_whois, initiate_subtask,
                            run_system_commands)
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
@@ -97,9 +98,7 @@ class WafDetector(APIView):
 		response = {}
 		response['status'] = False
 
-		wafw00f_command = 'wafw00f {}'.format(
-			url
-		)
+		wafw00f_command = f'wafw00f {url}'
 		output = subprocess.check_output(wafw00f_command, shell=True)
 		# use regex to get the waf
 		regex = "behind \\\\x1b\[1;96m(.*)\\\\x1b"
@@ -196,12 +195,13 @@ class FetchMostCommonVulnerability(APIView):
 		response['status'] = False
 
 		if scan_history_id:
-			if is_ignore_info:
-				most_common_vulnerabilities = Vulnerability.objects.filter(
+			vuln_query = Vulnerability.objects.filter(
 					scan_history__id=scan_history_id
 				).values(
 					"name", "severity"
-				).exclude(
+				)
+			if is_ignore_info:
+				most_common_vulnerabilities = vuln_query.exclude(
 					severity=0
 				).annotate(
 					count=Count('name')
@@ -209,23 +209,16 @@ class FetchMostCommonVulnerability(APIView):
 					"-count"
 				)[:limit]
 			else:
-				most_common_vulnerabilities = Vulnerability.objects.filter(
-					scan_history__id=scan_history_id
-				).values(
-					"name", "severity"
-				).annotate(
+				most_common_vulnerabilities = vuln_query.annotate(
 					count=Count('name')
 				).order_by(
 					"-count"
 				)[:limit]
 
 		elif target_id:
+			vuln_query = Vulnerability.objects.filter(target_domain__id=target_id).values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = Vulnerability.objects.filter(
-					target_domain__id=target_id
-				).values(
-					"name", "severity"
-				).exclude(
+				most_common_vulnerabilities = vuln_query.exclude(
 					severity=0
 				).annotate(
 					count=Count('name')
@@ -233,21 +226,16 @@ class FetchMostCommonVulnerability(APIView):
 					"-count"
 				)[:limit]
 			else:
-				most_common_vulnerabilities = Vulnerability.objects.filter(
-					target_domain__id=target_id
-				).values(
-					"name", "severity"
-				).annotate(
+				most_common_vulnerabilities = vuln_query.annotate(
 					count=Count('name')
 				).order_by(
 					"-count"
 				)[:limit]
 
 		else:
+			vuln_query = Vulnerability.objects.values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = Vulnerability.objects.values(
-					"name", "severity"
-				).exclude(
+				most_common_vulnerabilities = vuln_query.exclude(
 					severity=0
 				).annotate(
 					count=Count('name')
@@ -255,9 +243,7 @@ class FetchMostCommonVulnerability(APIView):
 					"-count"
 				)[:limit]
 			else:
-				most_common_vulnerabilities = Vulnerability.objects.values(
-					"name", "severity"
-				).annotate(
+				most_common_vulnerabilities = vuln_query.annotate(
 					count=Count('name')
 				).order_by(
 					"-count"
@@ -287,17 +273,15 @@ class FetchMostVulnerable(APIView):
 		response['status'] = False
 
 		if scan_history_id:
+			subdomain_query = Subdomain.objects.filter(scan_history__id=scan_history_id)
 			if is_ignore_info:
-				most_vulnerable_subdomains = Subdomain.objects.filter(
-					scan_history__id=scan_history_id).annotate(
+				most_vulnerable_subdomains = subdomain_query.annotate(
 						vuln_count=Count('vulnerability__name',
 							filter=~Q(vulnerability__severity=0)
 						)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
-				most_vulnerable_subdomains = Subdomain.objects.filter(
-				scan_history__id=scan_history_id).annotate(
-				vuln_count=Count('vulnerability__name'
-				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_subdomains = subdomain_query.annotate(
+					vuln_count=Count('vulnerability__name')).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_subdomains:
 				response['status'] = True
@@ -306,18 +290,15 @@ class FetchMostVulnerable(APIView):
 				).data
 
 		elif target_id:
+			domain_query = Subdomain.objects.filter(target_domain__id=target_id)
 			if is_ignore_info:
-				most_vulnerable_subdomains = Subdomain.objects.filter(
-					target_domain__id=target_id
-				).annotate(
+				most_vulnerable_subdomains = subdomain_query.annotate(
 					vuln_count=Count(
 						'vulnerability__name',
 						filter=~Q(vulnerability__severity=0)
 					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
-				most_vulnerable_subdomains = Subdomain.objects.filter(
-					target_domain__id=target_id
-				).annotate(
+				most_vulnerable_subdomains = subdomain_query.annotate(
 					vuln_count=Count(
 						'vulnerability__name'
 					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
@@ -336,8 +317,8 @@ class FetchMostVulnerable(APIView):
 					).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 			else:
 				most_vulnerable_targets = Domain.objects.annotate(
-				vuln_count=Count(
-				'subdomain__vulnerability__name'
+					vuln_count=Count(
+					'subdomain__vulnerability__name'
 				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
 			if most_vulnerable_targets:
@@ -441,18 +422,20 @@ class AddTarget(APIView):
 		if not validators.domain(target_name):
 			return Response({'status': False, 'message': 'Invalid Domain or IP'})
 
-		if Domain.objects.filter(name=target_name).exists():
+		domain_query = Domain.objets.filter(name=target_name)
+		if domain_query.exists():
 			return Response({
 				'status': False,
 				'message': 'Target already exists!',
-				'domain_id': Domain.objects.get(name=target_name).id
+				'domain_id': domain_query.first().id
 			})
 
-		domain = Domain()
-		domain.name = target_name
-		domain.insert_date = timezone.now()
-		domain.h1_team_handle = h1_team_handle
-		domain.description = description
+		domain = Domain(
+			name=target_name,
+			insert_date=timezone.now(),
+			h1_team_handle=h1_team_handle,
+			description=description
+		)
 		domain.save()
 
 		return Response({
@@ -852,13 +835,12 @@ class Whois(APIView):
 		req = self.request
 		ip_domain = req.query_params.get('ip_domain')
 		if not validators.domain(ip_domain):
+			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
-		save_db = True if 'save_db' in req.query_params else False
-		# fetch_from_db query param can be used to pull the whois record directly from db
-		# instead of fetching new
-		# if fetch_from_db = True, will not be queried to domainbigdata
+		save_db = 'save_db' in req.query_params
 		fetch_from_db = 'fetch_from_db' in req.query_params
-		response = get_whois(ip_domain, save_db=save_db, fetch_from_db=fetch_from_db)
+		task = query_whois.apply_async(args=(ip_domain, save_db, fetch_from_db))
+		response = task.wait()
 		if response:
 			return Response(response)
 		return Response({'status': False})

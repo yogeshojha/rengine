@@ -1,5 +1,4 @@
 import csv
-from ctypes import addressof
 import json
 import os
 import random
@@ -20,8 +19,6 @@ from reNgine.celery import app
 from reNgine.definitions import *
 from reNgine.settings import DEBUG
 from scanEngine.models import EngineType
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
@@ -394,6 +391,7 @@ def extract_imported_subdomain(imported_subdomains, task, domain, results_dir):
 	]))
 	with open(f'{results_dir}/from_imported.txt', 'w+') as file:
 		for subdomain in subdomains:
+			subdomain = subdomain.strip()
 			subdomain_query = Subdomain.objects.filter(scan_history=task, name=subdomain)
 			if not subdomain_query.exists():
 				subdomain_dict = DottedDict({
@@ -597,6 +595,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 	"""
 	Uses httpx to crawl domain for important info like page titles, http status, etc...
 	"""
+	cmd = '/go/bin/httpx'
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
 	alive_subdomain_file = open(f'{results_dir}/alive.txt', 'w')
 	httpx_results_file = f'{results_dir}/httpx.json'
@@ -611,7 +610,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 	if send_status:
 		send_notification(msg)
 
-	cmd = f'/go/bin/httpx -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {threads}'
+	cmd += f' -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {threads}'
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json -l {subdomain_scan_results_file}'
@@ -833,6 +832,7 @@ def port_scan(
 	'''
 	This function is responsible for running the port scan
 	'''
+	cmd = 'naabu -json -exclude-cdn'
 	config = yaml_configuration[PORT_SCAN]
 	exclude_ports = config.get(EXCLUDE_PORTS, [])
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
@@ -853,7 +853,6 @@ def port_scan(
 		send_notification(f'naabu has started gathering ports info for {domain_name}.')
 
 	# Build CMD
-	cmd = 'naabu -json -exclude-cdn'
 	if domain:
 		cmd += f' -list {subdomains_path}'
 	elif subdomain:
@@ -949,6 +948,7 @@ def check_waf(scan_history, results_dir):
 	"""
 	Uses wafw00f to check for the presence of a WAP.
 	"""
+	cmd = 'wafw00f'
 	alive_subdomain_path = f'{results_dir}/alive.txt'
 	output_path = f'{results_dir}/wafw00f.txt'
 
@@ -956,7 +956,7 @@ def check_waf(scan_history, results_dir):
 		logger.error(f'Could not find {alive_subdomain_path}')
 		return
 
-	cmd = f'wafw00f -i {alive_subdomain_path} -o {output_path}'
+	cmd += f' -i {alive_subdomain_path} -o {output_path}'
 	logger.info(cmd)
 	process = subprocess.Popen(cmd.split())
 	process.wait()
@@ -1013,10 +1013,13 @@ def directory_fuzz(
 	"""
 
 	# Config
-	output_path = f'{results_dir}/{filename}'
+	cmd = 'ffuf'
+	output_path = f'{results_dir}/{filename.strip()}'
+	print(output_path)
 	domain_name = domain.name if domain else subdomain
 	config = yaml_configuration[DIR_FILE_FUZZ]
-	auto_calibration = config.get(AUTO_CALIBRATION, False)
+	custom_header = yaml_configuration.get(CUSTOM_HEADER)
+	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	delay = config.get(DELAY, 0)
 	extensions = config.get(EXTENSIONS, [])
 	extensions_str = ','.join(map(str, extensions))
@@ -1040,10 +1043,9 @@ def directory_fuzz(
 	# Get wordlist
 	wordlist_name = 'dicc' if wordlist_name == 'default' else wordlist_name
 	wordlist_path = f'/usr/src/wordlist/{wordlist_name}.txt'
-	logger.info(f'Using ffuf wordlist at {wordlist_path} ...')
 
 	# Build command
-	cmd = f'ffuf -w {wordlist_path}'
+	cmd += f' -w {wordlist_path}'
 	cmd += f' -e {extensions_str}' if extensions and use_extensions else ''
 	cmd += f' -maxtime {max_time}' if max_time > 0 else ''
 	cmd += f' -p "{delay}"' if delay > 0 else ''
@@ -1054,6 +1056,7 @@ def directory_fuzz(
 	cmd += ' -fr' if follow_redirect else ''
 	cmd += ' -ac' if auto_calibration else ''
 	cmd += f' -mc {mc}' if mc else ''
+	cmd += f' -H "{custom_header}"' if custom_header else ''
 
     # Grab subdomains to fuzz
 	if domain:
@@ -1062,35 +1065,31 @@ def directory_fuzz(
 		subdomains_fuzz = Subdomain.objects.filter(name=subdomain).filter(scan_history__id=scan_history.id)
 
 
-	'''
-	Custom headers.
-	'''
-	custom_header = yaml_configuration.get(CUSTOM_HEADER)
-	if custom_header:
-		cmd += f' -H "{custom_header}"'
-
 	# Loop through subdomains and run command
 	for subdomain in subdomains_fuzz:
+		final_cmd = cmd
+
 		# Delete any existing dirs.json
 		if os.path.isfile(output_path):
 			os.system(f'rm -rf {output_path}')
 
 		# HTTP URL
-		http_url = subdomain
-		if subdomain.http_url:
-			sep = ''
-			if not subdomain.http_url[-1:] == '/':
-				sep = '/'
-			http_url = f'{subdomain.http_url}{sep}FUZZ'
+		http_url = subdomain.http_url or subdomain.name
+		http_url = http_url.strip()
+		if not http_url.endswith('/FUZZ'):
+			http_url += '/FUZZ'
+		if not http_url.startswith('http'):
+			http_url = f'https://{http_url}'
+		logger.info(f'Running ffuf on {http_url} ...')
 
 		# Proxy
 		proxy = get_random_proxy()
 		if proxy:
-			cmd += f' -x "{proxy}"'
+			final_cmd += f' -x "{proxy}"'
 
-		cmd += f' -u {http_url} -o {output_path} -of json'
-		logger.info(cmd)
-		process = subprocess.Popen(cmd.split())
+		final_cmd += f' -u {http_url} -o {output_path} -of json'
+		logger.info(final_cmd)
+		process = subprocess.Popen(final_cmd.split())
 		process.wait()
 
 		try:
@@ -1098,36 +1097,46 @@ def directory_fuzz(
 				logger.error(f'Could not read output file "{output_path}"')
 				return
 
-			with open(output_path, "r") as json_file:
-				json_string = json.loads(json_file.read())
+			with open(output_path, "r") as f:
+				data = json.load(f)
 
 			subdomain = Subdomain.objects.get(scan_history__id=scan_history.id, http_url=subdomain.http_url)
 			directory_scan = DirectoryScan()
 			directory_scan.scanned_date = timezone.now()
-			directory_scan.command_line = json_string['commandline']
+			directory_scan.command_line = data['commandline']
 			directory_scan.save()
 			# TODO: URL Models to be created here
 
-			for result in json_string['results']:
+			for result in data['results']:
+				name = result['input'].get('FUZZ')
+				length = result['length']
+				status = result['status']
+				words = result['words']
+				url = result['url']
+				lines = result['lines']
+				content_type = result['content-type']
+				if not name:
+					logger.error('FUZZ not found for "{url}"')
+					continue
 				dfile_query = DirectoryFile.objects.filter(
-					name=result['input']['FUZZ'],
-					length__exact=result['length'],
-					http_status__exact=result['status'],
-					words__exact=result['words'],
-					url=result['url'],
-					content_type=result['content-type']
+					name=name,
+					length__exact=length,
+					http_status__exact=status,
+					words__exact=words,
+					url=url,
+					content_type=content_type
 				)
 				if dfile_query.exists():
 					file = dfile_query.first()
 				else:
 					file = DirectoryFile(
-						name = result['input']['FUZZ'],
-						length = result['length'],
-						lines = result['lines'],
-						http_status = result['status'],
-						words = result['words'],
-						url = result['url'],
-						content_type = result['content-type'])
+						name=name,
+						length=length,
+						lines=lines,
+						http_status=status,
+						words=words,
+						url=url,
+						content_type=content_type)
 					file.save()
 				directory_scan.directory_files.add(file)
 
@@ -1664,8 +1673,9 @@ def vulnerability_scan(
 			vulnerability.save()
 
 			# Send notification for all vulnerabilities except info
-			logger.info(f'Found vulnerability "{vulnerability.name}" in {vulnerability.subdomain}/{vulnerability.http_url}')
-			if send_vuln:
+			url = vulnerability.http_url or vulnerability.subdomain
+			logger.info(f'Found vulnerability "{vulnerability.name}" in {url}')				
+			if send_vuln:	
 				severity_str = line['info'].get('severity', 'info')
 				message = f""""*Alert: Vulnerability identified*"
 
@@ -1793,6 +1803,7 @@ def save_endpoint(endpoint_dict):
 def perform_osint(scan_history, domain, yaml_configuration, results_dir):
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
+	logger.info(f'Performing OSInt on {domain} ...')
 	if send_status:
 		send_notification(f'reNgine has initiated OSINT on target {domain.name}')
 
@@ -2293,8 +2304,7 @@ def get_and_save_meta_info(meta_dict):
 	for metadata_name, metadata in result.get_metadata().items():
 		subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
 		metadata = DottedDict(metadata)
-		print(metadata_name)
-		print(metadata)
+		logger.info(metadata)
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
@@ -2313,3 +2323,205 @@ def get_and_save_meta_info(meta_dict):
 		meta_finder_document.save()
 		results.append(meta_finder_document)
 	return results
+
+@app.task
+def query_whois(ip_domain, save_db=False, fetch_from_db=True):
+	print(f'Running whois on {ip_domain}. Fetch from db ? {fetch_from_db}; Save to db ? {save_db}')
+	domain_query = Domain.objects.filter(name=ip_domain)
+	if fetch_from_db:
+		if not domain_query.exists():
+			return {
+				'status': False,
+				'message': f'Domain {ip_domain} does not exist as a Domain in the Database.'
+			}
+		domain_info = domain_query.first().domain_info
+		return {
+			'status': True,
+			'ip_domain': ip_domain,
+			'domain': {
+				'created': domain_info.created,
+				'updated': domain_info.updated,
+				'expires': domain_info.expires,
+				'registrar': DomainRegistrarSerializer(domain_info.registrar).data['name'],
+				'geolocation_iso': DomainCountrySerializer(domain_info.registrant_country).data['name'],
+				'dnssec': domain_info.dnssec,
+				'status': [status['status'] for status in DomainWhoisStatusSerializer(domain_info.status, many=True).data]
+			},
+			'registrant': {
+				'name': DomainRegisterNameSerializer(domain_info.registrant_name).data['name'],
+				'organization': DomainRegisterOrganizationSerializer(domain_info.registrant_organization).data['name'],
+				'address': DomainAddressSerializer(domain_info.registrant_address).data['name'],
+				'city': DomainCitySerializer(domain_info.registrant_city).data['name'],
+				'state': DomainStateSerializer(domain_info.registrant_state).data['name'],
+				'zipcode': DomainZipCodeSerializer(domain_info.registrant_zip_code).data['name'],
+				'country': DomainCountrySerializer(domain_info.registrant_country).data['name'],
+				'phone': DomainPhoneSerializer(domain_info.registrant_phone).data['name'],
+				'fax': DomainFaxSerializer(domain_info.registrant_fax).data['name'],
+				'email': DomainEmailSerializer(domain_info.registrant_email).data['name'],
+			},
+			'admin': {
+				'name': DomainRegisterNameSerializer(domain_info.admin_name).data['name'],
+				'id': DomainRegistrarIDSerializer(domain_info.admin_id).data['name'],
+				'organization': DomainRegisterOrganizationSerializer(domain_info.admin_organization).data['name'],
+				'address': DomainAddressSerializer(domain_info.admin_address).data['name'],
+				'city': DomainCitySerializer(domain_info.admin_city).data['name'],
+				'state': DomainStateSerializer(domain_info.admin_state).data['name'],
+				'zipcode': DomainZipCodeSerializer(domain_info.admin_zip_code).data['name'],
+				'country': DomainCountrySerializer(domain_info.admin_country).data['name'],
+				'phone': DomainPhoneSerializer(domain_info.admin_phone).data['name'],
+				'fax': DomainFaxSerializer(domain_info.admin_fax).data['name'],
+				'email': DomainEmailSerializer(domain_info.admin_email).data['name'],
+			},
+			'technical_contact': {
+				'name': DomainRegisterNameSerializer(domain_info.tech_name).data['name'],
+				'id': DomainRegistrarIDSerializer(domain_info.tech_id).data['name'],
+				'organization': DomainRegisterOrganizationSerializer(domain_info.tech_organization).data['name'],
+				'address': DomainAddressSerializer(domain_info.tech_address).data['name'],
+				'city': DomainCitySerializer(domain_info.tech_city).data['name'],
+				'state': DomainStateSerializer(domain_info.tech_state).data['name'],
+				'zipcode': DomainZipCodeSerializer(domain_info.tech_zip_code).data['name'],
+				'country': DomainCountrySerializer(domain_info.tech_country).data['name'],
+				'phone': DomainPhoneSerializer(domain_info.tech_phone).data['name'],
+				'fax': DomainFaxSerializer(domain_info.tech_fax).data['name'],
+				'email': DomainEmailSerializer(domain_info.tech_email).data['name'],
+			},
+			'nameservers': [ns['name'] for ns in NameServersSerializer(domain_info.name_servers, many=True).data],
+			'raw_text': domain_info.raw_text
+		}
+	else:
+		result = asyncwhois.whois_domain(ip_domain)
+		whois = result.parser_output
+		if not whois.get('domain_name'):
+			return {
+				'status': False,
+				'ip_domain': ip_domain,
+				'result': 'Unable to fetch records from WHOIS database.'
+			}
+		created = whois.get('created')
+		expires = whois.get('expires')
+		updated = whois.get('updated')
+		dnssec = whois.get('dnssec')
+
+		# Save whois information in various tables
+		if save_db and domain_query.exists():
+			domain = domain_query.first()
+			logger.info(f'Saving domain "{domain}" info in DB!')
+			domain_info = DomainInfo(
+				raw_text=result.query_output.strip(),
+				dnssec=dnssec,
+				created=created,
+				updated=updated,
+				expires=expires)
+			
+			# Record whois subfields in various DB models
+			whois_fields = {
+				'registrant':
+					[
+						('name', DomainRegisterName),
+						('organization', DomainRegisterOrganization),
+						('address', DomainAddress),
+						('city', DomainCity),
+						('state', DomainState),
+						('zipcode', DomainZipCode),
+						('country', DomainCountry),
+						('phone', DomainPhone),
+						('fax', DomainFax),
+						('email', DomainEmail)
+					],
+				'admin': [
+					('name', DomainRegisterName),
+					('id', DomainRegistrarID),
+					('organization', DomainRegisterOrganization),
+					('address', DomainAddress),
+					('city', DomainCity),
+					('state', DomainState),
+					('zipcode', DomainZipCode),
+					('country', DomainCountry),
+					('email', DomainEmail),
+					('phone', DomainPhone),
+					('fax', DomainFax)
+				]
+			}
+			whois_fields['tech'] = whois_fields['admin'] # same fields
+			data = {}
+			logger.info(f'Gathering domain details for {ip_domain}...')
+			for field_parent, fields in whois_fields.items():
+				data[field_parent] = {}
+				for (field_name, model_cls) in fields:
+					field_fullname = f'{field_parent}_{field_name}' if field_parent != 'default' else field_name
+					field_content = whois.get(field_fullname)
+					serializer_cls = globals()[model_cls.__name__ + 'Serializer']
+
+					# Skip empty fields
+					if not field_content:
+						continue
+
+					# If field is an email, parse it with a regex
+					if field_name == 'email':
+						email_search = EMAIL_REGEX.search(str(field_content))
+						field_content = email_search.group(0) if email_search else None
+
+					# Create object in database
+					try:
+						obj, created = model_cls.objects.get_or_create(name=field_content)
+					except Exception as e:
+						logger.error(e)
+						continue
+					obj_json = serializer_cls(obj, many=False).data
+					logger.info(obj_json)
+					data[field_parent][field_name] = obj_json['name']
+
+					# Set attribute in domain_info
+					logger.info(f'Setting {field_fullname} in DomainInfo object ...')
+					setattr(domain_info, field_fullname, obj)
+					domain_info.save()
+
+			logger.info(f'Finished saving domain info {ip_domain}.')
+
+			# Whois status
+			whois_status = whois.get('status', [])
+			for _status in whois_status:
+				domain_whois, _ = DomainWhoisStatus.objects.get_or_create(status=_status)
+				domain_info.status.add(domain_whois)
+				domain_whois_json = DomainWhoisStatusSerializer(domain_whois, many=False).data
+				if 'whois_status' in data:
+					data['whois_status'].append(domain_whois_json)
+				else:
+					data['whois_status'] = [domain_whois_json]
+
+			# Nameservers
+			nameservers = whois.get('name_servers', [])
+			for name_server in nameservers:
+				ns, _ = NameServers.objects.get_or_create(name=name_server)
+				domain_info.name_servers.add(ns)
+				ns_json = NameServersSerializer(ns, many=False).data
+				if 'name_servers' in data:
+					data['name_servers'].append(ns_json)
+				else:
+					data['name_servers'] = [ns_json]
+
+			# Save domain in DB
+			domain.domain_info = domain_info
+			domain.save()
+
+			import pprint
+			logger.info(pprint.pformat(data))
+
+			return {
+				'status': True,
+				'ip_domain': ip_domain,
+				'domain': {
+					'created': created,
+					'updated': updated,
+					'expires': expires,
+					'registrar': domain_info.registrar,
+					'geolocation_iso': data['registrant']['country'],
+					'dnssec': dnssec,
+					'status': _status,
+				},
+				'registrant': data['registrant'],
+				'admin': data['admin'],
+				'technical_contact': data['tech'],
+				'nameservers': data['name_servers'],
+				'raw_text': result.query_output.strip()
+			}
