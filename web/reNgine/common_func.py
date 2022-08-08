@@ -379,10 +379,10 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
         domain = domain_query.first()
         logger.info(f'Saving domain "{domain}" info in DB!')
         domain_info = DomainInfo(
-            raw_text=result.query_output.strip()
-            dnsec=dnssec
-            created=created
-            updated=updated
+            raw_text=result.query_output.strip(),
+            dnsec=dnssec,
+            created=created,
+            updated=updated,
             expires=expires)
 
         # Record whois subfields in various DB models
