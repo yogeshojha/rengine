@@ -1,4 +1,5 @@
 import csv
+from ctypes import addressof
 import json
 import os
 import random
@@ -2132,8 +2133,7 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 
 def get_and_save_employees(scan_history, results_dir):
 	theHarvester_dir = '/usr/src/github/theHarvester'
-	output_filepath = f'{results_dir}/theHarvester.html'
-	logger.info(f'Running theHarvester on {scan_history.domain.name} ...')
+	output_filepath = f'{results_dir}/results.json'
 	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {scan_history.domain.name} -b all -f {output_filepath}'
 
 	# Update proxies.yaml
@@ -2147,9 +2147,9 @@ def get_and_save_employees(scan_history, results_dir):
 				yaml.dump(yaml_data, file)
 
 	# Run cmd
+	logger.info(f'Running theHarvester on {scan_history.domain.name} ...')
 	logger.info(cmd)
 	os.system(cmd)
-
 
 	# Delete proxy environ var
 	if 'https_proxy' in os.environ:
@@ -2164,34 +2164,38 @@ def get_and_save_employees(scan_history, results_dir):
 
 	# Run headless firefox and parse harvester results with it
 	logger.info('Parsing theHarvester results ...')
-	options = FirefoxOptions()
-	options.add_argument("--headless")
-	driver = webdriver.Firefox(options=options)
-	driver.get(f'file://{output_filepath}')
-	tabledata = driver.execute_script('return tabledata')
+	with open(output_filepath, 'r') as f:
+		data = json.load(f)
 
-	# Save email addresses and linkedin employees
-	emails = []
-	employees = []
-	for data in tabledata:
-		if data['record'] == 'email':
-			email_address = data['result']
-			email, _ = Email.objects.get_or_create(address=email_address)
-			scan_history.emails.add(email)
-		elif data['record'] == 'people':
-			employee_descr = data['result']
-			split_val = employee_descr.split('-')
-			name = split_val[0]
-			if len(split_val) == 2:
-				designation = split_val[1]
-			else:
-				designation = ""
-			employee, _ = Employee.objects.get_or_create(name=name, designation=designation)
-			scan_history.employees.add(employee)
-	driver.quit()
+	emails = data.get('emails', [])
+	hosts = data.get('hosts', [])
+	ips = data.get('ips', [])
+	linkedin_people = data.get('linkedin_people', [])
+	twitter_people = data.get('twitter_people', [])
+
+	for email_address in emails:
+		logger.info(f'Found email address {email_address}')
+		email, _ = Email.objects.get_or_create(address=email_address)
+		scan_history.emails.add(email)
+		scan_history.save()
+
+	for people in linkedin_people:
+		logger.info(f'Found employee {people}')
+		employee, _ = Employee.objects.get_or_create(name=people, designation='linkedin')
+		scan_history.employees.add(employee)
+		scan_history.save()
+
+	for people in twitter_people:
+		logger.info(f'Found employee {people}')
+		employee, _ = Employee.objects.get_or_create(name=people, designation='twitter')
+		scan_history.employees.add(employee)
+		scan_history.save()
+
 	return {
 		'emails': emails,
-		'employees': employees
+		'employees': scan_history.employees,
+		'hosts': hosts,
+		'ips': ips
 	}
 
 
@@ -2206,11 +2210,11 @@ def get_and_save_emails(scan_history, results_dir):
 
 	# Gather emails from Google, Bing and Baidu
 	try:
-		logger.info('OSINT: Getting emails from Google')
+		logger.info('Getting emails from Google ...')
 		email_from_google = get_emails_from_google(scan_history.domain.name)
-		logger.info('OSINT: Getting emails from Bing')
+		logger.info('Getting emails from Bing ...')
 		email_from_bing = get_emails_from_bing(scan_history.domain.name)
-		logger.info('OSINT: Getting emails from Baidu')
+		logger.info('Getting emails from Baidu ...')
 		email_from_baidu = get_emails_from_baidu(scan_history.domain.name)
 		emails = list(set(email_from_google + email_from_bing + email_from_baidu))
 		logger.info(emails)
@@ -2225,7 +2229,7 @@ def get_and_save_emails(scan_history, results_dir):
 			scan_history.emails.add(email)
 			leak_target_file.write(f'{email_address}\n')
 
-		# fill leak_target_file with possible email address
+		# Fill leak_target_file with possible email address
 		leak_target_file.write(f'%@{scan_history.domain.name}\n')
 		leak_target_file.write(f'%@%.{scan_history.domain.name}\n')
 		leak_target_file.write(f'%.%@{scan_history.domain.name}\n')
@@ -2270,7 +2274,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 
 
 def get_and_save_meta_info(meta_dict):
-	logger.info(f'Getting METADATA for {meta_dict.osint_target}')
+	logger.info(f'Getting metadata for {meta_dict.osint_target}')
 
 	# Proxy settngs
 	proxy = get_random_proxy()
@@ -2288,7 +2292,9 @@ def get_and_save_meta_info(meta_dict):
 	results = []
 	for metadata_name, metadata in result.get_metadata().items():
 		subdomain = Subdomain.objects.get(scan_history=meta_dict.scan_id, name=meta_dict.osint_target)
-		metadata = DottedDict(metadata)['metadata']
+		metadata = DottedDict(metadata)
+		print(metadata_name)
+		print(metadata)
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
