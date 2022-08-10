@@ -68,6 +68,12 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 
 			if _order_direction == 'desc':
 				order_col = '-{}'.format(order_col)
+
+			qs = self.queryset.filter(
+				Q(name__icontains=search_value) |
+				Q(description__icontains=search_value) |
+				Q(domains__name__icontains=search_value)
+			)
 			return qs.order_by(order_col)
 
 		return qs.order_by('-id')
