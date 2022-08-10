@@ -1145,18 +1145,21 @@ function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	});
 }
 
-function download_interesting_subdomains(scan_id, domain_name){
+function download_interesting_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Interesting Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
+	var url = `/api/queryInterestingSubdomains/?format=json`;
 	if (scan_id) {
-		url = `/api/listInterestingSubdomains/?scan_id=${scan_id}&format=json&only_subdomains&no_page`;
+		url = `/api/queryInterestingSubdomains/?scan_id=${scan_id}&format=json`;
 	}
-	else{
-		url = `/api/listInterestingSubdomains/?format=json&only_subdomains&no_page`;
+	else if(domain_id){
+		url = `/api/queryInterestingSubdomains/?target_id=${domain_id}&format=json`;
 	}
+	console.log(url);
+
 	if (domain_name) {
 		$('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');
 	}

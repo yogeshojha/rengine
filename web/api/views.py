@@ -41,6 +41,24 @@ from reNgine.celery import app
 from django.utils import timezone
 
 
+class QueryInterestingSubdomains(APIView):
+	def get(self, request):
+		req = self.request
+		scan_id = req.query_params.get('scan_id')
+		target_id = req.query_params.get('target_id')
+
+		if scan_id:
+			queryset = get_interesting_subdomains(scan_history=scan_id)
+		elif target_id:
+			queryset = get_interesting_subdomains(target=target_id)
+		else:
+			queryset = get_interesting_subdomains()
+
+		queryset = queryset.distinct('name')
+
+		return Response(InterestingSubdomainSerializer(queryset, many=True).data)
+
+
 class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 	queryset = Domain.objects.all()
 	serializer_class = DomainSerializer
@@ -1529,7 +1547,7 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 			self.serializer_class = InterestingSubdomainSerializer
 
 		if scan_id:
-			self. queryset = get_interesting_subdomains(scan_history=scan_id)
+			self.queryset = get_interesting_subdomains(scan_history=scan_id)
 		elif target_id:
 			self.queryset = get_interesting_subdomains(target=target_id)
 		else:

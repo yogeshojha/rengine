@@ -16,7 +16,7 @@ All Subdomains
 
 {% block main_content %}
 <div class="row justify-content-center">
-	{% include 'base/_items/subdomain_tab_content.html' %}
+	{% include 'base/_items/subdomain_tab_content.html' with all_subdomains=True%}
 </div>
 {% include "base/_items/recon_note_modal.html" %}
 {% include "base/_items/subscan_modal.html" %}

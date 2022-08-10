@@ -51,6 +51,10 @@ urlpatterns = [
         ListIPs.as_view(),
         name='listIPs'),
     path(
+        'queryInterestingSubdomains/',
+        QueryInterestingSubdomains.as_view(),
+        name='queryInterestingSubdomains'),
+    path(
         'querySubdomains/',
         ListSubdomains.as_view(),
         name='querySubdomains'),
