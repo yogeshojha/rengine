@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models import CharField, Value, Count
 from django.core import serializers
 from django.shortcuts import get_object_or_404
@@ -47,6 +47,30 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		return self.queryset
+
+	def filter_queryset(self, qs):
+		qs = self.queryset.filter()
+		search_value = self.request.GET.get(u'search[value]', None)
+		_order_col = self.request.GET.get(u'order[0][column]', None)
+		_order_direction = self.request.GET.get(u'order[0][dir]', None)
+		if search_value or _order_col or _order_direction:
+			order_col = 'id'
+			if _order_col == '2':
+				order_col = 'name'
+			elif _order_col == '4':
+				order_col = 'insert_date'
+			elif _order_col == '5':
+				order_col = 'start_scan_date'
+				if _order_direction == 'desc':
+					return qs.order_by(F('start_scan_date').desc(nulls_last=True))
+				return qs.order_by(F('start_scan_date').asc(nulls_last=True))
+
+
+			if _order_direction == 'desc':
+				order_col = '-{}'.format(order_col)
+			return qs.order_by(order_col)
+
+		return qs.order_by('-id')
 
 
 
