@@ -71,7 +71,7 @@ def get_interesting_subdomains(scan_history=None, target=None):
     title_lookup = Subdomain.objects.none()
 
     if target:
-        subdomains = Subdomain.objects.filter(target_domain__id=target).order_by('name').distinct('name')
+        subdomains = Subdomain.objects.filter(target_domain__id=target)
         if subdomain_lookup_query:
             subdomain_lookup = subdomains.filter(subdomain_lookup_query)
         if page_title_lookup_query:

@@ -1247,20 +1247,21 @@ function download_interesting_endpoints(scan_id, domain_name){
 }
 
 
-function download_important_subdomains(scan_id, domain_name){
+function download_important_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Interesting Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
+	var url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important`;
 	if (scan_id) {
 		url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important&scan_id=${scan_id}`;
 	}
-	else{
-		url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important`;
+	else if (domain_id){
+		url = `/api/querySubdomains?format=json&no_lookup_interesting&only_important&target_id=${domain_id}`;
 	}
 	if (domain_name) {
-		$('.modal-title').html(count + 'Subdomains marked as important : <b>' + domain_name + '</b>');
+		$('.modal-title').html(count + ' Subdomains marked as important : <b>' + domain_name + '</b>');
 	}
 	else{
 		$('.modal-title').html(count + ' Subdomains marked as important');
