@@ -1015,7 +1015,6 @@ def directory_fuzz(
 	# Config
 	cmd = 'ffuf'
 	output_path = f'{results_dir}/{filename.strip()}'
-	print(output_path)
 	domain_name = domain.name if domain else subdomain
 	config = yaml_configuration[DIR_FILE_FUZZ]
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
@@ -1099,6 +1098,10 @@ def directory_fuzz(
 
 			with open(output_path, "r") as f:
 				data = json.load(f)
+
+			if not data:
+				logger.error(f'No input data was found in {output_path}')
+				return
 
 			subdomain = Subdomain.objects.get(scan_history__id=scan_history.id, http_url=subdomain.http_url)
 			directory_scan = DirectoryScan()
