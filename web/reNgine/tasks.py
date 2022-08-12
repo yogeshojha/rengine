@@ -168,7 +168,7 @@ def initiate_scan(
 		out_of_scope_subdomains=[],
 		results_dir='/usr/src/scan_results'):
 
-
+	# Get or create ScanHistory() object
 	if scan_type == 1: # immediate
 		task = ScanHistory()
 		task.scan_status = -1
@@ -208,6 +208,7 @@ def initiate_scan(
 		send_notification(f'reNgine has initiated recon for target {domain.name} with engine type {engine.engine_name}')
 
 	# Create results directory
+	os.makedirs(results_dir, exist_okay=True)
 	os.chdir(results_dir)
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	current_scan_dir = f'{domain.name}_{timestr}'
