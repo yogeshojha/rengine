@@ -27,7 +27,7 @@ dir_file_fuzz:
   threads: 100
   stop_on_error: false
   follow_redirect: false
-  auto_calibration: false
+  auto_calibration: true
   timeout: 10
   # delay: "0.1-0.2"
   # match_http_status: '200, 204'
