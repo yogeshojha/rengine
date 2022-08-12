@@ -283,11 +283,11 @@ class FetchMostVulnerable(APIView):
 				most_vulnerable_subdomains = subdomain_query.annotate(
 					vuln_count=Count('vulnerability__name')).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
 
-			if most_vulnerable_subdomains:
-				response['status'] = True
-				response['result'] = SubdomainSerializer(
-					most_vulnerable_subdomains, many=True
-				).data
+				if most_vulnerable_subdomains:
+					response['status'] = True
+					response['result'] = SubdomainSerializer(
+						most_vulnerable_subdomains, many=True
+					).data
 
 		elif target_id:
 			domain_query = Subdomain.objects.filter(target_domain__id=target_id)
