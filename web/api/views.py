@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models import CharField, Value, Count
 from django.core import serializers
 from django.shortcuts import get_object_or_404
@@ -39,6 +39,64 @@ from reNgine.tasks import run_system_commands, initiate_subtask, create_scan_act
 from packaging import version
 from reNgine.celery import app
 from django.utils import timezone
+
+
+class QueryInterestingSubdomains(APIView):
+	def get(self, request):
+		req = self.request
+		scan_id = req.query_params.get('scan_id')
+		target_id = req.query_params.get('target_id')
+
+		if scan_id:
+			queryset = get_interesting_subdomains(scan_history=scan_id)
+		elif target_id:
+			queryset = get_interesting_subdomains(target=target_id)
+		else:
+			queryset = get_interesting_subdomains()
+
+		queryset = queryset.distinct('name')
+
+		return Response(InterestingSubdomainSerializer(queryset, many=True).data)
+
+
+class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
+	queryset = Domain.objects.all()
+	serializer_class = DomainSerializer
+
+	def get_queryset(self):
+		return self.queryset
+
+	def filter_queryset(self, qs):
+		qs = self.queryset.filter()
+		search_value = self.request.GET.get(u'search[value]', None)
+		_order_col = self.request.GET.get(u'order[0][column]', None)
+		_order_direction = self.request.GET.get(u'order[0][dir]', None)
+		if search_value or _order_col or _order_direction:
+			order_col = 'id'
+			if _order_col == '2':
+				order_col = 'name'
+			elif _order_col == '4':
+				order_col = 'insert_date'
+			elif _order_col == '5':
+				order_col = 'start_scan_date'
+				if _order_direction == 'desc':
+					return qs.order_by(F('start_scan_date').desc(nulls_last=True))
+				return qs.order_by(F('start_scan_date').asc(nulls_last=True))
+
+
+			if _order_direction == 'desc':
+				order_col = '-{}'.format(order_col)
+
+			qs = self.queryset.filter(
+				Q(name__icontains=search_value) |
+				Q(description__icontains=search_value) |
+				Q(domains__name__icontains=search_value)
+			)
+			return qs.order_by(order_col)
+
+		return qs.order_by('-id')
+
+
 
 class WafDetector(APIView):
 	def get(self, request):
@@ -619,7 +677,10 @@ class RengineUpdateCheck(APIView):
 
 		# get current version_number
 		# remove quotes from current_version
-		current_version = '1.2.0'
+		current_version = ((os.environ['RENGINE_CURRENT_VERSION'
+							])[1:] if os.environ['RENGINE_CURRENT_VERSION'
+							][0] == 'v'
+							else os.environ['RENGINE_CURRENT_VERSION']).replace("'", "")
 
 		# for consistency remove v from both if exists
 		latest_version = re.search(r'v(\d+\.)?(\d+\.)?(\*|\d+)',
@@ -1486,7 +1547,7 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 			self.serializer_class = InterestingSubdomainSerializer
 
 		if scan_id:
-			self. queryset = get_interesting_subdomains(scan_history=scan_id)
+			self.queryset = get_interesting_subdomains(scan_history=scan_id)
 		elif target_id:
 			self.queryset = get_interesting_subdomains(target=target_id)
 		else:

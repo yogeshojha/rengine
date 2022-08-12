@@ -7,6 +7,8 @@ from dashboard.models import *
 from recon_note.models import *
 
 from django.db.models import F, JSONField, Value
+from django.contrib.humanize.templatetags.humanize import naturalday, naturaltime
+
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):
@@ -17,16 +19,44 @@ class SearchHistorySerializer(serializers.ModelSerializer):
 
 class DomainSerializer(serializers.ModelSerializer):
 	vuln_count = serializers.SerializerMethodField()
+	organization = serializers.SerializerMethodField()
+	most_recent_scan = serializers.SerializerMethodField()
+	insert_date = serializers.SerializerMethodField()
+	insert_date_humanized = serializers.SerializerMethodField()
+	start_scan_date = serializers.SerializerMethodField()
+	start_scan_date_humanized = serializers.SerializerMethodField()
 
 	class Meta:
 		model = Domain
 		fields = '__all__'
+		depth = 2
 
 	def get_vuln_count(self, obj):
 		try:
 			return obj.vuln_count
 		except:
 			return None
+
+	def get_organization(self, obj):
+		if Organization.objects.filter(domains__id=obj.id).exists():
+			return [org.name for org in Organization.objects.filter(domains__id=obj.id)]
+
+	def get_most_recent_scan(self, obj):
+		return obj.get_recent_scan_id()
+
+	def get_insert_date(self, obj):
+		return naturalday(obj.insert_date).title()
+
+	def get_insert_date_humanized(self, obj):
+		return naturaltime(obj.insert_date).title()
+
+	def get_start_scan_date(self, obj):
+		if obj.start_scan_date:
+			return naturalday(obj.start_scan_date).title()
+
+	def get_start_scan_date_humanized(self, obj):
+		if obj.start_scan_date:
+			return naturaltime(obj.start_scan_date).title()
 
 
 class SubScanResultSerializer(serializers.ModelSerializer):
