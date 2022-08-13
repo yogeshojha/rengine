@@ -208,7 +208,7 @@ def initiate_scan(
 		send_notification(f'reNgine has initiated recon for target {domain.name} with engine type {engine.engine_name}')
 
 	# Create results directory
-	os.makedirs(results_dir, exist_okay=True)
+	os.makedirs(results_dir, exist_ok=True)
 	os.chdir(results_dir)
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	current_scan_dir = f'{domain.name}_{timestr}'
