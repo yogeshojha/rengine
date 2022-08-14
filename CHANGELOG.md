@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.1
+**Release Date: August 12, 2022**
+
+# Fixes
+- Fix for #643 Downloading issue for Subdomain and Endpoints
+- Fix for #627 Too many Targets causes issues while loading datatable
+- Fix version Numbering issue
+
+
 ## 1.3.0
 **Release Date: July 11, 2022**
 

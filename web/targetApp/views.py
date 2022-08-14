@@ -161,11 +161,10 @@ def add_target(request):
     return render(request, 'target/add.html', context)
 
 def list_target(request):
-    domains = Domain.objects.all().order_by('-insert_date')
     context = {
         'list_target_li': 'active',
-        'target_data_active': 'active',
-        'domains': domains}
+        'target_data_active': 'active'
+    }
     return render(request, 'target/list.html', context)
 
 
