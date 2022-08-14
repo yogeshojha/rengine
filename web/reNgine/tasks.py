@@ -492,7 +492,7 @@ def subdomain_scan(
 					os.system(f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{domain.name}.csv >> {results_dir}/from_oneforall.txt')
 					os.system(f'rm -rf /usr/src/github/OneForAll/results/{domain.name}.csv')
 
-			elif tool.lower() in custom_subdomain_tools:
+			elif tool in custom_subdomain_tools:
 				tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
 				if tool_query.exists():
 					custom_tool = tool_query.first()
@@ -507,6 +507,9 @@ def subdomain_scan(
 						process.wait()
 					else:
 						logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+
+			else:
+				logger.error(f'"{tool}" is not part of either default_subdomain_tools or custom_subdomain_tools. Skipping.')
 
 	except Exception as e:
 		logger.error(e)
@@ -624,7 +627,9 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 	for line in execute_live(cmd):
 		if not isinstance(line, dict):
 			continue
+
 		try:
+			results.append(line)
 			# Locals
 			content_length = line.get('content-length', 0)
 			host = line.get('host', '')
@@ -749,9 +754,11 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 		json.dump(results, f)
 
 	# Send finish notification
+	alive_count = Subdomain.objects.filter(scan_history__id=task.id).values('name').distinct().filter(http_status__exact=200).count()
+	msg = f'httpx HTTP crawler has finished for {domain.name} and {alive_count} subdomains were marked as "alive".'
+	logger.info(msg)
 	if send_status:
-		alive_count = Subdomain.objects.filter(scan_history__id=task.id).values('name').distinct().filter(http_status__exact=200).count()
-		send_notification(f'httpx HTTP crawler has finished for {domain.name} and {alive_count} subdomains were marked as "alive".')
+		send_notification(msg)
 
 def geo_localize(host):
 	"""
@@ -842,6 +849,7 @@ def port_scan(
 	domain_name = domain.name if domain else subdomain
 	subdomains_path = f'{results_dir}/sorted_subdomain_collection.txt'
 	exclude_ports_str = ','.join(exclude_ports)
+	output_file = f'{results_dir}/{filename}'
 
 	# Random sleep to prevent ip and port being overwritten
 	sleep(random.randint(1,5))
@@ -878,12 +886,14 @@ def port_scan(
 	cmd += ' -config /root/.config/naabu/config.yaml ' if use_naabu_config else ''
 
 	# Writing port results
+	ports = []
 	try:
 		logger.info(f'Running naabu port scan on {domain_name}')
 		logger.info(cmd)
 		for line in execute_live(cmd):
 			if not isinstance(line, dict):
 				continue
+			ports.append(line)
 			port_number = line['port']
 			ip_address = line['ip']
 			host = line['host']
@@ -942,7 +952,9 @@ def port_scan(
 		send_notification(f'naabu has finished gathering ports info on {domain_name} and has identified {port_count} ports.')
 
 	if send_output_file:
-		send_files_to_discord(f'{results_dir}/ports.json')
+		with open(output_file, 'w') as f:
+			json.dump(ports, f)
+		send_files_to_discord(output_file)
 
 
 def check_waf(scan_history, results_dir):
@@ -1209,11 +1221,8 @@ def fetch_endpoints(
 	logger.info('Initiated endpoint scanning ...')
 	domain_regex = f"\'https?://([a-z0-9]+[.])*{domain_name}.*\'"
 	input_target = ''
-
 	for tool in tools:
 		try:
-			cmd = 'gospider'
-
 			if tool in ('gauplus', 'hakrawler', 'waybackurls'):
 				if subdomain:
 					subdomain_url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
@@ -1223,23 +1232,18 @@ def fetch_endpoints(
 				else:
 					input_target = f'echo {domain_name}'
 
+			cmd = ''
 			if tool == 'gauplus':
 				logger.info('Running Gauplus')
 				cmd = f'{input_target} | gauplus --random-agent | grep -Eo {domain_regex} > {results_dir}/urls_gau.txt'
-				logger.info(cmd)
-				os.system(cmd)
 
 			elif tool == 'hakrawler':
 				logger.info('Running hakrawler')
 				cmd = f'{input_target} | hakrawler -subs -u | grep -Eo {domain_regex} > {results_dir}/urls_hakrawler.txt'
-				logger.info(cmd)
-				os.system(cmd)
 
 			elif tool == 'waybackurls':
 				logger.info('Running waybackurls')
 				cmd = f'{input_target} | waybackurls | grep -Eo {domain_regex} > {results_dir}/urls_waybackurls.txt'
-				logger.info(cmd)
-				os.system(cmd)
 
 			elif tool == 'gospider':
 				logger.info('Running gospider')
@@ -1250,11 +1254,16 @@ def fetch_endpoints(
 					cmd += f' -S {alive_subdomains_path}'
 				else:
 					cmd += f' -s https://{domain_name} '
-
 				cmd += f' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {domain_regex} > {results_dir}/urls_gospider.txt'
 
+			else:
+				logger.error(f'Tool "{tool}" not supported. Skipping.')
+				continue
+
+			# Run cmd
 			logger.info(cmd)
 			os.system(cmd)
+
 		except Exception as e:
 			logger.error(f'{tool} exited with an error code.')
 			logger.exception(e)
@@ -1337,24 +1346,16 @@ def fetch_endpoints(
 
 	# Build CMD
 	logger.info('Running httpx probing on collected endpoints ...')
-	cmd = f'/go/bin/httpx -l {output_path} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent -o {results_dir}/final_httpx_urls.json'
+	cmd = f'/go/bin/httpx -l {output_path} -status-code -content-length -ip -cdn -title -tech-detect -json -follow-redirects -random-agent'
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd = remove_cmd_injection_chars(cmd)
 	logger.info(cmd)
-	os.system(cmd)
-	url_results_file = f'{results_dir}/final_httpx_urls.json'
 	try:
-		if not os.path.isfile(url_results_file):
-			logger.error(f'Could not open URL results file {url_results_file}')
-			return
-
-		with open(url_results_file, 'r') as f:
-			lines = f.readlines()
-
-		for line in lines:
-			json_st = json.loads(line.strip())
-			http_url = json_st['url']
+		for line in execute_live(cmd):
+			if not isinstance(line, dict):
+				continue
+			http_url = line['url']
 			subdomain = get_subdomain_from_url(http_url)
 			subdomain_query = Subdomain.objects.filter(scan_history=scan_history).filter(name=subdomain)
 			if subdomain_query.exists():
@@ -1381,21 +1382,21 @@ def fetch_endpoints(
 					'subdomain': subdomain_obj
 				})
 				endpoint = save_endpoint(endpoint_dict)
-			endpoint.page_title = json_st.get('title')
-			endpoint.webserver = json_st.get('webserver')
-			endpoint.content_length = json_st.get('content-length')
-			endpoint.http_status = json_st.get('status-code')
-			endpoint.webserver = json_st.get('webserver')
+			endpoint.page_title = line.get('title')
+			endpoint.webserver = line.get('webserver')
+			endpoint.content_length = line.get('content-length')
+			endpoint.http_status = line.get('status-code')
+			endpoint.webserver = line.get('webserver')
 			endpoint.save()
 
-			response_time = float(''.join(ch for ch in json_st.get('response-time', '0') if not ch.isalpha()))
+			response_time = float(''.join(ch for ch in line.get('response-time', '0') if not ch.isalpha()))
 			if response_time > 0:
-				if json_st['response-time'][-2:] == 'ms':
+				if line['response-time'][-2:] == 'ms':
 					response_time = response_time / 1000
 				endpoint.response_time = response_time
 				endpoint.save()
 
-			technologies = json_st.get('technologies', [])
+			technologies = line.get('technologies', [])
 			for tech_name in technologies:
 				if Technology.objects.filter(name=tech_name).exists():
 					tech = Technology.objects.get(name=tech_name)
@@ -1440,12 +1441,11 @@ def fetch_endpoints(
 		logger.info(gf_command)
 		os.system(gf_command)
 		if not os.path.exists(gf_output_file_path):
-			logger.error(f'Could not find GF output file {gf_output_file_path}')
-			return
+			logger.error(f'Could not find GF output file {gf_output_file_path}. Skipping GF pattern "{gf_pattern}"')
+			continue
 
 		# Read output file line by line and add endpoints / subdomains to DB
 		with open(gf_output_file_path) as gf_output:
-			lines = gf_output.readlines()
 			for url in gf_output:
 				try:
 					endpoint = EndPoint.objects.get(
@@ -1678,8 +1678,8 @@ def vulnerability_scan(
 
 			# Send notification for all vulnerabilities except info
 			url = vulnerability.http_url or vulnerability.subdomain
-			logger.info(f'Found vulnerability "{vulnerability.name}" in {url}')				
-			if send_vuln:	
+			logger.info(f'Found vulnerability "{vulnerability.name}" in {url}')
+			if send_vuln:
 				severity_str = line['info'].get('severity', 'info')
 				message = f""""*Alert: Vulnerability identified*"
 
@@ -2416,7 +2416,7 @@ def query_whois(ip_domain, save_db=False, fetch_from_db=True):
 				created=created,
 				updated=updated,
 				expires=expires)
-			
+
 			# Record whois subfields in various DB models
 			whois_fields = {
 				'registrant':

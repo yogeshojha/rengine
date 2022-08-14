@@ -1,8 +1,8 @@
 import os
 
 from celery import Celery
-from celery.signals import after_setup_task_logger
-from celery.app.log import TaskFormatter
+# from celery.signals import after_setup_task_logger
+# from celery.app.log import TaskFormatter
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
 
