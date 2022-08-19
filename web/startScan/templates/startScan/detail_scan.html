@@ -1799,42 +1799,48 @@ $(document).ready(function() {
 										aria_expanded = 'true';
 										show = 'hide';
 									}
-									html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
-									html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
-									var interesting_badge = '';
-									// console.log(item['directory_files'][i]['name']);
-									item['directory_files'].forEach(function(file){
-										interesting_keywords_array.forEach(function(keyword){
-											if (file.name.includes(keyword)) {
-												interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
-												return;
+									if(item['directory_files'].length == 0){
+										html_treeview += `<br><span class="text-muted"><i class="fe-folder"></i> No Directories Discovered during the Scan Performed on ${item.scanned_date}</span>`;
+										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+									}
+									else{
+										html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder-plus"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
+										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+										var interesting_badge = '';
+										// console.log(item['directory_files'][i]['name']);
+										item['directory_files'].forEach(function(file){
+											interesting_keywords_array.forEach(function(keyword){
+												if (file.name.includes(keyword)) {
+													interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
+													return;
+												}
+											});
+											// console.log(file);
+											var http_status_badge = '';
+											if (file.http_status >= 200 && file.http_status < 300) {
+												http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
 											}
+											else if (file.http_status >= 300 && file.http_status < 400) {
+												http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+											}
+											else{
+												http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+											}
+											var http_url = file.url;
+											var lines_word_content = '';
+											if (file.lines) {
+												lines_word_content += `${file.lines} Lines`;
+											}
+											if (file.words) {
+												lines_word_content += ` ${file.words} Words`
+											}
+											var lines_word_badge = ''
+											if (lines_word_content.length > 1) {
+												lines_word_badge = `<span class="badge badge-soft-secondary" data-toggle="tooltip" data-placement="top" title="Response Content Status">${lines_word_content}</span>`;
+											}
+											html_treeview += `<li class="mt-1"><a href="` + htmlEncode(http_url) + `" target="_blank">` + htmlEncode(file.name) + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + htmlEncode(file.content_type) + `)</span> ${http_status_badge}</a>${interesting_badge} ${lines_word_badge}</li>`;
 										});
-										// console.log(file);
-										var http_status_badge = '';
-										if (file.http_status >= 200 && file.http_status < 300) {
-											http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										else if (file.http_status >= 300 && file.http_status < 400) {
-											http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										else{
-											http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										var http_url = file.url;
-										var lines_word_content = '';
-										if (file.lines) {
-											lines_word_content += `${file.lines} Lines`;
-										}
-										if (file.words) {
-											lines_word_content += ` ${file.words} Words`
-										}
-										var lines_word_badge = ''
-										if (lines_word_content.length > 1) {
-											lines_word_badge = `<span class="badge badge-soft-secondary" data-toggle="tooltip" data-placement="top" title="Response Content Status">${lines_word_content}</span>`;
-										}
-										html_treeview += `<li class="mt-1"><a href="` + htmlEncode(http_url) + `" target="_blank">` + htmlEncode(file.name) + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + htmlEncode(file.content_type) + `)</span> ${http_status_badge}</a>${interesting_badge} ${lines_word_badge}</li>`;
-									});
+									}
 									item_pos++;
 									html_treeview += '</div>';
 								});
