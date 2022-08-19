@@ -1797,7 +1797,7 @@ $(document).ready(function() {
 									var show = '';
 									if (item_pos == 0) {
 										aria_expanded = 'true';
-										show = 'show';
+										show = 'hide';
 									}
 									html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
 									html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
