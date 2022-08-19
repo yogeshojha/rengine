@@ -1976,7 +1976,7 @@ $(document).ready(function() {
 	{% if history.fetch_url and history.used_gf_patterns %}
 		{% for pattern in history.used_gf_patterns|split:"," %}
 			$("#pills-{{pattern}}-tab").click(function() {
-				get_endpoints(scan_history={{scan_history_id}}, gf_tags='{{pattern}}');
+				get_endpoints(scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
 			});
 		{% endfor %}
 	{% endif %}
