@@ -7,42 +7,23 @@ import tldextract
 import logging
 import shutil
 import subprocess
+import asyncwhois
 
 from threading import Thread
-
 from urllib.parse import urlparse
-
 from bs4 import BeautifulSoup
 from lxml import html
-
+from datetime import datetime, date
 from discord_webhook import DiscordWebhook
-from django.db.models import Q
 from functools import reduce
+from rest_framework import serializers
+
+from django.db.models import Q
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 from reNgine.definitions import *
-from rest_framework import serializers
-
-
-# Serializers for NS
-class NSRecordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NSRecord
-        fields = '__all__'
-
-
-class NameServerHistorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NameServerHistory
-        fields = '__all__'
-
-
-class AssociatedDomainSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AssociatedDomain
-        fields = '__all__'
-
+from reNgine.common_serializers import *
 
 def get_lookup_keywords():
     default_lookup_keywords = [
@@ -315,7 +296,8 @@ def send_hackerone_report(vulnerability_id):
 
         return status_code
 
-def get_whois(ip_domain, save_db=False, fetch_from_db=True):
+def get_whois_using_domainbigdata(ip_domain, save_db=False, fetch_from_db=True):
+    # CURRENTLY DEPRECATED!!!!!!
     # this function will fetch whois details for domains
     # if save_db = True, then the whois will be saved in db
     # if fetch_from_db = True then whois will be fetched from db, no lookup on
@@ -665,6 +647,331 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
             'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
         }
 
+def calculate_age(created):
+    today = date.today()
+    return today.year - created.year - ((today.month, today.day) < (created.month, created.day))
+
+def return_zeorth_if_list(variable):
+    return variable[0] if type(variable) == list else variable
+
+def get_whois(ip_domain, save_db=False, fetch_from_db=True):
+    if ip_domain and not fetch_from_db:
+
+        try:
+            result = asyncwhois.whois_domain(ip_domain)
+            whois = result.parser_output
+            if not whois.get('domain_name'):
+                raise Exception
+        except Exception as e:
+            logger.error(e)
+            return {
+            'status': False,
+            'ip_domain': ip_domain,
+            'result': 'Invalid Domain/IP, WHOIS could not be fetched from WHOIS database'
+            }
+
+        created = whois.get('created')
+        expires = whois.get('expires')
+        updated = whois.get('updated')
+
+        registrar = whois.get('registrar')
+        dnssec = whois.get('dnssec')
+        status = whois.get('status')
+
+        registrant_name = whois.get('registrant_name')
+        registrant_organization = whois.get('registrant_organization')
+        registrant_address = whois.get('registrant_address')
+        registrant_city = whois.get('registrant_city')
+        registrant_state = whois.get('registrant_state')
+        registrant_zipcode = whois.get('registrant_zipcode')
+        registrant_country = whois.get('registrant_country')
+        registrant_email = whois.get('registrant_email')
+        registrant_phone = whois.get('registrant_phone')
+        registrant_fax = whois.get('registrant_fax')
+
+        name_servers = whois.get('name_servers')
+
+        admin_name = whois.get('admin_name')
+        admin_id = whois.get('admin_id')
+        admin_organization = whois.get('admin_organization')
+        admin_city = whois.get('admin_city')
+        admin_address = whois.get('admin_address')
+        admin_state = whois.get('admin_state')
+        admin_zipcode = whois.get('admin_zipcode')
+        admin_country = whois.get('admin_country')
+        admin_phone = whois.get('admin_phone')
+        admin_fax = whois.get('admin_fax')
+        admin_email = whois.get('admin_email')
+
+        tech_name = whois.get('tech_name')
+        tech_id = whois.get('tech_id')
+        tech_organization = whois.get('tech_organization')
+        tech_city = whois.get('tech_city')
+        tech_address = whois.get('tech_address')
+        tech_state = whois.get('tech_state')
+        tech_zipcode = whois.get('tech_zipcode')
+        tech_country = whois.get('tech_country')
+        tech_phone = whois.get('tech_phone')
+        tech_fax = whois.get('tech_fax')
+        tech_email = whois.get('tech_email')
+
+        if save_db and Domain.objects.filter(name=ip_domain).exists():
+            logger.info('Saving in DB!')
+            domain = Domain.objects.get(name=ip_domain)
+
+            domain_info = DomainInfo()
+            domain_info.raw_text = result.query_output.strip()
+            domain_info.dnsec = dnssec
+            domain_info.created = created
+            domain_info.updated = updated
+            domain_info.expires = expires
+
+            # registrant
+            domain_info.registrar = DomainRegistrar.objects.get_or_create(
+                name=registrar
+            )[0] if registrar else None
+
+            domain_info.registrant_name = DomainRegisterName.objects.get_or_create(
+                name=registrant_name
+            )[0] if registrant_name else None
+            domain_info.registrant_organization = DomainRegisterOrganization.objects.get_or_create(
+                name=registrant_organization
+            )[0] if registrant_organization else None
+            domain_info.registrant_address = DomainAddress.objects.get_or_create(
+                name=registrant_address
+            )[0] if registrant_address else None
+            domain_info.registrant_city = DomainCity.objects.get_or_create(
+                name=registrant_city
+            )[0] if registrant_city else None
+            domain_info.registrant_state = DomainState.objects.get_or_create(
+                name=registrant_state
+            )[0] if registrant_state else None
+            domain_info.registrant_zip_code = DomainZipCode.objects.get_or_create(
+                name=registrant_zipcode
+            )[0] if registrant_zipcode else None
+            domain_info.registrant_country = DomainCountry.objects.get_or_create(
+                name=registrant_country
+            )[0] if registrant_country else None
+            domain_info.registrant_email = DomainEmail.objects.get_or_create(
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None
+            domain_info.registrant_phone = DomainPhone.objects.get_or_create(
+                name=registrant_phone
+            )[0] if registrant_phone else None
+            domain_info.registrant_fax = DomainFax.objects.get_or_create(
+                name=registrant_fax
+            )[0] if registrant_fax else None
+
+            # admin
+            domain_info.admin_name = DomainRegisterName.objects.get_or_create(
+                name=admin_name
+            )[0] if admin_name else None
+            domain_info.admin_id = DomainRegistrarID.objects.get_or_create(
+                name=admin_id
+            )[0] if admin_id else None
+            domain_info.admin_organization = DomainRegisterOrganization.objects.get_or_create(
+                name=admin_organization
+            )[0] if admin_organization else None
+            domain_info.admin_address = DomainAddress.objects.get_or_create(
+                name=admin_address
+            )[0] if admin_address else None
+            domain_info.admin_city = DomainCity.objects.get_or_create(
+                name=admin_city
+            )[0] if admin_city else None
+            domain_info.admin_state = DomainState.objects.get_or_create(
+                name=admin_state
+            )[0] if admin_state else None
+            domain_info.admin_zip_code = DomainZipCode.objects.get_or_create(
+                name=admin_zipcode
+            )[0] if admin_zipcode else None
+            domain_info.admin_country = DomainCountry.objects.get_or_create(
+                name=admin_country
+            )[0] if admin_country else None
+            domain_info.admin_email = DomainEmail.objects.get_or_create(
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email) else None
+            domain_info.admin_phone = DomainPhone.objects.get_or_create(
+                name=admin_phone
+            )[0] if admin_phone else None
+            domain_info.admin_fax = DomainFax.objects.get_or_create(
+                name=admin_fax
+            )[0] if admin_fax else None
+
+            # tech
+            domain_info.tech_name = DomainRegisterName.objects.get_or_create(
+                name=tech_name
+            )[0] if tech_name else None
+            domain_info.tech_id = DomainRegistrarID.objects.get_or_create(
+                name=tech_id
+            )[0] if tech_id else None
+            domain_info.tech_organization = DomainRegisterOrganization.objects.get_or_create(
+                name=tech_organization
+            )[0] if tech_organization else None
+            domain_info.tech_address = DomainAddress.objects.get_or_create(
+                name=tech_address
+            )[0] if tech_address else None
+            domain_info.tech_city = DomainCity.objects.get_or_create(
+                name=tech_city
+            )[0] if tech_city else None
+            domain_info.tech_state = DomainState.objects.get_or_create(
+                name=tech_state
+            )[0] if tech_state else None
+            domain_info.tech_zip_code = DomainZipCode.objects.get_or_create(
+                name=tech_zipcode
+            )[0] if tech_zipcode else None
+            domain_info.tech_country = DomainCountry.objects.get_or_create(
+                name=tech_country
+            )[0] if tech_country else None
+            domain_info.tech_email = DomainEmail.objects.get_or_create(
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None
+            domain_info.tech_phone = DomainPhone.objects.get_or_create(
+                name=tech_phone
+            )[0] if tech_phone else None
+            domain_info.tech_fax = DomainFax.objects.get_or_create(
+                name=tech_fax
+            )[0] if tech_fax else None
+
+            domain_info.save()
+
+            # status
+            for _status in status:
+                domain_info.status.add(
+                    DomainWhoisStatus.objects.get_or_create(
+                        status=_status
+                )[0])
+
+            # name servers
+            for name_server in name_servers:
+                domain_info.name_servers.add(
+                    NameServers.objects.get_or_create(
+                        name=name_server
+                )[0])
+
+            domain.domain_info = domain_info
+            domain.save()
+        return {
+            'status': True,
+            'ip_domain': ip_domain,
+            'domain': {
+                'created': created,
+                'updated': updated,
+                'expires': expires,
+                'registrar': registrar,
+                'geolocation_iso': registrant_country,
+                'dnssec': dnssec,
+                'status': status,
+            },
+            'registrant': {
+                'name': registrant_name,
+                'organization': registrant_organization,
+                'address': registrant_address,
+                'city': registrant_city,
+                'state': registrant_state,
+                'zipcode': registrant_zipcode,
+                'country': registrant_country,
+                'phone': registrant_phone,
+                'fax': registrant_fax,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None,
+            },
+            'admin': {
+                'name': admin_name,
+                'id': admin_id,
+                'organization': admin_organization,
+                'city': admin_city,
+                'address': admin_address,
+                'state': admin_state,
+                'zipcode': admin_zipcode,
+                'country': admin_country,
+                'phone': admin_phone,
+                'fax': admin_fax,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email) else None,
+            },
+            'technical_contact': {
+                'name': tech_name,
+                'id': tech_id,
+                'organization': tech_organization,
+                'city': tech_city,
+                'address': tech_address,
+                'state': tech_state,
+                'zipcode': tech_zipcode,
+                'country': tech_country,
+                'phone': tech_phone,
+                'fax': tech_fax,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None,
+            },
+            'nameservers': name_servers,
+            'raw_text': result.query_output.strip()
+        }
+
+    elif ip_domain and fetch_from_db:
+        domain = Domain.objects.get(name=ip_domain) if Domain.objects.filter(name=ip_domain).exists() else None
+        if not domain:
+            return {
+                'status': False,
+                'message': 'Domain ' + ip_domain + ' does not exist as target and could not fetch WHOIS from database.'
+            }
+
+        if not domain.domain_info:
+            return {
+                'status': False,
+                'message': 'WHOIS could not be fetched!'
+            }
+
+        return {
+            'status': True,
+            'ip_domain': ip_domain,
+            'domain': {
+                'created': domain.domain_info.created,
+                'updated': domain.domain_info.updated,
+                'expires': domain.domain_info.expires,
+                'registrar': DomainRegistrarSerializer(domain.domain_info.registrar).data['name'],
+                'geolocation_iso': DomainCountrySerializer(domain.domain_info.registrant_country).data['name'],
+                'dnssec': domain.domain_info.dnssec,
+                'status': [status['status'] for status in DomainWhoisStatusSerializer(domain.domain_info.status, many=True).data]
+            },
+            'registrant': {
+                'name': DomainRegisterNameSerializer(domain.domain_info.registrant_name).data['name'],
+                'organization': DomainRegisterOrganizationSerializer(domain.domain_info.registrant_organization).data['name'],
+                'address': DomainAddressSerializer(domain.domain_info.registrant_address).data['name'],
+                'city': DomainCitySerializer(domain.domain_info.registrant_city).data['name'],
+                'state': DomainStateSerializer(domain.domain_info.registrant_state).data['name'],
+                'zipcode': DomainZipCodeSerializer(domain.domain_info.registrant_zip_code).data['name'],
+                'country': DomainCountrySerializer(domain.domain_info.registrant_country).data['name'],
+                'phone': DomainPhoneSerializer(domain.domain_info.registrant_phone).data['name'],
+                'fax': DomainFaxSerializer(domain.domain_info.registrant_fax).data['name'],
+                'email': DomainEmailSerializer(domain.domain_info.registrant_email).data['name'],
+            },
+            'admin': {
+                'name': DomainRegisterNameSerializer(domain.domain_info.admin_name).data['name'],
+                'id': DomainRegistrarIDSerializer(domain.domain_info.admin_id).data['name'],
+                'organization': DomainRegisterOrganizationSerializer(domain.domain_info.admin_organization).data['name'],
+                'address': DomainAddressSerializer(domain.domain_info.admin_address).data['name'],
+                'city': DomainCitySerializer(domain.domain_info.admin_city).data['name'],
+                'state': DomainStateSerializer(domain.domain_info.admin_state).data['name'],
+                'zipcode': DomainZipCodeSerializer(domain.domain_info.admin_zip_code).data['name'],
+                'country': DomainCountrySerializer(domain.domain_info.admin_country).data['name'],
+                'phone': DomainPhoneSerializer(domain.domain_info.admin_phone).data['name'],
+                'fax': DomainFaxSerializer(domain.domain_info.admin_fax).data['name'],
+                'email': DomainEmailSerializer(domain.domain_info.admin_email).data['name'],
+            },
+            'technical_contact': {
+                'name': DomainRegisterNameSerializer(domain.domain_info.tech_name).data['name'],
+                'id': DomainRegistrarIDSerializer(domain.domain_info.tech_id).data['name'],
+                'organization': DomainRegisterOrganizationSerializer(domain.domain_info.tech_organization).data['name'],
+                'address': DomainAddressSerializer(domain.domain_info.tech_address).data['name'],
+                'city': DomainCitySerializer(domain.domain_info.tech_city).data['name'],
+                'state': DomainStateSerializer(domain.domain_info.tech_state).data['name'],
+                'zipcode': DomainZipCodeSerializer(domain.domain_info.tech_zip_code).data['name'],
+                'country': DomainCountrySerializer(domain.domain_info.tech_country).data['name'],
+                'phone': DomainPhoneSerializer(domain.domain_info.tech_phone).data['name'],
+                'fax': DomainFaxSerializer(domain.domain_info.tech_fax).data['name'],
+                'email': DomainEmailSerializer(domain.domain_info.tech_email).data['name'],
+            },
+            'nameservers': [ns['name'] for ns in NameServersSerializer(domain.domain_info.name_servers, many=True).data],
+            'raw_text': domain.domain_info.raw_text
+        }
+
 
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
@@ -689,10 +996,6 @@ def get_cms_details(url):
     if port:
         find_dir += '_{}'.format(port)
 
-
-    print(url)
-    print(find_dir)
-
     # subdomain may also have port number, and is stored in dir as _port
 
     cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
@@ -712,3 +1015,10 @@ def get_cms_details(url):
             print(e)
 
     return response
+
+
+def remove_cmd_injection_chars(command):
+    remove_chars = ['&', '<', '>', '|', ';']
+    for chrs in remove_chars:
+        command = command.replace(chrs, '')
+    return command

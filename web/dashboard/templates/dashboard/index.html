@@ -12,10 +12,12 @@ Dashboard
 
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'custom/custom.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<span class="badge badge-soft-info">reNgine 1.1</span>
+<span class="badge badge-soft-info">reNgine 1.3.0</span>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -73,6 +75,42 @@ Dashboard
 				<br>
 				<p class="text-danger mb-0 mt-2"><span class="badge badge-soft-primary rounded-pill float-end">{{low_count}} Low, {{info_count}} Info, {{unknown_count}} Unknown Vulnerabilities</span></p>
 				<br>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="col-12">
+		<div class="card">
+			<div class="card-body">
+				<div class="row">
+					<div class="col-9">
+						<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+						<div id="world_map" style="height: 520px"></div>
+					</div>
+					<div class="col-3">
+						<div class="table-responsive" data-simplebar style="max-height: 520px;">
+							<table class="table table-borderless table-hover table-centered m-0">
+								<thead class="table-light">
+									<tr>
+										<th>&nbsp;</th>
+										<th>Country</th>
+										<th>Assets</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for country in asset_countries %}
+									<tr>
+										<td><span class="fi fi-{{country.iso|lower}}"></span></td>
+										<td>{{country.name}}</td>
+										<td>{{country.count}}</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -232,6 +270,8 @@ Dashboard
 <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
 <script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
+<script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
+<script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
 <script type="text/javascript">
 
 $(document).ready(function() {
@@ -597,6 +637,44 @@ $(document).ready(function() {
 
 	var chart = new ApexCharts(document.querySelector("#most_common_tech_chart"), options);
 	chart.render();
+
+	var countriesData = {
+		{% for country in asset_countries %}
+			"{{country.iso}}": {{country.count}},
+		{% endfor %}
+	};
+
+	$('#world_map').vectorMap({
+		map: 'world_mill_en',
+		hoverOpacity: 0.7,
+		hoverColor: false,
+		regionStyle: {
+				initial: {
+					fill: '#d4dadd'
+				}
+			},
+		backgroundColor: 'transparent',
+		series: {
+			regions: [{
+				values: countriesData,
+				scale: [
+					{% for country in asset_countries %}
+						shadeColor('#2C3E50', {{country.count}}),
+					{% endfor %}
+				],
+				normalizeFunction: 'polynomial'
+			}]
+		},
+		onRegionTipShow: function(e, el, code){
+			if (code in countriesData) {
+				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
+			}
+			else{
+				el.html(el.html()+' (Total Assets : 0)');
+			}
+		}
+	});
+
 });
 </script>
 {% endblock page_level_script %}
