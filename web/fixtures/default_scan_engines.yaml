@@ -2,14 +2,6 @@
   pk: 1
   fields:
     engine_name: Full Scan
-    subdomain_discovery: true
-    waf_detection: true
-    dir_file_fuzz: true
-    port_scan: true
-    fetch_url: true
-    vulnerability_scan: true
-    osint: true
-    screenshot: true
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder, oneforall ]\r\n  threads: 10\r\n  use_amass_config: false\r\n
       \ use_subfinder_config: false\r\n  # amass_wordlist: default\r\n\r\nscreenshot:\r\n
@@ -21,7 +13,7 @@
       exposed_documents, struts_rce, db_files, traefik, git_exposed ]\r\n\r\ndir_file_fuzz:\r\n
       \ wordlist: default\r\n  use_extensions: [ php, git, yaml, conf, db, mysql,
       bak, asp, aspx, txt, conf, sql, json ]\r\n  threads: 100\r\n  stop_on_error:
-      false\r\n  follow_redirect: false\r\n  auto_calibration: false\r\n  timeout:
+      false\r\n  follow_redirect: false\r\n  auto_calibration: true\r\n  timeout:
       10\r\n  # delay: \"0.1-0.2\"\r\n  # match_http_status: '200, 204'\r\n  # max_time:
       0\r\n  recursive: false\r\n  recursive_level: 1\r\n\r\nfetch_url:\r\n  uses_tools:
       [ gauplus, hakrawler, waybackurls, gospider ]\r\n  intensity: normal\r\n  #
@@ -36,14 +28,6 @@
   pk: 2
   fields:
     engine_name: Subdomain Only Scan
-    subdomain_discovery: true
-    waf_detection: true
-    dir_file_fuzz: false
-    port_scan: false
-    fetch_url: false
-    vulnerability_scan: false
-    osint: false
-    screenshot: false
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder, oneforall ]\r\n  threads: 10\r\n  use_amass_config: false\r\n
       \ use_subfinder_config: false\r\n  # amass_wordlist: default\r\n\r\nscreenshot:\r\n
@@ -55,7 +39,7 @@
       exposed_documents, struts_rce, db_files, traefik, git_exposed ]\r\n\r\ndir_file_fuzz:\r\n
       \ wordlist: default\r\n  use_extensions: [ php, git, yaml, conf, db, mysql,
       bak, asp, aspx, txt, conf, sql, json ]\r\n  threads: 100\r\n  stop_on_error:
-      false\r\n  follow_redirect: false\r\n  auto_calibration: false\r\n  timeout:
+      false\r\n  follow_redirect: false\r\n  auto_calibration: true\r\n  timeout:
       10\r\n  # delay: \"0.1-0.2\"\r\n  # match_http_status: '200, 204'\r\n  # max_time:
       0\r\n  recursive: false\r\n  recursive_level: 1\r\n\r\nfetch_url:\r\n  uses_tools:
       [ gauplus, hakrawler, waybackurls, gospider ]\r\n  intensity: normal\r\n  #
@@ -70,14 +54,6 @@
   pk: 3
   fields:
     engine_name: OSINT Only
-    subdomain_discovery: false
-    waf_detection: false
-    dir_file_fuzz: false
-    port_scan: false
-    fetch_url: false
-    vulnerability_scan: false
-    osint: true
-    screenshot: false
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder ]\r\n  threads: 10\r\n  use_amass_config: false\r\n  use_subfinder_config:
       false\r\n  # amass_wordlist: default\r\n\r\nscreenshot:\r\n  timeout: 10\r\n
@@ -89,7 +65,7 @@
       exposed_documents, struts_rce, db_files, traefik, git_exposed ]\r\n\r\ndir_file_fuzz:\r\n
       \ wordlist: default\r\n  use_extensions: [ php, git, yaml, conf, db, mysql,
       bak, asp, aspx, txt, conf, sql, json ]\r\n  threads: 100\r\n  stop_on_error:
-      false\r\n  follow_redirect: false\r\n  auto_calibration: false\r\n  timeout:
+      false\r\n  follow_redirect: false\r\n  auto_calibration: true\r\n  timeout:
       10\r\n  # delay: \"0.1-0.2\"\r\n  # match_http_status: '200, 204'\r\n  # max_time:
       0\r\n  recursive: false\r\n  recursive_level: 1\r\n\r\nfetch_url:\r\n  uses_tools:
       [ gauplus, hakrawler, waybackurls, gospider ]\r\n  intensity: normal\r\n  #
@@ -104,14 +80,6 @@
   pk: 4
   fields:
     engine_name: Vulnerability Scan Only
-    subdomain_discovery: true
-    waf_detection: false
-    dir_file_fuzz: false
-    port_scan: false
-    fetch_url: false
-    vulnerability_scan: true
-    osint: false
-    screenshot: false
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder ]\r\n  threads: 10\r\n  use_amass_config: false\r\n  use_subfinder_config:
       false\r\n  # amass_wordlist: default\r\n\r\nscreenshot:\r\n  timeout: 10\r\n
@@ -123,7 +91,7 @@
       exposed_documents, struts_rce, db_files, traefik, git_exposed ]\r\n\r\ndir_file_fuzz:\r\n
       \ wordlist: default\r\n  use_extensions: [ php, git, yaml, conf, db, mysql,
       bak, asp, aspx, txt, conf, sql, json ]\r\n  threads: 100\r\n  stop_on_error:
-      false\r\n  follow_redirect: false\r\n  auto_calibration: false\r\n  timeout:
+      false\r\n  follow_redirect: false\r\n  auto_calibration: true\r\n  timeout:
       10\r\n  # delay: \"0.1-0.2\"\r\n  # match_http_status: '200, 204'\r\n  # max_time:
       0\r\n  recursive: false\r\n  recursive_level: 1\r\n\r\nfetch_url:\r\n  uses_tools:
       [ gauplus, hakrawler, waybackurls, gospider ]\r\n  intensity: normal\r\n  #
@@ -138,14 +106,6 @@
   pk: 6
   fields:
     engine_name: reNgine Recommended
-    subdomain_discovery: true
-    waf_detection: true
-    dir_file_fuzz: true
-    port_scan: false
-    fetch_url: false
-    vulnerability_scan: true
-    osint: false
-    screenshot: true
     yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [ amass-passive, assetfinder,
       sublist3r, subfinder ]\r\n  threads: 10\r\n  use_amass_config: false\r\n  use_subfinder_config:
       false\r\n  # amass_wordlist: default\r\n\r\nscreenshot:\r\n  timeout: 10\r\n
@@ -157,7 +117,7 @@
       exposed_documents, struts_rce, db_files, traefik, git_exposed ]\r\n\r\ndir_file_fuzz:\r\n
       \ wordlist: default\r\n  use_extensions: [ php, git, yaml, conf, db, mysql,
       bak, asp, aspx, txt, conf, sql, json ]\r\n  threads: 100\r\n  stop_on_error:
-      false\r\n  follow_redirect: false\r\n  auto_calibration: false\r\n  timeout:
+      false\r\n  follow_redirect: false\r\n  auto_calibration: true\r\n  timeout:
       10\r\n  # delay: \"0.1-0.2\"\r\n  # match_http_status: '200, 204'\r\n  # max_time:
       0\r\n  recursive: false\r\n  recursive_level: 1\r\n\r\nfetch_url:\r\n  uses_tools:
       [ gauplus, hakrawler, waybackurls, gospider ]\r\n  intensity: normal\r\n  #

@@ -200,35 +200,33 @@ def initiate_scan(
 	#		 		 						                   screenshot
 	# 		   		 						           		   waf_detection
 	skipped = skip.si(*args)
-	tasks = group(
+	header = group(
 		# Subdomain tasks
 		chain(
 			subdomain_discovery.si(*args) if 'subdomain_discovery' in engine.tasks else skipped,
 			fetch_url.si(*args) if 'fetch_url' in engine.tasks else skipped,
-			# group(
-			# 	# HTTP tasks (crawl, dir fuzz, ...)
-			# 	chain(
-			# 		http_crawl.si(*args) if 'http_crawl' in engine.tasks else skipped,
-			# 		group(
-			# 			dir_file_fuzz.si(*args) if 'dir_file_fuzz' in engine.tasks else skipped,
-			# 			waf_detection.si(*args) if 'waf_detection' in engine.tasks else skipped,
-			# 			vulnerability_scan.si(*args) if 'vulnerability_scan' in engine.tasks else skipped,
-			# 			screenshot.si(*args) if 'screenshot' in engine.tasks else skipped
-			# 		)
-			# 	),
-			# 	# Port scan tasks
-			# 	port_scan.si(*args) if 'port_scan' in engine.tasks else skipped
-			# )
+			group(
+				# HTTP tasks (crawl, dir fuzz, ...)
+				chain(
+					http_crawl.si(*args) if 'http_crawl' in engine.tasks else skipped,
+					group(
+						dir_file_fuzz.si(*args) if 'dir_file_fuzz' in engine.tasks else skipped,
+						waf_detection.si(*args) if 'waf_detection' in engine.tasks else skipped,
+						vulnerability_scan.si(*args) if 'vulnerability_scan' in engine.tasks else skipped,
+						screenshot.si(*args) if 'screenshot' in engine.tasks else skipped
+					)
+				),
+				# Port scan tasks
+				port_scan.si(*args) if 'port_scan' in engine.tasks else skipped
+			)
 		),
 		# OSInt
-		# osint.si(*args) if 'osint' in engine.tasks else skipped
+		osint.si(*args) if 'osint' in engine.tasks else skipped
 	).tasks
-	print(tasks)
-
 
 	# Run Celery workflow and wait for results
 	callback = report.si(scan_history.id, -1, domain.id, engine_id, send_status)
-	task = chord(tasks)(callback)
+	task = chord(header)(callback)
 	return {
 		'success': True,
 		'task_id': task.id
