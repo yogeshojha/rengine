@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:20.04
+FROM ubuntu:latest
 
 # Labels and Credits
 LABEL \
