@@ -1,28 +1,24 @@
 import os
-import markdown
-
 from datetime import datetime
 
-from django.template.loader import get_template
-from weasyprint import HTML
-
-from django.shortcuts import render, get_object_or_404
+import markdown
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
-from django.urls import reverse
-from django_celery_beat.models import PeriodicTask, IntervalSchedule, ClockedSchedule
-from django.utils import timezone
-from django.conf import settings
-from django.core import serializers
 from django.db.models import Count
-
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.template.loader import get_template
+from django.urls import reverse
+from django.utils import timezone
+from django_celery_beat.models import (ClockedSchedule, IntervalSchedule,
+                                       PeriodicTask)
+from reNgine.celery import app
+from reNgine.common_func import *
+from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
+from reNgine.tasks import initiate_scan, create_scan_activity
+from scanEngine.models import EngineType
 from startScan.models import *
 from targetApp.models import *
-from scanEngine.models import EngineType, Configuration
-from reNgine.tasks import initiate_scan, create_scan_activity
-from reNgine.celery import app
-
-from reNgine.common_func import *
+from weasyprint import HTML
 
 
 def scan_history(request):
@@ -38,96 +34,205 @@ def subscan_history(request):
 
 
 def detail_scan(request, id=None):
-    context = {}
-    if id:
-        context['scan_history_id'] = id
-        context['subdomain_count'] = Subdomain.objects.filter(
-            scan_history__id=id).values('name').distinct().count()
-        context['alive_count'] = Subdomain.objects.filter(
-            scan_history__id=id).values('name').distinct().filter(
-            http_status__exact=200).count()
-        context['important_count'] = Subdomain.objects.filter(
-            scan_history__id=id).values('name').distinct().filter(
-            is_important=True).count()
-        context['scan_activity'] = ScanActivity.objects.filter(
-            scan_of__id=id).order_by('time')
-        context['endpoint_count'] = EndPoint.objects.filter(
-            scan_history__id=id).values('http_url').distinct().count()
-        context['endpoint_alive_count'] = EndPoint.objects.filter(
-            scan_history__id=id, http_status__exact=200).values('http_url').distinct().count()
-        history = get_object_or_404(ScanHistory, id=id)
-        context['history'] = history
-        vulnerabilities = Vulnerability.objects.filter(scan_history__id=id)
-        info_count = vulnerabilities.filter(severity=0).count()
-        low_count = vulnerabilities.filter(severity=1).count()
-        medium_count = vulnerabilities.filter(severity=2).count()
-        high_count = vulnerabilities.filter(severity=3).count()
-        critical_count = vulnerabilities.filter(severity=4).count()
-        unknown_count = vulnerabilities.filter(severity=-1).count()
-        context['vulnerability_list'] = Vulnerability.objects.filter(
-            scan_history__id=id).order_by('-severity').all()[:50]
-        context['total_vulnerability_count'] = info_count + low_count + \
-            medium_count + high_count + critical_count + unknown_count
-        context['info_count'] = info_count
-        context['low_count'] = low_count
-        context['medium_count'] = medium_count
-        context['high_count'] = high_count
-        context['critical_count'] = critical_count
-        context['unknown_count'] = unknown_count
-        context['total_vul_ignore_info_count'] = low_count + \
-            medium_count + high_count + critical_count
-        context['scan_history_active'] = 'active'
+    ctx = {}
+    if not id:
+        return render(request, 'startScan/detail_scan.html', ctx)
 
-        context['scan_engines'] = EngineType.objects.all()
+    # Get scan objects
+    scan_history = get_object_or_404(ScanHistory, id=id)
+    domain_id = scan_history.domain.id
+    scan_engines = EngineType.objects.all()
+    recent_scans = ScanHistory.objects.filter(domain__id=domain_id)
+    last_scans = (
+        ScanHistory.objects
+        .filter(domain__id=domain_id)
+        .filter(tasks__overlap=['subdomain_discovery'])
+        .filter(id__lte=id)
+        .filter(scan_status=2)
+    )
 
-        emails = Email.objects.filter(
-            emails__in=ScanHistory.objects.filter(
-                id=id))
+    # Get all kind of objects associated with our ScanHistory object
+    emails = Email.objects.filter(emails__in=[scan_history])
+    employees = Employee.objects.filter(employees__in=[scan_history])
+    subdomains = Subdomain.objects.filter(scan_history=id)
+    endpoints = EndPoint.objects.filter(scan_history__id=id)
+    vulns = Vulnerability.objects.filter(scan_history__id=id)
+    vulns_tags = VulnerabilityTags.objects.filter(vuln_tags__in=vulns)
+    ip_addresses = IpAddress.objects.filter(ip_addresses__in=subdomains)
+    geo_isos = CountryISO.objects.filter(ipaddress__in=ip_addresses)
+    scan_activity = ScanActivity.objects.filter(scan_of__id=id).order_by('time')
+    cves = CveId.objects.filter(cve_ids__in=vulns)
+    cwes = CweId.objects.filter(cwe_ids__in=vulns)
 
-        context['exposed_count'] = emails.exclude(password__isnull=True).count()
-        context['email_count'] = emails.count()
-        context['employees_count'] = Employee.objects.filter(
-            employees__in=ScanHistory.objects.filter(id=id)).count()
+    # HTTP statuses
+    http_statuses = (
+        subdomains
+        .exclude(http_status=0)
+        .values('http_status')
+        .annotate(Count('http_status'))
+    )
 
-        domain_id = ScanHistory.objects.filter(id=id)
+    # CVEs / CWes
+    common_cves = (
+        cves
+        .annotate(nused=Count('cve_ids'))
+        .order_by('-nused')
+        .values('name', 'nused')
+        [:10]
+    )
+    common_cwes = (
+        cwes
+        .annotate(nused=Count('cwe_ids'))
+        .order_by('-nused')
+        .values('name', 'nused')
+        [:10]
+    )
 
-        context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:10]
+    # Tags
+    common_tags = (
+        vulns_tags
+        .annotate(nused=Count('vuln_tags'))
+        .order_by('-nused')
+        .values('name', 'nused')
+        [:7]
+    )
 
-        context['http_status_breakdown'] = Subdomain.objects.filter(scan_history=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
+    # Countries
+    asset_countries = (
+        geo_isos
+        .annotate(count=Count('iso'))
+        .order_by('-count')
+    )
 
-        context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:10]
-        context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:10]
-        context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+    # Subdomains
+    subdomain_count = (
+        subdomains
+        .values('name')
+        .distinct()
+        .count()
+    )
+    alive_count = (
+        subdomains
+        .values('name')
+        .distinct()
+        .filter(http_status__exact=200)
+        .count()
+    )
+    important_count = (
+        subdomains
+        .values('name')
+        .distinct()
+        .filter(is_important=True)
+        .count()
+    )
 
-        context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
+    # Endpoints
+    endpoint_count = (
+        endpoints
+        .values('http_url')
+        .distinct()
+        .count()
+    )
+    endpoint_alive_count = (
+        endpoints
+        .filter(http_status__exact=200) # TODO: use is_alive() func as it's more precise
+        .values('http_url')
+        .distinct()
+        .count()
+    )
 
-        context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=id))).annotate(count=Count('iso')).order_by('-count')
+    # Vulnerabilities
+    common_vulns = (
+        vulns
+        .exclude(severity=0)
+        .values('name', 'severity')
+        .annotate(count=Count('name'))
+        .order_by('-count')
+        [:10]
+    )
+    info_count = vulns.filter(severity=0).count()
+    low_count = vulns.filter(severity=1).count()
+    medium_count = vulns.filter(severity=2).count()
+    high_count = vulns.filter(severity=3).count()
+    critical_count = vulns.filter(severity=4).count()
+    unknown_count = vulns.filter(severity=-1).count()
+    total_count = vulns.count()
+    total_count_ignore_info = vulns.exclude(severity=0).count()
 
-        if domain_id:
-            domain_id = domain_id[0].domain.id
-            scan_history = ScanHistory.objects.filter(domain=domain_id).filter(subdomain_discovery=True).filter(id__lte=id).filter(scan_status=2)
-            if scan_history.count() > 1:
-                last_scan = scan_history.order_by('-start_scan_date')[1]
-                context['last_scan'] = last_scan
+    # Emails
+    exposed_count = emails.exclude(password__isnull=True).count()
 
-    # badge count for gfs
-    if history.used_gf_patterns:
+    # Build render context
+    ctx = {
+        'scan_history_id': id,
+        'history': scan_history,
+        'scan_activity': scan_activity,
+        'subdomain_count': subdomain_count,
+        'alive_count': alive_count,
+        'important_count': important_count,
+        'endpoint_count': endpoint_count,
+        'endpoint_alive_count': endpoint_alive_count,
+        'info_count': info_count,
+        'low_count': low_count,
+        'medium_count': medium_count,
+        'high_count': high_count,
+        'critical_count': critical_count,
+        'unknown_count': unknown_count,
+        'total_vulnerability_count': total_count,
+        'total_vul_ignore_info_count': total_count_ignore_info,
+        'vulnerability_list': vulns.order_by('-severity').all(),
+        'scan_history_active': 'active',
+        'scan_engines': scan_engines,
+        'exposed_count': exposed_count,
+        'email_count': emails.count(),
+        'employees_count': employees.count(),
+        'most_recent_scans': recent_scans.order_by('-start_scan_date')[:1],
+        'http_status_breakdown': http_statuses,
+        'most_common_cve': common_cves,
+        'most_common_cwe': common_cwes,
+        'most_common_tags': common_tags,
+        'most_common_vulnerability': common_vulns,
+        'asset_countries': asset_countries
+    }
+
+    # Find number of matched GF patterns
+    if scan_history.used_gf_patterns:
         count_gf = {}
-        for gf in history.used_gf_patterns.split(','):
-            count_gf[gf] = EndPoint.objects.filter(scan_history__id=id, matched_gf_patterns__icontains=gf).count()
-            context['matched_gf_count'] = count_gf
-    return render(request, 'startScan/detail_scan.html', context)
+        for gf in scan_history.used_gf_patterns.split(','):
+            count_gf[gf] = (
+                endpoints
+                .filter(matched_gf_patterns__icontains=gf)
+                .count()
+            )
+            ctx['matched_gf_count'] = count_gf
+
+    # Find last scan for this domain
+    if last_scans.count() > 1:
+        last_scan = last_scans.order_by('-start_scan_date')[1]
+        ctx['last_scan'] = last_scan
+
+    return render(request, 'startScan/detail_scan.html', ctx)
+
 
 def all_subdomains(request):
-    context = {}
-    context['scan_history_id'] = id
-    context['subdomain_count'] = Subdomain.objects.values('name').distinct().count()
-    context['alive_count'] = Subdomain.objects.values('name').distinct().filter(
-        http_status__exact=200).count()
-    context['important_count'] = Subdomain.objects.values('name').distinct().filter(
-        is_important=True).count()
-    context['scan_engines'] = EngineType.objects.all()
-    context['scan_history_active'] = 'active'
+    subdomains = Subdomain.objects
+    scan_engines = EngineType.objects.all()
+    alive_subdomains = subdomains.filter(http_status__exact=200) # TODO: replace this with is_alive() function
+    important_subdomains = (
+        subdomains
+        .filter(is_important=True)
+        .values('name')
+        .distinct()
+        .count()
+    )
+    context = {
+        'scan_history_id': id,
+        'scan_history_active': 'active',
+        'scan_engines': scan_engines,
+        'subdomain_count': subdomains.values('name').distinct().count(),
+        'alive_count': alive_subdomains.values('name').distinct().count(),
+        'important_count': important_subdomains
+    }
     return render(request, 'startScan/subdomains.html', context)
 
 def detail_vuln_scan(request, id=None):
@@ -140,45 +245,57 @@ def detail_vuln_scan(request, id=None):
 
 
 def all_endpoints(request):
-    context = {}
-    context['scan_history_active'] = 'active'
+    context = {
+        'scan_history_active': 'active'
+    }
     return render(request, 'startScan/endpoints.html', context)
 
 
 def start_scan_ui(request, domain_id):
     domain = get_object_or_404(Domain, id=domain_id)
     if request.method == "POST":
-        # get imported subdomains
-        imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
-        imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
+        # Get imported and out-of-scope subdomains
+        subdomains_in = request.POST['importSubdomainTextArea'].split()
+        subdomains_in = [s.rstrip() for s in subdomains_in if s]
+        subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
+        subdomains_out = [s.rstrip() for s in subdomains_out if s]
 
-        out_of_scope_subdomains = [subdomain.rstrip() for subdomain in request.POST['outOfScopeSubdomainTextarea'].split('\n')]
-        out_of_scope_subdomains = [subdomain for subdomain in out_of_scope_subdomains if subdomain]
-        # get engine type
-        engine_type = request.POST['scan_mode']
-        scan_history_id = create_scan_object(domain_id, engine_type)
-        # start the celery task
+        # Get engine type
+        engine_id = request.POST['scan_mode']
+
+        # Create ScanHistory object
+        scan_history_id = create_scan_object(domain_id, engine_id)
+        scan_history = ScanHistory.objects.filter(id=scan_history_id).first()
+
+        # Start the celery task
         celery_task = initiate_scan.apply_async(
             args=(
-                domain_id,
                 scan_history_id,
+                None,
+                domain_id,
+                None,
+                '/usr/src/scan_results',
+                engine_id,
                 0,
-                engine_type,
-                imported_subdomains,
-                out_of_scope_subdomains
-                ))
-        ScanHistory.objects.filter(
-            id=scan_history_id).update(
-            celery_id=celery_task.id)
+                subdomains_in,
+                subdomains_out))
+        scan_history.celery_id = celery_task.id
+        scan_history.save()
+
+        # Send start notif
         messages.add_message(
             request,
             messages.INFO,
-            'Scan Started for ' +
-            domain.name)
+            f'Scan Started for {domain.name}')
         return HttpResponseRedirect(reverse('scan_history'))
+
+    # GET request
     engine = EngineType.objects.order_by('id')
-    custom_engine_count = EngineType.objects.filter(
-        default_engine=False).count()
+    custom_engine_count = (
+        EngineType.objects
+        .filter(default_engine=False)
+        .count()
+    )
     context = {
         'scan_history_active': 'active',
         'domain': domain,
@@ -196,18 +313,27 @@ def start_multiple_scan(request):
             engine_type = request.POST['scan_mode']
             list_of_domains = request.POST['list_of_domain_id']
             for domain_id in list_of_domains.split(","):
-                # start the celery task
+                # Start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_type)
+                scan_history = ScanHistory.objects.filter(id=scan_history_id).first()
                 celery_task = initiate_scan.apply_async(
-                    args=(domain_id, scan_history_id, 0, engine_type))
-                ScanHistory.objects.filter(
-                    id=scan_history_id).update(
-                    celery_id=celery_task.id)
+                    args=(
+                        domain_id,
+                        scan_history_id,
+                        0,
+                        engine_type)
+                )
+                scan_history.celery_id = celery_task.id
+                scan_history.save()
+
+            # Send start notif
             messages.add_message(
                 request,
                 messages.INFO,
                 'Scan Started for multiple targets')
+
             return HttpResponseRedirect(reverse('scan_history'))
+
         else:
             # this else condition will have post request from the scan page
             # containing all the targets id
@@ -219,27 +345,35 @@ def start_multiple_scan(request):
                     list_of_domain_name.append(domain.name)
                     list_of_domain_id.append(value)
             domain_ids = ",".join(list_of_domain_id)
-    engine = EngineType.objects
-    custom_engine_count = EngineType.objects.filter(
-        default_engine=False).count()
+
+    # GET request
+    engines = EngineType.objects
+    custom_engine_count = (
+        engines
+        .filter(default_engine=False)
+        .count()
+    )
     context = {
         'scan_history_active': 'active',
-        'engines': engine,
+        'engines': engines,
         'domain_list': list_of_domain_name,
         'domain_ids': domain_ids,
-        'custom_engine_count': custom_engine_count}
+        'custom_engine_count': custom_engine_count
+    }
     return render(request, 'startScan/start_multiple_scan_ui.html', context)
 
 def export_subdomains(request, scan_id):
     subdomain_list = Subdomain.objects.filter(scan_history__id=scan_id)
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
-    for name in subdomain_list:
-        response_body = response_body + name.name + "\n"
+    for domain in subdomain_list:
+        response_body += response_body + domain.name + "\n"
+    scan_start_date_str = str(domain_results.start_scan_date.date())
+    domain_name = domain_results.domain.name
     response = HttpResponse(response_body, content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename="subdomains_' + \
-        domain_results.domain.name + '_' + \
-        str(domain_results.start_scan_date.date()) + '.txt"'
+    response['Content-Disposition'] = (
+        f'attachment; filename="subdomains_{domain_name}_{scan_start_date_str}.txt"'
+    )
     return response
 
 
@@ -248,11 +382,13 @@ def export_endpoints(request, scan_id):
     domain_results = ScanHistory.objects.get(id=scan_id)
     response_body = ""
     for endpoint in endpoint_list:
-        response_body = response_body + endpoint.http_url + "\n"
+        response_body += endpoint.http_url + "\n"
+    scan_start_date_str = str(domain_results.start_scan_date.date())
+    domain_name = domain_results.domain.name
     response = HttpResponse(response_body, content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename="endpoints_' + \
-        domain_results.domain.name + '_' + \
-        str(domain_results.start_scan_date.date()) + '.txt"'
+    response['Content-Disposition'] = (
+        f'attachment; filename="endpoints_{domain_name}_{scan_start_date_str}.txt"'
+    )
     return response
 
 
@@ -262,11 +398,13 @@ def export_urls(request, scan_id):
     response_body = ""
     for url in urls_list:
         if url.http_url:
-            response_body = response_body + url.http_url + "\n"
+            response_body += response_body + url.http_url + "\n"
+    scan_start_date_str = str(domain_results.start_scan_date.date())
+    domain_name = domain_results.domain.name
     response = HttpResponse(response_body, content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename="urls_' + \
-        domain_results.domain.name + '_' + \
-        str(domain_results.start_scan_date.date()) + '.txt"'
+    response['Content-Disposition'] = (
+        f'attachment; filename="urls_{domain_name}_{scan_start_date_str}.txt"'
+    )
     return response
 
 
@@ -280,13 +418,15 @@ def delete_scan(request, id):
         messages.add_message(
             request,
             messages.INFO,
-            'Scan history successfully deleted!')
+            'Scan history successfully deleted!'
+        )
     else:
         messageData = {'status': 'false'}
         messages.add_message(
             request,
             messages.INFO,
-            'Oops! something went wrong!')
+            'Oops! something went wrong!'
+        )
     return JsonResponse(messageData)
 
 
@@ -295,44 +435,53 @@ def stop_scan(request, id):
         scan_history = get_object_or_404(ScanHistory, celery_id=id)
         # stop the celery task
         app.control.revoke(id, terminate=True, signal='SIGKILL')
-        scan_history.scan_status = 3
+        scan_history.scan_status = ABORTED_TASK
         scan_history.save()
         try:
-            last_activity = ScanActivity.objects.filter(
-                scan_of=scan_history).order_by('-pk')[0]
+            last_activity = (
+                ScanActivity.objects
+                .filter(scan_of=scan_history)
+                .order_by('-pk')[0]
+            )
             last_activity.status = 0
             last_activity.time = timezone.now()
             last_activity.save()
         except Exception as e:
             print(e)
-        create_scan_activity(scan_history, "Scan aborted", 0)
+        create_scan_activity(scan_history, "Scan aborted", SUCCESS_TASK)
         messageData = {'status': 'true'}
         messages.add_message(
             request,
             messages.INFO,
-            'Scan successfully stopped!')
+            'Scan successfully stopped!'
+        )
     else:
         messageData = {'status': 'false'}
         messages.add_message(
             request,
             messages.INFO,
-            'Oops! something went wrong!')
+            'Oops! something went wrong!'
+        )
     return JsonResponse(messageData)
 
 
 def schedule_scan(request, host_id):
     domain = Domain.objects.get(id=host_id)
     if request.method == "POST":
-        # get imported subdomains
-        imported_subdomains = [subdomain.rstrip() for subdomain in request.POST['importSubdomainTextArea'].split('\n')]
-        imported_subdomains = [subdomain for subdomain in imported_subdomains if subdomain]
-        # get engine type
+        scheduled_mode = request.POST['scheduled_mode']
         engine_type = int(request.POST['scan_mode'])
+
+        # Get imported and out-of-scope subdomains
+        subdomains_in = request.POST['importSubdomainTextarea'].split()
+        subdomains_in = [s.rstrip() for s in subdomains_in if s]
+        subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
+        subdomains_out = [s.rstrip() for s in subdomains_out if s]
+
+        # Get engine type
         engine_object = get_object_or_404(EngineType, id=engine_type)
         timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
         task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
-        if request.POST['scheduled_mode'] == 'periodic':
-            # periodic task
+        if scheduled_mode == 'periodic':
             frequency_value = int(request.POST['frequency'])
             frequency_type = request.POST['frequency_type']
             if frequency_type == 'minutes':
@@ -347,45 +496,65 @@ def schedule_scan(request, host_id):
             elif frequency_type == 'months':
                 period = IntervalSchedule.DAYS
                 frequency_value *= 30
-
-            schedule, created = IntervalSchedule.objects.get_or_create(
+            schedule, _ = IntervalSchedule.objects.get_or_create(
                 every=frequency_value,
-                period=period,)
-            _kwargs = json.dumps({'domain_id': host_id, 'scan_history_id': 0, 'scan_type': 1, 'engine_type': engine_type, 'imported_subdomains': imported_subdomains})
+                period=period)
+            kwargs = {
+                'domain_id': host_id,
+                'scan_history_id': 0,
+                'scan_type': 1,
+                'engine_type': engine_type,
+                'imported_subdomains': subdomains_in,
+                'out_of_scope_subdomains': subdomains_out
+            }
             PeriodicTask.objects.create(interval=schedule,
                                         name=task_name,
                                         task='reNgine.tasks.initiate_scan',
-                                        kwargs=_kwargs)
-        elif request.POST['scheduled_mode'] == 'clocked':
-            # clocked task
+                                        kwargs=json.dumps(kwargs))
+        elif scheduled_mode == 'clocked':
             schedule_time = request.POST['scheduled_time']
-            clock, created = ClockedSchedule.objects.get_or_create(
-                clocked_time=schedule_time,)
-            _kwargs = json.dumps({'domain_id': host_id, 'scan_history_id': 0, 'scan_type': 1, 'engine_type': engine_type, 'imported_subdomains': imported_subdomains})
+            clock, _ = ClockedSchedule.objects.get_or_create(
+                clocked_time=schedule_time)
+            kwargs = {
+                'domain_id': host_id,
+                'scan_history_id': 0,
+                'scan_type': 1,
+                'engine_type': engine_type,
+                'imported_subdomains': subdomains_in,
+                'out_of_scope_subdomains': subdomains_out }
             PeriodicTask.objects.create(clocked=clock,
                                         one_off=True,
                                         name=task_name,
                                         task='reNgine.tasks.initiate_scan',
-                                        kwargs=_kwargs)
+                                        kwargs=json.dumps(kwargs))
         messages.add_message(
             request,
             messages.INFO,
-            'Scan Scheduled for ' +
-            domain.name)
+            f'Scan Scheduled for {domain.name}'
+        )
         return HttpResponseRedirect(reverse('scheduled_scan_view'))
-    engine = EngineType.objects
-    custom_engine_count = EngineType.objects.filter(
-        default_engine=False).count()
+
+    # GET request
+    engines = EngineType.objects
+    custom_engine_count = (
+        engines
+        .filter(default_engine=False)
+        .count()
+    )
     context = {
         'scan_history_active': 'active',
         'domain': domain,
-        'engines': engine,
+        'engines': engines,
         'custom_engine_count': custom_engine_count}
     return render(request, 'startScan/schedule_scan_ui.html', context)
 
 
 def scheduled_scan_view(request):
-    scheduled_tasks = PeriodicTask.objects.all().exclude(name='celery.backend_cleanup')
+    scheduled_tasks = (
+        PeriodicTask.objects
+        .all()
+        .exclude(name='celery.backend_cleanup')
+    )
     context = {
         'scheduled_scan_active': 'active',
         'scheduled_tasks': scheduled_tasks,
@@ -427,7 +596,7 @@ def change_vuln_status(request, id):
     return HttpResponse('')
 
 
-def create_scan_object(host_id, engine_type):
+def create_scan_object(host_id, engine_id):
     '''
     create task with pending status so that celery task will execute when
     threads are free
@@ -435,18 +604,18 @@ def create_scan_object(host_id, engine_type):
     # get current time
     current_scan_time = timezone.now()
     # fetch engine and domain object
-    engine_object = EngineType.objects.get(pk=engine_type)
+    engine_object = EngineType.objects.get(pk=engine_id)
     domain = Domain.objects.get(pk=host_id)
-    task = ScanHistory()
-    task.scan_status = -1
-    task.domain = domain
-    task.scan_type = engine_object
-    task.start_scan_date = current_scan_time
-    task.save()
+    scan_history = ScanHistory()
+    scan_history.scan_status = -1
+    scan_history.domain = domain
+    scan_history.scan_type = engine_object
+    scan_history.start_scan_date = current_scan_time
+    scan_history.save()
     # save last scan date for domain model
     domain.start_scan_date = current_scan_time
     domain.save()
-    return task.id
+    return scan_history.id
 
 
 def delete_all_scan_results(request):
@@ -458,6 +627,7 @@ def delete_all_scan_results(request):
             messages.INFO,
             'All Scan History successfully deleted!')
     return JsonResponse(messageData)
+
 
 def delete_all_screenshots(request):
     if request.method == 'POST':
@@ -478,33 +648,36 @@ def visualise(request, id):
     }
     return render(request, 'startScan/visualise.html', context)
 
+
 def start_organization_scan(request, id):
     organization = get_object_or_404(Organization, id=id)
     if request.method == "POST":
-        # get engine type
         engine_type = request.POST['scan_mode']
+
+        # Start Celery task for each organization's domains
         for domain in organization.get_domains():
             scan_history_id = create_scan_object(domain.id, engine_type)
-            # start the celery task
+            scan_history = ScanHistory.objects.filter(id=scan_history_id)
             celery_task = initiate_scan.apply_async(
-                args=(domain.id,
+                args=(
+                    domain.id,
                     scan_history_id,
                     0,
                     engine_type,
                     None
                 ))
-            ScanHistory.objects.filter(
-                id=scan_history_id).update(
-                celery_id=celery_task.id)
+            scan_history.celery_id = celery_task.id
+            scan_history.save()
+
+        # Send start notif
+        ndomains = len(organization.get_domains())
         messages.add_message(
             request,
             messages.INFO,
-            'Scan Started for {} domains in organization {}'.format(
-                len(organization.get_domains()),
-                organization.name
-            )
-        )
+            f'Scan Started for {ndomains} domains in organization {organization.name}')
         return HttpResponseRedirect(reverse('scan_history'))
+
+    # GET request
     engine = EngineType.objects.order_by('id')
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
@@ -518,17 +691,19 @@ def start_organization_scan(request, id):
         'custom_engine_count': custom_engine_count}
     return render(request, 'organization/start_scan.html', context)
 
+
 def schedule_organization_scan(request, id):
     organization =Organization.objects.get(id=id)
     if request.method == "POST":
-        # get engine type
         engine_type = int(request.POST['scan_mode'])
         engine_object = get_object_or_404(EngineType, id=engine_type)
+        scheduled_mode = request.POST['scheduled_mode']
         for domain in organization.get_domains():
             timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
             task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
-            if request.POST['scheduled_mode'] == 'periodic':
-                # periodic task
+
+            # Period task
+            if scheduled_mode == 'periodic':
                 frequency_value = int(request.POST['frequency'])
                 frequency_type = request.POST['frequency_type']
                 if frequency_type == 'minutes':
@@ -544,25 +719,30 @@ def schedule_organization_scan(request, id):
                     period = IntervalSchedule.DAYS
                     frequency_value *= 30
 
-                schedule, created = IntervalSchedule.objects.get_or_create(
+                schedule, _ = IntervalSchedule.objects.get_or_create(
                     every=frequency_value,
-                    period=period,)
-                _kwargs = json.dumps({'domain_id': domain.id,
-                        'scan_history_id': 0,
-                        'scan_type': 1,
-                        'engine_type': engine_type,
-                        'imported_subdomains': None
+                    period=period
+                )
+                _kwargs = json.dumps({
+                    'domain_id': domain.id,
+                    'scan_history_id': 0,
+                    'scan_type': 1,
+                    'engine_type': engine_type,
+                    'imported_subdomains': None
                 })
-                PeriodicTask.objects.create(interval=schedule,
+                PeriodicTask.objects.create(
+                    interval=schedule,
                     name=task_name,
                     task='reNgine.tasks.initiate_scan',
-                    kwargs=_kwargs
+                    kwargs=_kwargs 
                 )
-            elif request.POST['scheduled_mode'] == 'clocked':
-                # clocked task
+
+            # Clocked task
+            elif scheduled_mode == 'clocked':
                 schedule_time = request.POST['scheduled_time']
-                clock, created = ClockedSchedule.objects.get_or_create(
-                    clocked_time=schedule_time,)
+                clock, _ = ClockedSchedule.objects.get_or_create(
+                    clocked_time=schedule_time
+                )
                 _kwargs = json.dumps({'domain_id': domain.id,
                     'scan_history_id': 0,
                     'scan_type': 1,
@@ -575,6 +755,8 @@ def schedule_organization_scan(request, id):
                     task='reNgine.tasks.initiate_scan',
                     kwargs=_kwargs
                 )
+
+        # Send start notif
         ndomains = len(organization.get_domains())
         messages.add_message(
             request,
@@ -582,6 +764,8 @@ def schedule_organization_scan(request, id):
             f'Scan started for {ndomains} domains in organization {organization.name}'
         )
         return HttpResponseRedirect(reverse('scheduled_scan_view'))
+
+    # GET request
     engine = EngineType.objects
     custom_engine_count = EngineType.objects.filter(default_engine=False).count()
     context = {
@@ -589,21 +773,20 @@ def schedule_organization_scan(request, id):
         'organization': organization,
         'domain_list': organization.get_domains(),
         'engines': engine,
-        'custom_engine_count': custom_engine_count}
+        'custom_engine_count': custom_engine_count
+    }
     return render(request, 'organization/schedule_scan_ui.html', context)
 
 
 def delete_scans(request):
-    context = {}
     if request.method == "POST":
-        list_of_scan_id = []
-
         for key, value in request.POST.items():
-            if key != "scan_history_table_length" and key != "csrfmiddlewaretoken":
-                obj = get_object_or_404(ScanHistory, id=value)
-                delete_dir = obj.results_dir
-                os.system('rm -rf /usr/src/scan_results/' + delete_dir)
-                obj.delete()
+            if key == 'scan_history_table_length' or key == 'csrfmiddlewaretoken':
+                continue
+            obj = get_object_or_404(ScanHistory, id=value)
+            delete_dir = obj.results_dir
+            os.system('rm -rf /usr/src/scan_results/' + delete_dir)
+            obj.delete()
         messages.add_message(
             request,
             messages.INFO,
@@ -621,12 +804,10 @@ def customize_report(request, id):
 
 
 def create_report(request, id):
-    primary_color = '#FFB74D'
-    secondary_color = '#212121'
-
+    # primary_color = '#FFB74D'
+    # secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
-
     if report_type == 'recon':
         show_recon = True
         show_vuln = False
@@ -642,21 +823,41 @@ def create_report(request, id):
         report_name = 'Full Scan Report'
 
     scan_object = ScanHistory.objects.get(id=id)
-    unique_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).values("name", "severity").annotate(count=Count('name')).order_by('-severity', '-count')
-    all_vulnerabilities = Vulnerability.objects.filter(scan_history=scan_object).order_by('-severity')
-    subdomains = Subdomain.objects.filter(scan_history=scan_object).order_by('-content_length')
-    subdomain_alive_count = Subdomain.objects.filter(
-        scan_history__id=id).values('name').distinct().filter(
-        http_status__exact=200).count()
+    vulns = (
+        Vulnerability.objects
+        .filter(scan_history=scan_object)
+        .order_by('-severity')
+    )
+    unique_vulns = (
+        Vulnerability.objects
+        .filter(scan_history=scan_object)
+        .values("name", "severity")
+        .annotate(count=Count('name'))
+        .order_by('-severity', '-count')
+    )
+    subdomains = (
+        Subdomain.objects
+        .filter(scan_history=scan_object)
+        .order_by('-content_length')
+    )
+    subdomain_alive_count = (
+        Subdomain.objects
+        .filter(scan_history__id=id)
+        .values('name')
+        .distinct()
+        .filter(http_status__exact=200)
+        .count()
+    )
     interesting_subdomains = get_interesting_subdomains(scan_history=id)
-    ip_addresses = IpAddress.objects.filter(
-        ip_addresses__in=Subdomain.objects.filter(
-            scan_history__id=id)).distinct()
-
+    ip_addresses = (
+        IpAddress.objects
+        .filter(ip_addresses__in=subdomains)
+        .distinct()
+    )
     data = {
         'scan_object': scan_object,
-        'unique_vulnerabilities': unique_vulnerabilities,
-        'all_vulnerabilities': all_vulnerabilities,
+        'unique_vulnerabilities': unique_vulns,
+        'vulns': vulns,
         'subdomain_alive_count': subdomain_alive_count,
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
@@ -666,9 +867,10 @@ def create_report(request, id):
         'report_name': report_name,
     }
 
-    # get report related config
-    if VulnerabilityReportSetting.objects.all().exists():
-        report = VulnerabilityReportSetting.objects.all()[0]
+    # Get report related config
+    vuln_report_query = VulnerabilityReportSetting.objects.all()
+    if vuln_report_query.exists():
+        report = vuln_report_query[0]
         data['company_name'] = report.company_name
         data['company_address'] = report.company_address
         data['company_email'] = report.company_email
@@ -678,31 +880,27 @@ def create_report(request, id):
         data['footer_text'] = report.footer_text
         data['show_executive_summary'] = report.show_executive_summary
 
-        primary_color = report.primary_color
-        secondary_color = report.secondary_color
-
+        # Replace executive_summary_description with template syntax
         description = report.executive_summary_description
-
-        # replace executive_summary_description with template syntax!
         description = description.replace('{scan_date}', scan_object.start_scan_date.strftime('%d %B, %Y'))
         description = description.replace('{company_name}', report.company_name)
         description = description.replace('{target_name}', scan_object.domain.name)
+        description = description.replace('{subdomain_count}', str(subdomains.count()))
+        description = description.replace('{vulnerability_count}', str(vulns.count()))
+        description = description.replace('{critical_count}', str(vulns.filter(severity=4).count()))
+        description = description.replace('{high_count}', str(vulns.filter(severity=3).count()))
+        description = description.replace('{medium_count}', str(vulns.filter(severity=2).count()))
+        description = description.replace('{low_count}', str(vulns.filter(severity=1).count()))
+        description = description.replace('{info_count}', str(vulns.filter(severity=0).count()))
+        description = description.replace('{unknown_count}', str(vulns.filter(severity=-1).count()))
         if scan_object.domain.description:
             description = description.replace('{target_description}', scan_object.domain.description)
-        description = description.replace('{subdomain_count}', str(subdomains.count()))
-        description = description.replace('{vulnerability_count}', str(all_vulnerabilities.count()))
-        description = description.replace('{critical_count}', str(all_vulnerabilities.filter(severity=4).count()))
-        description = description.replace('{high_count}', str(all_vulnerabilities.filter(severity=3).count()))
-        description = description.replace('{medium_count}', str(all_vulnerabilities.filter(severity=2).count()))
-        description = description.replace('{low_count}', str(all_vulnerabilities.filter(severity=1).count()))
-        description = description.replace('{info_count}', str(all_vulnerabilities.filter(severity=0).count()))
-        description = description.replace('{unknown_count}', str(all_vulnerabilities.filter(severity=-1).count()))
 
-        # convert to html
+        # Convert to Markdown
         data['executive_summary_description'] = markdown.markdown(description)
 
-    data['primary_color'] = primary_color
-    data['secondary_color'] = secondary_color
+    data['primary_color'] = report.primary_color
+    data['secondary_color'] = report.secondary_color
 
     template = get_template('report/template.html')
     html = template.render(data)

@@ -57,80 +57,80 @@ Scan Engines
           </tr>
         </thead>
         <tbody>
-          {% for engine_type in engine_type.all %}
+          {% for engine in engine_type.all %}
           <tr>
-            <td>{{engine_type.id}}</td>
-            <td class="text-primary">{{engine_type.engine_name}}</td>
+            <td>{{engine.id}}</td>
+            <td class="text-primary">{{engine.engine_name}}</td>
             <td class="text-center">
-              {% if engine_type.default_engine %}
+              {% if engine.default_engine %}
               <span class="badge badge-soft-primary p-1">Default Engine</span>
               {% else %}
               <span class="badge badge-soft-danger p-1">Custom Engine</span>
               {% endif %}
             </td>
             <td class="text-center">
-              {% if engine_type.subdomain_discovery %}
+              {% if 'subdomain_discovery' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.waf_detection %}
+              {% if 'waf_detection' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.screenshot %}
+              {% if 'screenshot' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.osint %}
+              {% if 'osint' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.port_scan %}
+              {% if 'port_scan' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.dir_file_fuzz %}
+              {% if 'dir_file_fuzz' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.fetch_url %}
+              {% if 'fetch_url' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.vulnerability_scan %}
+              {% if 'vulnerability_scan' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              <a href="{% url 'update_engine' engine_type.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
+              <a href="{% url 'update_engine' engine.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
               </a>
-              <a onclick="delete_api({{ engine_type.id }}, 'engine')" class="btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete {{engine_type.engine_name}} Engine">
+              <a onclick="delete_api({{ engine.id }}, 'engine')" class="btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete {{engine.engine_name}} Engine">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="15" y1="9" x2="9" y2="15"></line>

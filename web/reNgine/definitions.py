@@ -32,6 +32,7 @@ EXCLUDE_EXTENSIONS = 'exclude_extensions'
 EXCLUDE_TEXT = 'exclude_text'
 FETCH_URL = 'fetch_url'
 GF_PATTERNS = 'gf_patterns'
+HTTP_CRAWL = 'http_crawl'
 IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 INTENSITY = 'intensity'
 MATCH_HTTP_STATUS = 'match_http_status'
@@ -65,6 +66,13 @@ USE_SUBFINDER_CONFIG = 'use_subfinder_config'
 USES_TOOLS = 'uses_tools'
 VULNERABILITY_SCAN = 'vulnerability_scan'
 WORDLIST = 'wordlist'
+
+###############################################################################
+# Scan DEFAULTS
+###############################################################################
+
+LIVE_SCAN = 1
+SCHEDULED_SCAN = 0
 
 ###############################################################################
 # Tools DEFAULTS
@@ -151,6 +159,13 @@ FAILED_TASK = 0
 RUNNING_TASK = 1
 SUCCESS_TASK = 2
 ABORTED_TASK = 3
+CELERY_TASK_STATUSES = (
+    (INITIATED_TASK, INITIATED_TASK), 
+    (FAILED_TASK, FAILED_TASK), 
+    (RUNNING_TASK, RUNNING_TASK), 
+    (SUCCESS_TASK, SUCCESS_TASK), 
+    (ABORTED_TASK, ABORTED_TASK)
+)
 
 ###############################################################################
 # Uncommon Ports

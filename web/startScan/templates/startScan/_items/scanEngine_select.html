@@ -25,7 +25,7 @@
                 <p class="mr-2 mt-1">Subdomain Discovery</>
               </td>
               <td>
-                {% if engine.subdomain_discovery %}
+                {% if 'subdomain_discovery' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -37,7 +37,7 @@
                 <p class="mr-2 mt-1">WAF Detection</>
               </td>
               <td>
-                {% if engine.waf_detection %}
+                {% if 'waf_detection' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -49,7 +49,7 @@
                 <p class="mr-2 mt-1">Screenshot</>
               </td>
               <td>
-                {% if engine.screenshot %}
+                {% if 'screenshot' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -61,7 +61,7 @@
                 <p class="mr-2 mt-1">OSINT</>
               </td>
               <td>
-                {% if engine.osint %}
+                {% if 'osint' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -73,7 +73,7 @@
                 <p class="mr-2 mt-1">Port Scan</p>
               </td>
               <td>
-                {% if engine.port_scan %}
+                {% if 'port_scan' in engine.tasks%}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -85,7 +85,7 @@
                 <p class="mr-2 mt-1">Directory and Files Search</p>
               </td>
               <td>
-                {% if engine.dir_file_fuzz %}
+                {% if 'dir_file_fuzz' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -97,7 +97,7 @@
                 <p class="mr-2 mt-1">Fetch Endpoints(URLs)</p>
               </td>
               <td>
-                {% if engine.fetch_url %}
+                {% if 'fetch_url' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}
@@ -109,7 +109,7 @@
                 <p class="mr-2 mt-1">Vulnerability Scan</p>
               </td>
               <td>
-                {% if engine.vulnerability_scan %}
+                {% if 'vulnerability_scan' in engine.tasks %}
                   {% include 'base/_items/green_tick.html' %}
                 {% else %}
                   {% include 'base/_items/red_cross.html' %}

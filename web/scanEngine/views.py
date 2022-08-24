@@ -64,7 +64,11 @@ def delete_engine(request, id):
 
 def update_engine(request, id):
     engine = get_object_or_404(EngineType, id=id)
-    form = UpdateEngineForm()
+    form = UpdateEngineForm(
+        initial={
+            'yaml_configuration': engine.yaml_configuration,
+            'engine_name': engine.engine_name
+    })
     if request.method == "POST":
         form = UpdateEngineForm(request.POST, instance=engine)
         if form.is_valid():
@@ -74,11 +78,10 @@ def update_engine(request, id):
                 messages.INFO,
                 'Engine edited successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
-    else:
-        form.set_value(engine)
     context = {
-            'scan_engine_nav_active':
-            'active', 'form': form}
+        'scan_engine_nav_active': 'active', 
+        'form': form
+    }
     return render(request, 'scanEngine/update_engine.html', context)
 
 

@@ -1374,13 +1374,10 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 	});
 }
 
-function fetch_whois(domain_name, save_db) {
+function fetch_whois(domain_name) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
-	if (save_db) {
-		url += '&save_db';
-	}
 	$('[data-toggle="tooltip"]').tooltip('hide');
 	Snackbar.show({
 		text: 'Fetching WHOIS...',
@@ -1421,9 +1418,7 @@ function fetch_whois(domain_name, save_db) {
 }
 
 function get_target_whois(domain_name) {
-	// this function will fetch whois from db, if not fetched, will make a fresh
-	// query and will display whois on a modal
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}&fetch_from_db`
+	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
 
 	Swal.fire({
 		title: `Fetching WHOIS details for ${domain_name}...`
@@ -1442,7 +1437,7 @@ function get_target_whois(domain_name) {
 			swal.close();
 			display_whois_on_modal(response);
 		} else {
-			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}&save_db`, {
+			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}`, {
 				method: 'GET',
 				credentials: "same-origin",
 				headers: {
@@ -1737,13 +1732,13 @@ function add_quick_target() {
 
 function add_target(domain_name, h1_handle = null, description = null) {
 	// this function will add domain_name as target
+	console.log('Adding new target ' + domain_name)
 	const add_api = '/api/add/target/?format=json';
 	const data = {
 		'domain_name': domain_name,
 		'h1_team_handle': h1_handle,
 		'description': description
 	};
-
 	swal.queue([{
 		title: 'Add Target',
 		text: `Would you like to add ${domain_name} as target?`,
@@ -1762,10 +1757,11 @@ function add_target(domain_name, h1_handle = null, description = null) {
 				},
 				body: JSON.stringify(data)
 			}).then(function(response) {
+				console.log(response)
 				return response.json();
 			}).then(function(data) {
+				console.log(data)
 				if (data.status) {
-
 					swal.queue([{
 						title: 'Target Successfully added!',
 						text: `Do you wish to initiate the scan on new target?`,
@@ -1787,7 +1783,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 			}).catch(function() {
 				swal.insertQueueStep({
 					icon: 'error',
-					title: 'Oops! Unable to delete the scan history!'
+					title: 'Oops! Unable to add target !'
 				});
 			})
 		}

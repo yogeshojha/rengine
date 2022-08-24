@@ -1,7 +1,7 @@
 import csv
 import io
+import logging
 import os
-import threading
 from datetime import timedelta
 from functools import reduce
 from operator import and_, or_
@@ -22,6 +22,8 @@ from startScan.models import *
 from targetApp.forms import *
 from targetApp.models import *
 
+logger = logging.getLogger()
+
 
 def index(request):
     # TODO bring default target page
@@ -29,135 +31,165 @@ def index(request):
 
 
 def add_target(request):
-    add_target_form = AddTargetForm(request.POST or None)
+    form = AddTargetForm(request.POST or None)
+
     if request.method == "POST":
-        if 'add-single-target' in request.POST and add_target_form.is_valid():
-            Domain.objects.create(
-                **add_target_form.cleaned_data,
-                insert_date=timezone.now())
-            target_domain = add_target_form.cleaned_data['name']
-            messages.add_message(
-                request,
-                messages.INFO,
-                'Target domain {target_domain} added successfully')
-            if 'fetch_whois_checkbox' in request.POST and request.POST['fetch_whois_checkbox'] == 'on':
-                query_whois.apply_async(args=(target_domain, True, False))
-            return http.HttpResponseRedirect(reverse('list_target'))
-        if 'add-ip-target' in request.POST:
-            domains = request.POST.getlist('resolved_ip_domains')
-            description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
-            ip_address_cidr = request.POST['ip_address'] if 'ip_address' in request.POST else ''
-            h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
-            added_target_count = 0
-            for domain in domains:
-                if not Domain.objects.filter(
-                        name=domain).exists() and validators.domain(domain):
-                    Domain.objects.create(
-                        name=domain,
-                        description=description,
-                        h1_team_handle=h1_team_handle,
-                        ip_address_cidr=ip_address_cidr,
-                        insert_date=timezone.now())
-                    added_target_count += 1
-            if added_target_count:
-                messages.add_message(request, messages.SUCCESS, str(
-                    added_target_count) + ' targets added successfully!')
-                return http.HttpResponseRedirect(reverse('list_target'))
-            else:
+        added_target_count = 0
+        if not form.is_valid():
+            for error in form.errors:
+                messages.add_message(request, messages.ERROR, error)
+            return http.HttpResponseRedirect(reverse('add_target'))
+        data = form.cleaned_data
+        single_target = request.POST.get('add-single-target')
+        multiple_targets = request.POST.get('add-multiple-targets')
+        ip_target =  request.POST.get('add-ip-target')
+        do_fetch_whois = request.POST.get('fetch_whois_checkbox', '') == 'on'
+        try:
+            # Single target
+            if single_target:
+                name = data['name']
+                logger.info(f'Adding single target {name} ...')
+                domain, _ = Domain.objects.get_or_create(name=name)
+                for k, v in data.items():
+                    setattr(domain, k, v)
+                if not domain.insert_date:
+                    domain.insert_date = timezone.now()
+                    domain.save()
+                logger.info(f'Domain {domain.name} added/updated in DB')
                 messages.add_message(
                     request,
-                    messages.ERROR,
-                    'Oops! Could not import any targets, either targets already exists or is not a valid target.')
-                return http.HttpResponseRedirect(reverse('add_target'))
-        elif 'add-multiple-targets' in request.POST:
-            bulk_targets = [target.rstrip()
-                            for target in request.POST['addTargets'].split('\n')]
-            bulk_targets = [target for target in bulk_targets if target]
-            description = request.POST['targetDescription'] if 'targetDescription' in request.POST else ''
-            h1_team_handle = request.POST['targetH1TeamHandle'] if 'targetH1TeamHandle' in request.POST else None
-            target_count = 0
-            for target in bulk_targets:
-                if not Domain.objects.filter(
-                        name=target).exists() and validators.domain(target):
-                    Domain.objects.create(
-                        name=target.rstrip("\n"),
-                        description=description,
-                        h1_team_handle=h1_team_handle,
-                        insert_date=timezone.now())
-                    target_count += 1
-            if target_count:
-                messages.add_message(request, messages.SUCCESS, str(
-                    target_count) + ' targets added successfully!')
+                    messages.INFO,
+                    f'Target domain {domain.name} added successfully')
+
+                if do_fetch_whois:
+                    query_whois.apply_async(args=(domain.name,))
+
                 return http.HttpResponseRedirect(reverse('list_target'))
-            else:
-                messages.add_message(
-                    request,
-                    messages.ERROR,
-                    'Oops! Could not import any targets, either targets already exists or is not a valid target.')
-                return http.HttpResponseRedirect(reverse('add_target'))
-        elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:
-            if 'txtFile' in request.FILES:
-                txt_file = request.FILES['txtFile']
-                if txt_file.content_type == 'text/plain':
-                    target_count = 0
+
+            # Multiple targets
+            elif multiple_targets:
+                bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n')]
+                bulk_targets = [t for t in bulk_targets if t]
+                description = request.POST.get('targetDescription', '')
+                h1_team_handle = request.POST.get('targetH1TeamHandle')
+                for target in bulk_targets:
+                    domain_query = Domain.objects.filter(name=target)
+                    if not domain_query.exists() and validators.domain(target):
+                        Domain.objects.create(
+                            name=target.rstrip("\n"),
+                            description=description,
+                            h1_team_handle=h1_team_handle,
+                            insert_date=timezone.now())
+                        added_target_count += 1
+
+            # IP to domain conversion
+            elif ip_target:
+                domains = request.POST.getlist('resolved_ip_domains')
+                description = request.POST.get('targetDescription', '')
+                ip_address_cidr = request.POST.get('ip_address', '')
+                h1_team_handle = request.POST.get('targetH1TeamHandle')
+                for domain in domains:
+                    domain_query = Domain.objects.filter(name=domain)
+                    if not domain_query.exists():
+                        if not validators.domain(domain):
+                            messages.add_message(
+                                request,
+                                messages.ERROR,
+                                f'Domain {domain} is not a valid domain name. Skipping.')
+                            continue
+                        Domain.objects.create(
+                            name=domain,
+                            description=description,
+                            h1_team_handle=h1_team_handle,
+                            ip_address_cidr=ip_address_cidr,
+                            insert_date=timezone.now())
+                        added_target_count += 1
+
+            # Import from txt / csv
+            elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:
+                txt_file = request.FILES.get('txtFile')
+                csv_file = request.FILES.get('csvFile')
+                if not (txt_file or csv_file):
+                    messages.add_message(
+                        request, 
+                        messages.ERROR, 
+                        'Files uploaded are not .txt or .csv files.')
+                    return http.HttpResponseRedirect(reverse('add_target'))
+
+                if txt_file:
+                    is_txt = txt_file.content_type == 'text/plain' or txt_file.name.split('.')[-1] == 'txt'
+                    if not is_txt:
+                        messages.add_message(
+                            request,
+                            messages.ERROR,
+                            'File is not a valid TXT file')
+                        return http.HttpResponseRedirect(reverse('add_target'))
                     txt_content = txt_file.read().decode('UTF-8')
                     io_string = io.StringIO(txt_content)
                     for target in io_string:
                         target_domain = target.rstrip("\n").rstrip("\r")
-                        if not Domain.objects.filter(
-                                name=target_domain).exists() and validators.domain(target_domain):
+                        domain_query = Domain.objects.filter(name=target_domain)
+                        if not domain_query.exists():
+                            if not validators.domain(domain):
+                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
+                                continue
                             Domain.objects.create(
                                 name=target_domain,
                                 insert_date=timezone.now())
-                            target_count += 1
-                    if target_count:
-                        messages.add_message(request, messages.SUCCESS, str(
-                            target_count) + ' targets added successfully!')
-                    else:
+                            added_target_count += 1
+
+                elif csv_file:
+                    is_csv = csv_file.content_type = 'text/csv' or csv_file.name.split('.')[-1] == 'csv'
+                    if not is_csv:
                         messages.add_message(
                             request,
                             messages.ERROR,
-                            'Error importing targets, either targets already exist or CSV file is not valid.')
+                            'File is not a valid CSV file.'
+                        )
                         return http.HttpResponseRedirect(reverse('add_target'))
-                else:
-                    messages.add_message(
-                        request, messages.ERROR, 'Invalid File type!')
-                    return http.HttpResponseRedirect(reverse('add_target'))
-            elif 'csvFile' in request.FILES:
-                csv_file = request.FILES['csvFile']
-                if csv_file.content_type == 'text/csv' or csv_file.name.split('.')[1]:
-                    target_count = 0
                     csv_content = csv_file.read().decode('UTF-8')
                     io_string = io.StringIO(csv_content)
                     for column in csv.reader(io_string, delimiter=','):
-                        target_domain = column[0]
+                        domain = column[0]
                         description = None if len(column) == 1 else column[1]
-                        if not Domain.objects.filter(
-                                name=target_domain).exists() and validators.domain(
-                                target_domain):
+                        domain_query = Domain.objects.filter(name=domain)
+                        if not domain_query.exists():
+                            if not validators.domain(domain):
+                                messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
+                                continue
                             Domain.objects.create(
-                                name=target_domain,
+                                name=domain,
                                 description=description,
                                 insert_date=timezone.now())
-                            target_count += 1
-                    if target_count:
-                        messages.add_message(request, messages.SUCCESS, str(
-                            target_count) + ' targets added successfully!')
-                    else:
-                        messages.add_message(
-                            request,
-                            messages.ERROR,
-                            'Error importing targets, either targets already exist or CSV file is not valid.')
-                        return http.HttpResponseRedirect(reverse('add_target'))
-                else:
-                    messages.add_message(
-                        request, messages.ERROR, 'Invalid File type!')
-                    return http.HttpResponseRedirect(reverse('add_target'))
-            return http.HttpResponseRedirect(reverse('list_target'))
+                            added_target_count += 1
+
+        except Exception as e:
+            logger.exception(e)
+            messages.add_message(
+                request,
+                messages.ERROR,
+                f'Exception while adding domain: {e}'
+            )
+            return http.HttpResponseRedirect(reverse('add_target'))
+
+        # No targets added, redirect to add target page
+        if added_target_count == 0:
+            messages.add_message(
+                request,
+                messages.ERROR,
+                'Oops! Could not import any targets, either targets already exists or is not a valid target.')
+            return http.HttpResponseRedirect(reverse('add_target'))
+
+        # Targets added successfully, redirect to targets list
+        messages.add_message(request, messages.SUCCESS, f'{added_target_count} targets added successfully')
+        return http.HttpResponseRedirect(reverse('list_target'))
+
+    # GET request
     context = {
         "add_target_li": "active",
         "target_data_active": "active",
-        'form': add_target_form}
+        'form': form
+    }
     return render(request, 'target/add.html', context)
 
 def list_target(request):
@@ -192,7 +224,6 @@ def delete_target(request, id):
 
 
 def delete_targets(request):
-    context = {}
     if request.method == "POST":
         list_of_domains = []
         for key, value in request.POST.items():
@@ -215,7 +246,7 @@ def update_target(request, id):
             messages.add_message(
                 request,
                 messages.INFO,
-                'Domain {} modified!'.format(domain.name))
+                f'Domain {domain.name} modified!')
             return http.HttpResponseRedirect(reverse('list_target'))
     else:
         form.set_value(domain.name, domain.description, domain.h1_team_handle)
@@ -223,7 +254,8 @@ def update_target(request, id):
         'list_target_li': 'active',
         'target_data_active': 'active',
         "domain": domain,
-        "form": form}
+        "form": form
+    }
     return render(request, 'target/update.html', context)
 
 def target_summary(request, id):
@@ -292,17 +324,16 @@ def target_summary(request, id):
     context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
     context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(target_domain__id=id))).annotate(count=Count('iso')).order_by('-count')
-
     return render(request, 'target/summary.html', context)
 
 def add_organization(request):
     form = AddOrganizationForm(request.POST or None)
+    data = form.cleaned_data
     if request.method == "POST":
-        print(form.errors)
         if form.is_valid():
             organization = Organization.objects.create(
-                name=form.cleaned_data['name'],
-                description=form.cleaned_data['description'],
+                name=data['name'],
+                description=data['description'],
                 insert_date=timezone.now())
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
@@ -310,9 +341,7 @@ def add_organization(request):
             messages.add_message(
                 request,
                 messages.INFO,
-                'Organization ' +
-                form.cleaned_data['name'] +
-                ' added successfully')
+                f'Organization {data["name"]} added successfully')
             return http.HttpResponseRedirect(reverse('list_organization'))
     context = {
         "organization_active": "active",
@@ -348,6 +377,7 @@ def delete_organization(request, id):
 def update_organization(request, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
+    data = form.cleaned_data
     if request.method == "POST":
         print(request.POST.getlist("domains"))
         form = UpdateOrganizationForm(request.POST, instance=organization)
@@ -360,8 +390,8 @@ def update_organization(request, id):
                 organization.domains.remove(domain)
 
             organization_obj.update(
-                name=form.cleaned_data['name'],
-                description=form.cleaned_data['description'],
+                name=data['name'],
+                description=data['description'],
             )
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
@@ -369,7 +399,7 @@ def update_organization(request, id):
             messages.add_message(
                 request,
                 messages.INFO,
-                'Organization {} modified!'.format(organization.name))
+                f'Organization {organization.name} modified!')
             return http.HttpResponseRedirect(reverse('list_organization'))
     else:
         domain_list = organization.get_domains().values_list('id', flat=True)

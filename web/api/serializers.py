@@ -1,4 +1,6 @@
 from dashboard.models import *
+from django.contrib.humanize.templatetags.humanize import (naturalday,
+                                                           naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *
@@ -6,11 +8,6 @@ from rest_framework import serializers
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
-from dashboard.models import *
-from recon_note.models import *
-
-from django.db.models import F, JSONField, Value
-from django.contrib.humanize.templatetags.humanize import naturalday, naturaltime
 
 
 class SearchHistorySerializer(serializers.ModelSerializer):
