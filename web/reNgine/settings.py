@@ -16,7 +16,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
-DEBUG = int(os.environ.get('DEBUG', '0'))
+DEBUG = bool(int(os.environ.get('DEBUG', '1')))
+TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
 
 ALLOWED_HOSTS = ['*']
 
@@ -172,5 +173,15 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
+CELERY_IGNORE_RESULTS = False
+CELERY_TASK_CACHE = bool(int(os.environ.get('CELERY_TASK_CACHE', '0')))
+CELERY_TASK_CACHE_IGNORE_KWARGS = ['scan_history_id']
+CELERY_TASK_SKIP_RECORD_ACTIVITY = [
+    'reNgine.tasks.initiate_scan',
+    'reNgine.tasks.query_whois',
+    'reNgine.tasks.skip',
+    'reNgine.tasks.run_system_commands'
+]
+CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

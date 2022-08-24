@@ -6,16 +6,17 @@ from xml.dom import INUSE_ATTRIBUTE_ERR
 import requests
 import validators
 from dashboard.models import *
-from django.db.models import CharField, Count, Q, Value
+from django.db.models import CharField, Count, F, Q, Value
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
-from reNgine.tasks import (create_scan_activity, query_whois, initiate_subtask,
+from reNgine.tasks import (create_scan_activity, initiate_subtask, query_whois,
                            run_system_commands)
 from reNgine.utilities import is_safe_path
+from reNgine.definitions import ABORTED_TASK
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -31,7 +32,6 @@ from startScan.models import EndPoint
 from targetApp.models import *
 
 from .serializers import *
-
 
 
 class QueryInterestingSubdomains(APIView):
@@ -410,42 +410,27 @@ class AddTarget(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-
-		target_name = data.get('domain_name')
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
+		domain_name = data.get('domain_name')
 
-		if not target_name:
-			return Response({'status': False, 'message': 'domain_name missing!'})
+		# Validate domain name
+		if not validators.domain(domain_name):
+			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
-		# validate if target_name is a valid domain_name
-		if not validators.domain(target_name):
-			return Response({'status': False, 'message': 'Invalid Domain or IP'})
-
-		domain_query = Domain.objets.filter(name=target_name)
-		if domain_query.exists():
-			return Response({
-				'status': False,
-				'message': 'Target already exists!',
-				'domain_id': domain_query.first().id
-			})
-
-		domain = Domain(
-			name=target_name,
-			insert_date=timezone.now(),
-			h1_team_handle=h1_team_handle,
-			description=description
-		)
+		# Create domain object in DB
+		domain, _ = Domain.objets.get_or_create(name=domain_name)
+		domain.h1_team_handle = h1_team_handle
+		domain.description = description
+		if not domain.insert_date:
+			domain.insert_date = timezone.now()
 		domain.save()
-
 		return Response({
 			'status': True,
-			'message': 'Domain successfully added as target!',
-			'domain_name': target_name,
+			'message': 'Domain successfully added as target !',
+			'domain_name': domain_name,
 			'domain_id': domain.id
 		})
-
-
 
 class FetchSubscanResults(APIView):
 	def post(self, request):
@@ -472,11 +457,11 @@ class FetchSubscanResults(APIView):
 			vulns_in_subscan = Vulnerability.objects.filter(vuln_subscan_ids__in=subscan)
 			subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
 
-		elif subscan_type == 'endpoint':
+		elif subscan_type == 'fetch_endpoints':
 			endpoints_in_subscan = EndPoint.objects.filter(endpoint_subscan_ids__in=subscan)
 			subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
 
-		elif subscan_type == 'dir_fuzz':
+		elif subscan_type == 'directory_fuzz':
 			dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
 			subscan_results = DirectoryScanSerializer(dirs_in_subscan, many=True).data
 
@@ -496,29 +481,38 @@ class ListSubScans(APIView):
 		response['status'] = False
 
 		if subdomain_id:
-			subscans = SubScan.objects.filter(subdomain__id=subdomain_id).order_by('-stop_scan_date')
+			subscans = (
+				SubScan.objects
+				.filter(subdomain__id=subdomain_id)
+				.order_by('-stop_scan_date')
+			)
 			subscan_results = SubScanSerializer(subscans, many=True).data
-
 			if subscans:
 				response['status'] = True
 				response['results'] = subscan_results
 
 		elif scan_history:
-			subscans = SubScan.objects.filter(scan_history__id=scan_history).order_by('-stop_scan_date')
+			subscans = (
+				SubScan.objects
+				.filter(scan_history__id=scan_history)
+				.order_by('-stop_scan_date')
+			)
 			subscan_results = SubScanSerializer(subscans, many=True).data
-
 			if subscans:
 				response['status'] = True
 				response['results'] = subscan_results
 
 		elif domain_id:
-			subscans = SubScan.objects.filter(scan_history__in=ScanHistory.objects.filter(domain__id=domain_id)).order_by('-stop_scan_date')
+			scan_history = ScanHistory.objects.filter(domain__id=domain_id)
+			subscans = (
+				SubScan.objects
+				.filter(scan_history__in=scan_history)
+				.order_by('-stop_scan_date')
+			)
 			subscan_results = SubScanSerializer(subscans, many=True).data
-
 			if subscans:
 				response['status'] = True
 				response['results'] = subscan_results
-
 
 		return Response(response)
 
@@ -554,13 +548,17 @@ class StopScan(APIView):
 					terminate=True,
 					signal='SIGKILL'
 				)
-				scan_history.scan_status = 3
+				scan_history.scan_status = ABORTED_TASK
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
 
 				if ScanActivity.objects.filter(scan_of=scan_history).exists():
-					last_activity = ScanActivity.objects.filter(
-					scan_of=scan_history).order_by('-pk')[0]
+					last_activity =(
+						ScanActivity.objects
+						.filter(scan_of=scan_history)
+						.order_by('-pk')
+						.first()
+					)
 					last_activity.status = 0
 					last_activity.time = timezone.now()
 					last_activity.save()
@@ -588,7 +586,7 @@ class InitiateSubTask(APIView):
 		req = self.request
 		data = req.data
 		engine_id = data.get('engine_id')
-		scan_types = [stype for stype, enabled in data['tasks'].items() if enabled]
+		scan_types = data['tasks']
 		for subdomain_id in data['subdomain_ids']:
 			logging.info(f'Running subscans {scan_types} on subdomain "{subdomain_id}" ...')
 			for stype in scan_types:
@@ -802,28 +800,46 @@ class GithubToolCheckGetLatestRelease(APIView):
 class ScanStatus(APIView):
 	def get(self, request):
 		# main tasks
-		recently_completed_scans = ScanHistory.objects.all().order_by(
-			'-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:10]
-		currently_scanning = ScanHistory.objects.order_by(
-			'-start_scan_date').filter(scan_status=1)
-		pending_scans = ScanHistory.objects.filter(scan_status=-1)
+		recently_completed_scans = (
+			ScanHistory.objects
+			.all()
+			.order_by('-start_scan_date')
+			.filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:10]
+		)
+		current_scans = (
+			ScanHistory.objects
+			.order_by('-start_scan_date')
+			.filter(scan_status=1)
+		)
+		pending_scans = (
+			ScanHistory.objects
+			.filter(scan_status=-1)
+		)
 
 		# subtasks
-		recently_completed_tasks = SubScan.objects.all().order_by(
-		'-start_scan_date').filter(Q(status=0) | Q(status=2) | Q(status=3))[:15]
-		currently_running_tasks = SubScan.objects.order_by(
-		'-start_scan_date').filter(status=1)
-		pending_tasks = SubScan.objects.filter(status=-1)
-
+		recently_completed_tasks = (
+			SubScan.objects.all()
+			.order_by('-start_scan_date')
+			.filter(Q(status=0) | Q(status=2) | Q(status=3))[:15]
+		)
+		current_tasks = (
+			SubScan.objects
+			.order_by('-start_scan_date')
+			.filter(status=1)
+		)
+		pending_tasks = (
+			SubScan.objects
+			.filter(status=-1)
+		)
 		response = {
 			'scans': {
 				'pending': ScanHistorySerializer(pending_scans, many=True).data,
-				'scanning': ScanHistorySerializer(currently_scanning, many=True).data,
+				'scanning': ScanHistorySerializer(current_scans, many=True).data,
 				'completed': ScanHistorySerializer(recently_completed_scans, many=True).data
 			},
 			'tasks': {
 				'pending': SubScanSerializer(pending_tasks, many=True).data,
-				'running': SubScanSerializer(currently_running_tasks, many=True).data,
+				'running': SubScanSerializer(current_tasks, many=True).data,
 				'completed': SubScanSerializer(recently_completed_tasks, many=True).data
 			}
 		}
@@ -837,9 +853,7 @@ class Whois(APIView):
 		if not validators.domain(ip_domain):
 			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
-		save_db = 'save_db' in req.query_params
-		fetch_from_db = 'fetch_from_db' in req.query_params
-		task = query_whois.apply_async(args=(ip_domain, save_db, fetch_from_db))
+		task = query_whois.apply_async(args=(ip_domain,))
 		response = task.wait()
 		if response:
 			return Response(response)
@@ -903,7 +917,7 @@ class IPToDomain(APIView):
 				if whois_element:
 					response['whois'] = whois_element.text
 			except Exception as e:
-				logging.error(e)
+				logging.exception(e)
 				response = {
 					'status': False,
 					'ip_address': ip_address,
@@ -1043,8 +1057,8 @@ class ListScanHistory(APIView):
 class ListEngines(APIView):
 	def get(self, request, format=None):
 		req = self.request
-		engine = EngineType.objects.all()
-		engine_serializer = EngineSerializer(engine, many=True)
+		engines = EngineType.objects.all()
+		engine_serializer = EngineSerializer(engines, many=True)
 		return Response({'engines': engine_serializer.data})
 
 
@@ -1321,7 +1335,7 @@ class IpAddressViewSet(viewsets.ModelViewSet):
 				ip_addresses__isnull=True).distinct()
 		else:
 			self.serializer_class = IpSerializer
-			self.queryset = Ip.objects.all()
+			self.queryset = IpAddress.objects.all()
 		return self.queryset
 
 	def paginate_queryset(self, queryset, view=None):
@@ -1340,9 +1354,10 @@ class SubdomainsViewSet(viewsets.ModelViewSet):
 		scan_id = req.query_params.get('scan_id')
 		if scan_id:
 			if 'only_screenshot' in self.request.query_params:
-				return Subdomain.objects.filter(
-					scan_history__id=scan_id).exclude(
-					screenshot_path__isnull=True)
+				return (
+					Subdomain.objects
+					.filter(scan_history__id=scan_id)
+					.exclude(screenshot_path__isnull=True))
 			return Subdomain.objects.filter(scan_history=scan_id)
 
 	def paginate_queryset(self, queryset, view=None):
@@ -1367,45 +1382,62 @@ class SubdomainChangesViewSet(viewsets.ModelViewSet):
 		scan_id = req.query_params.get('scan_id')
 		changes = req.query_params.get('changes')
 		domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
-		scan_history = ScanHistory.objects.filter(
-			domain=domain_id).filter(
-			subdomain_discovery=True).filter(
-			id__lte=scan_id).exclude(Q(scan_status=-1) | Q(scan_status=1))
-		if scan_history.count() > 1:
-			last_scan = scan_history.order_by('-start_scan_date')[1]
-			scanned_host_q1 = Subdomain.objects.filter(
-				scan_history__id=scan_id).values('name')
-			scanned_host_q2 = Subdomain.objects.filter(
-				scan_history__id=last_scan.id).values('name')
+		scan_history_query = (
+			ScanHistory.objects
+			.filter(domain=domain_id)
+			.filter(tasks__overlap=['subdomain_discovery'])
+			.filter(id__lte=scan_id)
+			.exclude(Q(scan_status=-1) | Q(scan_status=1))
+		)
+		if scan_history_query.count() > 1:
+			last_scan = scan_history_query.order_by('-start_scan_date')[1]
+			scanned_host_q1 = (
+				Subdomain.objects
+				.filter(scan_history__id=scan_id)
+				.values('name')
+			)
+			scanned_host_q2 = (
+				Subdomain.objects
+				.filter(scan_history__id=last_scan.id)
+				.values('name')
+			)
 			added_subdomain = scanned_host_q1.difference(scanned_host_q2)
 			removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
 			if changes == 'added':
-				return Subdomain.objects.filter(
-					scan_history=scan_id).filter(
-					name__in=added_subdomain).annotate(
-					change=Value(
-						'added',
-						output_field=CharField()))
+				return (
+					Subdomain.objects
+					.filter(scan_history=scan_id)
+					.filter(name__in=added_subdomain)
+					.annotate(
+						change=Value('added', output_field=CharField())
+					)
+				)
 			elif changes == 'removed':
-				return Subdomain.objects.filter(
-					scan_history=last_scan).filter(
-					name__in=removed_subdomains).annotate(
-					change=Value(
-						'removed',
-						output_field=CharField()))
+				return (
+					Subdomain.objects
+					.filter(scan_history=last_scan)
+					.filter(name__in=removed_subdomains)
+					.annotate(
+						change=Value('removed', output_field=CharField())
+					)
+				)
 			else:
-				added_subdomain = Subdomain.objects.filter(
-					scan_history=scan_id).filter(
-					name__in=added_subdomain).annotate(
-					change=Value(
-						'added',
-						output_field=CharField()))
-				removed_subdomains = Subdomain.objects.filter(
-					scan_history=last_scan).filter(
-					name__in=removed_subdomains).annotate(
-					change=Value(
-						'removed',
-						output_field=CharField()))
+				added_subdomain = (
+					Subdomain.objects
+					.filter(scan_history=scan_id)
+					.filter(name__in=added_subdomain)
+					.annotate(
+						change=Value('added', output_field=CharField())
+					)
+				)
+				removed_subdomains = (
+					Subdomain.objects
+					.filter(scan_history=last_scan)
+					.filter(name__in=removed_subdomains)
+					.annotate(
+						change=Value('removed', output_field=CharField())
+					)
+				)
 				changes = added_subdomain.union(removed_subdomains)
 				return changes
 		return self.queryset
@@ -1428,48 +1460,55 @@ class EndPointChangesViewSet(viewsets.ModelViewSet):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
 		changes = req.query_params.get('changes')
-
-		domain_id = ScanHistory.objects.filter(id=scan_id)[0].domain.id
-		scan_history = ScanHistory.objects.filter(
-			domain=domain_id).filter(
-			fetch_url=True).filter(
-			id__lte=scan_id).filter(
-				scan_status=2)
+		domain_id = ScanHistory.objects.filter(id=scan_id).first().domain.id
+		scan_history = (
+			ScanHistory.objects
+			.filter(domain=domain_id)
+			.filter(tasks__overlap=['fetch_url'])
+			.filter(id__lte=scan_id)
+			.filter(scan_status=2)
+		)
 		if scan_history.count() > 1:
 			last_scan = scan_history.order_by('-start_scan_date')[1]
-			scanned_host_q1 = EndPoint.objects.filter(
-				scan_history__id=scan_id).values('http_url')
-			scanned_host_q2 = EndPoint.objects.filter(
-				scan_history__id=last_scan.id).values('http_url')
+			scanned_host_q1 = (
+				EndPoint.objects
+				.filter(scan_history__id=scan_id)
+				.values('http_url')
+			)
+			scanned_host_q2 = (
+				EndPoint.objects
+				.filter(scan_history__id=last_scan.id)
+				.values('http_url')
+			)
 			added_endpoints = scanned_host_q1.difference(scanned_host_q2)
 			removed_endpoints = scanned_host_q2.difference(scanned_host_q1)
 			if changes == 'added':
-				return EndPoint.objects.filter(
-					scan_history=scan_id).filter(
-					http_url__in=added_endpoints).annotate(
-					change=Value(
-						'added',
-						output_field=CharField()))
+				return (
+					EndPoint.objects
+					.filter(scan_history=scan_id)
+					.filter(http_url__in=added_endpoints)
+					.annotate(change=Value('added', output_field=CharField()))
+				)
 			elif changes == 'removed':
-				return EndPoint.objects.filter(
-					scan_history=last_scan).filter(
-					http_url__in=removed_endpoints).annotate(
-					change=Value(
-						'removed',
-						output_field=CharField()))
+				return (
+					EndPoint.objects
+					.filter(scan_history=last_scan)
+					.filter(http_url__in=removed_endpoints)
+					.annotate(change=Value('removed', output_field=CharField()))
+				)
 			else:
-				added_endpoints = EndPoint.objects.filter(
-					scan_history=scan_id).filter(
-					http_url__in=added_endpoints).annotate(
-					change=Value(
-						'added',
-						output_field=CharField()))
-				removed_endpoints = EndPoint.objects.filter(
-					scan_history=last_scan).filter(
-					http_url__in=removed_endpoints).annotate(
-					change=Value(
-						'removed',
-						output_field=CharField()))
+				added_endpoints = (
+					EndPoint.objects
+					.filter(scan_history=scan_id)
+					.filter(http_url__in=added_endpoints)
+					.annotate(change=Value('added', output_field=CharField()))
+				)
+				removed_endpoints = (
+					EndPoint.objects
+					.filter(scan_history=last_scan)
+					.filter(http_url__in=removed_endpoints)
+					.annotate(change=Value('removed', output_field=CharField()))
+				)
 				changes = added_endpoints.union(removed_endpoints)
 				return changes
 		return self.queryset
@@ -1572,14 +1611,23 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		name = req.query_params.get('name')
 
 		if target_id:
-			self.queryset = Subdomain.objects.filter(
-				target_domain__id=target_id).distinct()
+			self.queryset = (
+				Subdomain.objects
+				.filter(target_domain__id=target_id)
+				.distinct()
+			)
 		elif url_query:
-			self.queryset = Subdomain.objects.filter(
-				Q(target_domain__name=url_query)).distinct()
+			self.queryset = (
+				Subdomain.objects
+				.filter(Q(target_domain__name=url_query))
+				.distinct()
+			)
 		elif scan_id:
-			self.queryset = Subdomain.objects.filter(
-				scan_history__id=scan_id).distinct()
+			self.queryset = (
+				Subdomain.objects
+				.filter(scan_history__id=scan_id)
+				.distinct()
+			)
 		else:
 			self.queryset = Subdomain.objects.distinct()
 
@@ -1617,7 +1665,8 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		# if the search query is separated by = means, it is a specific lookup
 		# divide the search query into two half and lookup
 		if search_value:
-			if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+			operators = ['=', '&', '|', '>', '<', '!']
+			if any(x in search_value for x in operators):
 				if '&' in search_value:
 					complex_query = search_value.split('&')
 					for query in complex_query:
@@ -1651,7 +1700,6 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		)
 
 		if 'only_directory' in self.request.query_params:
-			print('Okay')
 			qs = qs | self.queryset.filter(
 				Q(directories__directory_files__name__icontains=search_value)
 			)
@@ -1662,118 +1710,138 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		qs = self.queryset.filter()
 		if '=' in search_value:
 			search_param = search_value.split("=")
-			lookup_title = search_param[0].lower().strip()
-			lookup_content = search_param[1].lower().strip()
-			if 'name' in lookup_title:
-				qs = self.queryset.filter(name__icontains=lookup_content)
-			elif 'page_title' in lookup_title:
-				qs = self.queryset.filter(page_title__icontains=lookup_content)
-			elif 'http_url' in lookup_title:
-				qs = self.queryset.filter(http_url__icontains=lookup_content)
-			elif 'content_type' in lookup_title:
-				qs = self.queryset.filter(content_type__icontains=lookup_content)
-			elif 'cname' in lookup_title:
-				qs = self.queryset.filter(cname__icontains=lookup_content)
-			elif 'webserver' in lookup_title:
-				qs = self.queryset.filter(webserver__icontains=lookup_content)
-			elif 'ip_addresses' in lookup_title:
+			title = search_param[0].lower().strip()
+			content = search_param[1].lower().strip()
+			if 'name' in title:
+				qs = self.queryset.filter(name__icontains=content)
+			elif 'page_title' in title:
+				qs = self.queryset.filter(page_title__icontains=content)
+			elif 'http_url' in title:
+				qs = self.queryset.filter(http_url__icontains=content)
+			elif 'content_type' in title:
+				qs = self.queryset.filter(content_type__icontains=content)
+			elif 'cname' in title:
+				qs = self.queryset.filter(cname__icontains=content)
+			elif 'webserver' in title:
+				qs = self.queryset.filter(webserver__icontains=content)
+			elif 'ip_addresses' in title:
 				qs = self.queryset.filter(
-					ip_addresses__address__icontains=lookup_content)
-			elif 'is_important' in lookup_title:
-				if 'true' in lookup_content.lower():
+					ip_addresses__address__icontains=content)
+			elif 'is_important' in title:
+				if 'true' in content.lower():
 					qs = self.queryset.filter(is_important=True)
 				else:
 					qs = self.queryset.filter(is_important=False)
-			elif 'port' in lookup_title:
-				qs = self.queryset.filter(
-					ip_addresses__ports__number__icontains=lookup_content
-					) | self.queryset.filter(
-					ip_addresses__ports__service_name__icontains=lookup_content
-					) | self.queryset.filter(ip_addresses__ports__description__icontains=lookup_content)
-			elif 'technology' in lookup_title:
-				qs = self.queryset.filter(
-					technologies__name__icontains=lookup_content)
-			elif 'http_status' in lookup_title:
+			elif 'port' in title:
+				qs = (
+					self.queryset
+					.filter(ip_addresses__ports__number__icontains=content)
+					|
+					self.queryset
+					.filter(ip_addresses__ports__service_name__icontains=content)
+					|
+					self.queryset
+					.filter(ip_addresses__ports__description__icontains=content)
+				)
+			elif 'technology' in title:
+				qs = (
+					self.queryset
+					.filter(technologies__name__icontains=content)
+				)
+			elif 'http_status' in title:
 				try:
-					int_http_status = int(lookup_content)
+					int_http_status = int(content)
 					qs = self.queryset.filter(http_status=int_http_status)
 				except Exception as e:
 					print(e)
-			elif 'content_length' in lookup_title:
+			elif 'content_length' in title:
 				try:
-					int_http_status = int(lookup_content)
+					int_http_status = int(content)
 					qs = self.queryset.filter(content_length=int_http_status)
 				except Exception as e:
 					print(e)
+
 		elif '>' in search_value:
 			search_param = search_value.split(">")
-			lookup_title = search_param[0].lower().strip()
-			lookup_content = search_param[1].lower().strip()
-			if 'http_status' in lookup_title:
+			title = search_param[0].lower().strip()
+			content = search_param[1].lower().strip()
+			if 'http_status' in title:
 				try:
-					int_val = int(lookup_content)
+					int_val = int(content)
 					qs = self.queryset.filter(http_status__gt=int_val)
 				except Exception as e:
 					print(e)
-			elif 'content_length' in lookup_title:
+			elif 'content_length' in title:
 				try:
-					int_val = int(lookup_content)
+					int_val = int(content)
 					qs = self.queryset.filter(content_length__gt=int_val)
 				except Exception as e:
 					print(e)
+
 		elif '<' in search_value:
 			search_param = search_value.split("<")
-			lookup_title = search_param[0].lower().strip()
-			lookup_content = search_param[1].lower().strip()
-			if 'http_status' in lookup_title:
+			title = search_param[0].lower().strip()
+			content = search_param[1].lower().strip()
+			if 'http_status' in title:
 				try:
-					int_val = int(lookup_content)
+					int_val = int(content)
 					qs = self.queryset.filter(http_status__lt=int_val)
 				except Exception as e:
 					print(e)
-			elif 'content_length' in lookup_title:
+			elif 'content_length' in title:
 				try:
-					int_val = int(lookup_content)
+					int_val = int(content)
 					qs = self.queryset.filter(content_length__lt=int_val)
 				except Exception as e:
 					print(e)
+
 		elif '!' in search_value:
 			search_param = search_value.split("!")
-			lookup_title = search_param[0].lower().strip()
-			lookup_content = search_param[1].lower().strip()
-			if 'name' in lookup_title:
-				qs = self.queryset.exclude(name__icontains=lookup_content)
-			elif 'page_title' in lookup_title:
-				qs = self.queryset.exclude(page_title__icontains=lookup_content)
-			elif 'http_url' in lookup_title:
-				qs = self.queryset.exclude(http_url__icontains=lookup_content)
-			elif 'content_type' in lookup_title:
-				qs = self.queryset.exclude(content_type__icontains=lookup_content)
-			elif 'cname' in lookup_title:
-				qs = self.queryset.exclude(cname__icontains=lookup_content)
-			elif 'webserver' in lookup_title:
-				qs = self.queryset.exclude(webserver__icontains=lookup_content)
-			elif 'ip_addresses' in lookup_title:
+			title = search_param[0].lower().strip()
+			content = search_param[1].lower().strip()
+			if 'name' in title:
+				qs = self.queryset.exclude(name__icontains=content)
+			elif 'page_title' in title:
+				qs = self.queryset.exclude(page_title__icontains=content)
+			elif 'http_url' in title:
+				qs = self.queryset.exclude(http_url__icontains=content)
+			elif 'content_type' in title:
+				qs = (
+					self.queryset
+					.exclude(content_type__icontains=content)
+				)
+			elif 'cname' in title:
+				qs = self.queryset.exclude(cname__icontains=content)
+			elif 'webserver' in title:
+				qs = self.queryset.exclude(webserver__icontains=content)
+			elif 'ip_addresses' in title:
 				qs = self.queryset.exclude(
-					ip_addresses__address__icontains=lookup_content)
-			elif 'port' in lookup_title:
-				qs = self.queryset.exclude(
-					ip_addresses__ports__number__icontains=lookup_content
-					) | self.queryset.exclude(
-					ip_addresses__ports__service_name__icontains=lookup_content
-					) | self.queryset.exclude(ip_addresses__ports__description__icontains=lookup_content)
-			elif 'technology' in lookup_title:
-				qs = self.queryset.exclude(
-					technologies__name__icontains=lookup_content)
-			elif 'http_status' in lookup_title:
+					ip_addresses__address__icontains=content)
+			elif 'port' in title:
+				qs = (
+					self.queryset
+					.exclude(ip_addresses__ports__number__icontains=content)
+					|
+					self.queryset
+					.exclude(ip_addresses__ports__service_name__icontains=content)
+					|
+					self.queryset
+					.exclude(ip_addresses__ports__description__icontains=content)
+				)
+			elif 'technology' in title:
+				qs = (
+					self.queryset
+					.exclude(technologies__name__icontains=content)
+				)
+			elif 'http_status' in title:
 				try:
-					int_http_status = int(lookup_content)
+					int_http_status = int(content)
 					qs = self.queryset.exclude(http_status=int_http_status)
 				except Exception as e:
 					print(e)
-			elif 'content_length' in lookup_title:
+			elif 'content_length' in title:
 				try:
-					int_http_status = int(lookup_content)
+					int_http_status = int(content)
 					qs = self.queryset.exclude(content_length=int_http_status)
 				except Exception as e:
 					print(e)
@@ -1791,10 +1859,16 @@ class ListEndpoints(APIView):
 		pattern = req.query_params.get('pattern')
 
 		if scan_id:
-			endpoints = EndPoint.objects.filter(scan_history__id=scan_id)
+			endpoints = (
+				EndPoint.objects
+				.filter(scan_history__id=scan_id)
+			)
 		elif target_id:
-			endpoints = EndPoint.objects.filter(
-				target_domain__id=target_id).distinct()
+			endpoints = (
+				EndPoint.objects
+				.filter(target_domain__id=target_id)
+				.distinct()
+			)
 		else:
 			endpoints = EndPoint.objects.all()
 
@@ -1827,31 +1901,38 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
 		gf_tag = req.query_params.get(
 			'gf_tag') if 'gf_tag' in req.query_params else None
-
 		if scan_id:
-			endpoints_queryset = EndPoint.objects.filter(
-				scan_history__id=scan_id
-			).distinct()
+			endpoints = (
+				EndPoint.objects
+				.filter(scan_history__id=scan_id)
+				.distinct()
+			)
 		elif target_id:
-			endpoints_queryset = EndPoint.objects.filter(
-				target_domain__id=target_id).distinct()
+			endpoints = (
+				EndPoint.objects
+				.filter(target_domain__id=target_id)
+				.distinct()
+			)
 		else:
-			endpoints_queryset = EndPoint.objects.distinct()
+			endpoints = EndPoint.objects.distinct()
 
 		if url_query:
-			endpoints_queryset = endpoints_queryset.filter(
-				Q(target_domain__name=url_query)).distinct()
+			endpoints = (
+				endpoints
+				.filter(Q(target_domain__name=url_query))
+				.distinct()
+			)
 
 		if gf_tag:
-			endpoints_queryset = endpoints_queryset.filter(matched_gf_patterns__icontains=gf_tag)
+			endpoints = endpoints.filter(matched_gf_patterns__icontains=gf_tag)
 
 		if subdomain_id:
-			endpoints_queryset = endpoints_queryset.filter(subdomain__id=subdomain_id)
+			endpoints = endpoints.filter(subdomain__id=subdomain_id)
 
 		if 'only_urls' in req.query_params:
 			self.serializer_class = EndpointOnlyURLsSerializer
 
-		self.queryset = endpoints_queryset
+		self.queryset = endpoints
 
 		return self.queryset
 
@@ -1902,18 +1983,17 @@ class EndPointViewSet(viewsets.ModelViewSet):
 				qs = self.general_lookup(search_value)
 			return qs.order_by(order_col)
 		return qs
-	def general_lookup(self, search_value):
-		qs = self.queryset.filter(
-			Q(http_url__icontains=search_value) |
-			Q(page_title__icontains=search_value) |
-			Q(http_status__icontains=search_value) |
-			Q(content_type__icontains=search_value) |
-			Q(webserver__icontains=search_value) |
-			Q(technologies__name__icontains=search_value) |
-			Q(content_type__icontains=search_value) |
-			Q(matched_gf_patterns__icontains=search_value))
 
-		return qs
+	def general_lookup(self, search_value):
+		return \
+			self.queryset.filter(Q(http_url__icontains=search_value) |
+								 Q(page_title__icontains=search_value) |
+								 Q(http_status__icontains=search_value) |
+								 Q(content_type__icontains=search_value) |
+								 Q(webserver__icontains=search_value) |
+								 Q(technologies__name__icontains=search_value) |
+								 Q(content_type__icontains=search_value) |
+								 Q(matched_gf_patterns__icontains=search_value))
 
 	def special_lookup(self, search_value):
 		qs = self.queryset.filter()
@@ -1924,17 +2004,27 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			if 'http_url' in lookup_title:
 				qs = self.queryset.filter(http_url__icontains=lookup_content)
 			elif 'page_title' in lookup_title:
-				qs = self.queryset.filter(page_title__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(page_title__icontains=lookup_content)
+				)
 			elif 'content_type' in lookup_title:
-				qs = self.queryset.filter(content_type__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(content_type__icontains=lookup_content)
+				)
 			elif 'webserver' in lookup_title:
 				qs = self.queryset.filter(webserver__icontains=lookup_content)
 			elif 'technology' in lookup_title:
-				qs = self.queryset.filter(
-					technologies__name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(technologies__name__icontains=lookup_content)
+				)
 			elif 'gf_pattern' in lookup_title:
-				qs = self.queryset.filter(
-					matched_gf_patterns__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(matched_gf_patterns__icontains=lookup_content)
+				)
 			elif 'http_status' in lookup_title:
 				try:
 					int_http_status = int(lookup_content)
@@ -1954,7 +2044,10 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			if 'http_status' in lookup_title:
 				try:
 					int_val = int(lookup_content)
-					qs = self.queryset.filter(http_status__gt=int_val)
+					qs = (
+						self.queryset
+						.filter(http_status__gt=int_val)
+					)
 				except Exception as e:
 					print(e)
 			elif 'content_length' in lookup_title:
@@ -1984,19 +2077,35 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			lookup_title = search_param[0].lower().strip()
 			lookup_content = search_param[1].lower().strip()
 			if 'http_url' in lookup_title:
-				qs = self.queryset.exclude(http_url__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(http_url__icontains=lookup_content)
+				)
 			elif 'page_title' in lookup_title:
-				qs = self.queryset.exclude(page_title__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(page_title__icontains=lookup_content)
+				)
 			elif 'content_type' in lookup_title:
-				qs = self.queryset.exclude(content_type__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(content_type__icontains=lookup_content)
+				)
 			elif 'webserver' in lookup_title:
-				qs = self.queryset.exclude(webserver__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(webserver__icontains=lookup_content)
+				)
 			elif 'technology' in lookup_title:
-				qs = self.queryset.exclude(
-				technologies__name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(technologies__name__icontains=lookup_content)
+				)
 			elif 'gf_pattern' in lookup_title:
-				qs = self.queryset.exclude(
-				matched_gf_patterns__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(matched_gf_patterns__icontains=lookup_content)
+				)
 			elif 'http_status' in lookup_title:
 				try:
 					int_http_status = int(lookup_content)
@@ -2018,23 +2127,25 @@ class DirectoryViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		req = self.request
-
 		scan_id = req.query_params.get('scan_history')
 		subdomain_id = req.query_params.get('subdomain_id')
-
-		if scan_id:
-			dirs_queryset = DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(scan_history__id=scan_id))).distinct()
-		else:
-			dirs_queryset = DirectoryFile.objects.distinct()
-
-		print(dirs_queryset)
-
-		if subdomain_id:
-			dirs_queryset = DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(id=subdomain_id))).distinct()
-
-
-		self.queryset = dirs_queryset
-
+		subdomains = None
+		if not (scan_id or subdomain_id):
+			return Response({
+				'status': False,
+				'message': 'Scan id or subdomain id must be provided.'
+			})
+		elif scan_id:
+			subdomains = Subdomain.objects.filter(scan_history__id=scan_id)
+		elif subdomain_id:
+			subdomains = Subdomain.objects.filter(id=subdomain_id)
+		dirs_scans = DirectoryScan.objects.filter(directories__in=subdomains)
+		qs = (
+			DirectoryFile.objects
+			.filter(directory_files__in=dirs_scans)
+			.distinct()
+		)
+		self.queryset = qs
 		return self.queryset
 
 
@@ -2044,7 +2155,6 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 
 	def get_queryset(self):
 		req = self.request
-
 		scan_id = req.query_params.get('scan_history')
 		target_id = req.query_params.get('target_id')
 		domain = req.query_params.get('domain')
@@ -2054,35 +2164,36 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		vulnerability_name = req.query_params.get('vulnerability_name')
 
 		if scan_id:
-			vulnerability_queryset = Vulnerability.objects.filter(
-				scan_history__id=scan_id).distinct()
+			qs = (
+				Vulnerability.objects
+				.filter(scan_history__id=scan_id)
+				.distinct()
+			)
 		elif target_id:
-			vulnerability_queryset = Vulnerability.objects.filter(
-				target_domain__id=target_id).distinct()
+			qs = (
+				Vulnerability.objects
+				.filter(target_domain__id=target_id)
+				.distinct()
+			)
 		elif subdomain_name:
-			vulnerability_queryset = Vulnerability.objects.filter(
-				subdomain__in=Subdomain.objects.filter(
-					name=subdomain_name)
-				).distinct()
+			subdomains = Subdomain.objects.filter(name=subdomain_name)
+			qs = (
+				Vulnerability.objects
+				.filter(subdomain__in=subdomains)
+				.distinct()
+			)
 		else:
-			vulnerability_queryset = Vulnerability.objects.distinct()
+			qs = Vulnerability.objects.distinct()
 
 		if domain:
-			vulnerability_queryset = vulnerability_queryset.filter(
-				Q(target_domain__name=domain)).distinct()
-
+			qs = qs.filter(Q(target_domain__name=domain)).distinct()
 		if vulnerability_name:
-			vulnerability_queryset = vulnerability_queryset.filter(
-				Q(name=vulnerability_name)).distinct()
-
+			qs = qs.filter(Q(name=vulnerability_name)).distinct()
 		if severity:
-			vulnerability_queryset = vulnerability_queryset.filter(severity=severity)
-
+			qs = qs.filter(severity=severity)
 		if subdomain_id:
-			vulnerability_queryset = vulnerability_queryset.filter(subdomain__id=subdomain_id)
-
-		self.queryset = vulnerability_queryset
-
+			qs = qs.filter(subdomain__id=subdomain_id)
+		self.queryset = qs
 		return self.queryset
 
 	def filter_queryset(self, qs):
@@ -2107,10 +2218,11 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			elif _order_col == '13':
 				order_col = 'discovered_date'
 			if _order_direction == 'desc':
-				order_col = '-{}'.format(order_col)
+				order_col = f'-{order_col}'
 			# if the search query is separated by = means, it is a specific lookup
 			# divide the search query into two half and lookup
-			if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
+			operators = ['=', '&', '|', '>', '<', '!']
+			if any(x in search_value for x in operators):
 				if '&' in search_value:
 					complex_query = search_value.split('&')
 					for query in complex_query:
@@ -2130,24 +2242,26 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		return qs.order_by('-severity')
 
 	def general_lookup(self, search_value):
-		qs = self.queryset.filter(
-			Q(http_url__icontains=search_value) |
-			Q(target_domain__name__icontains=search_value) |
-			Q(template__icontains=search_value) |
-			Q(template_id__icontains=search_value) |
-			Q(name__icontains=search_value) |
-			Q(severity__icontains=search_value) |
-			Q(description__icontains=search_value) |
-			Q(extracted_results__icontains=search_value) |
-			Q(references__url__icontains=search_value) |
-			Q(cve_ids__name__icontains=search_value) |
-			Q(cwe_ids__name__icontains=search_value) |
-			Q(cvss_metrics__icontains=search_value) |
-			Q(cvss_score__icontains=search_value) |
-			Q(type__icontains=search_value) |
-			Q(open_status__icontains=search_value) |
-			Q(hackerone_report_id__icontains=search_value) |
-			Q(tags__name__icontains=search_value))
+		qs = (
+			self.queryset
+			.filter(Q(http_url__icontains=search_value) |
+					Q(target_domain__name__icontains=search_value) |
+					Q(template__icontains=search_value) |
+					Q(template_id__icontains=search_value) |
+					Q(name__icontains=search_value) |
+					Q(severity__icontains=search_value) |
+					Q(description__icontains=search_value) |
+					Q(extracted_results__icontains=search_value) |
+					Q(references__url__icontains=search_value) |
+					Q(cve_ids__name__icontains=search_value) |
+					Q(cwe_ids__name__icontains=search_value) |
+					Q(cvss_metrics__icontains=search_value) |
+					Q(cvss_score__icontains=search_value) |
+					Q(type__icontains=search_value) |
+					Q(open_status__icontains=search_value) |
+					Q(hackerone_report_id__icontains=search_value) |
+					Q(tags__name__icontains=search_value))
+		)
 		return qs
 
 	def special_lookup(self, search_value):
@@ -2157,101 +2271,148 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 			lookup_title = search_param[0].lower().strip()
 			lookup_content = search_param[1].lower().strip()
 			if 'severity' in lookup_title:
-				severity_value = ''
-				if lookup_content == 'info':
-					severity_value = 0
-				elif lookup_content == 'low':
-					severity_value = 1
-				elif lookup_content == 'medium':
-					severity_value = 2
-				elif lookup_content == 'high':
-					severity_value = 3
-				elif lookup_content == 'critical':
-					severity_value = 4
-				elif lookup_content == 'unknown':
-					severity_value = -1
-				if severity_value:
-					qs = self.queryset.filter(severity=severity_value)
+				severity_value = NUCLEI_SEVERITY_MAP.get(lookup_content, -1)
+				qs = (
+					self.queryset
+					.filter(severity=severity_value)
+				)
 			elif 'name' in lookup_title:
-				qs = self.queryset.filter(name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(name__icontains=lookup_content)
+				)
 			elif 'http_url' in lookup_title:
-				qs = self.queryset.filter(http_url__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(http_url__icontains=lookup_content)
+				)
 			elif 'template' in lookup_title:
-				qs = self.queryset.filter(template__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(template__icontains=lookup_content)
+				)
 			elif 'template_id' in lookup_title:
-				qs = self.queryset.filter(template_id__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(template_id__icontains=lookup_content)
+				)
 			elif 'cve_id' in lookup_title or 'cve' in lookup_title:
-				qs = self.queryset.filter(cve_ids__name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(cve_ids__name__icontains=lookup_content)
+				)
 			elif 'cwe_id' in lookup_title or 'cwe' in lookup_title:
-				qs = self.queryset.filter(cwe_ids__name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(cwe_ids__name__icontains=lookup_content)
+				)
 			elif 'cvss_metrics' in lookup_title:
-				qs = self.queryset.filter(cvss_metrics__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(cvss_metrics__icontains=lookup_content)
+				)
 			elif 'cvss_score' in lookup_title:
-				qs = self.queryset.filter(cvss_score__exact=lookup_content)
+				qs = (
+					self.queryset
+					.filter(cvss_score__exact=lookup_content)
+				)
 			elif 'type' in lookup_title:
-				qs = self.queryset.filter(type__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(type__icontains=lookup_content)
+				)
 			elif 'tag' in lookup_title:
-				qs = self.queryset.filter(tags__name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.filter(tags__name__icontains=lookup_content)
+				)
 			elif 'status' in lookup_title:
-				if lookup_content == 'open':
-					qs = self.queryset.filter(open_status=True)
-				elif lookup_content == 'closed':
-					qs = self.queryset.filter(open_status=False)
+				open_status = lookup_content == 'open'
+				qs = (
+					self.queryset
+					.filter(open_status=open_status)
+				)
 			elif 'description' in lookup_title:
-				qs = self.queryset.filter(
-					Q(description__icontains=lookup_content) |
-					Q(template__icontains=lookup_content) |
-					Q(extracted_results__icontains=lookup_content))
+				qs = (
+					self.queryset
+					.filter(Q(description__icontains=lookup_content) |
+							Q(template__icontains=lookup_content) |
+							Q(extracted_results__icontains=lookup_content))
+				)
 		elif '!' in search_value:
 			search_param = search_value.split("!")
 			lookup_title = search_param[0].lower().strip()
 			lookup_content = search_param[1].lower().strip()
 			if 'severity' in lookup_title:
-				severity_value = ''
-				if lookup_content == 'info':
-					severity_value = 0
-				elif lookup_content == 'low':
-					severity_value = 1
-				elif lookup_content == 'medium':
-					severity_value = 2
-				elif lookup_content == 'high':
-					severity_value = 3
-				elif lookup_content == 'critical':
-					severity_value = 4
-				elif lookup_content == 'unknown':
-					severity_value = -1
-				if severity_value:
-					qs = self.queryset.exclude(severity=severity_value)
+				severity_value = NUCLEI_SEVERITY_MAP.get(lookup_title, -1)
+				qs = (
+					self.queryset
+					.exclude(severity=severity_value)
+				)
 			elif 'name' in lookup_title:
-				qs = self.queryset.exclude(name__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(name__icontains=lookup_content)
+				)
 			elif 'http_url' in lookup_title:
-				qs = self.queryset.exclude(http_url__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(http_url__icontains=lookup_content)
+				)
 			elif 'template' in lookup_title:
-				qs = self.queryset.exclude(template__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(template__icontains=lookup_content)
+				)
 			elif 'template_id' in lookup_title:
-				qs = self.queryset.exclude(template_id__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(template_id__icontains=lookup_content)
+				)
 			elif 'cve_id' in lookup_title or 'cve' in lookup_title:
-				qs = self.queryset.exclude(cve_ids__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(cve_ids__icontains=lookup_content)
+				)
 			elif 'cwe_id' in lookup_title or 'cwe' in lookup_title:
-				qs = self.queryset.exclude(cwe_ids__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(cwe_ids__icontains=lookup_content)
+				)
 			elif 'cvss_metrics' in lookup_title:
-				qs = self.queryset.exclude(cvss_metrics__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(cvss_metrics__icontains=lookup_content)
+				)
 			elif 'cvss_score' in lookup_title:
-				qs = self.queryset.exclude(cvss_score__exact=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(cvss_score__exact=lookup_content)
+				)
 			elif 'type' in lookup_title:
-				qs = self.queryset.exclude(type__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(type__icontains=lookup_content)
+				)
 			elif 'tag' in lookup_title:
-				qs = self.queryset.exclude(tags__icontains=lookup_content)
+				qs = (
+					self.queryset
+					.exclude(tags__icontains=lookup_content)
+				)
 			elif 'status' in lookup_title:
-				if lookup_content == 'open':
-					qs = self.queryset.exclude(open_status=True)
-				elif lookup_content == 'closed':
-					qs = self.queryset.exclude(open_status=False)
+				open_status = lookup_content == 'open'
+				qs = (
+					self.queryset
+					.exclude(open_status=open_status)
+				)
 			elif 'description' in lookup_title:
-				qs = self.queryset.exclude(
-					Q(description__icontains=lookup_content) |
-					Q(template__icontains=lookup_content) |
-					Q(extracted_results__icontains=lookup_content))
+				qs = (
+					self.queryset
+					.exclude(Q(description__icontains=lookup_content) |
+							 Q(template__icontains=lookup_content) |
+							 Q(extracted_results__icontains=lookup_content))
+				)
+
 		elif '>' in search_value:
 			search_param = search_value.split(">")
 			lookup_title = search_param[0].lower().strip()
@@ -2262,6 +2423,7 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					qs = self.queryset.filter(cvss_score__gt=val)
 				except Exception as e:
 					print(e)
+
 		elif '<' in search_value:
 			search_param = search_value.split("<")
 			lookup_title = search_param[0].lower().strip()
@@ -2272,4 +2434,5 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 					qs = self.queryset.filter(cvss_score__lt=val)
 				except Exception as e:
 					print(e)
+
 		return qs

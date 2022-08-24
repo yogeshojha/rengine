@@ -69,7 +69,7 @@
               <div class="dropdown-menu" style="">
                 {% if detail_scan %}
                   <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
-                  {% if history.fetch_url and history.used_gf_patterns%}
+                  {% if 'fetch_url' in history.tasks and history.used_gf_patterns%}
                     {% for key,value in matched_gf_count.items %}
                       {% if value > 0 %}
                         <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}', '{{key}}')">Download Endpoints with pattern {{key|upper}}</a>

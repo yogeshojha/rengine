@@ -1,4 +1,6 @@
 from dashboard.models import *
+from django.contrib.humanize.templatetags.humanize import (naturalday,
+                                                           naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *

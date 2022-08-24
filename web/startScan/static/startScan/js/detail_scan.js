@@ -1351,33 +1351,29 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 
 
 function initiate_subtask(subdomain_ids){
-	var port_scan = $('#port_scan_subtask').is(':checked');
-	var osint = $('#osint_subtask').is(':checked');
-	var endpoint = $('#endpoint_subtask').is(':checked');
-	var dir_fuzz = $('#dir_fuzz_subtask').is(':checked');
-	var vuln_scan = $('#vuln_subtask').is(':checked');
 	var engine_id = $('#subtaskScanEngine').val();
-	if (!port_scan && !osint && !endpoint && !dir_fuzz && !vuln_scan) {
+	var tasks = []
+	$('#engineTasks').find('input').each(function(i){
+		if (this.is(':checked')){
+			tasks.push(this.id)
+		}
+	})
+	console.log(tasks)
+	if (tasks.length === 0) {
 		Swal.fire({
 			title: 'Oops!',
-			text: 'No Subtasks Selected. Please choose atleast one subtask!',
+			text: 'No subtasks selected. Please choose at least one subtask !',
 			icon: 'error'
 		});
 		return;
 	}
 	var data = {
 		'subdomain_ids': subdomain_ids,
-		'tasks': {
-			'port_scan': port_scan,
-			'osint': osint,
-			'endpoint': endpoint,
-			'dir_fuzz': dir_fuzz,
-			'vulnerability_scan': vuln_scan
-		},
+		'tasks': tasks,
 		'engine_id': engine_id,
 	};
 	Swal.fire({
-		title: 'Initiating Subtask...',
+		title: 'Initiating subtask...',
 		allowOutsideClick: false
 	});
 	swal.showLoading();

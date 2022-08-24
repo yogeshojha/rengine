@@ -35,13 +35,6 @@ class AddTargetForm(forms.Form):
             }
         ))
 
-    def clean_name(self):
-        data = self.cleaned_data['name']
-        if Domain.objects.filter(name=data).count() > 0:
-            raise forms.ValidationError("{} target/domain already exists".format(data))
-        return data
-
-
 class AddOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
