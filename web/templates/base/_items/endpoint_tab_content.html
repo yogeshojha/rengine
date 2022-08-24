@@ -1,6 +1,6 @@
 <div class="row justify-content-center">
   <div class="col-xl-8 col-lg-8 col-sm-8">
-    <div class="wrapper">
+    <div class="<wrap></wrap>per">
       <div class="search-input" id="endpoint-search-input">
         <a href="" target="_blank" hidden></a>
         <div class="input-group">
@@ -68,16 +68,22 @@
               </button>
               <div class="dropdown-menu" style="">
                 {% if detail_scan %}
-                <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
-                {% if history.fetch_url and history.used_gf_patterns%}
-                {% for key,value in matched_gf_count.items %}
-                {% if value > 0 %}
-                <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}', '{{key}}')">Download Endpoints with pattern {{key|upper}}</a>
+                  <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}')">Download All Endpoints</a>
+                  {% if history.fetch_url and history.used_gf_patterns%}
+                    {% for key,value in matched_gf_count.items %}
+                      {% if value > 0 %}
+                        <a class="dropdown-item" href="javascript:download_endpoints({{scan_history_id}}, '{{history.domain.name}}', '{{key}}')">Download Endpoints with pattern {{key|upper}}</a>
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
                 {% endif %}
-                {% endfor %}
+                
+                {% if target_summary %}
+                  <a class="dropdown-item" href="javascript:download_endpoints(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}', pattern=null)">Download All Endpoints</a>
                 {% endif %}
-                {% else %}
-                <a class="dropdown-item" href="javascript:download_endpoints(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}', pattern=null)">Download All Endpoints</a>
+
+                {% if all_endpoints %}
+                  <a class="dropdown-item" href="javascript:download_endpoints()">Download All Endpoints</a>
                 {% endif %}
               </div>
             </div>
