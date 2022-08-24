@@ -1,18 +1,29 @@
+import yaml
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+
+class hybrid_property:
+    def __init__(self, func):
+        self.func = func
+        self.name = func.__name__
+        self.exp = None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return self.func(instance)
+
+    def __set__(self, instance, value):
+        pass
+
+    def expression(self, exp):
+        self.exp = exp
+        return self
 
 class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
-    subdomain_discovery = models.BooleanField(null=True, default=False)
-    waf_detection = models.BooleanField(null=True, default=False)
-    dir_file_fuzz = models.BooleanField(null=True, default=False)
-    port_scan = models.BooleanField(null=True, default=False)
-    fetch_url = models.BooleanField(null=True, default=False)
-    vulnerability_scan = models.BooleanField(null=True, default=False)
-    osint = models.BooleanField(null=True, default=False)
-    screenshot = models.BooleanField(null=True, default=True)
-    http_crawl = models.BooleanField(null=True, default=True)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 
@@ -20,19 +31,11 @@ class EngineType(models.Model):
         return self.engine_name
 
     def get_number_of_steps(self):
-        engine_list = [
-            self.subdomain_discovery,
-            self.waf_detection,
-            self.dir_file_fuzz,
-            self.port_scan,
-            self.fetch_url,
-            self.vulnerability_scan,
-            self.osint,
-            self.screenshot,
-            self.http_crawl
-        ]
-        return sum(bool(item) for item in engine_list)
+        return len(self.tasks) if self.tasks else 0
 
+    @hybrid_property
+    def tasks(self):
+        return list(yaml.safe_load(self.yaml_configuration).keys())
 
 class Wordlist(models.Model):
     id = models.AutoField(primary_key=True)

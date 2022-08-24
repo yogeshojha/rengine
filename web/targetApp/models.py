@@ -211,7 +211,7 @@ class Domain(models.Model):
     h1_team_handle = models.CharField(max_length=100, blank=True, null=True)
     ip_address_cidr = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    insert_date = models.DateTimeField()
+    insert_date = models.DateTimeField(null=True)
     start_scan_date = models.DateTimeField(null=True)
     domain_info = models.ForeignKey(DomainInfo, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -222,7 +222,7 @@ class Domain(models.Model):
         ScanHistory = apps.get_model('startScan.ScanHistory')
         obj = ScanHistory.objects.filter(domain__id=self.id).order_by('-id')
         if obj:
-	          return obj[0].id
+            return obj[0].id
 
     def __str__(self):
         return str(self.name)

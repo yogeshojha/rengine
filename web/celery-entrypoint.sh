@@ -15,10 +15,11 @@ python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
+# Load default engines
 python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
-#Load Default keywords
+# Load default keywords
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
-#Load Default External Tools
+# Load default external tools
 python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
 # update whatportis

@@ -15,49 +15,6 @@ class AddEngineForm(forms.ModelForm):
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Engine Name"}))
-    subdomain_discovery = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    waf_detection = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    screenshot = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    dir_file_fuzz = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    port_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    fetch_url = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    vulnerability_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    osint = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -80,46 +37,6 @@ class UpdateEngineForm(forms.ModelForm):
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Custom Engine"}))
-    subdomain_discovery = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    waf_detection = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    screenshot = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    dir_file_fuzz = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    port_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    fetch_url = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    vulnerability_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    osint = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -129,19 +46,6 @@ class UpdateEngineForm(forms.ModelForm):
         fontsize='17px',
         showinvisibles=True,
         attrs={"id": "editor"}))
-
-    def set_value(self, engine):
-        self.initial['engine_name'] = engine.engine_name
-        self.initial['subdomain_discovery'] = engine.subdomain_discovery
-        self.initial['waf_detection'] = engine.waf_detection
-        self.initial['dir_file_fuzz'] = engine.dir_file_fuzz
-        self.initial['port_scan'] = engine.port_scan
-        self.initial['fetch_url'] = engine.fetch_url
-        self.initial['yaml_configuration'] = engine.yaml_configuration
-        self.initial['vulnerability_scan'] = engine.vulnerability_scan
-        self.initial['osint'] = engine.osint
-        self.initial['screenshot'] = engine.screenshot
-
 
 class AddWordlistForm(forms.Form):
     name = forms.CharField(
