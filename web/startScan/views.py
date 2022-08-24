@@ -97,15 +97,17 @@ def detail_scan(request, id=None):
 
         domain_id = ScanHistory.objects.filter(id=id)
 
-        context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:5]
+        context['most_recent_scans'] = ScanHistory.objects.filter(domain__id=domain_id[0].domain.id).order_by('-start_scan_date')[:10]
 
         context['http_status_breakdown'] = Subdomain.objects.filter(scan_history=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
 
-        context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
-        context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+        context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:10]
+        context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:10]
         context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(scan_history__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
         context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(scan_history__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
+
+        context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(scan_history__id=id))).annotate(count=Count('iso')).order_by('-count')
 
         if domain_id:
             domain_id = domain_id[0].domain.id

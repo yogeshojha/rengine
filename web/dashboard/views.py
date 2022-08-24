@@ -145,6 +145,8 @@ def index(request):
     context['most_common_cwe'] = CweId.objects.annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
     context['most_common_tags'] = VulnerabilityTags.objects.annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
 
+    context['asset_countries'] = CountryISO.objects.annotate(count=Count('ipaddress')).order_by('-count')
+
     return render(request, 'dashboard/index.html', context)
 
 

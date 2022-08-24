@@ -4,6 +4,7 @@ class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
     subdomain_discovery = models.BooleanField()
+    waf_detection = models.BooleanField(null=True, default=False)
     dir_file_fuzz = models.BooleanField()
     port_scan = models.BooleanField()
     fetch_url = models.BooleanField()
@@ -19,6 +20,7 @@ class EngineType(models.Model):
     def get_number_of_steps(self):
         engine_list = [
             self.subdomain_discovery,
+            self.waf_detection,
             self.dir_file_fuzz,
             self.port_scan,
             self.fetch_url,
@@ -112,9 +114,9 @@ class InstalledExternalTool(models.Model):
     id = models.AutoField(primary_key=True)
     logo_url = models.CharField(max_length=200, null=True, blank=True)
     name = models.CharField(max_length=100)
-    description = models.CharField(max_length=500)
-    github_url = models.CharField(max_length=80)
-    license_url = models.CharField(max_length=100, null=True, blank=True)
+    description = models.CharField(max_length=2000)
+    github_url = models.CharField(max_length=500)
+    license_url = models.CharField(max_length=500, null=True, blank=True)
     version_lookup_command = models.CharField(max_length=100, null=True, blank=True)
     update_command = models.CharField(max_length=200, null=True, blank=True)
     install_command = models.CharField(max_length=200)
@@ -122,7 +124,7 @@ class InstalledExternalTool(models.Model):
     is_default = models.BooleanField(default=False)
     is_subdomain_gathering = models.BooleanField(default=False)
     is_github_cloned = models.BooleanField(default=False)
-    github_clone_path = models.CharField(max_length=100, null=True, blank=True)
+    github_clone_path = models.CharField(max_length=1500, null=True, blank=True)
     subdomain_gathering_command = models.CharField(max_length=300, null=True, blank=True)
 
     def __str__(self):

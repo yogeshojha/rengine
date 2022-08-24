@@ -1497,197 +1497,191 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 }
 
 function display_whois_on_modal(response, show_add_target_btn=false) {
+	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
 	$("#modal-footer").empty();
 
-	content = `<div class="row mt-3">
+	content = `
+	<div class="row mt-3">
 		<div class="col-sm-3">
 			<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 				<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
-				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
-				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
-				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related"aria-selected="false">Related Domains`;
-
-	if (response['related_domains'].length) {
-		content += `<span class="badge badge-soft-info float-end">${response['related_domains'].length}</span>`
-	}
-
-	content += `</a>`;
-
-	content += `<a class="nav-link mb-1" id="v-pills-related-tld-tab" data-bs-toggle="pill" href="#v-pills-related-tld" role="tab" aria-controls="v-pills-related-tld"aria-selected="false">Related TLDs`;
-
-	if (response['related_tlds'].length) {
-		content += `<span class="badge badge-soft-info float-end">${response['related_tlds'].length}</span>`
-	}
-
-	content += `</span></a>`;
-
-	content += `</div></div>
+				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
+				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history" aria-selected="false">NS History</a>
+			</div>
+		</div> <!-- end col-->
 		<div class="col-sm-9">
 			<div class="tab-content pt-0">
 				<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					<h4 class="header-title">Domain Information</h4>
-					<table class="domain_details_table table table-hover table-borderless">
-						<tr style="display: none">
-							<th>&nbsp;</th>
-							<th>&nbsp;</th>
-						</tr>
-						<tr>
-							<td>Domain Name</td>
-							<td>${response['ip_domain'] ? response['ip_domain']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Domain age</td>
-							<td>${response['domain']['domain_age'] ? response['domain']['domain_age']: "-"}</td>
-						</tr>
-						<tr>
-							<td>IP Address</td>
-							<td>${response['domain']['ip_address'] ? response['domain']['ip_address']: "-" }</td>
-						</tr>
-						<tr>
-							<td>IP Geolocation</td>
-							<td>
-							${response['domain']['geolocation_iso'] ? `<img src="https://domainbigdata.com/img/flags-iso/flat/24/${response['domain']['geolocation_iso']}.png" alt="${response['domain']['geolocation_iso']}">` : ""}
-							&nbsp;&nbsp;${response['domain']['geolocation'] ? response['domain']['geolocation'] : "-"}</td>
-						</tr>
-					</table>
-					<h4 class="header-title mt-3">Registrant Information</h4>
-					<table class="domain_details_table table table-hover table-borderless">
-						<tr style="display: none">
-							<th>&nbsp;</th>
-							<th>&nbsp;</th>
-						</tr>
-						<tr>
-							<td>Name</td>
-							<td>${response['registrant']['name'] ? response['registrant']['name']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Email</td>
-							<td>${response['registrant']['email'] ? response['registrant']['email']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Organization</td>
-							<td>${response['registrant']['organization'] ? response['registrant']['organization']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Address</td>
-							<td>${response['registrant']['address'] ? response['registrant']['address']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Phone Numbers</td>
-							<td>${response['registrant']['tel'] ? response['registrant']['tel']: "-"}</td>
-						</tr>
-						<tr>
-							<td>Fax</td>
-							<td>${response['registrant']['fax'] ? response['registrant']['fax']: "-"}</td>
-						</tr>
-					</table>
+					<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
+					<ul class="nav nav-tabs nav-bordered nav-justified">
+						<li class="nav-item">
+							<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
+								Registrant
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
+								Admin
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#technical-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+								Technical
+							</a>
+						</li>
+					</ul>
+					<div class="tab-content">
+						<div class="tab-pane active" id="registrant-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.registrant.name}</td>
+										</tr>
+										<tr class="table-primary">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.registrant.organization}</td>
+										</tr>
+										<tr class="">
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.registrant.email}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												<span class="fe-phone"></span>&nbsp;${response.registrant.phone}
+												<span class="fe-printer"></span>&nbsp;${response.registrant.fax}
+											</td>
+										</tr>
+										<tr class="">
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;${response.registrant.address}</td>
+										</tr>
+										<tr class="table-danger">
+											<td><b>Address</b></td>
+											<td><b>City: </b>${response.registrant.city} <b>State: </b>${response.registrant.state} <b>Zip Code: </b>${response.registrant.zipcode} <b>Country:
+												</b>${response.registrant.country} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<div class="tab-pane" id="admin-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="table-primary">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.admin.name}</td>
+										</tr>
+										<tr class="">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.admin.organization}</td>
+										</tr>
+										<tr class="table-info">
+											<td><b>Admin ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.admin.id}</td>
+										</tr>
+										<tr class="">
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.admin.email}</td>
+										</tr>
+										<tr class="table-success">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												<span class="fe-phone"></span>&nbsp;${response.admin.phone}
+												<span class="fe-printer"></span>&nbsp;${response.admin.fax}
+											</td>
+										</tr>
+										<tr class="">
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;${response.admin.address}</td>
+										</tr>
+										<tr class="table-danger">
+											<td><b>Address</b></td>
+											<td><b>City: </b>${response.admin.city} <b>State: </b>${response.admin.state} <b>Zip Code: </b>${response.admin.zipcode} <b>Country:
+												</b>${response.admin.country} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+						<div class="tab-pane" id="technical-tab">
+							<div class="table-responsive">
+								<table class="table mb-0">
+									<tbody>
+										<tr class="table-info">
+											<td><b>Name</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.name}</td>
+										</tr>
+										<tr class="">
+											<td><b>Organization</b></td>
+											<td><span class="fe-briefcase"></span>&nbsp;${response.technical_contact.organization}</td>
+										</tr>
+										<tr class="table-primary">
+											<td><b>Tech ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.id}</td>
+										</tr>
+										<tr class="">
+											<td><b>Email</b></td>
+											<td><span class="fe-mail"></span>&nbsp;${response.technical_contact.email}</td>
+										</tr>
+										<tr class="table-success">
+											<td><b>Phone/Fax</b></td>
+											<td>
+												<span class="fe-phone"></span>&nbsp;${response.technical_contact.phone}
+												<span class="fe-printer"></span>&nbsp;${response.technical_contact.fax}
+											</td>
+										</tr>
+										<tr>
+											<td><b>Address</b></td>
+											<td><span class="fe-home"></span>&nbsp;${response.technical_contact.address}</td>
+										</tr>
+										<tr class="table-danger">
+											<td><b>Address</b></td>
+											<td><b>City: </b>${response.technical_contact.city} <b>State: </b>${response.technical_contact.state} <b>Zip Code: </b>${response.technical_contact.zipcode} <b>Country:
+												</b>${response.technical_contact.country} </td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
 				</div>
 				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response['whois'] ? response['whois'] : "No Whois Data found!"}</pre>
+					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response.raw_text}</pre>
 				</div>
-				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
-	if (response['nameserver']['history'].length) {
-		content += `<table class="table table-striped mb-0">
-							<thead class="table-dark">
-								<td>Date</td>
-								<td>Action</td>
-								<td>NameServer</td>
-							</thead>
-							<tbody>`;
-
-		for (var history in response['nameserver']['history']) {
-			var obj = response['nameserver']['history'][history];
-			content += `
-						<tr>
-							<td>${obj['date']? obj['date'] : '-'}</td>
-							<td>${obj['action']? obj['action'] : '-'}</td>
-							<td>${obj['server']? obj['server'] : '-'}</td>
-						</tr>
-						`;
-		}
-
-		content += `</tbody></table>`
-	} else {
-		content += 'No DNS history records found.';
-	}
-	content += `
+				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 				</div>
-				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+				`;
 
-	if (response['nameserver']['records'].length) {
-		content += `<table class="table table-striped mb-0">
-						<thead class="table-dark">
-							<td>Type</td>
-							<td>Hostname</td>
-							<td>Address</td>
-							<td>TTL</td>
-							<td>Class</td>
-							<td>Preference</td>
-						</thead>
-						<tbody>`;
+				for (var ns in response.nameservers) {
+					var ns_object = response.nameservers[ns];
+					content += `<span class="badge badge-soft-primary me-1 ms-1">${ns_object}</span>`;
+				}
 
-		for (var record in response['nameserver']['records']) {
-			var obj = response['nameserver']['records'][record];
-			content += `
-							<tr>
-								<td><span class="badge badge-soft-primary me-1 ms-1">${obj['type']? obj['type'] : '-'}</span</td>
-								<td>${obj['hostname']? obj['hostname'] : '-'}</td>
-								<td>${obj['address']? obj['address'] : '-'}</td>
-								<td>${obj['ttl']? obj['ttl'] : '-'}</td>
-								<td>${obj['ns_class']? obj['ns_class'] : '-'}</td>
-								<td>${obj['preference']? obj['preference'] : '-'}</td>
-							</tr>`;
-		}
-		content += `</tbody></table>`;
-	} else {
-		content += `No DNS history records found.`;
-	}
-
-	content += `
+				content += `
 				</div>
 				<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				`;
-
-	if (!response['related_domains'].length) {
-		content += `<div class="alert alert-warning" role="alert">
-			<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related domains.
-		</div>`;
-	}
-
-	for (var domain in response['related_domains']) {
-		var domain_obj = response['related_domains'][domain];
-		content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${domain_obj} as target." onclick="add_target('${domain_obj}')">${domain_obj}</span>`
-	}
-
-	content += `
+					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
 				</div>
 				<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				`;
-
-	if (!response['related_tlds'].length) {
-		content += `<div class="alert alert-warning" role="alert">
-			<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related TLds.
-		</div>`;
-	}
-
-	for (var domain in response['related_tlds']) {
-		var domain_obj = response['related_tlds'][domain];
-		content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${domain_obj} as target." onclick="add_target('${domain_obj}')">${domain_obj}</span>`
-	}
-
-	content += `
+					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
 				</div>
 			</div>
 		</div>
-	</div>`;
+	</div>
+	`;
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">
-			<button class="btn btn-primary float-end" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
+			<button class="btn btn-primary float-end mt-4" type="submit" id="search_whois_toolbox_btn" onclick="add_target('${response['ip_domain']}')">Add ${response['ip_domain']} as target</button>
 		</div>`
 	}
 
@@ -2530,4 +2524,38 @@ function highlight_search(search_keyword, content){
 	// this function will send the highlighted text from search keyword
 	var reg = new RegExp('('+search_keyword+')', 'gi');
 	return content.replace(reg, '<mark>$1</mark>');
+}
+
+
+function validURL(str) {
+	// checks for valid http url
+	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+		'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+		'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+		'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+		'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+		'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+	return !!pattern.test(str);
+}
+
+
+function shadeColor(color, percent) {
+	//https://stackoverflow.com/a/13532993
+  var R = parseInt(color.substring(1,3),16);
+  var G = parseInt(color.substring(3,5),16);
+  var B = parseInt(color.substring(5,7),16);
+
+  R = parseInt(R * (100 + percent) / 100);
+  G = parseInt(G * (100 + percent) / 100);
+  B = parseInt(B * (100 + percent) / 100);
+
+  R = (R<255)?R:255;
+  G = (G<255)?G:255;
+  B = (B<255)?B:255;
+
+  var RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+  var GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+  var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+
+  return "#"+RR+GG+BB;
 }
