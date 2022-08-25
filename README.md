@@ -21,7 +21,7 @@
 <a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461" alt="" /></a>&nbsp;
 </p>
 
-<h3>reNgine 1.<br>More than just recon!</h3>
+<h3>reNgine 1.3.2<br>More than just recon!</h3>
 <h4>The only web application recon tool you will ever need!</h4>
 
 <p>Quickly discover the attack surface, and identify vulnerabilities using highly customizable and powerful scan engines.
