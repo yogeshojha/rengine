@@ -175,7 +175,12 @@ CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 CELERY_IGNORE_RESULTS = False
 CELERY_TASK_CACHE = bool(int(os.environ.get('CELERY_TASK_CACHE', '0')))
-CELERY_TASK_CACHE_IGNORE_KWARGS = ['scan_history_id']
+CELERY_TASK_CACHE_IGNORE_KWARGS = [
+    'scan_history_id',
+    'activity_id',
+    'yaml_configuration',
+    'results_dir'
+]
 CELERY_TASK_SKIP_RECORD_ACTIVITY = [
     'reNgine.tasks.initiate_scan',
     'reNgine.tasks.query_whois',

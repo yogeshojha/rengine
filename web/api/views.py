@@ -553,7 +553,7 @@ class StopScan(APIView):
 				scan_history.save()
 
 				if ScanActivity.objects.filter(scan_of=scan_history).exists():
-					last_activity =(
+					last_activity = (
 						ScanActivity.objects
 						.filter(scan_of=scan_history)
 						.order_by('-pk')
@@ -562,7 +562,7 @@ class StopScan(APIView):
 					last_activity.status = 0
 					last_activity.time = timezone.now()
 					last_activity.save()
-				create_scan_activity(scan_history, "Scan aborted", 0)
+				create_scan_activity(scan_history.id, "Scan aborted", 0)
 				response['status'] = True
 			except Exception as e:
 				logging.error(e)

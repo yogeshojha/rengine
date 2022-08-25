@@ -13,6 +13,7 @@ import whatportis
 import yaml
 from celery import chain, chord, group
 from celery.result import allow_join_result
+from celery.utils.log import get_task_logger
 from degoogle import degoogle
 from django.utils import timezone
 from dotted_dict import DottedDict
@@ -32,6 +33,8 @@ from .common_func import *
 """
 Celery tasks.
 """
+
+logger = get_task_logger(__name__)
 
 
 @app.task
@@ -92,7 +95,7 @@ def initiate_subtask(
 	subscan.save()
 	method = globals().get(scan_type)
 	if not method:
-		logger.error(f'Task {scan_type} is not supported by reNgine. Skipping')
+		logger.warning(f'Task {scan_type} is not supported by reNgine. Skipping')
 		return
 	filename = f'{scan_type}_{scan_name}.json'
 	if scan_type in ['fetch_endpoints', 'vulnerability_scan']:
@@ -101,7 +104,7 @@ def initiate_subtask(
 	scan_history.save()
 	method(
 		scan_history,
-		0,
+		DYNAMIC_ID,
 		config,
 		results_dir,
 		subdomain=subdomain.name,
@@ -151,16 +154,16 @@ def initiate_scan(
 
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
+		scan_history = ScanHistory.objects.get(pk=scan_history_id)
+		scan_history.scan_status = RUNNING_TASK
+	elif scan_type == SCHEDULED_SCAN: # scheduled
 		scan_history = ScanHistory()
 		scan_history.scan_status = INITIATED_TASK
-	elif scan_type == SCHEDULED_SCAN: # scheduled
-		scan_history = ScanHistory.objects.get(pk=scan_history_id)
 
 	# Once the celery task starts, change the task status to started
 	scan_history.scan_type = engine
 	scan_history.celery_id = initiate_scan.request.id
 	scan_history.domain = domain
-	scan_history.scan_status = RUNNING_TASK
 	scan_history.start_scan_date = timezone.now()
 	scan_history.tasks = engine.tasks
 	scan_history.results_dir = scan_dirname
@@ -178,9 +181,19 @@ def initiate_scan(
 
 	# Create subdomain in DB
 	Subdomain.objects.get_or_create(
+		scan_history=scan_history,
 		target_domain=domain,
-		name=domain.name,
-		scan_history=scan_history)
+		name=domain.name)
+
+	# Initial URL discovery + checker on domain - will create at least 1 endpoint
+	ctx = {
+		'scan_history_id': scan_history.id,
+		'activity_id': -1, # activity will be created dynamically
+		'domain_id': domain.id,
+		'yaml_configuration': config,
+		'results_dir': results_dir
+	}
+	http_crawl(**ctx)
 
 	# Send start notif
 	notification = Notification.objects.first()
@@ -191,37 +204,35 @@ def initiate_scan(
 		send_notification(msg)
 
 	# Run tasks
-	args = [scan_history.id, -1, domain.id, config, results_dir]
-
 	# Build one Celery workflow containing all the tasks, crafted according to
 	# the dependency graph below:
 	# initiate_scan --> subdomain_discovery --> http_crawl --> dir_file_fuzz
 	#					osint 	   		        port_scan      vulnerability_scan
 	#		 		 						                   screenshot
 	# 		   		 						           		   waf_detection
-	skipped = skip.si(*args)
+	skipped = skip.si(**ctx)
 	header = group(
 		# Subdomain tasks
 		chain(
-			subdomain_discovery.si(*args) if 'subdomain_discovery' in engine.tasks else skipped,
-			fetch_url.si(*args) if 'fetch_url' in engine.tasks else skipped,
+			subdomain_discovery.si(**ctx) if 'subdomain_discovery' in engine.tasks else skipped,
+			fetch_url.si(**ctx) if 'fetch_url' in engine.tasks else skipped,
 			group(
 				# HTTP tasks (crawl, dir fuzz, ...)
 				chain(
-					http_crawl.si(*args) if 'http_crawl' in engine.tasks else skipped,
+					http_crawl.si(**ctx) if 'http_crawl' in engine.tasks else skipped,
 					group(
-						dir_file_fuzz.si(*args) if 'dir_file_fuzz' in engine.tasks else skipped,
-						waf_detection.si(*args) if 'waf_detection' in engine.tasks else skipped,
-						vulnerability_scan.si(*args) if 'vulnerability_scan' in engine.tasks else skipped,
-						screenshot.si(*args) if 'screenshot' in engine.tasks else skipped
+						dir_file_fuzz.si(**ctx) if 'dir_file_fuzz' in engine.tasks else skipped,
+						waf_detection.si(**ctx) if 'waf_detection' in engine.tasks else skipped,
+						vulnerability_scan.si(**ctx) if 'vulnerability_scan' in engine.tasks else skipped,
+						screenshot.si(**ctx) if 'screenshot' in engine.tasks else skipped
 					)
 				),
 				# Port scan tasks
-				port_scan.si(*args) if 'port_scan' in engine.tasks else skipped
+				port_scan.si(**ctx) if 'port_scan' in engine.tasks else skipped
 			)
 		),
 		# OSInt
-		osint.si(*args) if 'osint' in engine.tasks else skipped
+		osint.si(**ctx) if 'osint' in engine.tasks else skipped
 	).tasks
 
 	# Run Celery workflow and wait for results
@@ -436,8 +447,8 @@ def subdomain_discovery(
 						logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
 
 			else:
-				logger.error(
-					f'Task "subdomain_discovery": "{tool}" not supported by reNgine. Skipping.')
+				logger.warning(
+					f'Task "subdomain_discovery": "{tool}" is not supported by reNgine. Skipping.')
 		except Exception as e:
 			logger.error(
 				f'Task "subdomain_discovery": "{tool}" raised an exception')
@@ -596,10 +607,13 @@ def http_crawl(
 
 	# Write httpx input file
 	input_file = f'{results_dir}/subdomains.txt'
-	get_subdomains(
+	subdomains = get_subdomains(
 		domain,
 		scan_history=scan_history,
 		write_filepath=input_file)
+	if not subdomains:
+		logger.warning('No subdomains found. Skipping.')
+		return
 
 	# Get random proxy
 	proxy = get_random_proxy()
@@ -681,6 +695,8 @@ def http_crawl(
 				response_time=response_time
 			)
 			endpoint.save()
+			if endpoint.is_alive():
+				logger.info(f'Found alive endpoint at {endpoint} with status {http_status}')
 
 			# Add technology objects to DB
 			technologies = line.get('technologies', [])
@@ -834,15 +850,16 @@ def screenshot(
 	with open(result_csv_path, 'r') as file:
 		reader = csv.reader(file)
 		for row in reader:
-			one, two, three, name, status, path = tuple(row)
-			logger.info(f'{one}:{two}:{three}:{name}:{status}:{path}')
+			"Protocol,Port,Domain,Request Status,Screenshot Path, Source Path"
+			protocol, port, subdomain_name, status, screenshot_path, source_path = tuple(row)
+			logger.info(f'{protocol}:{port}:{subdomain_name}:{status}')
 			subdomain_query = (
 				Subdomain.objects
-				.filter(scan_history__id=scan_history.id, name=name)
+				.filter(scan_history__id=scan_history.id, name=subdomain_name)
 			)
 			if status == 'Successful' and subdomain_query.exists():
 				subdomain = subdomain_query.first()
-				subdomain.screenshot_path = path.replace('/usr/src/scan_results/', '')
+				subdomain.screenshot_path = screenshot_path.replace('/usr/src/scan_results/', '')
 				subdomain.save()
 				logger.info(f'Added screenshot for {subdomain.name} to DB')
 
@@ -881,6 +898,7 @@ def port_scan(
 	"""
 	cmd = 'naabu -json -exclude-cdn'
 	config = yaml_configuration[PORT_SCAN]
+	exclude_subdomains = config.get('exclude_subdomains', False)
 	exclude_ports = config.get(EXCLUDE_PORTS, [])
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
 	naabu_rate = config.get(NAABU_RATE, 0)
@@ -904,9 +922,12 @@ def port_scan(
 		send_notification(msg)
 
 	# Get subdomains
-	subdomains = get_subdomains(domain, scan_history=scan_history)
-	subdomains_str = ','.join(subdomains)
-	cmd += f' -host {subdomains_str}'
+	if exclude_subdomains:
+		cmd += f' -host {domain.name}'
+	else:
+		subdomains = get_subdomains(domain, scan_history=scan_history)
+		subdomains_str = ','.join(subdomains)
+		cmd += f' -host {subdomains_str}'
 
 	# Get ports
 	if 'full' in ports:
@@ -1139,8 +1160,7 @@ def dir_file_fuzz(
     # Grab subdomains to fuzz
 	subdomains_fuzz = (
 		Subdomain.objects
-		.filter(scan_history__id=scan_history.id)
-		.exclude(http_url__isnull=True)
+		.filter(scan_history__id=scan_history.id, http_url__isnull=False)
 	)
 
 	# Loop through subdomains and run command
@@ -1259,7 +1279,7 @@ def fetch_url(
 	domain = Domain.objects.get(pk=domain_id)
 
 	# Config
-	config = yaml_configuration[FETCH_URL]
+	config = yaml_configuration.get(FETCH_URL)
 	gf_patterns = config.get(GF_PATTERNS, [])
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
 	scan_intensity = config.get(INTENSITY, DEFAULT_ENDPOINT_SCAN_INTENSITY)
@@ -1270,7 +1290,10 @@ def fetch_url(
 	output_path = f'{results_dir}/{filename}'
 
 	# Get subdomains
-	get_subdomains(domain, scan_history, write_filepath=input_path)
+	subdomains = get_subdomains(domain, scan_history, write_filepath=input_path)
+	if not subdomains:
+		logger.warning('No subdomains found. Skipping.')
+		return
 
 	# Combine old gf patterns with new ones
 	if gf_patterns:
@@ -1407,7 +1430,8 @@ def fetch_url(
 
 		# Add endpoints / subdomains to DB
 		for url in lines:
-			subdomain_name = get_subdomain_from_url(url)
+			http_url = url.strip()
+			subdomain_name = get_subdomain_from_url(http_url)
 			subdomain = Subdomain.objects.get_or_create(
 				target_domain=domain,
 				scan_history=scan_history,
@@ -1416,7 +1440,7 @@ def fetch_url(
 				scan_history=scan_history,
 				target_domain=domain,
 				subdomain=subdomain,
-				http_url=url.strip())
+				http_url=http_url)
 			earlier_pattern = endpoint.matched_gf_patterns
 			pattern = f'{earlier_pattern},{pattern}' if earlier_pattern else gf_pattern
 			endpoint.matched_gf_patterns = pattern
@@ -1470,11 +1494,13 @@ def vulnerability_scan(
 	output_path = f'{results_dir}/{filename}'
 
 	# Get alive endpoints
-	get_endpoints(
+	endpoints = get_endpoints(
 		domain,
 		scan_history=scan_history,
 		is_alive=True,
 		write_filepath=input_path)
+	endpoints_count = len(endpoints)
+	logger.info(f'Running Nuclei scanner on {endpoints_count} ...')
 
 	# Find URL
 	url = ''
@@ -1527,7 +1553,6 @@ def vulnerability_scan(
 		cmd += f' -t {tpl}'
 
 	# Run cmd
-	logger.info('Running Nuclei scanner ...')
 	logger.info(cmd)
 	results = []
 	for line in execute_live(cmd):
@@ -1538,19 +1563,23 @@ def vulnerability_scan(
 		subdomain = Subdomain.objects.get(
 			name=subdomain_name,
 			scan_history=scan_history)
+		vuln_name = line['info'].get('name', '')
+		vuln_type = line['type']
+		vuln_severity = line['info'].get('severity', 'unknown')
+		http_url = line.get('matched-at')
 		vulnerability = Vulnerability(
-			name=line['info'].get('name', ''),
-			type=line['type'],
+			name=vuln_name,
+			type=vuln_type,
 			subdomain=subdomain,
 			scan_history=scan_history,
 			target_domain=domain,
+			http_url=http_url,
+			severity=vuln_severity,
 			template=line['template'],
 			template_url=line['template-url'],
 			template_id=line['template-id'],
-			severity=NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
 			description=line['info'].get('description' ,''),
 			matcher_name=line.get('matcher-name', ''),
-			http_url=line.get('matched-at'),
 			curl_command=line.get('curl-command'),
 			extracted_results=line.get('extracted-results', []),
 			cvss_metrics=line['info'].get('classification', {}).get('cvss-metrics', ''),
@@ -1558,42 +1587,43 @@ def vulnerability_scan(
 			discovered_date=timezone.now(),
 			open_status=True
 		)
+		logger.info(f'Found {vuln_severity.upper()} vulnerability "{vuln_name}" of type {vuln_type} on {subdomain}')
 		vulnerability.save()
 
 		# Get or create EndPoint object
-		endpoint = EndPoint.objects.get_or_create(
-			http_url=host,
+		endpoint, _ = EndPoint.objects.get_or_create(
 			scan_history=scan_history,
 			target_domain=domain,
-			subdomain=subdomain)
+			subdomain=subdomain,
+			http_url=http_url)
 		vulnerability.endpoint = endpoint
 		vulnerability.save()
 
 		# Save tags
 		tags = line['info'].get('tags') or []
 		for tag_name in tags:
-			tag = VulnerabilityTags.objects.get_or_create(name=tag_name)
+			tag, _ = VulnerabilityTags.objects.get_or_create(name=tag_name)
 			vulnerability.tags.add(tag)
 			vulnerability.save()
 
 		# Save CVEs
 		cve_ids = line['info'].get('classification', {}).get('cve-id') or []
 		for cve_name in cve_ids:
-			cve = CveId.objects.get_or_create(name=cve_name)
+			cve, _ = CveId.objects.get_or_create(name=cve_name)
 			vulnerability.cve_ids.add(cve)
 			vulnerability.save()
 
 		# Save CWEs
 		cwe_ids = line['info'].get('classification', {}).get('cwe-id') or []
 		for cwe_name in cwe_ids:
-			cve = CweId.objects.get_or_create(name=cve_name)
-			vulnerability.cwe_ids.add(cve)
+			cwe, _ = CweId.objects.get_or_create(name=cwe_name)
+			vulnerability.cwe_ids.add(cwe)
 			vulnerability.save()
 
 		# Save vuln reference
 		references = line['info'].get('reference') or []
 		for ref_url in references:
-			ref = VulnerabilityReference.objects.get_or_create(url=ref_url)
+			ref, _ = VulnerabilityReference.objects.get_or_create(url=ref_url)
 			vulnerability.references.add(ref)
 			vulnerability.save()
 
@@ -2426,7 +2456,7 @@ def get_endpoints(
 	if scan_history:
 		base_query = base_query.filter(
 			scan_history=scan_history,
-			http_url__isnull=True)
+			http_url__isnull=False)
 	endpoint_query = base_query.distinct('http_url').order_by('http_url')
 	endpoints = [
 		endpoint
