@@ -587,7 +587,7 @@
 	};
 
 	Gridzy.getDefaultOptions = function (layout) {
-		if (layout && layout !== Gridzy._defaultOptions.layout && typeof Gridzy._layouts[layout] !== 'undefiend') {
+		if (layout && layout !== Gridzy._defaultOptions.layout && typeof Gridzy._layouts[layout] !== 'undefind') {
 			return helper.optionsMerge(helper.cloneDefaultOptionsTemplate(layout), Gridzy._defaultOptions);
 		} else {
 			helper.completeDefaultOptionsObject();
