@@ -587,15 +587,7 @@
 	};
 
 	Gridzy.getDefaultOptions = function (layout) {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		if (layout && layout !== Gridzy._defaultOptions.layout && typeof Gridzy._layouts[layout] !== 'undefined') {
-=======
-		if (layout && layout !== Gridzy._defaultOptions.layout && typeof Gridzy._layouts[layout] !== 'undefined') {
->>>>>>> f61757df686a36d55aba4b613a54330417da34e3
-=======
-		if (layout && layout !== Gridzy._defaultOptions.layout && typeof Gridzy._layouts[layout] !== 'undefiend') {
->>>>>>> parent of 791b0f25 (Fix typo)
 			return helper.optionsMerge(helper.cloneDefaultOptionsTemplate(layout), Gridzy._defaultOptions);
 		} else {
 			helper.completeDefaultOptionsObject();
