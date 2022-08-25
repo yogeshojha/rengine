@@ -18,7 +18,6 @@ from reNgine.settings import (CELERY_RAISE_ON_ERROR, CELERY_TASK_CACHE,
                               CELERY_TASK_SKIP_RECORD_ACTIVITY, DEBUG)
 
 cache = Redis.from_url(os.environ['CELERY_BROKER'])
-logger = logging.getLogger()
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
 
 # db imports only work if django is loaded, so MUST be placed after django setup
@@ -55,27 +54,52 @@ class RengineTask(Task):
     def __call__(self, *args, **kwargs):
 
         # Prepare task
-        logger.info(f'Task {self.name} status is RUNNING')
+        if self.name == 'reNgine.tasks.skip':
+            return
+        from celery.utils.log import get_task_logger
+        logger = get_task_logger(__name__)
+        logger.warning(f'Task {self.name} status is RUNNING')
         task_name = self.name.split('.')[-1]
-        task_descr = ' '.join(task_name.split('_')).capitalize()
-        scan_history_id = args[0]
-        RECORD_ACTIVITY = self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY
+        args_str = '_'.join([str(arg) for arg in args])
+        kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
+        task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
+        if DEBUG > 1:
+            task_descr += f' | {args_str} | {kwargs_str}'
+        scan_history_id = args[0] if len(args) > 0 else kwargs.get('scan_history_id')
+
+        # Create scan activity only if we have a scan_history_id and 
+        # activity_id in the task args
+        RECORD_ACTIVITY = (
+            scan_history_id is not None
+            and
+            self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY
+            and
+            (
+                (len(args) > 1 and isinstance(args[1], int))
+                or
+                kwargs.get('activity_id', False)
+            )
+        )
+
         if RECORD_ACTIVITY:
             activity_id = create_scan_activity(
                 scan_history_id=scan_history_id,
                 message=task_descr,
                 status=INITIATED_TASK)
-            args = list(args)
-            args[1] = activity_id # set activity id as task arg
-            args = tuple(args)
+            # Set activity id as task arg
+            if len(args) > 1:
+                args = list(args)
+                args[1] = activity_id
+                args = tuple(args)
+            elif 'activity_id' in kwargs:
+                kwargs['activity_id'] = activity_id
 
+        # Check for result in cache and return if hit
         if CELERY_TASK_CACHE:
-            args_str = '_'.join([str(arg) for arg in args])
-            kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
             record_key = f'{self.name}__{args_str}__{kwargs_str}'
             result = cache.get(record_key)
             if result and result != b'null':
-                logger.info(f'Task {self.name} status is SUCCESS (CACHED)')
+                logger.warning(f'Task {self.name} status is SUCCESS (CACHED)')
                 if RECORD_ACTIVITY:
                     update_scan_activity(activity_id, SUCCESS_TASK)
                 return json.loads(result)
@@ -86,7 +110,7 @@ class RengineTask(Task):
             if RECORD_ACTIVITY:
                 update_scan_activity(activity_id, RUNNING_TASK)
             result = self.run(*args, **kwargs)
-            logger.info(f'Task {self.name} status is SUCCESS')
+            logger.warning(f'Task {self.name} status is SUCCESS')
             if RECORD_ACTIVITY:
                 update_scan_activity(activity_id, SUCCESS_TASK)
         except Exception as e:
@@ -102,6 +126,7 @@ class RengineTask(Task):
             if CELERY_RAISE_ON_ERROR:
                 raise e
 
+        # Set task result in cache
         if CELERY_TASK_CACHE and result:
             cache.set(record_key, json.dumps(result))
             cache.expire(record_key, 600) # 10mn cache
@@ -116,4 +141,4 @@ app.autodiscover_tasks()
 @after_setup_task_logger.connect
 def setup_task_logger(logger, *args, **kwargs):
     for handler in logger.handlers:
-        handler.setFormatter(TaskFormatter('%(task_name)s - %(pathname)s - %(levelname)s - %(message)s'))
+        handler.setFormatter(TaskFormatter('%(task_name)s | %(levelname)s | %(message)s'))
