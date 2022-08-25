@@ -1,0 +1,6 @@
+{
+    "makefile.extensionOutputFolder": "./.vscode",
+    "githubPullRequests.ignoredPullRequestBranches": [
+        "master"
+    ]
+}
