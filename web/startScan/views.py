@@ -268,17 +268,18 @@ def start_scan_ui(request, domain_id):
         scan_history = ScanHistory.objects.filter(id=scan_history_id).first()
 
         # Start the celery task
-        celery_task = initiate_scan.apply_async(
-            args=(
-                scan_history_id,
-                None,
-                domain_id,
-                None,
-                '/usr/src/scan_results',
-                engine_id,
-                0,
-                subdomains_in,
-                subdomains_out))
+        kwargs = {
+            'scan_history_id': scan_history.id,
+            'domain_id': domain.id,
+            'engine_id': engine_id,
+            'activity_id': DYNAMIC_ID, # activity will be created dynamically
+            'scan_type': LIVE_SCAN,
+            'yaml_configuration': None,
+            'results_dir': '/usr/src/scan_results',
+            'imported_subdomains': subdomains_in,
+            'out_of_scope_subdomains': subdomains_out
+        }
+        celery_task = initiate_scan.apply_async(kwargs=kwargs)
         scan_history.celery_id = celery_task.id
         scan_history.save()
 
@@ -310,19 +311,24 @@ def start_multiple_scan(request):
         if request.POST.get('scan_mode', 0):
             # if scan mode is available, then start the scan
             # get engine type
-            engine_type = request.POST['scan_mode']
+            engine_id = request.POST['scan_mode']
             list_of_domains = request.POST['list_of_domain_id']
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
-                scan_history_id = create_scan_object(domain_id, engine_type)
-                scan_history = ScanHistory.objects.filter(id=scan_history_id).first()
-                celery_task = initiate_scan.apply_async(
-                    args=(
-                        domain_id,
-                        scan_history_id,
-                        0,
-                        engine_type)
-                )
+                scan_history_id = create_scan_object(domain_id, engine_id)
+                scan_history = ScanHistory.objects.get(pk=scan_history_id)
+                kwargs = {
+                    'scan_history_id': scan_history.id,
+                    'domain_id': domain.id,
+                    'engine_id': engine_id,
+                    'activity_id': DYNAMIC_ID,
+                    'scan_type': LIVE_SCAN,
+                    'results_dir': '/usr/src/scan_results',
+                    # TODO: Add this to multiple scan view
+                    # 'imported_subdomains': subdomains_in,
+                    # 'out_of_scope_subdomains': subdomains_out
+                }
+                celery_task = initiate_scan.apply_async(kwargs=kwargs)
                 scan_history.celery_id = celery_task.id
                 scan_history.save()
 
@@ -441,14 +447,15 @@ def stop_scan(request, id):
             last_activity = (
                 ScanActivity.objects
                 .filter(scan_of=scan_history)
-                .order_by('-pk')[0]
+                .order_by('-pk')
+                .first()
             )
             last_activity.status = 0
             last_activity.time = timezone.now()
             last_activity.save()
         except Exception as e:
             print(e)
-        create_scan_activity(scan_history, "Scan aborted", SUCCESS_TASK)
+        create_scan_activity(scan_history.id, "Scan aborted", SUCCESS_TASK)
         messageData = {'status': 'true'}
         messages.add_message(
             request,
@@ -502,7 +509,7 @@ def schedule_scan(request, host_id):
             kwargs = {
                 'domain_id': host_id,
                 'scan_history_id': 0,
-                'scan_type': 1,
+                'scan_type': SCHEDULED_SCAN,
                 'engine_type': engine_type,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out
@@ -518,7 +525,7 @@ def schedule_scan(request, host_id):
             kwargs = {
                 'domain_id': host_id,
                 'scan_history_id': 0,
-                'scan_type': 1,
+                'scan_type': SCHEDULED_SCAN,
                 'engine_type': engine_type,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out }
@@ -607,7 +614,7 @@ def create_scan_object(host_id, engine_id):
     engine_object = EngineType.objects.get(pk=engine_id)
     domain = Domain.objects.get(pk=host_id)
     scan_history = ScanHistory()
-    scan_history.scan_status = -1
+    scan_history.scan_status = INITIATED_TASK
     scan_history.domain = domain
     scan_history.scan_type = engine_object
     scan_history.start_scan_date = current_scan_time
@@ -652,20 +659,24 @@ def visualise(request, id):
 def start_organization_scan(request, id):
     organization = get_object_or_404(Organization, id=id)
     if request.method == "POST":
-        engine_type = request.POST['scan_mode']
+        engine_id = request.POST['scan_mode']
 
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
-            scan_history_id = create_scan_object(domain.id, engine_type)
+            scan_history_id = create_scan_object(domain.id, engine_id)
             scan_history = ScanHistory.objects.filter(id=scan_history_id)
-            celery_task = initiate_scan.apply_async(
-                args=(
-                    domain.id,
-                    scan_history_id,
-                    0,
-                    engine_type,
-                    None
-                ))
+            kwargs = {
+                'scan_history_id': scan_history.id,
+                'domain_id': domain.id,
+                'engine_id': engine_id,
+                'activity_id': -1, # activity will be created dynamically
+                'scan_type': LIVE_SCAN,
+                'results_dir': '/usr/src/scan_results',
+                # TODO: Add this to multiple scan view
+                # 'imported_subdomains': subdomains_in,
+                # 'out_of_scope_subdomains': subdomains_out
+            }
+            celery_task = initiate_scan.apply_async(kwargs=kwargs)
             scan_history.celery_id = celery_task.id
             scan_history.save()
 
@@ -726,7 +737,7 @@ def schedule_organization_scan(request, id):
                 _kwargs = json.dumps({
                     'domain_id': domain.id,
                     'scan_history_id': 0,
-                    'scan_type': 1,
+                    'scan_type': SCHEDULED_SCAN,
                     'engine_type': engine_type,
                     'imported_subdomains': None
                 })

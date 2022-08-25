@@ -166,6 +166,7 @@ CELERY_TASK_STATUSES = (
     (SUCCESS_TASK, SUCCESS_TASK), 
     (ABORTED_TASK, ABORTED_TASK)
 )
+DYNAMIC_ID = -1
 
 ###############################################################################
 # Uncommon Ports
