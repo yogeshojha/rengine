@@ -1350,11 +1350,12 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 }
 
 
-function initiate_subtask(subdomain_ids){
+function initiate_subscan(subdomain_ids){
 	var engine_id = $('#subtaskScanEngine').val();
 	var tasks = []
-	$('#engineTasks').find('input').each(function(i){
-		if (this.is(':checked')){
+	var $engine_tasks = $('#engineTasks').find('input')
+	$engine_tasks.each(function(i){
+		if ($(this).is(':checked')){
 			tasks.push(this.id)
 		}
 	})
@@ -1418,11 +1419,11 @@ $('#btn-initiate-subtask').on('click', function(){
 				subdomain_ids.push($(subdomain_item[i]).val());
 			}
 		}
-		initiate_subtask(subdomain_ids);
+		initiate_subscan(subdomain_ids);
 	}
 	else{
 		var subdomain_id = $('#subtask_subdomain_id').val();
-		initiate_subtask([subdomain_id]);
+		initiate_subscan([subdomain_id]);
 	}
 });
 

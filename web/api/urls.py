@@ -190,7 +190,7 @@ urlpatterns = [
     path(
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),
-        name='initiate_subtask'),
+        name='initiate_subscan'),
     path(
         'action/stop/scan/',
         StopScan.as_view(),

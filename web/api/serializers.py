@@ -1,6 +1,6 @@
 from dashboard.models import *
 from django.contrib.humanize.templatetags.humanize import (naturalday,
-                                                           naturaltime)
+														   naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *
@@ -74,7 +74,7 @@ class SubScanResultSerializer(serializers.ModelSerializer):
 			'stop_scan_date',
 			'scan_history',
 			'subdomain',
-			'celery_id',
+			'celery_ids',
 			'status',
 			'subdomain_name',
 			'task',
@@ -152,6 +152,13 @@ class SubScanSerializer(serializers.ModelSerializer):
 		return ''
 
 
+class CommandSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Command
+		fields = '__all__'
+		depth = 1
+
+
 class ScanHistorySerializer(serializers.ModelSerializer):
 
 	subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
@@ -165,7 +172,26 @@ class ScanHistorySerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = ScanHistory
-		fields = '__all__'
+		fields = [
+			'id',
+			'subdomain_count',
+			'endpoint_count',
+			'vulnerability_count',
+			'current_progress',
+			'completed_time',
+			'elapsed_time',
+			'completed_ago',
+			'organizations',
+			'start_scan_date',
+			'scan_status',
+			'results_dir',
+			'celery_ids',
+			'tasks',
+			'stop_scan_date',
+			'error_message',
+			'domain',
+			'scan_type'
+		]
 		depth = 1
 
 	def get_subdomain_count(self, scan_history):
@@ -205,9 +231,20 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 class EngineSerializer(serializers.ModelSerializer):
 
+	tasks = serializers.SerializerMethodField('get_tasks')
+
+	def get_tasks(self, instance):
+		return instance.tasks
+
 	class Meta:
 		model = EngineType
-		fields = '__all__'
+		fields = [
+			'id',
+			'default_engine',
+			'engine_name',
+			'yaml_configuration',
+			'tasks'
+		]
 
 
 class OrganizationTargetsSerializer(serializers.ModelSerializer):
@@ -330,11 +367,14 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 			return "Interesting"
 
 	def get_children(self, subdomain_name):
-		subdomain = Subdomain.objects.filter(
-			scan_history=self.context.get('scan_history')).filter(
-			name=subdomain_name)
+		scan_history = self.context.get('scan_history')
+		subdomains = (
+			Subdomain.objects
+			.filter(scan_history=scan_history)
+			.filter(name=subdomain_name)
+		)
 
-		ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
+		ips = IpAddress.objects.filter(ip_addresses__in=subdomains)
 		ip_serializer = VisualiseIpSerializer(ips, many=True)
 
 		# endpoint = EndPoint.objects.filter(
@@ -342,12 +382,14 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 		#     subdomain__name=subdomain_name)
 		# endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
-		technologies = Technology.objects.filter(technologies__in=subdomain)
+		technologies = Technology.objects.filter(technologies__in=subdomains)
 		tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
 
-		vulnerability = Vulnerability.objects.filter(
-			scan_history=self.context.get('scan_history')
-		).filter(subdomain=subdomain_name)
+		vulnerability = (
+			Vulnerability.objects
+			.filter(scan_history=scan_history)
+			.filter(subdomain=subdomain_name)
+		)
 
 		return_data = []
 		if ip_serializer.data:
@@ -527,8 +569,9 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 
 		subdomain = Subdomain.objects.filter(scan_history=history)
 		subdomain_serializer = VisualiseSubdomainSerializer(
-			subdomain, many=True, context={
-				'scan_history': history})
+			subdomain,
+			many=True,
+			context={'scan_history': history})
 
 		email = Email.objects.filter(emails__in=scan_history)
 		email_serializer = VisualiseEmailSerializer(email, many=True)
@@ -545,53 +588,77 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 		return_data = []
 
 		if subdomain_serializer.data:
-			return_data.append({'description': 'Subdomains', 'children': subdomain_serializer.data})
+			return_data.append({
+				'description': 'Subdomains',
+				'children': subdomain_serializer.data})
 
 		if email_serializer.data or employee_serializer.data or dork_serializer.data or metainfo:
 			osint_data = []
 			if email_serializer.data:
-				osint_data.append({'description': 'Emails', 'children': email_serializer.data})
+				osint_data.append({
+					'description': 'Emails',
+					'children': email_serializer.data})
 			if employee_serializer.data:
-				osint_data.append({'description': 'Employees', 'children': employee_serializer.data})
+				osint_data.append({
+					'description': 'Employees',
+					'children': employee_serializer.data})
 			if dork_serializer.data:
-				osint_data.append({'description': 'Dorks', 'children': dork_serializer.data})
+				osint_data.append({
+					'description': 'Dorks',
+					'children': dork_serializer.data})
 
 			if metainfo:
 				metainfo_data = []
-				usernames = metainfo.annotate(
-					description=F('author')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(author__isnull=False)
+				usernames = (
+					metainfo
+					.annotate(description=F('author'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(author__isnull=False)
+				)
 
 				if usernames:
-					metainfo_data.append({'description': 'Usernames', 'children': usernames})
+					metainfo_data.append({
+						'description': 'Usernames',
+						'children': usernames})
 
-				software = metainfo.annotate(
-					description=F('producer')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(producer__isnull=False)
+				software = (
+					metainfo
+					.annotate(description=F('producer'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(producer__isnull=False)
+				)
 
 				if software:
-					metainfo_data.append({'description': 'Software', 'children': software})
+					metainfo_data.append({
+						'description': 'Software',
+						'children': software})
 
-				os = metainfo.annotate(
-					description=F('os')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(os__isnull=False)
+				os = (
+					metainfo
+					.annotate(description=F('os'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(os__isnull=False)
+				)
 
 				if os:
-					metainfo_data.append({'description': 'OS', 'children': os})
+					metainfo_data.append({
+						'description': 'OS',
+						'children': os})
 
 			if metainfo:
-				osint_data.append({'description':'Metainfo', 'children': metainfo_data})
+				osint_data.append({
+					'description':'Metainfo',
+					'children': metainfo_data})
 
-			return_data.append({'description':'OSINT', 'children': osint_data})
+			return_data.append({
+				'description':'OSINT',
+				'children': osint_data})
 
 		return return_data
 
@@ -599,7 +666,6 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 class SubdomainChangesSerializer(serializers.ModelSerializer):
 
 	change = serializers.SerializerMethodField('get_change')
-
 	is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
 	class Meta:
@@ -610,9 +676,11 @@ class SubdomainChangesSerializer(serializers.ModelSerializer):
 		return Subdomain.change
 
 	def get_is_interesting(self, Subdomain):
-		return get_interesting_subdomains(
-			Subdomain.scan_history.id).filter(
-			name=Subdomain.name).exists()
+		return (
+			get_interesting_subdomains(Subdomain.scan_history.id)
+			.filter(name=Subdomain.name)
+			.exists()
+		)
 
 
 class EndPointChangesSerializer(serializers.ModelSerializer):
@@ -770,9 +838,12 @@ class SubdomainSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 	def get_is_interesting(self, subdomain):
-		return get_interesting_subdomains(
-			subdomain.scan_history.id).filter(
-			name=subdomain.name).exists()
+		scan_id = subdomain.scan_history.id if subdomain.scan_history else None
+		return (
+			get_interesting_subdomains(scan_id)
+			.filter(name=subdomain.name)
+			.exists()
+		)
 
 	def get_endpoint_count(self, subdomain):
 		return subdomain.get_endpoint_count
@@ -810,7 +881,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 
 class EndpointSerializer(serializers.ModelSerializer):
 
-	technologies = TechnologySerializer(many=True)
+	techs = TechnologySerializer(many=True)
 
 	class Meta:
 		model = EndPoint
@@ -827,7 +898,6 @@ class EndpointOnlyURLsSerializer(serializers.ModelSerializer):
 class VulnerabilitySerializer(serializers.ModelSerializer):
 
 	discovered_date = serializers.SerializerMethodField()
-
 	severity = serializers.SerializerMethodField()
 
 	def get_discovered_date(self, Vulnerability):

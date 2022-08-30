@@ -13,7 +13,7 @@ from packaging import version
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
-from reNgine.tasks import (create_scan_activity, initiate_subtask, query_whois,
+from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
                            run_system_commands)
 from reNgine.utilities import is_safe_path
 from reNgine.definitions import ABORTED_TASK
@@ -585,13 +585,21 @@ class InitiateSubTask(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
+		logging.info(data)
 		engine_id = data.get('engine_id')
 		scan_types = data['tasks']
 		for subdomain_id in data['subdomain_ids']:
 			logging.info(f'Running subscans {scan_types} on subdomain "{subdomain_id}" ...')
 			for stype in scan_types:
-				initiate_subtask.apply_async(
-					args=(subdomain_id, stype, engine_id))
+				ctx = {
+					'yaml_configuration': None,
+					'scan_history_id': None,
+					'activity_id': DYNAMIC_ID,
+					'subdomain_id': subdomain_id,
+					'scan_type': stype,
+					'engine_id': engine_id
+				}
+				initiate_subscan.apply_async(kwargs=ctx)
 		return Response({'status': True})
 
 
