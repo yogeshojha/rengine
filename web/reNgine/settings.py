@@ -183,6 +183,7 @@ CELERY_TASK_CACHE_IGNORE_KWARGS = [
 ]
 CELERY_TASK_SKIP_RECORD_ACTIVITY = [
     'reNgine.tasks.initiate_scan',
+    'reNgine.tasks.initiate_subscan',
     'reNgine.tasks.query_whois',
     'reNgine.tasks.skip',
     'reNgine.tasks.run_system_commands'
