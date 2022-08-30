@@ -44,9 +44,7 @@ def get_lookup_keywords():
             key.strip() for key in InterestingLookupModel.objects.filter(
                 custom_type=True).order_by('-id')[0].keywords.split(',')]
     lookup_keywords = default_lookup_keywords + custom_lookup_keywords
-    # remove empty strings from list, if any
-    lookup_keywords = list(filter(None, lookup_keywords))
-
+    lookup_keywords = list(filter(None, lookup_keywords)) # remove empty strings from list
     return lookup_keywords
 
 
@@ -145,8 +143,10 @@ def get_interesting_endpoint(scan_history=None, target=None):
 
     return url_lookup | title_lookup
 
+
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
+
 
 def get_subdomain_from_url(url):
     extract_url = tldextract.extract(url)
@@ -155,9 +155,11 @@ def get_subdomain_from_url(url):
         subdomain = subdomain[1:]
     return subdomain.strip()
 
+
 def get_domain_from_subdomain(subdomain):
     ext = tldextract.extract(subdomain)
     return '.'.join(ext[1:3])
+
 
 def send_telegram_message(message):
     notification = Notification.objects.first()
@@ -171,6 +173,7 @@ def send_telegram_message(message):
             + '&parse_mode=Markdown&text=' + message
         thread = Thread(target=requests.get, args = (send_text, ))
         thread.start()
+
 
 def send_slack_message(message):
     headers = {'content-type': 'application/json'}
@@ -188,6 +191,7 @@ def send_slack_message(message):
             })
         thread.start()
 
+
 def send_discord_message(message):
     notification = Notification.objects.first()
     if notification and notification.send_to_discord \
@@ -199,6 +203,7 @@ def send_discord_message(message):
             )
         thread = Thread(target=webhook.execute)
         thread.start()
+
 
 def send_files_to_discord(file_path):
     notification = Notification.objects.first()
@@ -215,10 +220,12 @@ def send_files_to_discord(file_path):
         thread = Thread(target=webhook.execute)
         thread.start()
 
+
 def send_notification(message):
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
+
 
 def get_random_proxy():
     if Proxy.objects.all().exists():
@@ -228,6 +235,7 @@ def get_random_proxy():
             print('Using proxy: ' + proxy_name)
             return proxy_name
     return False
+
 
 def send_hackerone_report(vulnerability_id):
     vulnerability = Vulnerability.objects.get(id=vulnerability_id)
@@ -285,9 +293,11 @@ def send_hackerone_report(vulnerability_id):
         status_code = 111
         return status_code
 
+
 def calculate_age(created):
     today = date.today()
     return today.year - created.year - ((today.month, today.day) < (created.month, created.day))
+
 
 def return_zeorth_if_list(variable):
     return variable[0] if type(variable) == list else variable
@@ -337,8 +347,8 @@ def get_cms_details(url):
     return response
 
 
-def remove_cmd_injection_chars(command):
-    remove_chars = ['&', '<', '>', '|', ';', '$', '`']
+def sanitize_cmd(command):
+    remove_chars = ['&', '<', '>', '|', ';']
     for chrs in remove_chars:
         command = command.replace(chrs, '')
     return command
