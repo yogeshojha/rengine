@@ -1,5 +1,6 @@
 import csv
 import json
+from multiprocessing.sharedctypes import Value
 import os
 import pprint
 import random
@@ -110,6 +111,7 @@ def initiate_subscan(
 		'scan_history_id': scan_history.id,
 		'activity_id': DYNAMIC_ID,
 		'domain_id': subdomain.target_domain.id,
+		'engine_id': engine_id,
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': yaml_configuration,
 		'results_dir': results_dir,
@@ -144,8 +146,8 @@ def initiate_scan(
 		activity_id,
 		domain_id,
 		yaml_configuration,
-		results_dir='/usr/src/scan_results',
 		engine_id=None,
+		results_dir='/usr/src/scan_results',
 		scan_type=LIVE_SCAN,
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
@@ -165,6 +167,9 @@ def initiate_scan(
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
 		path (str): URL path.
 	"""
+
+	# Get ScanHistory
+	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 
 	# Get engine
 	engine_id = engine_id or scan_history.scan_type.id # scan history engine_id
@@ -230,6 +235,7 @@ def initiate_scan(
 	fetch_url(**ctx, description='Initial URL Fetch')
 	sleep(1)
 	ctx['yaml_configuration'] = config # add config to ctx after above two tasks have run
+	ctx['engine_id'] = engine_id
 
 	# Send start notif
 	notification = Notification.objects.first()
@@ -240,33 +246,27 @@ def initiate_scan(
 		send_notification(msg)
 
 	# Build Celery tasks, crafted according to the dependency graph below:
-	# initiate_scan --> subdomain_discovery --> http_crawl --> dir_file_fuzz
-	#					osint 	   		        port_scan      vulnerability_scan
-	#		 		 						                   screenshot
-	# 		   		 						           		   waf_detection
+	# initiate_scan --> subdomain_discovery --> port_scan --> fetch_url --> http_crawl --> dir_file_fuzz
+	#					osint 	   		              		  				 			   vulnerability_scan
+	#		 		 						                  				 			   screenshot
+	# 		   		 						           		   				 			   waf_detection
 	skipped = skip.si(**ctx)
 	header = group(
 		# Subdomain tasks
 		chain(
-			subdomain_discovery.si(**ctx, description='Subdomain Discovery') if 'subdomain_discovery' in engine.tasks else skipped,
-			fetch_url.si(**ctx, description='Fetch URLs') if 'fetch_url' in engine.tasks else skipped,
+			subdomain_discovery.si(**ctx, description='Discover subdomains'),
+			port_scan.si(**ctx, description='Scan ports'),
+			fetch_url.si(**ctx, description='Fetch URLs'),
+			http_crawl.si(**ctx, description='Crawl HTTP URLs'),
 			group(
-				# HTTP tasks (crawl, dir fuzz, ...)
-				chain(
-					http_crawl.si(**ctx, description='HTTP Page Crawl') if 'http_crawl' in engine.tasks else skipped,
-					group(
-						dir_file_fuzz.si(**ctx, description='Directories & Files Fuzz') if 'dir_file_fuzz' in engine.tasks else skipped,
-						waf_detection.si(**ctx, description='Detect WAFs') if 'waf_detection' in engine.tasks else skipped,
-						vulnerability_scan.si(**ctx) if 'vulnerability_scan' in engine.tasks else skipped,
-						screenshot.si(**ctx, description='Grab screenshots') if 'screenshot' in engine.tasks else skipped
-					)
-				),
-				# Port scan tasks
-				port_scan.si(**ctx, description='Port scan') if 'port_scan' in engine.tasks else skipped
+				dir_file_fuzz.si(**ctx, description='Fuzz directories & files'),
+				waf_detection.si(**ctx, description='Detect WAFs'),
+				vulnerability_scan.si(**ctx, description='Scan vulnerabilities'),
+				screenshot.si(**ctx, description='Grab screenshots')
 			)
 		),
 		# OSInt
-		osint.si(**ctx, description='OS Intelligence') if 'osint' in engine.tasks else skipped
+		osint.si(**ctx, description='Perform OS Intelligence')
 	).tasks
 
 	# Build callback
@@ -295,7 +295,7 @@ def report(
 		scan_history_id,
 		activity_id,
 		domain_id,
-		engine_id,
+		engine_id=None,
 		subdomain_id=None,
 		send_status=False,
 		subscan_id=None,
@@ -393,6 +393,7 @@ def subdomain_discovery(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
 		out_of_scope_subdomains=[],
@@ -649,6 +650,7 @@ def http_crawl(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
@@ -724,21 +726,13 @@ def http_crawl(
 
 			# Save subdomain in DB
 			if 'url' in line: # fallback for older versions of httpx
-				subdomain, _ = (
-					Subdomain.objects.get_or_create(
-						target_domain=domain,
-						scan_history=scan_history,
-						name=line['input'].strip()
-					)
-				)
+				name = line['input'].strip()
 			else:
-				subdomain, _ = (
-					Subdomain.objects.get_or_create(
-						target_domain=domain,
-						scan_history=scan_history,
-						name=http_url.split("//")[-1].strip()
-					)
-				)
+				name = http_url.split("//")[-1].strip()
+			subdomain, _ = Subdomain.objects.get_or_create(
+				target_domain=domain,
+				scan_history=scan_history,
+				name=name)
 			discovered_date = timezone.now()
 			subdomain.discovered_date = discovered_date
 			subdomain.http_url = http_url
@@ -865,6 +859,7 @@ def screenshot(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
@@ -953,6 +948,7 @@ def port_scan(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
 		subdomain_id=None,
@@ -1067,6 +1063,17 @@ def port_scan(
 		subdomain.ip_addresses.add(ip)
 		subdomain.save()
 
+		# Add endpoint
+		protocol = 'https' if port_number == 443 else 'http'
+		http_url = f'{protocol}://{host}:{port_number}'
+		EndPoint.objects.get_or_create(
+			scan_history=scan_history,
+			target_domain=domain,
+			subdomain=subdomain,
+			http_url=http_url
+		)
+
+
 	# Send end notif and output file
 	msg = f'Task "port_scan" has finished for {domain.name} and has identified {len(ports)} ports'
 	logger.warning(msg)
@@ -1085,6 +1092,7 @@ def waf_detection(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
@@ -1179,6 +1187,7 @@ def dir_file_fuzz(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
@@ -1358,6 +1367,7 @@ def fetch_url(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
@@ -1566,6 +1576,7 @@ def vulnerability_scan(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
 		path=None,
@@ -1671,8 +1682,8 @@ def vulnerability_scan(
 	for line in execute_live(cmd):
 		if not isinstance(line, dict):
 			continue
-		host = line['host']
-		subdomain_name = get_subdomain_from_url(host)
+		url = line['host']
+		subdomain_name = get_subdomain_from_url(url)
 		subdomain = Subdomain.objects.get(
 			name=subdomain_name,
 			scan_history=scan_history)
@@ -1701,7 +1712,7 @@ def vulnerability_scan(
 			discovered_date=timezone.now(),
 			open_status=True
 		)
-		logger.warning(f'Found {vuln_severity.upper()} vulnerability "{vuln_name}" of type {vuln_type} on {subdomain}')
+		logger.warning(f'Found {vuln_severity.upper()} vulnerability "{vuln_name}" of type {vuln_type} on {url}')
 		vulnerability.save()
 
 		# Get or create EndPoint object
@@ -1825,13 +1836,17 @@ def query_whois(ip_domain):
 	domain_info = domain.domain_info
 	if not domain_info:
 		logger.info(f'Domain info for "{domain}" not found in DB, querying whois')
-		result = asyncwhois.whois_domain(ip_domain)
-		whois = result.parser_output
-		if not whois.get('domain_name'):
+		try:
+			result = asyncwhois.whois_domain(ip_domain)
+			whois = result.parser_output
+			if not whois.get('domain_name'):
+				raise Warning('No domain name in output')
+		except Exception as e:
 			return {
 				'status': False,
 				'ip_domain': ip_domain,
-				'result': 'Unable to fetch records from WHOIS database.'
+				'result': "unable to fetch records from WHOIS database.",
+				'message': str(e)
 			}
 		created = whois.get('created')
 		expires = whois.get('expires')
@@ -1985,6 +2000,7 @@ def osint(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
 		subdomain_id=None,

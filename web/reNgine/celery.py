@@ -9,6 +9,7 @@ import django
 from celery import Celery, Task
 from celery.app.log import TaskFormatter
 from celery.signals import after_setup_task_logger
+from celery.utils.log import get_task_logger
 from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
@@ -24,7 +25,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
 # db imports only work if django is loaded, so MUST be placed after django setup
 django.setup()
 from startScan.models import ScanActivity, ScanHistory
-
+from scanEngine.models import EngineType
 
 def create_scan_activity(scan_history_id, message, status):
 	scan_activity = ScanActivity()
@@ -53,13 +54,21 @@ class RengineRequest(Request):
 class RengineTask(Task):
     Request = RengineRequest
     def __call__(self, *args, **kwargs):
+        # Get task function name
+        task_name = self.name.split('.')[-1]
+        logger = get_task_logger(task_name)
+
+        # Check if this task needs to be recorded.
+        RECORD_TASK = self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY
+
+        # If task is not in engine.tasks, skip it
+        if RECORD_TASK and 'engine_id' in kwargs:
+            engine = EngineType.objects.get(pk=kwargs['engine_id'])
+            if task_name not in engine.tasks:
+                logger.debug(f'{task_name} is not part of this engine tasks. Skipping.')
+                return
 
         # Prepare task
-        if self.name == 'reNgine.tasks.skip':
-            return
-        from celery.utils.log import get_task_logger
-        logger = get_task_logger(__name__)
-        task_name = self.name.split('.')[-1]
         args_str = '_'.join([str(arg) for arg in args])
         kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
         task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
@@ -67,21 +76,15 @@ class RengineTask(Task):
         task_error = None
         task_descr += f' | {args_str} | {kwargs_str}' if DEBUG > 1 else ''
         scan_history_id = args[0] if len(args) > 0 else kwargs.get('scan_history_id')
+        has_activity_id = (
+            (len(args) > 1 and isinstance(args[1], int) and args[1] == DYNAMIC_ID)
+            or
+            kwargs.get('activity_id', DYNAMIC_ID) == DYNAMIC_ID
+        )
 
         # Create scan activity only if we have a scan_history_id and 
         # activity_id in the task args
-        RECORD_ACTIVITY = (
-            scan_history_id is not None
-            and
-            self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY
-            and
-            (
-                (len(args) > 1 and isinstance(args[1], int))
-                or
-                kwargs.get('activity_id', DYNAMIC_ID) == DYNAMIC_ID
-            )
-        )
-        
+        RECORD_ACTIVITY =  scan_history_id and has_activity_id and RECORD_TASK
         if RECORD_ACTIVITY:
             activity_id = create_scan_activity(
                 scan_history_id=scan_history_id,
@@ -141,6 +144,10 @@ class RengineTask(Task):
             cache.expire(record_key, 600) # 10mn cache
 
         return task_result
+
+    def s(self, *args, **kwargs):
+        # TODO: set task status to INIT when creating a signature.
+        return super().s(*args, **kwargs)
 
 def fmt_traceback(exc):
     return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))

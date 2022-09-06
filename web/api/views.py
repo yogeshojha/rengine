@@ -862,14 +862,12 @@ class Whois(APIView):
 	def get(self, request):
 		req = self.request
 		ip_domain = req.query_params.get('ip_domain')
-		if not validators.domain(ip_domain):
+		if not (validators.domain(ip_domain) or validators.ipv4(ip_domain) or validators.ipv6(ip_domain)):
 			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 		task = query_whois.apply_async(args=(ip_domain,))
 		response = task.wait()
-		if response:
-			return Response(response)
-		return Response({'status': False})
+		return Response(response)
 
 
 class CMSDetector(APIView):
