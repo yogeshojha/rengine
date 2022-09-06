@@ -24,7 +24,6 @@ class AddTargetForm(forms.Form):
                 "placeholder": "Target Description"
             }
         ))
-
     h1_team_handle = forms.CharField(
         required=False,
         widget=forms.TextInput(

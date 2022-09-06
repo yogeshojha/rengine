@@ -1720,12 +1720,6 @@ function add_quick_target() {
 	var domain_name = $('#target_name_modal').val();
 	var description = $('#target_description_modal').val();
 	var h1_handle = $('#h1_handle_modal').val();
-
-	const data = {
-		'domain_name': domain_name,
-		'h1_team_handle': h1_handle,
-		'description': description
-	};
 	add_target(domain_name, h1_handle = h1_handle, description = description);
 }
 

@@ -23,7 +23,7 @@ from startScan.models import *
 from targetApp.forms import *
 from targetApp.models import *
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -33,14 +33,9 @@ def index(request):
 
 def add_target(request):
     form = AddTargetForm(request.POST or None)
-
     if request.method == "POST":
+        logger.info(request.POST)
         added_target_count = 0
-        if not form.is_valid():
-            for error in form.errors:
-                messages.add_message(request, messages.ERROR, error)
-            return http.HttpResponseRedirect(reverse('add_target'))
-        data = form.cleaned_data
         single_target = request.POST.get('add-single-target')
         multiple_targets = request.POST.get('add-multiple-targets')
         ip_target =  request.POST.get('add-ip-target')
@@ -48,6 +43,13 @@ def add_target(request):
         try:
             # Single target
             if single_target:
+                if not form.is_valid():
+                    logger.error('Invalid form')
+                    for error in form.errors:
+                        logger.error(error)
+                        messages.add_message(request, messages.ERROR, error)
+                    return http.HttpResponseRedirect(reverse('add_target'))
+                data = form.cleaned_data
                 name = data['name']
                 logger.info(f'Adding single target {name} ...')
                 domain, _ = Domain.objects.get_or_create(name=name)
@@ -69,8 +71,8 @@ def add_target(request):
 
             # Multiple targets
             elif multiple_targets:
-                bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n')]
-                bulk_targets = [t for t in bulk_targets if t]
+                bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n') if t]
+                logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
                 h1_team_handle = request.POST.get('targetH1TeamHandle')
                 for target in bulk_targets:
@@ -85,26 +87,27 @@ def add_target(request):
 
             # IP to domain conversion
             elif ip_target:
-                domains = request.POST.getlist('resolved_ip_domains')
+                hosts = request.POST.getlist('resolved_ip_domains')
                 description = request.POST.get('targetDescription', '')
                 ip_address_cidr = request.POST.get('ip_address', '')
                 h1_team_handle = request.POST.get('targetH1TeamHandle')
-                for domain in domains:
-                    domain_query = Domain.objects.filter(name=domain)
-                    if not domain_query.exists():
-                        if not validators.domain(domain):
-                            messages.add_message(
-                                request,
-                                messages.ERROR,
-                                f'Domain {domain} is not a valid domain name. Skipping.')
-                            continue
-                        Domain.objects.create(
-                            name=domain,
-                            description=description,
-                            h1_team_handle=h1_team_handle,
-                            ip_address_cidr=ip_address_cidr,
-                            insert_date=timezone.now())
-                        added_target_count += 1
+                logger.info(f'Adding IP address: {ip_address_cidr}')
+                for name in hosts:
+                    if not (validators.domain(name) or validators.ipv4(name) or validators.ipv6(name)):
+                        messages.add_message(
+                            request,
+                            messages.ERROR,
+                            f'Domain or IP {name} is not a valid domain or IP. Skipping.')
+                        continue
+                    domain, created = Domain.objects.get_or_create(
+                        name=name,
+                        description=description,
+                        h1_team_handle=h1_team_handle,
+                        ip_address_cidr=ip_address_cidr)
+                    if created:
+                        domain.insert_date = timezone.now()
+                        domain.save()
+                    added_target_count += 1
 
             # Import from txt / csv
             elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:
@@ -182,7 +185,9 @@ def add_target(request):
             return http.HttpResponseRedirect(reverse('add_target'))
 
         # Targets added successfully, redirect to targets list
-        messages.add_message(request, messages.SUCCESS, f'{added_target_count} targets added successfully')
+        msg = f'{added_target_count} targets added successfully'
+        logger.info(msg)
+        messages.add_message(request, messages.SUCCESS, msg)
         return http.HttpResponseRedirect(reverse('list_target'))
 
     # GET request
