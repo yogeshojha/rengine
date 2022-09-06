@@ -153,6 +153,8 @@ def get_subdomain_from_url(url):
     subdomain = '.'.join(extract_url[:4])
     if subdomain[0] == '.':
         subdomain = subdomain[1:]
+    if subdomain[-1] == '.':
+        subdomain = subdomain[:-1]
     return subdomain.strip()
 
 
