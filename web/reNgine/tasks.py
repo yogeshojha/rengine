@@ -148,7 +148,8 @@ def initiate_scan(
 		engine_id=None,
 		scan_type=LIVE_SCAN,
 		imported_subdomains=[],
-		out_of_scope_subdomains=[]):
+		out_of_scope_subdomains=[],
+		path=None):
 
 	"""Initiate a new scan.
 
@@ -158,6 +159,11 @@ def initiate_scan(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		engine_id (int): Engine ID.
+		scan_type (int): Scan type (periodic, live).
+		imported_subdomains (list): Imported subdomains.
+		out_of_scope_subdomains (list): Out-of-scope subdomains.
+		path (str): URL path.
 	"""
 
 	# Get engine
@@ -218,6 +224,7 @@ def initiate_scan(
 		'activity_id': DYNAMIC_ID, # activity will be created dynamically
 		'domain_id': domain.id,
 		'results_dir': results_dir,
+		'path': path
 	}
 	http_crawl(**ctx, description='Initial HTTP Crawl')
 	fetch_url(**ctx, description='Initial URL Fetch')
@@ -389,6 +396,7 @@ def subdomain_discovery(
 		yaml_configuration={},
 		results_dir=None,
 		out_of_scope_subdomains=[],
+		path=None,
 		description=None):
 	"""
 	Uses a set of tools (see DEFAULT_SUBDOMAIN_SCAN_TOOLS) to scan all
@@ -644,7 +652,8 @@ def http_crawl(
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		description=None):
+		description=None,
+		path=None):
 	"""Uses httpx to crawl domain for important info like page titles, http
 	status, etc...
 
@@ -665,13 +674,14 @@ def http_crawl(
 
 	# Write httpx input file
 	input_file = f'{results_dir}/subdomains.txt'
-	subdomains = get_subdomains(
+	urls = get_subdomains(
 		domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan_history,
-		write_filepath=input_file)
-	if not subdomains:
-		logger.warning('No subdomains found. Skipping.')
+		write_filepath=input_file,
+		path=path)
+	if not urls:
+		logger.warning('Nofound. Skipping.')
 		return
 
 	# Get random proxy
@@ -716,6 +726,7 @@ def http_crawl(
 			if 'url' in line: # fallback for older versions of httpx
 				subdomain, _ = (
 					Subdomain.objects.get_or_create(
+						target_domain=domain,
 						scan_history=scan_history,
 						name=line['input'].strip()
 					)
@@ -723,6 +734,7 @@ def http_crawl(
 			else:
 				subdomain, _ = (
 					Subdomain.objects.get_or_create(
+						target_domain=domain,
 						scan_history=scan_history,
 						name=http_url.split("//")[-1].strip()
 					)
@@ -853,8 +865,10 @@ def screenshot(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
+		path=None,
 		description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
@@ -864,6 +878,8 @@ def screenshot(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		path (str): URL path.
+		description (str, optional): Task description shown in UI.
 	"""
 
 	# Config
@@ -879,8 +895,10 @@ def screenshot(
 	# Get alive endpoints to screenshot
 	get_endpoints(
 		domain,
+		subdomain_id=subdomain_id,
 		scan_history=scan_history,
 		is_alive=True,
+		path=path,
 		write_filepath=alive_endpoints_file)
 
 	# Build cmd
@@ -938,6 +956,7 @@ def port_scan(
 		yaml_configuration={},
 		results_dir=None,
 		subdomain_id=None,
+		path=None,
 		filename='ports.json',
 		description=None
 	):
@@ -949,6 +968,8 @@ def port_scan(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		path (str): URL path.
+		description (str, optional): Task description shown in UI.
 
 	Returns:
 		list: List of open ports (dict).
@@ -973,6 +994,7 @@ def port_scan(
 		domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan_history,
+		path=path,
 		exclude_subdomains=exclude_subdomains)
 	hosts_str = ','.join(hosts)
 	cmd += f' -host {hosts_str}'
@@ -997,6 +1019,8 @@ def port_scan(
 		ports_str = ','.join(ports)
 		ports_str = f' -p {ports_str}'
 
+	proxy = get_random_proxy()
+	cmd += f' -proxy "{proxy}"'
 	cmd += ' -config /root/.config/naabu/config.yaml' if use_naabu_config else ''
 	cmd += f' -rate {naabu_rate}' if naabu_rate > 0 else ''
 	cmd += ports_str
@@ -1061,8 +1085,10 @@ def waf_detection(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
+		path=None,
 		description=None):
 	"""
 	Uses wafw00f to check for the presence of a WAF.
@@ -1073,6 +1099,8 @@ def waf_detection(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		path (str): URL path.
+		description (str, optional): Task description shown in UI.
 
 	Returns:
 		list: List of startScan.models.Waf objects.
@@ -1093,8 +1121,10 @@ def waf_detection(
 	output_path = f'{results_dir}/wafw00f.txt'
 	get_endpoints(
 		domain,
+		subdomain_id=subdomain_id,
 		scan_history=scan_history,
 		is_alive=True,
+		path=path,
 		write_filepath=input_path)
 
 	cmd = f'wafw00f -i {input_path} -o {output_path}'
@@ -1143,7 +1173,6 @@ def waf_detection(
 	logger.info(msg)
 	if send_status:
 		send_notification(msg)
-	return wafs
 
 @app.task
 def dir_file_fuzz(
@@ -1153,6 +1182,7 @@ def dir_file_fuzz(
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
+		path=None,
 		filename='dirs.json',
 		description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
@@ -1163,6 +1193,7 @@ def dir_file_fuzz(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		description (str, optional): Task description shown in UI.
 	"""
 	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	domain = Domain.objects.get(pk=domain_id)
@@ -1238,6 +1269,8 @@ def dir_file_fuzz(
 		# HTTP URL
 		http_url = subdomain.http_url or subdomain.name
 		http_url = http_url.strip()
+		if path:
+			http_url += '/path'
 		if not http_url.endswith('/FUZZ'):
 			http_url += '/FUZZ'
 		if not http_url.startswith('http'):
@@ -1268,9 +1301,7 @@ def dir_file_fuzz(
 			return
 
 		# Initialize DirectoryScan object
-		subdomain = Subdomain.objects.get(
-			scan_history__id=scan_history.id,
-			http_url=subdomain.http_url)
+		subdomain = Subdomain.objects.get(pk=subdomain.id)
 		directory_scan = DirectoryScan()
 		directory_scan.scanned_date = timezone.now()
 		directory_scan.command_line = data['commandline']
@@ -1317,7 +1348,7 @@ def dir_file_fuzz(
 		subdomain.directories.add(directory_scan)
 		subdomain.save()
 
-	msg = f'ffuf directory bruteforce has finished for {domain_name}'
+	msg = f'ffuf directory bruteforce has finished for {host}'
 	if send_status:
 		send_notification(msg)
 
@@ -1331,6 +1362,7 @@ def fetch_url(
 		yaml_configuration={},
 		results_dir=None,
 		filename='urls.txt',
+		path=None,
 		description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1341,6 +1373,9 @@ def fetch_url(
 		subdomain_id (int): Subdomain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		filename (str): Filename.
+		path (str): URL path.
+		description (str, optional): Task description shown in UI.
 	"""
 	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	domain = Domain.objects.get(pk=domain_id)
@@ -1357,15 +1392,16 @@ def fetch_url(
 	output_path = f'{results_dir}/{filename}'
 	exclude_subdomains = config.get('exclude_subdomains', False)
 
-	# Get subdomains
-	subdomains = get_subdomains(
+	# Get URLs to scan
+	urls = get_subdomains(
 		domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan_history,
 		write_filepath=input_path,
+		path=path,
 		exclude_subdomains=exclude_subdomains)
-	if not subdomains:
-		logger.warning('No subdomains found. Skipping.')
+	if not urls:
+		logger.warning('No URLs found. Skipping.')
 		return
 
 	# Combine old gf patterns with new ones
@@ -1530,13 +1566,13 @@ def vulnerability_scan(
 		scan_history_id,
 		activity_id,
 		domain_id,
+		subdomain_id=None,
 		yaml_configuration={},
+		path=None,
 		results_dir=None,
-		subdomain=None,
 		filename='vulns.json',
 		subscan=None,
-		description=None
-	):
+		description=None):
 	"""
 	This function will run nuclei as a vulnerability scanner
 
@@ -1544,8 +1580,11 @@ def vulnerability_scan(
 		scan_history (startScan.models.ScanHistory): ScanHistory instance.
 		activity_id (int): Activity ID.
 		domain_id (int): Domain ID.
+		subdomain_id (int): Subdomain ID.
 		yaml_configuration (dict): YAML configuration.
+		path (str): URL path.
 		results_dir (str): Results directory.
+		description (str, optional): Task description shown in UI.
 
 	Notes:
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
@@ -1575,15 +1614,12 @@ def vulnerability_scan(
 	# Get alive endpoints
 	endpoints = get_endpoints(
 		domain,
+		subdomain_id=subdomain_id,
 		scan_history=scan_history,
 		is_alive=True,
+		path=path,
 		write_filepath=input_path)
 	endpoints_count = len(endpoints)
-
-	# Find URL
-	url = ''
-	if subdomain:
-		url = subdomain.http_url if subdomain.http_url else f'https://{subdomain.name}'
 
 	# Send start notification
 	notification = Notification.objects.first()
@@ -1619,7 +1655,7 @@ def vulnerability_scan(
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	# cmd += ' -debug' if DEBUG > 0 else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
-	cmd += f' -l {input_path}' if domain else f' -u {url}'
+	cmd += f' -l {input_path}'
 	cmd += f' -c {str(concurrency)}' if concurrency > 0 else ''
 	cmd += f' -proxy {proxy} ' if proxy else ''
 	cmd += f' -retries {retries}' if retries > 0 else ''
@@ -1778,7 +1814,6 @@ def query_whois(ip_domain):
 
 	Args:
 		ip_domain (str): IP address or domain name.
-		save_db (bool): If True, save resulting info to DB.
 
 	Returns:
 		dict: WHOIS information.
@@ -1810,6 +1845,7 @@ def query_whois(ip_domain):
 			created=created,
 			updated=updated,
 			expires=expires)
+		domain_info.save()
 
 		# Record whois subfields in various DB models
 		whois_fields = {
@@ -1845,8 +1881,9 @@ def query_whois(ip_domain):
 		for field_parent, fields in whois_fields.items():
 			for (field_name, model_cls) in fields:
 				field_fullname = f'{field_parent}_{field_name}' if field_parent != 'default' else field_name
+				logger.info(f'Processing field {field_fullname}')
 				field_content = whois.get(field_fullname)
-				serializer_cls = globals()[model_cls.__name__ + 'Serializer']
+				# serializer_cls = globals()[model_cls.__name__ + 'Serializer']
 
 				# Skip empty fields
 				if not field_content:
@@ -1876,7 +1913,7 @@ def query_whois(ip_domain):
 			for _status in whois_status:
 				domain_whois, _ = DomainWhoisStatus.objects.get_or_create(status=_status)
 				domain_info.status.add(domain_whois)
-				domain_whois_json = DomainWhoisStatusSerializer(domain_whois, many=False).data
+				# domain_whois_json = DomainWhoisStatusSerializer(domain_whois, many=False).data
 
 			# Nameservers
 			nameservers = whois.get('name_servers', [])
@@ -1950,6 +1987,8 @@ def osint(
 		domain_id,
 		yaml_configuration={},
 		results_dir=None,
+		subdomain_id=None,
+		path=None,
 		description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
@@ -1959,6 +1998,7 @@ def osint(
 		domain_id (int): Domain ID.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
+		description (str, optional): Task description shown in UI.
 	"""
 	config = yaml_configuration.get(OSINT, {})
 	scan_history = ScanHistory.objects.get(pk=scan_history_id)
@@ -2498,7 +2538,7 @@ def get_and_save_meta_info(meta_dict):
 	return results
 
 
-def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdomain_id=None, exclude_subdomains=None):
+def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdomain_id=None, exclude_subdomains=None, path=None):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -2507,6 +2547,7 @@ def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdom
 		write_filepath (str): Write info back to a file.
 		subdomain_id (int): Subdomain id.
 		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
+		path (str): Add URL path to subdomain.
 
 	Returns:
 		list: List of subdomains matching query.
@@ -2525,6 +2566,9 @@ def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdom
 	if not subdomains:
 		logger.warning('No subdomains were found in query !')
 
+	if path:
+		subdomains = [f'{subdomain}/{path}' for subdomain in subdomains]
+
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
 			f.write('\n'.join(subdomains))
@@ -2533,25 +2577,36 @@ def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdom
 
 def get_endpoints(
 		target_domain,
+		subdomain_id=None,
 		scan_history=None,
 		is_alive=False,
-		write_filepath=None):
+		path=None,
+		write_filepath=None,
+		exclude_subdomains=False):
 	"""Get EndPoint objects from DB.
 
 	Args:
 		target_domain (startScan.models.Domain): Target Domain object.
 		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
 		is_alive (bool): If True, select only alive subdomains.
+		path (str): URL path.
 		write_filepath (str): Write info back to a file.
 
 	Returns:
 		list: List of subdomains matching query.
 	"""
-	base_query = EndPoint.objects.filter(target_domain=target_domain)
-	if scan_history:
-		base_query = base_query.filter(
+	base_query = (
+		EndPoint.objects
+		.filter(
 			scan_history=scan_history,
+			target_domain=target_domain,
 			http_url__isnull=False)
+	)
+	if subdomain_id:
+		subdomain = Subdomain.objects.get(pk=subdomain_id)
+		base_query = base_query.filter(http_url__contains=subdomain.name)
+	elif exclude_subdomains:
+		base_query = base_query.filter(name=target_domain.name)
 	endpoint_query = base_query.distinct('http_url').order_by('http_url')
 	endpoints = [
 		endpoint
@@ -2566,6 +2621,9 @@ def get_endpoints(
 
 	if not endpoints:
 		logger.warning('No endpoints were found in query !')
+
+	if path:
+		endpoints = [e for e in endpoints if path in e]
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:

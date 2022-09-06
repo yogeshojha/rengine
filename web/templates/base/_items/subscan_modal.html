@@ -22,7 +22,7 @@
 				<!-- TODO: Make the tasks selection dynamic based on the selected engine -->
 				<div id="engineTasks" name="engineTasks">
 				{% for engine in scan_engines %}
-					{% if engine.engine_name == "Full Scan" %}
+					{% if engine.engine_name == "Deep Scan" %}
 						{% for task in engine.tasks %}
 							<div class="mt-1">
 								<div class="form-check">
