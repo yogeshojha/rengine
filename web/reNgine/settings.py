@@ -191,3 +191,19 @@ CELERY_TASK_SKIP_RECORD_ACTIVITY = [
 CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+    },
+}
