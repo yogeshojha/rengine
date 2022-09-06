@@ -120,8 +120,8 @@ class DomainWhoisStatus(models.Model):
     id = models.AutoField(primary_key=True)
     status = models.CharField(max_length=500)
 
-    def __str__(self):
-        return self.status
+    # def __str__(self):
+    #     return self.status or ''
 
 
 class DomainRegistrarID(models.Model):
@@ -187,8 +187,8 @@ class DomainInfo(models.Model):
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
-    def __str__(self):
-        return self.id
+    # def __str__(self):
+    #     return self.id or ''
 
 
 class Organization(models.Model):

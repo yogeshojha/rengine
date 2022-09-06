@@ -259,6 +259,10 @@ def start_scan_ui(request, domain_id):
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
+        paths = request.POST['filterPath'].split()
+        filterPath = [s.rstrip() for s in paths if s]
+        if len(filterPath) > 0:
+            filterPath = filterPath[0]
 
         # Get engine type
         engine_id = request.POST['scan_mode']
@@ -277,7 +281,8 @@ def start_scan_ui(request, domain_id):
             'yaml_configuration': None,
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
-            'out_of_scope_subdomains': subdomains_out
+            'out_of_scope_subdomains': subdomains_out,
+            'path': filterPath
         }
         celery_task = initiate_scan.apply_async(kwargs=kwargs)
         scan_history.celery_id = celery_task.id

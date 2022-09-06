@@ -5,6 +5,7 @@ import os
 from datetime import timedelta
 from functools import reduce
 from operator import and_, or_
+from urllib.parse import urlparse
 
 import validators
 from django import http
