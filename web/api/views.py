@@ -290,7 +290,7 @@ class FetchMostVulnerable(APIView):
 					).data
 
 		elif target_id:
-			domain_query = Subdomain.objects.filter(target_domain__id=target_id)
+			subdomain_query = Subdomain.objects.filter(target_domain__id=target_id)
 			if is_ignore_info:
 				most_vulnerable_subdomains = subdomain_query.annotate(
 					vuln_count=Count(
@@ -885,59 +885,59 @@ class IPToDomain(APIView):
 	def get(self, request):
 		req = self.request
 		ip_address = req.query_params.get('ip_address')
-		if ip_address:
-			options = FirefoxOptions()
-			options.add_argument("--headless")
-			driver = webdriver.Firefox(options=options)
+		if not ip_address:
+			return Response({
+				'status': False,
+				'message': 'IP Address Required'
+			})
+		options = FirefoxOptions()
+		options.add_argument("--headless")
+		driver = webdriver.Firefox(options=options)
 
-			# ip address may contain ip or CIDR, for ip use ip for CIDR use address
-			# as /net
-			if '/' in ip_address:
-				driver.get('https://bgp.he.net/net/{}#_dns'.format(ip_address))
-			else:
-				driver.get('https://bgp.he.net/ip/{}#_dns'.format(ip_address))
+		# ip address may contain ip or CIDR, for ip use ip for CIDR use address
+		# as /net
+		if '/' in ip_address:
+			driver.get('https://bgp.he.net/net/{}#_dns'.format(ip_address))
+		else:
+			driver.get('https://bgp.he.net/ip/{}#_dns'.format(ip_address))
 
-			try:
-				element = WebDriverWait(driver, 30).until(
-					EC.presence_of_element_located((By.ID, "tab_dns"))
-				)
-				# get all elements
-				elems = driver.find_elements_by_xpath("//a[starts-with(@href, '/dns/')]")
-				# remove empty domains as well
-				domains = [elem.text for elem in elems if elem.text]
+		try:
+			element = WebDriverWait(driver, 30).until(
+				EC.presence_of_element_located((By.ID, "tab_dns"))
+			)
+			# get all elements
+			elems = driver.find_elements_by_xpath("//a[starts-with(@href, '/dns/')]")
+			# remove empty domains as well
+			domains = [elem.text for elem in elems if elem.text]
 
-				# make domains list unique
-				domains = list(set(domains))
+			# make domains list unique
+			domains = list(set(domains))
 
-				response = {
-					'status': True,
-					'ip_address': ip_address,
-					'domains': domains,
-					'resolves_to': domains[0]
-				}
+			response = {
+				'status': True,
+				'ip_address': ip_address,
+				'domains': domains,
+				'resolves_to': domains[0]
+			}
 
-				# whois data
-				# click on whois tab
-				whois_button = driver.find_element_by_xpath("//li[@id='tab_whois']")
-				whois_button.click()
+			# whois data
+			# click on whois tab
+			whois_button = driver.find_element_by_xpath("//li[@id='tab_whois']")
+			whois_button.click()
 
-				whois_element = driver.find_element_by_xpath("//div[@id='whois']/pre")
-				if whois_element:
-					response['whois'] = whois_element.text
-			except Exception as e:
-				logging.exception(e)
-				response = {
-					'status': False,
-					'ip_address': ip_address,
-					'message': 'Exception {}'.format(e)
-				}
-			finally:
-				driver.quit()
-				return Response(response)
-		return Response({
-			'status': False,
-			'message': 'IP Address Required'
-		})
+			whois_element = driver.find_element_by_xpath("//div[@id='whois']/pre")
+			if whois_element:
+				response['whois'] = whois_element.text
+		except Exception as e:
+			logging.exception(e)
+			response = {
+				'status': False,
+				'ip_address': ip_address,
+				'message': 'Exception {}'.format(e)
+			}
+		finally:
+			driver.quit()
+			return Response(response)
 
 
 class VulnerabilityReport(APIView):
