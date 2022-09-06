@@ -1035,7 +1035,7 @@ def port_scan(
 			continue
 		port_number = line['port']
 		ip_address = line['ip']
-		host = line['host']
+		host = line.get('host') or ip_address
 		if port_number == 0:
 			continue
 		logger.warning(f'Found open port {port_number} on {ip_address} ({host})')
