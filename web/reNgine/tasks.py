@@ -1,12 +1,14 @@
 import csv
 import json
-from multiprocessing.sharedctypes import Value
 import os
-import pprint
 import random
 import subprocess
 from datetime import datetime
+from distutils.file_util import write_file
+from http.client import HTTPConnection, HTTPSConnection
+from multiprocessing.sharedctypes import Value
 from time import sleep
+from urllib.parse import urlparse
 
 import asyncwhois
 import validators
@@ -36,12 +38,6 @@ Celery tasks.
 """
 
 logger = get_task_logger(__name__)
-
-
-@app.task
-def skip(*args, **kwargs):
-	"""Task that does nothing to conditionally replace real tasks with."""
-	pass
 
 
 @app.task
@@ -151,7 +147,7 @@ def initiate_scan(
 		scan_type=LIVE_SCAN,
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
-		path=None):
+		path=''):
 
 	"""Initiate a new scan.
 
@@ -165,7 +161,7 @@ def initiate_scan(
 		scan_type (int): Scan type (periodic, live).
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
-		path (str): URL path.
+		path (str): URL path. Default: ''
 	"""
 
 	# Get ScanHistory
@@ -217,25 +213,44 @@ def initiate_scan(
 		domain,
 		results_dir)
 
-	# Create subdomain in DB
-	Subdomain.objects.get_or_create(
+	# Create initial subdomain in DB: make a copy of domain as a subdomain so
+	# that other tasks using subdomains can use it.
+	subdomain, _ = Subdomain.objects.get_or_create(
 		scan_history=scan_history,
 		target_domain=domain,
 		name=domain.name)
 
+	# Create initial endpoints in DB: add an endpoint for the domain so that
+	# HTTP crawling can start somewhere
+	base_url = f'{domain.name}/{path}'
+	protocol = detect_protocol(base_url) # probe to see if 'http' or 'https'
+	if not protocol:
+		logger.info(f'{base_url} is not alive on HTTP or HTTPs protocols.')
+	if protocol:
+		http_url = f'{protocol}://{base_url}'
+		url = urlparse(http_url)
+		EndPoint.objects.get_or_create(
+			scan_history=scan_history,
+			target_domain=domain,
+			subdomain=subdomain,
+			http_url=url.geturl())
+		subdomain.http_url = url.netloc
+		subdomain.save()
+
 	# Initial URL discovery + checker on domain - will create at least 1 endpoint
 	ctx = {
-		'scan_history_id': scan_history.id,
+		'scan_history_id': scan_history_id,
 		'activity_id': DYNAMIC_ID, # activity will be created dynamically
 		'domain_id': domain.id,
 		'results_dir': results_dir,
 		'path': path
 	}
-	http_crawl(**ctx, description='Initial HTTP Crawl')
 	fetch_url(**ctx, description='Initial URL Fetch')
+	http_crawl(**ctx, description='Initial HTTP Crawl')
 	sleep(1)
 	ctx['yaml_configuration'] = config # add config to ctx after above two tasks have run
 	ctx['engine_id'] = engine_id
+	ctx['scan_history_id'] = scan_history_id
 
 	# Send start notif
 	notification = Notification.objects.first()
@@ -247,14 +262,16 @@ def initiate_scan(
 
 	# Build Celery tasks, crafted according to the dependency graph below:
 	# initiate_scan --> subdomain_discovery --> port_scan --> fetch_url --> http_crawl --> dir_file_fuzz
-	#					osint 	   		              		  				 			   vulnerability_scan
+	#					osint 	   		    -->          		  				 		   vulnerability_scan
 	#		 		 						                  				 			   screenshot
 	# 		   		 						           		   				 			   waf_detection
-	skipped = skip.si(**ctx)
 	header = group(
 		# Subdomain tasks
 		chain(
-			subdomain_discovery.si(**ctx, description='Discover subdomains'),
+			group(
+				subdomain_discovery.si(**ctx, description='Discover subdomains'),
+				osint.si(**ctx, description='Perform OS Intelligence')
+			),
 			port_scan.si(**ctx, description='Scan ports'),
 			fetch_url.si(**ctx, description='Fetch URLs'),
 			http_crawl.si(**ctx, description='Crawl HTTP URLs'),
@@ -264,9 +281,7 @@ def initiate_scan(
 				vulnerability_scan.si(**ctx, description='Scan vulnerabilities'),
 				screenshot.si(**ctx, description='Grab screenshots')
 			)
-		),
-		# OSInt
-		osint.si(**ctx, description='Perform OS Intelligence')
+		)
 	).tasks
 
 	# Build callback
@@ -397,7 +412,7 @@ def subdomain_discovery(
 		yaml_configuration={},
 		results_dir=None,
 		out_of_scope_subdomains=[],
-		path=None,
+		path='',
 		description=None):
 	"""
 	Uses a set of tools (see DEFAULT_SUBDOMAIN_SCAN_TOOLS) to scan all
@@ -419,6 +434,11 @@ def subdomain_discovery(
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 	send_status, send_scan_output, send_subdomain_changes, send_interesting = False, False, False, False
 	notification = Notification.objects.first()
+
+	if path:
+		logger.info(f'Filtering on specific path {path}. Ignoring subdomains scan.')
+		return
+
 	if notification:
 		send_status = notification.send_scan_status_notif
 		send_scan_output = notification.send_scan_output_file
@@ -511,10 +531,10 @@ def subdomain_discovery(
 
 			else:
 				logger.warning(
-					f'Task "subdomain_discovery": "{tool}" is not supported by reNgine. Skipping.')
+					f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
 		except Exception as e:
 			logger.error(
-				f'Task "subdomain_discovery": "{tool}" raised an exception')
+				f'Subdomain discovery tool "{tool}" raised an exception')
 			logger.exception(e)
 
 	# Gather all the tools' results in one single file. wrote subdomains into separate files,
@@ -532,19 +552,33 @@ def subdomain_discovery(
 	for line in lines:
 		subdomain_name = line.strip()
 		valid_domain = validators.domain(subdomain_name)
-		if not valid_domain:
-			logger.error(f'Subdomain {subdomain_name} is not a valid domain name. Skipping.')
+		valid_ip = validators.ipv4(subdomain_name) or validators.ipv6(subdomain_name)
+		if not (valid_domain or valid_ip):
+			logger.error(f'Subdomain {subdomain_name} is not a valid domain or IP. Skipping.')
 			continue
 		if subdomain_name in out_of_scope_subdomains:
 			logger.error(f'Subdomain {subdomain_name} is out of scope. Skipping.')
 			continue
+
+		# Add subdomain
 		subdomain, created = Subdomain.objects.get_or_create(
 			scan_history=scan_history,
 			target_domain=domain,
 			name=subdomain_name)
-		if created:
-			logger.warning(f'Found new domain {subdomain_name}')
 		subdomain_count += 1
+		if created:
+			logger.warning(f'Found new subdomain {subdomain_name}')
+
+		# Add endpoints
+		protocol = detect_protocol(subdomain_name)
+		if protocol:
+			http_url = f'{protocol}://{subdomain_name}'
+			_, created = EndPoint.objects.get_or_create(
+				scan_history=scan_history,
+				target_domain=domain,
+				http_url=http_url)
+			subdomain.http_url = http_url
+			subdomain.save()
 
 	# Send notifications
 	msg = f'Subdomain scan finished with {tools} for {domain.name} and *{subdomain_count}* subdomains were found'
@@ -579,6 +613,51 @@ def subdomain_discovery(
 			message += subdomains_str
 			send_notification(message)
 
+def detect_protocol(url):
+	"""Probe http / https to detect which protocols will respond for this URL.
+
+	Args:
+		url (str): URL.
+
+	Returns:
+		str: Protocol detected.
+	"""
+	probe_http = is_alive(url, protocol='http')
+	probe_https = is_alive(url, protocol='https')
+	if probe_http:
+		return 'http'
+	elif probe_https:
+		return 'https'
+	return None
+
+def is_alive(url, protocol='https'):
+	""""Check if URL is alive.
+
+	Args:
+		url (str): URL with or without protocol.
+		protocol (str): Protocol to check. Default: https
+
+	Returns:
+		bool: True if alive otherwise False.
+	"""
+	protocol = url.split(':')[0] if '://' in url else protocol
+	url = f'{protocol}://{url}'
+	try:
+		url = urlparse(url)
+		if protocol == 'https':
+			connection = HTTPSConnection(url.netloc, timeout=3)
+		elif protocol == 'http':
+			connection = HTTPConnection(url.netloc, timeout=3)
+		else:
+			logger.error(f'Protocol {protocol} is not supported.')
+			return False
+		connection.request('HEAD', url.path)
+		if connection.getresponse():
+			return True
+		else:
+			return False
+	except:
+		return False
 
 def get_new_added_subdomain(scan_id, domain_id):
 	"""Find domains added during the last run.
@@ -655,8 +734,8 @@ def http_crawl(
 		yaml_configuration={},
 		results_dir=None,
 		description=None,
-		path=None):
-	"""Uses httpx to crawl domain for important info like page titles, http
+		path=''):
+	"""Uses httpx to crawl URLs for important info like page titles, http
 	status, etc...
 
 	Args:
@@ -676,15 +755,12 @@ def http_crawl(
 
 	# Write httpx input file
 	input_file = f'{results_dir}/subdomains.txt'
-	urls = get_subdomains(
-		domain,
+	get_endpoints(
+		target_domain=domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan_history,
-		write_filepath=input_file,
-		path=path)
-	if not urls:
-		logger.warning('Nofound. Skipping.')
-		return
+		path=path,
+		write_filepath=input_file)
 
 	# Get random proxy
 	proxy = get_random_proxy()
@@ -726,13 +802,12 @@ def http_crawl(
 
 			# Save subdomain in DB
 			if 'url' in line: # fallback for older versions of httpx
-				name = line['input'].strip()
-			else:
-				name = http_url.split("//")[-1].strip()
+				http_url = line['input'].strip()
+			subdomain_name = get_subdomain_from_url(http_url)
 			subdomain, _ = Subdomain.objects.get_or_create(
 				target_domain=domain,
 				scan_history=scan_history,
-				name=name)
+				name=subdomain_name)
 			discovered_date = timezone.now()
 			subdomain.discovered_date = discovered_date
 			subdomain.http_url = http_url
@@ -825,7 +900,7 @@ def http_crawl(
 		.filter(http_status__exact=200)
 		.count()
 	)
-	msg = f'Task "http_crawl" has finished gathering endpoints for {domain.name} and has discovered {alive_count} "alive" endpoint'
+	msg = f'Finished gathering endpoints for {domain.name}: {alive_count} "alive" endpoints discovered'
 	logger.warning(msg)
 	if send_status:
 		send_notification(msg)
@@ -863,7 +938,7 @@ def screenshot(
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		path=None,
+		path='',
 		description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
@@ -952,7 +1027,7 @@ def port_scan(
 		yaml_configuration={},
 		results_dir=None,
 		subdomain_id=None,
-		path=None,
+		path='',
 		filename='ports.json',
 		description=None
 	):
@@ -1041,6 +1116,7 @@ def port_scan(
 		port, _ = Port.objects.get_or_create(number=port_number)
 		port.is_uncommon = port_number in UNCOMMON_WEB_PORTS
 		port_details = whatportis.get_ports(str(port_number))
+		logger.info(port_details)
 		if len(port_details) > 0:
 			port.service_name = port_details[0].name
 			port.description = port_details[0].description
@@ -1063,16 +1139,18 @@ def port_scan(
 		subdomain.ip_addresses.add(ip)
 		subdomain.save()
 
-		# Add endpoint
-		protocol = 'https' if port_number == 443 else 'http'
-		http_url = f'{protocol}://{host}:{port_number}'
-		EndPoint.objects.get_or_create(
-			scan_history=scan_history,
-			target_domain=domain,
-			subdomain=subdomain,
-			http_url=http_url
-		)
-
+		# Add endpoint to DB
+		http_url = f'{host}:{port_number}'
+		protocol = detect_protocol(http_url)
+		if protocol:
+			http_url = f'{protocol}://{http_url}'
+			endpoint, _ = EndPoint.objects.get_or_create(
+				scan_history=scan_history,
+				target_domain=domain,
+				subdomain=subdomain,
+				http_url=http_url
+			)
+			endpoint.save()
 
 	# Send end notif and output file
 	msg = f'Task "port_scan" has finished for {domain.name} and has identified {len(ports)} ports'
@@ -1096,7 +1174,7 @@ def waf_detection(
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		path=None,
+		path='',
 		description=None):
 	"""
 	Uses wafw00f to check for the presence of a WAF.
@@ -1191,7 +1269,7 @@ def dir_file_fuzz(
 		subdomain_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		path=None,
+		path='',
 		filename='dirs.json',
 		description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
@@ -1277,13 +1355,12 @@ def dir_file_fuzz(
 
 		# HTTP URL
 		http_url = subdomain.http_url or subdomain.name
-		http_url = http_url.strip()
-		if path:
-			http_url += '/path'
+		http_url = http_url.rstrip('/')
+		if not (http_url.startswith('http') or http_url.startswith('https')):
+			protocol = detect_protocol(http_url)
+			http_url = f'{protocol}://{http_url}/{path}'
 		if not http_url.endswith('/FUZZ'):
 			http_url += '/FUZZ'
-		if not http_url.startswith('http'):
-			http_url = f'https://{http_url}'
 		logger.info(f'Running ffuf on {http_url} ...')
 
 		# Proxy
@@ -1372,7 +1449,7 @@ def fetch_url(
 		yaml_configuration={},
 		results_dir=None,
 		filename='urls.txt',
-		path=None,
+		path='',
 		description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1403,16 +1480,13 @@ def fetch_url(
 	exclude_subdomains = config.get('exclude_subdomains', False)
 
 	# Get URLs to scan
-	urls = get_subdomains(
+	get_endpoints(
 		domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan_history,
-		write_filepath=input_path,
 		path=path,
+		write_filepath=input_path,
 		exclude_subdomains=exclude_subdomains)
-	if not urls:
-		logger.warning('No URLs found. Skipping.')
-		return
 
 	# Combine old gf patterns with new ones
 	if gf_patterns:
@@ -1432,10 +1506,10 @@ def fetch_url(
 	domain_regex = f"\'https?://([a-z0-9]+[.])*{domain.name}.*\'"
 
 	# Tools cmds
-	gauplus_cmd = f'cat {input_path} | gauplus --random-agent | grep -Eo {domain_regex} > {results_dir}/urls_gau.txt'
-	hakrawler_cmd = f'cat {input_path} | hakrawler -subs -u | grep -Eo {domain_regex} > {results_dir}/urls_hakrawler.txt'
+	gauplus_cmd = f'cat {input_path} | gauplus -p {proxy} --random-agent | grep -Eo {domain_regex} > {results_dir}/urls_gau.txt'
+	hakrawler_cmd = f'cat {input_path} | hakrawler --proxy {proxy} -subs -u | grep -Eo {domain_regex} > {results_dir}/urls_hakrawler.txt'
 	waybackurls_cmd = f'cat {input_path} | waybackurls | grep -Eo {domain_regex} > {results_dir}/urls_waybackurls.txt'
-	gospider_cmd = f'gospider -S {input_path} --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {domain_regex} > {results_dir}/urls_gospider.txt'
+	gospider_cmd = f'gospider -p {proxy} -S {input_path} --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {domain_regex} > {results_dir}/urls_gospider.txt'
 	tools_cmd_map = {
 		'gauplus': gauplus_cmd,
 		'hakrawler': hakrawler_cmd,
@@ -1579,7 +1653,7 @@ def vulnerability_scan(
 		engine_id=None,
 		subdomain_id=None,
 		yaml_configuration={},
-		path=None,
+		path='',
 		results_dir=None,
 		filename='vulns.json',
 		subscan=None,
@@ -1682,6 +1756,7 @@ def vulnerability_scan(
 	for line in execute_live(cmd):
 		if not isinstance(line, dict):
 			continue
+		logger.info(line)
 		url = line['host']
 		subdomain_name = get_subdomain_from_url(url)
 		subdomain = Subdomain.objects.get(
@@ -2004,7 +2079,7 @@ def osint(
 		yaml_configuration={},
 		results_dir=None,
 		subdomain_id=None,
-		path=None,
+		path='',
 		description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
@@ -2367,6 +2442,15 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 	return dorks
 
 def get_and_save_employees(scan_history, results_dir):
+	"""Get and save employees found with theHarvester.
+
+	Args:
+		scan_history (startScan.ScanHistory): Scan history object.
+		results_dir (str): Results directory.
+
+	Returns:
+		dict: Dict of emails, employees, hosts and ips found during crawling.
+	"""
 	theHarvester_dir = '/usr/src/github/theHarvester'
 	output_filepath = f'{results_dir}/results.json'
 	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {scan_history.domain.name} -b all -f {output_filepath}'
@@ -2428,6 +2512,20 @@ def get_and_save_employees(scan_history, results_dir):
 		scan_history.employees.add(employee)
 		scan_history.save()
 
+	for host in hosts:
+		if not validators.url(host):
+			logger.info(f'Host {host} is not a valid URL. Skipping.')
+			continue
+		endpoint, created = EndPoint.objects.get_or_create(http_url=host)
+		logger.warning(f'Found endpoint {endpoint.http_url}')
+
+	for ip_address in ips:
+		if not (validators.ipv4(ip_address) or validators.ipv6(ip_address)):
+			logger.info(f'IP {ip_address} is not a valid IP. Skipping.')
+			continue
+		ip, created = IpAddress.objects.get_or_create(address=ip)
+		logger.warning(f'Found ip {ip.address}')
+
 	return {
 		'emails': emails,
 		'employees': scan_history.employees,
@@ -2437,6 +2535,15 @@ def get_and_save_employees(scan_history, results_dir):
 
 
 def get_and_save_emails(scan_history, results_dir):
+	"""Get and save emails from Google, Bing and Baidu.
+
+	Args:
+		scan_history (startScan.ScanHistory): Scan history object.
+		results_dir (str): Results directory.
+
+	Returns:
+		list: List of emails found.
+	"""
 	emails = []
 
 	# Proxy settings
@@ -2478,41 +2585,53 @@ def get_and_save_emails(scan_history, results_dir):
 
 
 def get_and_save_leaked_credentials(scan_history, results_dir):
+	"""Get and save leaked credentials to disk.
+
+	Args:
+		scan_history (startScan.ScanHistory): Scan history object.
+		results_dir (str): Results directory.
+
+	Returns:
+		list[dict]: List of credentials info.
+	"""
 	logger.warning('Getting leaked credentials')
 	leak_target_path = f'{results_dir}/creds_target.txt'
-	# TODO: pwndb is dead, long live h8mail !!!
-	cmd = f'python3 /usr/src/github/pwndb/pwndb.py --proxy tor:9150 --output json --list {leak_target_path}'
-	# leak_output_file = f'{results_dir}/pwndb.json'
-	try:
-		logger.info(cmd)
-		out = subprocess.getoutput(cmd)
-		logger.info(out)
-		creds = []
-		try:
-			creds = json.loads(out)
-			if not creds:
-				logger.error('No leaked credentials found in pwnd output')
-		except Exception as e:
-			logger.exception(e)
-			logger.error('Error parsing pwndb output')
-			pass
+	leak_output_file = f'{results_dir}/h8mail_output.json'
+	cmd = f'h8mail -t --proxy tor:9150 {leak_target_path} --json {leak_output_file}'
+	logger.info(cmd)
+	os.system(cmd)
+	with open(leak_output_file, 'r') as f:
+		creds = f.readlines()
 
-		for cred in creds:
-			if cred['username'] != 'donate':
-				email_id = f"{cred['username']}@{cred['domain']}"
-				email_obj, _ = Email.objects.get_or_create(
-					address=email_id,
-				)
-				email_obj.password = cred['password']
+	# Go through h8mail output and save emails to DB
+	creds_json = []
+	for cred in creds:
+		split = cred.split(':')
+		if len(split) == 2: # username:password
+			username, password = tuple(split)
+			creds_json.append({
+				'username': username,
+				'password': password
+			})
+			if cred['username'] == 'donate':
+				continue
+			if '@' in username: # email address found
+				logger.warning(f'Found email address with breached password')
+				email_obj, _ = Email.objects.get_or_create(address=username)
+				email_obj.password = password
 				email_obj.save()
 				scan_history.emails.add(email_obj)
-		return creds
-	except Exception as e:
-		logger.exception(e)
-		return
-
+	return creds_json
 
 def get_and_save_meta_info(meta_dict):
+	"""Extract metadata from Google Search.
+
+	Args:
+		meta_dict (dict): Info dict.
+
+	Returns:
+		list: List of startScan.MetaFinderDocument objects.
+	"""
 	logger.warning(f'Getting metadata for {meta_dict.osint_target}')
 
 	# Proxy settngs
@@ -2554,7 +2673,7 @@ def get_and_save_meta_info(meta_dict):
 	return results
 
 
-def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdomain_id=None, exclude_subdomains=None, path=None):
+def get_subdomains(target_domain, scan_history=None, write_filepath='', subdomain_id=None, exclude_subdomains=None, path=''):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -2591,12 +2710,13 @@ def get_subdomains(target_domain, scan_history=None, write_filepath=None, subdom
 
 	return subdomains
 
+
 def get_endpoints(
 		target_domain,
 		subdomain_id=None,
 		scan_history=None,
 		is_alive=False,
-		path=None,
+		path='',
 		write_filepath=None,
 		exclude_subdomains=False):
 	"""Get EndPoint objects from DB.
@@ -2611,18 +2731,20 @@ def get_endpoints(
 	Returns:
 		list: List of subdomains matching query.
 	"""
-	base_query = (
-		EndPoint.objects
-		.filter(
-			scan_history=scan_history,
-			target_domain=target_domain,
-			http_url__isnull=False)
-	)
+	base_query = EndPoint.objects.filter(target_domain=target_domain)
+	if scan_history:
+		base_query = base_query.filter(scan_history=scan_history)
 	if subdomain_id:
 		subdomain = Subdomain.objects.get(pk=subdomain_id)
 		base_query = base_query.filter(http_url__contains=subdomain.name)
 	elif exclude_subdomains:
 		base_query = base_query.filter(name=target_domain.name)
+
+	# If a path is passed, select only endpoints that contains it
+	if path:
+		url = f'{target_domain.name}/{path}'
+		base_query = base_query.filter(http_url__contains=url)
+
 	endpoint_query = base_query.distinct('http_url').order_by('http_url')
 	endpoints = [
 		endpoint
@@ -2636,14 +2758,13 @@ def get_endpoints(
 	endpoints = [e.http_url for e in endpoints]
 
 	if not endpoints:
-		logger.warning('No endpoints were found in query !')
-
-	if path:
-		endpoints = [e for e in endpoints if path in e]
+		logger.warning(f'No endpoints were found in query for {target_domain.name}!')
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
 			f.write('\n'.join(endpoints))
+
+	logger.info(endpoints)
 
 	return endpoints
 

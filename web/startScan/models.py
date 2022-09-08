@@ -328,7 +328,7 @@ class SubScan(models.Model):
 
 class EndPoint(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(
@@ -485,6 +485,9 @@ class IpAddress(models.Model):
 	ports = models.ManyToManyField('Port', related_name='ports')
 	geo_iso = models.ForeignKey(
 		CountryISO, on_delete=models.CASCADE, null=True, blank=True)
+	version = models.IntegerField(blank=True, null=True)
+	is_private = models.BooleanField(default=False)
+	reverse_pointer = models.CharField(max_length=100, blank=True, null=True)
 	# this is used for querying which ip was discovered during subcan
 	ip_subscan_ids = models.ManyToManyField('SubScan', related_name='ip_subscan_ids')
 
