@@ -19,7 +19,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from reNgine.common_func import *
-from reNgine.tasks import query_whois
+from reNgine.tasks import sanitize_url
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -120,6 +120,7 @@ def add_target(request):
                             logger.info(f'Added new domain {domain.name}')
                     
                     for http_url in http_urls:
+                        http_url = sanitize_url(http_url)
                         endpoint, created = EndPoint.objects.get_or_create(
                             target_domain=domain,
                             http_url=http_url)
