@@ -147,15 +147,10 @@ def get_interesting_endpoint(scan_history=None, target=None):
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
 
-
 def get_subdomain_from_url(url):
-    extract_url = tldextract.extract(url)
-    subdomain = '.'.join(extract_url[:4])
-    if subdomain[0] == '.':
-        subdomain = subdomain[1:]
-    if subdomain[-1] == '.':
-        subdomain = subdomain[:-1]
-    return subdomain.strip()
+    url_obj = urlparse(url.strip())
+    url_str = url_obj.netloc if url_obj.scheme else url_obj.path
+    return url_str.split(':')[0]
 
 
 def get_domain_from_subdomain(subdomain):
