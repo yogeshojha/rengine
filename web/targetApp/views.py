@@ -1,7 +1,9 @@
 import csv
 import io
+import ipaddress
 import logging
 import os
+import socket
 from datetime import timedelta
 from functools import reduce
 from operator import and_, or_
@@ -32,82 +34,112 @@ def index(request):
 
 
 def add_target(request):
+    """Add a new target. Targets can be URLs, IPs, CIDR ranges, or Domains.
+
+    Args:
+        request: Django request.
+    """
     form = AddTargetForm(request.POST or None)
     if request.method == "POST":
         logger.info(request.POST)
         added_target_count = 0
-        single_target = request.POST.get('add-single-target')
         multiple_targets = request.POST.get('add-multiple-targets')
-        ip_target =  request.POST.get('add-ip-target')
-        do_fetch_whois = request.POST.get('fetch_whois_checkbox', '') == 'on'
+        ip_target = request.POST.get('add-ip-target')
         try:
-            # Single target
-            if single_target:
-                if not form.is_valid():
-                    logger.error('Invalid form')
-                    for error in form.errors:
-                        logger.error(error)
-                        messages.add_message(request, messages.ERROR, error)
-                    return http.HttpResponseRedirect(reverse('add_target'))
-                data = form.cleaned_data
-                name = data['name']
-                logger.info(f'Adding single target {name} ...')
-                domain, _ = Domain.objects.get_or_create(name=name)
-                for k, v in data.items():
-                    setattr(domain, k, v)
-                if not domain.insert_date:
-                    domain.insert_date = timezone.now()
-                    domain.save()
-                logger.info(f'Domain {domain.name} added/updated in DB')
-                messages.add_message(
-                    request,
-                    messages.INFO,
-                    f'Target domain {domain.name} added successfully')
-
-                if do_fetch_whois:
-                    query_whois.apply_async(args=(domain.name,))
-
-                return http.HttpResponseRedirect(reverse('list_target'))
-
             # Multiple targets
-            elif multiple_targets:
+            if multiple_targets:
                 bulk_targets = [t.rstrip() for t in request.POST['addTargets'].split('\n') if t]
                 logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
                 h1_team_handle = request.POST.get('targetH1TeamHandle')
                 for target in bulk_targets:
-                    domain_query = Domain.objects.filter(name=target)
-                    if not domain_query.exists() and validators.domain(target):
-                        Domain.objects.create(
-                            name=target.rstrip("\n"),
+                    target = target.rstrip('\n')
+                    http_urls = []
+                    domains = []
+                    ports = []
+                    ips = []
+
+                    # Validate input and find what type of address it is. 
+                    # Valid inputs are URLs, Domains, or IP addresses.
+                    # TODO: support IP CIDR ranges (auto expand range and 
+                    # save new found ips to DB)
+                    is_domain = bool(validators.domain(target))
+                    is_ip = bool(validators.ipv4(target)) or bool(validators.ipv6(target))
+                    is_range = bool(validators.ipv4_cidr(target)) or bool(validators.ipv6_cidr(target))
+                    is_url = bool(validators.url(target))
+
+                    # Set ip_domain / http_url based on type of input
+                    logger.info(f'{target} | Domain? {is_domain} | IP? {is_ip} | CIDR range? {is_range} | URL? {is_url}')
+
+                    if is_domain:
+                       domains.append(target)
+
+                    elif is_url:
+                        url = urlparse(target)
+                        http_url = url.geturl()
+                        http_urls.append(http_url)
+                        split = url.netloc.split(':')
+                        if len(split) == 1:
+                            domain = split[0]
+                            domains.append(domain)
+                        if len(split) == 2:
+                            domain, port_number = tuple(split)
+                            domains.append(domain)
+                            ports.append(port_number)
+
+                    elif is_ip:
+                        ips.append(target)
+                        domains.append(target)
+
+                    elif is_range:
+                        ips = get_ips_from_cidr_range(target)
+                        for ip_address in ips:
+                            ips.append(ip_address)
+                            domains.append(ip_address)
+                    else:
+                        msg = f'{target} is not a valid domain, IP, or URL. Skipped.'
+                        logger.warning(msg)
+                        messages.add_message(
+                            request, 
+                            messages.WARNING,
+                            msg)
+                        continue
+
+                    logger.info(f'IPs: {ips} | Domains: {domains} | URLs: {http_urls} | Ports: {ports}')
+
+                    for domain_name in domains:
+                        domain, created = Domain.objects.get_or_create(
+                            name=domain_name,
                             description=description,
                             h1_team_handle=h1_team_handle,
-                            insert_date=timezone.now())
-                        added_target_count += 1
-
-            # IP to domain conversion
-            elif ip_target:
-                hosts = request.POST.getlist('resolved_ip_domains')
-                description = request.POST.get('targetDescription', '')
-                ip_address_cidr = request.POST.get('ip_address', '')
-                h1_team_handle = request.POST.get('targetH1TeamHandle')
-                logger.info(f'Adding IP address: {ip_address_cidr}')
-                for name in hosts:
-                    if not (validators.domain(name) or validators.ipv4(name) or validators.ipv6(name)):
-                        messages.add_message(
-                            request,
-                            messages.ERROR,
-                            f'Domain or IP {name} is not a valid domain or IP. Skipping.')
-                        continue
-                    domain, created = Domain.objects.get_or_create(
-                        name=name,
-                        description=description,
-                        h1_team_handle=h1_team_handle,
-                        ip_address_cidr=ip_address_cidr)
-                    if created:
+                            ip_address_cidr=domain_name if is_ip else None)
                         domain.insert_date = timezone.now()
                         domain.save()
-                    added_target_count += 1
+                        added_target_count += 1
+                        if created:
+                            logger.info(f'Added new domain {domain.name}')
+                    
+                    for http_url in http_urls:
+                        endpoint, created = EndPoint.objects.get_or_create(
+                            target_domain=domain,
+                            http_url=http_url)
+                        if created:
+                            logger.info(f'Added new endpoint {endpoint.http_url}')
+
+                    for ip_address in ips:
+                        ip_data = get_ip_info(ip_address)
+                        ip, created = IpAddress.objects.get_or_create(address=ip_address)
+                        ip.reverse_pointer = ip_data.reverse_pointer
+                        ip.is_private = ip_data.is_private
+                        ip.version = ip_data.version
+                        ip.save()
+                        if created:
+                            logger.warning(f'Added new IP {ip}')
+
+                    for port in ports:
+                        port, created = Port.objects.get_or_create(number=port_number)
+                        if created:
+                            logger.warning(f'Added new port {port.number}.')
 
             # Import from txt / csv
             elif 'import-txt-target' in request.POST or 'import-csv-target' in request.POST:
@@ -265,71 +297,144 @@ def update_target(request, id):
     return render(request, 'target/update.html', context)
 
 def target_summary(request, id):
+    """Summary of a target (domain). Contains aggregated information on all 
+    objects (Subdomain, EndPoint, Vulnerability, Emails, ...) found across all
+    scans.
+
+    Args:
+        request: Django request.
+        id: Domain id.
+    """
     context = {}
+
+    # Domain
     target = get_object_or_404(Domain, id=id)
     context['target'] = target
-    context['scan_count'] = ScanHistory.objects.filter(
-        domain_id=id).count()
-    last_week = timezone.now() - timedelta(days=7)
-    context['this_week_scan_count'] = ScanHistory.objects.filter(
-        domain_id=id, start_scan_date__gte=last_week).count()
-    subdomains = Subdomain.objects.filter(
-        target_domain__id=id).values('name').distinct()
-    endpoints = EndPoint.objects.filter(
-        target_domain__id=id).values('http_url').distinct()
 
-    vulnerabilities = Vulnerability.objects.filter(target_domain__id=id)
-    vulnerability_count = vulnerabilities.count()
+    # Scan History
+    scan_history = ScanHistory.objects.filter(domain__id=id)
+    context['recent_scans'] = scan_history.order_by('-start_scan_date')[:4]
+    context['scan_count'] = scan_history.count()
+    last_week = timezone.now() - timedelta(days=7)
+    context['this_week_scan_count'] = (
+        scan_history
+        .filter(start_scan_date__gte=last_week)
+        .count()
+    )
+
+    # Scan Engines
+    context['scan_engines'] = EngineType.objects.all()
+
+    # Subdomains
+    subdomains = (
+        Subdomain.objects
+        .filter(target_domain__id=id)
+        .values('name').distinct()
+    )
     context['subdomain_count'] = subdomains.count()
     context['alive_count'] = subdomains.filter(http_status__exact=200).count()
+
+    # Endpoints
+    endpoints = (
+        EndPoint.objects
+        .filter(target_domain__id=id)
+        .values('http_url')
+        .distinct()
+    )
     context['endpoint_count'] = endpoints.count()
     context['endpoint_alive_count'] = endpoints.filter(http_status__exact=200).count()
 
-    context['scan_engines'] = EngineType.objects.all()
-
+    # Vulnerabilities
+    vulnerabilities = Vulnerability.objects.filter(target_domain__id=id)
     unknown_count = vulnerabilities.filter(severity=-1).count()
     info_count = vulnerabilities.filter(severity=0).count()
     low_count = vulnerabilities.filter(severity=1).count()
     medium_count = vulnerabilities.filter(severity=2).count()
     high_count = vulnerabilities.filter(severity=3).count()
     critical_count = vulnerabilities.filter(severity=4).count()
-
+    ignore_info_count = sum([low_count, medium_count, high_count, critical_count])
     context['unknown_count'] = unknown_count
     context['info_count'] = info_count
     context['low_count'] = low_count
     context['medium_count'] = medium_count
     context['high_count'] = high_count
     context['critical_count'] = critical_count
+    context['total_vul_ignore_info_count'] = ignore_info_count
+    context['most_common_vulnerability'] = (
+        vulnerabilities
+        .exclude(severity=0)
+        .values("name", "severity")
+        .annotate(count=Count('name'))
+        .order_by("-count")[:10]
+    )
+    context['vulnerability_count'] = vulnerabilities.count()
+    context['vulnerability_list'] = (
+        vulnerabilities
+        .order_by('-severity')
+        .all()[:30]
+    )
 
-    context['total_vul_ignore_info_count'] = low_count + \
-        medium_count + high_count + critical_count
+    # Vulnerability Tags
+    context['most_common_tags'] = (
+        VulnerabilityTags.objects
+        .filter(vuln_tags__in=vulnerabilities)
+        .annotate(nused=Count('vuln_tags'))
+        .order_by('-nused')
+        .values('name', 'nused')[:7]
+    )
 
-    context['most_common_vulnerability'] = Vulnerability.objects.exclude(severity=0).filter(target_domain__id=id).values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
-
-    emails = Email.objects.filter(emails__in=ScanHistory.objects.filter(domain__id=id).distinct())
-
+    # Emails
+    emails = (
+        Email.objects
+        .filter(emails__in=scan_history)
+        .distinct()
+    )
     context['exposed_count'] = emails.exclude(password__isnull=True).count()
-
     context['email_count'] = emails.count()
+    
+    # Employees
+    context['employees_count'] = (
+        Employee.objects
+        .filter(employees__in=scan_history)
+        .count()
+    )
 
-    context['employees_count'] = Employee.objects.filter(
-        employees__in=ScanHistory.objects.filter(id=id)).count()
+    # HTTP Statuses
+    context['http_status_breakdown'] = (
+        subdomains
+        .exclude(http_status=0)
+        .values('http_status')
+        .annotate(Count('http_status'))
+    )
+    
+    # CVEs
+    context['most_common_cve'] = (
+        CveId.objects
+        .filter(cve_ids__in=vulnerabilities)
+        .annotate(nused=Count('cve_ids'))
+        .order_by('-nused')
+        .values('name', 'nused')[:7]
+    )
 
-    context['recent_scans'] = ScanHistory.objects.filter(
-        domain=id).order_by('-start_scan_date')[:4]
+    # CWEs
+    context['most_common_cwe'] = (
+        CweId.objects
+        .filter(cwe_ids__in=vulnerabilities)
+        .annotate(nused=Count('cwe_ids'))
+        .order_by('-nused')
+        .values('name', 'nused')[:7]
+    )
 
-    context['vulnerability_count'] = vulnerability_count
+    # Country ISOs
+    subdomains = Subdomain.objects.filter(target_domain__id=id)
+    ip_addresses = IpAddress.objects.filter(ip_addresses__in=subdomains)
+    context['asset_countries'] = (
+        CountryISO.objects
+        .filter(ipaddress__in=ip_addresses)
+        .annotate(count=Count('iso'))
+        .order_by('-count')
+    )
 
-    context['vulnerability_list'] = Vulnerability.objects.filter(
-        target_domain__id=id).order_by('-severity').all()[:30]
-
-    context['http_status_breakdown'] = Subdomain.objects.filter(target_domain=id).exclude(http_status=0).values('http_status').annotate(Count('http_status'))
-
-    context['most_common_cve'] = CveId.objects.filter(cve_ids__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
-    context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
-    context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=Vulnerability.objects.filter(target_domain__id=id)).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
-
-    context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=IpAddress.objects.filter(ip_addresses__in=Subdomain.objects.filter(target_domain__id=id))).annotate(count=Count('iso')).order_by('-count')
     return render(request, 'target/summary.html', context)
 
 def add_organization(request):
@@ -388,13 +493,10 @@ def update_organization(request, id):
         print(request.POST.getlist("domains"))
         form = UpdateOrganizationForm(request.POST, instance=organization)
         if form.is_valid():
-            organization_obj = Organization.objects.filter(
-                id=id
-            )
-
             for domain in organization.get_domains():
                 organization.domains.remove(domain)
 
+            organization_obj = Organization.objects.filter(id=id)
             organization_obj.update(
                 name=data['name'],
                 description=data['description'],
@@ -402,10 +504,12 @@ def update_organization(request, id):
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
                 organization.domains.add(domain)
+            msg = f'Organization {organization.name} modified!'
+            logger.info(msg)
             messages.add_message(
                 request,
                 messages.INFO,
-                f'Organization {organization.name} modified!')
+                msg)
             return http.HttpResponseRedirect(reverse('list_organization'))
     else:
         domain_list = organization.get_domains().values_list('id', flat=True)
@@ -419,3 +523,21 @@ def update_organization(request, id):
         "form": form
     }
     return render(request, 'organization/update.html', context)
+
+def get_ip_info(ip_address):
+    is_ipv4 = bool(validators.ipv4(ip_address))
+    is_ipv6 = bool(validators.ipv6(ip_address))
+    ip_data = None
+    if is_ipv4:
+        ip_data = ipaddress.IPv4Address(ip_address)
+    elif is_ipv6:
+        ip_data = ipaddress.IPv6Address(ip_address)
+    else:
+        return None
+    return ip_data
+
+def get_ips_from_cidr_range(target):
+    try:
+        return [str(ip) for ip in ipaddress.IPv4Network(target)]
+    except Exception as e:
+        logger.error(f'{target} is not a valid CIDR range. Skipping.')
