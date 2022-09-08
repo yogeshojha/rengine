@@ -729,7 +729,7 @@ class UpdateTool(APIView):
 
 		os.system(update_command)
 		run_system_commands.apply_async(args=(update_command,))
-		return Response({'status': True, 'message': tool.name + ' upated successfully.'})
+		return Response({'status': True, 'message': tool.name + ' updated successfully.'})
 
 
 class GetExternalToolCurrentVersion(APIView):
