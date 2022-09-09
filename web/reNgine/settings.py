@@ -187,7 +187,8 @@ CELERY_TASK_SKIP_RECORD_ACTIVITY = [
     'reNgine.tasks.query_whois',
     'reNgine.tasks.skip',
     'reNgine.tasks.run_system_commands',
-    'reNgine.tasks.report'
+    'reNgine.tasks.report',
+    'reNgine.tasks.http_crawl'
 ]
 CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
 

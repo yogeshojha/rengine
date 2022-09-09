@@ -202,14 +202,14 @@ def send_discord_message(message):
         thread.start()
 
 
-def send_files_to_discord(file_path):
+def send_files_to_discord(file_path, title=None):
     notification = Notification.objects.first()
     if notification and notification.send_to_discord \
     and notification.discord_hook_url:
         webhook = DiscordWebhook(
             url=notification.discord_hook_url,
             rate_limit_retry=True,
-            username="Scan Results - File"
+            username=title or "Scan Results - File"
         )
         with open(file_path, "rb") as f:
             head, tail = os.path.split(file_path)
@@ -219,6 +219,8 @@ def send_files_to_discord(file_path):
 
 
 def send_notification(message):
+    if not message.endswith('.'):
+        message += '.'
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
