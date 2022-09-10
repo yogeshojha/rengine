@@ -218,22 +218,28 @@ def send_files_to_discord(file_path, title=None):
         thread.start()
 
 
-def send_notification(message):
+def send_notification(message, scan_history_id=None):
     if not message.endswith('.'):
         message += '.'
+    if scan_history_id is not None:
+        message = f'*#{scan_history_id}* {message}'
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
 
 
 def get_random_proxy():
-    if Proxy.objects.all().exists():
-        proxy = Proxy.objects.all()[0]
-        if proxy.use_proxy:
-            proxy_name = random.choice(proxy.proxies.splitlines())
-            print('Using proxy: ' + proxy_name)
-            return proxy_name
-    return False
+    """Get a random proxy from the list of proxies input by user in the UI."""
+    if not Proxy.objects.all().exists():
+        return False
+    proxy = Proxy.objects.first()
+    if not proxy.use_proxy:
+        return False
+    proxy_name = random.choice(proxy.proxies.splitlines())
+    logger.warning('Using proxy: ' + proxy_name)
+    # os.environ['HTTP_PROXY'] = proxy_name
+    # os.environ['HTTPS_PROXY'] = proxy_name
+    return proxy_name
 
 
 def send_hackerone_report(vulnerability_id):

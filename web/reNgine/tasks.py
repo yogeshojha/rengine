@@ -4,9 +4,7 @@ import os
 import random
 import subprocess
 from datetime import datetime
-from distutils.file_util import write_file
 from http.client import HTTPConnection, HTTPSConnection
-from multiprocessing.sharedctypes import Value
 from time import sleep
 from urllib.parse import urlparse
 
@@ -15,17 +13,16 @@ import validators
 import whatportis
 import yaml
 from celery import chain, chord, group
-from celery.result import allow_join_result
+from celery.result import AsyncResult, GroupResult, allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
-                                   get_emails_from_google)
+								   get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
 from reNgine.celery import app
 from reNgine.definitions import *
-from reNgine.settings import DEBUG
 from scanEngine.models import EngineType
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
@@ -135,6 +132,7 @@ def initiate_subscan(
 		'task_id': task.id
 	}
 
+
 def sanitize_url(http_url):
 	url = urlparse(http_url)
 	if url.netloc.endswith(':80'):
@@ -142,6 +140,7 @@ def sanitize_url(http_url):
 	elif url.netloc.endswith(':443'):
 		url = url._replace(netloc=url.netloc.replace(':443', ''))
 	return url.geturl().rstrip('/')
+
 
 @app.task
 def initiate_scan(
@@ -155,7 +154,6 @@ def initiate_scan(
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
 		path=''):
-
 	"""Initiate a new scan.
 
 	Args:
@@ -187,6 +185,9 @@ def initiate_scan(
 	domain.last_scan_date = timezone.now()
 	domain.save()
 
+	# Get an initial proxy and set HTTP_PROXY / HTTPS_PROXY
+	get_random_proxy()
+
 	# Create results directory
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	scan_dirname = f'{domain.name}_{timestr}'
@@ -198,8 +199,8 @@ def initiate_scan(
 	send_status = notification.send_scan_status_notif if notification else False
 	if send_status:
 		count = len(engine.tasks)
-		msg = f'\n***Scan started***\nRunning {count} tasks on "{domain.name}" with engine "{engine.engine_name}"'
-		send_notification(msg)
+		msg = f'**SCAN STARTED**: Running **{count} tasks** on `{domain.name}` with engine `{engine.engine_name}`'
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
@@ -228,7 +229,7 @@ def initiate_scan(
 		domain,
 		results_dir)
 
-	# Create initial subdomain in DB: make a copy of domain as a subdomain so
+	# Create initial subdomain in DB: make a copy of domain as a subdomain so 
 	# that other tasks using subdomains can use it.
 	subdomain, created = Subdomain.objects.get_or_create(
 		scan_history=scan_history,
@@ -237,7 +238,7 @@ def initiate_scan(
 	if created:
 		logger.warning(f'Added new subdomain {subdomain.name}')
 
-	# Create initial endpoints in DB: add an endpoint for the domain so that
+	# Create initial endpoints in DB: add an endpoint for the domain so that 
 	# HTTP crawling can start somewhere
 	base_url = f'{domain.name}/{path}' if path else domain.name
 	protocol = detect_protocol(base_url) # probe to see if 'http' or 'https'
@@ -306,6 +307,9 @@ def initiate_scan(
 
 	# Run Celery chord
 	task = chord(header)(callback)
+	task_ids = get_task_ids(task, with_result=False)
+	task_ids_str = ', '.join(task_ids)
+	logger.warning(f'Celery task ids: {task_ids_str}')
 
 	return {
 		'success': True,
@@ -367,15 +371,15 @@ def report(
 	if subdomain_id:
 		subdomain = Subdomain.objects.get(pk=subdomain_id)
 		host = subdomain.name
-	msg = f'\n***Scan completed***\nFinished running tasks on "{host}" with engine {engine.engine_name}\nScan status: {status_str}'
-	msg += f'\n{failed_tasks_count} tasks have FAILED.' if failed_tasks_count > 0 else ''
+	msg = f'***SCAN COMPLETED***: Finished running tasks on `{host}` with engine `{engine.engine_name}`\nScan status: **{status_str}**'
+	msg += f'\n\t{failed_tasks_count} tasks are in **FAILED** state:' if failed_tasks_count > 0 else ''
 	for task in failed_tasks:
-		msg += f'\n-> {task.title}: {task.error_message}'
+		msg += f'\n\t-> {task.title}: {task.error_message}'
 	logger.info(msg)
 
 	# Send notif
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 
 def process_imported_subdomains(
@@ -383,7 +387,7 @@ def process_imported_subdomains(
 		scan_history,
 		domain,
 		results_dir):
-	"""Take a list of subdomains imported and write them to from_imported.txt
+	"""Take a list of subdomains imported and write them to from_imported.txt.
 
 	Args:
 		imported_subdomains (list): List of subdomains.
@@ -394,7 +398,7 @@ def process_imported_subdomains(
 
 	# Validate imported subdomains
 	subdomains = list(set([
-		subdomain for subdomain in imported_subdomains
+		subdomain for subdomain in imported_subdomains 
 		if validators.domain(subdomain) and domain.name == get_domain_from_subdomain(subdomain)
 	]))
 	if not subdomains:
@@ -424,8 +428,7 @@ def subdomain_discovery(
 		out_of_scope_subdomains=[],
 		path='',
 		description=None):
-	"""
-	Uses a set of tools (see DEFAULT_SUBDOMAIN_SCAN_TOOLS) to scan all
+	"""Uses a set of tools (see DEFAULT_SUBDOMAIN_SCAN_TOOLS) to scan all 
 	subdomains associated with a domain.
 
 	Args:
@@ -459,10 +462,10 @@ def subdomain_discovery(
 	domain = Domain.objects.get(pk=domain_id)
 
 	# Send start notif
-	msg = f'`subdomain_discovery` has started for {domain.name}'
+	msg = f'`subdomain_discovery` has started for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Gather tools to run for subdomain scan
 	if ALL in tools:
@@ -543,8 +546,8 @@ def subdomain_discovery(
 				f'Subdomain discovery tool "{tool}" raised an exception')
 			logger.exception(e)
 
-	# Gather all the tools' results in one single file. wrote subdomains into separate files,
-	# cleanup tool results and sort all subdomains.
+	# Gather all the tools' results in one single file. wrote subdomains into 
+	# separate files, cleanup tool results and sort all subdomains.
 	os.system(f'cat {results_dir}/subdomains_*.txt > {output_path}')
 	os.system(f'sort -u {output_path} -o {output_path}')
 	# os.system(f'rm -f {results_dir}/from*')
@@ -592,13 +595,14 @@ def subdomain_discovery(
 			subdomain.save()
 
 	# Send notifications
-	msg = f'`subdomain_discovery` has finished with {tools} for {domain.name}: *{subdomain_count}* subdomains discovered'
+	tools_str = ', '.join(f'`{tool}`' for tool in tools)
+	msg = f'`subdomain_discovery` has finished with {tools_str} for `{domain.name}`: **{subdomain_count} subdomains discovered**'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
-
+		send_notification(msg, scan_history_id=scan_history_id)
+	
 	if send_scan_output:
-		send_files_to_discord(f'{results_dir}/subdomains.txt', title=f'subdomains_{domain.name}.txt')
+		send_files_to_discord(f'{results_dir}/subdomains.txt', title=f'{scan_history_id}_subdomains.txt')
 
 	if send_subdomain_changes:
 		added_subdomains = get_new_added_subdomain(scan_history.id, domain.id)
@@ -608,13 +612,13 @@ def subdomain_discovery(
 			message = f'**{added_subdomains.count()} new subdomains discovered on domain {domain.name}**'
 			subdomains_str = '\n'.join([f'• {subdomain}' for subdomain in added_subdomains])
 			message += subdomains_str
-			send_notification(message)
+			send_notification(message, scan_history_id=scan_history_id)
 
 		if removed_subdomains:
 			message = f'**{removed_subdomains.count()} subdomains are no longer available on domain {domain.name}**'
 			subdomains_str = '\n'.join([f'• {subdomain}' for subdomain in removed_subdomains])
 			message += subdomains_str
-			send_notification(message)
+			send_notification(message, scan_history_id=scan_history_id)
 
 	if send_interesting:
 		interesting_subdomains = get_interesting_subdomains(scan_history.id, domain.id)
@@ -622,12 +626,13 @@ def subdomain_discovery(
 			message = f'**{interesting_subdomains.count()} interesting subdomains found on domain {domain.name}**'
 			subdomains_str = '\n'.join([f'• {subdomain}' for subdomain in removed_subdomains])
 			message += subdomains_str
-			send_notification(message)
+			send_notification(message, scan_history_id=scan_history_id)
+
 
 def detect_protocol(url):
-	"""Probe http / https URL using HEAD requests and detect which protocols
+	"""Probe http / https URL using HEAD requests and detect which protocols  
 	respond for this URL.
-
+	
 	Args:
 		url (str): URL.
 
@@ -642,13 +647,14 @@ def detect_protocol(url):
 		return 'http'
 	return None
 
+
 def is_alive(url, protocol='https'):
 	""""Check if URL is alive.
-
+	
 	Args:
 		url (str): URL with or without protocol.
 		protocol (str): Protocol to check. Default: https
-
+	
 	Returns:
 		bool: True if alive otherwise False.
 	"""
@@ -672,6 +678,7 @@ def is_alive(url, protocol='https'):
 			return False
 	except:
 		return False
+
 
 def get_new_added_subdomain(scan_id, domain_id):
 	"""Find domains added during the last run.
@@ -749,7 +756,7 @@ def http_crawl(
 		results_dir=None,
 		description=None,
 		path=''):
-	"""Use httpx to query HTTP URLs for important info like page titles, http
+	"""Use httpx to query HTTP URLs for important info like page titles, http 
 	status, etc...
 
 	Args:
@@ -766,7 +773,7 @@ def http_crawl(
 	httpx_results_file = f'{results_dir}/httpx.json'
 	domain = Domain.objects.get(pk=domain_id)
 	scan_history = ScanHistory.objects.get(pk=scan_history_id)
-
+	
 	# Write httpx input file
 	input_file = f'{results_dir}/endpoints.txt'
 	get_http_urls(
@@ -782,10 +789,10 @@ def http_crawl(
 	# Send notification
 	# notification = Notification.objects.first()
 	# send_status = notification.send_scan_status_notif if notification else False
-	# msg = f'`http_crawl` has started for {domain.name}'
+	# msg = f'`http_crawl` has started for `{domain.name}`'
 	# logger.warning(msg)
 	# if send_status:
-	# 	send_notification(msg)
+	# 	send_notification(msg, scan_history_id=scan_history_id)
 
 	cmd += f' -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent -t {threads}'
 	cmd += f' --http-proxy {proxy}' if proxy else ''
@@ -821,6 +828,7 @@ def http_crawl(
 				scan_history=scan_history,
 				name=subdomain_name)
 			subdomain.discovered_date = discovered_date
+
 			# Add HTTP URL + response info to subdomain if root URL
 			url = urlparse(http_url)
 			if url.netloc == subdomain_name and url.path in ['', '/']:
@@ -832,6 +840,7 @@ def http_crawl(
 				subdomain.response_time = response_time
 				subdomain.cname = ','.join(line.get('cnames', []))
 				subdomain.save()
+			
 			# Save default HTTP URL to endpoint object in DB
 			endpoint, _ = EndPoint.objects.get_or_create(
 				scan_history=scan_history,
@@ -911,10 +920,10 @@ def http_crawl(
 	# 	.filter(http_status__exact=200)
 	# 	.count()
 	# )
-	# msg = f'`http crawl` has finished probing endpoints for {domain.name}: {alive_count} alive endpoints discovered'
+	# msg = f'`http crawl` has finished probing endpoints for `{domain.name}`: **{alive_count} alive endpoints discovered**'
 	# logger.warning(msg)
 	# if send_status:
-	# 	send_notification(msg)
+	# 	send_notification(msg, scan_history_id=scan_history_id)
 
 
 def geo_localize(host):
@@ -990,10 +999,10 @@ def screenshot(
 	# Send start notif
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
-	msg = f'`screenshot` has started for {domain.name}'
+	msg = f'`screenshot` has started for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Run cmd
 	logger.info(cmd)
@@ -1025,8 +1034,10 @@ def screenshot(
 	os.system(f'rm -rf {screenshots_path}/source')
 
 	# Send finish notif
+	msg = f'`screenshot` has finished successfully.'
+	logger.warning(msg)
 	if send_status:
-		send_notification(f'`screenshot` has finished successfully.')
+		send_notification(msg, scan_history_id=scan_history_id)
 
 
 @app.task
@@ -1085,10 +1096,11 @@ def port_scan(
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
 	send_output_file = notification.send_scan_output_file if notification else False
-	msg = f'`port_scan` has started for {hosts}'
+	hosts_str_report = ', '.join(f'`{host}`' for host in hosts)
+	msg = f'`port_scan` has started for {hosts_str_report}'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Get ports
 	if 'full' in ports:
@@ -1107,7 +1119,7 @@ def port_scan(
 	cmd += f' -rate {naabu_rate}' if naabu_rate > 0 else ''
 	cmd += ports_str
 	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
-
+	
 	# Writing port results
 	ports = []
 	logger.info(cmd)
@@ -1115,34 +1127,35 @@ def port_scan(
 		# TODO: Update Celery task status continously
 		if not isinstance(line, dict):
 			continue
+		ports.append(line)
 		port_number = line['port']
 		ip_address = line['ip']
 		host = line.get('host') or ip_address
 		if port_number == 0:
 			continue
 
+		# Grab subdomain
+		subdomain = Subdomain.objects.filter(
+			target_domain=domain,
+			name=host,
+			scan_history=scan_history
+		).first()
+
 		# Add IP DB
 		ip, created = IpAddress.objects.get_or_create(address=ip_address)
 		if created:
 			logger.warning(f'Found new ip address {ip_address}')
 
-			# Add IP to Subdomain in DB
-			subdomain = Subdomain.objects.filter(
-				target_domain=domain,
-				name=host,
-				scan_history=scan_history
-			).first()
-			subdomain.ip_addresses.add(ip)
-			subdomain.save()
+		# Add IP to Subdomain in DB
+		subdomain.ip_addresses.add(ip)
+		subdomain.save()
 
 		# Add Port in DB
 		port, created = Port.objects.get_or_create(number=port_number)
 		if created:
-			ports.append(line)
 			logger.warning(f'Found new port {port_number} on {ip_address} ({host})')
 			port.is_uncommon = port_number in UNCOMMON_WEB_PORTS
 			port_details = whatportis.get_ports(str(port_number))
-			logger.info(port_details)
 			if len(port_details) > 0:
 				port.service_name = port_details[0].name
 				port.description = port_details[0].description
@@ -1168,14 +1181,14 @@ def port_scan(
 				logger.warning(f'Found new endpoint {endpoint.http_url}')
 
 	# Send end notif and output file
-	msg = f'`port_scan` has finished for {domain.name} `and` has identified {len(ports)} ports'
+	msg = f'`port_scan` has finished for `{domain.name}`: **{len(ports)} ports discovered**'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 	if send_output_file:
 		with open(output_file, 'w') as f:
 			json.dump(ports, f, indent=4)
-		send_files_to_discord(output_file, title=f'ports_{domain.name}.json')
+		send_files_to_discord(output_file, title=f'{scan_history_id}_ports.json')
 
 	return ports
 
@@ -1213,10 +1226,10 @@ def waf_detection(
 	# Send start notif
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
-	msg = f'`waf_detection` has started for {domain.name}'
+	msg = f'`waf_detection` has started for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Get alive endpoints from DB
 	input_path = f'{results_dir}/endpoints_alive.txt'
@@ -1268,13 +1281,13 @@ def waf_detection(
 		if subdomain_query.exists():
 			subdomain = subdomain_query.first()
 			subdomain.waf.add(waf_obj)
-		subdomain.save()
+			subdomain.save()
 
 	# Send end notif
-	msg = f'`waf_detection` has finished for {domain.name}'
+	msg = f'`waf_detection` has finished for `{domain.name}`: **{len(wafs)} wafs discovered**'
 	logger.info(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 # TODO: execute_live() for dir_file_fuzz
 @app.task
@@ -1320,7 +1333,7 @@ def dir_file_fuzz(
 	max_time = config.get(MAX_TIME, 0)
 	match_http_status = config.get(MATCH_HTTP_STATUS, FFUF_DEFAULT_MATCH_HTTP_STATUS)
 	mc = ','.join([str(c) for c in match_http_status])
-	recursive_level = config.get(RECURSIVE_LEVEL, 1)
+	recursive_level = config.get(RECURSIVE_LEVEL, 1)	
 	stop_on_error = config.get(STOP_ON_ERROR, False)
 	timeout = config.get(TIMEOUT, 0)
 	threads = config.get(THREADS, 0)
@@ -1330,10 +1343,10 @@ def dir_file_fuzz(
 	# Send start notification
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
-	msg = f'`dir_file_fuzz` has started for {host}'
+	msg = f'`dir_file_fuzz` has started for `{host}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Get wordlist
 	wordlist_name = 'dicc' if wordlist_name == 'default' else wordlist_name
@@ -1353,7 +1366,7 @@ def dir_file_fuzz(
 	cmd += f' -mc {mc}' if mc else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 
-    # Grab subdomains to fuzz
+	# Grab subdomains to fuzz
 	if subdomain_id:
 		subdomains_fuzz = [Subdomain.objects.get(pk=subdomain_id)]
 	else:
@@ -1363,6 +1376,8 @@ def dir_file_fuzz(
 		)
 
 	# Loop through subdomains and run command
+	dirfile_count = 0
+	endpoint_count = 0
 	for subdomain in subdomains_fuzz:
 		final_cmd = cmd
 
@@ -1412,7 +1427,6 @@ def dir_file_fuzz(
 		directory_scan.command_line = data['commandline']
 		directory_scan.save()
 		# TODO: URL Models to be created here
-
 		for result in data['results']:
 			name = result['input'].get('FUZZ')
 			length = result['length']
@@ -1431,6 +1445,7 @@ def dir_file_fuzz(
 				http_url=sanitize_url(url))
 			if created:
 				logger.warning(f'Added new endpoint {endpoint.http_url}')
+				endpoint_count += 1
 			dfile_query = DirectoryFile.objects.filter(
 				name=name,
 				length__exact=length,
@@ -1452,6 +1467,7 @@ def dir_file_fuzz(
 					content_type=content_type)
 				file.save()
 				logger.warning(f'Found new directory / file at {url}')
+				dirfile_count += 1
 			directory_scan.directory_files.add(file)
 
 		# if subscan:
@@ -1461,9 +1477,9 @@ def dir_file_fuzz(
 		subdomain.directories.add(directory_scan)
 		subdomain.save()
 
-	msg = f'`dir_file_fuzz` has finished for {host}'
+	msg = f'`dir_file_fuzz` has finished for `{host}`:\n\t**{dirfile_count} directories & files discovered**\n\t**{endpoint_count} endpoints discovered**'
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 
 @app.task
@@ -1503,9 +1519,6 @@ def fetch_url(
 	threads = config.get(THREADS, 20)
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
-	if proxy:
-		os.environ['HTTP_PROXY'] = proxy
-		os.environ['HTTPS_PROXY'] = proxy
 	input_path = f'{results_dir}/endpoints_alive.txt'
 	output_path = f'{results_dir}/{filename}'
 	exclude_subdomains = config.get('exclude_subdomains', False)
@@ -1529,43 +1542,53 @@ def fetch_url(
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
 	send_output_file = notification.send_scan_output_file if notification else False
-	msg = f'`fetch_url` started for {domain.name}'
+	msg = f'`fetch_url` started for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Domain regex
 	domain_regex = f"\'https?://([a-z0-9]+[.])*{domain.name}.*\'"
 
 	# Tools cmds
-	gauplus_cmd = f'cat {input_path} | gauplus --random-agent | grep -Eo {domain_regex} > {results_dir}/urls_gau.txt'
-	hakrawler_cmd = f'cat {input_path} | hakrawler -subs -u | grep -Eo {domain_regex} > {results_dir}/urls_hakrawler.txt'
-	waybackurls_cmd = f'cat {input_path} | waybackurls | grep -Eo {domain_regex} > {results_dir}/urls_waybackurls.txt'
-	gospider_cmd = f'gospider -S {input_path} --js -t {threads} -d 2 --sitemap --robots -w -r | grep -Eo {domain_regex} > {results_dir}/urls_gospider.txt'
-	tools_cmd_map = {
-		'gauplus': gauplus_cmd,
-		'hakrawler': hakrawler_cmd,
-		'waybackurls': waybackurls_cmd,
-		'gospider': gospider_cmd
+	cmd_map = {
+		'gauplus': f'gauplus --random-agent -t {threads}',
+		'hakrawler': 'hakrawler -subs -u',
+		'waybackurls': 'waybackurls',
+		'gospider': f'gospider -S {input_path} --js -t {threads} -d 2 --sitemap --robots -w -r'
 	}
-	cleanup_cmds = [
+	if proxy:
+		cmd_map['gauplus'] += f' -p "{proxy}"'
+		cmd_map['gospider'] += f' -p {proxy}'
+		cmd_map['hakrawler'] += f' -proxy {proxy}'
+	cat_input = f'cat {input_path}'
+	grep_output = f'grep -Eo {domain_regex} > {results_dir}/'
+	cmd_map = {
+		tool: f'{cat_input} | {cmd} | {grep_output}/urls_{tool}.txt' 
+		for tool, cmd in cmd_map.items()
+	}
+	tasks = group(
+		run_system_commands.si(cmd)
+		for tool, cmd in cmd_map.items()
+		if tool in tools
+	)
+
+	# Cleanup task
+	sort_output = [
 		f'cat {results_dir}/urls_* > {results_dir}/urls.txt',
 		f'cat {results_dir}/endpoints_alive.txt >> {results_dir}/urls.txt',
 		f'sort -u {results_dir}/urls.txt -o {output_path}',
 	]
 	if ignore_file_extension:
 		ignore_exts = '|'.join(ignore_file_extension)
-		cleanup_cmds.extend([
+		grep_ext_filtered_output = [
 			f'cat {output_path} | grep -Eiv "\\.({ignore_exts}).*" > {results_dir}/temp_urls.txt',
 			f'mv {results_dir}/temp_urls.txt {output_path}'
-		])
-
-	tasks = group(
-		run_system_commands.si(tool_cmd)
-		for tool_name, tool_cmd in tools_cmd_map.items()
-		if tool_name in tools
-	)
-	cleanup = chain(run_system_commands.si(cmd) for cmd in cleanup_cmds)
+		]
+		sort_output.extend(grep_ext_filtered_output)
+	cleanup = chain(run_system_commands.si(cmd) for cmd in sort_output)
+	
+	# Run all commands in parallel
 	result = chord(tasks)(cleanup)
 
 	# Wait for tasks to complete as we read from the output path
@@ -1598,12 +1621,12 @@ def fetch_url(
 			logger.warning(f'Added new endpoint {http_url}')
 
 	if send_output_file:
-		send_files_to_discord(output_path, title=f'urls_{domain.name}.txt')
+		send_files_to_discord(output_path, title=f'{scan_history_id}_urls.txt')
 
 	# TODO:
-	# Go spider & waybackurls accumulates a lot of urls, which is good but
-	# nuclei takes a long time to scan even a simple website, so we will do
-	# http probing and filter HTTP status 404, this way we can reduce the number
+	# Go spider & waybackurls accumulates a lot of urls, which is good but 
+	# nuclei takes a long time to scan even a simple website, so we will do 
+	# http probing and filter HTTP status 404, this way we can reduce the number 
 	# of non-existent URLS.
 	http_crawl(
 		scan_history_id=scan_history_id,
@@ -1627,11 +1650,11 @@ def fetch_url(
 	# Send status notif
 	if send_status:
 		msg = (
-			f'`fetch_url` has finished gathering endpoints for {domain.name} '
-			f'and has discovered *{endpoint_count}* unique endpoints '
-			f'(*{endpoint_alive_count}/{endpoint_count}* alive).'
+			f'`fetch_url` has finished gathering endpoints for `{domain.name}` '
+			f'**{endpoint_count} unique endpoints discovered '
+			f'({endpoint_alive_count}/{endpoint_count} alive)**'
 		)
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Run gf patterns on saved endpoints
 	# TODO: refactor to Celery workflow
@@ -1650,7 +1673,7 @@ def fetch_url(
 			logger.error(f'Could not find GF output file {output_file}. Skipping GF pattern "{gf_pattern}"')
 			continue
 
-		# Read output file line by line and
+		# Read output file line by line and 
 		with open(output_file) as f:
 			lines = f.readlines()
 
@@ -1723,11 +1746,11 @@ def vulnerability_scan(
 	rate_limit = config.get(RATE_LIMIT, 0)
 	retries = config.get(RETRIES, 0)
 	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
-	severities_str = ','.join(severities)
+	severities_str = ','.join(severities)	
 	timeout = config.get(TIMEOUT, 0)
 	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	output_path = f'{results_dir}/{filename}'
-
+	
 	# Get alive endpoints
 	endpoints = get_http_urls(
 		domain,
@@ -1745,7 +1768,7 @@ def vulnerability_scan(
 	msg = f'`vulnerability_scan` using Nuclei scanner started on {endpoints_count} endpoints'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
@@ -1762,7 +1785,7 @@ def vulnerability_scan(
 		else:
 			template = ','.join(nuclei_template).replace(',', '-t')
 		templates.append(template)
-
+	
 	if custom_nuclei_template:
 		custom_nuclei_template_paths = [f'{str(elem)}.yaml' for elem in custom_nuclei_template]
 		template = ','.join(custom_nuclei_template_paths).replace(',', '-t')
@@ -1872,20 +1895,18 @@ def vulnerability_scan(
 		if subscan:
 			vulnerability.vuln_subscan_ids.add(subscan)
 			vulnerability.save()
-
+		
 		# Save vulnerability object
 		vulnerability.save()
 
 		# Send notification for all vulnerabilities except info
 		url = vulnerability.http_url or vulnerability.subdomain
 		if vuln_severity in ['low', 'medium', 'critical'] and send_vuln:
-			message = f"""***ALERT: {vuln_severity.upper()} vulnerability found on {subdomain.name}***
-	A vulnerability of severity *{vuln_severity.upper()}* has been identified.'
-
+			message = f"""**ALERT:** ***{vuln_severity.upper()} vulnerability found on {subdomain.name}***
 	Name: {vulnerability.name}
 	Type: {vulnerability.type}
-	Target URL: {vulnerability.http_url}'"""
-			send_notification(message)
+	Target URL: {vulnerability.http_url}"""
+			send_notification(message, scan_history_id=scan_history_id)
 
 		# Send report to hackerone
 		hackerone_query = Hackerone.objects.all()
@@ -1914,23 +1935,23 @@ def vulnerability_scan(
 		critical_count = vulns.filter(severity=4).count()
 		unknown_count = vulns.filter(severity=-1).count()
 		vulnerability_count = info_count + low_count + medium_count + high_count + critical_count + unknown_count
-		message = f"""`vulnerability_scan` has been completed for {domain.name} and {vulnerability_count} vulnerabilities were discovered.
-*Vulnerability stats:*
-
-Critical: {critical_count}
-High: {high_count}
-Medium: {medium_count}
-Low: {low_count}
-Info: {info_count}
-Unknown: {unknown_count}
+		message = f"""`vulnerability_scan` has been completed for `{domain.name}`: **{vulnerability_count} vulnerabilities discovered**.
+	**Vulnerability summary:**
+			
+	Critical: {critical_count}
+	High: {high_count}
+	Medium: {medium_count}
+	Low: {low_count}
+	Info: {info_count}
+	Unknown: {unknown_count}
 		"""
-		send_notification(message)
+		send_notification(message, scan_history_id=scan_history_id)
 
 
 @app.task
 def query_whois(ip_domain):
 	"""Query WHOIS information for an IP or a domain name.
-
+	
 	Args:
 		ip_domain (str): IP address or domain name.
 
@@ -1969,7 +1990,7 @@ def query_whois(ip_domain):
 			updated=updated,
 			expires=expires)
 		domain_info.save()
-
+		
 		# Record whois subfields in various DB models
 		whois_fields = {
 			'registrant':
@@ -2129,10 +2150,10 @@ def osint(
 	domain = Domain.objects.get(pk=domain_id)
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
-	msg = f'`osint` has started for {domain.name}'
+	msg = f'`osint` has started for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 	if 'discover' in config:
 		osint_discovery(scan_history, domain, yaml_configuration, results_dir)
@@ -2140,10 +2161,10 @@ def osint(
 	if 'dork' in config:
 		dorking(scan_history, yaml_configuration)
 
-	msg = f'`osint` has finished for {domain.name}'
+	msg = f'`osint` has finished for `{domain.name}`'
 	logger.warning(msg)
 	if send_status:
-		send_notification(msg)
+		send_notification(msg, scan_history_id=scan_history_id)
 
 
 def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
@@ -2192,8 +2213,7 @@ def dorking(scan_history, yaml_configuration):
 				dork,
 				dork_type,
 				scan_history,
-				in_target=False
-			)
+				in_target=False)
 
 		elif dork == '3rdparty' :
 			# look in 3rd party sitee
@@ -2218,8 +2238,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=False
-				)
+					in_target=False)
 
 		elif dork == 'social_media' :
 			dork_type = 'Social Media'
@@ -2239,8 +2258,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=False
-				)
+					in_target=False)
 
 		elif dork == 'project_management' :
 			dork_type = 'Project Management'
@@ -2255,8 +2273,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=False
-				)
+					in_target=False)
 
 		elif dork == 'code_sharing' :
 			dork_type = 'Code Sharing Sites'
@@ -2272,8 +2289,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=False
-				)
+					in_target=False)
 
 		elif dork == 'config_files' :
 			dork_type = 'Config Files'
@@ -2297,8 +2313,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		if dork == 'jenkins' :
 			dork_type = 'Jenkins'
@@ -2307,8 +2322,7 @@ def dorking(scan_history, yaml_configuration):
 				dork_name,
 				dork_type,
 				scan_history,
-				in_target=True
-			)
+				in_target=True)
 
 		elif dork == 'wordpress_files' :
 			dork_type = 'Wordpress Files'
@@ -2316,7 +2330,6 @@ def dorking(scan_history, yaml_configuration):
 				'wp-content',
 				'wp-includes'
 			]
-
 			dork_name = ''
 			for lookup in inurl_lookup:
 				dork_name = dork + ' | ' + 'inurl:' + lookup
@@ -2324,8 +2337,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		elif dork == 'cloud_buckets':
 			dork_type = 'Cloud Buckets'
@@ -2342,8 +2354,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=False
-				)
+					in_target=False)
 
 		elif dork == 'php_error':
 			dork_type = 'PHP Error'
@@ -2360,8 +2371,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		elif dork == 'exposed_documents':
 			dork_type = 'Exposed Documents'
@@ -2386,8 +2396,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		elif dork == 'struts_rce':
 			dork_type = 'Apache Struts RCE'
@@ -2404,8 +2413,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		elif dork == 'db_files':
 			dork_type = 'Database Files'
@@ -2423,8 +2431,7 @@ def dorking(scan_history, yaml_configuration):
 					dork_name[3:],
 					dork_type,
 					scan_history,
-					in_target=True
-				)
+					in_target=True)
 
 		elif dork == 'traefik':
 			dork_name = 'intitle:traefik inurl:8080/dashboard'
@@ -2433,8 +2440,7 @@ def dorking(scan_history, yaml_configuration):
 				dork_name,
 				dork_type,
 				scan_history,
-				in_target=True
-			)
+				in_target=True)
 
 		elif dork == 'git_exposed':
 			dork_name = 'inurl:\"/.git\"'
@@ -2443,16 +2449,12 @@ def dorking(scan_history, yaml_configuration):
 				dork_name,
 				dork_type,
 				scan_history,
-				in_target=True
-			)
+				in_target=True)
 
 
 def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 	degoogle_obj = degoogle.dg()
-	proxy = get_random_proxy()
-	if proxy:
-		os.environ['HTTP_PROXY'] = proxy
-		os.environ['HTTPS_PROXY'] = proxy
+	get_random_proxy()
 	if in_target:
 		query = f'{dork} site:{scan_history.domain.name}'
 	else:
@@ -2473,6 +2475,7 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 		scan_history.dorks.add(dork)
 		dorks.append(dork)
 	return dorks
+
 
 def get_and_save_employees(scan_history, results_dir):
 	"""Get and save employees found with theHarvester.
@@ -2587,10 +2590,7 @@ def get_and_save_emails(scan_history, results_dir):
 	emails = []
 
 	# Proxy settings
-	proxy = get_random_proxy()
-	if proxy:
-		os.environ['HTTP_PROXY'] = proxy
-		os.environ['HTTPS_PROXY'] = proxy
+	get_random_proxy()
 
 	# Gather emails from Google, Bing and Baidu
 	try:
@@ -2648,7 +2648,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 			for row in csv.DictReader(f, skipinitialspace=True)
 		]
 		logger.info(f'h8mail output: {creds}')
-
+	
 	# TODO: go through h8mail output and save emails to DB
 	creds_json = []
 	# for cred in creds:
@@ -2669,6 +2669,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 	# 			scan_history.emails.add(email_obj)
 	return creds_json
 
+
 def get_and_save_meta_info(meta_dict):
 	"""Extract metadata from Google Search.
 
@@ -2680,11 +2681,8 @@ def get_and_save_meta_info(meta_dict):
 	"""
 	logger.warning(f'Getting metadata for {meta_dict.osint_target}')
 
-	# Proxy settngs
-	proxy = get_random_proxy()
-	if proxy:
-		os.environ['HTTP_PROXY'] = proxy
-		os.environ['HTTPS_PROXY'] = proxy
+	# Proxy settings
+	get_random_proxy()
 
 	# Get metadata
 	result = extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
@@ -2712,14 +2710,13 @@ def get_and_save_meta_info(meta_dict):
 			modified_date=metadata.get('ModDate', '').rstrip('\x00'),
 			author=metadata.get('Author', '').rstrip('\x00'),
 			title=metadata.get('Title', '').rstrip('\x00'),
-			os=metadata.get('OSInfo', '').rstrip('\x00')
-		)
+			os=metadata.get('OSInfo', '').rstrip('\x00'))
 		meta_finder_document.save()
 		results.append(meta_finder_document)
 	return results
 
 
-def get_subdomains(target_domain, scan_history=None, write_filepath='', subdomain_id=None, exclude_subdomains=None, path=''):
+def get_subdomains(target_domain, scan_history=None, path='', subdomain_id=None, exclude_subdomains=None, write_filepath=''):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -2762,10 +2759,10 @@ def get_http_urls(
 		subdomain_id=None,
 		scan_history=None,
 		is_alive=False,
-		path='',
-		write_filepath=None,
+		write_filepath='',
+		path=None,
 		exclude_subdomains=False):
-	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a
+	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a 
 	specific path.
 
 	Args:
@@ -2811,9 +2808,8 @@ def get_http_urls(
 		with open(write_filepath, 'w') as f:
 			f.write('\n'.join(endpoints))
 
-	logger.info(endpoints)
-
 	return endpoints
+
 
 def create_scan_activity(scan_history_id, message, status):
 	scan_activity = ScanActivity()
@@ -2823,3 +2819,26 @@ def create_scan_activity(scan_history_id, message, status):
 	scan_activity.status = status
 	scan_activity.save()
 	return scan_activity.id
+
+def get_task_ids(result, with_result=True):
+	task_ids = []
+
+	# For GroupResult, parents are first task, then iterate over the children
+	if isinstance(result, GroupResult):
+		task_ids.append(result.parent.task_id)
+		children = result.children
+		for child in children:
+			task_ids.extend(get_task_ids(child))
+
+	# for AsyncResult, append parents in reverse
+	elif isinstance(result, AsyncResult):
+		results = [result.task_id]
+		while result.parent is not None:
+			entry = result.parent.task_id
+			results.append(entry)
+		# remember to reverse the list to get the calling order
+		task_ids.extend(reversed(results))
+	
+	logger.info(task_ids)
+
+	return task_ids
