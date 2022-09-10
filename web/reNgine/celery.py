@@ -37,13 +37,14 @@ def create_scan_activity(scan_history_id, message, status):
 	return scan_activity.id
 
 
-def update_scan_activity(id, status, error=None):
+def update_scan_activity(id, status, error=None, traceback=None):
     scan_activity = ScanActivity.objects.filter(id=id)
     if error and len(error) > 300:
         error = error[:288] + '...[trimmed]'
     return scan_activity.update(
 			status=status,
 			error_message=error,
+            traceback=traceback,
 			time=timezone.now())
 
 
@@ -74,6 +75,7 @@ class RengineTask(Task):
         task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
         task_result = None
         task_error = None
+        task_traceback = None
         task_descr += f' | {args_str} | {kwargs_str}' if DEBUG > 1 else ''
         scan_history_id = args[0] if len(args) > 0 else kwargs.get('scan_history_id')
         has_activity_id = (
@@ -122,7 +124,7 @@ class RengineTask(Task):
             task_status = FAILED_TASK
             task_error = repr(exc)
             tb = fmt_traceback(exc)
-            task_error += f'\n => {tb}' if DEBUG > 0 else '' # append traceback to error
+            task_traceback = tb
             logger.exception(exc)
             if CELERY_RAISE_ON_ERROR:
                 raise exc
@@ -130,7 +132,11 @@ class RengineTask(Task):
             status = CELERY_TASK_STATUS_MAP[task_status]
             logger.warning(f'Task {self.name} status is {status}')
             if RECORD_ACTIVITY:
-                update_scan_activity(activity_id, task_status, task_error)
+                update_scan_activity(
+                    activity_id,
+                    task_status,
+                    error=task_error,
+                    traceback=task_traceback)
                 # TODO: send status notifs
                 # notification = Notification.objects.first()
                 # send_status = notification.send_scan_status_notif if notification else False
