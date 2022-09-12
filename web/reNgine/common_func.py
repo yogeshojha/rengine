@@ -1,8 +1,8 @@
 import json
+import logging
 import os
 import random
 import shutil
-import subprocess
 from datetime import date
 from threading import Thread
 from urllib.parse import urlparse
@@ -17,22 +17,8 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
+logger = logging.getLogger(__name__)
 
-def execute_live(cmd):
-    """Execute a command while fetching it's output live"""
-    popen = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        item = stdout_line.strip()
-        if item.startswith(('{', '[')) and item.endswith(('}', ']')):
-            try:
-                yield json.loads(item)
-                continue
-            except Exception as e:
-                pass
-        yield item
-    popen.stdout.close()
-    return_code = popen.wait()
-    return return_code
 
 def get_lookup_keywords():
     default_lookup_keywords = [
@@ -202,7 +188,7 @@ def send_discord_message(message):
         thread.start()
 
 
-def send_files_to_discord(file_path, title=None):
+def send_file_to_discord(file_path, title=None):
     notification = Notification.objects.first()
     if notification and notification.send_to_discord \
     and notification.discord_hook_url:
@@ -219,10 +205,8 @@ def send_files_to_discord(file_path, title=None):
 
 
 def send_notification(message, scan_history_id=None):
-    if not message.endswith('.'):
-        message += '.'
     if scan_history_id is not None:
-        message = f'*#{scan_history_id}* {message}'
+        message = f'`#{scan_history_id}`: {message}'
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
@@ -311,12 +295,8 @@ def return_zeorth_if_list(variable):
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
     response = {}
-    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect'
-    subprocess_splitted_command = cms_detector_command.split()
-    subprocess_splitted_command.append('-u')
-    subprocess_splitted_command.append(url)
-    process = subprocess.Popen(subprocess_splitted_command)
-    process.wait()
+    cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
+    os.system(cms_detector_command)
 
     response['status'] = False
     response['message'] = 'Could not detect CMS!'
@@ -350,10 +330,3 @@ def get_cms_details(url):
             print(e)
 
     return response
-
-
-def sanitize_cmd(command):
-    remove_chars = ['&', '<', '>', '|', ';']
-    for chrs in remove_chars:
-        command = command.replace(chrs, '')
-    return command

@@ -185,8 +185,8 @@ CELERY_TASK_SKIP_RECORD_ACTIVITY = [
     'reNgine.tasks.initiate_scan',
     'reNgine.tasks.initiate_subscan',
     'reNgine.tasks.query_whois',
-    'reNgine.tasks.skip',
-    'reNgine.tasks.run_system_commands',
+    'reNgine.tasks.run_command',
+    'reNgine.tasks.stream_command',
     'reNgine.tasks.report',
     'reNgine.tasks.http_crawl'
 ]

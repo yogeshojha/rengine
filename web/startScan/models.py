@@ -7,6 +7,7 @@ from reNgine.utilities import *
 from scanEngine.models import EngineType
 from targetApp.models import Domain
 
+
 class ScanHistory(models.Model): 
 	id = models.AutoField(primary_key=True)
 	start_scan_date = models.DateTimeField()
@@ -15,7 +16,7 @@ class ScanHistory(models.Model):
 	domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
 	scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
 	celery_id = models.CharField(max_length=100, blank=True)
-	celery_ids = ArrayField(models.CharField(max_length=100), null=True)
+	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
 	tasks = ArrayField(models.CharField(max_length=200), null=True)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
@@ -299,6 +300,7 @@ class SubScan(models.Model):
 	start_scan_date = models.DateTimeField()
 	status = models.IntegerField()
 	celery_id = models.CharField(max_length=100, blank=True)
+	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
@@ -445,6 +447,7 @@ class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	title = models.CharField(max_length=1000)
+	name = models.CharField(max_length=1000)
 	time = models.DateTimeField()
 	status = models.IntegerField()
 	error_message = models.CharField(max_length=300, blank=True, null=True)
