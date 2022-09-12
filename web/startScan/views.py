@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 
 import markdown
@@ -14,7 +13,7 @@ from django_celery_beat.models import (ClockedSchedule, IntervalSchedule,
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
-from reNgine.tasks import initiate_scan, create_scan_activity
+from reNgine.tasks import create_scan_activity, initiate_scan, run_command
 from scanEngine.models import EngineType
 from startScan.models import *
 from targetApp.models import *
@@ -425,7 +424,7 @@ def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
         delete_dir = obj.results_dir
-        os.system('rm -rf /usr/src/scan_results/' + delete_dir)
+        run_command('rm -rf /usr/src/scan_results/' + delete_dir)
         obj.delete()
         messageData = {'status': 'true'}
         messages.add_message(
@@ -446,11 +445,15 @@ def delete_scan(request, id):
 def stop_scan(request, id):
     if request.method == "POST":
         scan_history = get_object_or_404(ScanHistory, celery_id=id)
-        # stop the celery task
-        app.control.revoke(id, terminate=True, signal='SIGKILL')
         scan_history.scan_status = ABORTED_TASK
         scan_history.save()
         try:
+            app.control.revoke(id, terminate=True, signal='SIGKILL')
+            for task_id in scan_history.celery_ids:
+                try:
+                    app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+                except Exception as e:
+                    logger.error(f'Could not revoke Celery task id {task_id}')
             last_activity = (
                 ScanActivity.objects
                 .filter(scan_of=scan_history)
@@ -461,7 +464,7 @@ def stop_scan(request, id):
             last_activity.time = timezone.now()
             last_activity.save()
         except Exception as e:
-            print(e)
+            logger.error(e)
         create_scan_activity(scan_history.id, "Scan aborted", SUCCESS_TASK)
         messageData = {'status': 'true'}
         messages.add_message(
@@ -645,7 +648,7 @@ def delete_all_scan_results(request):
 
 def delete_all_screenshots(request):
     if request.method == 'POST':
-        os.system('rm -rf /usr/src/scan_results/*')
+        run_command('rm -rf /usr/src/scan_results/*')
         messageData = {'status': 'true'}
         messages.add_message(
             request,
@@ -803,7 +806,7 @@ def delete_scans(request):
                 continue
             obj = get_object_or_404(ScanHistory, id=value)
             delete_dir = obj.results_dir
-            os.system('rm -rf /usr/src/scan_results/' + delete_dir)
+            run_command('rm -rf /usr/src/scan_results/' + delete_dir)
             obj.delete()
         messages.add_message(
             request,

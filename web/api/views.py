@@ -15,19 +15,12 @@ from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
-from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
-                           run_system_commands)
+from reNgine.tasks import create_scan_activity, initiate_subscan, query_whois, run_command
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from scanEngine.models import *
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-# selenium
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 from startScan.models import *
 from startScan.models import EndPoint
 from targetApp.models import *
@@ -550,8 +543,13 @@ class StopScan(APIView):
 				app.control.revoke(
 					scan_history.celery_id,
 					terminate=True,
-					signal='SIGKILL'
-				)
+					signal='SIGKILL')
+				for task_id in scan_history.celery_ids:
+					try:
+						app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+					except Exception as e:
+						logger.error(f'Could not revoke Celery task id {task_id}')
+
 				scan_history.scan_status = ABORTED_TASK
 				scan_history.stop_scan_date = timezone.now()
 				scan_history.save()
@@ -574,6 +572,8 @@ class StopScan(APIView):
 		elif subscan_id:
 			try:
 				task = get_object_or_404(SubScan, id=subscan_id)
+				for task_id in task.celery_ids:
+					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
 				app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
 				task.status = 3
 				task.stop_scan_date = timezone.now()
@@ -696,8 +696,8 @@ class UninstallTool(APIView):
 		else:
 			return Response({'status': False, 'message': 'Cannot uninstall tool!'})
 
-		os.system(uninstall_command)
-		run_system_commands.apply_async(args=(uninstall_command,))
+		run_command(uninstall_command)
+		run_command.apply_async(args=(uninstall_command,))
 
 		tool.delete()
 
@@ -727,8 +727,8 @@ class UpdateTool(APIView):
 			tool_name = tool_name.split('/')[-1]
 			update_command = 'cd /usr/src/github/' + tool_name + ' && git pull && cd -'
 
-		os.system(update_command)
-		run_system_commands.apply_async(args=(update_command,))
+		run_command(update_command)
+		run_command.apply_async(args=(update_command,))
 		return Response({'status': True, 'message': tool.name + ' updated successfully.'})
 
 
@@ -754,9 +754,9 @@ class GetExternalToolCurrentVersion(APIView):
 		if not tool.version_lookup_command:
 			return Response({'status': False, 'message': 'Version Lookup command not provided.'})
 
-		p = subprocess.Popen(tool.version_lookup_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		version_number = None
-		for line in p.stdout.readlines():
+		_, stdout, _ = run_command(tool.version_lookup_command)
+		for line in stdout.split('\n'):
 			version_number = re.search(re.compile(tool.version_match_regex), str(line))
 			if version_number:
 				break
@@ -938,7 +938,7 @@ class GetFileContents(APIView):
 		if 'nuclei_config' in req.query_params:
 			path = "/root/.config/nuclei/config.yaml"
 			if not os.path.exists(path):
-				os.system('touch {}'.format(path))
+				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
 			f = open(path, "r")
 			response['status'] = True
@@ -948,7 +948,7 @@ class GetFileContents(APIView):
 		if 'subfinder_config' in req.query_params:
 			path = "/root/.config/subfinder/config.yaml"
 			if not os.path.exists(path):
-				os.system('touch {}'.format(path))
+				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
 			f = open(path, "r")
 			response['status'] = True
@@ -958,7 +958,7 @@ class GetFileContents(APIView):
 		if 'naabu_config' in req.query_params:
 			path = "/root/.config/naabu/config.yaml"
 			if not os.path.exists(path):
-				os.system('touch {}'.format(path))
+				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
 			f = open(path, "r")
 			response['status'] = True
@@ -968,7 +968,7 @@ class GetFileContents(APIView):
 		if 'theharvester_config' in req.query_params:
 			path = "/usr/src/github/theHarvester/api-keys.yaml"
 			if not os.path.exists(path):
-				os.system('touch {}'.format(path))
+				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
 			f = open(path, "r")
 			response['status'] = True
@@ -978,7 +978,7 @@ class GetFileContents(APIView):
 		if 'amass_config' in req.query_params:
 			path = "/root/.config/amass.ini"
 			if not os.path.exists(path):
-				os.system('touch {}'.format(path))
+				run_command(f'touch {path}')
 				response['message'] = 'File Created!'
 			f = open(path, "r")
 			response['status'] = True
@@ -987,7 +987,7 @@ class GetFileContents(APIView):
 
 		if 'gf_pattern' in req.query_params:
 			basedir = '/root/.gf'
-			path = '/root/.gf/{}.json'.format(name)
+			path = f'/root/.gf/{name}.json'
 			if is_safe_path(basedir, path) and os.path.exists(path):
 				content = open(path, "r").read()
 				response['status'] = True
@@ -1000,7 +1000,7 @@ class GetFileContents(APIView):
 
 		if 'nuclei_template' in req.query_params:
 			safe_dir = '/root/nuclei-templates'
-			path = '/root/nuclei-templates/{}'.format(name)
+			path = f'/root/nuclei-templates/{name}'
 			if is_safe_path(safe_dir, path) and os.path.exists(path):
 				content = open(path.format(name), "r").read()
 				response['status'] = True

@@ -213,6 +213,7 @@ class Domain(models.Model):
     description = models.TextField(blank=True, null=True)
     insert_date = models.DateTimeField(null=True)
     start_scan_date = models.DateTimeField(null=True)
+    request_headers = models.JSONField(null=True)
     domain_info = models.ForeignKey(DomainInfo, on_delete=models.CASCADE, null=True, blank=True)
 
     def get_organization(self):

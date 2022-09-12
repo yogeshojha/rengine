@@ -2,24 +2,20 @@ import csv
 import io
 import ipaddress
 import logging
-import os
-import socket
 from datetime import timedelta
-from functools import reduce
-from operator import and_, or_
 from urllib.parse import urlparse
 
 import validators
 from django import http
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from reNgine.common_func import *
-from reNgine.tasks import sanitize_url
+from reNgine.tasks import run_command, sanitize_url
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.forms import *
@@ -242,11 +238,7 @@ def list_target(request):
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
-        os.system(
-            'rm -rf ' +
-            settings.TOOL_LOCATION +
-            'scan_results/' +
-            obj.name + '*')
+        run_command(f'rm -rf {settings.TOOL_LOCATION} scan_results/{obj.name}*')
         obj.delete()
         responseData = {'status': 'true'}
         messages.add_message(
