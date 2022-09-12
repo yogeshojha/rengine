@@ -5,13 +5,11 @@ import shutil
 import subprocess
 
 from django import http
-from django.conf import settings
 from django.contrib import messages
-from django.core.files.storage import default_storage
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from reNgine.common_func import *
-from reNgine.tasks import run_system_commands
+from reNgine.tasks import run_command
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
@@ -23,7 +21,8 @@ def index(request):
         'engine_ul_show': 'show',
         'engine_li': 'active',
         'scan_engine_nav_active': 'active',
-        'engine_type': engine_type, }
+        'engine_type': engine_type, 
+    }
     return render(request, 'scanEngine/index.html', context)
 
 
@@ -39,8 +38,9 @@ def add_engine(request):
                 'Scan Engine Added successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     context = {
-            'scan_engine_nav_active':
-            'active', 'form': form}
+        'scan_engine_nav_active': 'active', 
+        'form': form
+    }
     return render(request, 'scanEngine/add_engine.html', context)
 
 
@@ -456,8 +456,8 @@ def add_tool(request):
                 # if github cloned we also need to install requirements, atleast found in the main dir
                 install_command = 'pip3 install -r /usr/src/github/' + project_name + '/requirements.txt'
 
-            os.system(install_command)
-            run_system_commands.apply_async(args=(install_command,))
+            run_command(install_command)
+            run_command.apply_async(args=(install_command,))
             saved_form = form.save()
             if github_clone_path:
                 tool = InstalledExternalTool.objects.get(id=saved_form.pk)
