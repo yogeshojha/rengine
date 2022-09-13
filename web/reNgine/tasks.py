@@ -1,5 +1,4 @@
 import csv
-from distutils.file_util import write_file
 import json
 import os
 import random
@@ -143,6 +142,9 @@ def initiate_scan(
 	domain.last_scan_date = timezone.now()
 	domain.save()
 
+	# Get path filter
+	path = path.rstrip('/').lstrip('/')
+
 	# Create results directory
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	scan_dirname = f'{domain.name}_{timestr}'
@@ -238,7 +240,6 @@ def initiate_scan(
 	)
 
 	# Build callback
-	ctx['send_status'] = send_status
 	callback = report.si(**ctx).set(link_error=[report.si(**ctx)])
 
 	# Run Celery chord
@@ -317,7 +318,6 @@ def initiate_subscan(
 	workflow = method.si(**ctx)
 	ctx.update({
 		'subscan_id': subscan.id,
-		'send_status': send_status
 	})
 	callback = report.si(**ctx).set(link_error=[report.si(**ctx)])
 
@@ -823,7 +823,6 @@ def http_crawl(
 			continue
 		try:
 			results.append(line)
-			discovered_date = timezone.now()
 			content_length = line.get('content-length', 0)
 			host = line.get('host', '')
 			http_url = sanitize_url(line['url'])
@@ -853,7 +852,7 @@ def http_crawl(
 				subdomain.save()
 			
 			# Save default HTTP URL to endpoint object in DB
-			endpoint, created = save_endpoint(http_url, scan_history, domain, subdomain, results_dir)
+			endpoint, created = save_endpoint(http_url, scan_history, domain, subdomain, results_dir, crawl=False)
 			endpoint.is_default = True
 			endpoint.http_status = http_status
 			endpoint.page_title = page_title
@@ -861,7 +860,7 @@ def http_crawl(
 			endpoint.webserver = webserver
 			endpoint.response_time = response_time
 			endpoint.save()
-			if created and endpoint.is_alive():
+			if endpoint.is_alive():
 				logger.warning(f'Found alive endpoint {endpoint.http_url} [{http_status}]')
 
 			# Add technology objects to DB
@@ -918,7 +917,7 @@ def http_crawl(
 		json.dump(results, f, indent=4)
 
 	# Remove input file
-	run_command(f'rm {input_file} {httpx_results_file}', shell=True, write_filepath=f'{results_dir}/commands.txt')
+	run_command(f'rm {input_file} {httpx_results_file}', shell=True)
 
 	# Send finish notification
 	# alive_count = (
@@ -1615,27 +1614,32 @@ def fetch_url(
 	# Store all the endpoints and run httpx
 	with open(output_path) as f:
 		urls = f.readlines()
-	
+
 	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them 
 	# to the final URL list
 	final_urls = []
 	for url in urls:
-		path = None
+		urlpath = None
 		base_url = None
 		if validators.url(url):
 			final_urls.append(url)
 			continue
 		elif ']' in url: # found JS scraped endpoint e.g from gospider
-			base_url, path = tuple(url.split(']'))
+			base_url, urlpath = tuple(url.split(']'))
+			urlpath = urlpath.lstrip(' - ')
 		elif ' - ' in url: # found JS scraped endpoint e.g from gospider
-			base_url, path = tuple(url.split(' - '))
+			base_url, urlpath = tuple(url.split(' - '))
 		else:
 			logger.warning(f'URL format {url} not recognized. Skipping.')
 			continue
-		if base_url and path:
+		if base_url and urlpath:
 			subdomain = urlparse(base_url)
 			http_url = f'{subdomain.scheme}://{subdomain.netloc}/{path}'
 			final_urls.append(http_url)
+	
+	# Filter out URLs if a path filter was passed
+	if path:
+		final_urls = [url for url in final_urls if path in url]
 
 	# Write result to output path
 	with open(output_path, 'w') as f:
@@ -1919,10 +1923,24 @@ def vulnerability_scan(
 		# Send notification for all vulnerabilities except info
 		url = vulnerability.http_url or vulnerability.subdomain
 		if vuln_severity in ['low', 'medium', 'critical'] and send_vuln:
-			message = f"""**ALERT**: {vuln_severity.upper()} vulnerability found on `{subdomain.name}`
-	**Name:** {vulnerability.name}
-	**Type:** {vulnerability.type}
-	**Target URL:** {vulnerability.http_url}"""
+			url = urlparse(url)
+			cve_str = ', '.join(f'`{cve_id}`' for cve_id in cve_ids)
+			cwe_str = ', '.join(f'`{cwe_id}`' for cwe_id in cve_ids)
+			tags_str = ', '.join(f'`{tag}`' for tag in tags)
+			refs_str = '\n\t\t- '.join(f'`{ref}`' for ref in references)
+			severity = vuln_severity.upper()
+			message = f'**{severity} vulnerability found** on `{subdomain.name}`'
+			message += f'\n\t🡆 **Name:** {vulnerability.name}'
+			message += f'\n\t🡆 **Type:** `{vulnerability.type}`'
+			message += f'\n\t🡆 **Target URL:** [{url.path}]({url.geturl()})'
+			message += f'\n\t🡆 **Template:** `{vulnerability.template}`'
+			message += f'\n\t🡆 **Tags:** {tags_str}'
+			if cve_str:
+				message += f'\n\t🡆 **CVE:** {cve_str}'
+			if cwe_str:
+				message += f'\n\t🡆 **CWE:** {cwe_str}'
+			if refs_str:
+				message += f'\n\t🡆 **References:** \n\t\t- {refs_str}\n\n' 
 			send_notification(message, scan_history_id=scan_history_id)
 
 		# Send report to hackerone
@@ -1955,13 +1973,12 @@ def vulnerability_scan(
 		message = f"""`vulnerability_scan` has been completed for `{domain.name}`: **{vulnerability_count} vulnerabilities discovered**.
 	**Vulnerability summary:**
 			
-	Critical: {critical_count}
-	High: {high_count}
-	Medium: {medium_count}
-	Low: {low_count}
-	Info: {info_count}
-	Unknown: {unknown_count}
-		"""
+	**Critical:** {critical_count}
+	**High:** {high_count}
+	**Medium:** {medium_count}
+	**Low:** {low_count}
+	**Info:** {info_count}
+	**Unknown:** {unknown_count}"""
 		send_notification(message, scan_history_id=scan_history_id)
 	if send_output_file:
 		send_file_to_discord(output_path, title=f'{scan_history.id}_{filename}')
@@ -2205,9 +2222,12 @@ def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
 	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
 	osint_intensity = osint_config.get(INTENSITY, 'normal')
 	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
+	data = {}
+	meta_info = []
+	emails = []
+	creds = []
 
 	# Get and save meta info
-	meta_info = []
 	if 'metainfo' in osint_lookup:
 		if osint_intensity == 'normal':
 			meta_dict = DottedDict({
@@ -2228,23 +2248,18 @@ def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
 				})
 				meta_info = get_and_save_meta_info(meta_dict)
 
-	emails = []
-	creds = []
 	if 'emails' in osint_lookup:
 		emails = get_and_save_emails(scan_history, results_dir)
 		creds = get_and_save_leaked_credentials(scan_history, results_dir)
 
-	info = {}
 	if 'employees' in osint_lookup:
-		info = get_and_save_employees(scan_history, domain, results_dir)
-	return {
-		'emails': info.get('emails', []) + emails,
-		'employees': info.get('employees', []),
-		'hosts': info.get('hosts', []),
-		'ips': info.get('ips', []),
-		'creds': creds,
-		'meta_info': meta_info
-	}
+		data = get_and_save_employees(scan_history, domain, results_dir)
+	
+	data['emails'] = data.get(emails, []) + emails
+	data['creds'] = creds
+	data['meta_info'] = meta_info
+	return data
+
 
 def dorking(scan_history, yaml_configuration):
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
@@ -2572,9 +2587,13 @@ def get_and_save_employees(scan_history, domain, results_dir):
 		logger.error(f'Could not open {output_filepath}')
 		return
 
-	# Run headless firefox and parse harvester results with it
+	# Load theHarvester results
 	with open(output_filepath, 'r') as f:
 		data = json.load(f)
+	
+	# Re-indent theHarvester JSON
+	with open(output_filepath, 'w') as f:
+		json.dump(data, f, indent=4)
 
 	emails = data.get('emails', [])
 	hosts = data.get('hosts', [])
@@ -2627,13 +2646,7 @@ def get_and_save_employees(scan_history, domain, results_dir):
 		if created:
 			logger.warning(f'Found new ip {ip.address}')
 
-	return {
-		'emails': emails,
-		'twitter_employees': twitter_people,
-		'linkedin_employees': linkedin_people,
-		'hosts': hosts,
-		'ips': ips
-	}
+	return data
 
 
 def get_and_save_emails(scan_history, results_dir):
@@ -2901,12 +2914,18 @@ def save_endpoint(http_url, scan_history, domain, subdomain, results_dir=None, c
 		endpoint.discovered_date = timezone.now()
 		endpoint.save()
 		if crawl:
-			http_crawl(scan_history.id, None, domain.id, subdomain.id, urls=[http_url], results_dir=results_dir)
+			http_crawl(
+				scan_history.id,
+				None,
+				domain.id,
+				subdomain.id,
+				urls=[http_url],
+				results_dir=results_dir)
 	return endpoint, created
 
 
 def save_subdomain(subdomain_name, scan_history, domain):
-	if not validators.domain(subdomain_name):
+	if not (validators.domain(subdomain_name) or validators.ipv4(subdomain_name) or validators.ipv6(subdomain_name)):
 		logger.error(f'{subdomain_name} is not a valid domain. Skipping.')
 		return None, False
 	subdomain, created = Subdomain.objects.get_or_create(
