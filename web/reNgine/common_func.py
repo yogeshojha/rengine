@@ -1,8 +1,8 @@
 import json
+import logging
 import os
 import random
 import shutil
-import subprocess
 from datetime import date
 from threading import Thread
 from urllib.parse import urlparse
@@ -17,22 +17,8 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
+logger = logging.getLogger(__name__)
 
-def execute_live(cmd):
-    """Execute a command while fetching it's output live"""
-    popen = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(popen.stdout.readline, ""):
-        item = stdout_line.strip()
-        if item.startswith(('{', '[')) and item.endswith(('}', ']')):
-            try:
-                yield json.loads(item)
-                continue
-            except Exception as e:
-                pass
-        yield item
-    popen.stdout.close()
-    return_code = popen.wait()
-    return return_code
 
 def get_lookup_keywords():
     default_lookup_keywords = [
@@ -147,13 +133,10 @@ def get_interesting_endpoint(scan_history=None, target=None):
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
 
-
 def get_subdomain_from_url(url):
-    extract_url = tldextract.extract(url)
-    subdomain = '.'.join(extract_url[:4])
-    if subdomain[0] == '.':
-        subdomain = subdomain[1:]
-    return subdomain.strip()
+    url_obj = urlparse(url.strip())
+    url_str = url_obj.netloc if url_obj.scheme else url_obj.path
+    return url_str.split(':')[0]
 
 
 def get_domain_from_subdomain(subdomain):
@@ -205,14 +188,14 @@ def send_discord_message(message):
         thread.start()
 
 
-def send_files_to_discord(file_path):
+def send_file_to_discord(file_path, title=None):
     notification = Notification.objects.first()
     if notification and notification.send_to_discord \
     and notification.discord_hook_url:
         webhook = DiscordWebhook(
             url=notification.discord_hook_url,
             rate_limit_retry=True,
-            username="Scan Results - File"
+            username=title or "Scan Results - File"
         )
         with open(file_path, "rb") as f:
             head, tail = os.path.split(file_path)
@@ -221,20 +204,26 @@ def send_files_to_discord(file_path):
         thread.start()
 
 
-def send_notification(message):
+def send_notification(message, scan_history_id=None):
+    if scan_history_id is not None:
+        message = f'`#{scan_history_id}`: {message}'
     send_slack_message(message)
     send_discord_message(message)
     send_telegram_message(message)
 
 
 def get_random_proxy():
-    if Proxy.objects.all().exists():
-        proxy = Proxy.objects.all()[0]
-        if proxy.use_proxy:
-            proxy_name = random.choice(proxy.proxies.splitlines())
-            print('Using proxy: ' + proxy_name)
-            return proxy_name
-    return False
+    """Get a random proxy from the list of proxies input by user in the UI."""
+    if not Proxy.objects.all().exists():
+        return False
+    proxy = Proxy.objects.first()
+    if not proxy.use_proxy:
+        return False
+    proxy_name = random.choice(proxy.proxies.splitlines())
+    logger.warning('Using proxy: ' + proxy_name)
+    # os.environ['HTTP_PROXY'] = proxy_name
+    # os.environ['HTTPS_PROXY'] = proxy_name
+    return proxy_name
 
 
 def send_hackerone_report(vulnerability_id):
@@ -306,12 +295,8 @@ def return_zeorth_if_list(variable):
 def get_cms_details(url):
     # this function will fetch cms details using cms_detector
     response = {}
-    cms_detector_command = 'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect'
-    subprocess_splitted_command = cms_detector_command.split()
-    subprocess_splitted_command.append('-u')
-    subprocess_splitted_command.append(url)
-    process = subprocess.Popen(subprocess_splitted_command)
-    process.wait()
+    cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
+    os.system(cms_detector_command)
 
     response['status'] = False
     response['message'] = 'Could not detect CMS!'
@@ -345,10 +330,3 @@ def get_cms_details(url):
             print(e)
 
     return response
-
-
-def sanitize_cmd(command):
-    remove_chars = ['&', '<', '>', '|', ';']
-    for chrs in remove_chars:
-        command = command.replace(chrs, '')
-    return command

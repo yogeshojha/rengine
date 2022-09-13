@@ -49,12 +49,12 @@ Scan Findings
 				<li class="nav-item recon-changes-tab-show" style="display: none">
 					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#recon-changes-tab">Recon Data Changes</a>
 				</li>
-				{% if history.screenshot %}
+				{% if 'screenshot' in history.tasks %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#screenshot-tab">Screenshots</a>
 				</li>
 				{% endif %}
-				{% if history.dir_file_fuzz %}
+				{% if 'dir_fuzz' in history.tasks %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#directories-tab">Directories</a>
 				</li>
@@ -63,7 +63,7 @@ Scan Findings
 					<a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">URLs&nbsp;<i class="fe-chevron-down"></i></a>
 					<ul class="dropdown-menu" style="width: 240px;">
 						<li><a class="dropdown-item" id="pills-endpoints-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">All Endpoints</a></li>
-						{% if history.fetch_url and history.used_gf_patterns %}
+						{% if 'fetch_url' in history.tasks and history.used_gf_patterns %}
 						{% for key,value in matched_gf_count.items %}
 						{% if value > 0 %}
 						<li><a class="dropdown-item" id="pills-{{key}}-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">{{key|upper}}<span class="badge-soft-danger float-end ms-1 ps-1 pe-1">{{value}}</span></a></li>
@@ -72,12 +72,12 @@ Scan Findings
 						{% endif %}
 					</ul>
 				</li>
-				{% if history.vulnerability_scan %}
+				{% if 'vulnerability_scan' in history.tasks %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
 				</li>
 				{% endif %}
-				{% if history.osint %}
+				{% if 'osint' in history.tasks %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-osint-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#osint-tab">OSINT</a>
 				</li>
@@ -327,7 +327,7 @@ Scan Findings
 								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
 								<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
 								<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
-								{% if history.vulnerability_scan %}
+								{% if 'vulnerability_scan' in history.tasks %}
 								<p class="text-muted mb-0">
 									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
 									<br>
@@ -346,7 +346,7 @@ Scan Findings
 							<div class="card-body">
 								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container3" data-bs-toggle="tooltip" data-bs-placement="bottom" title="OSINT Results"></i>
 								<h4 class="mt-0 font-16">OSINT</h4>
-								{% if history.osint %}
+								{% if 'osint' in history.tasks %}
 								<h5 class="text-warning">{{exposed_count}} Exposed Credentials</h5>
 								<p class="text-muted mb-0">{{email_count}} Email Address Discovered</p>
 								<p class="text-muted mb-0">{{employees_count}} Employees Found</p>
@@ -650,7 +650,7 @@ Scan Findings
 							</div>
 						</div>
 					</div>
-					{% if history.vulnerability_scan %}
+					{% if 'vulnerability_scan' in history.tasks %}
 					<div class="col-xl-5 col-lg-5 col-12">
 						{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
 					</div>
@@ -770,7 +770,7 @@ Scan Findings
 	<div class="tab-pane" id="subdomain-tab">
 		{% include 'base/_items/subdomain_tab_content.html' with detail_scan=True%}
 	</div>
-	{% if history.screenshot %}
+	{% if 'screenshot' in history.tasks %}
 	<div class="tab-pane" id="screenshot-tab">
 		<div class="col-lg-8 col-md-8 col-sm-9 filtered-list-search mx-auto">
 			<input type="text" class="form-control form-control-lg br-30 mb-3" id="screenshot-search" placeholder="">
@@ -801,7 +801,7 @@ Scan Findings
 									<select class="form-control tagging" id="ips_select_filter" multiple="multiple" data-width="100%">
 									</select>
 								</div>
-								{% if history.port_scan %}
+								{% if 'port_scan' in history.tasks %}
 								<div class="col-xl-2 col-lg-4 col-sm-12">
 									<label for="services_select_filter" class="form-label">Running Services</label>
 									<select class="form-control tagging" id="services_select_filter" multiple="multiple" data-width="100%">
@@ -855,7 +855,7 @@ Scan Findings
 	</div>
 
 	{# directories section #}
-	{% if history.dir_file_fuzz %}
+	{% if 'dir_file_fuzz' in history.tasks %}
 	<div class="tab-pane" id="directories-tab">
 		<div class="row">
 			<div class="col-12">
@@ -883,14 +883,14 @@ Scan Findings
 	{% endif %}
 
 	{# Vulnerabilities Section #}
-	{% if history.vulnerability_scan %}
+	{% if 'vulnerability_scan' in history.tasks %}
 	<div class="tab-pane" id="vulnerabilities-tab">
 		{% include 'base/_items/vulnerability_tab_content.html' %}
 	</div>
 	{% endif %}
 
 	{# OSINT Section #}
-	{% if history.osint %}
+	{% if 'osint' in history.tasks %}
 	<div class="tab-pane" id="osint-tab">
 		<div class="row">
 			<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
@@ -1168,7 +1168,7 @@ Scan Findings
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 
-{% if history.vulnerability_scan %}
+{% if 'vulnerability_scan' in history.tasks %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 {% endif %}
 
@@ -1252,7 +1252,7 @@ $(document).ready(function() {
 	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
 	chart.render();
 	// vulnerability summary pie chart
-	{% if history.vulnerability_scan %}
+	{% if 'vulnerability_scan' in history.tasks %}
 		{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 	// chart
 		var options = {
@@ -1702,7 +1702,7 @@ $(document).ready(function() {
 		});
 	{% endif %}
 
-	{% if history.dir_file_fuzz %}
+	{% if 'dir_file_fuzz' in history.tasks %}
 		$("#pills-directories-tab").click(function() {
 			var interesting_keywords_array = [];
 			var directory_table = $('#directories-table').DataTable({
@@ -1797,44 +1797,50 @@ $(document).ready(function() {
 									var show = '';
 									if (item_pos == 0) {
 										aria_expanded = 'true';
-										show = 'show';
+										show = 'hide';
 									}
-									html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
-									html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
-									var interesting_badge = '';
-									// console.log(item['directory_files'][i]['name']);
-									item['directory_files'].forEach(function(file){
-										interesting_keywords_array.forEach(function(keyword){
-											if (file.name.includes(keyword)) {
-												interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
-												return;
+									if(item['directory_files'].length == 0){
+										html_treeview += `<br><span class="text-muted"><i class="fe-folder"></i> No Directories Discovered during the Scan Performed on ${item.scanned_date}</span>`;
+										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+									}
+									else{
+										html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder-plus"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
+										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+										var interesting_badge = '';
+										// console.log(item['directory_files'][i]['name']);
+										item['directory_files'].forEach(function(file){
+											interesting_keywords_array.forEach(function(keyword){
+												if (file.name.includes(keyword)) {
+													interesting_badge = '<span class="badge badge-soft-danger ms-1 me-1" data-toggle="tooltip" data-placement="top" title="Interesting Directory">Interesting</span>';
+													return;
+												}
+											});
+											// console.log(file);
+											var http_status_badge = '';
+											if (file.http_status >= 200 && file.http_status < 300) {
+												http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
 											}
+											else if (file.http_status >= 300 && file.http_status < 400) {
+												http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+											}
+											else{
+												http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
+											}
+											var http_url = file.url;
+											var lines_word_content = '';
+											if (file.lines) {
+												lines_word_content += `${file.lines} Lines`;
+											}
+											if (file.words) {
+												lines_word_content += ` ${file.words} Words`
+											}
+											var lines_word_badge = ''
+											if (lines_word_content.length > 1) {
+												lines_word_badge = `<span class="badge badge-soft-secondary" data-toggle="tooltip" data-placement="top" title="Response Content Status">${lines_word_content}</span>`;
+											}
+											html_treeview += `<li class="mt-1"><a href="` + htmlEncode(http_url) + `" target="_blank">` + htmlEncode(file.name) + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + htmlEncode(file.content_type) + `)</span> ${http_status_badge}</a>${interesting_badge} ${lines_word_badge}</li>`;
 										});
-										// console.log(file);
-										var http_status_badge = '';
-										if (file.http_status >= 200 && file.http_status < 300) {
-											http_status_badge = `<span class='badge badge-pills badge-soft-success' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										else if (file.http_status >= 300 && file.http_status < 400) {
-											http_status_badge = `<span class='badge badge-pills badge-soft-warning' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										else{
-											http_status_badge = `<span class='badge badge-pills badge-soft-danger' data-toggle="tooltip" data-placement="top" title="HTTP Status">`+file.http_status+`</span>`;
-										}
-										var http_url = file.url;
-										var lines_word_content = '';
-										if (file.lines) {
-											lines_word_content += `${file.lines} Lines`;
-										}
-										if (file.words) {
-											lines_word_content += ` ${file.words} Words`
-										}
-										var lines_word_badge = ''
-										if (lines_word_content.length > 1) {
-											lines_word_badge = `<span class="badge badge-soft-secondary" data-toggle="tooltip" data-placement="top" title="Response Content Status">${lines_word_content}</span>`;
-										}
-										html_treeview += `<li class="mt-1"><a href="` + htmlEncode(http_url) + `" target="_blank">` + htmlEncode(file.name) + ` (` + file.length / 100 + ` Kb) <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Content Type">(` + htmlEncode(file.content_type) + `)</span> ${http_status_badge}</a>${interesting_badge} ${lines_word_badge}</li>`;
-									});
+									}
 									item_pos++;
 									html_treeview += '</div>';
 								});
@@ -1878,7 +1884,7 @@ $(document).ready(function() {
 		});
 	{% endif %}
 
-	{% if history.screenshot %}
+	{% if 'screenshot' in history.tasks %}
 		$("#pills-screenshot-tab").click(function() {
 			get_screenshot({{scan_history_id}});
 
@@ -1967,10 +1973,10 @@ $(document).ready(function() {
 		get_endpoints(scan_history={{scan_history_id}}, gf_tags=null);
 	});
 
-	{% if history.fetch_url and history.used_gf_patterns %}
+	{% if 'fetch_url' in history.tasks and history.used_gf_patterns %}
 		{% for pattern in history.used_gf_patterns|split:"," %}
 			$("#pills-{{pattern}}-tab").click(function() {
-				get_endpoints(scan_history={{scan_history_id}}, gf_tags='{{pattern}}');
+				get_endpoints(scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
 			});
 		{% endfor %}
 	{% endif %}
@@ -2424,14 +2430,14 @@ $(document).ready(function() {
 
 			// if port scanning is not done, remove port row
 			var column = subdomain_datatables.column('7');
-			{% if history.port_scan %}
+			{% if 'port_scan' in history.tasks %}
 			column.visible(true);
 			{% else %}
 			column.visible(false);
 			{% endif %}
 			// if screenshot is not taken remove screenshot row
 			var column = subdomain_datatables.column('9');
-			{% if history.screenshot %}
+			{% if 'screenshot' in history.tasks %}
 			column.visible(true);
 			{% else %}
 			column.visible(false);
