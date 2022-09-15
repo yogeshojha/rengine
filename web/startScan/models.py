@@ -8,6 +8,25 @@ from scanEngine.models import EngineType
 from targetApp.models import Domain
 
 
+class hybrid_property:
+    def __init__(self, func):
+        self.func = func
+        self.name = func.__name__
+        self.exp = None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return self.func(instance)
+
+    def __set__(self, instance, value):
+        pass
+
+    def expression(self, exp):
+        self.exp = exp
+        return self
+
+
 class ScanHistory(models.Model): 
 	id = models.AutoField(primary_key=True)
 	start_scan_date = models.DateTimeField()
@@ -356,10 +375,10 @@ class EndPoint(models.Model):
 	def __str__(self):
 		return self.http_url
 
+	@hybrid_property
 	def is_alive(self):
-		if self.http_status:
-			return 0 < self.http_status < 400
-		return False
+		return self.http_status and (0 < self.http_status < 500) and self.http_status != 404
+
 
 class VulnerabilityTags(models.Model):
 	id = models.AutoField(primary_key=True)

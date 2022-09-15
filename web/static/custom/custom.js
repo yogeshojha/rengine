@@ -911,12 +911,13 @@ function show_subscan_results(subscan_id) {
 				button: "Okay",
 			});
 			return;
-		} else if (response['subscan']['status'] == 1) {
-			swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
-				button: "Okay",
-			});
-			return;
-		}
+		} 
+		// else if (response['subscan']['status'] == 1) {
+		// 	swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
+		// 		button: "Okay",
+		// 	});
+		// 	return;
+		// }
 		$('#xl-modal-title').empty();
 		$('#xl-modal-content').empty();
 		$('#xl-modal-footer').empty();
@@ -1329,8 +1330,9 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 			for (var result in data['results']) {
 
 				var result_obj = data['results'][result];
+				console.log(result_obj)
 				var error_message = '';
-				var task_name = get_task_name(result_obj);
+				var task_name = result_obj.type;
 
 				if (result_obj.status == 0) {
 					color = 'danger';

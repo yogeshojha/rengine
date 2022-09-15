@@ -205,9 +205,19 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
 class EngineSerializer(serializers.ModelSerializer):
 
+	tasks = serializers.SerializerMethodField('get_tasks')
+
+	def get_tasks(self, instance):
+		return instance.tasks
+
 	class Meta:
 		model = EngineType
-		fields = '__all__'
+		fields = [
+			'id',
+			'engine_name',
+			'yaml_configuration',
+			'tasks'
+		]
 
 
 class OrganizationTargetsSerializer(serializers.ModelSerializer):

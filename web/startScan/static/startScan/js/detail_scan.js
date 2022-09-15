@@ -1349,7 +1349,6 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 	});
 }
 
-
 function initiate_subscan(subdomain_ids){
 	var engine_id = $('#subtaskScanEngine').val();
 	var tasks = []
@@ -1426,6 +1425,49 @@ $('#btn-initiate-subtask').on('click', function(){
 		initiate_subscan([subdomain_id]);
 	}
 });
+
+
+// Load engine tasks on modal load and engine input change
+function load_engine_tasks(engine_name){
+	var tasks = []
+	var html = ''
+	var url = `/api/listEngines/?format=json`;
+	console.log(url);
+	$.getJSON(url, function(data) {
+		console.log(data);
+		var engines = data.engines
+		console.log(engines);
+		console.log(engine_name);
+		$.each(engines, function(i, engine){
+			console.log(`${engine.engine_name} == ${engine_name}`)
+			if (engine.engine_name === engine_name){
+				tasks = engine.tasks
+				console.log(tasks)
+			}
+		})
+		$.each(tasks, function(i, task){
+			html += `
+			<div class="mt-1">
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" id="${task}">
+					<label class="form-check-label" for="${task}">${task}</label>
+				</div>
+			</div>`
+		});
+		console.log(html)
+		$('#engineTasks').html(html);
+	})
+}
+
+$('#subscan-modal').on('shown.bs.modal', function () {
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
+
+$('#subtaskScanEngine').on('change', function(){
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
 
 // download subdomains
 function downloadSelectedSubdomains(domain_name){

@@ -11,7 +11,6 @@ logger = logging.getLogger('django')
 # TOOLS DEFINITIONS
 ###############################################################################
 
-NUCLEI_TEMPLATES_PATH = '/root/nuclei-templates/'
 EMAIL_REGEX = re.compile(r'[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+')
 
 ###############################################################################
