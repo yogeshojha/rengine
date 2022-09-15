@@ -305,12 +305,12 @@ def target_summary(request, id):
     context['target'] = target
 
     # Scan History
-    scan_history = ScanHistory.objects.filter(domain__id=id)
-    context['recent_scans'] = scan_history.order_by('-start_scan_date')[:4]
-    context['scan_count'] = scan_history.count()
+    scan = ScanHistory.objects.filter(domain__id=id)
+    context['recent_scans'] = scan.order_by('-start_scan_date')[:4]
+    context['scan_count'] = scan.count()
     last_week = timezone.now() - timedelta(days=7)
     context['this_week_scan_count'] = (
-        scan_history
+        scan
         .filter(start_scan_date__gte=last_week)
         .count()
     )
@@ -322,7 +322,8 @@ def target_summary(request, id):
     subdomains = (
         Subdomain.objects
         .filter(target_domain__id=id)
-        .values('name').distinct()
+        .values('name')
+        .distinct()
     )
     context['subdomain_count'] = subdomains.count()
     context['alive_count'] = subdomains.filter(http_status__exact=200).count()
@@ -379,7 +380,7 @@ def target_summary(request, id):
     # Emails
     emails = (
         Email.objects
-        .filter(emails__in=scan_history)
+        .filter(emails__in=scan)
         .distinct()
     )
     context['exposed_count'] = emails.exclude(password__isnull=True).count()
@@ -388,7 +389,7 @@ def target_summary(request, id):
     # Employees
     context['employees_count'] = (
         Employee.objects
-        .filter(employees__in=scan_history)
+        .filter(employees__in=scan)
         .count()
     )
 

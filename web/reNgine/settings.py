@@ -188,7 +188,12 @@ CELERY_TASK_SKIP_RECORD_ACTIVITY = [
     'reNgine.tasks.run_command',
     'reNgine.tasks.stream_command',
     'reNgine.tasks.report',
-    'reNgine.tasks.http_crawl'
+    'reNgine.tasks.http_crawl',
+    'reNgine.tasks.send_notification',
+    'reNgine.tasks.send_file_to_discord',
+    'reNgine.tasks.send_discord_message',
+    'reNgine.tasks.send_slack_message',
+    'reNgine.tasks.send_telegram_message'
 ]
 CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
 

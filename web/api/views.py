@@ -191,59 +191,54 @@ class FetchMostCommonVulnerability(APIView):
 		response['status'] = False
 
 		if scan_history_id:
-			vuln_query = Vulnerability.objects.filter(
-					scan_history__id=scan_history_id
-				).values(
-					"name", "severity"
-				)
+			vuln_query = (
+				Vulnerability.objects
+				.filter(scan_history__id=scan_history_id)
+				.values("name", "severity")
+			)
 			if is_ignore_info:
-				most_common_vulnerabilities = vuln_query.exclude(
-					severity=0
-				).annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query
+					.exclude(severity=0)
+					.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 			else:
-				most_common_vulnerabilities = vuln_query.annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query
+					.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 
 		elif target_id:
 			vuln_query = Vulnerability.objects.filter(target_domain__id=target_id).values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = vuln_query.exclude(
-					severity=0
-				).annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query
+					.exclude(severity=0)
+					.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 			else:
-				most_common_vulnerabilities = vuln_query.annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query
+					.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 
 		else:
 			vuln_query = Vulnerability.objects.values("name", "severity")
 			if is_ignore_info:
-				most_common_vulnerabilities = vuln_query.exclude(
-					severity=0
-				).annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query.exclude(severity=0)
+					.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 			else:
-				most_common_vulnerabilities = vuln_query.annotate(
-					count=Count('name')
-				).order_by(
-					"-count"
-				)[:limit]
+				most_common_vulnerabilities = (
+					vuln_query.annotate(count=Count('name'))
+					.order_by("-count")[:limit]
+				)
 
 
 		most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
@@ -271,58 +266,80 @@ class FetchMostVulnerable(APIView):
 		if scan_history_id:
 			subdomain_query = Subdomain.objects.filter(scan_history__id=scan_history_id)
 			if is_ignore_info:
-				most_vulnerable_subdomains = subdomain_query.annotate(
-						vuln_count=Count('vulnerability__name',
-							filter=~Q(vulnerability__severity=0)
-						)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_subdomains = (
+					subdomain_query
+					.annotate(
+						vuln_count=Count('vulnerability__name', filter=~Q(vulnerability__severity=0))
+					)
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 			else:
-				most_vulnerable_subdomains = subdomain_query.annotate(
-					vuln_count=Count('vulnerability__name')).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_subdomains = (
+					subdomain_query
+					.annotate(vuln_count=Count('vulnerability__name'))
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 
 				if most_vulnerable_subdomains:
 					response['status'] = True
-					response['result'] = SubdomainSerializer(
-						most_vulnerable_subdomains, many=True
-					).data
+					response['result'] = (
+						SubdomainSerializer(
+							most_vulnerable_subdomains,
+							many=True)
+						.data
+					)
 
 		elif target_id:
 			subdomain_query = Subdomain.objects.filter(target_domain__id=target_id)
 			if is_ignore_info:
-				most_vulnerable_subdomains = subdomain_query.annotate(
-					vuln_count=Count(
-						'vulnerability__name',
-						filter=~Q(vulnerability__severity=0)
-					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_subdomains = (
+					subdomain_query
+					.annotate(vuln_count=Count('vulnerability__name', filter=~Q(vulnerability__severity=0)))
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 			else:
-				most_vulnerable_subdomains = subdomain_query.annotate(
-					vuln_count=Count(
-						'vulnerability__name'
-					)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_subdomains = (
+					subdomain_query
+					.annotate(vuln_count=Count('vulnerability__name'))
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 
 			if most_vulnerable_subdomains:
 				response['status'] = True
-				response['result'] = SubdomainSerializer(
-					most_vulnerable_subdomains, many=True
-				).data
+				response['result'] = (
+					SubdomainSerializer(
+						most_vulnerable_subdomains,
+						many=True)
+					.data
+				)
 		else:
 			if is_ignore_info:
-				most_vulnerable_targets = Domain.objects.annotate(
-					vuln_count=Count(
-						'subdomain__vulnerability__name',
-						filter=~Q(subdomain__vulnerability__severity=0))
-					).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_targets = (
+					Domain.objects
+					.annotate(vuln_count=Count('subdomain__vulnerability__name', filter=~Q(subdomain__vulnerability__severity=0)))
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 			else:
-				most_vulnerable_targets = Domain.objects.annotate(
-					vuln_count=Count(
-					'subdomain__vulnerability__name'
-				)).order_by('-vuln_count').exclude(vuln_count=0)[:limit]
+				most_vulnerable_targets = (
+					Domain.objects
+					.annotate(vuln_count=Count('subdomain__vulnerability__name'))
+					.order_by('-vuln_count')
+					.exclude(vuln_count=0)[:limit]
+				)
 
 			if most_vulnerable_targets:
 				response['status'] = True
-				response['result'] = DomainSerializer(
-					most_vulnerable_targets,
-					many=True
-				).data
+				response['result'] = (
+					DomainSerializer(
+						most_vulnerable_targets,
+						many=True)
+					.data
+				)
 
 		return Response(response)
 
@@ -404,7 +421,6 @@ class ToggleSubdomainImportantStatus(APIView):
 
 class AddTarget(APIView):
 	def post(self, request):
-		logger.info('Test')
 		req = self.request
 		data = req.data
 		h1_team_handle = data.get('h1_team_handle')
@@ -454,11 +470,11 @@ class FetchSubscanResults(APIView):
 			vulns_in_subscan = Vulnerability.objects.filter(vuln_subscan_ids__in=subscan)
 			subscan_results = VulnerabilitySerializer(vulns_in_subscan, many=True).data
 
-		elif subscan_type == 'fetch_endpoints':
+		elif subscan_type == 'fetch_url':
 			endpoints_in_subscan = EndPoint.objects.filter(endpoint_subscan_ids__in=subscan)
 			subscan_results = EndpointSerializer(endpoints_in_subscan, many=True).data
 
-		elif subscan_type == 'directory_fuzz':
+		elif subscan_type == 'dir_file_fuzz':
 			dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
 			subscan_results = DirectoryScanSerializer(dirs_in_subscan, many=True).data
 
@@ -483,10 +499,10 @@ class ListSubScans(APIView):
 				.filter(subdomain__id=subdomain_id)
 				.order_by('-stop_scan_date')
 			)
-			subscan_results = SubScanSerializer(subscans, many=True).data
+			subscans_json = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscan_results
+				response['results'] = subscans_json
 
 		elif scan_history:
 			subscans = (
@@ -494,10 +510,10 @@ class ListSubScans(APIView):
 				.filter(scan_history__id=scan_history)
 				.order_by('-stop_scan_date')
 			)
-			subscan_results = SubScanSerializer(subscans, many=True).data
+			subscans_json = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscan_results
+				response['results'] = subscans_json
 
 		elif domain_id:
 			scan_history = ScanHistory.objects.filter(domain__id=domain_id)
@@ -506,10 +522,10 @@ class ListSubScans(APIView):
 				.filter(scan_history__in=scan_history)
 				.order_by('-stop_scan_date')
 			)
-			subscan_results = SubScanSerializer(subscans, many=True).data
+			subscans_json = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscan_results
+				response['results'] = subscans_json
 
 		return Response(response)
 
@@ -537,51 +553,60 @@ class StopScan(APIView):
 		scan_id = data.get('scan_id')
 		subscan_id = data.get('subscan_id')
 		response = {}
-		if scan_id:
+		task_ids = []
+		scan = None
+		subscan = None
+		if subscan_id:
 			try:
-				scan_history = get_object_or_404(ScanHistory, id=scan_id)
-				app.control.revoke(
-					scan_history.celery_id,
-					terminate=True,
-					signal='SIGKILL')
-				for task_id in scan_history.celery_ids:
-					try:
-						app.control.revoke(task_id, terminate=True, signal='SIGKILL')
-					except Exception as e:
-						logger.error(f'Could not revoke Celery task id {task_id}')
-
-				scan_history.scan_status = ABORTED_TASK
-				scan_history.stop_scan_date = timezone.now()
-				scan_history.save()
-
-				if ScanActivity.objects.filter(scan_of=scan_history).exists():
-					last_activity = (
-						ScanActivity.objects
-						.filter(scan_of=scan_history)
-						.order_by('-pk')
-						.first()
-					)
-					last_activity.status = 0
-					last_activity.time = timezone.now()
-					last_activity.save()
-				create_scan_activity(scan_history.id, "Scan aborted", 0)
+				subscan = get_object_or_404(SubScan, id=subscan_id)
+				scan = subscan.scan_history
+				task_ids = [subscan.celery_id] + subscan.celery_ids
+				subscan.status = ABORTED_TASK
+				subscan.stop_scan_date = timezone.now()
+				subscan.save()
+				create_scan_activity(
+					subscan.scan_history.id,
+					f'Subscan {subscan_id} aborted',
+					SUCCESS_TASK)
 				response['status'] = True
 			except Exception as e:
 				logging.error(e)
 				response = {'status': False, 'message': str(e)}
-		elif subscan_id:
+		elif scan_id:
 			try:
-				task = get_object_or_404(SubScan, id=subscan_id)
-				for task_id in task.celery_ids:
-					app.control.revoke(task_id, terminate=True, signal='SIGKILL')
-				app.control.revoke(task.celery_id, terminate=True, signal='SIGKILL')
-				task.status = 3
-				task.stop_scan_date = timezone.now()
+				scan = get_object_or_404(ScanHistory, id=scan_id)
+				task_ids = [scan.celery_id] + scan.celery_ids
+				scan.scan_status = ABORTED_TASK
+				scan.stop_scan_date = timezone.now()
+				scan.save()
+				create_scan_activity(
+					scan.id,
+					"Scan aborted",
+					SUCCESS_TASK)
+				response['status'] = True
+			except Exception as e:
+				logging.error(e)
+				response = {'status': False, 'message': str(e)}
+
+		logger.warning(f'Revoking tasks {task_ids}')
+		for task_id in task_ids:
+			app.control.revoke(task_id, terminate=True, signal='SIGKILL')
+
+		# Abort running tasks
+		tasks = (
+			ScanActivity.objects
+			.filter(scan_of=scan)
+			.filter(status=RUNNING_TASK)
+			.order_by('-pk')
+		)
+		if tasks.exists():
+			for task in tasks:
+				if subscan_id and task.id not in [subscan.celery_id] + subscan.celery_ids:
+					continue
+				task.status = ABORTED_TASK
+				task.time = timezone.now()
 				task.save()
-				response['status'] = True
-			except Exception as e:
-				logging.error(e)
-				response = {'status': False, 'message': str(e)}
+
 		return Response(response)
 
 
@@ -755,12 +780,10 @@ class GetExternalToolCurrentVersion(APIView):
 			return Response({'status': False, 'message': 'Version Lookup command not provided.'})
 
 		version_number = None
-		_, stdout, _ = run_command(tool.version_lookup_command)
-		for line in stdout.split('\n'):
-			version_number = re.search(re.compile(tool.version_match_regex), str(line))
-			if version_number:
-				break
-
+		_, stdout, stderr = run_command(tool.version_lookup_command)
+		logger.info(f'stdout:{stdout}')
+		logger.info(f'stderr:{stderr}')
+		version_number = re.search(re.compile(tool.version_match_regex), str(stdout + stderr))
 		if not version_number:
 			return Response({'status': False, 'message': 'Invalid version lookup command.'})
 
@@ -1919,6 +1942,14 @@ class EndPointViewSet(viewsets.ModelViewSet):
 
 		if 'only_urls' in req.query_params:
 			self.serializer_class = EndpointOnlyURLsSerializer
+
+		# Filter status code 404 and 0
+		endpoints = (
+			endpoints
+			.exclude(http_status=0)
+			.exclude(http_status=None)
+			.exclude(http_status=404)
+		)
 
 		self.queryset = endpoints
 
