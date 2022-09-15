@@ -79,13 +79,10 @@ class RengineTask(Task):
 				return
 
 		# Prepare task
-		args_str = '_'.join([str(arg) for arg in args])
-		kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
 		task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
 		task_result = None
 		task_error = None
 		task_traceback = None
-		task_descr += f' | {args_str} | {kwargs_str}' if DEBUG > 1 else ''
 		scan_history_id = args[0] if len(args) > 0 else kwargs.get('scan_history_id')
 		subscan_id = kwargs.get('subscan_id')
 		has_activity_id = (
@@ -121,6 +118,8 @@ class RengineTask(Task):
 
 		# Check for result in cache and return if hit
 		if CELERY_TASK_CACHE:
+			args_str = '_'.join([str(arg) for arg in args])
+			kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
 			record_key = f'{self.name}__{args_str}__{kwargs_str}'
 			task_result = cache.get(record_key)
 			if task_result and task_result != b'null':

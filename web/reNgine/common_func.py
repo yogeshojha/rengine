@@ -133,6 +133,7 @@ def get_interesting_endpoint(scan_history=None, target=None):
 def check_keyword_exists(keyword_list, subdomain):
     return any(sub in subdomain for sub in keyword_list)
 
+
 def get_subdomain_from_url(url):
     url_obj = urlparse(url.strip())
     url_str = url_obj.netloc if url_obj.scheme else url_obj.path
@@ -142,74 +143,6 @@ def get_subdomain_from_url(url):
 def get_domain_from_subdomain(subdomain):
     ext = tldextract.extract(subdomain)
     return '.'.join(ext[1:3])
-
-
-def send_telegram_message(message):
-    notification = Notification.objects.first()
-    if notification and notification.send_to_telegram \
-    and notification.telegram_bot_token \
-    and notification.telegram_bot_chat_id:
-        telegram_bot_token = notification.telegram_bot_token
-        telegram_bot_chat_id = notification.telegram_bot_chat_id
-        send_text = 'https://api.telegram.org/bot' + telegram_bot_token \
-            + '/sendMessage?chat_id=' + telegram_bot_chat_id \
-            + '&parse_mode=Markdown&text=' + message
-        thread = Thread(target=requests.get, args = (send_text, ))
-        thread.start()
-
-
-def send_slack_message(message):
-    headers = {'content-type': 'application/json'}
-    message = {'text': message}
-    notification = Notification.objects.first()
-    if notification and notification.send_to_slack \
-    and notification.slack_hook_url:
-        hook_url = notification.slack_hook_url
-        thread = Thread(
-            target=requests.post,
-            kwargs = {
-                'url': hook_url,
-                'data': json.dumps(message),
-                'headers': headers,
-            })
-        thread.start()
-
-
-def send_discord_message(message):
-    notification = Notification.objects.first()
-    if notification and notification.send_to_discord \
-    and notification.discord_hook_url:
-        webhook = DiscordWebhook(
-            url=notification.discord_hook_url,
-            content=message,
-            rate_limit_retry=True
-            )
-        thread = Thread(target=webhook.execute)
-        thread.start()
-
-
-def send_file_to_discord(file_path, title=None):
-    notification = Notification.objects.first()
-    if notification and notification.send_to_discord \
-    and notification.discord_hook_url:
-        webhook = DiscordWebhook(
-            url=notification.discord_hook_url,
-            rate_limit_retry=True,
-            username=title or "Scan Results - File"
-        )
-        with open(file_path, "rb") as f:
-            head, tail = os.path.split(file_path)
-            webhook.add_file(file=f.read(), filename=tail)
-        thread = Thread(target=webhook.execute)
-        thread.start()
-
-
-def send_notification(message, scan_history_id=None):
-    if scan_history_id is not None:
-        message = f'`#{scan_history_id}`: {message}'
-    send_slack_message(message)
-    send_discord_message(message)
-    send_telegram_message(message)
 
 
 def get_random_proxy():

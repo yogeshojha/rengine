@@ -19,20 +19,8 @@
 					</select>
 				</div>
 				<h5>Select the engine's subtasks to perform</h5>
-				<!-- TODO: Make the tasks selection dynamic based on the selected engine -->
 				<div id="engineTasks" name="engineTasks">
-				{% for engine in scan_engines %}
-					{% if engine.engine_name == "Deep Scan" %}
-						{% for task in engine.tasks %}
-							<div class="mt-1">
-								<div class="form-check">
-									<input type="checkbox" class="form-check-input" id="{{task}}">
-									<label class="form-check-label" for="{{task}}">{{task}}</label>
-								</div>
-							</div>
-						{% endfor %}
-					{% endif %}
-				{% endfor %}
+				<!-- dynamically populated based on engine input -->
 				</div>
 			</div>
 			<div class="modal-footer">
