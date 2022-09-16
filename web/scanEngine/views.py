@@ -9,7 +9,8 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from reNgine.common_func import *
-from reNgine.tasks import run_command
+from reNgine.tasks import (run_command, send_discord_message,
+                           send_slack_message, send_telegram_message)
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *

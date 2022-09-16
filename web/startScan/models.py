@@ -34,7 +34,6 @@ class ScanHistory(models.Model):
 	results_dir = models.CharField(max_length=100, blank=True)
 	domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
 	scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
-	celery_id = models.CharField(max_length=100, blank=True)
 	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
 	tasks = ArrayField(models.CharField(max_length=200), null=True)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
@@ -318,14 +317,13 @@ class SubScan(models.Model):
 	type = models.CharField(max_length=100, blank=True, null=True)
 	start_scan_date = models.DateTimeField()
 	status = models.IntegerField()
-	celery_id = models.CharField(max_length=100, blank=True)
 	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	engine = models.ForeignKey(EngineType, on_delete=models.CASCADE, blank=True, null=True)
-
+	subdomain_subscan_ids = models.ManyToManyField('Subdomain', related_name='subdomain_subscan_ids', blank=True)
 
 	def get_completed_ago(self):
 		if self.stop_scan_date:

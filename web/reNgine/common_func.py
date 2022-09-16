@@ -1,16 +1,12 @@
-from cgitb import lookup
 import json
 import logging
 import os
 import random
 import shutil
-from datetime import date
-from threading import Thread
 from urllib.parse import urlparse
 
 import requests
 import tldextract
-from discord_webhook import DiscordWebhook
 from django.db.models import Q
 from reNgine.common_serializers import *
 from reNgine.definitions import *
@@ -277,6 +273,9 @@ def get_http_urls(
 
 	return endpoints
 
+#-----------#
+# URL utils #
+#-----------#
 
 def get_subdomain_from_url(url):
 	"""Get subdomain from HTTP URL.
@@ -304,6 +303,9 @@ def get_domain_from_subdomain(subdomain):
 	ext = tldextract.extract(subdomain)
 	return '.'.join(ext[1:3])
 
+#-------#
+# Utils #
+#-------#
 
 def get_random_proxy():
 	"""Get a random proxy from the list of proxies input by user in the UI.
