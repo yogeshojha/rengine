@@ -52,7 +52,7 @@ def load_custom_scan_engines(results_dir):
 		engine_name = path.replace('.yaml', '').split('/')[-1]
 		full_path = os.path.join(results_dir, path)
 		with open(full_path, 'r') as f:
-			yaml_configuration = yaml.load(f)
+			yaml_configuration = yaml.safe_load(f)
 		engine, _ = EngineType.objects.get_or_create(engine_name=engine_name)
 		engine.yaml_configuration = yaml.dump(yaml_configuration)
 		engine.save()
