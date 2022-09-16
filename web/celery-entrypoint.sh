@@ -80,12 +80,8 @@ then
 fi
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
 
-# clone pwndb
-if [ ! -d "/usr/src/github/pwndb" ]
-then
-  echo "Cloning pwndb"
-  git clone https://github.com/davidtavarez/pwndb /usr/src/github/pwndb
-fi
+# install h8mail
+python3 -m pip install h8mail
 
 # install gf patterns
 if [ ! -d "/root/Gf-Patterns" ];
