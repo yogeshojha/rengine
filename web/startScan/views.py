@@ -279,14 +279,12 @@ def start_scan_ui(request, domain_id):
             'engine_id': engine_id,
             'activity_id': DYNAMIC_ID, # activity will be created dynamically
             'scan_type': LIVE_SCAN,
-            'yaml_configuration': None,
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
             'url_path': filterPath.lstrip('/')
         }
         celery_task = initiate_scan.apply_async(kwargs=kwargs)
-        scan.celery_id = celery_task.id
         scan.save()
 
         # Send start notif
@@ -323,9 +321,8 @@ def start_multiple_scan(request):
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_id)
-                scan = ScanHistory.objects.get(pk=scan_history_id)
                 kwargs = {
-                    'scan_history_id': scan.id,
+                    'scan_history_id': scan_history_id,
                     'domain_id': domain.id,
                     'engine_id': engine_id,
                     'activity_id': DYNAMIC_ID,
@@ -335,9 +332,7 @@ def start_multiple_scan(request):
                     # 'imported_subdomains': subdomains_in,
                     # 'out_of_scope_subdomains': subdomains_out
                 }
-                celery_task = initiate_scan.apply_async(kwargs=kwargs)
-                scan.celery_id = celery_task.id
-                scan.save()
+                initiate_scan.apply_async(kwargs=kwargs)
 
             # Send start notif
             messages.add_message(
@@ -445,7 +440,7 @@ def delete_scan(request, id):
 
 def stop_scan(request, id):
     if request.method == "POST":
-        scan = get_object_or_404(ScanHistory, celery_id=id)
+        scan = get_object_or_404(ScanHistory, id=id)
         scan.scan_status = ABORTED_TASK
         scan.save()
         try:
@@ -672,9 +667,8 @@ def start_organization_scan(request, id):
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
             scan_history_id = create_scan_object(domain.id, engine_id)
-            scan = ScanHistory.objects.filter(id=scan_history_id)
             kwargs = {
-                'scan_history_id': scan.id,
+                'scan_history_id': scan_history_id,
                 'domain_id': domain.id,
                 'engine_id': engine_id,
                 'activity_id': -1, # activity will be created dynamically
@@ -684,9 +678,8 @@ def start_organization_scan(request, id):
                 # 'imported_subdomains': subdomains_in,
                 # 'out_of_scope_subdomains': subdomains_out
             }
-            celery_task = initiate_scan.apply_async(kwargs=kwargs)
-            scan.celery_id = celery_task.id
-            scan.save()
+            initiate_scan.apply_async(kwargs=kwargs)
+
 
         # Send start notif
         ndomains = len(organization.get_domains())

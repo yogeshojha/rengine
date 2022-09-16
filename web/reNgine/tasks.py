@@ -1,14 +1,13 @@
 import csv
-from distutils.log import info
 import json
 import os
 import random
 import subprocess
 import time
 from datetime import datetime
+from distutils.log import info
 from http.client import HTTPConnection, HTTPSConnection
 from time import sleep
-from urllib import response
 from urllib.parse import urlparse
 
 import asyncwhois
@@ -21,18 +20,19 @@ from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
+from discord_webhook import DiscordWebhook
 from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
-								   get_emails_from_google)
+                                   get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification,
-							   Proxy)
+                               Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
@@ -129,7 +129,7 @@ def initiate_scan(
 		scan_history_id,
 		activity_id,
 		domain_id,
-		yaml_configuration,
+		yaml_configuration={},
 		engine_id=None,
 		results_dir='/usr/src/scan_results',
 		scan_type=LIVE_SCAN,
@@ -199,7 +199,7 @@ def initiate_scan(
 		scan = ScanHistory()
 		scan.scan_status = INITIATED_TASK
 	scan.scan_type = engine
-	scan.celery_id = initiate_scan.request.id
+	scan.celery_ids = [initiate_scan.request.id]
 	scan.domain = domain
 	scan.start_scan_date = timezone.now()
 	scan.tasks = engine.tasks
@@ -268,7 +268,7 @@ def initiate_scan(
 	# Run Celery chord
 	logger.info(f'Running Celery workflow with {len(workflow.tasks) + 1} tasks')
 	task = chain(workflow, callback).on_error(callback).delay()
-	scan.celery_ids = [task.id]
+	scan.celery_ids.append(task.id)
 	scan.save()
 
 	return {
@@ -299,7 +299,7 @@ def initiate_subscan(
 	# Create scan activity of SubScan Model
 	subscan = SubScan(
 		start_scan_date=timezone.now(),
-		celery_id=initiate_subscan.request.id,
+		celery_ids=[initiate_subscan.request.id],
 		scan_history=scan,
 		subdomain=subdomain,
 		type=scan_type,
@@ -358,7 +358,7 @@ def initiate_subscan(
 
 	# Run Celery tasks
 	task = chain(workflow, callback).on_error(callback).delay()
-	subscan.celery_ids = [task.id]
+	subscan.celery_ids.append(task.id)
 	subscan.save()
 
 	return {
@@ -374,7 +374,7 @@ def report(
 		engine_id=None,
 		subdomain_id=None,
 		subscan_id=None,
-		yaml_configuration=None,
+		yaml_configuration={},
 		url_path='',
 		results_dir=None,
 		description=None):
@@ -411,7 +411,7 @@ def report(
 		.all()
 	)
 	if subscan:
-		celery_ids = [subscan.celery_id] + subscan.celery_ids
+		celery_ids = subscan.celery_ids
 		failed_tasks = [task for task in failed_tasks if task.id in celery_ids]
 	failed_tasks_count = len(failed_tasks)
 	status = SUCCESS_TASK if failed_tasks_count == 0 else FAILED_TASK
@@ -447,7 +447,7 @@ def report(
 🡆 **Duration:** {duration}
 🡆 **Tasks:** {tasks_str}"""
 	if subscan:
-		msg = f'🡆 **Scan ID:{scan.id}**\n{msg}'
+		msg = f'🡆 **Scan ID:{scan.id}**{msg}'
 
 	# Attach tracebacks files to notification for tasks that failed
 	tb_files = []
@@ -704,7 +704,7 @@ def subdomain_discovery(
 		interesting_subdomains = get_interesting_subdomains(scan.id, domain.id)
 		if interesting_subdomains:
 			msg = f'**{interesting_subdomains.count()} interesting subdomains found on domain {host}**\n'
-			subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in removed_subdomains])
+			subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in interesting_subdomains])
 			msg += subdomains_str
 			send_notification.delay(msg, scan_history_id, subscan_id)
 
@@ -1274,8 +1274,8 @@ def port_scan(
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
 	send_output_file = notification.send_scan_output_file if notification else False
-	hosts_str_report = ', '.join(f'`{host}`' for host in hosts)
-	msg = f'`port_scan` has started for {hosts_str_report}'
+	hosts_str = ', '.join(f'`{host}`' for host in hosts)
+	msg = f'`port_scan` has started for {hosts_str}'
 	logger.warning(msg)
 	if send_status:
 		send_notification.delay(msg, scan_history_id, subscan_id)
@@ -1321,7 +1321,7 @@ def port_scan(
 		).first()
 
 		# Add IP DB
-		save_ip_address(ip_address, subdomain, subscan=subscan)
+		ip, _ = save_ip_address(ip_address, subdomain, subscan=subscan)
 
 		# Add endpoint to DB
 		http_url = f'{host}:{port_number}'
@@ -1353,7 +1353,7 @@ def port_scan(
 			ip.save()
 
 	# Send end notif and output file
-	msg = f'`port_scan` has finished for `{domain.name}`: **{len(ports)} ports discovered**'
+	msg = f'`port_scan` has finished for `{hosts_str}`: **{len(ports)} ports discovered**'
 	logger.warning(msg)
 	if send_status:
 		send_notification.delay(msg, scan_history_id, subscan_id)
@@ -3171,6 +3171,7 @@ def save_endpoint(
 			endpoint_id = results[0]['endpoint_id']
 			endpoint = EndPoint.objects.get(pk=endpoint_id)
 			return endpoint, False
+		return None, False
 
 	if not validators.url(http_url):
 		logger.error(f'{http_url} is not a valid URL. Skipping.')
@@ -3191,7 +3192,7 @@ def save_endpoint(
 	return endpoint, created
 
 
-def save_subdomain(subdomain_name, scan_history, domain):
+def save_subdomain(subdomain_name, scan_history, domain, subscan=None):
 	"""Get or create Subdomain object.
 
 	Args:
@@ -3214,8 +3215,10 @@ def save_subdomain(subdomain_name, scan_history, domain):
 		logger.warning(f'Found new subdomain {subdomain_name}')
 		subdomain.discovered_date = timezone.now()
 		subdomain.save()
+		if subscan:
+			subdomain.subdomain_subscan_ids.add(subscan)
+			subdomain.save()
 	return subdomain, created
-
 
 
 def save_email(email_address, scan_history=None):
@@ -3264,12 +3267,12 @@ def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
 
 	# Add IP to subdomain
 	if subdomain:
-			subdomain.ip_addresses.add(ip)
-			subdomain.save()
+		subdomain.ip_addresses.add(ip)
+		subdomain.save()
 
 	# Add subscan to IP
 	if subscan:
-			ip.ips_subscan_ids.add(subscan)
+		ip.ip_subscan_ids.add(subscan)
 
 	# Geo-localize IP asynchronously
 	if not ip.geo_iso:

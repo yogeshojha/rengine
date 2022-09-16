@@ -15,7 +15,8 @@ from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
-from reNgine.tasks import create_scan_activity, initiate_subscan, query_whois, run_command
+from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
+                           run_command)
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -449,18 +450,14 @@ class FetchSubscanResults(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-
 		subscan_id = data['subscan_id']
-
-		if not SubScan.objects.filter(id=subscan_id).exists():
+		subscan = SubScan.objects.filter(id=subscan_id).first()
+		if not subscan:
 			return Response({'status': False, 'error': 'Subscan {} does not exist'.format(subscan_id)})
 
-		subscan = SubScan.objects.filter(id=subscan_id)
-		subscan_data = SubScanResultSerializer(subscan.first(), many=False).data
+		subscan_data = SubScanResultSerializer(subscan, many=False).data
 		subscan_type = subscan_data['type']
 		subscan_results = None
-
-		# TODO: Review this section as it doesn't work
 
 		if subscan_type == 'port_scan':
 			ips_in_subscan = IpAddress.objects.filter(ip_subscan_ids__in=subscan)
@@ -478,6 +475,14 @@ class FetchSubscanResults(APIView):
 			dirs_in_subscan = DirectoryScan.objects.filter(dir_subscan_ids__in=subscan)
 			subscan_results = DirectoryScanSerializer(dirs_in_subscan, many=True).data
 
+		elif subscan_type == 'subdomain_discovery':
+			subdomains_in_subscan = Subdomain.objects.filter(subdomain_subscan_ids__in=subscan)
+			subscan_results = SubdomainSerializer(subdomains_in_subscan, many=True).data
+
+		elif subscan_type == 'screenshot':
+			subdomains_in_subscan = Subdomain.objects.filter(subdomain_subscan_ids__in=subscan, screenshot_path__isnull=False)
+			subscan_results = SubdomainSerializer(subdomains_in_subscan, many=True).data
+
 		return Response({'subscan': subscan_data, 'result': subscan_results})
 
 
@@ -485,11 +490,9 @@ class ListSubScans(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-
 		subdomain_id = data.get('subdomain_id', None)
 		scan_history = data.get('scan_history_id', None)
 		domain_id = data.get('domain_id', None)
-
 		response = {}
 		response['status'] = False
 
@@ -499,10 +502,10 @@ class ListSubScans(APIView):
 				.filter(subdomain__id=subdomain_id)
 				.order_by('-stop_scan_date')
 			)
-			subscans_json = SubScanSerializer(subscans, many=True).data
+			results = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscans_json
+				response['results'] = results
 
 		elif scan_history:
 			subscans = (
@@ -510,10 +513,10 @@ class ListSubScans(APIView):
 				.filter(scan_history__id=scan_history)
 				.order_by('-stop_scan_date')
 			)
-			subscans_json = SubScanSerializer(subscans, many=True).data
+			results = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscans_json
+				response['results'] = results
 
 		elif domain_id:
 			scan_history = ScanHistory.objects.filter(domain__id=domain_id)
@@ -522,10 +525,10 @@ class ListSubScans(APIView):
 				.filter(scan_history__in=scan_history)
 				.order_by('-stop_scan_date')
 			)
-			subscans_json = SubScanSerializer(subscans, many=True).data
+			results = SubScanSerializer(subscans, many=True).data
 			if subscans:
 				response['status'] = True
-				response['results'] = subscans_json
+				response['results'] = results
 
 		return Response(response)
 
@@ -560,7 +563,7 @@ class StopScan(APIView):
 			try:
 				subscan = get_object_or_404(SubScan, id=subscan_id)
 				scan = subscan.scan_history
-				task_ids = [subscan.celery_id] + subscan.celery_ids
+				task_ids = subscan.celery_ids
 				subscan.status = ABORTED_TASK
 				subscan.stop_scan_date = timezone.now()
 				subscan.save()
@@ -575,7 +578,7 @@ class StopScan(APIView):
 		elif scan_id:
 			try:
 				scan = get_object_or_404(ScanHistory, id=scan_id)
-				task_ids = [scan.celery_id] + scan.celery_ids
+				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
 				scan.save()
@@ -601,7 +604,7 @@ class StopScan(APIView):
 		)
 		if tasks.exists():
 			for task in tasks:
-				if subscan_id and task.id not in [subscan.celery_id] + subscan.celery_ids:
+				if subscan_id and task.id not in subscan.celery_ids:
 					continue
 				task.status = ABORTED_TASK
 				task.time = timezone.now()
