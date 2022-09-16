@@ -24,7 +24,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
 
 # db imports only work if django is loaded, so MUST be placed after django setup
 django.setup()
-from scanEngine.models import EngineType
+from scanEngine.models import EngineType, Notification
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
 
@@ -46,7 +46,7 @@ def create_scan_activity(scan_history_id, task_id, name, message, status, subsca
 	return scan_activity.id
 
 
-def update_scan_activity(id, status, error=None, traceback=None, subscan_id=None):
+def update_scan_activity(id, status, error=None, traceback=None):
 	scan_activity = ScanActivity.objects.filter(id=id)
 	if error and len(error) > 300:
 		error = error[:288] + '...[trimmed]'
@@ -64,104 +64,91 @@ class RengineRequest(Request):
 class RengineTask(Task):
 	Request = RengineRequest
 	def __call__(self, *args, **kwargs):
-		# Get task function name
 		task_name = self.name.split('.')[-1]
+		result = None
+		error = None
+		traceback = None
 		logger = get_task_logger(task_name)
 
 		# Check if this task needs to be recorded.
-		RECORD_TASK = self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY
-
-		# If task is not in engine.tasks, skip it
-		if RECORD_TASK and 'engine_id' in kwargs:
-			engine = EngineType.objects.get(pk=kwargs['engine_id'])
-			if task_name not in engine.tasks:
-				logger.debug(f'{task_name} is not part of this engine tasks. Skipping.')
-				return
-
-		# Prepare task
-		task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
-		task_result = None
-		task_error = None
-		task_traceback = None
-		scan_history_id = args[0] if len(args) > 0 else kwargs.get('scan_history_id')
-		subscan_id = kwargs.get('subscan_id')
-		has_activity_id = (
-			(len(args) > 1 and isinstance(args[1], int) and args[1] == DYNAMIC_ID)
-			or
-			kwargs.get('activity_id', DYNAMIC_ID) == DYNAMIC_ID
+		RECORD_ACTIVITY = (
+			self.name not in CELERY_TASK_SKIP_RECORD_ACTIVITY and
+			'engine_id' in kwargs and 
+			'scan_history_id' in kwargs and
+			'activity_id' in kwargs and kwargs['activity_id'] == DYNAMIC_ID
 		)
-
-		# Create scan activity only if we have a scan_history_id and 
-		# activity_id in the task args
-		RECORD_ACTIVITY =  scan_history_id and has_activity_id and RECORD_TASK
 		if RECORD_ACTIVITY:
+			# If task is not in engine.tasks, skip it.
+			engine_id = kwargs['engine_id']
+			if engine_id:
+				engine = EngineType.objects.get(pk=engine_id)
+				if task_name not in engine.tasks:
+					logger.debug(f'{task_name} is not part of this engine tasks. Skipping.')
+					return
+
+			# Create ScanActivity for this task
+			scan_history_id = kwargs['scan_history_id']
+			subscan_id = kwargs.get('subscan_id')
+			task_descr = kwargs.pop('description', None) or ' '.join(task_name.split('_')).capitalize()
 			activity_id = create_scan_activity(
 				scan_history_id=scan_history_id,
 				task_id=self.request.id,
 				name=task_name,
 				message=task_descr,
 				subscan_id=subscan_id,
-				status=INITIATED_TASK)
-			# Set activity id as task arg
-			if len(args) > 1:
-				args = list(args)
-				args[1] = activity_id
-				args = tuple(args)
-			elif 'activity_id' in kwargs:
-				kwargs['activity_id'] = activity_id
+				status=RUNNING_TASK)
 
-		# Mark task as running
-		task_status = RUNNING_TASK
-		if RECORD_ACTIVITY:
+			# Set activity id in task kwargs so we can update ScanActivity from
+			# within the task
+			kwargs['activity_id'] = activity_id 
 			logger.warning(f'Task {self.name} status is RUNNING')
-			update_scan_activity(activity_id, task_status)
 
 		# Check for result in cache and return if hit
 		if CELERY_TASK_CACHE:
 			args_str = '_'.join([str(arg) for arg in args])
 			kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
 			record_key = f'{self.name}__{args_str}__{kwargs_str}'
-			task_result = cache.get(record_key)
-			if task_result and task_result != b'null':
+			result = cache.get(record_key)
+			if result and result != b'null':
 				if RECORD_ACTIVITY:
 					logger.warning(f'Task {self.name} status is SUCCESS (CACHED)')
 					update_scan_activity(activity_id, SUCCESS_TASK)
-				return json.loads(task_result)
+				return json.loads(result)
 
 		# Execute task
 		try:
-			task_result = self.run(*args, **kwargs)
-			task_status = SUCCESS_TASK
+			result = self.run(*args, **kwargs)
+			status = SUCCESS_TASK
 		except Exception as exc:
-			task_status = FAILED_TASK
-			task_error = repr(exc)
+			status = FAILED_TASK
+			error = repr(exc)
 			tb = fmt_traceback(exc)
-			task_traceback = tb
-			logger.exception(exc)
+			traceback = tb
 			if CELERY_RAISE_ON_ERROR:
 				raise exc
+			logger.exception(exc)
 		finally:
-			status = CELERY_TASK_STATUS_MAP[task_status]
+			status_str = CELERY_TASK_STATUS_MAP[status]
 			if RECORD_ACTIVITY:
-				logger.warning(f'Task {self.name} status is {status}')
-				update_scan_activity(
-					activity_id,
-					task_status,
-					error=task_error,
-					traceback=task_traceback)
-				# TODO: send status notifs
+				msg = f'Task {self.name} status is {status_str}'
+				logger.warning(msg)
+				# TODO: Add send status notif without a circular import on send_notification
 				# notification = Notification.objects.first()
 				# send_status = notification.send_scan_status_notif if notification else False
-				# logger.info(msg)
 				# if send_status:
-				#   send_notification(msg)
+				# 	send_notification.delay(msg)
+				update_scan_activity(
+					activity_id,
+					status,
+					error=error,
+					traceback=traceback)
 
 		# Set task result in cache
-		if CELERY_TASK_CACHE and task_status == SUCCESS_TASK and task_result:
-			cache.set(record_key, json.dumps(task_result))
+		if CELERY_TASK_CACHE and status == SUCCESS_TASK and result:
+			cache.set(record_key, json.dumps(result))
 			cache.expire(record_key, 600) # 10mn cache
 
-		return task_result
+		return result
 
 	def s(self, *args, **kwargs):
 		# TODO: set task status to INIT when creating a signature.
