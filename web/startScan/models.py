@@ -340,10 +340,13 @@ class SubScan(models.Model):
 
 	def get_task_name_str(self):
 		taskmap = {
+			'subdomain_discovery': 'Subdomain discovery',
 			'dir_file_fuzz': 'Directory and File fuzzing',
 			'port_scan': 'Port Scan',
 			'fetch_url': 'Endpoint Gathering',
 			'vulnerability_scan': 'Vulnerability Scan',
+			'screenshot': 'Screenshot',
+			'waf_detection': 'Waf Detection',
 			'osint': 'Open-Source Intelligence'
 		}
 		return taskmap.get(self.type, 'Unknown')

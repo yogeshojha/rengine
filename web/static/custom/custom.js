@@ -576,7 +576,7 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 	});
 }
 
-function get_interesting_endpoint(target_id, scan_history_id) {
+function get_interesting_endpoints(target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
 		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
@@ -688,7 +688,7 @@ function get_important_subdomains(target_id, scan_history_id) {
 			}
 		} else {
 			$('#important-count').html(`<span class="badge badge-soft-primary ms-1 me-1">0</span>`);
-			$('#important-subdomains-list').append(`<p>No subdomains markerd as important!</p>`);
+			$('#important-subdomains-list').append(`<p>No subdomains marked as important!</p>`);
 		}
 		$('.bs-tooltip').tooltip();
 	});
