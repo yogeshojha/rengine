@@ -1594,11 +1594,11 @@ class InterestingEndpointViewSet(viewsets.ModelViewSet):
 		if 'only_endpoints' in self.request.query_params:
 			self.serializer_class = InterestingEndPointSerializer
 		if scan_id:
-			return get_interesting_endpoint(scan_history=scan_id)
+			return get_interesting_endpoints(scan_history=scan_id)
 		elif target_id:
-			return get_interesting_endpoint(target=target_id)
+			return get_interesting_endpoints(target=target_id)
 		else:
-			return get_interesting_endpoint()
+			return get_interesting_endpoints()
 
 	def paginate_queryset(self, queryset, view=None):
 		if 'no_page' in self.request.query_params:
@@ -1942,12 +1942,12 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			self.serializer_class = EndpointOnlyURLsSerializer
 
 		# Filter status code 404 and 0
-		endpoints = (
-			endpoints
-			.exclude(http_status=0)
-			.exclude(http_status=None)
-			.exclude(http_status=404)
-		)
+		# endpoints = (
+		# 	endpoints
+		# 	.exclude(http_status=0)
+		# 	.exclude(http_status=None)
+		# 	.exclude(http_status=404)
+		# )
 
 		self.queryset = endpoints
 

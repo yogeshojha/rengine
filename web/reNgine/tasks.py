@@ -1,13 +1,14 @@
 import csv
+from distutils.log import info
 import json
 import os
 import random
 import subprocess
 import time
 from datetime import datetime
-from email import message
 from http.client import HTTPConnection, HTTPSConnection
 from time import sleep
+from urllib import response
 from urllib.parse import urlparse
 
 import asyncwhois
@@ -20,6 +21,7 @@ from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
+from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
@@ -28,6 +30,7 @@ from metafinder.extractor import extract_metadata_from_google_search
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import *
+from reNgine.settings import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification,
 							   Proxy)
 from startScan.models import *
@@ -176,11 +179,17 @@ def initiate_scan(
 	send_status = notification.send_scan_status_notif if notification else False
 	if send_status:
 		tasks_str = ', '.join(f'`{task}`' for task in engine.tasks)
-		msg = f"""**SCAN STARTED**
+		title = f'SCAN #{scan.id} STARTED'
+		url = f'https://{DOMAIN_NAME}/scan/detail/{scan.id}'
+		msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {domain.name}
 🡆 **Tasks:** {tasks_str}"""
-		send_notification.delay(msg, scan_history_id)
+		send_notification.delay(
+			msg,
+			scan_history_id,
+			title=title,
+			url=url)
 
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
@@ -220,11 +229,7 @@ def initiate_scan(
 	# crawling can start somewhere
 	logger.info('Probing initial endpoints ...')
 	base_url = f'{domain.name}/{url_path}' if url_path else domain.name
-	protocol = detect_protocol(base_url) # probe to see if 'http' or 'https'
-	if protocol:
-		http_url = sanitize_url(f'{protocol}://{base_url}')
-		logger.info(f'Protocol detected: {protocol}. Saving endpoint {http_url}')
-		save_endpoint(http_url, scan, domain, subdomain, results_dir, crawl=True)
+	save_endpoint(base_url, scan, domain, subdomain, results_dir, crawl=True)
 
 	# Initial URL discovery + checker on domain - will create at least 1 endpoint
 	ctx = {
@@ -323,12 +328,19 @@ def initiate_subscan(
 	send_status = notification.send_scan_status_notif if notification else False
 	if send_status:
 		tasks_str = f'`{subscan.type}`'
-		msg = f"""**SUBSCAN #{subscan.id} STARTED**
+		title = f'SUBSCAN #{subscan.id} STARTED'
+		url = f'https://{DOMAIN_NAME}/scan/history/subscan'
+		msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {domain.name}
 🡆 **Subdomain:** {subdomain.name}
 🡆 **Tasks:** {tasks_str}"""
-		send_notification.delay(msg, scan_history_id, subscan.id)
+		send_notification.delay(
+			msg,
+			scan_history_id,
+			subscan.id,
+			url=url,
+			title=title)
 
 	# Build header
 	ctx = {
@@ -427,14 +439,17 @@ def report(
 	td = scan_obj.stop_scan_date - scan_obj.start_scan_date
 	duration = humanize.naturaldelta(td)
 	traceback_dir = f'{results_dir}/tracebacks'
-	tasks_str = subscan.type if subscan else ', '.join(f'`{task}`' for task in engine.tasks)
-	title = f'SUBSCAN' if subscan else 'SCAN'
-	msg = f"""**{title} {status_str}**
+	tasks_str = f'`{subscan.type}`' if subscan else ', '.join(f'`{task}`' for task in engine.tasks)
+	title = f'SUBSCAN #{subscan.id} {status_str}' if subscan else f'SCAN #{scan.id} {status_str}'
+	msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {host}
 🡆 **Duration:** {duration}
 🡆 **Tasks:** {tasks_str}"""
+	if subscan:
+		msg = f'🡆 **Scan ID:{scan.id}**\n{msg}'
 
+	# Attach tracebacks files to notification for tasks that failed
 	tb_files = []
 	if failed_tasks_count != 0:
 		os.makedirs(f'{results_dir}/tracebacks', exist_ok=True)
@@ -446,19 +461,24 @@ def report(
 			if subscan:
 				tb_file = f'{traceback_dir}/{task.name}_{subscan_id}'
 			tb_file += '.txt'
-			tb_files.append(tb_file)
+			tb_title = tb_file.split('/')[-1]
+			tb_title = f'traceback_{tb_title}'
+			tb_files.append((tb_file, tb_title))
 			with open(tb_file, 'w') as f:
 				f.write(task.traceback)
-	logger.info(msg)
 
 	# Send notif
 	if send_status:
-		send_notification.delay(msg, scan_history_id, subscan_id)
-	if send_output_file and failed_tasks_count != 0: # send tracebacks
-		for path in tb_files:
-			send_file_to_discord.delay(
-				path,
-				title=path.split('/')[-1].replace('.txt', ''))
+		severity = 'error' if tb_files else 'info'
+		url = f'https://{DOMAIN_NAME}/scan/detail/{scan.id}'
+		send_notification.delay(
+			msg,
+			scan_history_id,
+			subscan_id,
+			title=title,
+			url=url,
+			files=tb_files,
+			severity=severity)
 
 
 def process_imported_subdomains(
@@ -521,6 +541,9 @@ def subdomain_discovery(
 	host = domain.name
 	if subdomain:
 		host = subdomain.name
+	if url_path:
+		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({url_path}).')
+		return
 
 	# Config
 	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY, {})
@@ -531,11 +554,6 @@ def subdomain_discovery(
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 	send_status, send_scan_output, send_subdomain_changes, send_interesting = False, False, False, False
 	notification = Notification.objects.first()
-
-	if url_path:
-		logger.warning(f'Filtering on specific path {url_path}. Ignoring subdomains scan.')
-		return
-
 	if notification:
 		send_status = notification.send_scan_status_notif
 		send_scan_output = notification.send_scan_output_file
@@ -629,7 +647,6 @@ def subdomain_discovery(
 		lines = f.readlines()
 
 	subdomain_count = 0
-	subdomain_urls = []
 	for line in lines:
 		subdomain_name = line.strip()
 		valid_domain = bool(validators.domain(subdomain_name))
@@ -649,43 +666,24 @@ def subdomain_discovery(
 		subdomain_count += 1
 
 		# Add endpoints
-		protocol = detect_protocol(subdomain_name)
-		if protocol:
-			http_url = sanitize_url(f'{protocol}://{subdomain_name}')
-			subdomain_urls.append(http_url)
-			save_endpoint(
-				http_url,
-				scan,
-				domain,
-				subdomain,
-				results_dir,
-				crawl=False,
-				subscan=subscan)
-			subdomain.http_url = http_url
-			subdomain.save()
-	
-	# Crawl discovered subdomain root URLs
-	http_crawl(
-		scan_history_id,
-		activity_id,
-		engine_id,
-		None,
-		yaml_configuration,
-		results_dir,
-		urls=subdomain_urls,
-		subscan_id=subscan_id)
+		save_endpoint(
+			subdomain_name,
+			scan,
+			domain,
+			subdomain,
+			results_dir,
+			crawl=True,
+			subscan=subscan)
 
 	# Send notifications
 	tools_str = ', '.join(f'`{tool}`' for tool in tools)
 	msg = f'`subdomain_discovery` has finished with {tools_str} for `{host}`: **{subdomain_count} subdomains discovered**'
 	logger.warning(msg)
 	if send_status:
-		send_notification.delay(msg, scan_history_id, subscan_id)
-	
-	if send_scan_output:
 		title = get_file_title(scan_history_id, subscan_id, filename)
-		send_file_to_discord.delay(output_path, title)
-
+		files = [(output_path, title)] if send_scan_output else []
+		send_notification.delay(msg, scan_history_id, subscan_id, files=files)
+	
 	if send_subdomain_changes:
 		added_subdomains = get_new_added_subdomain(scan.id, domain.id)
 		removed_subdomains = get_removed_subdomain(scan.id, domain.id)
@@ -711,64 +709,90 @@ def subdomain_discovery(
 			send_notification.delay(msg, scan_history_id, subscan_id)
 
 
-def detect_protocol(url):
-	"""Probe http / https URL using HEAD requests and detect which protocols 
-	respond for this URL.
+def probe_url(url, method='HEAD', first=False):
+	"""Probe URL to find out which protocols respond for this URL.
 
 	Args:
 		url (str): URL.
+		method (str): HTTP method to probe with. Default: HEAD.
+		first (bool): Return only first successful probe URL.
 
 	Returns:
-		str: Protocol detected.
+		list: List of URLs that responded.
+		str: First URL that responded.
 	"""
-	protocol = urlparse(url).scheme
-	if protocol:
-		return protocol
-	probe_http = is_alive(url, protocol='http')
-	probe_https = is_alive(url, protocol='https')
-	# probe_ftp = is_alive(url, protocol='ftp')
-	if probe_https:
-		return 'https'
-	elif probe_http:
-		return 'http'
-	return None
+	http_alive, http_url, http_resp = is_alive(url, scheme='http', method=method)
+	https_alive, https_url, https_resp = is_alive(url, scheme='https', method=method)
+	alive_ftp, ftp_url, _ = is_alive(url, scheme='ftp')
+	urls = []
+	if https_alive:
+		url = getattr(https_resp, 'url', https_url)
+		urls.append(url)
+	if http_alive:
+		url = getattr(http_resp, 'url', http_url)
+		urls.append(url)
+	if alive_ftp:
+		urls.append(ftp_url)
+	urls = [sanitize_url(url) for url in urls]
+	logger.info(f'Probed "{url}" and found {len(urls)} alive URLs: {urls}')
+	if first:
+		if urls:
+			return urls[0]
+		return None
+	return urls
 
 
-def is_alive(url, protocol='https'):
-	""""Check if URL is alive.
+def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_REQUEST_TIMEOUT):
+	""""Check if URL is alive on a certain scheme (protocol).
 
 	Args:
 		url (str): URL with or without protocol.
 		protocol (str): Protocol to check. Default: https
+		method (str): HTTP method to use.
 
 	Returns:
-		bool: True if alive otherwise False.
+		tuple: (is_alive [bool], url [str], response [HTTPResponse]).
 	"""
-	url = f'{protocol}://{url}'
+	url = urlparse(url)
+	if not url.scheme: # no scheme in input URL, adding input scheme to URL
+		url = urlparse(f'{scheme}://{url.geturl()}')
+	if url.scheme != scheme:
+		print(f'Mismatch between probed scheme ({scheme}) and actual scheme ({url.scheme})')
+		return False, None, None
+	final_url = url.geturl()
 	try:
-		url = urlparse(url)
-		if protocol == 'https':
-			connection = HTTPSConnection(url.netloc, timeout=3)
-			connection = HTTPConnection(url.netloc, timeout=3)
-			connection.request('HEAD', url.path)
-			if connection.getresponse():
-				return True
-			return False
-		elif protocol == 'http':
-			connection = HTTPConnection(url.netloc, timeout=3)
-			connection.request('HEAD', url.path)
-			if connection.getresponse():
-				return True
-			return False
-		elif protocol == 'ftp':
+		if scheme == 'https':
+			connection = HTTPSConnection(url.netloc, timeout=timeout)
+			connection.request(method, url.path)
+			resp = connection.getresponse()
+			if resp:
+				return True, final_url, resp
+			return False, None, None
+		elif scheme == 'http':
+			connection = HTTPConnection(url.netloc, timeout=timeout)
+			connection.request(method, url.path)
+			resp = connection.getresponse()
+			if resp:
+				return True, final_url, resp
+			return False, None, None
+		elif scheme == 'ftp':
 			from ftplib import FTP
-			FTP(url.netloc)
-			return True
+			ftp = FTP(url.netloc)
+			resp1 = ftp.connect(timeout=timeout)
+			resp2 = ftp.voidcmd('NOOP')
+			status, msg = tuple(resp2.split(' NOOP command '))
+			# TODO: make this look like an HTTPResponse object
+			resp = DottedDict({
+				'status': int(status),
+				'noop_info': resp2,
+				'connect_info': resp1
+			})
+			return True, final_url, resp
 		else:
-			logger.error(f'Protocol {protocol} is not supported.')
-			return False
-	except:
-		return False
+			return False, None, None
+	except Exception as e:
+		print(str(e))
+		return False, None, None
 
 
 def get_new_added_subdomain(scan_id, domain_id):
@@ -857,28 +881,28 @@ def http_crawl(
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
-		urls (list, optional): A set of URLs to check. Overrides default behavior which 
-			queries all endpoints related with this scan.
+		urls (list, optional): A set of URLs to check. Overrides default 
+			behavior which queries all endpoints related with this scan.
 		url_path (str, optional): URL path to filter on.
 	"""
 	timestamp = time.time()
 	cmd = '/go/bin/httpx'
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
 	threads = yaml_configuration.get(THREADS)
-	httpx_results_file = f'{results_dir}/httpx_{timestamp}.json'
+	results_dir = f'{results_dir}/httpx'
+	os.makedirs(results_dir, exist_ok=True)
+	output_file = f'{results_dir}/httpx_output_probe_{timestamp}.json'
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
 
 	# Write httpx input file
-	input_file = f'{results_dir}/httpx_probe_{timestamp}.txt'
+	input_file = f'{results_dir}/httpx_input_probe_{timestamp}.txt'
 	if urls: # direct passing URLs to check
+		if url_path:
+			urls = [u for u in urls if u.contains(url_path)]
 		with open(input_file, 'w') as f:
-			for url in urls:
-				if not validators.url(url):
-					logger.warning(f'Invalid URL {url}. Skipping.')
-					continue
-				f.write(url + '\n')
+			f.write('\n'.join(urls))
 	else:
 		get_http_urls(
 			target_domain=domain,
@@ -897,18 +921,21 @@ def http_crawl(
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json -l {input_file}'
 	results = []
-	for line in stream_command(cmd, write_filepath=f'{results_dir}/commands.txt'):
-		if not isinstance(line, dict):
+	endpoint_ids = []
+	for line in stream_command(cmd, echo=False, write_filepath=f'{results_dir}/commands.txt'):
+		if not line or not isinstance(line, dict):
 			continue
 		try:
-			results.append(line)
 			content_length = line.get('content-length', 0)
 			host = line.get('host', '')
-			http_url = sanitize_url(line['url'])
 			http_status = line.get('status-code', 0)
+			input_url = line.get('input')
+			http_url, is_redirect = extract_httpx_url(line)
 			page_title = line.get('title', '')
 			webserver = line.get('webserver')
 			response_time = line.get('response-time')
+			cdn = line.get('cdn', False)
+			logger.info(f'{http_url} [{http_status}] [{content_length}] [{webserver}] [{response_time}] [{page_title}]')
 			if response_time:
 				response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
 				if line['response-time'][-2:] == 'ms':
@@ -918,9 +945,14 @@ def http_crawl(
 			subdomain_name = get_subdomain_from_url(http_url)
 			subdomain, _ = save_subdomain(subdomain_name, scan, domain)
 
-			# Add HTTP URL + response info to subdomain if root URL
+			# Add HTTP URL + response info to subdomain if it is the subdomain's
+			# root URL '/' or ''.
 			url = urlparse(http_url)
-			if url.netloc == subdomain_name and url.path in ['', '/']:
+			url_input = urlparse(input_url)
+			url_input_path = url_input.path
+			if not url_input.scheme:
+				url_input_path = '/'.join(url_input_path.split('/')[1:])
+			if url.netloc == subdomain_name and url_input_path in ['', '/']:
 				subdomain.http_url = http_url
 				subdomain.http_status = http_status
 				subdomain.content_length = content_length
@@ -946,8 +978,15 @@ def http_crawl(
 			endpoint.webserver = webserver
 			endpoint.response_time = response_time
 			endpoint.save()
-			if endpoint.is_alive:
+			if created and endpoint.is_alive:
 				logger.warning(f'Found alive endpoint {endpoint.http_url} [{http_status}]')
+
+			# Add endpoint to results
+			logger.info(f'Adding {http_url} to results')
+			line['final-url'] = http_url
+			line['endpoint_id'] = endpoint.id
+			line['is_redirect'] = is_redirect
+			results.append(line)
 
 			# Add technology objects to DB
 			technologies = line.get('technologies', [])
@@ -961,58 +1000,105 @@ def http_crawl(
 			# Add IP objects for 'a' records to DB
 			a_records = line.get('a', [])
 			for ip_address in a_records:
-				ip, created = IpAddress.objects.get_or_create(address=ip_address)
-
-				# Add CountryISO to DB
-				if created:
-					ip.is_cdn = line.get('cdn', False)
-					ip.save()
-					geo_object = geo_localize(ip_address)
-					if geo_object:
-						ip.geo_iso = geo_object
-						ip.save()
-					subdomain.ip_addresses.add(ip)
-					subdomain.save()
+				save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
 
 			# Add IP object for host in DB
 			if host:
-				ip, created = IpAddress.objects.get_or_create(address=host)
-
-				# Add CountryISO to DB
-				if created:
-					ip.is_cdn = line.get('cdn', False)
-					ip.save()
-					geo_object = geo_localize(host)
-					if geo_object:
-						ip.geo_iso = geo_object
-						ip.save()
-					subdomain.ip_addresses.add(ip)
-					subdomain.save()
-					if subscan:
-						ip.ips_subscan_ids.add(subscan)
+				save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
 
 			# Save subdomain and endpoint
 			subdomain.save()
 			endpoint.save()
+			endpoint_ids.append(endpoint.id)
 
 		except Exception as exception:
 			logger.error(f'JSON line triggered an exception: {line}')
 			logger.exception(exception)
 			continue
 
+	# Remove 'fake' alive endpoints that are just redirects to the same page
+	remove_duplicate_endpoints(
+		scan_history_id,
+		domain.id,
+		subdomain_id,
+		filter_ids=endpoint_ids)
+
 	# Write results to JSON file
-	with open(httpx_results_file, 'w') as f:
+	with open(output_file, 'w') as f:
 		json.dump(results, f, indent=4)
 
 	# Remove input file
-	run_command(f'rm {input_file} {httpx_results_file}', shell=True)
+	# run_command(f'rm {input_file} {output_file}', shell=True)
+
+	return results
 
 
-def geo_localize(host):
+@app.task
+def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, filter_ids=None):
+	"""Remove duplicate endpoints.
+
+	Check for implicit redirections by comparing endpoints:
+	- [x] `content_length` similarities indicating redirections
+	- [x] `page_title` (check for same page title)
+	- [ ] Sign-in / login page (check for endpoints with the same words)
+	"""
+	endpoints = (
+		EndPoint.objects
+		.filter(scan_history__id=scan_history_id)
+		.filter(target_domain__id=domain_id)
+	)
+	if subdomain_id:
+		endpoints = endpoints.filter(subdomain__id=subdomain_id)
+
+	if filter_ids:
+		endpoints = endpoints.filter(id__in=filter_ids)
+
+	# Content-Length
+	cl_query = (
+		endpoints
+		.values_list('content_length')
+		.annotate(mc=Count('content_length'))
+		.order_by('-mc')
+	)
+	for (content_length, count) in cl_query:
+		if count > DELETE_DUPLICATES_THRESHOLD:
+			eps_delete = endpoints.filter(content_length=content_length).order_by('discovered_date').all()[1:]
+			msg = f'Deleting {len(eps_delete)} endpoints [reason: same content_length]'
+			for ep in eps_delete:
+				url = urlparse(ep.http_url)
+				if url.path in ['', '/', '/login']: # try do not delete the original page that other pages redirect to
+					continue
+				msg += f'\n\t {ep.http_url} [{ep.http_status}] [{ep.content_length}]'
+				ep.delete()
+			logger.warning(msg)
+
+	# Page titles
+	pt_query = (
+		endpoints
+		.values_list('page_title')
+		.annotate(mc=Count('page_title'))
+		.order_by('-mc')
+	)
+	for (page_title, count) in pt_query:
+		if count > DELETE_DUPLICATES_THRESHOLD:
+			eps_delete = endpoints.filter(page_title=page_title).order_by('discovered_date').all()[:1]
+			msg = f'Deleting {len(eps_delete)} endpoints [reason: same page_title]'
+			for ep in eps_delete:
+				url = urlparse(ep.http_url)
+				if url.path in ['', '/', '/login']: # try do not delete the original page that other pages redirect to
+					continue
+				msg += f'\n\t {ep.http_url} [{ep.http_status}] [{ep.content_length}]'
+				ep.delete()
+			logger.warning(msg)
+
+
+@app.task
+def geo_localize(host, ip_id=None):
 	"""Uses geoiplookup to find location associated with host.
 
 	Args:
 		host (str): Hostname.
+		ip_id (int): IpAddress object id.
 
 	Returns:
 		startScan.models.CountryISO: CountryISO object from DB or None.
@@ -1026,6 +1112,10 @@ def geo_localize(host):
 			iso=country_iso,
 			name=country_name
 		)
+		if ip_id:
+			ip = IpAddress.objects.get(pk=ip_id)
+			ip.geo_iso = geo_object
+			ip.save()
 		return geo_object
 	logger.info(f'Geo IP lookup failed for host "{host}"')
 	return None
@@ -1231,24 +1321,29 @@ def port_scan(
 		).first()
 
 		# Add IP DB
-		ip, created = IpAddress.objects.get_or_create(address=ip_address)
-		if created:
-			logger.warning(f'Found new ip address {ip_address}')
-			if subscan:
-				ip.ip_subscan_ids.add(subscan)
+		save_ip_address(ip_address, subdomain, subscan=subscan)
 
-		# Add IP to Subdomain in DB
-		subdomain.ip_addresses.add(ip)
-		subdomain.save()
+		# Add endpoint to DB
+		http_url = f'{host}:{port_number}'
+		endpoint, _ = save_endpoint(http_url, scan, domain, subdomain, results_dir, crawl=True)
 
 		# Add Port in DB
-		port, created = Port.objects.get_or_create(number=port_number)
+		port_details = whatportis.get_ports(str(port_number))
+		service_name = 'unknown'
+		description = ''
+		if len(port_details) > 0:
+			service_name = port_details[0].name
+			description = port_details[0].description
+		if endpoint and endpoint.is_alive:
+			url = urlparse(http_url)
+			service_name = url.scheme
+			description = endpoint.page_title
+		port, created = Port.objects.get_or_create(
+			number=port_number,
+			service_name=service_name,
+			description=description)
 		if created:
 			port.is_uncommon = port_number in UNCOMMON_WEB_PORTS
-			port_details = whatportis.get_ports(str(port_number))
-			if len(port_details) > 0:
-				port.service_name = port_details[0].name
-				port.description = port_details[0].description
 			port.save()
 		ip.ports.add(port)
 		ip.save()
@@ -1256,26 +1351,6 @@ def port_scan(
 		if subscan:
 			ip.ip_subscan_ids.add(subscan)
 			ip.save()
-
-		# Add endpoint to DB
-		base_url = f'{host}:{port_number}'
-		protocol = detect_protocol(base_url)
-		if protocol:
-			http_url = sanitize_url(f'{protocol}://{base_url}')
-			urls.append(http_url)
-			save_endpoint(http_url, scan, domain, subdomain, results_dir, crawl=False)
-
-	# Crawl discovered URLs
-	http_crawl(
-		scan_history_id,
-		activity_id,
-		engine_id,
-		subdomain_id,
-		yaml_configuration,
-		results_dir,
-		description,
-		urls=urls,
-		subscan_id=subscan_id)
 
 	# Send end notif and output file
 	msg = f'`port_scan` has finished for `{domain.name}`: **{len(ports)} ports discovered**'
@@ -1491,19 +1566,17 @@ def dir_file_fuzz(
 		# HTTP URL
 		http_url = subdomain.http_url or subdomain.name
 		http_url = http_url.rstrip('/')
-		logger.info(f'Running file fuzz on {http_url}')
-		if not (http_url.startswith('http') or http_url.startswith('https')):
-			protocol = detect_protocol(http_url)
-			http_url = f'{protocol}://{http_url}/{url_path}'
+		if url_path:
+			http_url += f'/{url_path}'
+		http_url = probe_url(http_url, first=True)
 		if not http_url.endswith('/FUZZ'):
 			http_url += '/FUZZ'
-		http_url = sanitize_url(http_url)
 		logger.info(f'Running ffuf on {http_url} ...')
 
 		# Proxy
 		proxy = get_random_proxy()
 		if proxy:
-			final_cmd += f' -x "{proxy}"'
+			final_cmd += f' -x {proxy}'
 
 		final_cmd += f' -u {http_url} -o {output_path} -of json'
 
@@ -1582,7 +1655,7 @@ def dir_file_fuzz(
 		results_dir,
 		urls=urls)
 
-	results_path = f'{results_dir}/ffuf_results.json'
+	results_path = f'{results_dir}/{filename}'
 	with open(results_path, 'w') as f:
 		json.dump(all_results, f, indent=4)
 
@@ -1592,7 +1665,7 @@ def dir_file_fuzz(
 	if send_status:
 		send_notification.delay(msg, scan_history_id, subscan_id)
 	if send_output_file:
-		title = get_file_title(scan_history_id, '_ffuf_results.json', subscan_id)
+		title = get_file_title(scan_history_id, subscan_id, filename)
 		send_file_to_discord.delay(results_path, title)
 
 
@@ -1969,14 +2042,10 @@ def vulnerability_scan(
 		description = line['info'].get('description', '')
 
 		# Get or create EndPoint object
-		protocol = urlparse(http_url).scheme
-		if not protocol: # no protocol initially, try to find one and prepend it to URL
-			protocol = detect_protocol(http_url)
-			if protocol: # if protocol detected, add it to URL
-				http_url = f'{protocol}://{http_url}'
-		if protocol:
+		http_url = probe_url(http_url, first=True)
+		if http_url:
 			endpoint, created = save_endpoint(http_url, scan, domain, subdomain, results_dir, crawl=False)
-			
+
 		# Validate URL
 		if not validators.url(http_url):
 			logger.info(f'"{http_url}" is not a valid URL. Skipping')
@@ -2387,16 +2456,41 @@ def send_slack_message(message):
 
 
 @app.task
-def send_discord_message(message):
+def send_discord_message(message, title=None, severity='info', url=None, files=None):
 	notification = Notification.objects.first()
+	colors = {
+		'info': '0xfbbc00', # yellow
+		'warning': '0xf75b00', # orange
+		'error': '0xf70000'
+	}
 	if notification and notification.send_to_discord \
 	and notification.discord_hook_url:
-		webhook = DiscordWebhook(
-			url=notification.discord_hook_url,
-			content=message,
-			rate_limit_retry=True)
-		thread = Thread(target=webhook.execute)
-		thread.start()
+		if title: # embed
+			webhook = DiscordWebhook(
+				url=notification.discord_hook_url,
+				rate_limit_retry=True
+			)
+			embed = {
+				'type': 'rich',
+				'title': title,
+				'description': message,
+				'url': url,
+				# 'color': colors[severity]
+			}
+			webhook.add_embed(embed)
+			logger.info(webhook.embeds)
+		else:
+			webhook = DiscordWebhook(
+				url=notification.discord_hook_url,
+				content=message,
+				rate_limit_retry=True)
+		if files:
+			for (path, name) in files:
+				with open(path, 'r') as f:
+					content = f.read()
+				logger.warning(f"Adding file to embed '{path}'")
+				webhook.add_file(content, name)
+		webhook.execute()
 
 
 @app.task
@@ -2412,21 +2506,28 @@ def send_file_to_discord(file_path, title=None):
 		with open(file_path, "rb") as f:
 			head, tail = os.path.split(file_path)
 			webhook.add_file(file=f.read(), filename=tail)
-		thread = Thread(target=webhook.execute)
-		thread.start()
+		webhook.execute()
 
 
 @app.task
-def send_notification(message, scan_history_id=None, subscan_id=None):
-	if scan_history_id is not None:
-		if subscan_id:
-			message = f'`#{scan_history_id}_{subscan_id}`: {message}'
-		else:
-			message = f'`#{scan_history_id}`: {message}'
+def send_notification(
+		message,
+		scan_history_id=None,
+		subscan_id=None,
+		title=None,
+		url=None,
+		files=[],
+		severity='info'):
+	if not title:
+		message = format_notification_message(message, scan_history_id, subscan_id)
+	send_discord_message.delay(message, title=title, url=url, files=files, severity=severity)
 	send_slack_message.delay(message)
-	send_discord_message.delay(message)
 	send_telegram_message.delay(message)
 
+
+#-------------#
+# OSInt utils #
+#-------------#
 
 def osint_discovery(scan_history, domain, yaml_configuration, results_dir, subscan=None):
 	osint_config = yaml_configuration.get(OSINT, {})
@@ -2813,58 +2914,32 @@ def get_and_save_employees(scan_history, domain, results_dir, subscan=None):
 	twitter_people = data.get('twitter_people', [])
 
 	for email_address in emails:
-		if not validators.email(email_address):
-			logger.info(f'Email {email_address} is invalid. Skipping.')
-			continue
-		email, created = Email.objects.get_or_create(address=email_address)
-		if created:
-			logger.warning(f'Found new email address {email_address}')
-		scan_history.emails.add(email)
-		scan_history.save()
+		save_email(email_address, scan_history=scan_history)
 
 	for people in linkedin_people:
-		employee, created = Employee.objects.get_or_create(
-			name=people,
-			designation='linkedin')
-		if created:
-			logger.warning(f'Found new employee {people}')
-		scan_history.employees.add(employee)
-		scan_history.save()
+		save_employee(people, designation='linkedin', scan_history=scan_history)
 
 	for people in twitter_people:
-		employee, created = Employee.objects.get_or_create(
-			name=people,
-			designation='twitter')
-		if created:
-			logger.warning(f'Found new employee {people}')
-		scan_history.employees.add(employee)
-		scan_history.save()
+		save_employee(people, designation='linkedin', scan_history=scan_history)
 
 	for host in hosts:
-		host, _ = tuple(host.split(':'))
-		subdomain_name = get_subdomain_from_url(host)
+		split = tuple(host.split(':'))
+		http_url = split[0]
+		subdomain_name = get_subdomain_from_url(http_url)
 		subdomain, _ = save_subdomain(subdomain_name, scan_history, domain)
-		protocol = detect_protocol(host)
-		if protocol:
-			http_url = f'{protocol}://{host}'
-			save_endpoint(
-				http_url,
-				scan_history,
-				domain,
-				subdomain,
-				results_dir,
-				crawl=True,
-				subscan=subscan)
+		save_endpoint(
+			http_url,
+			scan_history,
+			domain,
+			subdomain,
+			results_dir,
+			crawl=True,
+			subscan=subscan)
 
 	for ip_address in ips:
-		if not (validators.ipv4(ip_address) or validators.ipv6(ip_address)):
-			logger.info(f'IP {ip_address} is not a valid IP. Skipping.')
-			continue
-		ip, created = IpAddress.objects.get_or_create(address=ip_address)
-		if created:
-			logger.warning(f'Found new ip {ip.address}')
-			if subscan:
-				ip.ip_subscan_ids.add(subscan)
+		save_ip_address(
+			ip_address,
+			subscan=subscan)
 	return data
 
 
@@ -2900,8 +2975,7 @@ def get_and_save_emails(scan_history, results_dir):
 	leak_target_path = f'{results_dir}/emails.txt'
 	with open(leak_target_path, 'w') as leak_target_file:
 		for email_address in emails:
-			email, _ = Email.objects.get_or_create(address=email_address)
-			scan_history.emails.add(email)
+			save_email(email_address, scan_history)
 			leak_target_file.write(f'{email_address}\n')
 
 		# Fill leak_target_file with possible email address
@@ -2932,7 +3006,7 @@ def get_and_save_leaked_credentials(scan_history, results_dir):
 	run_command(cmd, write_filepath=f'{results_dir}/commands.txt')
 	with open(leak_output_file) as f:
 		creds = [
-			{k: int(v) for k, v in row.items()}
+			{k: v for k, v in row.items()}
 			for row in csv.DictReader(f, skipinitialspace=True)
 		]
 		logger.info(f'h8mail output: {creds}')
@@ -3004,104 +3078,47 @@ def get_and_save_meta_info(meta_dict):
 	return results
 
 
-def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
-	"""Get Subdomain objects from DB.
+#-----------------#
+# Utils functions #
+#-----------------#
+
+def extract_httpx_url(line):
+	"""Extract final URL from httpx results. Always follow redirects to find
+	the last URL.
 
 	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
-		write_filepath (str): Write info back to a file.
-		subdomain_id (int): Subdomain id.
-		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
-		path (str): Add URL path to subdomain.
+		line (dict): URL data output by httpx.
 
 	Returns:
-		list: List of subdomains matching query.
+		tuple: (final_url, redirect_bool) tuple.
 	"""
-	base_query = Subdomain.objects.filter(target_domain=target_domain, scan_history=scan_history)
-	if subdomain_id:
-		base_query = base_query.filter(pk=subdomain_id)
-	elif exclude_subdomains:
-		base_query = base_query.filter(name=target_domain.name)
-	subdomain_query = base_query.distinct('name').order_by('name')
-	subdomains = [
-		subdomain.name
-		for subdomain in subdomain_query.all()
-		if subdomain.name
-	]
-	if not subdomains:
-		logger.warning('No subdomains were found in query !')
+	status_code = line.get('status-code', 0)
+	final_url = line.get('final-url')
+	location = line.get('location')
+	chain_status_codes = line.get('chain-status-codes', [])
 
-	if url_path:
-		subdomains = [f'{subdomain}/{url_path}' for subdomain in subdomains]
+	# Final URL is already looking nice, if it exists return it
+	if final_url:
+		return final_url, False
+	http_url = line['url'] # fallback to url field
 
-	if write_filepath:
-		with open(write_filepath, 'w') as f:
-			f.write('\n'.join(subdomains))
+	# Handle redirects manually
+	REDIRECT_STATUS_CODES = [301, 302]
+	is_redirect = (
+		status_code in REDIRECT_STATUS_CODES 
+		or 
+		any(x in REDIRECT_STATUS_CODES for x in chain_status_codes)
+	)
+	if is_redirect and location:
+		if location.startswith('/'): # concatenate url netloc and path
+			http_url = f'{http_url}{location}'
+		else:
+			http_url = location
+	
+	# Sanitize URL
+	http_url = sanitize_url(http_url)
 
-	return subdomains
-
-
-def get_http_urls(
-		target_domain,
-		subdomain_id=None,
-		scan_history=None,
-		is_alive=False,
-		url_path='',
-		ignore_files=False,
-		exclude_subdomains=False,
-		write_filepath=None):
-	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a 
-	specific path.
-
-	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
-		is_alive (bool): If True, select only alive subdomains.
-		path (str): URL path.
-		write_filepath (str): Write info back to a file.
-
-	Returns:
-		list: List of subdomains matching query.
-	"""
-	base_query = EndPoint.objects.filter(target_domain=target_domain)
-	if scan_history:
-		base_query = base_query.filter(scan_history=scan_history)
-	if subdomain_id:
-		subdomain = Subdomain.objects.get(pk=subdomain_id)
-		base_query = base_query.filter(http_url__contains=subdomain.name)
-	elif exclude_subdomains:
-		base_query = base_query.filter(name=target_domain.name)
-
-	# If a path is passed, select only endpoints that contains it
-	if url_path:
-		url = f'{target_domain.name}/{url_path}'
-		base_query = base_query.filter(http_url__contains=url)
-
-	# Select distinct endpoints and order
-	endpoints = base_query.distinct('http_url').order_by('http_url').all()
-
-	# If is_alive is True, select only endpoints that are alive
-	if is_alive:
-		endpoints = [e for e in endpoints if e.is_alive]
-
-	# Grab only http_url from endpoint objects
-	endpoints = [e.http_url for e in endpoints]
-	if ignore_files: # ignore all files
-		# TODO: not hardcode this
-		extensions_path = '/usr/src/app/fixtures/extensions.txt'
-		with open(extensions_path, 'r') as f:
-			extensions = tuple(f.readlines())
-		endpoints = [e for e in endpoints if not urlparse(e).path.endswith(extensions)]
-
-	if not endpoints:
-		logger.warning(f'No endpoints were found in query for {target_domain.name}!')
-
-	if write_filepath:
-		with open(write_filepath, 'w') as f:
-			f.write('\n'.join(endpoints))
-
-	return endpoints
+	return http_url, is_redirect
 
 
 def create_scan_activity(scan_history_id, message, status):
@@ -3114,20 +3131,52 @@ def create_scan_activity(scan_history_id, message, status):
 	return scan_activity.id
 
 
-def sanitize_url(http_url):
-	url = urlparse(http_url)
-	if url.netloc.endswith(':80'):
-		url = url._replace(netloc=url.netloc.replace(':80', ''))
-	elif url.netloc.endswith(':443'):
-		url = url._replace(netloc=url.netloc.replace(':443', ''))
-	return url.geturl().rstrip('/')
+#--------------#
+# DB functions #
+#--------------#
+def save_endpoint(
+		http_url,
+		scan_history,
+		domain,
+		subdomain,
+		results_dir=None,
+		crawl=False,
+		subscan=None):
+	"""Get or create EndPoint object. If crawl is True, also crawl the endpoint
+	HTTP URL with httpx.
 
+	Args:
+		http_url (str): Input HTTP URL.
+		scan_history (startScan.models.ScanHistory): ScanHistory object.
+		domain (startScan.models.Domain): Domain object.
+		subdomain (starScan.models.Subdomain): Subdomain object.
+		results_dir (str, optional): Results directory.
+		crawl (bool, optional): Run httpx on endpoint if True. Default: False.
+		subscan (startScan.models.SubScan, optional): SubScan object.
 
-def save_endpoint(http_url, scan_history, domain, subdomain, results_dir=None, crawl=True, subscan=None):
-	http_url = sanitize_url(http_url)
+	Returns:
+		tuple: (startScan.models.EndPoint, created) where `created` is a boolean 
+			indicating if the object is new or already existed.
+	"""
+	if crawl:
+		results = http_crawl(
+			scan_history.id,
+			None,
+			domain.id,
+			subdomain.id,
+			urls=[http_url],
+			results_dir=results_dir)
+		logger.info(results)
+		if results:
+			endpoint_id = results[0]['endpoint_id']
+			endpoint = EndPoint.objects.get(pk=endpoint_id)
+			return endpoint, False
+
 	if not validators.url(http_url):
 		logger.error(f'{http_url} is not a valid URL. Skipping.')
 		return None, False
+
+	http_url = sanitize_url(http_url)
 	endpoint, created = EndPoint.objects.get_or_create(
 		scan_history=scan_history,
 		target_domain=domain,
@@ -3139,18 +3188,21 @@ def save_endpoint(http_url, scan_history, domain, subdomain, results_dir=None, c
 		if subscan:
 			endpoint.endpoint_subscan_ids.add(subscan)
 			endpoint.save()
-		if crawl:
-			http_crawl(
-				scan_history.id,
-				None,
-				domain.id,
-				subdomain.id,
-				urls=[http_url],
-				results_dir=results_dir)
 	return endpoint, created
 
 
 def save_subdomain(subdomain_name, scan_history, domain):
+	"""Get or create Subdomain object.
+
+	Args:
+		subdomain_name (str): Subdomain name.
+		scan_history (startScan.models.ScanHistory): ScanHistory object.
+		domain (startScan.models.Domain): Domain object.
+
+	Returns:
+		tuple: (startScan.models.Subdomain, created) where `created` is a 
+			boolean indicating if the object has been created in DB.
+	"""
 	if not (validators.domain(subdomain_name) or validators.ipv4(subdomain_name) or validators.ipv6(subdomain_name)):
 		logger.error(f'{subdomain_name} is not a valid domain. Skipping.')
 		return None, False
@@ -3163,3 +3215,64 @@ def save_subdomain(subdomain_name, scan_history, domain):
 		subdomain.discovered_date = timezone.now()
 		subdomain.save()
 	return subdomain, created
+
+
+
+def save_email(email_address, scan_history=None):
+	if not validators.email(email_address):
+		logger.info(f'Email {email_address} is invalid. Skipping.')
+		return None, False
+	email, created = Email.objects.get_or_create(address=email_address)
+	if created:
+		logger.warning(f'Found new email address {email_address}')
+	
+	# Add email to ScanHistory
+	if scan_history:
+		scan_history.emails.add(email)
+		scan_history.save()
+
+	return email, created
+
+
+def save_employee(name, designation, scan_history=None):
+	employee, created = Employee.objects.get_or_create(
+		name=name,
+		designation=designation)
+	if created:
+		logger.warning(f'Found new employee {name}')
+	
+	# Add employee to ScanHistory
+	if scan_history:
+		scan_history.employees.add(employee)
+		scan_history.save()
+
+	return employee, created
+
+
+def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
+	if not (validators.ipv4(ip_address) or validators.ipv6(ip_address)):
+		logger.info(f'IP {ip_address} is not a valid IP. Skipping.')
+		return None, False
+	ip, created = IpAddress.objects.get_or_create(address=ip_address)
+	if created:
+		logger.warning(f'Found new IP {ip_address}')
+
+	# Set extra attributes
+	for key, value in kwargs.items():
+		setattr(ip, key, value)
+	ip.save()
+
+	# Add IP to subdomain
+	if subdomain:
+			subdomain.ip_addresses.add(ip)
+			subdomain.save()
+
+	# Add subscan to IP
+	if subscan:
+			ip.ips_subscan_ids.add(subscan)
+
+	# Geo-localize IP asynchronously
+	if not ip.geo_iso:
+		geo_localize.delay(ip_address, ip.id)
+
+	return ip, created

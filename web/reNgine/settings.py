@@ -13,7 +13,7 @@ mimetypes.add_type("text/css", ".css", True)
 RENGINE_HOME = os.environ.get('RENGINE_HOME', '/usr/src/app')
 SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
 DEBUG = bool(int(os.environ.get('DEBUG', '1')))
@@ -166,6 +166,12 @@ LOGOUT_REDIRECT_URL = 'login'
 # Tool Location
 TOOL_LOCATION = '/usr/src/app/tools/'
 
+# Requests defaults
+DEFAULT_REQUEST_TIMEOUT = 3
+
+# Number of endpoints that have the same content_length
+DELETE_DUPLICATES_THRESHOLD = 10
+
 '''
 CELERY settings
 '''
@@ -182,18 +188,20 @@ CELERY_TASK_CACHE_IGNORE_KWARGS = [
     'results_dir'
 ]
 CELERY_TASK_SKIP_RECORD_ACTIVITY = [
+    'reNgine.tasks.geo_localize',
     'reNgine.tasks.initiate_scan',
     'reNgine.tasks.initiate_subscan',
-    'reNgine.tasks.query_whois',
-    'reNgine.tasks.run_command',
-    'reNgine.tasks.stream_command',
-    'reNgine.tasks.report',
     'reNgine.tasks.http_crawl',
+    'reNgine.tasks.query_whois',
+    'reNgine.tasks.remove_duplicate_endpoints',
+    'reNgine.tasks.report',
+    'reNgine.tasks.run_command',
     'reNgine.tasks.send_notification',
     'reNgine.tasks.send_file_to_discord',
     'reNgine.tasks.send_discord_message',
     'reNgine.tasks.send_slack_message',
-    'reNgine.tasks.send_telegram_message'
+    'reNgine.tasks.send_telegram_message',
+    'reNgine.tasks.stream_command',
 ]
 CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
 
