@@ -548,7 +548,8 @@ def subdomain_discovery(
 	# Config
 	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY, {})
 	output_path = f'{results_dir}/{filename}'
-	threads = config.get(THREADS, 20)
+	threads = config.get(THREADS)
+	timeout = config.get(TIMEOUT, 3)
 	tools = config.get(USES_TOOLS, [])
 	default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
@@ -576,6 +577,7 @@ def subdomain_discovery(
 		try:
 			cmd = None
 			logger.info(f'Scanning subdomains with {tool}')
+			proxy = get_random_proxy()
 			if tool in default_subdomain_tools:
 				if tool == 'amass-passive':
 					cmd = f'amass enum -passive -d {host} -o {results_dir}/subdomains_amass.txt'
@@ -596,9 +598,12 @@ def subdomain_discovery(
 					cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {results_dir}/subdomains_sublister.txt'
 
 				elif tool == 'subfinder':
-					cmd = f'subfinder -d {host} -t {threads} -o {results_dir}/subdomains_subfinder.txt'
+					cmd = f'subfinder -d {host} -o {results_dir}/subdomains_subfinder.txt'
 					use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
 					cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
+					cmd += f' -proxy {proxy}' if proxy else ''
+					cmd += f' -timeout {timeout}' if timeout else ''
+					cmd += f' -t {threads}' if threads else ''
 
 				elif tool == 'oneforall':
 					cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
@@ -630,8 +635,8 @@ def subdomain_discovery(
 				f'Subdomain discovery tool "{tool}" raised an exception')
 			logger.exception(e)
 
-	# Gather all the tools' results in one single file. wrote subdomains into 
-	# separate files, cleanup tool results and sort all subdomains.
+	# Gather all the tools' results in one single file. Write subdomains into 
+	# separate files, and sort all subdomains.
 	run_command(
 		f'cat {results_dir}/subdomains_*.txt > {output_path}',
 		shell=True,
@@ -640,12 +645,12 @@ def subdomain_discovery(
 		f'sort -u {output_path} -o {output_path}',
 		shell=True,
 		write_filepath=f'{results_dir}/commands.txt')
-	# run_command(f'rm -f {results_dir}/from*')
 
-	# Parse the subdomain list file and store in db.
 	with open(output_path) as f:
 		lines = f.readlines()
 
+	# Parse the output_file file and store Subdomain and EndPoint objects found
+	# in db.
 	subdomain_count = 0
 	for line in lines:
 		subdomain_name = line.strip()
@@ -657,6 +662,7 @@ def subdomain_discovery(
 			continue
 		if valid_url:
 			subdomain_name = urlparse(subdomain_name).netloc
+
 		if subdomain_name in out_of_scope_subdomains:
 			logger.error(f'Subdomain {subdomain_name} is out of scope. Skipping.')
 			continue
@@ -871,6 +877,7 @@ def http_crawl(
 		description=None,
 		urls=[],
 		url_path='',
+		method=None,
 		subscan_id=None):
 	"""Use httpx to query HTTP URLs for important info like page titles, http 
 	status, etc...
@@ -884,6 +891,9 @@ def http_crawl(
 		urls (list, optional): A set of URLs to check. Overrides default 
 			behavior which queries all endpoints related with this scan.
 		url_path (str, optional): URL path to filter on.
+
+	Returns:
+		list: httpx results.
 	"""
 	timestamp = time.time()
 	cmd = '/go/bin/httpx'
@@ -920,6 +930,7 @@ def http_crawl(
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json -l {input_file}'
+	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
 	for line in stream_command(cmd, echo=False, write_filepath=f'{results_dir}/commands.txt'):
@@ -3279,3 +3290,16 @@ def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
 		geo_localize.delay(ip_address, ip.id)
 
 	return ip, created
+
+# TODO: replace all cmd += ' -{proxy}' if proxy else '' by this function
+# def build_cmd(cmd, options, flags, sep=' '):
+# 	for k, v in options.items():
+# 		if v is None:
+# 			continue
+#		cmd += f' {k}{sep}{v}'
+#	for flag in flags:
+#		if not flag:
+#			continue
+#		cmd += f' --{flag}'
+# 	return cmd
+# build_cmd(cmd, proxy=proxy, option_prefix='-')
