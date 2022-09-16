@@ -36,7 +36,7 @@ function truncate(str, n) {
 function return_str_if_not_null(val) {
 	return val ? val : '';
 }
-// seperate hostname and url
+// separate hostname and url
 // Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
 function getParsedURL(url) {
 	var parser = new URL(url);
@@ -165,7 +165,7 @@ function test_white_space(x) {
 	const white = new RegExp(/^\s$/);
 	return white.test(x.charAt(0));
 };
-// span values function will seperate the values by comma and put badge around it
+// span values function will separate the values by comma and put badge around it
 function parse_comma_values_into_span(data, color, outline = null) {
 	if (data) {
 		var badge = `<span class='badge badge-soft-` + color + ` m-1'>`;
@@ -358,7 +358,7 @@ function parse_technology(data, color, scan_id = null, domain_id=null) {
 	}
 	return data_with_span;
 }
-// span values function will seperate the values by comma and put badge around it
+// span values function will separate the values by comma and put badge around it
 function parse_ip(data, cdn) {
 	if (cdn) {
 		var badge = `<span class='badge badge-soft-warning m-1 bs-tooltip' title="CDN IP Address">`;

@@ -74,7 +74,7 @@ class SubScanResultSerializer(serializers.ModelSerializer):
 			'stop_scan_date',
 			'scan_history',
 			'subdomain',
-			'celery_id',
+			'celery_ids',
 			'status',
 			'subdomain_name',
 			'task',
