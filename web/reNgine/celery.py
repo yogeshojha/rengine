@@ -1,6 +1,5 @@
 import json
 import os
-import traceback
 from sre_constants import SUCCESS
 from time import time
 
@@ -13,18 +12,18 @@ from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
 from reNgine.definitions import (CELERY_TASK_STATUS_MAP, DYNAMIC_ID,
-                                 FAILED_TASK, INITIATED_TASK, RUNNING_TASK,
-                                 SUCCESS_TASK)
-from reNgine.settings import (CELERY_RAISE_ON_ERROR, CELERY_TASK_CACHE,
+                                 FAILED_TASK, RUNNING_TASK, SUCCESS_TASK)
+from reNgine.settings import (CELERY_RAISE_ON_ERROR, CELERY_TASK_CACHE_ENABLED,
                               CELERY_TASK_CACHE_IGNORE_KWARGS,
-                              CELERY_TASK_SKIP_RECORD_ACTIVITY, DEBUG)
+                              CELERY_TASK_SKIP_RECORD_ACTIVITY)
 
 cache = Redis.from_url(os.environ['CELERY_BROKER'])
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
 
 # db imports only work if django is loaded, so MUST be placed after django setup
 django.setup()
-from scanEngine.models import EngineType, Notification
+from reNgine.common_func import (fmt_traceback, send_file_to_discord_helper, write_traceback)
+from scanEngine.models import EngineType
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
 
@@ -104,7 +103,7 @@ class RengineTask(Task):
 			logger.warning(f'Task {self.name} status is RUNNING')
 
 		# Check for result in cache and return if hit
-		if CELERY_TASK_CACHE:
+		if CELERY_TASK_CACHE_ENABLED:
 			args_str = '_'.join([str(arg) for arg in args])
 			kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in CELERY_TASK_CACHE_IGNORE_KWARGS])
 			record_key = f'{self.name}__{args_str}__{kwargs_str}'
@@ -122,8 +121,7 @@ class RengineTask(Task):
 		except Exception as exc:
 			status = FAILED_TASK
 			error = repr(exc)
-			tb = fmt_traceback(exc)
-			traceback = tb
+			traceback = fmt_traceback(exc)
 			if CELERY_RAISE_ON_ERROR:
 				raise exc
 			logger.exception(exc)
@@ -143,8 +141,21 @@ class RengineTask(Task):
 					error=error,
 					traceback=traceback)
 
+				if traceback:
+					results_dir = kwargs['results_dir']
+					scan = ScanHistory.objects.get(pk=scan_history_id)
+					output_path = write_traceback(
+						traceback,
+						results_dir=f'{results_dir}/tracebacks',
+						task_name=task_name,
+						scan_history=scan,
+						subscan_id=subscan_id)
+					output_title = output_path.split('/')[-1]
+					logger.info(f'Sendin traceback to Discord ...')
+					send_file_to_discord_helper(output_path, title=output_title)
+
 		# Set task result in cache
-		if CELERY_TASK_CACHE and status == SUCCESS_TASK and result:
+		if CELERY_TASK_CACHE_ENABLED and status == SUCCESS_TASK and result:
 			cache.set(record_key, json.dumps(result))
 			cache.expire(record_key, 600) # 10mn cache
 
@@ -154,9 +165,7 @@ class RengineTask(Task):
 		# TODO: set task status to INIT when creating a signature.
 		return super().s(*args, **kwargs)
 
-def fmt_traceback(exc):
-	return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))
-	
+
 # Celery app
 app = Celery('reNgine', task_cls=RengineTask)
 app.config_from_object('django.conf:settings', namespace='CELERY')

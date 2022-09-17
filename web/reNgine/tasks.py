@@ -1,11 +1,11 @@
 import csv
 import json
 import os
+import pickle
 import random
 import subprocess
 import time
 from datetime import datetime
-from distutils.log import info
 from http.client import HTTPConnection, HTTPSConnection
 from time import sleep
 from urllib.parse import urlparse
@@ -20,7 +20,7 @@ from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
-from discord_webhook import DiscordWebhook
+from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
@@ -177,19 +177,27 @@ def initiate_scan(
 	# Send start notif
 	notification = Notification.objects.first()
 	send_status = notification.send_scan_status_notif if notification else False
+	tasks_str = f', '.join(f'`{task}`' for task in engine.tasks)
 	if send_status:
-		tasks_str = ', '.join(f'`{task}`' for task in engine.tasks)
-		title = f'SCAN #{scan.id} STARTED'
+		title = f'SCAN #{scan.id}'
 		url = f'https://{DOMAIN_NAME}/scan/detail/{scan.id}'
+		status_str = 'RUNNING'
+		fields = {
+			'Status': f'**{status_str}**',
+			'Engine': engine.engine_name,
+			'Domain': domain.name,
+			'Tasks': tasks_str
+		}
 		msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {domain.name}
 🡆 **Tasks:** {tasks_str}"""
 		send_notification.delay(
-			msg,
+			'',
 			scan_history_id,
 			title=title,
-			url=url)
+			url=url,
+			fields=fields)
 
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
@@ -328,19 +336,28 @@ def initiate_subscan(
 	send_status = notification.send_scan_status_notif if notification else False
 	if send_status:
 		tasks_str = f'`{subscan.type}`'
-		title = f'SUBSCAN #{subscan.id} STARTED'
+		title = f'SUBSCAN #{subscan.id}'
 		url = f'https://{DOMAIN_NAME}/scan/history/subscan'
+		status_str = 'RUNNING'
+		fields = {
+			'Status': f'**{status_str}**',
+			'Engine': engine.engine_name,
+			'Domain': domain.name,
+			'Subdomain': subdomain.name,
+			'Tasks': tasks_str
+		}
 		msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {domain.name}
 🡆 **Subdomain:** {subdomain.name}
 🡆 **Tasks:** {tasks_str}"""
 		send_notification.delay(
-			msg,
+			'',
 			scan_history_id,
 			subscan.id,
 			url=url,
-			title=title)
+			title=title,
+			fields=fields)
 
 	# Build header
 	ctx = {
@@ -395,7 +412,6 @@ def report(
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
-	domain = scan.domain
 	notification = Notification.objects.first()
 	send_status = False
 	send_output_file = False
@@ -412,7 +428,10 @@ def report(
 	)
 	if subscan:
 		celery_ids = subscan.celery_ids
-		failed_tasks = [task for task in failed_tasks if task.id in celery_ids]
+		failed_tasks = [
+			task for task in failed_tasks
+			if task.id in celery_ids
+		]
 	failed_tasks_count = len(failed_tasks)
 	status = SUCCESS_TASK if failed_tasks_count == 0 else FAILED_TASK
 	status_str = 'SUCCESS' if status else 'FAILED'
@@ -438,47 +457,40 @@ def report(
 	ntasks = 1 if subscan else len(scan.tasks)
 	td = scan_obj.stop_scan_date - scan_obj.start_scan_date
 	duration = humanize.naturaldelta(td)
-	traceback_dir = f'{results_dir}/tracebacks'
 	tasks_str = f'`{subscan.type}`' if subscan else ', '.join(f'`{task}`' for task in engine.tasks)
-	title = f'SUBSCAN #{subscan.id} {status_str}' if subscan else f'SCAN #{scan.id} {status_str}'
+	title = f'SUBSCAN #{subscan.id}' if subscan else f'SCAN #{scan.id}'
+	fields = {
+		'Status': f'**{status_str}**',
+		'Engine': engine.engine_name,
+		'Domain': host,
+		'Duration': duration,
+		'Tasks': tasks_str
+	}
 	msg = f"""
 🡆 **Engine:** {engine.engine_name}
 🡆 **Domain:** {host}
 🡆 **Duration:** {duration}
 🡆 **Tasks:** {tasks_str}"""
 	if subscan:
+		fields['Scan ID'] = scan.id
 		msg = f'🡆 **Scan ID:{scan.id}**{msg}'
 
-	# Attach tracebacks files to notification for tasks that failed
-	tb_files = []
-	if failed_tasks_count != 0:
-		os.makedirs(f'{results_dir}/tracebacks', exist_ok=True)
-		msg += f'\n\t🡆 **Tasks FAILED:** **{failed_tasks_count}**/{ntasks}'
-		msg += f'\n\t🡆 **Errors:**'
-		for task in failed_tasks:
-			msg += f'\n\t\t🡆 `{task.name}`: `{task.error_message}`'
-			tb_file = f'{traceback_dir}/{task.name}'
-			if subscan:
-				tb_file = f'{traceback_dir}/{task.name}_{subscan_id}'
-			tb_file += '.txt'
-			tb_title = tb_file.split('/')[-1]
-			tb_title = f'traceback_{tb_title}'
-			tb_files.append((tb_file, tb_title))
-			with open(tb_file, 'w') as f:
-				f.write(task.traceback)
+	if failed_tasks_count > 0:
+		fields['Failed tasks'] = failed_tasks_count
+		msg = f'🡆 **Failed tasks: {failed_tasks_count}'
 
 	# Send notif
 	if send_status:
-		severity = 'error' if tb_files else 'info'
+		severity = 'error' if failed_tasks_count else 'success'
 		url = f'https://{DOMAIN_NAME}/scan/detail/{scan.id}'
 		send_notification.delay(
-			msg,
+			'',
 			scan_history_id,
 			subscan_id,
 			title=title,
 			url=url,
-			files=tb_files,
-			severity=severity)
+			severity=severity,
+			fields=fields)
 
 
 def process_imported_subdomains(
@@ -546,11 +558,11 @@ def subdomain_discovery(
 		return
 
 	# Config
-	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY, {})
+	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY) or {}
 	output_path = f'{results_dir}/{filename}'
-	threads = config.get(THREADS)
-	timeout = config.get(TIMEOUT, 3)
-	tools = config.get(USES_TOOLS, [])
+	threads = config.get(THREADS, 0)
+	timeout = config.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	tools = config.get(USES_TOOLS, DEFAULT_SUBDOMAIN_SCAN_TOOLS)
 	default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
 	send_status, send_scan_output, send_subdomain_changes, send_interesting = False, False, False, False
@@ -898,7 +910,7 @@ def http_crawl(
 	timestamp = time.time()
 	cmd = '/go/bin/httpx'
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
-	threads = yaml_configuration.get(THREADS)
+	threads = yaml_configuration.get(THREADS, 0)
 	results_dir = f'{results_dir}/httpx'
 	os.makedirs(results_dir, exist_ok=True)
 	output_file = f'{results_dir}/httpx_output_probe_{timestamp}.json'
@@ -926,7 +938,7 @@ def http_crawl(
 
 	# Run command
 	cmd += f' -status-code -content-length -title -tech-detect -cdn -ip -follow-host-redirects -random-agent'
-	cmd += f' -t {threads}' if threads else ''
+	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json -l {input_file}'
@@ -1114,6 +1126,9 @@ def geo_localize(host, ip_id=None):
 	Returns:
 		startScan.models.CountryISO: CountryISO object from DB or None.
 	"""
+	if validators.ipv6(host):
+		logger.info(f'Ipv6 "{host}" is not supported by geoiplookup. Skipping.')
+		return None
 	cmd = f'geoiplookup {host}'
 	_, out, err = run_command(cmd)
 	if 'IP Address not found' not in out and "can't resolve hostname" not in out:
@@ -1160,8 +1175,8 @@ def screenshot(
 	screenshots_path = f'{results_dir}/screenshots'
 	output_path = f'{results_dir}/screenshots/{filename}'
 	alive_endpoints_file = f'{results_dir}/endpoints_alive.txt'
-	config = yaml_configuration.get(SCREENSHOT, {})
-	timeout = config.get(TIMEOUT, 0)
+	config = yaml_configuration.get(SCREENSHOT) or {}
+	timeout = config.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
 	threads = config.get(THREADS, 0)
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	domain = scan.domain
@@ -1254,7 +1269,7 @@ def port_scan(
 		list: List of open ports (dict).
 	"""
 	cmd = 'naabu -json -exclude-cdn'
-	config = yaml_configuration.get(PORT_SCAN, {})
+	config = yaml_configuration.get(PORT_SCAN) or {}
 	exclude_subdomains = config.get('exclude_subdomains', False)
 	exclude_ports = config.get(EXCLUDE_PORTS, [])
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
@@ -1520,7 +1535,7 @@ def dir_file_fuzz(
 	mc = ','.join([str(c) for c in match_http_status])
 	recursive_level = config.get(RECURSIVE_LEVEL, 1)	
 	stop_on_error = config.get(STOP_ON_ERROR, False)
-	timeout = config.get(TIMEOUT, 0)
+	timeout = config.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
 	threads = config.get(THREADS, 0)
 	use_extensions = config.get(USE_EXTENSIONS)
 	wordlist_name = config.get(WORDLIST, 'dicc')
@@ -1544,8 +1559,8 @@ def dir_file_fuzz(
 	cmd += f' -maxtime {max_time}' if max_time > 0 else ''
 	cmd += f' -p "{delay}"' if delay > 0 else ''
 	cmd += f' -recursion -recursion-depth {recursive_level} ' if recursive_level else ''
-	cmd += f' -t {threads}' if threads > 0 else ''
-	cmd += f' -timeout {timeout}' if timeout > 0 else ''
+	cmd += f' -t {threads}' if threads and threads > 0 else ''
+	cmd += f' -timeout {timeout}' if timeout and timeout > 0 else ''
 	cmd += ' -se' if stop_on_error else ''
 	cmd += ' -fr' if follow_redirect else ''
 	cmd += ' -ac' if auto_calibration else ''
@@ -1709,12 +1724,12 @@ def fetch_url(
 	domain = scan.domain
 
 	# Config
-	config = yaml_configuration.get(FETCH_URL, {})
+	config = yaml_configuration.get(FETCH_URL) or {}
 	gf_patterns = config.get(GF_PATTERNS, [])
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
 	intensity = config.get(INTENSITY, DEFAULT_ENDPOINT_SCAN_INTENSITY)
 	tools = config.get(USES_TOOLS, DEFAULT_ENDPOINT_SCAN_TOOLS)
-	threads = config.get(THREADS, 20)
+	threads = config.get(THREADS, 0)
 	custom_header = domain.request_headers or yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
 	input_path = f'{results_dir}/input_endpoints_fetch_url.txt'
@@ -1753,12 +1768,15 @@ def fetch_url(
 		'gauplus': f'gauplus --random-agent -t {threads}',
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
-		'gospider': f'gospider -S {input_path} --js -t {threads} -d 2 --sitemap --robots -w -r',
+		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
 	}
 	if proxy:
 		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
+	if threads > 0:
+		cmd_map['gauplus'] += f' -t {threads}'
+		cmd_map['gospider'] += f' -t {threads}'
 	if custom_header:
 		header_string = ';;'.join([
 			f'{key}: {value}' for key, value in custom_header.items()
@@ -1955,7 +1973,7 @@ def vulnerability_scan(
 	cmd = 'nuclei -json'
 	input_path = f'{results_dir}/input_endpoints_vulnerability_scan.txt'
 	output_path = f'{results_dir}/{filename}'
-	config = yaml_configuration.get(VULNERABILITY_SCAN, {})
+	config = yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	custom_header = config.get(CUSTOM_HEADER)
 	concurrency = config.get(NUCLEI_CONCURRENCY, 0)
 	custom_nuclei_templates = config.get(NUCLEI_CUSTOM_TEMPLATE, None)
@@ -1967,7 +1985,7 @@ def vulnerability_scan(
 	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
 	severities_str = ','.join(severities)
 	intensity = config.get(INTENSITY, 'normal')
-	timeout = config.get(TIMEOUT, 0)
+	timeout = config.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
 	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	
 	# Get alive endpoints
@@ -2028,7 +2046,7 @@ def vulnerability_scan(
 	cmd += f' -retries {retries}' if retries > 0 else ''
 	cmd += f' -rl {str(rate_limit)}' if rate_limit > 0 else ''
 	cmd += f' -severity {severities_str}'
-	cmd += f' -timeout {str(timeout)}' if timeout > 0 else ''
+	cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
@@ -2395,7 +2413,7 @@ def osint(
 		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
 	"""
-	config = yaml_configuration.get(OSINT, {})
+	config = yaml_configuration.get(OSINT) or {}
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
@@ -2442,82 +2460,9 @@ def get_file_title(scan_history_id, subscan_id, filename):
 #---------------#
 # Notifications #
 #---------------#
-
-@app.task
-def send_telegram_message(message):
-	notification = Notification.objects.first()
-	if notification and notification.send_to_telegram \
-	and notification.telegram_bot_token \
-	and notification.telegram_bot_chat_id:
-		telegram_bot_token = notification.telegram_bot_token
-		telegram_bot_chat_id = notification.telegram_bot_chat_id
-		send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
-		requests.get(send_url)
-
-
-@app.task
-def send_slack_message(message):
-	headers = {'content-type': 'application/json'}
-	message = {'text': message}
-	notification = Notification.objects.first()
-	if notification and notification.send_to_slack \
-	and notification.slack_hook_url:
-		hook_url = notification.slack_hook_url
-		requests.post(url=hook_url, data=json.dumps(message), headers=headers)
-
-
-@app.task
-def send_discord_message(message, title=None, severity='info', url=None, files=None):
-	notification = Notification.objects.first()
-	colors = {
-		'info': '0xfbbc00', # yellow
-		'warning': '0xf75b00', # orange
-		'error': '0xf70000'
-	}
-	if notification and notification.send_to_discord \
-	and notification.discord_hook_url:
-		if title: # embed
-			webhook = DiscordWebhook(
-				url=notification.discord_hook_url,
-				rate_limit_retry=True
-			)
-			embed = {
-				'type': 'rich',
-				'title': title,
-				'description': message,
-				'url': url,
-				# 'color': colors[severity]
-			}
-			webhook.add_embed(embed)
-			logger.info(webhook.embeds)
-		else:
-			webhook = DiscordWebhook(
-				url=notification.discord_hook_url,
-				content=message,
-				rate_limit_retry=True)
-		if files:
-			for (path, name) in files:
-				with open(path, 'r') as f:
-					content = f.read()
-				logger.warning(f"Adding file to embed '{path}'")
-				webhook.add_file(content, name)
-		webhook.execute()
-
-
 @app.task
 def send_file_to_discord(file_path, title=None):
-	notification = Notification.objects.first()
-	if notification and notification.send_to_discord \
-	and notification.discord_hook_url:
-		webhook = DiscordWebhook(
-			url=notification.discord_hook_url,
-			rate_limit_retry=True,
-			username=title or "reNgine Discord Plugin"
-		)
-		with open(file_path, "rb") as f:
-			head, tail = os.path.split(file_path)
-			webhook.add_file(file=f.read(), filename=tail)
-		webhook.execute()
+	send_file_to_discord_helper(file_path, title=title)
 
 
 @app.task
@@ -2528,12 +2473,17 @@ def send_notification(
 		title=None,
 		url=None,
 		files=[],
-		severity='info'):
-	if not title:
-		message = format_notification_message(message, scan_history_id, subscan_id)
-	send_discord_message.delay(message, title=title, url=url, files=files, severity=severity)
-	send_slack_message.delay(message)
-	send_telegram_message.delay(message)
+		severity='info',
+		fields={}):
+	send_notification_helper(
+		message,
+		scan_history_id=scan_history_id,
+		subscan_id=subscan_id,
+		title=title,
+		url=url,
+		files=files,
+		severity=severity,
+		fields=fields)
 
 
 #-------------#
@@ -2541,7 +2491,7 @@ def send_notification(
 #-------------#
 
 def osint_discovery(scan_history, domain, yaml_configuration, results_dir, subscan=None):
-	osint_config = yaml_configuration.get(OSINT, {})
+	osint_config = yaml_configuration.get(OSINT) or {}
 	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
 	osint_intensity = osint_config.get(INTENSITY, 'normal')
 	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
@@ -2586,7 +2536,7 @@ def osint_discovery(scan_history, domain, yaml_configuration, results_dir, subsc
 
 def dorking(scan_history, yaml_configuration):
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
-	config = yaml_configuration.get(OSINT, {})
+	config = yaml_configuration.get(OSINT) or {}
 	dorks = config.get(OSINT_DORK, DORKS_DEFAULT_NAMES)
 	results = []
 	for dork in dorks:
@@ -3286,7 +3236,7 @@ def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
 		ip.ip_subscan_ids.add(subscan)
 
 	# Geo-localize IP asynchronously
-	if not ip.geo_iso:
+	if created:
 		geo_localize.delay(ip_address, ip.id)
 
 	return ip, created

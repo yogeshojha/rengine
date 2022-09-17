@@ -1,20 +1,26 @@
 import json
 import logging
 import os
+import pickle
 import random
 import shutil
+import traceback
 from urllib.parse import urlparse
 
+import redis
 import requests
 import tldextract
+from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
 from reNgine.common_serializers import *
 from reNgine.definitions import *
+from reNgine.settings import CELERY_BROKER_URL
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
 logger = logging.getLogger(__name__)
+DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 
 #------------------#
 # EngineType utils #
@@ -471,3 +477,130 @@ def format_notification_message(message, scan_history_id, subscan_id):
 		else:
 			message = f'`#{scan_history_id}`: {message}'
 	return message
+
+
+def send_notification_helper(
+		message,
+		scan_history_id=None,
+		subscan_id=None,
+		title=None,
+		url=None,
+		files=[],
+		severity='info',
+		fields={}):
+	if not title:
+		message = format_notification_message(message, scan_history_id, subscan_id)
+	send_discord_message(message, title=title, url=url, files=files, severity=severity, fields=fields)
+	send_slack_message(message)
+	send_telegram_message(message)
+
+
+def send_telegram_message(message):
+	notification = Notification.objects.first()
+	if notification and notification.send_to_telegram \
+	and notification.telegram_bot_token \
+	and notification.telegram_bot_chat_id:
+		telegram_bot_token = notification.telegram_bot_token
+		telegram_bot_chat_id = notification.telegram_bot_chat_id
+		send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
+		requests.get(send_url)
+
+
+def send_slack_message(message):
+	headers = {'content-type': 'application/json'}
+	message = {'text': message}
+	notification = Notification.objects.first()
+	if notification and notification.send_to_slack \
+	and notification.slack_hook_url:
+		hook_url = notification.slack_hook_url
+		requests.post(url=hook_url, data=json.dumps(message), headers=headers)
+
+
+def send_discord_message(message, title='', severity='info', url=None, files=None, fields={}):
+	notif = Notification.objects.first()
+	colors = {
+		'info': '0xfbbc00', # yellow
+		'warning': '0xf75b00', # orange
+		'error': '0xf70000', # red,
+		'success': '0x00ff78'
+	}
+	color = colors[severity]
+
+	if not (notif and notif.send_to_discord and notif.discord_hook_url):
+		return False
+
+	if title: # embed
+		webhook = DiscordWebhook(
+			url=notif.discord_hook_url,
+			rate_limit_retry=True,
+		)
+		embed = DiscordEmbed(
+			title=title,
+			description=message,
+			url=url,
+			color=color)
+		if fields:
+			for name, value in fields.items():
+				embed.add_embed_field(name=name, value=value, inline=False)
+		webhook.add_embed(embed)
+	else:
+		webhook = DiscordWebhook(
+			url=notif.discord_hook_url,
+			content=message,
+			rate_limit_retry=True)
+	if files:
+		for (path, name) in files:
+			with open(path, 'r') as f:
+				content = f.read()
+			webhook.add_file(content, name)
+
+	# Edit webhook if sent response in cache, otherwise send new webhook
+	if title:
+		cached_response = DISCORD_WEBHOOKS_CACHE.get(title)
+		if cached_response: # edit existing embed
+			logger.warning(f'Found cached webhook. Editing webhook !!!')
+			cached_response = pickle.loads(cached_response)
+			webhook.edit(cached_response)
+		else:
+			response = webhook.execute()
+			DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
+	else:
+		webhook.execute()
+
+
+def send_file_to_discord_helper(file_path, title=None):
+	notif = Notification.objects.first()
+	do_send = notif and notif.send_to_discord and notif.discord_hook_url
+	if not do_send:
+		return False
+
+	webhook = DiscordWebhook(
+		url=notif.discord_hook_url,
+		rate_limit_retry=True,
+		username=title or "reNgine Discord Plugin"
+	)
+	with open(file_path, "rb") as f:
+		head, tail = os.path.split(file_path)
+		webhook.add_file(file=f.read(), filename=tail)
+	webhook.execute()
+
+
+def fmt_traceback(exc):
+	return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))
+
+
+def get_traceback_path(task_name, scan_history, subscan_id=None):
+	path = f'{scan_history.results_dir}/{task_name}_#{scan_history.id}'
+	if subscan_id:
+		path += f'_#{subscan_id}'
+	path += '.txt'
+	return path
+
+
+def write_traceback(traceback, results_dir, task_name, scan_history, subscan_id=None):
+	output_path = get_traceback_path(task_name, scan_history, subscan_id)
+	os.makedirs(os.path.dirname(output_path))
+	with open(output_path, 'w') as f:
+		f.write(traceback)
+	logger.info(f'Traceback written to {output_path}')
+	return output_path
