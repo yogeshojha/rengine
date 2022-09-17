@@ -167,7 +167,7 @@ LOGOUT_REDIRECT_URL = 'login'
 TOOL_LOCATION = '/usr/src/app/tools/'
 
 # Requests defaults
-DEFAULT_REQUEST_TIMEOUT = 3
+DEFAULT_REQUEST_TIMEOUT = 5
 
 # Number of endpoints that have the same content_length
 DELETE_DUPLICATES_THRESHOLD = 10
@@ -180,7 +180,7 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 CELERY_IGNORE_RESULTS = False
-CELERY_TASK_CACHE = bool(int(os.environ.get('CELERY_TASK_CACHE', '0')))
+CELERY_TASK_CACHE_ENABLED = bool(int(os.environ.get('CELERY_TASK_CACHE_ENABLED', '0')))
 CELERY_TASK_CACHE_IGNORE_KWARGS = [
     'scan_history_id',
     'activity_id',
