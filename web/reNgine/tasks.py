@@ -734,7 +734,7 @@ def port_scan(
 	exclude_subdomains = config.get('exclude_subdomains', False)
 	exclude_ports = config.get(EXCLUDE_PORTS, [])
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
-	naabu_rate = config.get(NAABU_RATE, 0)
+	rate = config.get(NAABU_RATE, 0)
 	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
 	exclude_ports_str = ','.join(exclude_ports)
 
@@ -761,7 +761,7 @@ def port_scan(
 		ports_str = f' -p {ports_str}'
 	cmd += f' -proxy "{proxy}"' if proxy else ''
 	cmd += ' -config /root/.config/naabu/config.yaml' if use_naabu_config else ''
-	cmd += f' -rate {naabu_rate}' if naabu_rate > 0 else ''
+	cmd += f' -rate {rate}' if rate > 0 else ''
 	cmd += ports_str
 	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
 	
