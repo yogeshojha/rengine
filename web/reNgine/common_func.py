@@ -648,10 +648,11 @@ def send_notification_helper(
 		url=None,
 		files=[],
 		severity='info',
-		fields={}):
+		fields={},
+		fields_append=[]):
 	if not title:
 		message = format_notification_message(message, scan_history_id, subscan_id)
-	send_discord_message(message, title=title, url=url, files=files, severity=severity, fields=fields)
+	send_discord_message(message, title=title, url=url, files=files, severity=severity, fields=fields, fields_append=fields_append)
 	send_slack_message(message)
 	send_telegram_message(message)
 
@@ -677,7 +678,7 @@ def send_slack_message(message):
 		requests.post(url=hook_url, data=json.dumps(message), headers=headers)
 
 
-def send_discord_message(message, title='', severity='info', url=None, files=None, fields={}):
+def send_discord_message(message, title='', severity='info', url=None, files=None, fields={}, fields_append=[]):
 	notif = Notification.objects.first()
 	colors = {
 		'info': '0xfbbc00', # yellow
@@ -686,53 +687,84 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 		'success': '0x00ff78'
 	}
 	color = colors[severity]
+	is_embed_message = fields and title
 
 	if not (notif and notif.send_to_discord and notif.discord_hook_url):
 		return False
 
-	if title: # embed
-		message = '' # ignore message field
-		logger.info(title)
-		logger.info(url)
-		logger.info(color)
-		logger.info(fields)
-		webhook = DiscordWebhook(
-			url=notif.discord_hook_url,
-			rate_limit_retry=True,
-			color=color
-		)
-		embed = DiscordEmbed(
-			title=title,
-			description=message,
-			url=url,
-			color=color)
-		if fields:
-			for name, value in fields.items():
-				embed.add_embed_field(name=name, value=value, inline=False)
-		webhook.add_embed(embed)
+	message = '' # ignore message field when doing an embed, to ensure compat with other notif backends
+	cached_response = DISCORD_WEBHOOKS_CACHE.get(title)
+	if cached_response:
+		cached_response = pickle.loads(cached_response)
+
+	# Get existing webhook if found in cache
+	webhook = DISCORD_WEBHOOKS_CACHE.get(title + '_webhook')
+	if webhook:
+		webhook = pickle.loads(webhook)
+		webhook.remove_embeds()
 	else:
 		webhook = DiscordWebhook(
 			url=notif.discord_hook_url,
-			content=message,
-			rate_limit_retry=True)
+			rate_limit_retry=True,
+			content=message)
+
+	# Get existing embed if found in cache
+	embed = DISCORD_WEBHOOKS_CACHE.get(title + '_embed')
+	if embed:
+		embed = pickle.loads(embed) 
+	elif is_embed_message:
+		embed = DiscordEmbed(title=title)
+
+	# Add embed fields
+	if embed:
+		logger.info(embed)
+		embed.set_url(url)
+		embed.set_color(color)
+		embed.set_description(message)
+		embed.set_timestamp()
+		for name, value in fields.items():
+			new_field = {'name': name, 'value': value, 'inline': False}
+
+			# Check for an existing field in previous embed, so that we can 
+			# append to it.
+			matches = [field for field in embed.fields if field['name'] == name]
+			if matches:
+				field = matches[0]
+
+				# Delete existing field to avoid duplicates
+				ix = embed.fields.index(field)
+				embed.del_embed_field(ix)
+
+				# Append to existing field value
+				if name in fields_append:
+					existing_val = field['value']
+					new_field['value'] = f'{existing_val} {value}'
+
+			embed.add_embed_field(**new_field)
+		webhook.add_embed(embed)
+
+	# Add files to webhook
 	if files:
+		if cached_response:
+			logger.warning(f'Existing webhook files will be overriden: {webhook.files}')
 		for (path, name) in files:
 			with open(path, 'r') as f:
 				content = f.read()
 			webhook.add_file(content, name)
 
-	# Edit webhook if sent response in cache, otherwise send new webhook
-	if title:
-		cached_response = DISCORD_WEBHOOKS_CACHE.get(title)
-		if cached_response: # edit existing embed
-			logger.warning(f'Found cached webhook. Editing webhook !!!')
-			cached_response = pickle.loads(cached_response)
-			webhook.edit(cached_response)
-		else:
-			response = webhook.execute()
-			DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
+	# Edit webhook if it already existed, otherwise send new webhook
+	if cached_response:
+		logger.warning(f'Editing existing webhook')
+
+		response = webhook.edit(cached_response)
 	else:
-		webhook.execute()
+		logger.warning(f'Creating new webhook')
+		response = webhook.execute()
+		DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
+	DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
+	if embed:
+		logger.warning(f'Adding embed to cache')
+		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
 
 
 def send_file_to_discord_helper(file_path, title=None):
@@ -845,3 +877,14 @@ def write_traceback(traceback, results_dir, task_name, scan_history, subscan_id=
 		f.write(traceback)
 	logger.info(f'Traceback written to {output_path}')
 	return output_path
+
+
+def get_nmap_cmd(cmd=None, script=None, script_args=None, max_rate=None, flags=[]):
+	if not cmd:
+		cmd = 'nmap'
+	cmd += f' --script {script}' if script else ''
+	cmd += f' --script-args {script_args}' if script_args else ''
+	cmd += f' --max-rate {max_rate}' if max_rate else ''
+	for flag in flags:
+		cmd += flag
+	return cmd
