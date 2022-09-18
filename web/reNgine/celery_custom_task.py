@@ -79,29 +79,33 @@ class RengineTask(Task):
 		description = kwargs.get('description') or ' '.join(name.split('_')).capitalize()
 		logger = get_task_logger(name)
 
-		# Check if this is a well formed rengine task
-		# is_valid_rengine_task = all(
-		# 	key in RengineTask.REQUIRED_KWARGS and isinstance(value, int)
-		# 	for key, value in kwargs.items())
-		# if not is_valid_rengine_task:
-		# 	raise Exception(
-		# 		f'RengineTask Invalid Task:'
-		# 		f'{RengineTask.REQUIRED_KWARGS} must be passed as kwargs')
-
-		# Record start activity
-		engine_id = kwargs['engine_id']
-		scan_id = kwargs['scan_history_id']
+		# Get reNgine context
+		engine_id = kwargs.get('engine_id')
+		scan_id = kwargs.get('scan_history_id')
 		activity_id = kwargs.get('activity_id', DYNAMIC_ID)
 		subscan_id = kwargs.get('subscan_id')
-		filename = get_output_file_name(scan_id, subscan_id, f'{name}.txt')
-		if name == 'screenshot':
-			filename = 'Requests.csv'
-		kwargs['filename'] = filename # default to task name
+		filename = kwargs.get('filename')
 		results_dir = kwargs.get('results_dir', RENGINE_RESULTS)
+		if not (engine_id and scan_id):
+			raise Exception(
+				f'RengineTask Invalid Task:'
+				f'{RengineTask.REQUIRED_KWARGS} must be passed as kwargs')
+
+		# Set file name if not already set
+		if not filename:
+			filename = get_output_file_name(scan_id, subscan_id, f'{name}.txt')
+			if name == 'screenshot':
+				filename = 'Requests.csv'
+			kwargs['filename'] = filename
+
+		# Set file output path
+		output_path = f'{results_dir}/{filename}'
+
 		if RENGINE_RECORD_ENABLED:
 			engine = EngineType.objects.get(pk=engine_id)
+			scan = ScanHistory.objects.get(pk=scan_id)
 			notif = Notification.objects.first()
-			
+
 			# If task is not in engine.tasks, skip it.
 			if name not in engine.tasks:
 				logger.debug(f'{name} is not part of this engine tasks. Skipping.')
@@ -139,9 +143,11 @@ class RengineTask(Task):
 			record_key = get_cache_key(name, *args, **kwargs)
 			result = cache.get(record_key)
 			if result and result != b'null':
+
 				if RENGINE_RECORD_ENABLED:
 					logger.warning(f'Task {name} status is SUCCESS (CACHED)')
 					update_scan_activity(activity_id, SUCCESS_TASK)
+
 				return json.loads(result)
 
 		# Execute task, catch exceptions and update ScanActivity object after 
@@ -149,7 +155,7 @@ class RengineTask(Task):
 		try:
 			result = self.run(*args, **kwargs)
 			status = SUCCESS_TASK
-			output_path = f'{results_dir}/{filename}'
+
 		except Exception as exc:
 			status = FAILED_TASK
 			error = repr(exc)
@@ -160,11 +166,14 @@ class RengineTask(Task):
 					task_name=name,
 					scan_history=scan,
 					subscan_id=subscan_id)
+
 			if RENGINE_RAISE_ON_ERROR:
 				raise exc
 			logger.exception(exc)
+
 		finally:
 			status_str = CELERY_TASK_STATUS_MAP[status]
+
 			if RENGINE_RECORD_ENABLED:
 				msg = f'Task {self.name} status is {status_str}'
 				logger.warning(msg)
@@ -179,10 +188,11 @@ class RengineTask(Task):
 
 				# Send task status notification
 				if notif and notif.send_scan_status_notif:
-					results_dir = kwargs['results_dir']
 					scan = ScanHistory.objects.get(pk=scan_id)
+
+					# Add files to notif
+					files = []
 					if notif.send_scan_output_file:
-						files = []
 						output_title = output_path.split('/')[-1]
 						logger.warning(f'Sending output file {output_path} to Discord.')
 						if isinstance(result, dict) or isinstance(result, list):
@@ -190,21 +200,20 @@ class RengineTask(Task):
 								json.dump(result, f)
 						if output_path and os.path.exists(output_path):
 							files = [(output_path, output_title)]
-						scan = ScanHistory.objects.get(pk=scan_id)
-						fields = {
-							'Status': f'**{status_str}**',
-						}
-						severity = 'success'
-						if status == FAILED_TASK:
-							fields['Error'] = error
-							fields['Traceback'] = traceback
-							severity = 'error'
-						send_notification_helper(
-							message=msg,
-							title=title,
-							files=files,
-							fields=fields,
-							severity=severity)
+					
+					# Send notification
+					fields = {'Status': f'**{status_str}**'}
+					severity = 'success'
+					if status == FAILED_TASK:
+						fields['Error'] = error
+						fields['Traceback'] = "```\n" + traceback + "\n```"
+						severity = 'error'
+					send_notification_helper(
+						message=msg,
+						title=title,
+						files=files,
+						fields=fields,
+						severity=severity)
 
 		# Set task result in cache
 		if RENGINE_CACHE_ENABLED and status == SUCCESS_TASK and result:
