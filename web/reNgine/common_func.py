@@ -1,3 +1,4 @@
+from asyncore import ExitNow
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ import humanize
 import redis
 import requests
 import tldextract
+import validators
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
 from dotted_dict import DottedDict
@@ -432,7 +434,6 @@ def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_REQUEST_TIMEOUT
 	if not url.scheme: # no scheme in input URL, adding input scheme to URL
 		url = urlparse(f'{scheme}://{url.geturl()}')
 	if url.scheme != scheme:
-		print(f'Mismatch between probed scheme ({scheme}) and actual scheme ({url.scheme})')
 		return False, None, None
 	final_url = url.geturl()
 	try:
@@ -693,7 +694,7 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 		return False
 
 	message = '' # ignore message field when doing an embed, to ensure compat with other notif backends
-	cached_response = DISCORD_WEBHOOKS_CACHE.get(title)
+	cached_response = DISCORD_WEBHOOKS_CACHE.get(title) if title else None
 	if cached_response:
 		cached_response = pickle.loads(cached_response)
 
@@ -717,12 +718,12 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 
 	# Add embed fields
 	if embed:
-		logger.info(embed)
 		embed.set_url(url)
 		embed.set_color(color)
 		embed.set_description(message)
 		embed.set_timestamp()
 		for name, value in fields.items():
+			value = str(value)
 			new_field = {'name': name, 'value': value, 'inline': False}
 
 			# Check for an existing field in previous embed, so that we can 
@@ -738,15 +739,25 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 				# Append to existing field value
 				if name in fields_append:
 					existing_val = field['value']
-					new_field['value'] = f'{existing_val} {value}'
+					sep = ' '
+					if not value or not existing_val:
+						continue
+					existing_val = str(existing_val)
+					if existing_val.startswith('`') and existing_val.endswith('`'):
+						value = f'`{value}`'
+					if len(value) > 10:
+						sep = '\n'
+					new_field['value'] = f'{existing_val}{sep}{value}'
 
 			embed.add_embed_field(**new_field)
 		webhook.add_embed(embed)
 
+		# Add webhook and embed objects to cache so we can pick them up later
+		DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
+		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
+
 	# Add files to webhook
 	if files:
-		if cached_response:
-			logger.warning(f'Existing webhook files will be overriden: {webhook.files}')
 		for (path, name) in files:
 			with open(path, 'r') as f:
 				content = f.read()
@@ -754,17 +765,11 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 
 	# Edit webhook if it already existed, otherwise send new webhook
 	if cached_response:
-		logger.warning(f'Editing existing webhook')
-
 		response = webhook.edit(cached_response)
 	else:
-		logger.warning(f'Creating new webhook')
 		response = webhook.execute()
 		DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
-	DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
-	if embed:
-		logger.warning(f'Adding embed to cache')
-		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
+
 
 
 def send_file_to_discord_helper(file_path, title=None):
