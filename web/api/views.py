@@ -2,7 +2,6 @@ import logging
 import re
 import socket
 import subprocess
-from xml.dom import INUSE_ATTRIBUTE_ERR
 
 import requests
 import validators

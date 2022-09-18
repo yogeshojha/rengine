@@ -214,6 +214,7 @@ class EngineSerializer(serializers.ModelSerializer):
 		model = EngineType
 		fields = [
 			'id',
+			'default_engine',
 			'engine_name',
 			'yaml_configuration',
 			'tasks'

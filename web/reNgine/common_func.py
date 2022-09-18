@@ -5,16 +5,20 @@ import pickle
 import random
 import shutil
 import traceback
+from ftplib import FTP
+from http.client import HTTPConnection, HTTPSConnection
 from urllib.parse import urlparse
 
+import humanize
 import redis
 import requests
 import tldextract
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
+from dotted_dict import DottedDict
 from reNgine.common_serializers import *
 from reNgine.definitions import *
-from reNgine.settings import CELERY_BROKER_URL
+from reNgine.settings import *
 from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
@@ -60,9 +64,9 @@ def load_custom_scan_engines(results_dir):
 		engine.save()
 
 
-#------------------#
-# Database queries #
-#------------------#
+#--------------------------------#
+# InterestingLookupModel queries #
+#--------------------------------#
 def get_lookup_keywords():
 	"""Get lookup keywords from InterestingLookupModel.
 	
@@ -85,6 +89,112 @@ def get_lookup_keywords():
 	lookup_keywords = default_lookup_keywords + custom_lookup_keywords
 	lookup_keywords = list(filter(None, lookup_keywords)) # remove empty strings from list
 	return lookup_keywords
+
+
+#-------------------#
+# SubDomain queries #
+#-------------------#
+
+def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
+	"""Get Subdomain objects from DB.
+
+	Args:
+		target_domain (startScan.models.Domain): Target Domain object.
+		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
+		write_filepath (str): Write info back to a file.
+		subdomain_id (int): Subdomain id.
+		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
+		path (str): Add URL path to subdomain.
+
+	Returns:
+		list: List of subdomains matching query.
+	"""
+	base_query = Subdomain.objects.filter(target_domain=target_domain, scan_history=scan_history)
+	if subdomain_id:
+		base_query = base_query.filter(pk=subdomain_id)
+	elif exclude_subdomains:
+		base_query = base_query.filter(name=target_domain.name)
+	subdomain_query = base_query.distinct('name').order_by('name')
+	subdomains = [
+		subdomain.name
+		for subdomain in subdomain_query.all()
+		if subdomain.name
+	]
+	if not subdomains:
+		logger.warning('No subdomains were found in query !')
+
+	if url_path:
+		subdomains = [f'{subdomain}/{url_path}' for subdomain in subdomains]
+
+	if write_filepath:
+		with open(write_filepath, 'w') as f:
+			f.write('\n'.join(subdomains))
+
+	return subdomains
+
+def get_new_added_subdomain(scan_id, domain_id):
+	"""Find domains added during the last run.
+
+	Args:
+		scan_id (int): startScan.models.ScanHistory ID.
+		domain_id (int): startScan.models.Domain ID.
+
+	Returns:
+		django.models.querysets.QuerySet: query of newly added subdomains.
+	"""
+	scan = (
+		ScanHistory.objects
+		.filter(domain=domain_id)
+		.filter(tasks__overlap=['subdomain_discovery'])
+		.filter(id__lte=scan_id)
+	)
+	if not scan.count() > 1:
+		return
+	last_scan = scan.order_by('-start_scan_date')[1]
+	scanned_host_q1 = (
+		Subdomain.objects
+		.filter(scan_history__id=scan_id)
+		.values('name')
+	)
+	scanned_host_q2 = (
+		Subdomain.objects
+		.filter(scan_history__id=last_scan.id)
+		.values('name')
+	)
+	added_subdomain = scanned_host_q1.difference(scanned_host_q2)
+	return (
+		Subdomain.objects
+		.filter(scan_history=scan_id)
+		.filter(name__in=added_subdomain)
+	)
+
+
+def get_removed_subdomain(scan_id, domain_id):
+	scan_history = (
+		ScanHistory.objects
+		.filter(domain=domain_id)
+		.filter(tasks__overlap=['subdomain_discovery'])
+		.filter(id__lte=scan_id)
+	)
+	if not scan_history.count() > 1:
+		return
+	last_scan = scan_history.order_by('-start_scan_date')[1]
+	scanned_host_q1 = (
+		Subdomain.objects
+		.filter(scan_history__id=scan_id)
+		.values('name')
+	)
+	scanned_host_q2 = (
+		Subdomain.objects
+		.filter(scan_history__id=last_scan.id)
+		.values('name')
+	)
+	removed_subdomains = scanned_host_q2.difference(scanned_host_q1)
+	return (
+		Subdomain.objects
+		.filter(scan_history=last_scan)
+		.filter(name__in=removed_subdomains)
+	)
 
 
 def get_interesting_subdomains(scan_history=None, target=None):
@@ -133,90 +243,9 @@ def get_interesting_subdomains(scan_history=None, target=None):
 	return url_lookup_query | title_lookup_query
 
 
-def get_interesting_endpoints(scan_history=None, target=None):
-	"""Get EndPoint objects matching InterestingLookupModel conditions.
-
-	Args:
-		scan_history (startScan.models.ScanHistory): Scan history.
-		target (str): Domain id.
-
-	Returns:
-		django.db.Q: QuerySet object.
-	"""
-
-	lookup_keywords = get_lookup_keywords()
-	lookup_obj = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id').first()
-	url_lookup = lookup_obj.url_lookup
-	title_lookup = lookup_obj.title_lookup
-	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
-	if not lookup_obj:
-		return EndPoint.objects.none()
-
-	# Filter on domain_id, scan_history_id
-	query = EndPoint.objects
-	if target:
-		query = query.filter(target_domain__id=target)
-	elif scan_history:
-		query = query.filter(scan_history__id=scan_history)
-
-	# Filter on HTTP status code 200
-	if condition_200_http_lookup:
-		query = query.filter(http_status__exact=200)
-
-	# Build subdomain lookup / page title lookup queries
-	url_lookup_query = Q()
-	title_lookup_query = Q()
-	for key in lookup_keywords:
-		if url_lookup:
-			url_lookup_query |= Q(http_url__icontains=key)
-		if title_lookup:
-			title_lookup_query |= Q(page_title__iregex=f"\\y{key}\\y")
-
-	# Filter on url / title queries
-	url_lookup_query = query.filter(url_lookup_query)
-	title_lookup_query = query.filter(title_lookup_query)
-
-	# Return OR query
-	return url_lookup_query | title_lookup_query
-
-
-def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
-	"""Get Subdomain objects from DB.
-
-	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
-		write_filepath (str): Write info back to a file.
-		subdomain_id (int): Subdomain id.
-		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
-		path (str): Add URL path to subdomain.
-
-	Returns:
-		list: List of subdomains matching query.
-	"""
-	base_query = Subdomain.objects.filter(target_domain=target_domain, scan_history=scan_history)
-	if subdomain_id:
-		base_query = base_query.filter(pk=subdomain_id)
-	elif exclude_subdomains:
-		base_query = base_query.filter(name=target_domain.name)
-	subdomain_query = base_query.distinct('name').order_by('name')
-	subdomains = [
-		subdomain.name
-		for subdomain in subdomain_query.all()
-		if subdomain.name
-	]
-	if not subdomains:
-		logger.warning('No subdomains were found in query !')
-
-	if url_path:
-		subdomains = [f'{subdomain}/{url_path}' for subdomain in subdomains]
-
-	if write_filepath:
-		with open(write_filepath, 'w') as f:
-			f.write('\n'.join(subdomains))
-
-	return subdomains
-
+#------------------#
+# EndPoint queries #
+#------------------#
 
 def get_http_urls(
 		target_domain,
@@ -279,6 +308,53 @@ def get_http_urls(
 
 	return endpoints
 
+def get_interesting_endpoints(scan_history=None, target=None):
+	"""Get EndPoint objects matching InterestingLookupModel conditions.
+
+	Args:
+		scan_history (startScan.models.ScanHistory): Scan history.
+		target (str): Domain id.
+
+	Returns:
+		django.db.Q: QuerySet object.
+	"""
+
+	lookup_keywords = get_lookup_keywords()
+	lookup_obj = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id').first()
+	url_lookup = lookup_obj.url_lookup
+	title_lookup = lookup_obj.title_lookup
+	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
+	if not lookup_obj:
+		return EndPoint.objects.none()
+
+	# Filter on domain_id, scan_history_id
+	query = EndPoint.objects
+	if target:
+		query = query.filter(target_domain__id=target)
+	elif scan_history:
+		query = query.filter(scan_history__id=scan_history)
+
+	# Filter on HTTP status code 200
+	if condition_200_http_lookup:
+		query = query.filter(http_status__exact=200)
+
+	# Build subdomain lookup / page title lookup queries
+	url_lookup_query = Q()
+	title_lookup_query = Q()
+	for key in lookup_keywords:
+		if url_lookup:
+			url_lookup_query |= Q(http_url__icontains=key)
+		if title_lookup:
+			title_lookup_query |= Q(page_title__iregex=f"\\y{key}\\y")
+
+	# Filter on url / title queries
+	url_lookup_query = query.filter(url_lookup_query)
+	title_lookup_query = query.filter(title_lookup_query)
+
+	# Return OR query
+	return url_lookup_query | title_lookup_query
+
+
 #-----------#
 # URL utils #
 #-----------#
@@ -308,6 +384,107 @@ def get_domain_from_subdomain(subdomain):
 	"""
 	ext = tldextract.extract(subdomain)
 	return '.'.join(ext[1:3])
+
+def probe_url(url, method='HEAD', first=False):
+	"""Probe URL to find out which protocols respond for this URL.
+
+	Args:
+		url (str): URL.
+		method (str): HTTP method to probe with. Default: HEAD.
+		first (bool): Return only first successful probe URL.
+
+	Returns:
+		list: List of URLs that responded.
+		str: First URL that responded.
+	"""
+	http_alive, http_url, http_resp = is_alive(url, scheme='http', method=method)
+	https_alive, https_url, https_resp = is_alive(url, scheme='https', method=method)
+	alive_ftp, ftp_url, _ = is_alive(url, scheme='ftp')
+	urls = []
+	if https_alive:
+		url = getattr(https_resp, 'url', https_url)
+		urls.append(url)
+	if http_alive:
+		url = getattr(http_resp, 'url', http_url)
+		urls.append(url)
+	if alive_ftp:
+		urls.append(ftp_url)
+	urls = [sanitize_url(url) for url in urls]
+	logger.info(f'Probed "{url}" and found {len(urls)} alive URLs: {urls}')
+	if first:
+		if urls:
+			return urls[0]
+		return None
+	return urls
+
+def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_REQUEST_TIMEOUT):
+	""""Check if URL is alive on a certain scheme (protocol).
+
+	Args:
+		url (str): URL with or without protocol.
+		protocol (str): Protocol to check. Default: https
+		method (str): HTTP method to use.
+
+	Returns:
+		tuple: (is_alive [bool], url [str], response [HTTPResponse]).
+	"""
+	url = urlparse(url)
+	if not url.scheme: # no scheme in input URL, adding input scheme to URL
+		url = urlparse(f'{scheme}://{url.geturl()}')
+	if url.scheme != scheme:
+		print(f'Mismatch between probed scheme ({scheme}) and actual scheme ({url.scheme})')
+		return False, None, None
+	final_url = url.geturl()
+	try:
+		if scheme == 'https':
+			connection = HTTPSConnection(url.netloc, timeout=timeout)
+			connection.request(method, url.path)
+			resp = connection.getresponse()
+			if resp:
+				return True, final_url, resp
+			return False, None, None
+		elif scheme == 'http':
+			connection = HTTPConnection(url.netloc, timeout=timeout)
+			connection.request(method, url.path)
+			resp = connection.getresponse()
+			if resp:
+				return True, final_url, resp
+			return False, None, None
+		elif scheme == 'ftp':
+			ftp = FTP(url.netloc)
+			resp1 = ftp.connect(timeout=timeout)
+			resp2 = ftp.voidcmd('NOOP')
+			status, msg = tuple(resp2.split(' NOOP command '))
+			# TODO: make this look like an HTTPResponse object
+			resp = DottedDict({
+				'status': int(status),
+				'noop_info': resp2,
+				'connect_info': resp1
+			})
+			return True, final_url, resp
+		else:
+			return False, None, None
+	except Exception as e:
+		print(str(e))
+		return False, None, None
+
+
+def sanitize_url(http_url):
+	"""Removes HTTP ports 80 and 443 from HTTP URL because it's ugly.
+
+	Args:
+		http_url (str): Input HTTP URL.
+
+	Returns:
+		str: Stripped HTTP URL.
+	"""
+	url = urlparse(http_url)
+	if url.netloc.endswith(':80'):
+		url = url._replace(netloc=url.netloc.replace(':80', ''))
+	elif url.netloc.endswith(':443'):
+		url = url._replace(netloc=url.netloc.replace(':443', ''))
+	return url.geturl().rstrip('/')
+
 
 #-------#
 # Utils #
@@ -443,22 +620,6 @@ def get_cms_details(url):
 
 	return response
 
-def sanitize_url(http_url):
-	"""Removes HTTP ports 80 and 443 from HTTP URL because it's ugly.
-
-	Args:
-		http_url (str): Input HTTP URL.
-
-	Returns:
-		str: Stripped HTTP URL.
-	"""
-	url = urlparse(http_url)
-	if url.netloc.endswith(':80'):
-		url = url._replace(netloc=url.netloc.replace(':80', ''))
-	elif url.netloc.endswith(':443'):
-		url = url._replace(netloc=url.netloc.replace(':443', ''))
-	return url.geturl().rstrip('/')
-
 
 def format_notification_message(message, scan_history_id, subscan_id):
 	"""Add scan id / subscan id to notification message.
@@ -530,9 +691,15 @@ def send_discord_message(message, title='', severity='info', url=None, files=Non
 		return False
 
 	if title: # embed
+		message = '' # ignore message field
+		logger.info(title)
+		logger.info(url)
+		logger.info(color)
+		logger.info(fields)
 		webhook = DiscordWebhook(
 			url=notif.discord_hook_url,
 			rate_limit_retry=True,
+			color=color
 		)
 		embed = DiscordEmbed(
 			title=title,
@@ -589,12 +756,86 @@ def fmt_traceback(exc):
 	return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))
 
 
+def get_scan_fields(engine, scan, subscan=None, status='RUNNING', failed_tasks=0):
+	scan_obj = subscan if subscan else scan
+	if subscan:
+		tasks = f'`{subscan.type}`'
+		host = subscan.subdomain.name
+		scan_obj = subscan
+	else:
+		tasks = '\n'.join(f'`{task}`' for task in engine.tasks)
+		host = scan.domain.name
+		scan_obj = scan
+
+	# Find scan elapsed time
+	if status in ['ABORTED', 'FAILED', 'SUCCESS']:
+		td = scan_obj.stop_scan_date - scan.start_scan_date
+	else:
+		td = timezone.now() - scan.start_scan_date
+	duration = humanize.naturaldelta(td)
+
+	# Build fields
+	fields = {}
+	if subscan:
+		scan_url = get_scan_url(scan.id)
+		fields['Parent scan'] = f'[#{scan.id}]({scan_url})'
+	fields.update({
+		'Status': f'**{status}**',
+		'Duration': duration,
+		'Engine': engine.engine_name,
+		'Host': host,
+		'Tasks': tasks
+	})
+	if failed_tasks != 0:
+		fields['Failed tasks'] = failed_tasks
+
+	return fields
+
+def get_task_title(task_name, scan_id, subscan_id=None):
+	if subscan_id:
+		return f'`#{scan_id}-#{subscan_id}` - `{task_name}`'
+	return f'`#{scan_id}` - `{task_name}`'
+
+def get_scan_title(scan_id, subscan_id=None, task_name=None):
+	title = ''
+	title += f'SUBSCAN #{subscan_id}' if subscan_id else f'SCAN #{scan_id}'
+	return title
+
+def get_scan_url(scan_id, subscan_id=None):
+	return f'https://{DOMAIN_NAME}/scan/detail/{scan_id}'
+
+def get_task_header_message(name, scan_history_id, subscan_id):
+	msg = f'`{name}` [#{scan_history_id}'
+	if subscan_id:
+		msg += f'_#{subscan_id}]'
+	msg += 'status'
+	return msg
+
+
+def get_cache_key(func_name, *args, **kwargs):
+	args_str = '_'.join([str(arg) for arg in args])
+	kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in RENGINE_TASK_IGNORE_CACHE_KWARGS])
+	return f'{func_name}__{args_str}__{kwargs_str}'
+
+
 def get_traceback_path(task_name, scan_history, subscan_id=None):
 	path = f'{scan_history.results_dir}/{task_name}_#{scan_history.id}'
 	if subscan_id:
 		path += f'_#{subscan_id}'
 	path += '.txt'
 	return path
+
+
+def get_output_file_name(scan_history_id, subscan_id, filename):
+	title = f'#{scan_history_id}'
+	if subscan_id:
+		title += f'-{subscan_id}'
+	title += f'_{filename}'
+	return title
+
+
+def get_existing_webhook(scan_history_id, subscan_id):
+	pass
 
 
 def write_traceback(traceback, results_dir, task_name, scan_history, subscan_id=None):
