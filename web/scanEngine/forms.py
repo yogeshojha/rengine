@@ -269,6 +269,14 @@ class NotificationForm(forms.ModelForm):
                 "id": "send_scan_output_file",
             }))
 
+    send_scan_tracebacks = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "send_scan_tracebacks",
+            }))
+
 
     def set_value(self, key):
         self.initial['send_to_slack'] = key.send_to_slack
@@ -286,6 +294,7 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_subdomain_changes_notif'] = key.send_subdomain_changes_notif
 
         self.initial['send_scan_output_file'] = key.send_scan_output_file
+        self.initial['send_scan_tracebacks'] = key.send_scan_tracebacks
 
         if not key.send_to_slack:
             self.fields['slack_hook_url'].widget.attrs['readonly'] = True
@@ -312,6 +321,7 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_subdomain_changes_notif'] = True
 
         self.initial['send_scan_output_file'] = True
+        self.initial['send_scan_tracebacks'] = True
 
 
 class ProxyForm(forms.ModelForm):

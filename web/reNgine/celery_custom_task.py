@@ -67,7 +67,6 @@ class RengineTask(Task):
 	- Raise the actual exception when task fails instead of just logging it.
 	"""
 	Request = RengineRequest
-	REQUIRED_KWARGS = ['engine_id', 'scan_history_id']
 	def __call__(self, *args, **kwargs):
 		result = None
 		error = None
@@ -80,16 +79,16 @@ class RengineTask(Task):
 		logger = get_task_logger(name)
 
 		# Get reNgine context
-		engine_id = kwargs.get('engine_id')
 		scan_id = kwargs.get('scan_history_id')
-		activity_id = kwargs.get('activity_id', DYNAMIC_ID)
 		subscan_id = kwargs.get('subscan_id')
+		activity_id = kwargs.get('activity_id', DYNAMIC_ID)
+		engine_id = kwargs.get('engine_id')
 		filename = kwargs.get('filename')
 		results_dir = kwargs.get('results_dir', RENGINE_RESULTS)
-		if not (engine_id and scan_id):
+		if not scan_id:
 			raise Exception(
 				f'RengineTask Invalid Task:'
-				f'{RengineTask.REQUIRED_KWARGS} must be passed as kwargs')
+				f'scan_history_id must be passed as kwargs !')
 
 		# Set file name if not already set
 		if not filename:
@@ -102,14 +101,15 @@ class RengineTask(Task):
 		output_path = f'{results_dir}/{filename}'
 
 		if RENGINE_RECORD_ENABLED:
-			engine = EngineType.objects.get(pk=engine_id)
 			scan = ScanHistory.objects.get(pk=scan_id)
 			notif = Notification.objects.first()
 
 			# If task is not in engine.tasks, skip it.
-			if name not in engine.tasks:
-				logger.debug(f'{name} is not part of this engine tasks. Skipping.')
-				return
+			if engine_id:
+				engine = EngineType.objects.get(pk=engine_id)
+				if name not in engine.tasks:
+					logger.debug(f'{name} is not part of this engine tasks. Skipping.')
+					return
 
 			# Send start log + notification
 			msg = f'Task {name} has started'
