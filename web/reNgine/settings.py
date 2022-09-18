@@ -10,19 +10,41 @@ mimetypes.add_type("text/css", ".css", True)
 #       RENGINE CONFIGURATIONS
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+# Root env vars
 RENGINE_HOME = os.environ.get('RENGINE_HOME', '/usr/src/app')
-SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RENGINE_RESULTS = os.environ.get('RENGINE_RESULTS', f'{RENGINE_HOME}/scan_results')
+RENGINE_CACHE_ENABLED = bool(int(os.environ.get('RENGINE_CACHE_ENABLED', '0')))
+RENGINE_RECORD_ENABLED = bool(int(os.environ.get('RENGINE_RECORD_ENABLED', '1')))
+RENGINE_RAISE_ON_ERROR = bool(int(os.environ.get('RENGINE_RAISE_ON_ERROR', '0')))
+
+# Env vars
+DEBUG = bool(int(os.environ.get('DEBUG', '1')))
 DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
+TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
+SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
+
+# Globals
+ALLOWED_HOSTS = ['*']
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = first_run(SECRET_FILE, BASE_DIR)
 
-DEBUG = bool(int(os.environ.get('DEBUG', '1')))
-TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
-
-ALLOWED_HOSTS = ['*']
+# Databases
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB'),
+        'USER': os.environ.get('POSTGRES_USER'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+        'HOST': os.environ.get('POSTGRES_HOST'),
+        'PORT': os.environ.get('POSTGRES_PORT'),
+        # 'OPTIONS':{
+        #     'sslmode':'verify-full',
+        #     'sslrootcert': os.path.join(BASE_DIR, 'ca-certificate.crt')
+        # }
+    }
+}
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -43,7 +65,6 @@ INSTALLED_APPS = [
     'mathfilters',
     'drf_yasg'
 ]
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -54,9 +75,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-ROOT_URLCONF = 'reNgine.urls'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -69,15 +87,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
-        },
     },
-]
-
-WSGI_APPLICATION = 'reNgine.wsgi.application'
-
-
-# REST Framework
-
+}]
+ROOT_URLCONF = 'reNgine.urls'
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -87,29 +99,15 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'rest_framework_datatables.filters.DatatablesFilterBackend',
     ),
-    'DEFAULT_PAGINATION_CLASS':
-        'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS':(
+        'rest_framework_datatables.pagination.DatatablesPageNumberPagination'
+    ),
     'PAGE_SIZE': 50,
 }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB'),
-        'USER': os.environ.get('POSTGRES_USER'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
-        'HOST': os.environ.get('POSTGRES_HOST'),
-        'PORT': os.environ.get('POSTGRES_PORT'),
-        # 'OPTIONS':{
-        #     'sslmode':'verify-full',
-        #     'sslrootcert': os.path.join(BASE_DIR, 'ca-certificate.crt')
-        # }
-    }
-}
+WSGI_APPLICATION = 'reNgine.wsgi.application'
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.' +
@@ -132,25 +130,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
-MEDIA_ROOT = os.path.join(BASE_DIR, '/usr/src/scan_results')
+
 MEDIA_URL = '/media/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100000000
 FILE_UPLOAD_PERMISSIONS = 0o644
-
 STATIC_URL = '/staticfiles/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
@@ -180,33 +171,25 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_BROKER", "redis://redis:6379/0")
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 CELERY_IGNORE_RESULTS = False
-CELERY_TASK_CACHE_ENABLED = bool(int(os.environ.get('CELERY_TASK_CACHE_ENABLED', '0')))
-CELERY_TASK_CACHE_IGNORE_KWARGS = [
+
+'''
+Cache settings
+'''
+RENGINE_TASK_IGNORE_CACHE_KWARGS = [
     'scan_history_id',
     'activity_id',
+    'subscan_id',
     'yaml_configuration',
-    'results_dir'
+    'results_dir',
+    'description'
 ]
-CELERY_TASK_SKIP_RECORD_ACTIVITY = [
-    'reNgine.tasks.geo_localize',
-    'reNgine.tasks.initiate_scan',
-    'reNgine.tasks.initiate_subscan',
-    'reNgine.tasks.http_crawl',
-    'reNgine.tasks.query_whois',
-    'reNgine.tasks.remove_duplicate_endpoints',
-    'reNgine.tasks.report',
-    'reNgine.tasks.run_command',
-    'reNgine.tasks.send_notification',
-    'reNgine.tasks.send_file_to_discord',
-    'reNgine.tasks.send_discord_message',
-    'reNgine.tasks.send_slack_message',
-    'reNgine.tasks.send_telegram_message',
-    'reNgine.tasks.stream_command',
-]
-CELERY_RAISE_ON_ERROR = bool(int(os.environ.get('CELERY_RAISE_ON_ERROR', '0')))
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+'''
+LOGGING settings
+'''
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

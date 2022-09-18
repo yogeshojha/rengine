@@ -53,5 +53,5 @@ urlpatterns = [
         include(
             'api.urls',
             'api')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + \
+] + static(settings.MEDIA_URL, document_root=settings.RENGINE_RESULTS) + \
     static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
