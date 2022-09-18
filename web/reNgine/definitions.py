@@ -128,6 +128,8 @@ DEFAULT_SUBDOMAIN_SCAN_TOOLS = ['subfinder']
 # endpoints scan
 DEFAULT_ENDPOINT_SCAN_TOOLS = ['gospider']
 DEFAULT_ENDPOINT_SCAN_INTENSITY = 'normal'
+DEFAULT_ENDPOINT_DUPLICATE_FIELDS = ['content_length', 'page_title']
+
 
 ###############################################################################
 # Logger DEFINITIONS
