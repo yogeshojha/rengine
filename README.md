@@ -66,6 +66,30 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
+### 💐💐💐 Tribute to Jasper 💐💐💐
+ 
+ ;             |  ;
+:-------------------------:|:-------------------------:
+<img src=https://user-images.githubusercontent.com/17223002/191900102-fbb05cb0-6007-49cc-9c5a-40be690d2bc0.jpg height=300> | <img src=https://user-images.githubusercontent.com/17223002/191901331-af2bd0e8-c63d-4f19-8c6c-09a181234626.png height=300>
+
+
+September 18, 2022 10:58 IST, Jasper crossed the rainbow bridge peacefully in my arms. He battled a long time with Cardiac Fibrosis and Chronic Kidney Disease. Jasper was a wonder dog, my everything and my love. We both lived together for 7 years, he was 60 days old and I was 19 years old back then, and we pretty much grew together. 
+
+My biological family lived in another country thousand miles away while Jasper by my side always every waking hours. He meant so much to me, more than just a dog, he was my brother, my son and probably everything.
+
+Every lines of code I have written for reNgine, Jasper was a part of it, every failured I had, Jasper cheered me up. He knew my best and worst. A part of me has gone forever and I am deeply broken. I take this space to honor Jasper's life.
+
+Shine brighter and fly higher Jasper!
+
+
+#### reNgine 2.0 codenamed Jasper
+
+I am currently working on reNgine 2.0 likely to be announced sometimes between May to August 2023. This version will be codenamed for Jasper. reNgine 2.0 will be the most advanced reNgine ever, a tons of work will be done in how scans are performed, things such as Pause and Resume Scan, Axiom Integration, more deeper coorelation, Project Options, Multiple Tenants, etc.
+
+Please submit your feature requests via github issues or you can [use this form](https://docs.google.com/forms/d/1Ow0XYVm8nKirG5Gvnn4Jlvx0NZ9I6CQzShXXfzhE8aE/viewform?edit_requested=true) as well.
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
 ## About reNgine
 
 You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?v=iy_6F7Vq8Lo) (Recommended)
