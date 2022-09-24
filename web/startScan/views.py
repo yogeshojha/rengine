@@ -442,8 +442,7 @@ def stop_scan(request, id):
         scan.scan_status = ABORTED_TASK
         scan.save()
         try:
-            task_ids = [id] + scan.celery_ids
-            for task_id in task_ids:
+            for task_id in scan.celery_ids:
                 app.control.revoke(task_id, terminate=True, signal='SIGKILL')
             tasks = (
                 ScanActivity.objects
