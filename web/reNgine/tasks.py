@@ -79,8 +79,6 @@ def initiate_scan(
 	# Get YAML config
 	config = yaml.safe_load(engine.yaml_configuration)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL)
-	if enable_http_crawl:
-		logger.warning('ENABLE_HTTP_CRAWL MODE ON')
 
 	# Get domain and set last_scan_date
 	domain = Domain.objects.get(pk=domain_id)
@@ -147,7 +145,7 @@ def initiate_scan(
 		subdomain,
 		config,
 		results_dir,
-		crawl=True)
+		crawl=enable_http_crawl)
 
 	# Initial URL discovery + checker on domain - will create at least 1 endpoint
 	ctx = {
@@ -362,7 +360,7 @@ def subdomain_discovery(
 	output_path = f'{results_dir}/{filename}'
 	history_file = f'{results_dir}/commands.txt'
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	tools = config.get(USES_TOOLS, SUBDOMAIN_SCAN_DEFAULT_TOOLS)
 	default_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=True).filter(is_subdomain_gathering=True)]
 	custom_subdomain_tools = [tool.name.lower() for tool in InstalledExternalTool.objects.filter(is_default=False).filter(is_subdomain_gathering=True)]
@@ -603,7 +601,7 @@ def screenshot(
 	config = yaml_configuration.get(SCREENSHOT) or {}
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
-	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	domain = scan.domain
@@ -704,7 +702,7 @@ def port_scan(
 	config = yaml_configuration.get(PORT_SCAN) or {}
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
-	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	exclude_ports = config.get(EXCLUDE_PORTS, [])
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
 	rate_limit = config.get(NAABU_RATE) or yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
@@ -971,7 +969,7 @@ def dir_file_fuzz(
 	mc = ','.join([str(c) for c in match_http_status])
 	recursive_level = config.get(RECURSIVE_LEVEL, 1)	
 	stop_on_error = config.get(STOP_ON_ERROR, False)
-	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	use_extensions = config.get(USE_EXTENSIONS)
 	wordlist_name = config.get(WORDLIST, 'dicc')
@@ -1371,7 +1369,7 @@ def vulnerability_scan(
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	rate_limit = config.get(RATE_LIMIT) or yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	retries = config.get(RETRIES) or yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
-	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
+	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_header = config.get(CUSTOM_HEADER) or yaml_configuration.get(CUSTOM_HEADER)
 
 	nuclei_templates = config.get(NUCLEI_TEMPLATE)
@@ -2245,7 +2243,7 @@ def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, fi
 	if filter_ids:
 		endpoints = endpoints.filter(id__in=filter_ids)
 
-	for field_name in ENDPOINT_DEFAULT_DUPLICATE_FIELDS:
+	for field_name in ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS:
 		cl_query = (
 			endpoints
 			.values_list(field_name)
@@ -2447,7 +2445,12 @@ def query_whois(ip_domain):
 
 
 @app.task
-def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, filter_ids=[], filter_status=[200, 301, 404]):
+def remove_duplicate_endpoints(
+		scan_history_id,
+		domain_id,
+		subdomain_id=None,
+		filter_ids=[],
+		filter_status=[200, 301, 404]):
 	"""Remove duplicate endpoints.
 
 	Check for implicit redirections by comparing endpoints:
@@ -2476,7 +2479,7 @@ def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, fi
 	if filter_ids:
 		endpoints = endpoints.filter(id__in=filter_ids)
 
-	for field_name in ENDPOINT_DEFAULT_DUPLICATE_FIELDS:
+	for field_name in ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS:
 		cl_query = (
 			endpoints
 			.values_list(field_name)
