@@ -438,7 +438,7 @@ def probe_url(url, method='HEAD', first=False):
 	return urls
 
 
-def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_REQUEST_TIMEOUT):
+def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_HTTP_TIMEOUT):
 	""""Check if URL is alive on a certain scheme (protocol).
 
 	Args:
