@@ -927,7 +927,7 @@ function show_subscan_results(subscan_id) {
 		} else if (response['subscan']['task'] == 'vulnerability_scan') {
 			task_name = 'Vulnerability Scan';
 		} else if (response['subscan']['task'] == 'fetch_url') {
-			task_name = 'EndPoint Gathering';
+			task_name = 'Fetch URLs';
 		} else if (response['subscan']['task'] == 'dir_file_fuzz') {
 			task_name = 'Directory and Files Fuzzing';
 		}

@@ -17,11 +17,15 @@ RENGINE_CACHE_ENABLED = bool(int(os.environ.get('RENGINE_CACHE_ENABLED', '0')))
 RENGINE_RECORD_ENABLED = bool(int(os.environ.get('RENGINE_RECORD_ENABLED', '1')))
 RENGINE_RAISE_ON_ERROR = bool(int(os.environ.get('RENGINE_RAISE_ON_ERROR', '0')))
 
-# Env vars
-DEBUG = bool(int(os.environ.get('DEBUG', '1')))
+# Common env vars
+DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
 TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
 SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
+DEFAULT_RATE_LIMIT = int(os.environ.get('DEFAULT_RATE_LIMIT', '1000')) # requests / second
+DEFAULT_REQUEST_TIMEOUT = int(os.environ.get('DEFAULT_REQUEST_TIMEOUT', '2')) # seconds
+DEFAULT_RETRIES = int(os.environ.get('DEFAULT_RETRIES', '1'))
+DEFAULT_THREADS = int(os.environ.get('DEFAULT_THREADS', '15'))
 
 # Globals
 ALLOWED_HOSTS = ['*']
@@ -157,9 +161,6 @@ LOGOUT_REDIRECT_URL = 'login'
 # Tool Location
 TOOL_LOCATION = '/usr/src/app/tools/'
 
-# Requests defaults
-DEFAULT_REQUEST_TIMEOUT = 5
-
 # Number of endpoints that have the same content_length
 DELETE_DUPLICATES_THRESHOLD = 10
 
@@ -177,7 +178,6 @@ Cache settings
 '''
 RENGINE_TASK_IGNORE_CACHE_KWARGS = [
     'scan_history_id',
-    'activity_id',
     'subscan_id',
     'yaml_configuration',
     'results_dir',

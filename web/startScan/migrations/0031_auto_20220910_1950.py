@@ -61,7 +61,10 @@ class Migration(migrations.Migration):
             model_name='scanhistory',
             name='waf_detection',
         ),
-
+        migrations.RemoveField(
+            model_name='scanhistory',
+            name='celery_id',
+        ),
         migrations.AddField(
             model_name='scanhistory',
             name='tasks',
@@ -104,6 +107,10 @@ class Migration(migrations.Migration):
             model_name='subscan',
             name='vulnerability_scan',
         ),
+        migrations.RemoveField(
+            model_name='subscan',
+            name='celery_id',
+        ),
         migrations.AddField(
             model_name='subscan',
             name='type',
@@ -113,6 +120,11 @@ class Migration(migrations.Migration):
             model_name='subscan',
             name='celery_ids',
             field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=100), blank=True, default=list, size=None),
+        ),
+        migrations.AddField(
+            model_name='subscan',
+            name='subdomain_subscan_ids',
+            field=models.ManyToManyField(blank=True, related_name='subdomain_subscan_ids', to='startScan.Subdomain'),
         ),
 
         # ScanActivity
@@ -126,5 +138,10 @@ class Migration(migrations.Migration):
             model_name='scanactivity',
             name='traceback',
             field=models.TextField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name='scanactivity',
+            name='celery_id',
+            field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]
