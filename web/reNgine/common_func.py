@@ -699,7 +699,8 @@ def send_discord_message(
 				if name in fields_append:
 					existing_val = field['value']
 					existing_val = str(existing_val)
-					value = f'{existing_val}\n{value}'
+					if value not in existing_val:
+						value = f'{existing_val}\n{value}'
 
 				# Update existing embed
 				ix = embed.fields.index(field)
@@ -855,14 +856,18 @@ def fmt_traceback(exc):
 
 def get_nmap_cmd(
 		cmd=None,
+		ports=None,
 		input_file=None,
 		output_file=None,
 		script=None,
 		script_args=None,
 		max_rate=None,
+		service_detection=True,
 		flags=[]):
 	if not cmd:
 		cmd = 'nmap'
+	cmd += f' -sV' if service_detection else ''
+	cmd += f' -p {ports}' if ports else ''
 	cmd += f' -iL {input_file}' if input_file else ''
 	for flag in flags:
 		cmd += flag
@@ -884,6 +889,7 @@ def get_nmap_cmd(
 #		cmd += f' --{flag}'
 # 	return cmd
 # build_cmd(cmd, proxy=proxy, option_prefix='-')
+
 
 def xml2json(xml): 
     xmlfile = open(xml)

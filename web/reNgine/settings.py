@@ -22,10 +22,10 @@ DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
 TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
 SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
-DEFAULT_RATE_LIMIT = int(os.environ.get('DEFAULT_RATE_LIMIT', '1000')) # requests / second
-DEFAULT_REQUEST_TIMEOUT = int(os.environ.get('DEFAULT_REQUEST_TIMEOUT', '2')) # seconds
+DEFAULT_RATE_LIMIT = int(os.environ.get('DEFAULT_RATE_LIMIT', '150')) # requests / second
+DEFAULT_REQUEST_TIMEOUT = int(os.environ.get('DEFAULT_REQUEST_TIMEOUT', '5')) # seconds
 DEFAULT_RETRIES = int(os.environ.get('DEFAULT_RETRIES', '1'))
-DEFAULT_THREADS = int(os.environ.get('DEFAULT_THREADS', '15'))
+DEFAULT_THREADS = int(os.environ.get('DEFAULT_THREADS', '30'))
 
 # Globals
 ALLOWED_HOSTS = ['*']

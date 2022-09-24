@@ -24,6 +24,7 @@ netaddr==0.8.0
 PyYAML==5.4.1
 PySocks==1.7.1
 psycopg2==2.9.1
+pycvesearch==1.2
 python-Levenshtein==0.12.2
 PyVirtualDisplay==2.2
 redis==3.5.3
