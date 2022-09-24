@@ -5,7 +5,6 @@ import pprint
 import subprocess
 import time
 from datetime import datetime
-from time import sleep
 from urllib.parse import urlparse
 
 import asyncwhois
@@ -362,9 +361,8 @@ def subdomain_discovery(
 
 	# Config
 	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY) or {}
-	stealth = config.get(STEALTH, False)
 	output_path = f'{results_dir}/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_REQUEST_TIMEOUT)
 	tools = config.get(USES_TOOLS, SUBDOMAIN_SCAN_DEFAULT_TOOLS)
@@ -421,7 +419,7 @@ def subdomain_discovery(
 					cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
 					cmd += f' && {cmd_extract} && {cmd_rm}'
 
-				run_command(cmd, shell=True, cmd_history=cmd_history)
+				run_command(cmd, shell=True, history_file=history_file)
 
 			elif tool in custom_subdomain_tools:
 				tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
@@ -435,7 +433,7 @@ def subdomain_discovery(
 					cmd = cmd.replace('{OUTPUT}', f'{results_dir}/subdomains_{tool}.txt')
 					cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
 
-				run_command(cmd, shell=True, cmd_history=cmd_history)
+				run_command(cmd, shell=True, history_file=history_file)
 			else:
 				logger.warning(
 					f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
@@ -450,11 +448,11 @@ def subdomain_discovery(
 	run_command(
 		f'cat {results_dir}/subdomains_*.txt > {output_path}',
 		shell=True,
-		cmd_history=cmd_history)
+		history_file=history_file)
 	run_command(
 		f'sort -u {output_path} -o {output_path}',
 		shell=True,
-		cmd_history=cmd_history)
+		history_file=history_file)
 
 	with open(output_path) as f:
 		lines = f.readlines()
@@ -602,7 +600,7 @@ def screenshot(
 	# Config
 	screenshots_path = f'{results_dir}/screenshots'
 	output_path = f'{results_dir}/screenshots/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	alive_endpoints_file = f'{results_dir}/endpoints_alive.txt'
 	config = yaml_configuration.get(SCREENSHOT) or {}
 	stealth = yaml_configuration.get(STEALTH, False)
@@ -636,7 +634,7 @@ def screenshot(
 	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_endpoints_file} -d {screenshots_path} --no-prompt'
 	cmd += f' --timeout {timeout}' if timeout > 0 else ''
 	cmd += f' --threads {threads}' if threads > 0 else ''
-	run_command(cmd, shell=True, cmd_history=cmd_history)
+	run_command(cmd, shell=True, history_file=history_file)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not load EyeWitness results at {output_path} for {domain.name}.')
 		return
@@ -699,7 +697,7 @@ def port_scan(
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	input_file = f'{results_dir}/input_subdomains_port_scan.txt'
 	output_file = f'{results_dir}/{filename}'
 	proxy = get_random_proxy()
@@ -758,7 +756,7 @@ def port_scan(
 
 	# Execute cmd and gather results
 	ports = []
-	for line in stream_command(cmd, shell=True, cmd_history=cmd_history):
+	for line in stream_command(cmd, history_file=history_file):
 		# TODO: Update Celery task status continously
 		if not isinstance(line, dict):
 			continue
@@ -841,7 +839,7 @@ def port_scan(
 			nmap_cmd,
 			echo=True,
 			shell=True,
-			cmd_history=cmd_history)
+			history_file=history_file)
 		# TODO: add xmltodict
 		# nmap_results = xmltodict(nmap_output_file)
 		with open(nmap_output_file, 'r') as f:
@@ -883,7 +881,7 @@ def waf_detection(
 	domain = scan.domain
 	input_path = f'{results_dir}/input_endpoints_waf_detection.txt'
 	output_path = f'{results_dir}/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	stealth = yaml_configuration.get(STEALTH, False)
 
 	# Get alive endpoints from DB
@@ -896,7 +894,7 @@ def waf_detection(
 		write_filepath=input_path)
 
 	cmd = f'wafw00f -i {input_path} -o {output_path}'
-	run_command(cmd, cmd_history=cmd_history)
+	run_command(cmd, history_file=history_file)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not find {output_path}')
 		return
@@ -1139,7 +1137,7 @@ def fetch_url(
 	domain = scan.domain
 	input_path = f'{results_dir}/input_endpoints_fetch_url.txt'
 	output_path = f'{results_dir}/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	proxy = get_random_proxy()
 
 	# Config
@@ -1286,7 +1284,7 @@ def fetch_url(
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{results_dir}/gf_patterns_{gf_pattern}.txt'
 		cmd = f'cat {output_path} | gf {gf_pattern} | grep -Eo {domain_regex} >> {gf_output_file}'
-		run_command(cmd, shell=True, cmd_history=cmd_history)
+		run_command(cmd, shell=True, history_file=history_file)
 
 		# Check output file
 		if not os.path.exists(gf_output_file):
@@ -1360,13 +1358,13 @@ def vulnerability_scan(
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 
 	# Config
 	config = yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{results_dir}/input_endpoints_vulnerability_scan.txt'
 	output_path = f'{results_dir}/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 
 	stealth = yaml_configuration.get(STEALTH, False)
 	concurrency = config.get(NUCLEI_CONCURRENCY) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -1399,10 +1397,10 @@ def vulnerability_scan(
 
 	if intensity == 'normal': # reduce number of endpoints to scan
 		unfurl_path = f'{results_dir}/unfurl_urls.txt'
-		run_command(f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_path}', shell=True, cmd_history=cmd_history)
-		run_command(f'sort -u {unfurl_path} -o  {unfurl_path}', shell=True, cmd_history=cmd_history)
+		run_command(f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_path}', shell=True, history_file=history_file)
+		run_command(f'sort -u {unfurl_path} -o  {unfurl_path}', shell=True, history_file=history_file)
 		input_path = unfurl_path
-		_, out, _ = run_command(f'cat {unfurl_path} | wc -l', shell=True, cmd_history=cmd_history)
+		_, out, _ = run_command(f'cat {unfurl_path} | wc -l', shell=True, history_file=history_file)
 
 	# Send start notification
 	notification = Notification.objects.first()
@@ -1412,7 +1410,7 @@ def vulnerability_scan(
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
-	# run_command('nuclei -update-templates', shell=True, cmd_history=cmd_history)
+	# run_command('nuclei -update-templates', shell=True, history_file=history_file)
 
 	templates = []
 	if not (nuclei_templates or custom_nuclei_templates):
@@ -1448,7 +1446,7 @@ def vulnerability_scan(
 
 	# Run cmd
 	results = []
-	for line in stream_command(cmd, echo=True, cmd_history=cmd_history):
+	for line in stream_command(cmd, echo=True, history_file=history_file):
 		if not isinstance(line, dict):
 			continue
 		template = line['template']
@@ -1678,7 +1676,7 @@ def http_crawl(
 	results_dir = f'{results_dir}/httpx'
 	os.makedirs(results_dir, exist_ok=True)
 	output_file = f'{results_dir}/{filename}'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	scan = ScanHistory.objects.get(pk=scan_history_id)
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
@@ -1715,7 +1713,7 @@ def http_crawl(
 	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
-	for line in stream_command(cmd, echo=False, cmd_history=cmd_history):
+	for line in stream_command(cmd, echo=False, history_file=history_file):
 		if not line or not isinstance(line, dict):
 			continue
 		try:
@@ -1858,24 +1856,6 @@ def http_crawl(
 #---------------------#
 # Notifications tasks #
 #---------------------#
-
-@app.task
-def send_file_to_discord(file_path, title=None):
-	notif = Notification.objects.first()
-	do_send = notif and notif.send_to_discord and notif.discord_hook_url
-	if not do_send:
-		return False
-
-	webhook = DiscordWebhook(
-		url=notif.discord_hook_url,
-		rate_limit_retry=True,
-		username=title or "reNgine Discord Plugin"
-	)
-	with open(file_path, "rb") as f:
-		head, tail = os.path.split(file_path)
-		webhook.add_file(file=f.read(), filename=tail)
-	webhook.execute()
-
 
 @app.task
 def send_notification(
@@ -2027,6 +2007,25 @@ def send_task_status_notification(
 		**opts)
 
 
+@app.task
+def send_file_to_discord(file_path, title=None):
+	notif = Notification.objects.first()
+	do_send = notif and notif.send_to_discord and notif.discord_hook_url
+	if not do_send:
+		return False
+
+	webhook = DiscordWebhook(
+		url=notif.discord_hook_url,
+		rate_limit_retry=True,
+		username=title or "reNgine Discord Plugin"
+	)
+	with open(file_path, "rb") as f:
+		head, tail = os.path.split(file_path)
+		webhook.add_file(file=f.read(), filename=tail)
+	webhook.execute()
+
+
+@app.task
 def send_hackerone_report(vulnerability_id):
 	"""Send HackerOne vulnerability report.
 	
@@ -2419,14 +2418,14 @@ def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, fi
 
 
 @app.task
-def run_command(cmd, echo=True, shell=False, cmd_history=None):
+def run_command(cmd, echo=True, shell=False, history_file=None):
 	"""Run a given command using subprocess module.
 
 	Args:
 		cmd (str): Command to run.
 		echo (bool): Log command.
 		shell (bool): Run within separate shell if True.
-		cmd_history (str): Write command + output to history file.
+		history_file (str): Write command + output to history file.
 
 	Returns:
 		tuple: Tuple with return_code, stdout, stderr.
@@ -2451,11 +2450,11 @@ def run_command(cmd, echo=True, shell=False, cmd_history=None):
 		if echo:
 			logger.info(item)
 	return_code = popen.returncode
-	if cmd_history:
+	if history_file:
 		mode = 'a'
-		if not os.path.exists(cmd_history):
+		if not os.path.exists(history_file):
 			mode = 'w'
-		with open(cmd_history, mode) as f:
+		with open(history_file, mode) as f:
 			f.write(f'\n{cmd}\n{return_code}\n{out}\n{err}\n\n')
 	if echo:
 		logger.info(out + err)
@@ -2466,14 +2465,14 @@ def run_command(cmd, echo=True, shell=False, cmd_history=None):
 # Other utils #
 #-------------#
 
-def stream_command(cmd, echo=True, shell=False, cmd_history=None):
+def stream_command(cmd, echo=True, shell=False, history_file=None):
 	"""Run a given command using subprocess module and stream its output live.
 
 	Args:
 		cmd (str): Command to run.
 		echo (bool): Log response items to console.
 		shell (bool): Run within separate shell if True.
-		cmd_history (str): Write command + output to history file.
+		history_file (str): Write command + output to history file.
 
 	Yields:
 		dict: stdout output converted to JSON.
@@ -2502,11 +2501,11 @@ def stream_command(cmd, echo=True, shell=False, cmd_history=None):
 		yield item
 		popen.stdout.close()
 	popen.wait()
-	if cmd_history:
+	if history_file:
 		mode = 'a'
-		if not os.path.exists(cmd_history):
+		if not os.path.exists(history_file):
 			mode = 'w'
-		with open(cmd_history, mode) as f:
+		with open(history_file, mode) as f:
 			f.write(f'\n{cmd}\n{popen.returncode}\n[STREAMED OUTPUT]\n\n')
 
 
@@ -2945,7 +2944,7 @@ def theHarvester(scan_history, subscan=None, engine_id=None, yaml_configuration=
 	subscan_id = subscan.id if subscan else None
 	theHarvester_dir = '/usr/src/github/theHarvester'
 	output_filepath = f'{results_dir}/results.json'
-	cmd_history = f'{results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {host} -b all -f {output_filepath}'
 
 	# Update proxies.yaml
@@ -2959,7 +2958,7 @@ def theHarvester(scan_history, subscan=None, engine_id=None, yaml_configuration=
 				yaml.dump(yaml_data, file)
 
 	# Run cmd
-	run_command(cmd, shell=True, cmd_history=cmd_history)
+	run_command(cmd, shell=True, history_file=history_file)
 
 	# Get file location
 	if not os.path.isfile(output_filepath):
@@ -3112,8 +3111,8 @@ def h8mail(scan_history, subscan=None, engine_id=None, results_dir=None):
 	output_path = f'{results_dir}/emails.txt'
 	leak_output_file = f'{results_dir}/h8mail_output.json'
 	cmd = f'h8mail -t {output_path} --json {leak_output_file}'
-	cmd_history = f'{results_dir}/commands.txt'
-	run_command(cmd, cmd_history=cmd_history)
+	history_file = f'{results_dir}/commands.txt'
+	run_command(cmd, history_file=history_file)
 	with open(leak_output_file) as f:
 		data = json.load(f)
 		creds = data.get('targets', [])
