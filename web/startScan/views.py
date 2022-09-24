@@ -40,7 +40,7 @@ def detail_scan(request, id=None):
     # Get scan objects
     scan = get_object_or_404(ScanHistory, id=id)
     domain_id = scan.domain.id
-    scan_engines = EngineType.objects.all()
+    scan_engines = EngineType.objects.order_by('engine_name').all()
     recent_scans = ScanHistory.objects.filter(domain__id=domain_id)
     last_scans = (
         ScanHistory.objects
@@ -215,7 +215,7 @@ def detail_scan(request, id=None):
 
 def all_subdomains(request):
     subdomains = Subdomain.objects
-    scan_engines = EngineType.objects.all()
+    scan_engines = EngineType.objects.order_by('engine_name').all()
     alive_subdomains = subdomains.filter(http_status__exact=200) # TODO: replace this with is_alive() function
     important_subdomains = (
         subdomains
@@ -277,14 +277,13 @@ def start_scan_ui(request, domain_id):
             'scan_history_id': scan.id,
             'domain_id': domain.id,
             'engine_id': engine_id,
-            'activity_id': DYNAMIC_ID, # activity will be created dynamically
             'scan_type': LIVE_SCAN,
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
             'url_path': filterPath.lstrip('/')
         }
-        celery_task = initiate_scan.apply_async(kwargs=kwargs)
+        initiate_scan.apply_async(kwargs=kwargs)
         scan.save()
 
         # Send start notif
@@ -295,7 +294,7 @@ def start_scan_ui(request, domain_id):
         return HttpResponseRedirect(reverse('scan_history'))
 
     # GET request
-    engine = EngineType.objects.order_by('id')
+    engine = EngineType.objects.order_by('engine_name')
     custom_engine_count = (
         EngineType.objects
         .filter(default_engine=False)
@@ -325,7 +324,6 @@ def start_multiple_scan(request):
                     'scan_history_id': scan_history_id,
                     'domain_id': domain.id,
                     'engine_id': engine_id,
-                    'activity_id': DYNAMIC_ID,
                     'scan_type': LIVE_SCAN,
                     'results_dir': '/usr/src/scan_results',
                     # TODO: Add this to multiple scan view
@@ -488,9 +486,9 @@ def schedule_scan(request, host_id):
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
 
         # Get engine type
-        engine_object = get_object_or_404(EngineType, id=engine_type)
+        engine = get_object_or_404(EngineType, id=engine_type)
         timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
-        task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
+        task_name = f'{engine.engine_name} for {domain.name}: {timestr}'
         if scheduled_mode == 'periodic':
             frequency_value = int(request.POST['frequency'])
             frequency_type = request.POST['frequency_type']
@@ -511,9 +509,9 @@ def schedule_scan(request, host_id):
                 period=period)
             kwargs = {
                 'domain_id': host_id,
-                'scan_history_id': 0,
+                'engine_id': engine.id,
+                'scan_history_id': LIVE_SCAN,
                 'scan_type': SCHEDULED_SCAN,
-                'engine_type': engine_type,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out
             }
@@ -526,12 +524,13 @@ def schedule_scan(request, host_id):
             clock, _ = ClockedSchedule.objects.get_or_create(
                 clocked_time=schedule_time)
             kwargs = {
-                'domain_id': host_id,
                 'scan_history_id': 0,
+                'domain_id': host_id,
+                'engine_id': engine.id,
                 'scan_type': SCHEDULED_SCAN,
-                'engine_type': engine_type,
                 'imported_subdomains': subdomains_in,
-                'out_of_scope_subdomains': subdomains_out }
+                'out_of_scope_subdomains': subdomains_out
+            }
             PeriodicTask.objects.create(clocked=clock,
                                         one_off=True,
                                         name=task_name,
@@ -614,12 +613,12 @@ def create_scan_object(host_id, engine_id):
     # get current time
     current_scan_time = timezone.now()
     # fetch engine and domain object
-    engine_object = EngineType.objects.get(pk=engine_id)
+    engine = EngineType.objects.get(pk=engine_id)
     domain = Domain.objects.get(pk=host_id)
     scan = ScanHistory()
     scan.scan_status = INITIATED_TASK
     scan.domain = domain
-    scan.scan_type = engine_object
+    scan.scan_type = engine
     scan.start_scan_date = current_scan_time
     scan.save()
     # save last scan date for domain model
@@ -671,7 +670,6 @@ def start_organization_scan(request, id):
                 'scan_history_id': scan_history_id,
                 'domain_id': domain.id,
                 'engine_id': engine_id,
-                'activity_id': -1, # activity will be created dynamically
                 'scan_type': LIVE_SCAN,
                 'results_dir': '/usr/src/scan_results',
                 # TODO: Add this to multiple scan view
@@ -690,7 +688,7 @@ def start_organization_scan(request, id):
         return HttpResponseRedirect(reverse('scan_history'))
 
     # GET request
-    engine = EngineType.objects.order_by('id')
+    engine = EngineType.objects.order_by('engine_name')
     custom_engine_count = EngineType.objects.filter(default_engine=False).count()
     domain_list = organization.get_domains()
     context = {
@@ -707,11 +705,11 @@ def schedule_organization_scan(request, id):
     organization =Organization.objects.get(id=id)
     if request.method == "POST":
         engine_type = int(request.POST['scan_mode'])
-        engine_object = get_object_or_404(EngineType, id=engine_type)
+        engine = get_object_or_404(EngineType, id=engine_type)
         scheduled_mode = request.POST['scheduled_mode']
         for domain in organization.get_domains():
             timestr = str(datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S'))
-            task_name = f'{engine_object.engine_name} for {domain.name}: {timestr}'
+            task_name = f'{engine.engine_name} for {domain.name}: {timestr}'
 
             # Period task
             if scheduled_mode == 'periodic':
@@ -736,9 +734,9 @@ def schedule_organization_scan(request, id):
                 )
                 _kwargs = json.dumps({
                     'domain_id': domain.id,
+                    'engine_id': engine.id,
                     'scan_history_id': 0,
                     'scan_type': SCHEDULED_SCAN,
-                    'engine_type': engine_type,
                     'imported_subdomains': None
                 })
                 PeriodicTask.objects.create(
@@ -754,12 +752,13 @@ def schedule_organization_scan(request, id):
                 clock, _ = ClockedSchedule.objects.get_or_create(
                     clocked_time=schedule_time
                 )
-                _kwargs = json.dumps({'domain_id': domain.id,
+                _kwargs = json.dumps({
+                    'domain_id': domain.id,
+                    'engine_id': engine.id,
                     'scan_history_id': 0,
-                    'scan_type': 1,
-                    'engine_type': engine_type,
-                    'imported_subdomains': None}
-                )
+                    'scan_type': LIVE_SCAN,
+                    'imported_subdomains': None
+                })
                 PeriodicTask.objects.create(clocked=clock,
                     one_off=True,
                     name=task_name,

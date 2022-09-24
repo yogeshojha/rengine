@@ -1268,6 +1268,7 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 			return "Interesting"
 
 	def get_children(self, subdomain_name):
+		scan_history = self.context.get('scan_history')
 		subdomain = Subdomain.objects.filter(
 			scan_history=self.context.get('scan_history')).filter(
 			name=subdomain_name)
@@ -1283,9 +1284,11 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 		technologies = Technology.objects.filter(technologies__in=subdomain)
 		tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
 
-		vulnerability = Vulnerability.objects.filter(
-			scan_history=self.context.get('scan_history')
-		).filter(subdomain=subdomain_name)
+		vulnerability = (
+			Vulnerability.objects
+			.filter(scan_history=scan_history)
+			.filter(subdomain=subdomain_name)
+		)
 
 		return_data = []
 		if ip_serializer.data:
@@ -1465,8 +1468,9 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 
 		subdomain = Subdomain.objects.filter(scan_history=history)
 		subdomain_serializer = VisualiseSubdomainSerializer(
-			subdomain, many=True, context={
-				'scan_history': history})
+			subdomain,
+			many=True,
+			context={'scan_history': history})
 
 		email = Email.objects.filter(emails__in=scan_history)
 		email_serializer = VisualiseEmailSerializer(email, many=True)
@@ -1483,53 +1487,77 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 		return_data = []
 
 		if subdomain_serializer.data:
-			return_data.append({'description': 'Subdomains', 'children': subdomain_serializer.data})
+			return_data.append({
+				'description': 'Subdomains',
+				'children': subdomain_serializer.data})
 
 		if email_serializer.data or employee_serializer.data or dork_serializer.data or metainfo:
 			osint_data = []
 			if email_serializer.data:
-				osint_data.append({'description': 'Emails', 'children': email_serializer.data})
+				osint_data.append({
+					'description': 'Emails',
+					'children': email_serializer.data})
 			if employee_serializer.data:
-				osint_data.append({'description': 'Employees', 'children': employee_serializer.data})
+				osint_data.append({
+					'description': 'Employees',
+					'children': employee_serializer.data})
 			if dork_serializer.data:
-				osint_data.append({'description': 'Dorks', 'children': dork_serializer.data})
+				osint_data.append({
+					'description': 'Dorks',
+					'children': dork_serializer.data})
 
 			if metainfo:
 				metainfo_data = []
-				usernames = metainfo.annotate(
-					description=F('author')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(author__isnull=False)
+				usernames = (
+					metainfo
+					.annotate(description=F('author'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(author__isnull=False)
+				)
 
 				if usernames:
-					metainfo_data.append({'description': 'Usernames', 'children': usernames})
+					metainfo_data.append({
+						'description': 'Usernames',
+						'children': usernames})
 
-				software = metainfo.annotate(
-					description=F('producer')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(producer__isnull=False)
+				software = (
+					metainfo
+					.annotate(description=F('producer'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(producer__isnull=False)
+				)
 
 				if software:
-					metainfo_data.append({'description': 'Software', 'children': software})
+					metainfo_data.append({
+						'description': 'Software',
+						'children': software})
 
-				os = metainfo.annotate(
-					description=F('os')
-				).values('description').distinct().annotate(
-					children=Value(
-						[], output_field=JSONField())
-					).filter(os__isnull=False)
+				os = (
+					metainfo
+					.annotate(description=F('os'))
+					.values('description')
+					.distinct()
+					.annotate(children=Value([], output_field=JSONField()))
+					.filter(os__isnull=False)
+				)
 
 				if os:
-					metainfo_data.append({'description': 'OS', 'children': os})
+					metainfo_data.append({
+						'description': 'OS',
+						'children': os})
 
 			if metainfo:
-				osint_data.append({'description':'Metainfo', 'children': metainfo_data})
+				osint_data.append({
+					'description':'Metainfo',
+					'children': metainfo_data})
 
-			return_data.append({'description':'OSINT', 'children': osint_data})
+			return_data.append({
+				'description':'OSINT',
+				'children': osint_data})
 
 		return return_data
 
@@ -1537,7 +1565,6 @@ class VisualiseDataSerializer(serializers.ModelSerializer):
 class SubdomainChangesSerializer(serializers.ModelSerializer):
 
 	change = serializers.SerializerMethodField('get_change')
-
 	is_interesting = serializers.SerializerMethodField('get_is_interesting')
 
 	class Meta:
@@ -1548,9 +1575,11 @@ class SubdomainChangesSerializer(serializers.ModelSerializer):
 		return Subdomain.change
 
 	def get_is_interesting(self, Subdomain):
-		return get_interesting_subdomains(
-			Subdomain.scan_history.id).filter(
-			name=Subdomain.name).exists()
+		return (
+			get_interesting_subdomains(Subdomain.scan_history.id)
+			.filter(name=Subdomain.name)
+			.exists()
+		)
 
 
 class EndPointChangesSerializer(serializers.ModelSerializer):
@@ -1708,9 +1737,11 @@ class SubdomainSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 	def get_is_interesting(self, subdomain):
-		return get_interesting_subdomains(
-			subdomain.scan_history.id).filter(
-			name=subdomain.name).exists()
+		return (
+			get_interesting_subdomains(subdomain.scan_history.id)
+			.filter(name=subdomain.name)
+			.exists()
+		)
 
 	def get_endpoint_count(self, subdomain):
 		return subdomain.get_endpoint_count
@@ -1765,7 +1796,6 @@ class EndpointOnlyURLsSerializer(serializers.ModelSerializer):
 class VulnerabilitySerializer(serializers.ModelSerializer):
 
 	discovered_date = serializers.SerializerMethodField()
-
 	severity = serializers.SerializerMethodField()
 
 	def get_discovered_date(self, Vulnerability):
