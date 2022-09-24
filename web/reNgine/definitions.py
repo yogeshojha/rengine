@@ -135,7 +135,7 @@ SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder']
 
 # endpoints scan
 ENDPOINT_SCAN_DEFAULT_TOOLS = ['gospider']
-ENDPOINT_DEFAULT_DUPLICATE_FIELDS = ['content_length', 'page_title']
+ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS = ['content_length', 'page_title']
 
 
 ###############################################################################
