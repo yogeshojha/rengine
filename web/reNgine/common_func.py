@@ -757,9 +757,7 @@ def enrich_notification(message, scan_history_id, subscan_id):
 
 
 def get_scan_title(scan_id, subscan_id=None, task_name=None):
-	title = ''
-	title += f'SUBSCAN #{subscan_id}' if subscan_id else f'SCAN #{scan_id}'
-	return title
+	return f'Subscan #{subscan_id} summary' if subscan_id else f'Scan #{scan_id} summary'
 
 
 def get_scan_url(scan_id, subscan_id=None):
