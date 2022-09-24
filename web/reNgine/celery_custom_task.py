@@ -5,43 +5,93 @@ from celery.utils.log import get_task_logger
 from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
-from reNgine.common_func import (fmt_traceback, get_cache_key,
-                                 get_output_file_name, get_scan_title, get_task_title,
-                                 send_notification_helper, write_traceback)
+from reNgine.common_func import (fmt_traceback, get_output_file_name,
+                                 get_task_cache_key, get_traceback_path)
 from reNgine.definitions import *
 from reNgine.settings import *
-from scanEngine.models import EngineType, Notification
+from scanEngine.models import EngineType
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
 cache = Redis.from_url(os.environ['CELERY_BROKER'])
 
-def create_scan_activity(scan_history_id, task_id, name, message, status, subscan_id=None):
-	scan_history = ScanHistory.objects.get(pk=scan_history_id)
-	scan_history.celery_ids.append(task_id)
-	scan_history.save()
-	scan_activity = ScanActivity()
-	scan_activity.scan_of = scan_history
-	scan_activity.name = name
-	scan_activity.title = message
-	scan_activity.time = timezone.now()
-	scan_activity.status = status
-	scan_activity.save()
+
+def create_scan_activity(
+		task_celery_id,
+		task_name,
+		status=None,
+		title=None,
+		scan_history_id=None,
+		subscan_id=None,
+		engine_id=None):
+	scan = ScanHistory.objects.get(pk=scan_history_id) if scan_history_id else None
+	task = ScanActivity(
+		name=task_name,
+		title=title,
+		time=timezone.now(),
+		status=status,
+		celery_id=task_celery_id)
+	if scan:
+		task.scan_of = scan
+		scan.celery_ids.append(task_celery_id)
+		scan.save()
+	task.save()
 	if subscan_id:
 		subscan = SubScan.objects.get(pk=subscan_id)
-		subscan.celery_ids.append(task_id)
+		subscan.celery_ids.append(task_celery_id)
 		subscan.save()
-	return scan_activity.id
+
+	# Send notification
+	from reNgine.tasks import send_task_status_notification
+	send_task_status_notification.delay(
+		task_name,
+		status='RUNNING',
+		scan_history_id=scan_history_id,
+		engine_id=engine_id,
+		subscan_id=subscan_id)
+
+	return task.id
 
 
-def update_scan_activity(id, status, error=None, traceback=None):
-	scan_activity = ScanActivity.objects.filter(id=id)
+def update_scan_activity(
+		id,
+		task_name,
+		status=None,
+		result=None,
+		error=None,
+		traceback=None,
+		output_path=None,
+		scan_history_id=None,
+		engine_id=None,
+		subscan_id=None):
+	task = ScanActivity.objects.filter(id=id)
+	scan = task.first().scan_of
+	scan_id = scan.id if scan else scan_history_id
+	status_h = CELERY_TASK_STATUS_MAP.get(status) if status else None
+
+	# Trim error before saving to DB
 	if error and len(error) > 300:
 		error = error[:288] + '...[trimmed]'
-	return scan_activity.update(
+
+	if status:
+		task.update(
 			status=status,
 			error_message=error,
 			traceback=traceback,
 			time=timezone.now())
+
+	# Send notification
+	from reNgine.tasks import send_task_status_notification
+	send_task_status_notification.delay(
+		task_name,
+		status=status_h,
+		result=result,
+		traceback=traceback,
+		output_path=output_path,
+		scan_history_id=scan_id,
+		engine_id=engine_id,
+		subscan_id=subscan_id)
+
+	return result
 
 
 class RengineRequest(Request):
@@ -81,7 +131,6 @@ class RengineTask(Task):
 		# Get reNgine context
 		scan_id = kwargs.get('scan_history_id')
 		subscan_id = kwargs.get('subscan_id')
-		activity_id = kwargs.get('activity_id', DYNAMIC_ID)
 		engine_id = kwargs.get('engine_id')
 		filename = kwargs.get('filename')
 		results_dir = kwargs.get('results_dir', RENGINE_RESULTS)
@@ -96,57 +145,42 @@ class RengineTask(Task):
 			if name == 'screenshot':
 				filename = 'Requests.csv'
 			kwargs['filename'] = filename
-
-		# Set file output path
 		output_path = f'{results_dir}/{filename}'
 
 		if RENGINE_RECORD_ENABLED:
-			scan = ScanHistory.objects.get(pk=scan_id)
-			notif = Notification.objects.first()
-
-			# If task is not in engine.tasks, skip it.
-			if engine_id:
+			if engine_id: # task not in engine.tasks, skip it.
 				engine = EngineType.objects.get(pk=engine_id)
 				if name not in engine.tasks:
-					logger.debug(f'{name} is not part of this engine tasks. Skipping.')
+					logger.debug(f'Task {name} is not part of engine "{engine.engine_name}" tasks. Skipping.')
 					return
 
-			# Send start log + notification
-			msg = f'Task {name} has started'
-			title = get_task_title(name, scan_id, subscan_id)
-			if notif and notif.send_scan_status_notif:
-				fields = {
-					'Status': '**RUNNING**'
-				}
-				send_notification_helper(
-					message=msg,
-					title=title,
-					fields=fields,
-					severity='info')
-
-			# Create ScanActivity for this task
-			activity_id = create_scan_activity(
-				scan_history_id=scan_id,
-				task_id=self.request.id,
-				name=name,
-				message=description,
-				subscan_id=subscan_id,
-				status=RUNNING_TASK)
-
-			# Set activity id in task kwargs so we can update ScanActivity from
-			# within the task if needed.
-			kwargs['activity_id'] = activity_id
+			# Create ScanActivity for this task and send start scan notifs
 			logger.warning(f'Task {name} is RUNNING')
+			activity_id = create_scan_activity(
+				self.request.id,
+				name,
+				RUNNING_TASK,
+				title=description,
+				scan_history_id=scan_id,
+				subscan_id=subscan_id,
+				engine_id=engine_id)
 
-		# Check for result in cache and return it if it's a hit
 		if RENGINE_CACHE_ENABLED:
-			record_key = get_cache_key(name, *args, **kwargs)
+			# Check for result in cache and return it if it's a hit
+			record_key = get_task_cache_key(name, *args, **kwargs)
 			result = cache.get(record_key)
 			if result and result != b'null':
-
 				if RENGINE_RECORD_ENABLED:
 					logger.warning(f'Task {name} status is SUCCESS (CACHED)')
-					update_scan_activity(activity_id, SUCCESS_TASK)
+					update_scan_activity(
+						activity_id,
+						name,
+						SUCCESS_TASK,
+						result,
+						output_path=output_path,
+						engine_id=engine_id,
+						scan_history_id=scan_id,
+						subscan_id=subscan_id)
 
 				return json.loads(result)
 
@@ -160,60 +194,35 @@ class RengineTask(Task):
 			status = FAILED_TASK
 			error = repr(exc)
 			traceback = fmt_traceback(exc)
-			output_path = write_traceback(
-					traceback,
-					results_dir=f'{results_dir}/tracebacks',
-					task_name=name,
-					scan_history=scan,
-					subscan_id=subscan_id)
+			result = traceback
+			output_path = get_traceback_path(name, results_dir, scan_id, subscan_id)
+			os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 			if RENGINE_RAISE_ON_ERROR:
 				raise exc
+
 			logger.exception(exc)
 
 		finally:
 			status_str = CELERY_TASK_STATUS_MAP[status]
 
 			if RENGINE_RECORD_ENABLED:
-				msg = f'Task {self.name} status is {status_str}'
-				logger.warning(msg)
-
 				# Update ScanActivity for this task: change task status, add 
-				# error and traceback to db when the task failed.
+				# error and traceback to db when the task failed, send scan
+				# status notification.
+				logger.warning(f'Task {self.name} status is {status_str}')
 				update_scan_activity(
 					activity_id,
+					name,
 					status,
+					result=result,
 					error=error,
-					traceback=traceback)
+					traceback=traceback,
+					output_path=output_path,
+					engine_id=engine_id,
+					scan_history_id=scan_id,
+					subscan_id=subscan_id)
 
-				# Send task status notification
-				if notif and notif.send_scan_status_notif:
-					scan = ScanHistory.objects.get(pk=scan_id)
-
-					# Add files to notif
-					files = []
-					if notif.send_scan_output_file:
-						output_title = output_path.split('/')[-1]
-						logger.warning(f'Sending output file {output_path} to Discord.')
-						if isinstance(result, dict) or isinstance(result, list):
-							with open(output_path, 'w') as f:
-								json.dump(result, f)
-						if output_path and os.path.exists(output_path):
-							files = [(output_path, output_title)]
-					
-					# Send notification
-					fields = {'Status': f'**{status_str}**'}
-					severity = 'success'
-					if status == FAILED_TASK:
-						fields['Error'] = error
-						fields['Traceback'] = "```\n" + traceback + "\n```"
-						severity = 'error'
-					send_notification_helper(
-						message=msg,
-						title=title,
-						files=files,
-						fields=fields,
-						severity=severity)
 
 		# Set task result in cache
 		if RENGINE_CACHE_ENABLED and status == SUCCESS_TASK and result:

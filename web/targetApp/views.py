@@ -316,7 +316,7 @@ def target_summary(request, id):
     )
 
     # Scan Engines
-    context['scan_engines'] = EngineType.objects.all()
+    context['scan_engines'] = EngineType.objects.order_by('engine_name').all()
 
     # Subdomains
     subdomains = (

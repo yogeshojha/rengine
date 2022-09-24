@@ -341,7 +341,7 @@ class SubScan(models.Model):
 			'subdomain_discovery': 'Subdomain discovery',
 			'dir_file_fuzz': 'Directory and File fuzzing',
 			'port_scan': 'Port Scan',
-			'fetch_url': 'Endpoint Gathering',
+			'fetch_url': 'Fetch URLs',
 			'vulnerability_scan': 'Vulnerability Scan',
 			'screenshot': 'Screenshot',
 			'waf_detection': 'Waf Detection',
@@ -472,6 +472,7 @@ class ScanActivity(models.Model):
 	status = models.IntegerField()
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	traceback = models.TextField(blank=True, null=True)
+	celery_id = models.CharField(max_length=100, blank=True, null=True)
 
 	def __str__(self):
 		return str(self.title)

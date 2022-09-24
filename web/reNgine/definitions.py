@@ -59,6 +59,7 @@ RETRIES = 'retries'
 SCREENSHOT = 'screenshot'
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 STOP_ON_ERROR = 'stop_on_error'
+STEALTH = 'stealth'
 THREADS = 'threads'
 TIMEOUT = 'timeout'
 USE_AMASS_CONFIG = 'use_amass_config'
@@ -76,6 +77,8 @@ WORDLIST = 'wordlist'
 
 LIVE_SCAN = 1
 SCHEDULED_SCAN = 0
+
+DEFAULT_SCAN_INTENSITY = 'normal'
 
 ###############################################################################
 # Tools DEFAULTS
@@ -109,7 +112,7 @@ FFUF_DEFAULT_WORDLIST_PATH = '/usr/src/wordlist/dicc.txt'
 FFUF_DEFAULT_MATCH_HTTP_STATUS = [200, 204]
 
 # naabu
-NAABU_DEFAULT_PORTS = ['full']  # all ports
+NAABU_DEFAULT_PORTS = ['top-1000']
 
 # nuclei
 NUCLEI_DEFAULT_TEMPLATES_PATH = '/root/nuclei-templates'
@@ -127,12 +130,11 @@ NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
 OSINT_DEFAULT_LOOKUPS = ['emails', 'metainfo', 'employees']
 
 # subdomain scan
-DEFAULT_SUBDOMAIN_SCAN_TOOLS = ['subfinder']
+SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder']
 
 # endpoints scan
-DEFAULT_ENDPOINT_SCAN_TOOLS = ['gospider']
-DEFAULT_ENDPOINT_SCAN_INTENSITY = 'normal'
-DEFAULT_ENDPOINT_DUPLICATE_FIELDS = ['content_length', 'page_title']
+ENDPOINT_SCAN_DEFAULT_TOOLS = ['gospider']
+ENDPOINT_DEFAULT_DUPLICATE_FIELDS = ['content_length', 'page_title']
 
 
 ###############################################################################
@@ -149,6 +151,26 @@ SMALL = '100px'
 MEDIM = '200px'
 LARGE = '400px'
 XLARGE = '500px'
+
+# Discord message colors
+DISCORD_INFO_COLOR = '0xfbbc00' # yellow
+DISCORD_WARNING_COLOR = '0xf75b00' # orange
+DISCORD_ERROR_COLOR = '0xf70000'
+DISCORD_SUCCESS_COLOR = '0x00ff78'
+DISCORD_SEVERITY_COLORS = {
+    'info': DISCORD_INFO_COLOR,
+    'warning': DISCORD_WARNING_COLOR,
+    'error': DISCORD_ERROR_COLOR,
+    'aborted': DISCORD_ERROR_COLOR,
+    'success': DISCORD_SUCCESS_COLOR
+}
+
+STATUS_TO_SEVERITIES = {
+    'RUNNING': 'info',
+    'SUCCESS': 'success',
+    'FAILED': 'error',
+    'ABORTED': 'error'
+}
 
 ###############################################################################
 # Interesting Subdomain DEFINITIONS

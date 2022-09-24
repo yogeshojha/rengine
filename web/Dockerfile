@@ -25,6 +25,7 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     libpq-dev \
     libpcap-dev \
     netcat \
+    nmap \
     postgresql \
     python3 \
     python3-dev \
