@@ -55,7 +55,3 @@ secret
 /secrets
 
 get-docker.sh
-*.sh
-Pipfile*
-resume.cfg
-
