@@ -7,6 +7,7 @@ import shutil
 import traceback
 from ftplib import FTP
 from http.client import HTTPConnection, HTTPSConnection
+from time import sleep
 from urllib.parse import urlparse
 
 import humanize
@@ -340,11 +341,11 @@ def get_interesting_endpoints(scan_history=None, target=None):
 
 	lookup_keywords = get_lookup_keywords()
 	lookup_obj = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id').first()
+	if not lookup_obj:
+		return EndPoint.objects.none()
 	url_lookup = lookup_obj.url_lookup
 	title_lookup = lookup_obj.title_lookup
 	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
-	if not lookup_obj:
-		return EndPoint.objects.none()
 
 	# Filter on domain_id, scan_history_id
 	query = EndPoint.objects
@@ -727,11 +728,24 @@ def send_discord_message(
 		response = webhook.edit(cached_response)
 	else:
 		response = webhook.execute()
-		if use_discord_embed:
+		if use_discord_embed and response.status_code == 200:
 			DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
 
 	# Get status code
-	if response.status_code != 200:
+	if response.status_code == 429:
+		errors = json.loads(response.content.decode('utf-8'))
+		wh_sleep = (int(errors['retry_after']) / 1000) + 0.15
+		logger.warning(f'Rate limited while sending webhook data to Discord. Retrying in {wh_sleep}.')
+		sleep(wh_sleep)
+		send_discord_message(
+			message,
+			title=title,
+			severity=severity,
+			url=url,
+			files=files,
+			fields=fields,
+			fields_append=fields_append)
+	elif response.status_code != 200:
 		logger.error(
 			f'Error while sending webhook data to Discord.'
 			f'\n\tHTTP code: {response.status_code}.'

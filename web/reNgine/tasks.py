@@ -20,7 +20,7 @@ from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
-								   get_emails_from_google)
+                                   get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
 from pycvesearch import CVESearch
 from reNgine.celery import app
@@ -29,7 +29,7 @@ from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification,
-							   Proxy)
+                               Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
@@ -157,23 +157,25 @@ def initiate_scan(
 	}
 
 	# Build Celery tasks, crafted according to the dependency graph below:
-	# initiate_scan --> subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
-	#					osint 	   		              		  			    vulnerability_scan
-	#		 		 						                  				screenshot
-	# 		   		 						           		   				waf_detection
+	# initiate_scan --> subdomain_discovery --> port_scan     --> fetch_url      --> vulnerability_scan
+	#					osint 	   		        waf_detection 	  dir_file_fuzz	     screenshot
 	workflow = chain(
 		group(
 			subdomain_discovery.si(**ctx, description='Subdomain discovery'),
 			osint.si(**ctx, description='OS Intelligence')
 		),
-		port_scan.si(**ctx, description='Port scan'),
-		fetch_url.si(**ctx, description='Fetch URL'),
 		group(
-			dir_file_fuzz.si(**ctx, description='Directories & files fuzz'),
+			port_scan.si(**ctx, description='Port scan'),
 			waf_detection.si(**ctx, description='WAF detection'),
+		),
+		group(
+			fetch_url.si(**ctx, description='Fetch URL'),
+			dir_file_fuzz.si(**ctx, description='Directories & files fuzz'),
+		),
+		group(
 			vulnerability_scan.si(**ctx, description='Vulnerability scan'),
-			screenshot.si(**ctx, description='Screenshot')
-		)
+			screenshot.si(**ctx, description='Screenshot'),
+		),
 	)
 
 	# Build callback
@@ -896,7 +898,7 @@ def nmap(
 			subscan=subscan,
 			**vuln_data)
 		notif = Notification.objects.first()
-		if vuln and notif.send_scan_status_notif:
+		if vuln and notif and notif.send_scan_status_notif:
 			cve_str = ', '.join(f'`{cve_id}`' for cve_id in vuln.cve_ids)
 			vuln_str = f'`{vuln.name}` | {cve_str} | `{vuln.cvss}`'
 			send_task_status_notification.delay(
