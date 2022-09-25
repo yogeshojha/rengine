@@ -421,11 +421,11 @@ def probe_url(url, method='HEAD', first=False):
 	https_alive, https_url, https_resp = is_alive(url, scheme='https', method=method)
 	alive_ftp, ftp_url, _ = is_alive(url, scheme='ftp')
 	urls = []
-	if https_alive:
-		url = getattr(https_resp, 'url', https_url)
-		urls.append(url)
 	if http_alive:
 		url = getattr(http_resp, 'url', http_url)
+		urls.append(url)
+	if https_alive:
+		url = getattr(https_resp, 'url', https_url)
 		urls.append(url)
 	if alive_ftp:
 		urls.append(ftp_url)
@@ -855,9 +855,10 @@ def fmt_traceback(exc):
 #--------------#
 
 def get_nmap_cmd(
+		input_file,
 		cmd=None,
+		host=None,
 		ports=None,
-		input_file=None,
 		output_file=None,
 		script=None,
 		script_args=None,
@@ -868,13 +869,16 @@ def get_nmap_cmd(
 		cmd = 'nmap'
 	cmd += f' -sV' if service_detection else ''
 	cmd += f' -p {ports}' if ports else ''
-	cmd += f' -iL {input_file}' if input_file else ''
 	for flag in flags:
 		cmd += flag
 	cmd += f' --script {script}' if script else ''
 	cmd += f' --script-args {script_args}' if script_args else ''
 	cmd += f' --max-rate {max_rate}' if max_rate else ''
 	cmd += f' -oX {output_file}' if output_file else ''
+	if input_file:
+		cmd += f' -iL {input_file}'
+	elif host:
+		cmd += f' {host}'
 	return cmd
 
 # TODO: replace all cmd += ' -{proxy}' if proxy else '' by this function
