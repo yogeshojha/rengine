@@ -13,6 +13,7 @@ from scanEngine.models import EngineType
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
 cache = Redis.from_url(os.environ['CELERY_BROKER'])
+logger = get_task_logger(__name__)
 
 
 def create_scan_activity(
@@ -67,6 +68,7 @@ def update_scan_activity(
 	scan = task.first().scan_of
 	scan_id = scan.id if scan else scan_history_id
 	status_h = CELERY_TASK_STATUS_MAP.get(status) if status else None
+	logger.info(f'SCAN UPDATE || Status: {status_h} | Output path: {output_path}')
 
 	# Trim error before saving to DB
 	if error and len(error) > 300:
