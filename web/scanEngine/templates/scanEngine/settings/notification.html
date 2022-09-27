@@ -104,19 +104,19 @@ Notification Settings
             <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Send me notification for</h4>
             <div class="col-xl-9 col-lg-9 col-sm-10">
               {{form.send_scan_status_notif}}
-              <label class="form-label" for="send_scan_status_notif">Scan related updates (e.g. Scan Initiated, Scan Completed)</label>
+              <label class="form-label" for="send_scan_status_notif">Scan related updates (e.g. Scan initiated, Scan completed)</label>
               <br>
               {{form.send_interesting_notif}}
-              <label class="form-label" for="send_interesting_notif">Interesting Subdomains</label>
+              <label class="form-label" for="send_interesting_notif">Interesting subdomains</label>
               <br>
               {{form.send_vuln_notif}}
               <label class="form-label" for="send_vuln_notif">Vulnerabilities Found</label>
               <br>
-              <span class="text-muted">*Informational Vulnerabilities will not be notified.</span>
+              <span class="text-muted">*Informational vulnerabilities will not be notified.</span>
               <br>
               {{form.send_subdomain_changes_notif}}
               <label class="form-label" for="send_subdomain_changes_notif">
-                Subdomain Changes
+                Subdomain changes
                 <br>
                 <span class="text-muted">
                   (e.g. when new Subdomains are discovered or subdomains are no longer available)
@@ -129,12 +129,27 @@ Notification Settings
             <div class="col-xl-9 col-lg-9 col-sm-10">
               {{form.send_scan_output_file}}
               <label class="form-label" for="send_scan_output_file">
-                Send Scan Output (e.g. Subdomain gathered file)
+                Send scan output (e.g. Subdomain gathered file)
                 <br>
-                <span class="text-primary">Only discord is supported!</span>
+                <span class="text-primary">Discord only</span>
                 <br>
                 <span class="text-muted">
-                  (This lets you upload scan results like list of subdomains to your discord)
+                  (upload scan results to your Discord)
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="row mt-3">
+            <h4 class="col-form-label col-xl-3 col-sm-3 col-sm-2 mt-3 header-title">Upload Scan Results<br>(Recommended)</h4>
+            <div class="col-xl-9 col-lg-9 col-sm-10">
+              {{form.send_scan_tracebacks}}
+              <label class="form-label" for="send_scan_output_file">
+                Send tasks tracebacks
+                <br>
+                <span class="text-primary">Discord only</span>
+                <br>
+                <span class="text-muted">
+                  (upload task failed tasks tracebacks to your Discord)
                 </span>
               </label>
             </div>

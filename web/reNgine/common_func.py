@@ -5,17 +5,19 @@ import pickle
 import random
 import shutil
 import traceback
-from ftplib import FTP
+# from ftplib import FTP
 from http.client import HTTPConnection, HTTPSConnection
+from time import sleep
 from urllib.parse import urlparse
 
 import humanize
 import redis
 import requests
 import tldextract
+import xmltodict
+from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
-from dotted_dict import DottedDict
 from reNgine.common_serializers import *
 from reNgine.definitions import *
 from reNgine.settings import *
@@ -23,7 +25,7 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 
 #------------------#
@@ -46,7 +48,7 @@ def dump_custom_scan_engines(results_dir):
 def load_custom_scan_engines(results_dir):
 	"""Load custom scan engines from YAML files. The filename without .yaml will 
 	be used as the engine name.
-	
+
 	Args:
 		results_dir (str): Results directory containing engines configs.
 	"""
@@ -69,7 +71,7 @@ def load_custom_scan_engines(results_dir):
 #--------------------------------#
 def get_lookup_keywords():
 	"""Get lookup keywords from InterestingLookupModel.
-	
+
 	Returns:
 		list: Lookup keywords.
 	"""
@@ -95,7 +97,7 @@ def get_lookup_keywords():
 # SubDomain queries #
 #-------------------#
 
-def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
+def get_subdomains(target_domain, scan_history=None, url_filter='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -123,8 +125,8 @@ def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=N
 	if not subdomains:
 		logger.warning('No subdomains were found in query !')
 
-	if url_path:
-		subdomains = [f'{subdomain}/{url_path}' for subdomain in subdomains]
+	if url_filter:
+		subdomains = [f'{subdomain}/{url_filter}' for subdomain in subdomains]
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
@@ -133,7 +135,7 @@ def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=N
 	return subdomains
 
 def get_new_added_subdomain(scan_id, domain_id):
-	"""Find domains added during the last run.
+	"""Find domains added during the last scan.
 
 	Args:
 		scan_id (int): startScan.models.ScanHistory ID.
@@ -170,6 +172,15 @@ def get_new_added_subdomain(scan_id, domain_id):
 
 
 def get_removed_subdomain(scan_id, domain_id):
+	"""Find domains removed during the last scan.
+
+	Args:
+		scan_id (int): startScan.models.ScanHistory ID.
+		domain_id (int): startScan.models.Domain ID.
+
+	Returns:
+		django.models.querysets.QuerySet: query of newly added subdomains.
+	"""
 	scan_history = (
 		ScanHistory.objects
 		.filter(domain=domain_id)
@@ -197,28 +208,32 @@ def get_removed_subdomain(scan_id, domain_id):
 	)
 
 
-def get_interesting_subdomains(scan_history=None, target=None):
+def get_interesting_subdomains(scan_history=None, domain_id=None):
 	"""Get Subdomain objects matching InterestingLookupModel conditions.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): Scan history.
-		target (str): Domain id.
+		scan_history (startScan.models.ScanHistory, optional): Scan history.
+		domain_id (int, optional): Domain id.
 
 	Returns:
 		django.db.Q: QuerySet object.
 	"""
 	lookup_keywords = get_lookup_keywords()
-	lookup_obj = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id').first()
-	url_lookup = lookup_obj.url_lookup
-	title_lookup = lookup_obj.title_lookup
-	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
+	lookup_obj = (
+		InterestingLookupModel.objects
+		.filter(custom_type=True)
+		.order_by('-id').first())
 	if not lookup_obj:
 		return Subdomain.objects.none()
 
+	url_lookup = lookup_obj.url_lookup
+	title_lookup = lookup_obj.title_lookup
+	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
+
 	# Filter on domain_id, scan_history_id
 	query = Subdomain.objects
-	if target:
-		query = query.filter(target_domain__id=target)
+	if domain_id:
+		query = query.filter(target_domain__id=domain_id)
 	elif scan_history:
 		query = query.filter(scan_history__id=scan_history)
 
@@ -252,7 +267,9 @@ def get_http_urls(
 		subdomain_id=None,
 		scan_history=None,
 		is_alive=False,
-		url_path='',
+		is_uncrawled=False,
+		url_filter='',
+		strict=False,
 		ignore_files=False,
 		exclude_subdomains=False,
 		write_filepath=None):
@@ -262,7 +279,8 @@ def get_http_urls(
 	Args:
 		target_domain (startScan.models.Domain): Target Domain object.
 		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
-		is_alive (bool): If True, select only alive subdomains.
+		is_alive (bool): If True, select only alive urls.
+		is_uncrawled (bool): If True, select only urls that have not been crawled.
 		path (str): URL path.
 		write_filepath (str): Write info back to a file.
 
@@ -276,12 +294,21 @@ def get_http_urls(
 		subdomain = Subdomain.objects.get(pk=subdomain_id)
 		base_query = base_query.filter(http_url__contains=subdomain.name)
 	elif exclude_subdomains:
-		base_query = base_query.filter(name=target_domain.name)
+		base_query = base_query.filter(http_url=target_domain.http_url)
+
+	# If is_uncrawled is True, select only endpoints that have not been crawled
+	# yet (no status)
+	if is_uncrawled:
+		base_query = base_query.filter(http_status__isnull=True)
 
 	# If a path is passed, select only endpoints that contains it
-	if url_path:
-		url = f'{target_domain.name}/{url_path}'
-		base_query = base_query.filter(http_url__contains=url)
+	if url_filter:
+		url = f'{target_domain.name}/{url_filter}'
+		url = url.rstrip('/')
+		if strict:
+			base_query = base_query.filter(http_url=url)
+		else:
+			base_query = base_query.filter(http_url__contains=url)
 
 	# Select distinct endpoints and order
 	endpoints = base_query.distinct('http_url').order_by('http_url').all()
@@ -321,11 +348,11 @@ def get_interesting_endpoints(scan_history=None, target=None):
 
 	lookup_keywords = get_lookup_keywords()
 	lookup_obj = InterestingLookupModel.objects.filter(custom_type=True).order_by('-id').first()
+	if not lookup_obj:
+		return EndPoint.objects.none()
 	url_lookup = lookup_obj.url_lookup
 	title_lookup = lookup_obj.title_lookup
 	condition_200_http_lookup = lookup_obj.condition_200_http_lookup
-	if not lookup_obj:
-		return EndPoint.objects.none()
 
 	# Filter on domain_id, scan_history_id
 	query = EndPoint.objects
@@ -385,89 +412,6 @@ def get_domain_from_subdomain(subdomain):
 	ext = tldextract.extract(subdomain)
 	return '.'.join(ext[1:3])
 
-def probe_url(url, method='HEAD', first=False):
-	"""Probe URL to find out which protocols respond for this URL.
-
-	Args:
-		url (str): URL.
-		method (str): HTTP method to probe with. Default: HEAD.
-		first (bool): Return only first successful probe URL.
-
-	Returns:
-		list: List of URLs that responded.
-		str: First URL that responded.
-	"""
-	http_alive, http_url, http_resp = is_alive(url, scheme='http', method=method)
-	https_alive, https_url, https_resp = is_alive(url, scheme='https', method=method)
-	alive_ftp, ftp_url, _ = is_alive(url, scheme='ftp')
-	urls = []
-	if https_alive:
-		url = getattr(https_resp, 'url', https_url)
-		urls.append(url)
-	if http_alive:
-		url = getattr(http_resp, 'url', http_url)
-		urls.append(url)
-	if alive_ftp:
-		urls.append(ftp_url)
-	urls = [sanitize_url(url) for url in urls]
-	logger.info(f'Probed "{url}" and found {len(urls)} alive URLs: {urls}')
-	if first:
-		if urls:
-			return urls[0]
-		return None
-	return urls
-
-def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_REQUEST_TIMEOUT):
-	""""Check if URL is alive on a certain scheme (protocol).
-
-	Args:
-		url (str): URL with or without protocol.
-		protocol (str): Protocol to check. Default: https
-		method (str): HTTP method to use.
-
-	Returns:
-		tuple: (is_alive [bool], url [str], response [HTTPResponse]).
-	"""
-	url = urlparse(url)
-	if not url.scheme: # no scheme in input URL, adding input scheme to URL
-		url = urlparse(f'{scheme}://{url.geturl()}')
-	if url.scheme != scheme:
-		print(f'Mismatch between probed scheme ({scheme}) and actual scheme ({url.scheme})')
-		return False, None, None
-	final_url = url.geturl()
-	try:
-		if scheme == 'https':
-			connection = HTTPSConnection(url.netloc, timeout=timeout)
-			connection.request(method, url.path)
-			resp = connection.getresponse()
-			if resp:
-				return True, final_url, resp
-			return False, None, None
-		elif scheme == 'http':
-			connection = HTTPConnection(url.netloc, timeout=timeout)
-			connection.request(method, url.path)
-			resp = connection.getresponse()
-			if resp:
-				return True, final_url, resp
-			return False, None, None
-		elif scheme == 'ftp':
-			ftp = FTP(url.netloc)
-			resp1 = ftp.connect(timeout=timeout)
-			resp2 = ftp.voidcmd('NOOP')
-			status, msg = tuple(resp2.split(' NOOP command '))
-			# TODO: make this look like an HTTPResponse object
-			resp = DottedDict({
-				'status': int(status),
-				'noop_info': resp2,
-				'connect_info': resp1
-			})
-			return True, final_url, resp
-		else:
-			return False, None, None
-	except Exception as e:
-		print(str(e))
-		return False, None, None
-
 
 def sanitize_url(http_url):
 	"""Removes HTTP ports 80 and 443 from HTTP URL because it's ugly.
@@ -506,71 +450,6 @@ def get_random_proxy():
 	# os.environ['HTTP_PROXY'] = proxy_name
 	# os.environ['HTTPS_PROXY'] = proxy_name
 	return proxy_name
-
-
-def send_hackerone_report(vulnerability_id):
-	"""Send hackerone report.
-	
-	Args:
-		vulnerability_id (int): Vulnerability id.
-
-	Returns:
-		int: HTTP response status code.
-	"""
-	vulnerability = Vulnerability.objects.get(id=vulnerability_id)
-	severities = {v: k for k,v in NUCLEI_SEVERITY_MAP.items()}
-	headers = {
-		'Content-Type': 'application/json',
-		'Accept': 'application/json'
-	}
-
-	# can only send vulnerability report if team_handle exists
-	if len(vulnerability.target_domain.h1_team_handle) !=0:
-		hackerone_query = Hackerone.objects.all()
-		if hackerone_query.exists():
-			hackerone = Hackerone.objects.first()
-			severity_value = severities[vulnerability.severity]
-			tpl = hackerone.report_template
-
-			# Replace syntax of report template with actual content
-			tpl = tpl.replace('{vulnerability_name}', vulnerability.name)
-			tpl = tpl.replace('{vulnerable_url}', vulnerability.http_url)
-			tpl = tpl.replace('{vulnerability_severity}', severity_value)
-			tpl = tpl.replace('{vulnerability_description}', vulnerability.description if vulnerability.description else '')
-			tpl = tpl.replace('{vulnerability_extracted_results}', vulnerability.extracted_results if vulnerability.extracted_results else '')
-			tpl = tpl.replace('{vulnerability_reference}', vulnerability.reference if vulnerability.reference else '')
-
-			data = {
-			  "data": {
-				"type": "report",
-				"attributes": {
-				  "team_handle": vulnerability.target_domain.h1_team_handle,
-				  "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
-				  "vulnerability_information": tpl,
-				  "severity_rating": severity_value,
-				  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
-				}
-			  }
-			}
-
-			r = requests.post(
-			  'https://api.hackerone.com/v1/hackers/reports',
-			  auth=(hackerone.username, hackerone.api_key),
-			  json=data,
-			  headers=headers
-			)
-			response = r.json()
-			status_code = r.status_code
-			if status_code == 201:
-				vulnerability.hackerone_report_id = response['data']["id"]
-				vulnerability.open_status = False
-				vulnerability.save()
-			return status_code
-
-	else:
-		logger.error('No team handle found.')
-		status_code = 111
-		return status_code
 
 
 def get_cms_details(url):
@@ -621,7 +500,189 @@ def get_cms_details(url):
 	return response
 
 
-def format_notification_message(message, scan_history_id, subscan_id):
+#--------------------#
+# NOTIFICATION UTILS #
+#--------------------#
+
+def send_telegram_message(message):
+	"""Send Telegram message.
+	
+	Args:
+		message (str): Message.
+	"""
+	notif = Notification.objects.first()
+	do_send = (
+		notif and
+		notif.send_to_telegram and
+		notif.telegram_bot_token and
+		notif.telegram_bot_chat_id)
+	if not do_send:
+		return
+	telegram_bot_token = notif.telegram_bot_token
+	telegram_bot_chat_id = notif.telegram_bot_chat_id
+	send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
+	requests.get(send_url)
+
+
+def send_slack_message(message):
+	"""Send Slack message.
+	
+	Args:
+		message (str): Message.
+	"""
+	headers = {'content-type': 'application/json'}
+	message = {'text': message}
+	notif = Notification.objects.first()
+	do_send = (
+		notif and 
+		notif.send_to_slack and
+		notif.slack_hook_url)
+	if not do_send:
+		return
+	hook_url = notif.slack_hook_url
+	requests.post(url=hook_url, data=json.dumps(message), headers=headers)
+
+
+def send_discord_message(
+		message,
+		title='',
+		severity=None,
+		url=None,
+		files=None,
+		fields={},
+		fields_append=[]):
+	"""Send Discord message.
+	
+	If title and fields are specified, ignore the 'message' and create a Discord
+	embed that can be updated later if specifying the same title (title is the
+	cache key).
+
+	Args:
+		message (str): Message to send. If an embed is used, this is ignored.
+		severity (str, optional): Severity. Colors are picked based on severity.
+		files (list, optional): List of files to attach to message.
+		title (str, optional): Discord embed title.
+		url (str, optional): Discord embed URL.
+		fields (dict, optional): Discord embed fields.
+		fields_append (list, optional): Discord embed field names to update
+			instead of overwrite.
+	"""
+
+	# Check if do send
+	notif = Notification.objects.first()
+	if not (notif and notif.send_to_discord and notif.discord_hook_url):
+		return False
+
+	# If fields and title, use an embed
+	use_discord_embed = fields and title
+	if use_discord_embed:
+		message = '' # no need for message in embeds
+
+	# Check for cached response in cache, using title as key
+	cached_response = DISCORD_WEBHOOKS_CACHE.get(title) if title else None
+	if cached_response:
+		cached_response = pickle.loads(cached_response)
+
+	# Get existing webhook if found in cache
+	cached_webhook = DISCORD_WEBHOOKS_CACHE.get(title + '_webhook') if title else None
+	if cached_webhook:
+		webhook = pickle.loads(cached_webhook)
+		webhook.remove_embeds()
+	else:
+		webhook = DiscordWebhook(
+			url=notif.discord_hook_url,
+			rate_limit_retry=False,
+			content=message)
+
+	# Get existing embed if found in cache
+	embed = None
+	cached_embed = DISCORD_WEBHOOKS_CACHE.get(title + '_embed') if title else None
+	if cached_embed:
+		embed = pickle.loads(cached_embed) 
+	elif use_discord_embed:
+		embed = DiscordEmbed(title=title)
+
+	# Set embed fields
+	if embed:
+		if url:
+			embed.set_url(url)
+		if severity:
+			embed.set_color(DISCORD_SEVERITY_COLORS[severity])
+		embed.set_description(message)
+		embed.set_timestamp()
+		existing_fields_dict = {field['name']: field['value'] for field in embed.fields}
+		logger.warning(''.join([f'\n\t{k}: {v}' for k, v in fields.items()]))
+		for name, value in fields.items():
+			if not value: # cannot send empty field values to Discord [error 400]
+				continue
+			value = str(value)
+			new_field = {'name': name, 'value': value, 'inline': False}
+
+			# If field already existed in previous embed, update it.
+			if name in existing_fields_dict.keys():
+				field = [f for f in embed.fields if f['name'] == name][0]
+
+				# Append to existing field value
+				if name in fields_append:
+					existing_val = field['value']
+					existing_val = str(existing_val)
+					if value not in existing_val:
+						value = f'{existing_val}\n{value}'
+
+				# Update existing embed
+				ix = embed.fields.index(field)
+				embed.fields[ix]['value'] = value
+
+			else:
+				embed.add_embed_field(**new_field)
+
+		webhook.add_embed(embed)
+
+		# Add webhook and embed objects to cache so we can pick them up later
+		DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
+		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
+
+	# Add files to webhook
+	if files:
+		for (path, name) in files:
+			with open(path, 'r') as f:
+				content = f.read()
+			webhook.add_file(content, name)
+
+	# Edit webhook if it already existed, otherwise send new webhook
+	if cached_response:
+		response = webhook.edit(cached_response)
+	else:
+		response = webhook.execute()
+		if use_discord_embed and response.status_code == 200:
+			DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
+
+	# Get status code
+	if response.status_code == 429:
+		errors = json.loads(
+			response.content.decode('utf-8'))
+		wh_sleep = (int(errors['retry_after']) / 1000) + 0.15
+		logger.error(
+			f'Webhook rate limited: sleeping for {wh_sleep} seconds...')
+		sleep(wh_sleep)
+		send_discord_message(
+				message,
+				title,
+				severity,
+				url,
+				files,
+				fields,
+				fields_append)
+	elif response.status_code != 200:
+		logger.error(
+			f'Error while sending webhook data to Discord.'
+			f'\n\tHTTP code: {response.status_code}.'
+			f'\n\tDetails: {response.content}')
+	else:
+		logger.warning(f'Discord notification "{title}" sent !')
+
+
+def enrich_notification(message, scan_history_id, subscan_id):
 	"""Add scan id / subscan id to notification message.
 	
 	Args:
@@ -640,169 +701,61 @@ def format_notification_message(message, scan_history_id, subscan_id):
 	return message
 
 
-def send_notification_helper(
-		message,
-		scan_history_id=None,
-		subscan_id=None,
-		title=None,
-		url=None,
-		files=[],
-		severity='info',
-		fields={}):
-	if not title:
-		message = format_notification_message(message, scan_history_id, subscan_id)
-	send_discord_message(message, title=title, url=url, files=files, severity=severity, fields=fields)
-	send_slack_message(message)
-	send_telegram_message(message)
+def get_scan_title(scan_id, subscan_id=None, task_name=None):
+	return f'Subscan #{subscan_id} summary' if subscan_id else f'Scan #{scan_id} summary'
 
 
-def send_telegram_message(message):
-	notification = Notification.objects.first()
-	if notification and notification.send_to_telegram \
-	and notification.telegram_bot_token \
-	and notification.telegram_bot_chat_id:
-		telegram_bot_token = notification.telegram_bot_token
-		telegram_bot_chat_id = notification.telegram_bot_chat_id
-		send_url = f'https://api.telegram.org/bot{telegram_bot_token}/sendMessage?chat_id={telegram_bot_chat_id}&parse_mode=Markdown&text={message}'
-		requests.get(send_url)
+def get_scan_url(scan_id, subscan_id=None):
+	return f'https://{DOMAIN_NAME}/scan/detail/{scan_id}'
 
 
-def send_slack_message(message):
-	headers = {'content-type': 'application/json'}
-	message = {'text': message}
-	notification = Notification.objects.first()
-	if notification and notification.send_to_slack \
-	and notification.slack_hook_url:
-		hook_url = notification.slack_hook_url
-		requests.post(url=hook_url, data=json.dumps(message), headers=headers)
-
-
-def send_discord_message(message, title='', severity='info', url=None, files=None, fields={}):
-	notif = Notification.objects.first()
-	colors = {
-		'info': '0xfbbc00', # yellow
-		'warning': '0xf75b00', # orange
-		'error': '0xf70000', # red,
-		'success': '0x00ff78'
-	}
-	color = colors[severity]
-
-	if not (notif and notif.send_to_discord and notif.discord_hook_url):
-		return False
-
-	if title: # embed
-		message = '' # ignore message field
-		logger.info(title)
-		logger.info(url)
-		logger.info(color)
-		logger.info(fields)
-		webhook = DiscordWebhook(
-			url=notif.discord_hook_url,
-			rate_limit_retry=True,
-			color=color
-		)
-		embed = DiscordEmbed(
-			title=title,
-			description=message,
-			url=url,
-			color=color)
-		if fields:
-			for name, value in fields.items():
-				embed.add_embed_field(name=name, value=value, inline=False)
-		webhook.add_embed(embed)
-	else:
-		webhook = DiscordWebhook(
-			url=notif.discord_hook_url,
-			content=message,
-			rate_limit_retry=True)
-	if files:
-		for (path, name) in files:
-			with open(path, 'r') as f:
-				content = f.read()
-			webhook.add_file(content, name)
-
-	# Edit webhook if sent response in cache, otherwise send new webhook
-	if title:
-		cached_response = DISCORD_WEBHOOKS_CACHE.get(title)
-		if cached_response: # edit existing embed
-			logger.warning(f'Found cached webhook. Editing webhook !!!')
-			cached_response = pickle.loads(cached_response)
-			webhook.edit(cached_response)
-		else:
-			response = webhook.execute()
-			DISCORD_WEBHOOKS_CACHE.set(title, pickle.dumps(response))
-	else:
-		webhook.execute()
-
-
-def send_file_to_discord_helper(file_path, title=None):
-	notif = Notification.objects.first()
-	do_send = notif and notif.send_to_discord and notif.discord_hook_url
-	if not do_send:
-		return False
-
-	webhook = DiscordWebhook(
-		url=notif.discord_hook_url,
-		rate_limit_retry=True,
-		username=title or "reNgine Discord Plugin"
-	)
-	with open(file_path, "rb") as f:
-		head, tail = os.path.split(file_path)
-		webhook.add_file(file=f.read(), filename=tail)
-	webhook.execute()
-
-
-def fmt_traceback(exc):
-	return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))
-
-
-def get_scan_fields(engine, scan, subscan=None, status='RUNNING', failed_tasks=0):
+def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 	scan_obj = subscan if subscan else scan
 	if subscan:
-		tasks = f'`{subscan.type}`'
+		tasks_h = f'`{subscan.type}`'
 		host = subscan.subdomain.name
 		scan_obj = subscan
 	else:
-		tasks = '\n'.join(f'`{task}`' for task in engine.tasks)
+		tasks_h = '• ' + '\n• '.join(f'`{task.name}`' for task in tasks) if tasks else ''
 		host = scan.domain.name
 		scan_obj = scan
 
 	# Find scan elapsed time
-	if status in ['ABORTED', 'FAILED', 'SUCCESS']:
-		td = scan_obj.stop_scan_date - scan.start_scan_date
-	else:
-		td = timezone.now() - scan.start_scan_date
-	duration = humanize.naturaldelta(td)
+	duration = None
+	if scan_obj and status in ['ABORTED', 'FAILED', 'SUCCESS']:
+		td = scan_obj.stop_scan_date - scan_obj.start_scan_date
+		duration = humanize.naturaldelta(td)
+	elif scan_obj:
+		td = timezone.now() - scan_obj.start_scan_date
+		duration = humanize.naturaldelta(td)
 
 	# Build fields
-	fields = {}
-	if subscan:
-		scan_url = get_scan_url(scan.id)
-		fields['Parent scan'] = f'[#{scan.id}]({scan_url})'
-	fields.update({
+	url = get_scan_url(scan.id)
+	fields = {
 		'Status': f'**{status}**',
-		'Duration': duration,
 		'Engine': engine.engine_name,
-		'Host': host,
-		'Tasks': tasks
-	})
-	if failed_tasks != 0:
-		fields['Failed tasks'] = failed_tasks
+		'Scan ID': f'[#{scan.id}]({url})'
+	}
+
+	if subscan:
+		url = get_scan_url(scan.id, subscan.id)
+		fields['Subscan ID'] = f'[#{subscan.id}]({url})'
+
+	if duration:
+		fields['Duration'] = duration
+
+	fields['Host'] = host
+	if tasks:
+		fields['Tasks'] = tasks_h
 
 	return fields
+
 
 def get_task_title(task_name, scan_id, subscan_id=None):
 	if subscan_id:
 		return f'`#{scan_id}-#{subscan_id}` - `{task_name}`'
 	return f'`#{scan_id}` - `{task_name}`'
 
-def get_scan_title(scan_id, subscan_id=None, task_name=None):
-	title = ''
-	title += f'SUBSCAN #{subscan_id}' if subscan_id else f'SCAN #{scan_id}'
-	return title
-
-def get_scan_url(scan_id, subscan_id=None):
-	return f'https://{DOMAIN_NAME}/scan/detail/{scan_id}'
 
 def get_task_header_message(name, scan_history_id, subscan_id):
 	msg = f'`{name}` [#{scan_history_id}'
@@ -812,18 +765,10 @@ def get_task_header_message(name, scan_history_id, subscan_id):
 	return msg
 
 
-def get_cache_key(func_name, *args, **kwargs):
+def get_task_cache_key(func_name, *args, **kwargs):
 	args_str = '_'.join([str(arg) for arg in args])
 	kwargs_str = '_'.join([f'{k}={v}' for k, v in kwargs.items() if k not in RENGINE_TASK_IGNORE_CACHE_KWARGS])
 	return f'{func_name}__{args_str}__{kwargs_str}'
-
-
-def get_traceback_path(task_name, scan_history, subscan_id=None):
-	path = f'{scan_history.results_dir}/{task_name}_#{scan_history.id}'
-	if subscan_id:
-		path += f'_#{subscan_id}'
-	path += '.txt'
-	return path
 
 
 def get_output_file_name(scan_history_id, subscan_id, filename):
@@ -834,14 +779,69 @@ def get_output_file_name(scan_history_id, subscan_id, filename):
 	return title
 
 
-def get_existing_webhook(scan_history_id, subscan_id):
-	pass
+def get_traceback_path(task_name, results_dir, scan_history_id=None, subscan_id=None):
+	path = results_dir
+	if scan_history_id:
+		path = f'{path}/{task_name}_#{scan_history_id}'
+	if subscan_id:
+		path += f'-#{subscan_id}'
+	path += '.txt'
+	return path
 
 
-def write_traceback(traceback, results_dir, task_name, scan_history, subscan_id=None):
-	output_path = get_traceback_path(task_name, scan_history, subscan_id)
-	os.makedirs(os.path.dirname(output_path))
-	with open(output_path, 'w') as f:
-		f.write(traceback)
-	logger.info(f'Traceback written to {output_path}')
-	return output_path
+def fmt_traceback(exc):
+	return '\n'.join(traceback.format_exception(None, exc, exc.__traceback__))
+
+
+#--------------#
+# CLI BUILDERS #
+#--------------#
+
+def get_nmap_cmd(
+		input_file,
+		cmd=None,
+		host=None,
+		ports=None,
+		output_file=None,
+		script=None,
+		script_args=None,
+		max_rate=None,
+		service_detection=True,
+		flags=[]):
+	if not cmd:
+		cmd = 'nmap'
+	cmd += f' -sV' if service_detection else ''
+	cmd += f' -p {ports}' if ports else ''
+	for flag in flags:
+		cmd += flag
+	cmd += f' --script {script}' if script else ''
+	cmd += f' --script-args {script_args}' if script_args else ''
+	cmd += f' --max-rate {max_rate}' if max_rate else ''
+	cmd += f' -oX {output_file}' if output_file else ''
+	if input_file:
+		cmd += f' -iL {input_file}'
+	elif host:
+		cmd += f' {host}'
+	return cmd
+
+# TODO: replace all cmd += ' -{proxy}' if proxy else '' by this function
+# def build_cmd(cmd, options, flags, sep=' '):
+# 	for k, v in options.items():
+# 		if v is None:
+# 			continue
+#		cmd += f' {k}{sep}{v}'
+#	for flag in flags:
+#		if not flag:
+#			continue
+#		cmd += f' --{flag}'
+# 	return cmd
+# build_cmd(cmd, proxy=proxy, option_prefix='-')
+
+
+def xml2json(xml): 
+    xmlfile = open(xml)
+    xml_content = xmlfile.read()
+    xmlfile.close()
+    xmljson = json.dumps(xmltodict.parse(xml_content), indent=4, sort_keys=True)
+    jsondata = json.loads(xmljson)
+    return jsondata

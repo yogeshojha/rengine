@@ -24,7 +24,6 @@ CUSTOM_HEADER = 'custom_header'
 DELAY = 'delay'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FOLLOW_REDIRECT = 'follow_redirect'
-EXCLUDE_PORTS = 'exclude_ports'
 EXTENSIONS = 'extensions'
 EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 EXCLUDE_EXTENSIONS = 'exclude_extensions'
@@ -36,8 +35,15 @@ IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 INTENSITY = 'intensity'
 MATCH_HTTP_STATUS = 'match_http_status'
 MAX_TIME = 'max_time'
+NAABU_EXCLUDE_PORTS = 'exclude_ports'
+NAABU_EXCLUDE_SUBDOMAINS = 'exclude_subdomains'
+NAABU_NMAP_CLI = 'nmap_cli'
+NAABU_NMAP_SCRIPT = 'nmap_script'
+NAABU_NMAP_SCRIPT_ARGS = 'nmap_script_args'
+NAABU_PASSIVE = 'passive'
 NAABU_RATE = 'rate'
 NUCLEI_CUSTOM_TEMPLATE = 'custom_templates'
+NUCLEI_TAGS = 'tags'
 NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
@@ -55,6 +61,7 @@ RETRIES = 'retries'
 SCREENSHOT = 'screenshot'
 SUBDOMAIN_DISCOVERY = 'subdomain_discovery'
 STOP_ON_ERROR = 'stop_on_error'
+ENABLE_HTTP_CRAWL = 'enable_http_crawl'
 THREADS = 'threads'
 TIMEOUT = 'timeout'
 USE_AMASS_CONFIG = 'use_amass_config'
@@ -64,6 +71,7 @@ USE_NUCLEI_CONFIG = 'use_nuclei_config'
 USE_SUBFINDER_CONFIG = 'use_subfinder_config'
 USES_TOOLS = 'uses_tools'
 VULNERABILITY_SCAN = 'vulnerability_scan'
+WAF_DETECTION = 'waf_detection'
 WORDLIST = 'wordlist'
 
 ###############################################################################
@@ -72,6 +80,8 @@ WORDLIST = 'wordlist'
 
 LIVE_SCAN = 1
 SCHEDULED_SCAN = 0
+
+DEFAULT_SCAN_INTENSITY = 'normal'
 
 ###############################################################################
 # Tools DEFAULTS
@@ -105,7 +115,7 @@ FFUF_DEFAULT_WORDLIST_PATH = '/usr/src/wordlist/dicc.txt'
 FFUF_DEFAULT_MATCH_HTTP_STATUS = [200, 204]
 
 # naabu
-NAABU_DEFAULT_PORTS = ['full']  # all ports
+NAABU_DEFAULT_PORTS = ['top-1000']
 
 # nuclei
 NUCLEI_DEFAULT_TEMPLATES_PATH = '/root/nuclei-templates'
@@ -117,18 +127,18 @@ NUCLEI_SEVERITY_MAP = {
     'critical': 4,
     'unknown': -1,
 }
+NUCLEI_REVERSE_SEVERITY_MAP = {v: k for k, v in NUCLEI_SEVERITY_MAP.items()}
 NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
 
 # osint
 OSINT_DEFAULT_LOOKUPS = ['emails', 'metainfo', 'employees']
 
 # subdomain scan
-DEFAULT_SUBDOMAIN_SCAN_TOOLS = ['subfinder']
+SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder']
 
 # endpoints scan
-DEFAULT_ENDPOINT_SCAN_TOOLS = ['gospider']
-DEFAULT_ENDPOINT_SCAN_INTENSITY = 'normal'
-DEFAULT_ENDPOINT_DUPLICATE_FIELDS = ['content_length', 'page_title']
+ENDPOINT_SCAN_DEFAULT_TOOLS = ['gospider']
+ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS = ['content_length', 'page_title']
 
 
 ###############################################################################
@@ -145,6 +155,26 @@ SMALL = '100px'
 MEDIM = '200px'
 LARGE = '400px'
 XLARGE = '500px'
+
+# Discord message colors
+DISCORD_INFO_COLOR = '0xfbbc00' # yellow
+DISCORD_WARNING_COLOR = '0xf75b00' # orange
+DISCORD_ERROR_COLOR = '0xf70000'
+DISCORD_SUCCESS_COLOR = '0x00ff78'
+DISCORD_SEVERITY_COLORS = {
+    'info': DISCORD_INFO_COLOR,
+    'warning': DISCORD_WARNING_COLOR,
+    'error': DISCORD_ERROR_COLOR,
+    'aborted': DISCORD_ERROR_COLOR,
+    'success': DISCORD_SUCCESS_COLOR
+}
+
+STATUS_TO_SEVERITIES = {
+    'RUNNING': 'info',
+    'SUCCESS': 'success',
+    'FAILED': 'error',
+    'ABORTED': 'error'
+}
 
 ###############################################################################
 # Interesting Subdomain DEFINITIONS

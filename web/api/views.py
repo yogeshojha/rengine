@@ -15,7 +15,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
-                           run_command)
+                           run_command, send_hackerone_report)
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -34,12 +34,12 @@ class QueryInterestingSubdomains(APIView):
 	def get(self, request):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
-		target_id = req.query_params.get('target_id')
+		domain_id = req.query_params.get('target_id')
 
 		if scan_id:
 			queryset = get_interesting_subdomains(scan_history=scan_id)
-		elif target_id:
-			queryset = get_interesting_subdomains(target=target_id)
+		elif domain_id:
+			queryset = get_interesting_subdomains(domain_id=domain_id)
 		else:
 			queryset = get_interesting_subdomains()
 
@@ -622,16 +622,14 @@ class InitiateSubTask(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		logging.info(data)
+		logger.error(data)
 		engine_id = data.get('engine_id')
 		scan_types = data['tasks']
 		for subdomain_id in data['subdomain_ids']:
-			logging.info(f'Running subscans {scan_types} on subdomain "{subdomain_id}" ...')
+			logger.info(f'Running subscans {scan_types} on subdomain "{subdomain_id}" ...')
 			for stype in scan_types:
 				ctx = {
-					'yaml_configuration': None,
 					'scan_history_id': None,
-					'activity_id': DYNAMIC_ID,
 					'subdomain_id': subdomain_id,
 					'scan_type': stype,
 					'engine_id': engine_id
@@ -1074,7 +1072,7 @@ class ListScanHistory(APIView):
 class ListEngines(APIView):
 	def get(self, request, format=None):
 		req = self.request
-		engines = EngineType.objects.all()
+		engines = EngineType.objects.order_by('engine_name').all()
 		engine_serializer = EngineSerializer(engines, many=True)
 		return Response({'engines': engine_serializer.data})
 
@@ -1544,15 +1542,15 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 	def get_queryset(self):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
-		target_id = req.query_params.get('target_id')
+		domain_id = req.query_params.get('target_id')
 
 		if 'only_subdomains' in self.request.query_params:
 			self.serializer_class = InterestingSubdomainSerializer
 
 		if scan_id:
 			self.queryset = get_interesting_subdomains(scan_history=scan_id)
-		elif target_id:
-			self.queryset = get_interesting_subdomains(target=target_id)
+		elif domain_id:
+			self.queryset = get_interesting_subdomains(domain_id=domain_id)
 		else:
 			self.queryset = get_interesting_subdomains()
 

@@ -17,7 +17,7 @@ from scanEngine.models import *
 
 
 def index(request):
-    engine_type = EngineType.objects.all().order_by('id')
+    engine_type = EngineType.objects.order_by('engine_name').all()
     context = {
         'engine_ul_show': 'show',
         'engine_li': 'active',
