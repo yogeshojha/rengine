@@ -16,6 +16,7 @@ from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
@@ -41,6 +42,21 @@ Celery tasks.
 logger = get_task_logger(__name__)
 
 
+class RengineContext(dict):
+	def __init__(self, *args, **kwargs):
+		self.scan_history_id = kwargs.get('scan_history_id')
+		self.subscan = SubScan.get(pk=self.subscan_id) if self.subscan_id else None
+		self.engine_id = kwargs.get('engine_id')
+		self.filename = kwargs.get('filename')
+		self.results_dir = kwargs.get('results_dir', RENGINE_RESULTS)
+		self.yaml_configuration = kwargs.get('yaml_configuration', {})
+		self.url_filter = kwargs.get('url_filter', '')
+
+		# Get objects
+		self.scan = ScanHistory.get(pk=self.scan_history_id) if self.scan_history_id else None
+		self.subscan_id = kwargs.get('subscan_id')
+		self.engine = EngineType.get(pk=self.engine_id) if self.engine_id else None
+
 #----------------------#
 # Scan / Subscan tasks #
 #----------------------#
@@ -51,11 +67,11 @@ def initiate_scan(
 		scan_history_id,
 		domain_id,
 		engine_id=None,
-		results_dir='/usr/src/scan_results',
+		results_dir=RENGINE_RESULTS,
 		scan_type=LIVE_SCAN,
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
-		url_path=''):
+		url_filter=''):
 	"""Initiate a new scan.
 
 	Args:
@@ -66,7 +82,7 @@ def initiate_scan(
 		scan_type (int): Scan type (periodic, live).
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
-		path (str): URL path. Default: ''
+		url_filter (str): URL path. Default: ''
 	"""
 
 	# Get ScanHistory
@@ -86,13 +102,13 @@ def initiate_scan(
 	domain.save()
 
 	# Get path filter
-	url_path = url_path.rstrip('/').lstrip('/')
+	url_filter = url_filter.rstrip('/').lstrip('/')
 
 	# Create results directory
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
 	scan_dirname = f'{domain.name}_{timestr}'
 	results_dir = f'{results_dir}/{scan_dirname}'
-	os.makedirs(results_dir, exist_ok=True)
+	os.makedirs(results_dir)
 
 	# Send start notif
 	send_scan_status_notification.delay(
@@ -137,8 +153,8 @@ def initiate_scan(
 
 	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP 
 	# crawling can start somewhere
-	base_url = f'{domain.name}/{url_path}' if url_path else domain.name
-	save_endpoint(
+	base_url = f'{domain.name}/{url_filter}' if url_filter else domain.name
+	endpoint, _ = save_endpoint(
 		base_url,
 		scan,
 		domain,
@@ -146,36 +162,37 @@ def initiate_scan(
 		config,
 		results_dir,
 		crawl=enable_http_crawl)
+	if endpoint and endpoint.is_alive:
+		logger.warning(f'Found domain HTTP URL {endpoint.http_url}')
 
 	# Initial URL discovery + checker on domain - will create at least 1 endpoint
 	ctx = {
 		'scan_history_id': scan_history_id,
 		'engine_id': engine_id,
 		'results_dir': results_dir,
-		'url_path': url_path,
+		'url_filter': url_filter,
 		'yaml_configuration': config
 	}
 
 	# Build Celery tasks, crafted according to the dependency graph below:
-	# initiate_scan --> subdomain_discovery --> port_scan     --> fetch_url      --> vulnerability_scan
-	#					osint 	   		        waf_detection 	  dir_file_fuzz	     screenshot
+	# initiate_scan --> subdomain_discovery --> port_scan --> waf_detection --> vulnerability_scan
+	# 					osint								  fetch_url         screenshot
+	#						 	   		         	  	      dir_file_fuzz	     
 	workflow = chain(
 		group(
 			subdomain_discovery.si(**ctx, description='Subdomain discovery'),
 			osint.si(**ctx, description='OS Intelligence')
 		),
+		port_scan.si(**ctx, description='Port scan'),
 		group(
-			port_scan.si(**ctx, description='Port scan'),
 			waf_detection.si(**ctx, description='WAF detection'),
-		),
-		group(
 			fetch_url.si(**ctx, description='Fetch URL'),
-			dir_file_fuzz.si(**ctx, description='Directories & files fuzz'),
 		),
+		dir_file_fuzz.si(**ctx, description='Directories & files fuzz'),
 		group(
 			vulnerability_scan.si(**ctx, description='Vulnerability scan'),
-			screenshot.si(**ctx, description='Screenshot'),
-		),
+			screenshot.si(**ctx, description='Screenshot')
+		)
 	)
 
 	# Build callback
@@ -198,8 +215,8 @@ def initiate_subscan(
 		scan_history_id,
 		subdomain_id,
 		engine_id=None,
-		results_dir='/usr/src/scan_results',
-		url_path='',
+		results_dir=RENGINE_RESULTS,
+		url_filter='',
 		scan_type=None):
 
 	# Get Subdomain and ScanHistory
@@ -209,6 +226,10 @@ def initiate_subscan(
 	# Get EngineType
 	engine_id = engine_id or scan.scan_type.id
 	engine = EngineType.objects.get(pk=engine_id)
+	
+	# Get YAML config
+	config = yaml.safe_load(engine.yaml_configuration)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 
 	# Create scan activity of SubScan Model
 	subscan = SubScan(
@@ -225,9 +246,8 @@ def initiate_subscan(
 	config = yaml.safe_load(engine.yaml_configuration)
 
 	# Create results directory
-	results_dir = f'/usr/src/scan_results/{scan.results_dir}/subscans/{subscan.id}'
-	if not os.path.exists(results_dir):
-		os.makedirs(results_dir, exist_ok=True)
+	results_dir = f'{results_dir}/{scan.results_dir}/subscans/{subscan.id}'
+	os.makedirs(results_dir, exist_ok=True)
 
 	# Run task
 	method = globals().get(scan_type)
@@ -239,10 +259,36 @@ def initiate_subscan(
 
 	# Send start notif
 	send_scan_status_notification.delay(
-		scan_history_id,
+		scan.id,
 		subscan_id=subscan.id,
 		engine_id=engine_id,
 		status='RUNNING')
+
+	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP 
+	# crawling can start somewhere
+	base_url = f'{subdomain.name}/{url_filter}' if url_filter else subdomain.name
+	endpoint, _ = save_endpoint(
+		base_url,
+		scan,
+		subdomain.target_domain,
+		subdomain,
+		config,
+		results_dir,
+		subscan=subscan,
+		crawl=enable_http_crawl)
+	if endpoint and endpoint.is_alive:
+		# TODO: add `root_endpoint` property to subdomain and simply do
+		# subdomain.root_endpoint = endpoint instead
+		logger.warning(f'Found subdomain HTTP URL {endpoint.http_url}')
+		subdomain.http_url = endpoint.http_url
+		subdomain.http_status = endpoint.http_status
+		subdomain.response_time = endpoint.response_time
+		subdomain.page_title = endpoint.page_title
+		subdomain.content_type = endpoint.content_type
+		subdomain.content_length = endpoint.content_length
+		for tech in endpoint.technologies.all():
+			subdomain.technologies.add(tech)
+		subdomain.save()
 
 	# Build header
 	ctx = {
@@ -252,7 +298,7 @@ def initiate_subscan(
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': config,
 		'results_dir': results_dir,
-		'url_path': url_path
+		'url_filter': url_filter
 	}
 	workflow = method.si(**ctx)
 	callback = report.si(**ctx).set(link_error=[report.si(**ctx)])
@@ -274,7 +320,7 @@ def report(
 		engine_id=None,
 		subscan_id=None,
 		subdomain_id=None,
-		url_path='',
+		url_filter='',
 		yaml_configuration={},
 		results_dir=None,
 		description=None):
@@ -335,7 +381,7 @@ def subdomain_discovery(
 		yaml_configuration={},
 		results_dir=None,
 		out_of_scope_subdomains=[],
-		url_path='',
+		url_filter='',
 		filename='subdomains.txt',
 		description=None):
 	"""Uses a set of tools (see SUBDOMAIN_SCAN_DEFAULT_TOOLS) to scan all 
@@ -352,13 +398,13 @@ def subdomain_discovery(
 	domain = scan.domain
 	host = subdomain.name if subdomain else domain.name
 
-	if url_path:
-		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({url_path}).')
+	if url_filter:
+		logger.warning(f'Ignoring subdomains scan as an URL path filter was passed ({url_filter}).')
 		return
 
 	# Config
 	config = yaml_configuration.get(SUBDOMAIN_DISCOVERY) or {}
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	output_path = f'{results_dir}/{filename}'
 	history_file = f'{results_dir}/commands.txt'
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -406,6 +452,7 @@ def subdomain_discovery(
 				elif tool == 'subfinder':
 					cmd = f'subfinder -d {host} -o {results_dir}/subdomains_subfinder.txt'
 					use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
+					cmd += ' -v' if DEBUG else ''
 					cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
 					cmd += f' -proxy {proxy}' if proxy else ''
 					cmd += f' -timeout {timeout}' if timeout else ''
@@ -458,6 +505,8 @@ def subdomain_discovery(
 	# Parse the output_file file and store Subdomain and EndPoint objects found
 	# in db.
 	subdomain_count = 0
+	results = []
+	urls = []
 	for line in lines:
 		subdomain_name = line.strip()
 		valid_domain = bool(validators.domain(subdomain_name))
@@ -475,17 +524,12 @@ def subdomain_discovery(
 
 		# Add subdomain
 		subdomain, created = save_subdomain(subdomain_name, scan, domain)
-		if created:
-			send_task_status_notification.delay(
-				'subdomain_discovery',
-				scan_history_id=scan_history_id,
-				subscan_id=subscan_id,
-				update_fields={'Subdomains': f'• `{subdomain.name}`'})
+		results.append(subdomain.name)
 
 		subdomain_count += 1
 
 		# Add endpoints
-		save_endpoint(
+		endpoint, _ = save_endpoint(
 			subdomain_name,
 			scan,
 			domain,
@@ -493,9 +537,31 @@ def subdomain_discovery(
 			yaml_configuration,
 			results_dir,
 			subscan=subscan,
-			crawl=enable_http_crawl)
+			crawl=False)
+		if endpoint:
+			urls.append(subdomain.name)
+	
+	# Crawl subdomains
+	if enable_http_crawl:
+		http_crawl(
+			scan_history_id,
+			engine_id,
+			subdomain_id,
+			yaml_configuration,
+			results_dir,
+			urls)
 
 	# Send notifications
+	subdomains_str = '\n'.join([f'• `{subdomain.name}`' for subdomain in results])
+	send_task_status_notification.delay(
+		'subdomain_discovery',
+		scan_history_id=scan_history_id,
+		subscan_id=subscan_id,
+		update_fields={
+			'Subdomain count': len(results),
+			'Subdomains': subdomains_str,
+		}
+	)
 	if send_subdomain_changes:
 		added = get_new_added_subdomain(scan.id, domain.id)
 		removed = get_removed_subdomain(scan.id, domain.id)
@@ -506,7 +572,7 @@ def subdomain_discovery(
 				'subdomain_discovery',
 				scan_history_id=scan_history_id,
 				subscan_id=subscan_id,
-				update_fields={'Added subdomains': subdomains_str})
+				update_fields={'Added since last scan': subdomains_str})
 
 		if removed:
 			subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in removed])
@@ -514,7 +580,7 @@ def subdomain_discovery(
 				'subdomain_discovery',
 				scan_history_id=scan_history_id,
 				subscan_id=subscan_id,
-				update_fields={'Removed subdomains': subdomains_str})
+				update_fields={'Removed since last scan': subdomains_str})
 
 	if send_interesting:
 		interesting_subdomains = get_interesting_subdomains(scan.id, domain.id)
@@ -535,7 +601,7 @@ def osint(
 		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		url_path='',
+		url_filter='',
 		filename='osint.txt',
 		description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
@@ -582,7 +648,7 @@ def screenshot(
 		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		url_path='',
+		url_filter='',
 		filename='Requests.csv', # cannot be changed.
 		description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
@@ -591,7 +657,7 @@ def screenshot(
 		scan_history (startScan.models.ScanHistory): ScanHistory instance.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
-		path (str): URL path.
+		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 	"""
 
@@ -601,7 +667,7 @@ def screenshot(
 	history_file = f'{results_dir}/commands.txt'
 	alive_endpoints_file = f'{results_dir}/endpoints_alive.txt'
 	config = yaml_configuration.get(SCREENSHOT) or {}
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -611,7 +677,7 @@ def screenshot(
 	# If intensity is normal, grab only the root endpoints of each subdomain
 	strict = False
 	if intensity == 'normal':
-		url_path = '/'
+		url_filter = '/'
 		strict = True
 
 	# Get alive endpoints to screenshot
@@ -620,7 +686,7 @@ def screenshot(
 		subdomain_id=subdomain_id,
 		scan_history=scan,
 		is_alive=True if not enable_http_crawl else False,
-		url_path=url_path,
+		url_filter=url_filter,
 		strict=strict,
 		write_filepath=alive_endpoints_file)
 
@@ -657,12 +723,18 @@ def screenshot(
 				subdomain.save()
 				logger.warning(f'Added screenshot for {subdomain.name} to DB')
 
-
 	# Remove all db, html extra files in screenshot results
 	run_command('rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path), shell=True)
 	run_command(f'rm -rf {screenshots_path}/source', shell=True)
 
-	# Send finish notif
+	# Send finish notifs
+	screenshots_str = '\n'.join([f'{path}' for path in screenshots_paths])
+	send_task_status_notification(
+		'screenshot',
+		scan_history_id=scan_history_id,
+		engine_id=engine_id,
+		subscan_id=subscan_id,
+		update_fields={'Screenshots': screenshots_str})
 	if send_output_file:
 		for path in screenshot_paths:
 			title = get_output_file_name(scan_history_id, subscan_id, filename)
@@ -677,7 +749,7 @@ def port_scan(
 		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		url_path='',
+		url_filter='',
 		filename='ports.json',
 		description=None):
 	"""Run port scan.
@@ -686,7 +758,7 @@ def port_scan(
 		scan_history (startScan.models.ScanHistory): ScanHistory instance.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
-		path (str): URL path.
+		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 
 	Returns:
@@ -702,11 +774,13 @@ def port_scan(
 
 	# Config
 	config = yaml_configuration.get(PORT_SCAN) or {}
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
-	exclude_ports = config.get(EXCLUDE_PORTS, [])
+	exclude_ports = config.get(NAABU_EXCLUDE_PORTS, [])
+	exclude_subdomains = config.get(NAABU_EXCLUDE_SUBDOMAINS, False)
 	ports = config.get(PORTS, NAABU_DEFAULT_PORTS)
+	ports = [str(port) for port in ports]
 	rate_limit = config.get(NAABU_RATE) or yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	threads = config.get(THREADS) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	passive = config.get(NAABU_PASSIVE, False)
@@ -717,12 +791,11 @@ def port_scan(
 	exclude_ports_str = ','.join(exclude_ports)
 
 	# Get subdomains
-	exclude_subdomains = True if intensity == 'normal' else False
 	get_subdomains(
 		domain,
 		subdomain_id=subdomain_id,
 		scan_history=scan,
-		url_path=url_path,
+		url_filter=url_filter,
 		write_filepath=input_file,
 		exclude_subdomains=exclude_subdomains)
 
@@ -751,8 +824,8 @@ def port_scan(
 	# Execute cmd and gather results
 	results = []
 	urls = []
-	ports = {}
-	for line in stream_command(cmd, echo=False, shell=True, history_file=history_file):
+	ports_data = {}
+	for line in stream_command(cmd, echo=DEBUG > 0, shell=True, history_file=history_file):
 		# TODO: Update Celery task status continously
 		if not isinstance(line, dict):
 			continue
@@ -778,7 +851,7 @@ def port_scan(
 
 		# Add endpoint to DB
 		http_url = f'{host}:{port_number}'
-		save_endpoint(
+		endpoint, _ = save_endpoint(
 			http_url,
 			scan,
 			domain,
@@ -786,14 +859,19 @@ def port_scan(
 			yaml_configuration,
 			results_dir,
 			subscan=subscan,
-			crawl=False)
+			crawl=enable_http_crawl)
+		if endpoint:
+			http_url = endpoint.http_url
 		urls.append(http_url)
 
 		# Add Port in DB
 		port_details = whatportis.get_ports(str(port_number))
 		service_name = 'unknown'
 		description = ''
-		if len(port_details) > 0:
+		if endpoint and endpoint.is_alive:
+			service_name = urlparse(http_url).scheme
+			description = endpoint.page_title
+		elif len(port_details) > 0:
 			service_name = port_details[0].name
 			description = port_details[0].description
 		port, created = Port.objects.get_or_create(
@@ -805,55 +883,46 @@ def port_scan(
 			port.save()
 		ip.ports.add(port)
 		ip.save()
-		if host in ports:
-			ports[host].append(port_number)
+		if host in ports_data:
+			ports_data[host].append(port_number)
 		else:
-			ports[host] = [port_number]
+			ports_data[host] = [port_number]
 
 		# Send notification
 		logger.warning(f'Found opened port {port_number} on {ip_address} ({host})')
+		field_key = 'HTTP ports' if endpoint and endpoint.is_alive else 'Other ports'
 		send_task_status_notification.delay(
 			'port_scan',
 			scan_history_id=scan_history_id,
 			subscan_id=subscan_id,
-			update_fields={'Opened ports': f'• `{port_number}/{service_name}`'})
+			update_fields={field_key: f'• `{port_number}/{service_name}`'})
 
 	logger.info('Finished running naabu port scan.')
-
-	# Crawl discovered URLs
-	if enable_http_crawl:
-		http_crawl(
-			scan_history_id=scan_history_id,
-			engine_id=None,
-			subdomain_id=subdomain_id,
-			yaml_configuration=yaml_configuration,
-			results_dir=results_dir,
-			urls=urls)
 
 	# Save output to file
 	with open(output_file, 'w') as f:
 		json.dump(results, f, indent=4)
 
-	# Process nmap results
+	# Process nmap results: 1 process per host
 	sigs = []
 	if nmap_enabled:
-		logger.info(f'Starting nmap scans ...')
-		logger.info(ports)
-		for host, ports in ports.items():
-			for port in ports:
-				sig = nmap.si(
-					subdomain_id=subdomain_id,
-					scan_history_id=scan_history_id,
-					subscan_id=subscan_id,
-					engine_id=engine_id,
-					cmd=nmap_cli,
-					ports=[str(port)],
-					host=host,
-					script=nmap_script,
-					script_args=nmap_script_args,
-					max_rate=rate_limit,
-					output_file=f'{results_dir}/nmap_tmp_{host}_{port}.xml')
-				sigs.append(sig)
+		logger.warning(f'Starting nmap scans ...')
+		logger.warning(ports_data)
+		for host, port_list in ports_data.items():
+			ports_str = '_'.join([str(p) for p in port_list])
+			sig = nmap.si(	
+				scan_history_id=scan_history_id,
+				subscan_id=subscan_id,
+				subdomain_id=subdomain_id,
+				cmd=nmap_cli,
+				ports=port_list,
+				host=host,
+				script=nmap_script,
+				script_args=nmap_script_args,
+				max_rate=rate_limit,
+				results_dir=results_dir,
+				filename=f'nmap_tmp_{host}_{ports_str}.json')
+			sigs.append(sig)
 		task = group(*sigs).delay()
 		with allow_join_result():
 			task.get()
@@ -861,12 +930,11 @@ def port_scan(
 	return results
 
 
-@app.task
+@app.task(base=RengineTask)
 def nmap(
-		subdomain_id=None,
 		scan_history_id=None,
 		subscan_id=None,
-		engine_id=None,
+		subdomain_id=None,
 		cmd=None,
 		ports=[],
 		host=None,
@@ -874,39 +942,66 @@ def nmap(
 		script=None,
 		script_args=None,
 		max_rate=None,
-		output_file=None):
+		results_dir=None,
+		filename='nmap_output.json'):
 	scan = ScanHistory.objects.get(pk=scan_history_id) if scan_history_id else None
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 	domain = scan.domain
 	subdomain = Subdomain.objects.get(pk=subdomain_id) if subdomain_id else None
+	notif = Notification.objects.first()
+	ports_str = ','.join(str(port) for port in ports)
+	filename_xml = filename.replace('.json', '.xml')
+	output_file = f'{results_dir}/{filename}'
+	output_file_xml = f'{results_dir}/{filename_xml}'
+
+	# Build cmd
 	nmap_cmd = get_nmap_cmd(
 		cmd=cmd,
-		ports=','.join(ports),
+		ports=ports_str,
 		script=script,
 		script_args=script_args,
 		max_rate=max_rate,
 		host=host,
 		input_file=input_file,
-		output_file=output_file)
-	run_command(nmap_cmd, echo=True, shell=True)
-	vulns = parse_nmap_results(output_file)
+		output_file=output_file_xml)
+
+	# Run cmd
+	run_command(nmap_cmd, echo=DEBUG > 0, shell=True)
+
+	# Get nmap XML results and convert to JSON
+	vulns = parse_nmap_results(output_file_xml)
+	with open(output_file, 'w') as f:
+		json.dump(vulns, f)
+
+	# Save vulnerabilities found by nmap
+	vulns_str = ''
 	for vuln_data in vulns:
-		vuln, _ = save_vulnerability(
+		# URL is not necessarily an HTTP URL when running nmap (can be any 
+		# other vulnerable protocols). Look for existing endpoint and use its 
+		# URL as vulnerability.http_url if it exists.
+		url = vuln_data['http_url']
+		endpoint = EndPoint.objects.filter(http_url__contains=url).first()
+		if endpoint:
+			vuln_data['http_url'] = endpoint.http_url
+		vuln, created = save_vulnerability(
 			target_domain=domain,
 			subdomain=subdomain,
 			scan_history=scan,
 			subscan=subscan,
+			endpoint=endpoint,
 			**vuln_data)
-		notif = Notification.objects.first()
-		if vuln and notif and notif.send_scan_status_notif:
-			cve_str = ', '.join(f'`{cve_id}`' for cve_id in vuln.cve_ids)
-			vuln_str = f'`{vuln.name}` | {cve_str} | `{vuln.cvss}`'
-			send_task_status_notification.delay(
-				'port_scan',
-				scan_history_id=scan_history_id,
-				engine_id=engine_id,
-				subscan_id=subscan_id,
-				fields={'Vulnerabilities': f'• {vuln_str}'})
+		vulns_str += f'• {str(vuln)}\n'
+		if created:
+			logger.warning(f'Found new vulnerability: {str(vuln)}')
+
+	# Send only 1 notif for all vulns to reduce number of notifs
+	if notif and notif.send_vuln_notif and vulns_str:
+		logger.warning(vulns_str)
+		send_task_status_notification.delay(
+			'nmap',
+			scan_history_id=scan_history_id,
+			subscan_id=subscan_id,
+			update_fields={'CVEs': vulns_str})
 
 
 @app.task(base=RengineTask)
@@ -917,7 +1012,7 @@ def waf_detection(
 		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		url_path='',
+		url_filter='',
 		filename='wafw00f.txt',
 		description=None):
 	"""
@@ -927,7 +1022,7 @@ def waf_detection(
 		scan_history (startScan.models.ScanHistory): ScanHistory instance.
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
-		path (str): URL path.
+		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 
 	Returns:
@@ -939,7 +1034,7 @@ def waf_detection(
 	output_path = f'{results_dir}/{filename}'
 	history_file = f'{results_dir}/commands.txt'
 	config = yaml_configuration.get(WAF_DETECTION) or {}
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 
 	# Get alive endpoints from DB
 	get_http_urls(
@@ -947,7 +1042,7 @@ def waf_detection(
 		subdomain_id=subdomain_id,
 		scan_history=scan,
 		is_alive=enable_http_crawl,
-		url_path=url_path,
+		url_filter=url_filter,
 		write_filepath=input_path)
 
 	cmd = f'wafw00f -i {input_path} -o {output_path}'
@@ -997,7 +1092,7 @@ def dir_file_fuzz(
 		engine_id=None,
 		yaml_configuration={},
 		results_dir=None,
-		url_path='',
+		url_filter='',
 		filename='dirs.json',
 		description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
@@ -1020,7 +1115,7 @@ def dir_file_fuzz(
 	config = yaml_configuration.get(DIR_FILE_FUZZ, {})
 	custom_header = yaml_configuration.get(CUSTOM_HEADER)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	delay = config.get(DELAY, 0)
 	extensions = config.get(EXTENSIONS, [])
@@ -1063,6 +1158,10 @@ def dir_file_fuzz(
 		subdomains_fuzz = subdomains_fuzz.filter(pk=subdomain_id)
 	elif intensity == 'normal': # scan only domain, not subdomains
 		subdomains_fuzz = subdomains_fuzz.filter(name=domain.name)
+
+	if not subdomains_fuzz:
+		logger.error('No subdomains found. Skipping.')
+		return
 
 	# Loop through subdomains and run command
 	urls = []
@@ -1178,7 +1277,7 @@ def fetch_url(
 		yaml_configuration={},
 		results_dir=None,
 		filename='urls.txt',
-		url_path='',
+		url_filter='',
 		description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1188,7 +1287,7 @@ def fetch_url(
 		yaml_configuration (dict): YAML configuration.
 		results_dir (str): Results directory.
 		filename (str): Filename.
-		path (str): URL path.
+		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 	"""
 	scan = ScanHistory.objects.get(pk=scan_history_id)
@@ -1201,7 +1300,7 @@ def fetch_url(
 
 	# Config
 	config = yaml_configuration.get(FETCH_URL) or {}
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	gf_patterns = config.get(GF_PATTERNS, [])
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
@@ -1214,7 +1313,7 @@ def fetch_url(
 		domain,
 		subdomain_id,
 		scan,
-		url_path=url_path,
+		url_filter=url_filter,
 		is_alive=True if not enable_http_crawl else False,
 		write_filepath=input_path,
 		exclude_subdomains=exclude_subdomains)
@@ -1304,7 +1403,7 @@ def fetch_url(
 
 		if base_url and urlpath:
 			subdomain = urlparse(base_url)
-			url = f'{subdomain.scheme}://{subdomain.netloc}/{url_path}'
+			url = f'{subdomain.scheme}://{subdomain.netloc}/{url_filter}'
 
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
@@ -1312,8 +1411,8 @@ def fetch_url(
 		urls.append(url)
 
 	# Filter out URLs if a path filter was passed
-	if url_path:
-		urls = [url for url in urls if url_path in url]
+	if url_filter:
+		urls = [url for url in urls if url_filter in url]
 
 	# Write result to output path
 	with open(output_path, 'w') as f:
@@ -1387,6 +1486,22 @@ def fetch_url(
 			urls=urls)
 
 
+def parse_curl_output(response):
+	# TODO: Enrich from other cURL fields.
+	CURL_REGEX_HTTP_STATUS = f'HTTP\/(?:(?:\d\.?)+)\s(\d+)\s(?:\w+)'
+	http_status = 0
+	if response:
+		failed = False
+		regex = re.compile(CURL_REGEX_HTTP_STATUS, re.MULTILINE)
+		try:
+			http_status = int(regex.findall(response)[0])
+		except (KeyError, TypeError):
+			pass
+	return {
+		'http_status': http_status,
+	}
+
+
 @app.task(base=RengineTask)
 def vulnerability_scan(
 		scan_history_id,
@@ -1394,7 +1509,7 @@ def vulnerability_scan(
 		subdomain_id=None,
 		engine_id=None,
 		yaml_configuration={},
-		url_path='',
+		url_filter='',
 		results_dir=None,
 		filename='vulnerabilities.json',
 		description=None,
@@ -1406,7 +1521,7 @@ def vulnerability_scan(
 		scan_history (startScan.models.ScanHistory): ScanHistory instance.
 		subdomain_id (int): Subdomain ID.
 		yaml_configuration (dict): YAML configuration.
-		path (str): URL path.
+		url_filter (str): URL path.
 		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
 		urls (list, optional): If passed, filter on those URLs.
@@ -1426,14 +1541,14 @@ def vulnerability_scan(
 	output_path = f'{results_dir}/{filename}'
 	history_file = f'{results_dir}/commands.txt'
 
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	concurrency = config.get(NUCLEI_CONCURRENCY) or yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	intensity = config.get(INTENSITY) or yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	rate_limit = config.get(RATE_LIMIT) or yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	retries = config.get(RETRIES) or yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_header = config.get(CUSTOM_HEADER) or yaml_configuration.get(CUSTOM_HEADER)
-
+	tags = config.get(NUCLEI_TAGS)
 	nuclei_templates = config.get(NUCLEI_TEMPLATE)
 	custom_nuclei_templates = config.get(NUCLEI_CUSTOM_TEMPLATE)
 	proxy = get_random_proxy()
@@ -1452,19 +1567,18 @@ def vulnerability_scan(
 			scan_history=scan,
 			is_alive=True if not enable_http_crawl else False,
 			ignore_files=True,
-			url_path=url_path,
+			url_filter=url_filter,
 			write_filepath=input_path)
 
 	if intensity == 'normal': # reduce number of endpoints to scan
-		unfurl_path = f'{results_dir}/urls_unfurled.txt'
-		run_command(f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_path}', shell=True, history_file=history_file)
-		run_command(f'sort -u {unfurl_path} -o  {unfurl_path}', shell=True, history_file=history_file)
-		input_path = unfurl_path
+		unfurl_filter = f'{results_dir}/urls_unfurled.txt'
+		run_command(f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_filter}', shell=True, history_file=history_file)
+		run_command(f'sort -u {unfurl_filter} -o  {unfurl_filter}', shell=True, history_file=history_file)
+		input_path = unfurl_filter
 
 	# Send start notification
-	notification = Notification.objects.first()
-	send_vuln = notification.send_vuln_notif if notification else False
-	send_status = notification.send_scan_status_notif if notification else False
+	notif = Notification.objects.first()
+	send_status = notif.send_scan_status_notif if notif else False
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
@@ -1487,8 +1601,8 @@ def vulnerability_scan(
 
 	# Build CMD
 	cmd = 'nuclei -json'
+	cmd += ' -debug' if DEBUG else ''
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
-	# cmd += ' -debug' if DEBUG > 0 else ''
 	cmd += f' -irr'
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -l {input_path}'
@@ -1498,12 +1612,13 @@ def vulnerability_scan(
 	cmd += f' -rl {rate_limit}' if rate_limit > 0 else ''
 	cmd += f' -severity {severities_str}'
 	cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
+	cmd += f' -tags {tags}' if tags else ''
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
 	# Run cmd
 	results = []
-	for line in stream_command(cmd, echo=True, history_file=history_file):
+	for line in stream_command(cmd, echo=DEBUG > 0, history_file=history_file):
 		if not isinstance(line, dict):
 			continue
 
@@ -1523,6 +1638,7 @@ def vulnerability_scan(
 		matcher_name = line.get('matcher-name', '')
 		curl_command = line.get('curl-command')
 		extracted_results = line.get('extracted-results', [])
+		response = line.get('response')
 
 		# Get corresponding subdomain
 		subdomain_name = get_subdomain_from_url(url)
@@ -1532,9 +1648,7 @@ def vulnerability_scan(
 			target_domain=domain)
 
 		# Get or create EndPoint object
-		# TODO: Do not http_crawl, we should have enough info to build endpoint
-		# from naabu scan. Get response content from naabu and fill new EndPoint instead.
-		# response = line.get('response')
+		httpx_crawl = False if response else enable_http_crawl # avoid yet another httpx crawl
 		endpoint, _ = save_endpoint(
 			http_url,
 			scan,
@@ -1542,11 +1656,14 @@ def vulnerability_scan(
 			subdomain,
 			yaml_configuration,
 			results_dir,
-			crawl=enable_http_crawl)
+			crawl=httpx_crawl)
+		if endpoint:
+			output = parse_curl_output(response)
+			endpoint.http_status = output['http_status']
+			endpoint.save()
+			http_url = endpoint.http_url
 
 		# Get or create Vulnerability object
-		if endpoint:
-			http_url = endpoint.http_url
 		vuln, _ = save_vulnerability(
 			name=vuln_name,
 			type=vuln_type,
@@ -1569,28 +1686,29 @@ def vulnerability_scan(
 		if not vuln:
 			continue
 
+		# Print vuln
+		logger.warning(f'Found new {vuln_severity.upper()} vulnerability:\n\t{str(vuln)}')
+
 		# Send notification for all vulnerabilities except info
 		url = vuln.http_url or vuln.subdomain
-		if vuln_severity in ['low', 'medium', 'high', 'critical'] and send_vuln:
-			url = urlparse(url)
-			cve_str = ', '.join(f'`{cve_id}`' for cve_id in vuln.cve_ids)
-			cwe_str = ', '.join(f'`{cwe_id}`' for cwe_id in vuln.cwe_ids)
-			tags_str = ', '.join(f'`{tag}`' for tag in vuln.tags)
-			refs_str = '•' + '\n• '.join(f'`{ref}`' for ref in vuln.references)
-
-			# Send vuln as notification
+		send_vuln = (
+			notif and
+			notif.send_vuln_notif and
+			vuln and
+			vuln_severity in ['low', 'medium', 'high', 'critical'])
+		if send_vuln:
 			fields = {
-				'Severity': f'**{vuln_severity}**',
-				'URL': url.geturl(),
+				'Severity': f'**{vuln_severity.upper()}**',
+				'URL': http_url,
 				'Subdomain': subdomain_name,
 				'Name': vuln.name,
 				'Type': vuln.type,
 				'Description': vuln.description,
 				'Template': vuln.template_url,
-				'Tags': tags_str,
-				'CVEs': cve_str,
-				'CWEs': cwe_str,
-				'References': refs_str
+				'Tags': vuln.get_tags_str(),
+				'CVEs': vuln.get_cve_str(),
+				'CWEs': vuln.get_cwe_str(),
+				'References': vuln.get_refs_str()
 			}
 			severity_map = {
 				'low': 'info',
@@ -1601,9 +1719,6 @@ def vulnerability_scan(
 			severity = severity_map[vuln_severity]
 			send_task_status_notification.delay(
 				f'vulnerability_scan_#{vuln.id}',
-				scan_history_id=scan_history_id,
-				engine_id=engine_id,
-				subscan_id=subscan_id,
 				severity=severity,
 				update_fields=fields)
 
@@ -1665,10 +1780,11 @@ def http_crawl(
 		yaml_configuration={},
 		results_dir=None,
 		urls=[],
-		url_path='',
+		url_filter='',
 		method=None,
 		subscan_id=None,
 		filename='http_probes.json',
+		recrawl=False,
 		description=None):
 	"""Use httpx to query HTTP URLs for important info like page titles, http 
 	status, etc...
@@ -1679,8 +1795,9 @@ def http_crawl(
 		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
 		urls (list, optional): A set of URLs to check. Overrides default 
-			behavior which queries all endpoints related with this scan.
-		url_path (str, optional): URL path to filter on.
+			behavior which queries all endpoints related to this scan.
+		url_filter (str, optional): URL path to filter on.
+		recrawl (bool, optional): If False, filter out URLs that have already been crawled.
 
 	Returns:
 		list: httpx results.
@@ -1700,8 +1817,8 @@ def http_crawl(
 	# Write httpx input file
 	input_file = f'{results_dir}/httpx_input_probe_{timestamp}.txt'
 	if urls: # direct passing URLs to check
-		if url_path:
-			urls = [u for u in urls if u.contains(url_path)]
+		if url_filter:
+			urls = [u for u in urls if u.contains(url_filter)]
 		with open(input_file, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
@@ -1709,9 +1826,14 @@ def http_crawl(
 			target_domain=domain,
 			subdomain_id=subdomain_id,
 			scan_history=scan,
-			url_path=url_path,
+			url_filter=url_filter,
+			is_uncrawled=not recrawl,
 			write_filepath=input_file)
 		logger.debug(urls)
+
+	# If no URLs found, skip it
+	if not urls:
+		return
 	
 	# Re-adjust thread number if few URLs to avoid spinning up a monster to
 	# kill a fly.
@@ -1722,7 +1844,7 @@ def http_crawl(
 	proxy = get_random_proxy()
 
 	# Run command
-	cmd += f' -sc -cl -ct -location -td -websocket -ip -cname -asn -cdn -probe -random-agent'
+	cmd += f' -cl -ct -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
@@ -1730,127 +1852,104 @@ def http_crawl(
 	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
-	for line in stream_command(cmd, echo=False, history_file=history_file):
+	for line in stream_command(cmd, echo=DEBUG > 0, history_file=history_file):
 		if not line or not isinstance(line, dict):
 			continue
-		try:
-			content_length = line.get('content-length', 0)
-			host = line.get('host', '')
-			http_status = line.get('status-code', 0)
-			input_url = line.get('input')
-			http_url, is_redirect = extract_httpx_url(line)
-			page_title = line.get('title', '')
-			webserver = line.get('webserver')
-			response_time = line.get('response-time')
-			cdn = line.get('cdn', False)
-			failed = line['failed']
-			error = line.get('error', 'Unknown error')
+		# logger.warning(line)
+		error = line.get('error')
+		host = line.get('host', '')
+		if error:
+			logger.info(f'{host} - {error}')
+			continue
+		content_length = line.get('content-length')
+		http_status = line.get('status-code')
+		input_url = line.get('input')
+		http_url, is_redirect = extract_httpx_url(line)
+		page_title = line.get('title')
+		webserver = line.get('webserver')
+		cdn = line.get('cdn', False)
+		response_time = line.get('response-time')
+		if response_time:
+			response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
+			if line['response-time'][-2:] == 'ms':
+				response_time = response_time / 1000
 
-			if failed:
-				logger.info(f'{host} - {error}')
-				continue
+		# Create Subdomain object in DB
+		subdomain_name = get_subdomain_from_url(http_url)
+		subdomain, _ = save_subdomain(subdomain_name, scan, domain)
 
-			if response_time:
-				response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
-				if line['response-time'][-2:] == 'ms':
-					response_time = response_time / 1000
+		# Save default HTTP URL to endpoint object in DB
+		endpoint, created = save_endpoint(
+			http_url,
+			scan,
+			domain,
+			subdomain,
+			yaml_configuration,
+			results_dir,
+			crawl=False,
+			subscan=subscan)
+		endpoint.is_default = True
+		endpoint.http_status = http_status
+		endpoint.page_title = page_title
+		endpoint.content_length = content_length
+		endpoint.webserver = webserver
+		endpoint.response_time = response_time
+		endpoint.save()
+		response_time_ms = int(response_time * 1000)
+		endpoint_str = f'{http_url} `{http_status}` `{content_length}B` `{webserver}` `{response_time_ms}ms`'
+		logger.warning(endpoint_str)
+		if endpoint and endpoint.is_alive:
+			logger.warning(f'Found new alive endpoint {endpoint.http_url}')
+			send_task_status_notification.delay(
+				'http_crawl',
+				scan_history_id=scan_history_id,
+				subscan_id=subscan_id,
+				engine_id=engine_id,
+				update_fields={'Alive endpoints':f'• {endpoint_str}'})
 
-			# Create Subdomain object in DB
-			subdomain_name = get_subdomain_from_url(http_url)
-			subdomain, _ = save_subdomain(subdomain_name, scan, domain)
+		# Add endpoint to results
+		line['final-url'] = http_url
+		line['endpoint-id'] = endpoint.id
+		line['endpoint-created'] = created
+		line['is_redirect'] = is_redirect
+		results.append(line)
 
-			# Add HTTP URL + response info to subdomain if it is the subdomain's
-			# root URL '/' or ''.
-			url = urlparse(http_url)
-			url_input = urlparse(input_url)
-			url_input_path = url_input.path
-			if not url_input.scheme:
-				url_input_path = '/'.join(url_input_path.split('/')[1:])
-			if url.netloc == subdomain_name and url_input_path in ['', '/']:
-				subdomain.http_url = http_url
-				subdomain.http_status = http_status
-				subdomain.content_length = content_length
-				subdomain.page_title = page_title
-				subdomain.webserver = webserver
-				subdomain.response_time = response_time
-				subdomain.cname = ','.join(line.get('cnames', []))
-				subdomain.save()
-			
-			# Save default HTTP URL to endpoint object in DB
-			endpoint, created = save_endpoint(
-				http_url,
-				scan,
-				domain,
-				subdomain,
-				yaml_configuration,
-				results_dir,
-				crawl=False,
-				subscan=subscan)
-			endpoint.is_default = True
-			endpoint.http_status = http_status
-			endpoint.page_title = page_title
-			endpoint.content_length = content_length
-			endpoint.webserver = webserver
-			endpoint.response_time = response_time
+		# Add technology objects to DB
+		technologies = line.get('technologies', [])
+		for technology in technologies:
+			tech, _ = Technology.objects.get_or_create(name=technology)
+			subdomain.technologies.add(tech)
+			endpoint.technologies.add(tech)
+			subdomain.save()
 			endpoint.save()
-			response_time_ms = int(response_time * 1000)
-			endpoint_str = f'{http_url} `{http_status}` `{content_length}B` `{webserver}` `{response_time_ms}ms`'
-			logger.info(endpoint_str)
-			if created and endpoint.is_alive:
+
+		# Add IP objects for 'a' records to DB
+		a_records = line.get('a', [])
+		for ip_address in a_records:
+			ip, created = save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
+			if created:
 				send_task_status_notification.delay(
 					'http_crawl',
 					scan_history_id=scan_history_id,
 					subscan_id=subscan_id,
 					engine_id=engine_id,
-					update_fields={'Alive endpoints':f'• {endpoint_str}'})
+					update_fields={'IPs': ip.address})
 
-			# Add endpoint to results
-			line['final-url'] = http_url
-			line['endpoint_id'] = endpoint.id
-			line['is_redirect'] = is_redirect
-			results.append(line)
+		# Add IP object for host in DB
+		if host:
+			ip, created = save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
+			if created:
+				send_task_status_notification.delay(
+					'http_crawl',
+					scan_history_id=scan_history_id,
+					subscan_id=subscan_id,
+					engine_id=engine_id,
+					update_fields={'IPs': ip.address})
 
-			# Add technology objects to DB
-			technologies = line.get('technologies', [])
-			for technology in technologies:
-				tech, _ = Technology.objects.get_or_create(name=technology)
-				subdomain.technologies.add(tech)
-				endpoint.technologies.add(tech)
-				subdomain.save()
-				endpoint.save()
-
-			# Add IP objects for 'a' records to DB
-			a_records = line.get('a', [])
-			for ip_address in a_records:
-				ip, created = save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
-				if created:
-					send_task_status_notification.delay(
-						'http_crawl',
-						scan_history_id=scan_history_id,
-						subscan_id=subscan_id,
-						engine_id=engine_id,
-						update_fields={'IPs': ip.address})
-
-			# Add IP object for host in DB
-			if host:
-				ip, created = save_ip_address(ip_address, subdomain, subscan=subscan, cdn=cdn)
-				if created:
-					send_task_status_notification.delay(
-						'http_crawl',
-						scan_history_id=scan_history_id,
-						subscan_id=subscan_id,
-						engine_id=engine_id,
-						update_fields={'IPs': ip.address})
-
-			# Save subdomain and endpoint
-			subdomain.save()
-			endpoint.save()
-			endpoint_ids.append(endpoint.id)
-
-		except Exception as exception:
-			logger.error(f'JSON line triggered an exception: {line}')
-			logger.exception(exception)
-			continue
+		# Save subdomain and endpoint
+		subdomain.save()
+		endpoint.save()
+		endpoint_ids.append(endpoint.id)
 
 	# Remove 'fake' alive endpoints that are just redirects to the same page
 	remove_duplicate_endpoints(
@@ -1916,11 +2015,11 @@ def send_scan_status_notification(
 	url = get_scan_url(scan_history_id, subscan_id)
 	title = get_scan_title(scan_history_id, subscan_id)
 	fields = get_scan_fields(engine, scan, subscan, status, tasks)
-	severity = 'info'
+	severity = None
 	msg = f'{title} {status}\n'
 	msg += '\n🡆 '.join(f'**{k}:** {v}' for k, v in fields.items())
 	if status:
-		severity = STATUS_TO_SEVERITIES.get(status, 'info')
+		severity = STATUS_TO_SEVERITIES.get(status)
 	opts = {
 		'title': title,
 		'url': url,
@@ -1947,7 +2046,7 @@ def send_task_status_notification(
 		scan_history_id=None,
 		engine_id=None,
 		subscan_id=None,
-		severity='info',
+		severity=None,
 		update_fields={}):
 
 	# Skip send if notification settings are not configured
@@ -1963,7 +2062,8 @@ def send_task_status_notification(
 	# Build fields
 	url = get_scan_url(scan.id)
 	fields = {}
-	fields['Status'] = f'**{status}**' if status else None
+	if status:
+		fields['Status'] = f'**{status}**'
 	if engine:
 		fields['Engine'] = engine.engine_name 
 	if scan:
@@ -1973,7 +2073,7 @@ def send_task_status_notification(
 		fields['Subscan ID'] = f'[#{subscan.id}]({url})'
 	title = get_task_title(task_name, scan_history_id, subscan_id)
 	if status:
-		severity = STATUS_TO_SEVERITIES.get(status, 'info')
+		severity = STATUS_TO_SEVERITIES.get(status)
 
 	msg = f'{title} {status}\n'
 	msg += '\n🡆 '.join(f'**{k}:** {v}' for k, v in fields.items())
@@ -1984,30 +2084,29 @@ def send_task_status_notification(
 
 	# Add traceback to notif
 	if traceback:
-		fields['Traceback'] = "```\n" + traceback + "\n```"
+		fields['Traceback'] = f'```\n{traceback}\n```'
 
 	# Add files to notif
 	files = []
 	attach_file = (
 		notif.send_scan_output_file and
 		output_path and
-		os.path.exists(output_path) and
 		result
 	)
 	if attach_file:
 		output_title = output_path.split('/')[-1]
 		is_json_results = isinstance(result, dict) or isinstance(result, list)
-		with open(output_path, 'w') as f:
-			if is_json_results:
-				json.dump(result, f)
-			else:
-				f.write(result)
-		if traceback and not notif.send_scan_tracebacks: # do not send traceback
+		if not os.path.exists(output_path):
+			with open(output_path, 'w') as f:
+				if is_json_results:
+					json.dump(result, f)
+				else:
+					f.write(result)
+		files = [(output_path, output_title)]
+		if not notif.send_scan_tracebacks: # do not send traceback
 			files = []
-		else:
-			files = [(output_path, output_title)]
 
-	# Send notif in thread
+	# Send notif
 	opts = {
 		'title': title,
 		'url': url,
@@ -2122,97 +2221,114 @@ def parse_nmap_results(nmap_output_file):
 	Returns:
 		list: List of vulnerabilities found from nmap results.
 	"""
+	vulns = []
 	with open(nmap_output_file, 'r') as f:
-		nmap_results = xmltodict.parse(f.read()) # parse XML to dict
-	nmap_ports = (
+		content = f.read()
+		try:
+			nmap_results = xmltodict.parse(content) # parse XML to dict
+		except Exception as e:
+			logger.info(content)
+			logger.error(f'Cannot parse {nmap_output_file} to valid JSON. Skipping.')
+			return vulns
+	logger.debug(json.dumps(nmap_results, indent=4))
+	hosts = (
 		nmap_results
 		.get('nmaprun', {})
 		.get('host', {})
-		.get('ports', {})
-		.get('port', [])
 	)
-	if isinstance(nmap_ports, dict):
-		nmap_ports = [nmap_ports]
-	logger.info(json.dumps(nmap_ports, indent=4))
-	vulns = []
-	for port in nmap_ports:
-		port_number = int(port['@portid'])
-		port_protocol = port['@protocol']
-		scripts = port.get('script', [])
-		if isinstance(scripts, dict):
-			scripts = [scripts]
-		for script in scripts:
-			script_id = script['@id']
-			script_output = script['@output']
-			logger.info(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
+	if isinstance(hosts, dict):
+		hosts = [hosts]
 
-			# Check for CVE in script output
-			CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
-			matches = CVE_REGEX.findall(script_output)
-			matches = list(dict.fromkeys(matches))
-			for cve_id in matches: # get CVE info
-				cve_info = CVESearch('https://cve.circl.lu').id(cve_id)
-				if not cve_info:
-					logger.error(f'Could not fetch CVE info for cve {cve_id}. Skipping.')
-					continue
-				vuln_cve_id = cve_info['id']
-				vuln_description = cve_info.get('summary', 'none').replace(vuln_cve_id, '').strip()
-				vuln_name = vuln_description
-				vuln_cvss = int(cve_info.get('cvss', -1))
-				vuln_type = ''
-				vuln_cwe_id = cve_info.get('cwe', '')
-				exploit_ids = cve_info.get('refmap', {}).get('exploit-db', [])
-				osvdb_ids = cve_info.get('refmap', {}).get('osvdb', [])
-				references = cve_info.get('references', [])
-				capec_objects = cve_info.get('capec', [])
+	for host in hosts:
 
-				# Parse ovals for a better vuln name / type
-				ovals = cve_info.get('oval', [])
-				if ovals:
-					vuln_name = ovals[0]['title']
-					vuln_type = ovals[0]['family']
+		# Grab hostname / IP from output
+		hostnames = host.get('hostnames', {})
+		if hostnames:
+			hostname = hostnames.get('hostname', [])[0]['@name']
+		else:
+			hostname = host.get('address')['@addr']
 
-				# Set vulnerability severity based on CVSS score
-				vuln_severity = 'info'
-				if vuln_cvss < 4:
-					vuln_severity = 'low'
-				elif vuln_cvss < 7:
-					vuln_severity = 'medium'
-				elif vuln_cvss < 9:
-					vuln_severity = 'high'
-				else:
-					vuln_severity = 'critical'
+		# Grab ports from output
+		ports = host.get('ports', {}).get('port', [])
+		if isinstance(ports, dict):
+			ports = [ports]
 
-				if vuln_cve_id:
-					CveId.objects.get_or_create(name=vuln_cve_id)
+		for port in ports:
+			port_number = port['@portid']
+			logger.info(f'Parsing nmap results for {hostname}:{port_number} ...')
+			if not port_number or not port_number.isdigit():
+				continue
+			port_protocol = port['@protocol']
+			scripts = port.get('script', [])
+			if isinstance(scripts, dict):
+				scripts = [scripts]
 
-				if vuln_cwe_id:
-					CweId.objects.get_or_create(name=vuln_cwe_id)
+			for script in scripts:
+				script_id = script['@id']
+				script_output = script['@output']
+				logger.debug(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
 
-				# Build console warning message
-				msg = f'{vuln_name} | {vuln_severity.upper()} | {vuln_cve_id} | {vuln_cwe_id} | {vuln_cvss}'
-				for reference in references:
-					msg += f'\n\tRef: {reference}'
-				for id in osvdb_ids:
-					msg += f'\n\tOSVDB: {id}'
-				for capec_obj in capec_objects:
-					name, summary = capec_obj['name'], capec_obj['summary']
-					msg += f'\n\tCapec: {name} {summary}'
-				for exploit_id in exploit_ids:
-					msg += f'\n\tEXPLOITDB: {exploit_id}'
-				logger.warning(msg)
+				# Check for CVE in script output
+				CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
+				matches = CVE_REGEX.findall(script_output)
+				matches = list(dict.fromkeys(matches))
+				for cve_id in matches: # get CVE info
+					cve_info = CVESearch('https://cve.circl.lu').id(cve_id)
+					if not cve_info:
+						logger.error(f'Could not fetch CVE info for cve {cve_id}. Skipping.')
+						continue
+					vuln_cve_id = cve_info['id']
+					vuln_description = cve_info.get('summary', 'none').replace(vuln_cve_id, '').strip()
+					vuln_name = f'nmap-{script_id}'
+					try:
+						vuln_cvss = float(cve_info.get('cvss', -1))
+					except (ValueError, TypeError):
+						vuln_cvss = -1
+					vuln_type = 'unknown'
+					vuln_cwe_id = cve_info.get('cwe', '')
+					exploit_ids = cve_info.get('refmap', {}).get('exploit-db', [])
+					osvdb_ids = cve_info.get('refmap', {}).get('osvdb', [])
+					references = cve_info.get('references', [])
+					capec_objects = cve_info.get('capec', [])
 
-				vuln = {
-					'name': vuln_name,
-					'type': vuln_type,
-					'severity': NUCLEI_SEVERITY_MAP[vuln_severity],
-					'description': vuln_description,
-					'cvss_score': vuln_cvss,
-					'references': references,
-					'cve_ids': [vuln_cve_id],
-					'cwe_ids': [vuln_cwe_id]
-				}
-				vulns.append(vuln)
+					# Parse ovals for a better vuln name / type
+					ovals = cve_info.get('oval', [])
+					if ovals:
+						vuln_name = ovals[0]['title']
+						vuln_type = ovals[0]['family']
+
+					# Set vulnerability severity based on CVSS score
+					vuln_severity = 'info'
+					if vuln_cvss < 4:
+						vuln_severity = 'low'
+					elif vuln_cvss < 7:
+						vuln_severity = 'medium'
+					elif vuln_cvss < 9:
+						vuln_severity = 'high'
+					else:
+						vuln_severity = 'critical'
+
+					# Build console warning message
+					msg = f'{vuln_name} | {vuln_severity.upper()} | {vuln_cve_id} | {vuln_cwe_id} | {vuln_cvss}'
+					for id in osvdb_ids:
+						msg += f'\n\tOSVDB: {id}'
+					for exploit_id in exploit_ids:
+						msg += f'\n\tEXPLOITDB: {exploit_id}'
+					logger.warning(msg)
+
+					http_url = f'{hostname}:{port_number}'
+					vuln = {
+						'name': vuln_name,
+						'type': vuln_type,
+						'severity': NUCLEI_SEVERITY_MAP[vuln_severity],
+						'description': vuln_description,
+						'cvss_score': vuln_cvss,
+						'references': references,
+						'http_url': http_url,
+						'cve_ids': [vuln_cve_id],
+						'cwe_ids': [vuln_cwe_id]
+					}
+					vulns.append(vuln)
 	return vulns
 
 
@@ -2253,7 +2369,7 @@ def geo_localize(host, ip_id=None):
 
 
 @app.task
-def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, filter_ids=[], filter_status=[200, 301, 404]):
+def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, filter_ids=[], filter_status=[200, 301, 302, 404]):
 	"""Remove duplicate endpoints.
 
 	Check for implicit redirections by comparing endpoints:
@@ -2617,7 +2733,7 @@ def stream_command(cmd, echo=True, shell=False, history_file=None):
 			try:
 				item = json.loads(item)
 				if echo:
-					logger.info(pprint.pformat(item))
+					logger.info(json.dumps(item, indent=4))
 				yield item
 				continue
 			except Exception as e:
@@ -2666,11 +2782,11 @@ def extract_httpx_url(line):
 		any(x in REDIRECT_STATUS_CODES for x in chain_status_codes)
 	)
 	if is_redirect and location:
-		if location.startswith('/'): # concatenate url netloc and path
-			http_url = f'{http_url}{location}'
-		else:
+		if location.startswith(('http', 'https')):
 			http_url = location
-	
+		else:
+			http_url = f'{http_url}/{location.lstrip("/")}'
+
 	# Sanitize URL
 	http_url = sanitize_url(http_url)
 
@@ -2720,17 +2836,17 @@ def osint_discovery(
 
 	if 'emails' in osint_lookup:
 		emails = get_and_save_emails(scan_history, results_dir)
+		emails_str = '\n'.join([f'• `{email}`' for email in emails])
+		send_task_status_notification.delay(
+			'osint',
+			scan_history_id=scan_history.id if scan_history else None,
+			subscan_id=subscan.id if subscan else None,
+			engine_id=engine_id,
+			update_fields={'Emails': emails_str})
 		for email in emails:
 			email, created = save_email(email, scan_history=scan_history)
 			if created:
 				logger.warning(f'Found new email address {email}')
-			if email:
-				send_task_status_notification.delay(
-					'osint',
-					scan_history_id=scan_history.id if scan_history else None,
-					subscan_id=subscan.id if subscan else None,
-					engine_id=engine_id,
-					update_fields={'Emails': f'• `{email.address}`'})
 		creds = h8mail(
 			scan_history=scan_history,
 			subscan=subscan,
@@ -3064,7 +3180,7 @@ def theHarvester(scan_history, subscan=None, engine_id=None, yaml_configuration=
 		dict: Dict of emails, employees, hosts and ips found during crawling.
 	"""
 	config = yaml_configuration.get(OSINT, {})
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL) or yaml_configuration.get(ENABLE_HTTP_CRAWL, True)
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	domain = scan_history.domain
 	host = scan_history.domain.name
 	scan_history_id = scan_history.id if scan_history else None
@@ -3325,6 +3441,7 @@ def create_scan_activity(scan_history_id, message, status):
 # Database functions #
 #--------------------#
 
+
 def save_vulnerability(**vuln_data):
 	references = vuln_data.pop('references', [])
 	cve_ids = vuln_data.pop('cve_ids', [])
@@ -3332,45 +3449,52 @@ def save_vulnerability(**vuln_data):
 	tags = vuln_data.pop('tags', [])
 	subscan = vuln_data.pop('subscan', None)
 
-	# Create vulnerability
-	vuln, created = Vulnerability.objects.get_or_create(**vuln_data)
-	if created:
-		vuln.discovered_date = timezone.now()
-		vuln.open_status = True
-		vuln.save()
+	try:
+		with transaction.atomic():
 
-	# Save vuln tags
-	for tag_name in tags:
-		tag, created = VulnerabilityTags.objects.get_or_create(name=tag_name)
-		if created:
-			vuln.tags.add(tag)
-			vuln.save()
+			# Create vulnerability
+			vuln, created = Vulnerability.objects.get_or_create(**vuln_data)
+			if created:
+				vuln.discovered_date = timezone.now()
+				vuln.open_status = True
+				vuln.save()
 
-	# Save CVEs
-	for cve_id in cve_ids:
-		cve, created = CveId.objects.get_or_create(name=cve_id)
-		if created:
-			vuln.cve_ids.add(cve)
-			vuln.save()
+			# Save vuln tags
+			for tag_name in tags:
+				tag, created = VulnerabilityTags.objects.get_or_create(name=tag_name)
+				if tag:
+					vuln.tags.add(tag)
+					vuln.save()
 
-	# Save CWEs
-	for cve_id in cwe_ids:
-		cwe, created = CweId.objects.get_or_create(name=cve_id)
-		if created:
-			vuln.cwe_ids.add(cwe)
-			vuln.save()
+			# Save CVEs
+			for cve_id in cve_ids:
+				cve, created = CveId.objects.get_or_create(name=cve_id)
+				if cve:
+					vuln.cve_ids.add(cve)
+					vuln.save()
 
-	# Save vuln reference
-	for url in references:
-		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-		if created:
-			vuln.references.add(ref)
-			vuln.save()
+			# Save CWEs
+			for cve_id in cwe_ids:
+				cwe, created = CweId.objects.get_or_create(name=cve_id)
+				if cwe:
+					vuln.cwe_ids.add(cwe)
+					vuln.save()
 
-	# Save subscan id in vuln object
-	if subscan:
-		vuln.vuln_subscan_ids.add(subscan)
-		vuln.save()
+			# Save vuln reference
+			for url in references:
+				ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+				if created:
+					vuln.references.add(ref)
+					vuln.save()
+
+			# Save subscan id in vuln object
+			if subscan:
+				vuln.vuln_subscan_ids.add(subscan)
+				vuln.save()
+	
+	except IntegrityError:
+		logger.error('Could not save vulnerability to DB.')
+		return None, False
 
 	return vuln, created
 
@@ -3383,7 +3507,8 @@ def save_endpoint(
 		yaml_configuration={},
 		results_dir=None,
 		crawl=False,
-		subscan=None):
+		subscan=None,
+		**endpoint_data):
 	"""Get or create EndPoint object. If crawl is True, also crawl the endpoint
 	HTTP URL with httpx.
 
@@ -3401,29 +3526,37 @@ def save_endpoint(
 		tuple: (startScan.models.EndPoint, created) where `created` is a boolean 
 			indicating if the object is new or already existed.
 	"""
-	if crawl:
+
+	# If crawl is set OR the input URL has no scheme, probe URL with httpx
+	# and return created endpoint.
+	run_http_crawl = crawl or not urlparse(http_url).scheme
+	if run_http_crawl:
 		results = http_crawl(
 			scan_history_id=scan_history.id,
+			subscan_id = subscan.id if subscan else None,
 			engine_id=None,
-			subdomain_id=subdomain.id,
+			subdomain_id=subdomain.id if subdomain else None,
 			yaml_configuration=yaml_configuration,
+			method='HEAD',
 			urls=[http_url],
 			results_dir=results_dir)
 		if results:
-			endpoint_id = results[0]['endpoint_id']
+			endpoint_id = results[0]['endpoint-id']
+			created = results[0]['endpoint-created']
 			endpoint = EndPoint.objects.get(pk=endpoint_id)
-			return endpoint, False
+			return endpoint, created
 		return None, False
 
+	# Otherwise, add dumb endpoint without probing it
 	if not validators.url(http_url):
 		return None, False
-
 	http_url = sanitize_url(http_url)
 	endpoint, created = EndPoint.objects.get_or_create(
 		scan_history=scan_history,
 		target_domain=domain,
 		subdomain=subdomain,
-		http_url=http_url)
+		http_url=http_url,
+		**endpoint_data)
 	if created:
 		endpoint.discovered_date = timezone.now()
 		endpoint.save()
