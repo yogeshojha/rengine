@@ -5,7 +5,7 @@ import pickle
 import random
 import shutil
 import traceback
-from ftplib import FTP
+# from ftplib import FTP
 from http.client import HTTPConnection, HTTPSConnection
 from time import sleep
 from urllib.parse import urlparse
@@ -15,9 +15,9 @@ import redis
 import requests
 import tldextract
 import xmltodict
+from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
-from dotted_dict import DottedDict
 from reNgine.common_serializers import *
 from reNgine.definitions import *
 from reNgine.settings import *
@@ -25,7 +25,7 @@ from scanEngine.models import *
 from startScan.models import *
 from targetApp.models import *
 
-logger = logging.getLogger(__name__)
+logger = get_task_logger(__name__)
 DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 
 #------------------#
@@ -97,7 +97,7 @@ def get_lookup_keywords():
 # SubDomain queries #
 #-------------------#
 
-def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
+def get_subdomains(target_domain, scan_history=None, url_filter='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -125,8 +125,8 @@ def get_subdomains(target_domain, scan_history=None, url_path='', subdomain_id=N
 	if not subdomains:
 		logger.warning('No subdomains were found in query !')
 
-	if url_path:
-		subdomains = [f'{subdomain}/{url_path}' for subdomain in subdomains]
+	if url_filter:
+		subdomains = [f'{subdomain}/{url_filter}' for subdomain in subdomains]
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
@@ -267,7 +267,8 @@ def get_http_urls(
 		subdomain_id=None,
 		scan_history=None,
 		is_alive=False,
-		url_path='',
+		is_uncrawled=False,
+		url_filter='',
 		strict=False,
 		ignore_files=False,
 		exclude_subdomains=False,
@@ -278,7 +279,8 @@ def get_http_urls(
 	Args:
 		target_domain (startScan.models.Domain): Target Domain object.
 		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
-		is_alive (bool): If True, select only alive subdomains.
+		is_alive (bool): If True, select only alive urls.
+		is_uncrawled (bool): If True, select only urls that have not been crawled.
 		path (str): URL path.
 		write_filepath (str): Write info back to a file.
 
@@ -294,9 +296,14 @@ def get_http_urls(
 	elif exclude_subdomains:
 		base_query = base_query.filter(http_url=target_domain.http_url)
 
+	# If is_uncrawled is True, select only endpoints that have not been crawled
+	# yet (no status)
+	if is_uncrawled:
+		base_query = base_query.filter(http_status__isnull=True)
+
 	# If a path is passed, select only endpoints that contains it
-	if url_path:
-		url = f'{target_domain.name}/{url_path}'
+	if url_filter:
+		url = f'{target_domain.name}/{url_filter}'
 		url = url.rstrip('/')
 		if strict:
 			base_query = base_query.filter(http_url=url)
@@ -404,90 +411,6 @@ def get_domain_from_subdomain(subdomain):
 	"""
 	ext = tldextract.extract(subdomain)
 	return '.'.join(ext[1:3])
-
-
-def probe_url(url, method='HEAD', first=False):
-	"""Probe URL to find out which protocols respond for this URL.
-
-	Args:
-		url (str): URL.
-		method (str): HTTP method to probe with. Default: HEAD.
-		first (bool): Return only first successful probe URL.
-
-	Returns:
-		list: List of URLs that responded.
-		str: First URL that responded.
-	"""
-	http_alive, http_url, http_resp = is_alive(url, scheme='http', method=method)
-	https_alive, https_url, https_resp = is_alive(url, scheme='https', method=method)
-	alive_ftp, ftp_url, _ = is_alive(url, scheme='ftp')
-	urls = []
-	if http_alive:
-		url = getattr(http_resp, 'url', http_url)
-		urls.append(url)
-	if https_alive:
-		url = getattr(https_resp, 'url', https_url)
-		urls.append(url)
-	if alive_ftp:
-		urls.append(ftp_url)
-	urls = [sanitize_url(url) for url in urls]
-	logger.info(f'Probed "{url}" and found {len(urls)} alive URLs: {urls}')
-	if first:
-		if urls:
-			return urls[0]
-		return None
-	return urls
-
-
-def is_alive(url, scheme='https', method='HEAD', timeout=DEFAULT_HTTP_TIMEOUT):
-	""""Check if URL is alive on a certain scheme (protocol).
-
-	Args:
-		url (str): URL with or without protocol.
-		protocol (str): Protocol to check. Default: https
-		method (str): HTTP method to use.
-
-	Returns:
-		tuple: (is_alive [bool], url [str], response [HTTPResponse]).
-	"""
-	url = urlparse(url)
-	if not url.scheme: # no scheme in input URL, adding input scheme to URL
-		url = urlparse(f'{scheme}://{url.geturl()}')
-	if url.scheme != scheme:
-		return False, None, None
-	final_url = url.geturl()
-	try:
-		if scheme == 'https':
-			connection = HTTPSConnection(url.netloc, timeout=timeout)
-			connection.request(method, url.path)
-			resp = connection.getresponse()
-			if resp:
-				return True, final_url, resp
-			return False, None, None
-		elif scheme == 'http':
-			connection = HTTPConnection(url.netloc, timeout=timeout)
-			connection.request(method, url.path)
-			resp = connection.getresponse()
-			if resp:
-				return True, final_url, resp
-			return False, None, None
-		elif scheme == 'ftp':
-			ftp = FTP(url.netloc)
-			resp1 = ftp.connect(timeout=timeout)
-			resp2 = ftp.voidcmd('NOOP')
-			status, msg = tuple(resp2.split(' NOOP command '))
-			# TODO: make this look like an HTTPResponse object
-			resp = DottedDict({
-				'status': int(status),
-				'noop_info': resp2,
-				'connect_info': resp1
-			})
-			return True, final_url, resp
-		else:
-			return False, None, None
-	except Exception as e:
-		print(str(e))
-		return False, None, None
 
 
 def sanitize_url(http_url):
@@ -623,7 +546,7 @@ def send_slack_message(message):
 def send_discord_message(
 		message,
 		title='',
-		severity='info',
+		severity=None,
 		url=None,
 		files=None,
 		fields={},
@@ -668,7 +591,7 @@ def send_discord_message(
 	else:
 		webhook = DiscordWebhook(
 			url=notif.discord_hook_url,
-			rate_limit_retry=True,
+			rate_limit_retry=False,
 			content=message)
 
 	# Get existing embed if found in cache
@@ -681,11 +604,14 @@ def send_discord_message(
 
 	# Set embed fields
 	if embed:
-		embed.set_url(url)
-		embed.set_color(DISCORD_SEVERITY_COLORS[severity])
+		if url:
+			embed.set_url(url)
+		if severity:
+			embed.set_color(DISCORD_SEVERITY_COLORS[severity])
 		embed.set_description(message)
 		embed.set_timestamp()
 		existing_fields_dict = {field['name']: field['value'] for field in embed.fields}
+		logger.warning(''.join([f'\n\t{k}: {v}' for k, v in fields.items()]))
 		for name, value in fields.items():
 			if not value: # cannot send empty field values to Discord [error 400]
 				continue
@@ -733,23 +659,27 @@ def send_discord_message(
 
 	# Get status code
 	if response.status_code == 429:
-		errors = json.loads(response.content.decode('utf-8'))
+		errors = json.loads(
+			response.content.decode('utf-8'))
 		wh_sleep = (int(errors['retry_after']) / 1000) + 0.15
-		logger.warning(f'Rate limited while sending webhook data to Discord. Retrying in {wh_sleep}.')
+		logger.error(
+			f'Webhook rate limited: sleeping for {wh_sleep} seconds...')
 		sleep(wh_sleep)
 		send_discord_message(
-			message,
-			title=title,
-			severity=severity,
-			url=url,
-			files=files,
-			fields=fields,
-			fields_append=fields_append)
+				message,
+				title,
+				severity,
+				url,
+				files,
+				fields,
+				fields_append)
 	elif response.status_code != 200:
 		logger.error(
 			f'Error while sending webhook data to Discord.'
 			f'\n\tHTTP code: {response.status_code}.'
 			f'\n\tDetails: {response.content}')
+	else:
+		logger.warning(f'Discord notification "{title}" sent !')
 
 
 def enrich_notification(message, scan_history_id, subscan_id):
@@ -786,7 +716,7 @@ def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 		host = subscan.subdomain.name
 		scan_obj = subscan
 	else:
-		tasks_h = '\n• '.join(f'`{task.name}`' for task in tasks)
+		tasks_h = '• ' + '\n• '.join(f'`{task.name}`' for task in tasks) if tasks else ''
 		host = scan.domain.name
 		scan_obj = scan
 
@@ -814,10 +744,9 @@ def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 	if duration:
 		fields['Duration'] = duration
 
-	fields.update({
-		'Host': host,
-		'Tasks': tasks_h
-	})
+	fields['Host'] = host
+	if tasks:
+		fields['Tasks'] = tasks_h
 
 	return fields
 

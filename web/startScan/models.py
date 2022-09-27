@@ -2,7 +2,8 @@ from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
-from reNgine.definitions import CELERY_TASK_STATUSES
+from reNgine.definitions import (CELERY_TASK_STATUSES,
+                                 NUCLEI_REVERSE_SEVERITY_MAP)
 from reNgine.utilities import *
 from scanEngine.models import EngineType
 from targetApp.models import Domain
@@ -172,6 +173,7 @@ class ScanHistory(models.Model):
 
 
 class Subdomain(models.Model):
+	# TODO: Add endpoint property instead of replicating endpoint fields here
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
@@ -457,11 +459,24 @@ class Vulnerability(models.Model):
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
 	def __str__(self):
-		return self.name
+		cve_str = ', '.join(f'`{cve.name}`' for cve in self.cve_ids.all())
+		severity = NUCLEI_REVERSE_SEVERITY_MAP[self.severity]
+		return f'{self.http_url} | `{severity.upper()}` | `{self.name}` | `{cve_str}`'
 
 	def get_severity(self):
 		return self.severity
 
+	def get_cve_str(self):
+		return ', '.join(f'`{cve.name}`' for cve in self.cve_ids.all())
+
+	def get_cwe_str(self):
+		return ', '.join(f'`{cwe.name}`' for cwe in self.cwe_ids.all())
+
+	def get_tags_str(self):
+		return ', '.join(f'`{tag.name}`' for tag in self.tags.all())
+
+	def get_refs_str(self):
+		return '•' + '\n• '.join(f'`{ref.url}`' for ref in self.references.all())
 
 class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)

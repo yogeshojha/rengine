@@ -281,7 +281,7 @@ def start_scan_ui(request, domain_id):
             'results_dir': '/usr/src/scan_results',
             'imported_subdomains': subdomains_in,
             'out_of_scope_subdomains': subdomains_out,
-            'url_path': filterPath.lstrip('/')
+            'url_filter': filterPath.lstrip('/')
         }
         initiate_scan.apply_async(kwargs=kwargs)
         scan.save()

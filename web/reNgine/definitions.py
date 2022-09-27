@@ -24,7 +24,6 @@ CUSTOM_HEADER = 'custom_header'
 DELAY = 'delay'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FOLLOW_REDIRECT = 'follow_redirect'
-EXCLUDE_PORTS = 'exclude_ports'
 EXTENSIONS = 'extensions'
 EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
 EXCLUDE_EXTENSIONS = 'exclude_extensions'
@@ -36,12 +35,15 @@ IGNORE_FILE_EXTENSION = 'ignore_file_extension'
 INTENSITY = 'intensity'
 MATCH_HTTP_STATUS = 'match_http_status'
 MAX_TIME = 'max_time'
+NAABU_EXCLUDE_PORTS = 'exclude_ports'
+NAABU_EXCLUDE_SUBDOMAINS = 'exclude_subdomains'
 NAABU_NMAP_CLI = 'nmap_cli'
 NAABU_NMAP_SCRIPT = 'nmap_script'
 NAABU_NMAP_SCRIPT_ARGS = 'nmap_script_args'
 NAABU_PASSIVE = 'passive'
 NAABU_RATE = 'rate'
 NUCLEI_CUSTOM_TEMPLATE = 'custom_templates'
+NUCLEI_TAGS = 'tags'
 NUCLEI_TEMPLATE = 'templates'
 NUCLEI_SEVERITY = 'severity'
 NUCLEI_CONCURRENCY = 'concurrency'
@@ -125,6 +127,7 @@ NUCLEI_SEVERITY_MAP = {
     'critical': 4,
     'unknown': -1,
 }
+NUCLEI_REVERSE_SEVERITY_MAP = {v: k for k, v in NUCLEI_SEVERITY_MAP.items()}
 NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
 
 # osint

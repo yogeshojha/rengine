@@ -65,14 +65,14 @@ Scan Findings
 						<li><a class="dropdown-item" id="pills-endpoints-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">All Endpoints</a></li>
 						{% if 'fetch_url' in history.tasks and history.used_gf_patterns %}
 						{% for key,value in matched_gf_count.items %}
-						{% if value > 0 %}
-						<li><a class="dropdown-item" id="pills-{{key}}-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">{{key|upper}}<span class="badge-soft-danger float-end ms-1 ps-1 pe-1">{{value}}</span></a></li>
-						{% endif %}
+							{% if value > 0 %}
+							<li><a class="dropdown-item" id="pills-{{key}}-tab" href="#endpoints-tab" data-bs-toggle="tab" aria-expanded="false">{{key|upper}}<span class="badge-soft-danger float-end ms-1 ps-1 pe-1">{{value}}</span></a></li>
+							{% endif %}
 						{% endfor %}
 						{% endif %}
 					</ul>
 				</li>
-				{% if 'vulnerability_scan' in history.tasks %}
+				{% if total_vulnerability_count > 0 %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-vulnerabilities-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#vulnerabilities-tab">Vulnerabilities</a>
 				</li>
@@ -327,14 +327,14 @@ Scan Findings
 								<i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Total Vulnerabilities discovered by reNgine. This will be populated only if vulnerability scan is performed during this scan."></i>
 								<h4 class="mt-0 font-16">Vulnerabilities Discovered</h4>
 								<h2 class="text-danger my-3 text-center"><span data-plugin="counterup">{{total_vulnerability_count|intcomma}}</span></h2>
-								{% if 'vulnerability_scan' in history.tasks %}
+								{% if total_vulnerability_count > 0 %}
 								<p class="text-muted mb-0">
 									<span class="w-title text-danger">{{critical_count}} Critical, {{high_count}} High, {{medium_count}} Medium</span>
 									<br>
 									<span class="w-title text-primary">{{low_count}} Low, {{info_count}} Info, and {{unknown_count}} Unknown Vulnerabilities</span>
 								</p>
 								{% else %}
-								<p class="text-muted mb-0 small">Vulnerability scan hasn't been performed.</p>
+								<p class="text-muted mb-0 small">No vulnerabilities found.</p>
 								<br>
 								{% endif %}
 							</div>
@@ -650,7 +650,7 @@ Scan Findings
 							</div>
 						</div>
 					</div>
-					{% if 'vulnerability_scan' in history.tasks %}
+					{% if total_vulnerability_count > 0 %}
 					<div class="col-xl-5 col-lg-5 col-12">
 						{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
 					</div>
@@ -883,7 +883,7 @@ Scan Findings
 	{% endif %}
 
 	{# Vulnerabilities Section #}
-	{% if 'vulnerability_scan' in history.tasks %}
+	{% if total_vulnerability_count > 0 %}
 	<div class="tab-pane" id="vulnerabilities-tab">
 		{% include 'base/_items/vulnerability_tab_content.html' %}
 	</div>
@@ -1168,7 +1168,7 @@ Scan Findings
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
 
-{% if 'vulnerability_scan' in history.tasks %}
+{% if total_vulnerability_count > 0 %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
 {% endif %}
 
@@ -1252,7 +1252,7 @@ $(document).ready(function() {
 	var chart = new ApexCharts(document.querySelector("#http_status_chart"), options);
 	chart.render();
 	// vulnerability summary pie chart
-	{% if 'vulnerability_scan' in history.tasks %}
+	{% if total_vulnerability_count > 0 %}
 		{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 	// chart
 		var options = {
