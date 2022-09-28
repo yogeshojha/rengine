@@ -910,6 +910,7 @@ def port_scan(
 		logger.warning(ports_data)
 		for host, port_list in ports_data.items():
 			ports_str = '_'.join([str(p) for p in port_list])
+			title = get_task_title(f'nmap_{host}', scan_history_id, subscan_id)
 			sig = nmap.si(	
 				scan_history_id=scan_history_id,
 				subscan_id=subscan_id,
@@ -921,7 +922,7 @@ def port_scan(
 				script_args=nmap_script_args,
 				max_rate=rate_limit,
 				results_dir=results_dir,
-				filename=f'nmap_tmp_{host}_{ports_str}.json')
+				filename=f'{title}.json')
 			sigs.append(sig)
 		task = group(*sigs).delay()
 		with allow_join_result():
@@ -951,8 +952,10 @@ def nmap(
 	notif = Notification.objects.first()
 	ports_str = ','.join(str(port) for port in ports)
 	filename_xml = filename.replace('.json', '.xml')
+	filename_vulns = filename.replace('.json', '_vulns.json')
 	output_file = f'{results_dir}/{filename}'
 	output_file_xml = f'{results_dir}/{filename_xml}'
+	vulns_file = f'{results_dir}/{filename_vulns}'
 
 	# Build cmd
 	nmap_cmd = get_nmap_cmd(
@@ -969,9 +972,9 @@ def nmap(
 	run_command(nmap_cmd, echo=DEBUG > 0, shell=True)
 
 	# Get nmap XML results and convert to JSON
-	vulns = parse_nmap_results(output_file_xml)
-	with open(output_file, 'w') as f:
-		json.dump(vulns, f)
+	vulns = parse_nmap_results(output_file_xml, output_file)
+	with open(vulns_file, 'w') as f:
+		json.dump(vulns, f, indent=4)
 
 	# Save vulnerabilities found by nmap
 	vulns_str = ''
@@ -2060,7 +2063,9 @@ def send_task_status_notification(
 	subscan = SubScan.objects.get(pk=subscan_id) if subscan_id else None
 
 	# Build fields
-	url = get_scan_url(scan.id)
+	url = None
+	if scan_history_id:
+		url = get_scan_url(scan_history_id)
 	fields = {}
 	if status:
 		fields['Status'] = f'**{status}**'
@@ -2069,7 +2074,7 @@ def send_task_status_notification(
 	if scan:
 		fields['Scan ID'] = f'[#{scan.id}]({url})'
 	if subscan:
-		url = get_scan_url(scan.id, subscan.id)
+		url = get_scan_url(scan_history_id, subscan_id)
 		fields['Subscan ID'] = f'[#{subscan.id}]({url})'
 	title = get_task_title(task_name, scan_history_id, subscan_id)
 	if status:
@@ -2212,25 +2217,30 @@ def send_hackerone_report(vulnerability_id):
 
 
 @app.task
-def parse_nmap_results(nmap_output_file):
+def parse_nmap_results(xml_file, output_file=None):
 	"""Parse results from nmap output file.
 
 	Args:
-		nmap_output_file (str): nmap XML output file path.
+		xml_file (str): nmap XML report file path.
 
 	Returns:
 		list: List of vulnerabilities found from nmap results.
 	"""
-	vulns = []
-	with open(nmap_output_file, 'r') as f:
+	with open(xml_file, 'r') as f:
 		content = f.read()
 		try:
 			nmap_results = xmltodict.parse(content) # parse XML to dict
 		except Exception as e:
 			logger.info(content)
-			logger.error(f'Cannot parse {nmap_output_file} to valid JSON. Skipping.')
-			return vulns
-	logger.debug(json.dumps(nmap_results, indent=4))
+			logger.error(f'Cannot parse {xml_file} to valid JSON. Skipping.')
+			return []
+
+	# Write JSON to output file
+	if output_file:
+		with open(output_file, 'w') as f:
+			json.dump(nmap_results, f, indent=4)
+	logger.warning(json.dumps(nmap_results, indent=4))
+	vulns = []
 	hosts = (
 		nmap_results
 		.get('nmaprun', {})

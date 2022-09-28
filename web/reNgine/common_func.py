@@ -705,8 +705,10 @@ def get_scan_title(scan_id, subscan_id=None, task_name=None):
 	return f'Subscan #{subscan_id} summary' if subscan_id else f'Scan #{scan_id} summary'
 
 
-def get_scan_url(scan_id, subscan_id=None):
-	return f'https://{DOMAIN_NAME}/scan/detail/{scan_id}'
+def get_scan_url(scan_id=None, subscan_id=None):
+	if scan_id:
+		return f'https://{DOMAIN_NAME}/scan/detail/{scan_id}'
+	return None
 
 
 def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
