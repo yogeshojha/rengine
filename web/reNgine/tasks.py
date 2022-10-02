@@ -1051,6 +1051,10 @@ def port_scanning(
 	if USE_NAABU_CONFIG in yaml_configuration[PORT_SCAN] and yaml_configuration[PORT_SCAN][USE_NAABU_CONFIG]:
 		naabu_command += ' -config /root/.config/naabu/config.yaml '
 
+	proxy = get_random_proxy()
+	if proxy:
+		naabu_command += ' -proxy "{}" '.format(proxy)
+
 	# run naabu
 	logger.info(naabu_command)
 	process = subprocess.Popen(naabu_command.split())

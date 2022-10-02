@@ -1018,7 +1018,7 @@ def get_cms_details(url):
 
 
 def remove_cmd_injection_chars(command):
-    remove_chars = ['&', '<', '>', '|', ';']
+    remove_chars = ['&', '<', '>', '|', ';', '$', '`']
     for chrs in remove_chars:
         command = command.replace(chrs, '')
     return command
