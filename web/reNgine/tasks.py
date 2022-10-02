@@ -1579,7 +1579,7 @@ def http_crawl(
 	cfg = ctx.get('yaml_configuration', {})
 	custom_header = cfg.get(CUSTOM_HEADER)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
-	output_path = f'{results_dir}/httpx_ouput_{timestamp}.json'
+	output_path = f'{results_dir}/httpx_output_{timestamp}.json'
 	input_file = f'{results_dir}/httpx_input_{timestamp}.txt'
 	history_file = f'{results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
