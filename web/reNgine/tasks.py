@@ -277,7 +277,7 @@ def initiate_subscan(
 			subdomain.technologies.add(tech)
 		subdomain.save()
 
-	# Build header
+	# Build header + callback
 	workflow = method.si(ctx=ctx)
 	callback = report.si(ctx=ctx).set(link_error=[report.si(ctx=ctx)])
 
@@ -1733,7 +1733,7 @@ def http_crawl(
 		json.dump(results, f, indent=4)
 
 	# Remove input file
-	# run_command(f'rm {input_file} {output_file}', shell=True)
+	run_command(f'rm {input_file}', shell=True)
 
 	return results
 
