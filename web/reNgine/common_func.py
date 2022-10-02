@@ -97,7 +97,7 @@ def get_lookup_keywords():
 # SubDomain queries #
 #-------------------#
 
-def get_subdomains(target_domain, scan_history=None, url_filter='', subdomain_id=None, exclude_subdomains=None, write_filepath=None):
+def get_subdomains(write_filepath=None, exclude_subdomains=False, ctx={}):
 	"""Get Subdomain objects from DB.
 
 	Args:
@@ -111,19 +111,31 @@ def get_subdomains(target_domain, scan_history=None, url_filter='', subdomain_id
 	Returns:
 		list: List of subdomains matching query.
 	"""
-	base_query = Subdomain.objects.filter(target_domain=target_domain, scan_history=scan_history)
+	domain_id = ctx.get('domain_id')
+	scan_id = ctx.get('scan_history_id')
+	subdomain_id = ctx.get('subdomain_id')
+	exclude_subdomains = ctx.get('exclude_subdomains', False)
+	url_filter = ctx.get('url_filter', '')
+	domain = Domain.objects.filter(pk=domain_id).first()
+	scan = ScanHistory.objects.filter(pk=scan_id).first()
+
+	query = Subdomain.objects
+	if domain:
+		query = query.filter(target_domain=domain)
+	if scan:
+		query = query.filter(scan_history=scan)
 	if subdomain_id:
-		base_query = base_query.filter(pk=subdomain_id)
-	elif exclude_subdomains:
-		base_query = base_query.filter(name=target_domain.name)
-	subdomain_query = base_query.distinct('name').order_by('name')
+		query = query.filter(pk=subdomain_id)
+	elif domain and exclude_subdomains:
+		query = query.filter(name=domain.name)
+	subdomain_query = query.distinct('name').order_by('name')
 	subdomains = [
 		subdomain.name
 		for subdomain in subdomain_query.all()
 		if subdomain.name
 	]
 	if not subdomains:
-		logger.warning('No subdomains were found in query !')
+		logger.error('No subdomains were found in query !')
 
 	if url_filter:
 		subdomains = [f'{subdomain}/{url_filter}' for subdomain in subdomains]
@@ -263,16 +275,13 @@ def get_interesting_subdomains(scan_history=None, domain_id=None):
 #------------------#
 
 def get_http_urls(
-		target_domain,
-		subdomain_id=None,
-		scan_history=None,
 		is_alive=False,
 		is_uncrawled=False,
-		url_filter='',
 		strict=False,
 		ignore_files=False,
+		write_filepath=None,
 		exclude_subdomains=False,
-		write_filepath=None):
+		ctx={}):
 	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a 
 	specific path.
 
@@ -287,31 +296,40 @@ def get_http_urls(
 	Returns:
 		list: List of subdomains matching query.
 	"""
-	base_query = EndPoint.objects.filter(target_domain=target_domain)
-	if scan_history:
-		base_query = base_query.filter(scan_history=scan_history)
+	domain_id = ctx.get('domain_id')
+	scan_id = ctx.get('scan_history_id')
+	subdomain_id = ctx.get('subdomain_id')
+	url_filter = ctx.get('url_filter', '')
+	domain = Domain.objects.filter(pk=domain_id).first()
+	scan = ScanHistory.objects.filter(pk=scan_id).first()
+
+	query = EndPoint.objects
+	if domain:
+		query = query.filter(target_domain=domain)
+	if scan:
+		query = query.filter(scan_history=scan)
 	if subdomain_id:
 		subdomain = Subdomain.objects.get(pk=subdomain_id)
-		base_query = base_query.filter(http_url__contains=subdomain.name)
-	elif exclude_subdomains:
-		base_query = base_query.filter(http_url=target_domain.http_url)
+		query = query.filter(http_url__contains=subdomain.name)
+	elif exclude_subdomains and domain:
+		query = query.filter(http_url=domain.http_url)
 
 	# If is_uncrawled is True, select only endpoints that have not been crawled
 	# yet (no status)
 	if is_uncrawled:
-		base_query = base_query.filter(http_status__isnull=True)
+		query = query.filter(http_status__isnull=True)
 
 	# If a path is passed, select only endpoints that contains it
-	if url_filter:
-		url = f'{target_domain.name}/{url_filter}'
+	if url_filter and domain:
+		url = f'{domain.name}/{url_filter}'
 		url = url.rstrip('/')
 		if strict:
-			base_query = base_query.filter(http_url=url)
+			query = query.filter(http_url=url)
 		else:
-			base_query = base_query.filter(http_url__contains=url)
+			query = query.filter(http_url__contains=url)
 
 	# Select distinct endpoints and order
-	endpoints = base_query.distinct('http_url').order_by('http_url').all()
+	endpoints = query.distinct('http_url').order_by('http_url').all()
 
 	# If is_alive is True, select only endpoints that are alive
 	if is_alive:
@@ -327,7 +345,7 @@ def get_http_urls(
 		endpoints = [e for e in endpoints if not urlparse(e).path.endswith(extensions)]
 
 	if not endpoints:
-		logger.error(f'No endpoints were found in query for {target_domain.name}!')
+		logger.error(f'No endpoints were found in query for {domain.name}!')
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
@@ -611,7 +629,7 @@ def send_discord_message(
 		embed.set_description(message)
 		embed.set_timestamp()
 		existing_fields_dict = {field['name']: field['value'] for field in embed.fields}
-		logger.warning(''.join([f'\n\t{k}: {v}' for k, v in fields.items()]))
+		logger.debug(''.join([f'\n\t{k}: {v}' for k, v in fields.items()]))
 		for name, value in fields.items():
 			if not value: # cannot send empty field values to Discord [error 400]
 				continue
@@ -662,8 +680,6 @@ def send_discord_message(
 		errors = json.loads(
 			response.content.decode('utf-8'))
 		wh_sleep = (int(errors['retry_after']) / 1000) + 0.15
-		logger.error(
-			f'Webhook rate limited: sleeping for {wh_sleep} seconds...')
 		sleep(wh_sleep)
 		send_discord_message(
 				message,
@@ -678,8 +694,6 @@ def send_discord_message(
 			f'Error while sending webhook data to Discord.'
 			f'\n\tHTTP code: {response.status_code}.'
 			f'\n\tDetails: {response.content}')
-	else:
-		logger.warning(f'Discord notification "{title}" sent !')
 
 
 def enrich_notification(message, scan_history_id, subscan_id):
