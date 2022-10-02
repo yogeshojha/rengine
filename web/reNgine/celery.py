@@ -2,9 +2,9 @@ import os
 
 import django
 from celery import Celery
+from celery.app import trace
 from celery.app.log import TaskFormatter
 from celery.signals import after_setup_task_logger
-from celery.app import trace
 
 trace.LOG_SUCCESS = 'Task %(name)s[%(id)s] succeeded in %(runtime)ss'
 
