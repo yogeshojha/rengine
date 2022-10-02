@@ -809,7 +809,6 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		task = group(sigs).apply_async()
 		with allow_join_result():
 			results = task.get()
-			logger.warning(results)
 
 	return results
 

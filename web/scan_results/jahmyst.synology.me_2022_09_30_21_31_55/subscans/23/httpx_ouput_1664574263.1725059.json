@@ -1,0 +1,60 @@
+[
+    {
+        "timestamp": "2022-09-30T21:44:24.048525748Z",
+        "asn": {
+            "as-number": "AS12322",
+            "as-name": "PROXAD",
+            "as-country": "FR",
+            "as-range": "82.64.0.0/14"
+        },
+        "csp": {
+            "domains": [
+                "https://*.gstatic.com",
+                "http://*.googlecode.com",
+                "https://help.synology.cn/",
+                "https://www.synology.cn/",
+                "https://*.googleapis.com",
+                "https://gofile.me",
+                "http://gofile.me",
+                "https://*.synology.cn",
+                "https://*.google.com",
+                "https://help.synology.cn",
+                "https://*.synology.com"
+            ]
+        },
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "513193160cd2c4d5799f0167a2032e5f",
+            "header-mmh3": "1969996348",
+            "header-sha256": "06efab190f1a399d869831113a44d95feb1b1485e261fffc019da2c5bfb01ddc",
+            "header-simhash": "15623508380749512092"
+        },
+        "port": "443",
+        "url": "https://jahmyst.synology.me:443",
+        "input": "jahmyst.synology.me",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "82.66.157.114",
+        "path": "/",
+        "response-time": "143.862056ms",
+        "a": [
+            "82.66.157.114"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "failed": false,
+        "final-url": "https://jahmyst.synology.me",
+        "endpoint-id": 5465,
+        "endpoint-created": true,
+        "is_redirect": false
+    }
+]

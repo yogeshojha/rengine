@@ -646,6 +646,8 @@ def send_discord_message(
 					existing_val = str(existing_val)
 					if value not in existing_val:
 						value = f'{existing_val}\n{value}'
+					if len(value) > 1024: # character limit for embed field
+						value = value[0:512] + '\n[TRUNCATED]\n' + value[512:1009]
 
 				# Update existing embed
 				ix = embed.fields.index(field)
