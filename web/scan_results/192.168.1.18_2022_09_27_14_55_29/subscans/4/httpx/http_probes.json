@@ -1,0 +1,40 @@
+[
+    {
+        "timestamp": "2022-09-27T15:59:53.752839572Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "c06d2c36dcfb789e7b4e6eb4a9b89912",
+            "header-mmh3": "1039749815",
+            "header-sha256": "60c9bd0abed914e0a374e2e347a577ab494dbbdeace5fd3ff3eea5aedf9cab84",
+            "header-simhash": "10967026087514316655"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443",
+        "input": "192.168.1.18",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/",
+        "response-time": "2.589096ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18",
+        "endpoint-id": 3614,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+]

@@ -1,0 +1,391 @@
+[
+    {
+        "timestamp": "2022-09-27T22:20:47.300493874Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "d37660529accca1caf3945956ec69592",
+            "header-mmh3": "1870856171",
+            "header-sha256": "8057fca8f7532175d5f357aa3606fa3091e6eb5c8802db23bc63d16f3e83efc1",
+            "header-simhash": "10967026087514314607"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443",
+        "input": "192.168.1.18",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/",
+        "response-time": "2.969632ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18",
+        "endpoint-id": 3658,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:21:06.090711534Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "138480b92eb4f75d54c775128a0831ef",
+            "header-mmh3": "975362806",
+            "header-sha256": "1072569f4badedb436dd9b89fbc1982593c2241e0ffda9b8d3b4675644fc4a15",
+            "header-simhash": "10967026087514316653"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "2.751802ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:21:08.201108647Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "5ce6b6676255b23e8d38c4559fa82be4",
+            "header-mmh3": "2053821544",
+            "header-sha256": "939fe70c16b21e38510344c9aae29d8bb71a61032666384c8449e7b62373c581",
+            "header-simhash": "10967026087514316655"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "2.419199ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:21:10.064573035Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "af7363f92cab82ba0b87c53f5aaca461",
+            "header-mmh3": "586453724",
+            "header-sha256": "3885030d75944bfdab55c3716f141112b1e2ecabf71b46b04714ca7f2eeb088c",
+            "header-simhash": "10967026087514316653"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443",
+        "input": "https://192.168.1.18",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/",
+        "response-time": "2.440468ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18",
+        "endpoint-id": 3658,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][][][][][][][][][][][][][][][][][][][][][][
+    {
+        "timestamp": "2022-09-27T22:21:46.373130901Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "bb0c733c052d64746e6a9f9c8a6809c9",
+            "header-mmh3": "31271951",
+            "header-sha256": "6139f9e10d0dacc4a4f2c7e15b4dc6bcc2f71885ac841008ee26b4308f70364f",
+            "header-simhash": "10967026087514314607"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "3.054265ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:21:47.748633471Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "b0107f119fcf2f1485f77d797fa18baf",
+            "header-mmh3": "-138660667",
+            "header-sha256": "51e5bdfb63d9d28fba607f3db03ce02677b0a1ca05b01453295e41e124744c80",
+            "header-simhash": "10967026087514314607"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443",
+        "input": "https://192.168.1.18",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/",
+        "response-time": "2.575277ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18",
+        "endpoint-id": 3658,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:21:54.293683014Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "6d04232829ab8038b26d1dd268f08804",
+            "header-mmh3": "494308546",
+            "header-sha256": "e1efb655eb07b04efcc46b11fa1d6cb7042e562c1f337218b52216eee2123587",
+            "header-simhash": "10967026087514314605"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "2.544308ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][][][][
+    {
+        "timestamp": "2022-09-27T22:22:00.259037762Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "005b8cb80c08e1ff7b9eb29f349f5747",
+            "header-mmh3": "769678036",
+            "header-sha256": "ff55ce121120c36d9ad4a31f41d72bfc39a06c7240ca6eb60f0b19092417c7d5",
+            "header-simhash": "10967026087514316653"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443",
+        "input": "https://192.168.1.18",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/",
+        "response-time": "3.087683ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18",
+        "endpoint-id": 3658,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:22:02.06732069Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "d320d7e28b6a28e82f082ca2ccc01bc4",
+            "header-mmh3": "-334443849",
+            "header-sha256": "3eb7aca85b6cbbdc0cfcfcc8423e5f5ce50d994134aa1dbdb4ee2844862719b7",
+            "header-simhash": "10967026087514316653"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "2.629069ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][
+    {
+        "timestamp": "2022-09-27T22:22:03.919664675Z",
+        "hashes": {
+            "body-md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "body-mmh3": "-1840324437",
+            "body-sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "body-simhash": "18446744073709551615",
+            "header-md5": "4c8ae5462205c88e517df443a8f57c73",
+            "header-mmh3": "-1404719350",
+            "header-sha256": "7143035a135627088df494895dd233e360969cc2b1296b48ca05c1302cd05972",
+            "header-simhash": "10967026087514316653"
+        },
+        "port": "443",
+        "url": "https://192.168.1.18:443/login",
+        "input": "https://192.168.1.18/login",
+        "scheme": "https",
+        "webserver": "nginx",
+        "content-type": "text/html",
+        "method": "HEAD",
+        "host": "192.168.1.18",
+        "path": "/login",
+        "response-time": "2.582439ms",
+        "a": [
+            "192.168.1.18"
+        ],
+        "technologies": [
+            "Nginx"
+        ],
+        "words": 1,
+        "lines": 1,
+        "status-code": 200,
+        "content-length": 463,
+        "failed": false,
+        "final-url": "https://192.168.1.18/login",
+        "endpoint-id": 3670,
+        "endpoint-created": false,
+        "is_redirect": false
+    }
+][][][][][][][][][][][][]
