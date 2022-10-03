@@ -433,9 +433,9 @@ def target_summary(request, id):
 
 def add_organization(request):
     form = AddOrganizationForm(request.POST or None)
-    data = form.cleaned_data
     if request.method == "POST":
         if form.is_valid():
+            data = form.cleaned_data
             organization = Organization.objects.create(
                 name=data['name'],
                 description=data['description'],
