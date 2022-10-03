@@ -224,10 +224,10 @@ LOGGING = {
             'format': '%(message)s'
         },
         'brief': {
-            'format': '%(name)-25s | %(message)s'
+            'format': '%(name)-10s | %(message)s'
         },
         'task': {
-            '()': lambda : TaskFormatter('%(task_name)-25s | %(message)s')
+            '()': lambda : TaskFormatter('%(task_name)-34s | %(message)s')
         }
     },
     'loggers': {
@@ -239,6 +239,10 @@ LOGGING = {
         'celery.app.trace': {
             'handlers': ['null'],
             'propagate': False,
+        },
+        'celery.task': {
+            'handlers': ['task'],
+            'propagate': False
         },
         'celery.worker': {
             'handlers': ['null'],
@@ -256,6 +260,6 @@ LOGGING = {
         'reNgine.tasks': {
             'handlers': ['task'],
             'propagate': False
-        },
+        }
     },
 }

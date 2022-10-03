@@ -63,9 +63,8 @@ def initiate_scan(
 		scan_history_id (int): ScanHistory id.
 		domain_id (int): Domain id.
 		engine_id (int): Engine ID.
-		results_dir (str): Results directory.
 		scan_type (int): Scan type (periodic, live).
-		yaml_configuration (dict): YAML configuration.
+		results_dir (str): Results directory.
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
 		url_filter (str): URL path. Default: ''
@@ -158,9 +157,10 @@ def initiate_scan(
 		logger.warning(f'Found root HTTP URL {endpoint.http_url}')
 
 	# Build Celery tasks, crafted according to the dependency graph below:
-	# subdomain_discovery --> port_scan --> waf_detection --> dir_file_fuzz --> vulnerability_scan
-	# osint								    fetch_url         					screenshot
-	#						 	   		         	  	      
+	# subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
+	# osint								             	  vulnerability_scan
+	#						 	   		         	  	  screenshot
+	#													  waf_detection
 	workflow = chain(
 		group(
 			subdomain_discovery.si(ctx=ctx, description='Subdomain discovery'),
@@ -196,9 +196,19 @@ def initiate_subscan(
 		scan_history_id,
 		subdomain_id,
 		engine_id=None,
+		scan_type=None,
 		results_dir=RENGINE_RESULTS,
-		url_filter='',
-		scan_type=None):
+		url_filter=''):
+	"""Initiate a new subscan.
+
+	Args:
+		scan_history_id (int): ScanHistory id.
+		subdomain_id (int): Subdomain id.
+		engine_id (int): Engine ID.
+		scan_type (int): Scan type (periodic, live).
+		results_dir (str): Results directory.
+		url_filter (str): URL path. Default: ''
+	"""
 
 	# Get Subdomain and ScanHistory
 	subdomain = Subdomain.objects.get(pk=subdomain_id)
@@ -296,8 +306,8 @@ def initiate_subscan(
 @app.task
 def report(ctx={}, description=None):
 	"""Report task running after all other tasks.
-	Mark ScanHistory or SubScan object as completed and update with final 
-	status. Log run details and send notification.
+	Mark ScanHistory or SubScan object as completed and update with final
+	status, log run details and send notification.
 
 	Args:
 		description (str, optional): Task description shown in UI.
@@ -352,7 +362,10 @@ def subdomain_discovery(
 	subdomains associated with a domain.
 
 	Args:
-		description (str, optional): Task description shown in UI.
+		host (str): Hostname to scan.
+
+	Returns:
+		subdomains (list): List of subdomain names.
 	"""
 	if not host:
 		host = self.subdomain.name if self.subdomain else self.domain.name
@@ -528,37 +541,534 @@ def subdomain_discovery(
 			subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in interesting_subdomains])
 			self.notify(fields={'Interesting subdomains': subdomains_str})
 
+	return results
+
 
 @app.task(base=RengineTask, bind=True)
-def osint(self, ctx={}, description=None):
+def osint(self, host=None, ctx={}, description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
 	Args:
-		description (str, optional): Task description shown in UI.
+		host (str): Hostname to scan.
+
+	Returns:
+		dict: Results from osint discovery and dorking.
 	"""
 	config = self.yaml_configuration.get(OSINT) or {}
 	results = {}
 
 	if 'discover' in config:
-		results = osint_discovery(
-			self.scan,
-			subscan=self.subscan,
-			engine_id=self.engine_id,
-			yaml_configuration=self.yaml_configuration,
-			results_dir=self.results_dir)
+		ctx['track'] = False
+		results = osint_discovery(host=host, ctx=ctx)
 
 	if 'dork' in config:
-		results['dorks'] = dorking(
-			self.scan,
-			subscan=self.subscan,
-			engine_id=self.engine_id,
-			yaml_configuration=self.yaml_configuration,
-			results_dir=self.results_dir)
+		ctx['track'] = False
+		results['dorks'] = dorking(host=host, ctx=ctx, track=False)
 
 	with open(self.output_path, 'w') as f:
 		json.dump(results, f, indent=4)
 
 	return results
+
+
+@app.task(base=RengineTask, bind=True)
+def osint_discovery(self, host=None, ctx={}):
+	"""Run OSInt discovery.
+	
+	Args:
+		host (str): Hostname to scan.
+
+	Returns:
+		dict: osint metadat and theHarvester and h8mail results.
+	"""
+	cfg = self.yaml_configuration
+	osint_config = cfg.get(OSINT) or {}
+	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
+	osint_intensity = osint_config.get(INTENSITY, 'normal')
+	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
+	data = {}
+	meta_info = []
+	emails = []
+	creds = []
+	host = self.domain.name if self.domain else host
+
+	# Get and save meta info
+	if 'metainfo' in osint_lookup:
+		if osint_intensity == 'normal':
+			meta_dict = DottedDict({
+				'osint_target': host,
+				'domain': self.domain if self.domain else host,
+				'scan_id': self.scan_id,
+				'documents_limit': documents_limit
+			})
+			meta_info = save_metadata_info(meta_dict)
+		elif osint_intensity == 'deep':
+			subdomains = Subdomain.objects
+			if self.scan:
+				subdomains = subdomains.filter(scan_history=self.scan)
+			for subdomain in subdomains:
+				meta_dict = DottedDict({
+					'osint_target': subdomain.name,
+					'domain': self.domain,
+					'scan_id': self.scan_id,
+					'documents_limit': documents_limit
+				})
+				meta_info = save_metadata_info(meta_dict)
+
+	if 'emails' in osint_lookup:
+		emails = get_and_save_emails(self.scan, self.results_dir)
+		emails_str = '\n'.join([f'• `{email}`' for email in emails])
+		self.notify(fields={'Emails': emails_str})
+		for email in emails:
+			email, created = save_email(email, scan_history=self.scan)
+			if created:
+				logger.warning(f'Found new email address {email}')
+		ctx['track'] = False
+		creds = h8mail(ctx=ctx)
+
+	if 'employees' in osint_lookup:
+		ctx['track'] = False
+		data = theHarvester(host=host, ctx=ctx)
+	
+	data['emails'] = data.get('emails', []) + emails
+	data['creds'] = creds
+	data['meta_info'] = meta_info
+	return data
+
+
+@app.task(base=RengineTask, bind=True)
+def dorking(self, host=None, ctx={}):
+	"""Run Google dorks.
+
+	Args:
+		host (str): Hostname to scan.
+
+	Returns:
+		list: Dorking results for each dork ran.
+	"""
+	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
+	config = self.yaml_configuration.get(OSINT) or {}
+	dorks = config.get(OSINT_DORK, DORKS_DEFAULT_NAMES)
+	results = []
+	for dork in dorks:
+		if dork == 'stackoverflow':
+			dork_name = 'site:stackoverflow.com'
+			dork_type = 'stackoverflow'
+			results = get_and_save_dork_results(
+				dork,
+				dork_type,
+				host=host,
+				scan_history=self.scan,
+				in_target=False)
+
+		elif dork == '3rdparty' :
+			# look in 3rd party sitee
+			dork_type = '3rdparty'
+			lookup_websites = [
+				'gitter.im',
+				'papaly.com',
+				'productforums.google.com',
+				'coggle.it',
+				'replt.it',
+				'ycombinator.com',
+				'libraries.io',
+				'npm.runkit.com',
+				'npmjs.com',
+				'scribd.com',
+				'gitter.im'
+			]
+			dork_name = ''
+			for website in lookup_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=False)
+				results.extend(tmp_results)
+
+		elif dork == 'social_media' :
+			dork_type = 'Social Media'
+			social_websites = [
+				'tiktok.com',
+				'facebook.com',
+				'twitter.com',
+				'youtube.com',
+				'pinterest.com',
+				'tumblr.com',
+				'reddit.com'
+			]
+			dork_name = ''
+			for website in social_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=False)
+				results.extend(tmp_results)
+
+		elif dork == 'project_management' :
+			dork_type = 'Project Management'
+			project_websites = [
+				'trello.com',
+				'*.atlassian.net'
+			]
+			dork_name = ''
+			for website in project_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=False)
+				results.extend(tmp_results)
+
+		elif dork == 'code_sharing' :
+			dork_type = 'Code Sharing Sites'
+			code_websites = [
+				'github.com',
+				'gitlab.com',
+				'bitbucket.org'
+			]
+			dork_name = ''
+			for website in code_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=False)
+				results.extend(tmp_results)
+
+		elif dork == 'config_files' :
+			dork_type = 'Config Files'
+			config_file_ext = [
+				'env',
+				'xml',
+				'conf',
+				'cnf',
+				'inf',
+				'rdp',
+				'ora',
+				'txt',
+				'cfg',
+				'ini'
+			]
+
+			dork_name = ''
+			results = []
+			for extension in config_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		if dork == 'jenkins' :
+			dork_type = 'Jenkins'
+			dork_name = 'intitle:\"Dashboard [Jenkins]\"'
+			tmp_results = get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				host=host,
+				scan_history=self.scan,
+				in_target=True)
+			results.extend(tmp_results)
+
+		elif dork == 'wordpress_files' :
+			dork_type = 'Wordpress Files'
+			inurl_lookup = [
+				'wp-content',
+				'wp-includes'
+			]
+			dork_name = ''
+			for lookup in inurl_lookup:
+				dork_name = dork + ' | ' + 'inurl:' + lookup
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		elif dork == 'cloud_buckets':
+			dork_type = 'Cloud Buckets'
+			cloud_websites = [
+				'.s3.amazonaws.com',
+				'storage.googleapis.com',
+				'amazonaws.com'
+			]
+
+			dork_name = ''
+			for website in cloud_websites:
+				dork_name = dork + ' | ' + 'site:' + website
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=False)
+				results.extend(tmp_results)
+
+		elif dork == 'php_error':
+			dork_type = 'PHP Error'
+			error_words = [
+				'\"PHP Parse error\"',
+				'\"PHP Warning\"',
+				'\"PHP Error\"'
+			]
+
+			dork_name = ''
+			for word in error_words:
+				dork_name = dork + ' | ' + word
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		elif dork == 'exposed_documents':
+			dork_type = 'Exposed Documents'
+			docs_file_ext = [
+				'doc',
+				'docx',
+				'odt',
+				'pdf',
+				'rtf',
+				'sxw',
+				'psw',
+				'ppt',
+				'pptx',
+				'pps',
+				'csv'
+			]
+
+			dork_name = ''
+			for extension in docs_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		elif dork == 'struts_rce':
+			dork_type = 'Apache Struts RCE'
+			struts_file_ext = [
+				'action',
+				'struts',
+				'do'
+			]
+
+			dork_name = ''
+			for extension in struts_file_ext:
+				dork_name = dork + ' | ' + 'ext:' + extension
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		elif dork == 'db_files':
+			dork_type = 'Database Files'
+			db_file_ext = [
+				'sql',
+				'db',
+				'dbf',
+				'mdb'
+			]
+
+			dork_name = ''
+			for extension in db_file_ext:
+				dork_name = dork_name + ' | ' + 'ext:' + extension
+				tmp_results = get_and_save_dork_results(
+					dork_name[3:],
+					dork_type,
+					host=host,
+					scan_history=self.scan,
+					in_target=True)
+				results.extend(tmp_results)
+
+		elif dork == 'traefik':
+			dork_name = 'intitle:traefik inurl:8080/dashboard'
+			dork_type = 'Traefik'
+			tmp_results = get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				host=host,
+				scan_history=self.scan,
+				in_target=True)
+			results.extend(tmp_results)
+
+		elif dork == 'git_exposed':
+			dork_name = 'inurl:\"/.git\"'
+			dork_type = '.git Exposed'
+			tmp_results = get_and_save_dork_results(
+				dork_name,
+				dork_type,
+				host=host,
+				scan_history=self.scan,
+				in_target=True)
+			results.extend(tmp_results)
+	return results
+
+
+@app.task(base=RengineTask, bind=True)
+def theHarvester(self, host=None, ctx={}):
+	"""Run theHarvester to get save emails, hosts, employees found in domain.
+
+	Args:
+		host (str): Hostname to scan.
+
+	Returns:
+		dict: Dict of emails, employees, hosts and ips found during crawling.
+	"""
+	config = self.yaml_configuration.get(OSINT, {})
+	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
+	host = self.domain.name if self.domain else host
+	if not host:
+		logger.error('No host found in context.')
+		return {}
+
+	theHarvester_dir = '/usr/src/github/theHarvester'
+	history_file = f'{self.results_dir}/commands.txt'
+	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {host} -b all -f {self.output_filepath}'
+
+	# Update proxies.yaml
+	proxy_query = Proxy.objects.all()
+	if proxy_query.exists():
+		proxy = proxy_query.first()
+		if proxy.use_proxy:
+			proxy_list = proxy.proxies.splitlines()
+			yaml_data = {'http' : proxy_list}
+			with open(f'{theHarvester_dir}/proxies.yaml', 'w') as file:
+				yaml.dump(yaml_data, file)
+
+	# Run cmd
+	run_command(cmd, shell=True, echo=DEBUG, history_file=history_file)
+
+	# Get file location
+	if not os.path.isfile(self.output_filepath):
+		logger.error(f'Could not open {self.output_filepath}')
+		return
+
+	# Load theHarvester results
+	with open(self.output_filepath, 'r') as f:
+		data = json.load(f)
+	
+	# Re-indent theHarvester JSON
+	with open(self.output_filepath, 'w') as f:
+		json.dump(data, f, indent=4)
+
+	emails = data.get('emails', [])
+	for email_address in emails:
+		email, _ = save_email(email_address, scan_history=self.scan)
+		if email:
+			self.notify(fields={'Emails': f'• `{email.address}`'})
+
+	linkedin_people = data.get('linkedin_people', [])
+	for people in linkedin_people:
+		employee, _ = save_employee(
+			people,
+			designation='linkedin',
+			scan_history=self.scan)
+		if employee:
+			self.notify(fields={'LinkedIn people': f'• {employee.name}'})
+
+	twitter_people = data.get('twitter_people', [])
+	for people in twitter_people:
+		employee, _ = save_employee(
+			people,
+			designation='twitter',
+			scan_history=self.scan)
+		if employee:
+			self.notify(fields={'Twitter people': f'• {employee.name}'})
+
+	hosts = data.get('hosts', [])
+	urls = []
+	for host in hosts:
+		split = tuple(host.split(':'))
+		http_url = split[0]
+		subdomain_name = get_subdomain_from_url(http_url)
+		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
+		endpoint, _ = save_endpoint(http_url, crawl=False, ctx=ctx, subdomain=subdomain)
+		if endpoint:
+			urls.append(endpoint.http_url)
+			self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
+
+	if enable_http_crawl:
+		ctx['track'] = False
+		http_crawl(urls, ctx=ctx)
+
+	# TODO: Lots of ips unrelated with our domain are found, disabling 
+	# this for now.
+	# ips = data.get('ips', [])
+	# for ip_address in ips:
+	# 	ip, created = save_ip_address(
+	# 		ip_address,
+	# 		subscan=subscan)
+	# 	if ip:
+	# 		send_task_status_notification.delay(
+	# 			'osint',
+	# 			scan_history_id=scan_history_id,
+	# 			subscan_id=subscan_id,
+	# 			severity='success',
+	# 			update_fields={'IPs': f'{ip.address}'})
+	return data
+
+
+@app.task(base=RengineTask, bind=True)
+def h8mail(self, input_path=None, ctx={}):
+	"""Run h8mail.
+
+	Args:
+		input_path (str): Emails input file.
+
+	Returns:
+		list[dict]: List of credentials info.
+	"""
+	logger.warning('Getting leaked credentials')
+	results_dir = self.results_dir
+	scan = self.scan
+	input_path = input_path if input_path else f'{self.results_dir}/emails.txt'
+	output_path = self.output_path
+	cmd = f'h8mail -t {input_path} --json {output_path}'
+	history_file = f'{results_dir}/commands.txt'
+
+	run_command(
+		cmd,
+		echo=DEBUG,
+		history_file=history_file)
+
+	with open(output_path) as f:
+		data = json.load(f)
+		creds = data.get('targets', [])
+	
+	# TODO: go through h8mail output and save emails to DB
+	for cred in creds:
+		logger.warning(cred)
+		email_address = cred['target']
+		pwn_num = cred['pwn_num']
+		pwn_data = cred.get('pwn_data', {})
+		email, created = save_email(email_address, scan_history=scan)
+		if email:
+			self.notify(fields={'Emails': f'• `{email.address}`'})
+	return creds
 
 
 @app.task(base=RengineTask, bind=True)
@@ -597,7 +1107,7 @@ def screenshot(self, ctx={}, description=None):
 	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_endpoints_file} -d {screenshots_path} --no-prompt'
 	cmd += f' --timeout {timeout}' if timeout > 0 else ''
 	cmd += f' --threads {threads}' if threads > 0 else ''
-	run_command(cmd, shell=True, history_file=self.history_file)
+	run_command(cmd, shell=True, echo=False, history_file=self.history_file)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not load EyeWitness results at {output_path} for {self.domain.name}.')
 		return
@@ -622,11 +1132,19 @@ def screenshot(self, ctx={}, description=None):
 				logger.warning(f'Added screenshot for {subdomain.name} to DB')
 
 	# Remove all db, html extra files in screenshot results
-	run_command('rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path), shell=True)
-	run_command(f'rm -rf {screenshots_path}/source', shell=True)
+	run_command(
+		'rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path),
+		shell=True,
+		echo=False,
+		history_file=self.history_file)
+	run_command(
+		f'rm -rf {screenshots_path}/source',
+		shell=True,
+		echo=False,
+		history_file=self.history_file)
 
 	# Send finish notifs
-	screenshots_str = '\n'.join([f'{path}' for path in screenshot_paths])
+	screenshots_str = '• ' + '\n• '.join([f'`{path}`' for path in screenshot_paths])
 	self.notify(fields={'Screenshots': screenshots_str})
 	if send_output_file:
 		for path in screenshot_paths:
@@ -847,7 +1365,11 @@ def nmap(
 		output_file=output_file_xml)
 
 	# Run cmd
-	run_command(nmap_cmd, echo=DEBUG, shell=True)
+	run_command(
+		nmap_cmd,
+		echo=DEBUG,
+		shell=True,
+		history_file=self.history_file)
 
 	# Get nmap XML results and convert to JSON
 	vulns = parse_nmap_results(output_file_xml, output_file)
@@ -904,7 +1426,10 @@ def waf_detection(self, ctx={}, description=None):
 		ctx=ctx)
 
 	cmd = f'wafw00f -i {input_path} -o {self.output_path}'
-	run_command(cmd, history_file=self.history_file)
+	run_command(
+		cmd,
+		echo=DEBUG,
+		history_file=self.history_file)
 	if not os.path.isfile(self.output_path):
 		logger.error(f'Could not find {self.output_path}')
 		return
@@ -1010,7 +1535,11 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 		# Delete any existing dirs.json
 		if os.path.isfile(self.output_path):
-			run_command(f'rm -rf {self.output_path}')
+			run_command(
+				f'rm -rf {self.output_path}',
+				shell=True,
+				echo=False,
+				history_file=self.history_file)
 
 		# Probe HTTP URL and get final URL
 		http_url = subdomain.http_url
@@ -1028,7 +1557,11 @@ def dir_file_fuzz(self, ctx={}, description=None):
 		final_cmd += f' -u {http_url} -o {self.output_path} -of json'
 
 		# Run cmd
-		run_command(final_cmd)
+		run_command(
+			final_cmd,
+			echo=DEBUG,
+			history_file=self.history_file)
+		
 		if not os.path.isfile(self.output_path):
 			logger.error(f'Could not read output file "{self.output_path}"')
 			return
@@ -1239,7 +1772,7 @@ def fetch_url(self, ctx={}, description=None):
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
 		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {domain_regex} >> {gf_output_file}'
-		run_command(cmd, shell=True, history_file=self.history_file)
+		run_command(cmd, shell=True, echo=DEBUG, history_file=self.history_file)
 
 		# Check output file
 		if not os.path.exists(gf_output_file):
@@ -1337,8 +1870,16 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 	if intensity == 'normal': # reduce number of endpoints to scan
 		unfurl_filter = f'{self.results_dir}/urls_unfurled.txt'
-		run_command(f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_filter}', shell=True, history_file=self.history_file)
-		run_command(f'sort -u {unfurl_filter} -o  {unfurl_filter}', shell=True, history_file=self.history_file)
+		run_command(
+			f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_filter}',
+			shell=True,
+			echo=DEBUG,
+			history_file=self.history_file)
+		run_command(
+			f'sort -u {unfurl_filter} -o  {unfurl_filter}',
+			shell=True,
+			echo=DEBUG,
+			history_file=self.history_file)
 		input_path = unfurl_filter
 
 	# Send start notification
@@ -1699,7 +2240,11 @@ def http_crawl(
 		json.dump(results, f, indent=4)
 
 	# Remove input file
-	run_command(f'rm {input_file}', shell=True)
+	run_command(
+		f'rm {input_file}',
+		shell=True,
+		echo=False,
+		history_file=self.history_file)
 
 	return results
 
@@ -2081,7 +2626,7 @@ def geo_localize(host, ip_id=None):
 		logger.info(f'Ipv6 "{host}" is not supported by geoiplookup. Skipping.')
 		return None
 	cmd = f'geoiplookup {host}'
-	_, out, err = run_command(cmd)
+	_, out, err = run_command(cmd, echo=False)
 	if 'IP Address not found' not in out and "can't resolve hostname" not in out:
 		country_iso = out.split(':')[1].strip().split(',')[0]
 		country_name = out.split(':')[1].strip().split(',')[1].strip()
@@ -2531,356 +3076,14 @@ def extract_httpx_url(line):
 # OSInt utils #
 #-------------#
 
-def osint_discovery(
-		scan_history,
-		subscan=None,
-		engine_id=None,
-		yaml_configuration={},
-		results_dir=None):
-	domain = scan_history.domain
-	osint_config = yaml_configuration.get(OSINT) or {}
-	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
-	osint_intensity = osint_config.get(INTENSITY, 'normal')
-	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
-	data = {}
-	meta_info = []
-	emails = []
-	creds = []
-
-	# Get and save meta info
-	if 'metainfo' in osint_lookup:
-		if osint_intensity == 'normal':
-			meta_dict = DottedDict({
-				'osint_target': domain.name,
-				'domain': domain,
-				'scan_id': scan_history,
-				'documents_limit': documents_limit
-			})
-			meta_info = save_metadata_info(meta_dict)
-		elif osint_intensity == 'deep':
-			subdomains = Subdomain.objects.filter(scan_history=scan_history)
-			for subdomain in subdomains:
-				meta_dict = DottedDict({
-					'osint_target': subdomain.name,
-					'domain': domain,
-					'scan_id': scan_history,
-					'documents_limit': documents_limit
-				})
-				meta_info = save_metadata_info(meta_dict)
-
-	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(scan_history, results_dir)
-		emails_str = '\n'.join([f'• `{email}`' for email in emails])
-		send_task_status_notification.delay(
-			'osint',
-			scan_history_id=scan_history.id if scan_history else None,
-			subscan_id=subscan.id if subscan else None,
-			engine_id=engine_id,
-			update_fields={'Emails': emails_str})
-		for email in emails:
-			email, created = save_email(email, scan_history=scan_history)
-			if created:
-				logger.warning(f'Found new email address {email}')
-		creds = h8mail(
-			scan_history=scan_history,
-			subscan=subscan,
-			engine_id=engine_id,
-			results_dir=results_dir)
-
-	if 'employees' in osint_lookup:
-		data = theHarvester(
-			scan_history=scan_history,
-			subscan=subscan,
-			engine_id=engine_id,
-			yaml_configuration=yaml_configuration,
-			results_dir=results_dir)
-	
-	data['emails'] = data.get('emails', []) + emails
-	data['creds'] = creds
-	data['meta_info'] = meta_info
-	return data
-
-
-def dorking(
-		scan_history,
-		subscan=None,
-		engine_id=None,
-		yaml_configuration={},
-		results_dir=None):
-	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
-	config = yaml_configuration.get(OSINT) or {}
-	dorks = config.get(OSINT_DORK, DORKS_DEFAULT_NAMES)
-	results = []
-	for dork in dorks:
-		if dork == 'stackoverflow':
-			dork_name = 'site:stackoverflow.com'
-			dork_type = 'stackoverflow'
-			results = get_and_save_dork_results(
-				dork,
-				dork_type,
-				scan_history,
-				in_target=False)
-
-		elif dork == '3rdparty' :
-			# look in 3rd party sitee
-			dork_type = '3rdparty'
-			lookup_websites = [
-				'gitter.im',
-				'papaly.com',
-				'productforums.google.com',
-				'coggle.it',
-				'replt.it',
-				'ycombinator.com',
-				'libraries.io',
-				'npm.runkit.com',
-				'npmjs.com',
-				'scribd.com',
-				'gitter.im'
-			]
-			dork_name = ''
-			for website in lookup_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=False)
-				results.extend(tmp_results)
-
-		elif dork == 'social_media' :
-			dork_type = 'Social Media'
-			social_websites = [
-				'tiktok.com',
-				'facebook.com',
-				'twitter.com',
-				'youtube.com',
-				'pinterest.com',
-				'tumblr.com',
-				'reddit.com'
-			]
-			dork_name = ''
-			for website in social_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=False)
-				results.extend(tmp_results)
-
-		elif dork == 'project_management' :
-			dork_type = 'Project Management'
-			project_websites = [
-				'trello.com',
-				'*.atlassian.net'
-			]
-			dork_name = ''
-			for website in project_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=False)
-				results.extend(tmp_results)
-
-		elif dork == 'code_sharing' :
-			dork_type = 'Code Sharing Sites'
-			code_websites = [
-				'github.com',
-				'gitlab.com',
-				'bitbucket.org'
-			]
-			dork_name = ''
-			for website in code_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=False)
-				results.extend(tmp_results)
-
-		elif dork == 'config_files' :
-			dork_type = 'Config Files'
-			config_file_ext = [
-				'env',
-				'xml',
-				'conf',
-				'cnf',
-				'inf',
-				'rdp',
-				'ora',
-				'txt',
-				'cfg',
-				'ini'
-			]
-
-			dork_name = ''
-			results = []
-			for extension in config_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		if dork == 'jenkins' :
-			dork_type = 'Jenkins'
-			dork_name = 'intitle:\"Dashboard [Jenkins]\"'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				scan_history,
-				in_target=True)
-			results.extend(tmp_results)
-
-		elif dork == 'wordpress_files' :
-			dork_type = 'Wordpress Files'
-			inurl_lookup = [
-				'wp-content',
-				'wp-includes'
-			]
-			dork_name = ''
-			for lookup in inurl_lookup:
-				dork_name = dork + ' | ' + 'inurl:' + lookup
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'cloud_buckets':
-			dork_type = 'Cloud Buckets'
-			cloud_websites = [
-				'.s3.amazonaws.com',
-				'storage.googleapis.com',
-				'amazonaws.com'
-			]
-
-			dork_name = ''
-			for website in cloud_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=False)
-				results.extend(tmp_results)
-
-		elif dork == 'php_error':
-			dork_type = 'PHP Error'
-			error_words = [
-				'\"PHP Parse error\"',
-				'\"PHP Warning\"',
-				'\"PHP Error\"'
-			]
-
-			dork_name = ''
-			for word in error_words:
-				dork_name = dork + ' | ' + word
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'exposed_documents':
-			dork_type = 'Exposed Documents'
-			docs_file_ext = [
-				'doc',
-				'docx',
-				'odt',
-				'pdf',
-				'rtf',
-				'sxw',
-				'psw',
-				'ppt',
-				'pptx',
-				'pps',
-				'csv'
-			]
-
-			dork_name = ''
-			for extension in docs_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'struts_rce':
-			dork_type = 'Apache Struts RCE'
-			struts_file_ext = [
-				'action',
-				'struts',
-				'do'
-			]
-
-			dork_name = ''
-			for extension in struts_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'db_files':
-			dork_type = 'Database Files'
-			db_file_ext = [
-				'sql',
-				'db',
-				'dbf',
-				'mdb'
-			]
-
-			dork_name = ''
-			for extension in db_file_ext:
-				dork_name = dork_name + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					scan_history,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'traefik':
-			dork_name = 'intitle:traefik inurl:8080/dashboard'
-			dork_type = 'Traefik'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				scan_history,
-				in_target=True)
-			results.extend(tmp_results)
-
-		elif dork == 'git_exposed':
-			dork_name = 'inurl:\"/.git\"'
-			dork_type = '.git Exposed'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				scan_history,
-				in_target=True)
-			results.extend(tmp_results)
-	return results
-
-
-def get_and_save_dork_results(dork, type, scan_history, in_target=False):
+def get_and_save_dork_results(dork, type, host=None, scan_history=None, in_target=False):
 	degoogle_obj = degoogle.dg()
 	get_random_proxy()
+	host = scan_history.domain.name if scan_history else host
 	if in_target:
-		query = f'{dork} site:{scan_history.domain.name}'
+		query = f'{dork} site:{host}'
 	else:
-		query = f'{dork} \"{scan_history.domain.name}\"'
+		query = f'{dork} \"{host}\"'
 	degoogle_obj.query = query
 	logger.info(f'Running degoogle with query "{query}" ...')
 	results = degoogle_obj.run()
@@ -2896,116 +3099,10 @@ def get_and_save_dork_results(dork, type, scan_history, in_target=False):
 		)
 		if created:
 			logger.warning(f'Found dork {dork}')
-		scan_history.dorks.add(dork)
+		if scan_history:
+			scan_history.dorks.add(dork)
 		dorks.append(dork)
 	return results
-
-
-@app.task(base=RengineTask, bind=True)
-def theHarvester(self, ctx={}):
-	"""Run theHarvester to get save emails, hosts, employees found in domain.
-
-	Args:
-		host (str): Hostname to scan.
-		scan_history (startScan.ScanHistory): Scan history object.
-		domain (targetApp.Domain): Domain object.
-		results_dir (str): Results directory.
-
-	Returns:
-		dict: Dict of emails, employees, hosts and ips found during crawling.
-	"""
-	config = self.yaml_configuration.get(OSINT, {})
-	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	host = self.domain.name if self.domain else None
-	if not host:
-		logger.error('No host found in context.')
-		return {}
-
-	theHarvester_dir = '/usr/src/github/theHarvester'
-	history_file = f'{self.results_dir}/commands.txt'
-	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {host} -b all -f {self.output_filepath}'
-
-	# Update proxies.yaml
-	proxy_query = Proxy.objects.all()
-	if proxy_query.exists():
-		proxy = proxy_query.first()
-		if proxy.use_proxy:
-			proxy_list = proxy.proxies.splitlines()
-			yaml_data = {'http' : proxy_list}
-			with open(f'{theHarvester_dir}/proxies.yaml', 'w') as file:
-				yaml.dump(yaml_data, file)
-
-	# Run cmd
-	run_command(cmd, shell=True, history_file=history_file)
-
-	# Get file location
-	if not os.path.isfile(self.output_filepath):
-		logger.error(f'Could not open {self.output_filepath}')
-		return
-
-	# Load theHarvester results
-	with open(self.output_filepath, 'r') as f:
-		data = json.load(f)
-	
-	# Re-indent theHarvester JSON
-	with open(self.output_filepath, 'w') as f:
-		json.dump(data, f, indent=4)
-
-	emails = data.get('emails', [])
-	for email_address in emails:
-		email, _ = save_email(email_address, scan_history=self.scan)
-		if email:
-			self.notify(fields={'Emails': f'• `{email.address}`'})
-
-	linkedin_people = data.get('linkedin_people', [])
-	for people in linkedin_people:
-		employee, _ = save_employee(
-			people,
-			designation='linkedin',
-			scan_history=self.scan)
-		if employee:
-			self.notify(fields={'LinkedIn people': f'• {employee.name}'})
-
-	twitter_people = data.get('twitter_people', [])
-	for people in twitter_people:
-		employee, _ = save_employee(
-			people,
-			designation='twitter',
-			scan_history=self.scan)
-		if employee:
-			self.notify(fields={'Twitter people': f'• {employee.name}'})
-
-	hosts = data.get('hosts', [])
-	urls = []
-	for host in hosts:
-		split = tuple(host.split(':'))
-		http_url = split[0]
-		subdomain_name = get_subdomain_from_url(http_url)
-		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
-		endpoint, _ = save_endpoint(http_url, crawl=False, ctx=ctx, subdomain=subdomain)
-		if endpoint:
-			urls.append(endpoint.http_url)
-			self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
-
-	if enable_http_crawl:
-		ctx['track'] = False
-		http_crawl(urls, ctx=ctx)
-
-	# TODO: Lots of ips unrelated with our domain are found, disabling 
-	# this for now.
-	# ips = data.get('ips', [])
-	# for ip_address in ips:
-	# 	ip, created = save_ip_address(
-	# 		ip_address,
-	# 		subscan=subscan)
-	# 	if ip:
-	# 		send_task_status_notification.delay(
-	# 			'osint',
-	# 			scan_history_id=scan_history_id,
-	# 			subscan_id=subscan_id,
-	# 			severity='success',
-	# 			update_fields={'IPs': f'{ip.address}'})
-	return data
 
 
 def get_and_save_emails(scan_history, results_dir):
@@ -3052,42 +3149,6 @@ def get_and_save_emails(scan_history, results_dir):
 		output_file.write(f'%_%@%.{scan_history.domain.name}\n')
 
 	return emails
-
-
-def h8mail(scan_history, subscan=None, engine_id=None, results_dir=None):
-	"""Run h8mail.
-
-	Args:
-		scan_history (startScan.ScanHistory): Scan history object.
-		results_dir (str): Results directory.
-
-	Returns:
-		list[dict]: List of credentials info.
-	"""
-	logger.warning('Getting leaked credentials')
-	output_path = f'{results_dir}/emails.txt'
-	leak_output_file = f'{results_dir}/h8mail_output.json'
-	cmd = f'h8mail -t {output_path} --json {leak_output_file}'
-	history_file = f'{results_dir}/commands.txt'
-	run_command(cmd, history_file=history_file)
-	with open(leak_output_file) as f:
-		data = json.load(f)
-		creds = data.get('targets', [])
-	
-	# TODO: go through h8mail output and save emails to DB
-	for cred in creds:
-		logger.warning(cred)
-		email_address = cred['target']
-		pwn_num = cred['pwn_num']
-		pwn_data = cred.get('pwn_data', {})
-		email, created = save_email(email_address, scan_history=scan_history)
-		if email:
-			send_task_status_notification.delay(
-				'osint',
-				scan_history_id=scan_history.id,
-				subscan_id=subscan.id if subscan else None,
-				update_fields={'Emails': f'• `{email.address}`'})
-	return creds
 
 
 def save_metadata_info(meta_dict):

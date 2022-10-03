@@ -94,8 +94,9 @@ class RengineTask(Task):
 					return
 
 			# Create ScanActivity for this task and send start scan notifs
-			logger.warning(f'Task {self.task_name} is RUNNING')
-			self.create_scan_activity()
+			if self.track:
+				logger.warning(f'Task {self.task_name} is RUNNING')
+				self.create_scan_activity()
 
 		if RENGINE_CACHE_ENABLED:
 			# Check for result in cache and return it if it's a hit
@@ -103,7 +104,7 @@ class RengineTask(Task):
 			result = cache.get(record_key)
 			if result and result != b'null':
 				self.status = SUCCESS_TASK
-				if RENGINE_RECORD_ENABLED:
+				if RENGINE_RECORD_ENABLED and self.track:
 					logger.warning(f'Task {self.task_name} status is SUCCESS (CACHED)')
 					self.update_scan_activity()
 				return json.loads(result)
@@ -134,7 +135,7 @@ class RengineTask(Task):
 		finally:
 			self.write_results()
 
-			if RENGINE_RECORD_ENABLED:
+			if RENGINE_RECORD_ENABLED and self.track:
 				msg = f'Task {self.task_name} status is {self.status_str}'
 				msg += f' | Error: {self.error}' if self.error else ''
 				logger.warning(msg)
