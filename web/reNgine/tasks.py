@@ -52,19 +52,20 @@ def initiate_scan(
 		scan_history_id,
 		domain_id,
 		engine_id=None,
-		results_dir=RENGINE_RESULTS,
 		scan_type=LIVE_SCAN,
+		results_dir=RENGINE_RESULTS,
 		imported_subdomains=[],
 		out_of_scope_subdomains=[],
 		url_filter=''):
 	"""Initiate a new scan.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
+		scan_history_id (int): ScanHistory id.
+		domain_id (int): Domain id.
 		engine_id (int): Engine ID.
+		results_dir (str): Results directory.
 		scan_type (int): Scan type (periodic, live).
+		yaml_configuration (dict): YAML configuration.
 		imported_subdomains (list): Imported subdomains.
 		out_of_scope_subdomains (list): Out-of-scope subdomains.
 		url_filter (str): URL path. Default: ''
@@ -96,20 +97,15 @@ def initiate_scan(
 	results_dir = f'{results_dir}/{scan_dirname}'
 	os.makedirs(results_dir)
 
-	# Send start notif
-	send_scan_status_notification.delay(
-		scan_history_id,
-		subscan_id=None,
-		engine_id=engine_id,
-		status='RUNNING')
-
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
 		scan = ScanHistory.objects.get(pk=scan_history_id)
 		scan.scan_status = RUNNING_TASK
+		status = 'RUNNING'
 	elif scan_type == SCHEDULED_SCAN: # scheduled
 		scan = ScanHistory()
 		scan.scan_status = INITIATED_TASK
+		status = 'INITIATED'
 	scan.scan_type = engine
 	scan.celery_ids = [initiate_scan.request.id]
 	scan.domain = domain
@@ -133,7 +129,14 @@ def initiate_scan(
 		'out_of_scope_subdomains': out_of_scope_subdomains
 	}
 	ctx_str = json.dumps(ctx, indent=2)
+
+	# Send start notif
 	logger.warning(f'Starting scan {scan_history_id} with context:\n{ctx_str}')
+	send_scan_status_notification.delay(
+		scan_history_id,
+		subscan_id=None,
+		engine_id=engine_id,
+		status=status)
 
 	# Save imported subdomains in DB
 	save_imported_subdomains(imported_subdomains, ctx=ctx)
@@ -164,14 +167,12 @@ def initiate_scan(
 			osint.si(ctx=ctx, description='OS Intelligence')
 		),
 		port_scan.si(ctx=ctx, description='Port scan'),
+		fetch_url.si(ctx=ctx, description='Fetch URL'),
 		group(
-			waf_detection.si(ctx=ctx, description='WAF detection'),
-			fetch_url.si(ctx=ctx, description='Fetch URL'),
-		),
-		dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
-		group(
+			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
-			screenshot.si(ctx=ctx, description='Screenshot')
+			screenshot.si(ctx=ctx, description='Screenshot'),
+			waf_detection.si(ctx=ctx, description='WAF detection')
 		)
 	)
 
@@ -299,11 +300,7 @@ def report(ctx={}, description=None):
 	status. Log run details and send notification.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		engine_id (int): Engine ID.
-		subdomain_id (int): Subdomain ID.
-		send_status (bool, optional): Send status notification. Default: False.
-		description (str, optional): Task description.
+		description (str, optional): Task description shown in UI.
 	"""
 	# Get objects
 	subscan_id = ctx.get('subscan_id')
@@ -355,9 +352,7 @@ def subdomain_discovery(
 	subdomains associated with a domain.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
+		description (str, optional): Task description shown in UI.
 	"""
 	if not host:
 		host = self.subdomain.name if self.subdomain else self.domain.name
@@ -506,6 +501,7 @@ def subdomain_discovery(
 	
 	# Bulk crawl subdomains
 	if enable_http_crawl:
+		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
 	# Send notifications
@@ -538,9 +534,6 @@ def osint(self, ctx={}, description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
 	"""
 	config = self.yaml_configuration.get(OSINT) or {}
@@ -573,10 +566,6 @@ def screenshot(self, ctx={}, description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
-		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 	"""
 
@@ -653,6 +642,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	"""Run port scan.
 
 	Args:
+		hosts (list, optional): Hosts to run port scan on.
 		description (str, optional): Task description shown in UI.
 
 	Returns:
@@ -711,7 +701,6 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	results = []
 	urls = []
 	ports_data = {}
-	notif_str = ''
 	for line in stream_command(cmd, echo=DEBUG, shell=True, history_file=self.history_file):
 		# TODO: Update Celery task status continously
 		if not isinstance(line, dict):
@@ -810,7 +799,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		with allow_join_result():
 			results = task.get()
 
-	return results
+	return ports_data
 
 
 @app.task(base=RengineTask, bind=True)
@@ -825,6 +814,18 @@ def nmap(
 		max_rate=None,
 		ctx={},
 		description=None):
+	"""Run nmap on a host.
+
+	Args:
+		cmd (str, optional): Existing nmap command to complete.
+		ports (list, optional): List of ports to scan.
+		host (str, optional): Host to scan.
+		input_file (str, optional): Input hosts file.
+		script (str, optional): NSE script to run.
+		script_args (str, optional): NSE script args.
+		max_rate (int): Max rate.
+		description (str, optional): Task description shown in UI.
+	"""
 	notif = Notification.objects.first()
 	ports_str = ','.join(str(port) for port in ports)
 	filename_xml = self.filename.replace('.json', '.xml')
@@ -887,10 +888,6 @@ def waf_detection(self, ctx={}, description=None):
 	Uses wafw00f to check for the presence of a WAF.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
-		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 
 	Returns:
@@ -950,9 +947,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
 		description (str, optional): Task description shown in UI.
 	"""
 	# Config
@@ -1092,6 +1086,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	# Crawl discovered URLs
 	if enable_http_crawl:
+		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
 	return all_results
@@ -1102,12 +1097,6 @@ def fetch_url(self, ctx={}, description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		subdomain_id (int): Subdomain ID.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
-		filename (str): Filename.
-		url_filter (str): URL path.
 		description (str, optional): Task description shown in UI.
 	"""
 	input_path = f'{self.results_dir}/input_endpoints_fetch_url.txt'
@@ -1283,6 +1272,7 @@ def fetch_url(self, ctx={}, description=None):
 
 	# Crawl discovered URLs
 	if enable_http_crawl:
+		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
 
@@ -1308,13 +1298,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	This function will run nuclei as a vulnerability scanner
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		subdomain_id (int): Subdomain ID.
-		yaml_configuration (dict): YAML configuration.
-		url_filter (str): URL path.
-		results_dir (str): Results directory.
-		description (str, optional): Task description shown in UI.
 		urls (list, optional): If passed, filter on those URLs.
+		description (str, optional): Task description shown in UI.
 
 	Notes:
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
@@ -1543,48 +1528,39 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		self.notify(fields=fields)
 
 
-@app.task
+@app.task(base=RengineTask, bind=True)
 def http_crawl(
+		self,
 		urls=[],
 		method=None,
 		recrawl=False,
 		ctx={},
+		track=True,
 		description=None):
 	"""Use httpx to query HTTP URLs for important info like page titles, http 
 	status, etc...
 
 	Args:
-		scan_history (startScan.models.ScanHistory): ScanHistory instance.
-		yaml_configuration (dict): YAML configuration.
-		results_dir (str): Results directory.
-		description (str, optional): Task description shown in UI.
 		urls (list, optional): A set of URLs to check. Overrides default 
 			behavior which queries all endpoints related to this scan.
-		url_filter (str, optional): URL path to filter on.
-		recrawl (bool, optional): If False, filter out URLs that have already been crawled.
+		method (str): HTTP method to use (GET, HEAD, POST, PUT, DELETE).
+		recrawl (bool, optional): If False, filter out URLs that have already
+			been crawled.
 
 	Returns:
 		list: httpx results.
 	"""
 	timestamp = time.time()
 	cmd = '/go/bin/httpx'
-	domain_id = ctx.get('domain_id')
-	subdomain_id = ctx.get('subdomain_id')
-	engine_id = ctx.get('engine_id')
-	scan_id = ctx.get('scan_history_id')
-	subscan_id = ctx.get('subscan_id')
-	subscan = SubScan.objects.filter(pk=subscan_id).first()
-	results_dir = ctx.get('results_dir', RENGINE_RESULTS)
-	url_filter = ctx.get('url_filter', '')
-	cfg = ctx.get('yaml_configuration', {})
+	cfg = self.yaml_configuration
 	custom_header = cfg.get(CUSTOM_HEADER)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
-	output_path = f'{results_dir}/httpx_output_{timestamp}.json'
-	input_file = f'{results_dir}/httpx_input_{timestamp}.txt'
-	history_file = f'{results_dir}/commands.txt'
+	output_path = f'{self.results_dir}/httpx_output_{timestamp}.json'
+	input_file = f'{self.results_dir}/httpx_input_{timestamp}.txt'
+	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
-		if url_filter:
-			urls = [u for u in urls if u.contains(url_filter)]
+		if self.url_filter:
+			urls = [u for u in urls if u.contains(self.url_filter)]
 		with open(input_file, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
@@ -1626,7 +1602,6 @@ def http_crawl(
 			continue
 		content_length = line.get('content-length')
 		http_status = line.get('status-code')
-		input_url = line.get('input')
 		http_url, is_redirect = extract_httpx_url(line)
 		page_title = line.get('title')
 		webserver = line.get('webserver')
@@ -1659,13 +1634,9 @@ def http_crawl(
 		logger.warning(endpoint_str)
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
 			logger.warning(f'Found new alive endpoint {endpoint.http_url}')
-			send_task_status_notification.delay(
-				'httpx',
-				scan_history_id=scan_id,
-				engine_id=engine_id,
-				subscan_id=subscan_id,
-				add_meta_info=False,
-				update_fields={'Alive endpoints': f'• {endpoint_str}'})
+			self.notify(
+				fields={'Alive endpoint': f'• {endpoint_str}'},
+				add_meta_info=False)
 
 		# Add endpoint to results
 		line['final-url'] = http_url
@@ -1682,6 +1653,10 @@ def http_crawl(
 			endpoint.technologies.add(tech)
 			subdomain.save()
 			endpoint.save()
+		techs_str = ', '.join([f'`{tech}`' for tech in technologies])
+		self.notify(
+			fields={'Technologies': techs_str},
+			add_meta_info=False)
 
 		# Add IP objects for 'a' records to DB
 		a_records = line.get('a', [])
@@ -1689,32 +1664,23 @@ def http_crawl(
 			ip, created = save_ip_address(
 				ip_address,
 				subdomain,
-				subscan=subscan,
+				subscan=self.subscan,
 				cdn=cdn)
-			if created:
-				send_task_status_notification.delay(
-					'httpx',
-					scan_history_id=scan_id,
-					engine_id=engine_id,
-					subscan_id=subscan_id,
-					add_meta_info=False,
-					update_fields={'IPs': ip.address})
+		ips_str = '• ' + '\n• '.join([f'`{ip}`' for ip in a_records])
+		self.notify(
+			fields={'IPs': ips_str},
+			add_meta_info=False)
 
 		# Add IP object for host in DB
 		if host:
 			ip, created = save_ip_address(
-				ip_address,
+				host,
 				subdomain,
-				subscan=subscan,
+				subscan=self.subscan,
 				cdn=cdn)
-			if created:
-				send_task_status_notification.delay(
-					'httpx',
-					scan_history_id=scan_id,
-					engine_id=engine_id,
-					subscan_id=subscan_id,
-					add_meta_info=False,
-					update_fields={'IPs': ip.address})
+			self.notify(
+				fields={'IPs': f'• `{ip.address}`'},
+				add_meta_info=False)
 
 		# Save subdomain and endpoint
 		subdomain.save()
@@ -1723,9 +1689,9 @@ def http_crawl(
 
 	# Remove 'fake' alive endpoints that are just redirects to the same page
 	remove_duplicate_endpoints(
-		scan_id,
-		domain_id,
-		subdomain_id,
+		self.scan_id,
+		self.domain_id,
+		self.subdomain_id,
 		filter_ids=endpoint_ids)
 
 	# Write results to JSON file
@@ -3022,6 +2988,7 @@ def theHarvester(self, ctx={}):
 			self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
 
 	if enable_http_crawl:
+		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
 	# TODO: Lots of ips unrelated with our domain are found, disabling 
@@ -3273,6 +3240,7 @@ def save_endpoint(
 	endpoint = None
 	created = False
 	if run_http_crawl:
+		ctx['track'] = False
 		results = http_crawl(
 			urls=[http_url],
 			method='HEAD',
