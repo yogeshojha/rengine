@@ -563,7 +563,7 @@ def osint(self, host=None, ctx={}, description=None):
 
 	if 'dork' in config:
 		ctx['track'] = False
-		results['dorks'] = dorking(host=host, ctx=ctx, track=False)
+		results['dorks'] = dorking(host=host, ctx=ctx)
 
 	with open(self.output_path, 'w') as f:
 		json.dump(results, f, indent=4)
@@ -586,7 +586,7 @@ def osint_discovery(self, host=None, ctx={}):
 	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
 	osint_intensity = osint_config.get(INTENSITY, 'normal')
 	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
-	data = {}
+	results = {}
 	meta_info = []
 	emails = []
 	creds = []
@@ -628,12 +628,12 @@ def osint_discovery(self, host=None, ctx={}):
 
 	if 'employees' in osint_lookup:
 		ctx['track'] = False
-		data = theHarvester(host=host, ctx=ctx)
+		results = theHarvester(host=host, ctx=ctx)
 	
-	data['emails'] = data.get('emails', []) + emails
-	data['creds'] = creds
-	data['meta_info'] = meta_info
-	return data
+	results['emails'] = results.get('emails', []) + emails
+	results['creds'] = creds
+	results['meta_info'] = meta_info
+	return results
 
 
 @app.task(base=RengineTask, bind=True)
@@ -945,9 +945,10 @@ def theHarvester(self, host=None, ctx={}):
 		logger.error('No host found in context.')
 		return {}
 
+	output_path_json = self.output_path.replace('.txt', '.json')
 	theHarvester_dir = '/usr/src/github/theHarvester'
 	history_file = f'{self.results_dir}/commands.txt'
-	cmd  = f'cd {theHarvester_dir} && python3 theHarvester.py -d {host} -b all -f {self.output_filepath}'
+	cmd  = f'python3 {theHarvester_dir}/theHarvester.py -d {host} -b all -f {output_path_json}'
 
 	# Update proxies.yaml
 	proxy_query = Proxy.objects.all()
@@ -960,19 +961,24 @@ def theHarvester(self, host=None, ctx={}):
 				yaml.dump(yaml_data, file)
 
 	# Run cmd
-	run_command(cmd, shell=True, echo=DEBUG, history_file=history_file)
+	run_command(
+		cmd,
+		shell=False,
+		cwd=theHarvester_dir,
+		echo=DEBUG,
+		history_file=history_file)
 
 	# Get file location
-	if not os.path.isfile(self.output_filepath):
-		logger.error(f'Could not open {self.output_filepath}')
-		return
+	if not os.path.isfile(output_path_json):
+		logger.error(f'Could not open {output_path_json}')
+		return {}
 
 	# Load theHarvester results
-	with open(self.output_filepath, 'r') as f:
+	with open(output_path_json, 'r') as f:
 		data = json.load(f)
-	
+
 	# Re-indent theHarvester JSON
-	with open(self.output_filepath, 'w') as f:
+	with open(output_path_json, 'w') as f:
 		json.dump(data, f, indent=4)
 
 	emails = data.get('emails', [])
@@ -2939,11 +2945,12 @@ def remove_duplicate_endpoints(
 
 
 @app.task
-def run_command(cmd, echo=True, shell=False, history_file=None):
+def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 	"""Run a given command using subprocess module.
 
 	Args:
 		cmd (str): Command to run.
+		cwd (str): Current working directory.
 		echo (bool): Log command.
 		shell (bool): Run within separate shell if True.
 		history_file (str): Write command + output to history file.
@@ -2957,6 +2964,7 @@ def run_command(cmd, echo=True, shell=False, history_file=None):
 		shell=shell,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE,
+		cwd=cwd,
 		universal_newlines=True)
 	out = ''
 	for stdout_line in iter(popen.stdout.readline, ""):
@@ -2986,11 +2994,12 @@ def run_command(cmd, echo=True, shell=False, history_file=None):
 # Other utils #
 #-------------#
 
-def stream_command(cmd, echo=True, shell=False, history_file=None):
+def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 	"""Run a given command using subprocess module and stream its output live.
 
 	Args:
 		cmd (str): Command to run.
+		cwd (str): Current working directory.
 		echo (bool): Log response items to console.
 		shell (bool): Run within separate shell if True.
 		history_file (str): Write command + output to history file.
@@ -3005,6 +3014,7 @@ def stream_command(cmd, echo=True, shell=False, history_file=None):
 		shell=shell,
 		stdout=subprocess.PIPE,
 		stderr=subprocess.PIPE,
+		cwd=cwd,
 		universal_newlines=True)
 	for stdout_line in iter(popen.stdout.readline, ""):
 		item = stdout_line.strip()
@@ -3169,7 +3179,7 @@ def save_metadata_info(meta_dict):
 	result = extract_metadata_from_google_search(meta_dict.osint_target, meta_dict.documents_limit)
 	if not result:
 		logger.error(f'No metadata result from Google Search for {meta_dict.osint_target}.')
-		return
+		return []
 
 	# Add metadata info to DB
 	results = []
