@@ -16,7 +16,7 @@ python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
 # Load default engines
-# python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
+python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
 # Load default keywords
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
 # Load default external tools
