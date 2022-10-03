@@ -175,7 +175,7 @@ class ScanHistory(models.Model):
 class Subdomain(models.Model):
 	# TODO: Add endpoint property instead of replicating endpoint fields here
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 	name = models.CharField(max_length=1000)
 	is_imported_subdomain = models.BooleanField(default=False)
@@ -203,19 +203,15 @@ class Subdomain(models.Model):
 
 	@property
 	def get_endpoint_count(self):
-		return (
-			EndPoint.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
-			.count()
-		)
+		endpoints = EndPoint.objects.filter(subdomain__name=self.name)
+		if self.scan_history:
+			endpoints = endpoints.filter(scan_history=self.scan_history)
+		return endpoints.count()
 
 	@property
 	def get_info_count(self):
 		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
+			self.get_vulnerabilities
 			.filter(severity=0)
 			.count()
 		)
@@ -223,9 +219,7 @@ class Subdomain(models.Model):
 	@property
 	def get_low_count(self):
 		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
+			self.get_vulnerabilities
 			.filter(severity=1)
 			.count()
 		)
@@ -233,9 +227,7 @@ class Subdomain(models.Model):
 	@property
 	def get_medium_count(self):
 		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
+			self.get_vulnerabilities
 			.filter(severity=2)
 			.count()
 		)
@@ -243,9 +235,7 @@ class Subdomain(models.Model):
 	@property
 	def get_high_count(self):
 		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
+			self.get_vulnerabilities
 			.filter(severity=3)
 			.count()
 		)
@@ -253,29 +243,21 @@ class Subdomain(models.Model):
 	@property
 	def get_critical_count(self):
 		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
+			self.get_vulnerabilities
 			.filter(severity=4)
 			.count()
 		)
 
 	@property
 	def get_total_vulnerability_count(self):
-		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
-			.count()
-		)
+		return self.get_vulnerabilities.count()
 
 	@property
 	def get_vulnerabilities(self):
-		return (
-			Vulnerability.objects
-			.filter(scan_history=self.scan_history)
-			.filter(subdomain__name=self.name)
-		)
+		vulns = Vulnerability.objects.filter(subdomain__name=self.name)
+		if self.scan_history:
+			vulns = vulns.filter(scan_history=self.scan_history)
+		return vulns
 
 	@property
 	def get_directories_count(self):
@@ -297,11 +279,10 @@ class Subdomain(models.Model):
 	@property
 	def get_todos(self):
 		TodoNote = apps.get_model('recon_note', 'TodoNote')
-		notes = (
-			TodoNote.objects
-			.filter(scan_history__id=self.scan_history.id)
-			.filter(subdomain__id=self.id)
-		)
+		notes = TodoNote.objects
+		if self.scan_history:
+			notes = notes.filter(scan_history=self.scan_history)
+		notes = notes.filter(subdomain__id=self.id)
 		return notes.values()
 
 	@property
@@ -417,7 +398,7 @@ class CweId(models.Model):
 
 class Vulnerability(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(
 		Subdomain,
 		on_delete=models.CASCADE,
@@ -480,7 +461,7 @@ class Vulnerability(models.Model):
 
 class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, blank=True, null=True)
 	title = models.CharField(max_length=1000)
 	name = models.CharField(max_length=1000)
 	time = models.DateTimeField()
@@ -572,7 +553,7 @@ class DirectoryScan(models.Model):
 
 class MetaFinderDocument(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(

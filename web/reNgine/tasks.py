@@ -12,6 +12,7 @@ import validators
 import whatportis
 import xmltodict
 import yaml
+from api.serializers import SubdomainSerializer
 from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
@@ -114,7 +115,6 @@ def initiate_scan(
 	add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
 	if add_gf_patterns:
 		scan.used_gf_patterns = ','.join(gf_patterns)
-		scan.save()
 	scan.save()
 
 	# Build task context
@@ -131,7 +131,7 @@ def initiate_scan(
 
 	# Send start notif
 	logger.warning(f'Starting scan {scan_history_id} with context:\n{ctx_str}')
-	send_scan_status_notification.delay(
+	send_scan_notif.delay(
 		scan_history_id,
 		subscan_id=None,
 		engine_id=engine_id,
@@ -249,7 +249,7 @@ def initiate_subscan(
 	scan.save()
 
 	# Send start notif
-	send_scan_status_notification.delay(
+	send_scan_notif.delay(
 		scan.id,
 		subscan_id=subscan.id,
 		engine_id=engine_id,
@@ -341,7 +341,7 @@ def report(ctx={}, description=None):
 	scan.save()
 
 	# Send scan status notif
-	send_scan_status_notification.delay(
+	send_scan_notif.delay(
 		scan_history_id=scan_id,
 		subscan_id=subscan_id,
 		engine_id=engine_id,
@@ -395,64 +395,67 @@ def subdomain_discovery(
 
 	# Run tools
 	for tool in tools:
+		cmd = None
+		logger.info(f'Scanning subdomains with {tool}')
+		proxy = get_random_proxy()
+
+		if tool in default_subdomain_tools:
+			if tool == 'amass-passive':
+				cmd = f'amass enum -passive -d {host} -o {self.results_dir}/subdomains_amass.txt'
+				cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
+
+			elif tool == 'amass-active':
+				use_amass_config = config.get(USE_AMASS_CONFIG, False)
+				amass_wordlist_name = config.get(AMASS_WORDLIST, 'deepmagic.com-prefixes-top50000')
+				wordlist_path = f'/usr/src/wordlist/{amass_wordlist_name}.txt'
+				cmd = f'amass enum -active -d {host} -o {self.results_dir}/subdomains_amass_active.txt'
+				cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
+				cmd += f' -brute -w {wordlist_path}'
+
+			elif tool == 'assetfinder':
+				cmd = f'assetfinder --subs-only {host} > {self.results_dir}/subdomains_assetfinder.txt'
+
+			elif tool == 'sublist3r':
+				cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt'
+
+			elif tool == 'subfinder':
+				cmd = f'subfinder -d {host} -o {self.results_dir}/subdomains_subfinder.txt'
+				use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
+				cmd += ' -v' if DEBUG else ''
+				cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
+				cmd += f' -proxy {proxy}' if proxy else ''
+				cmd += f' -timeout {timeout}' if timeout else ''
+				cmd += f' -t {threads}' if threads else ''
+
+			elif tool == 'oneforall':
+				cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
+				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv >> {self.results_dir}/subdomains_oneforall.txt'
+				cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
+				cmd += f' && {cmd_extract} && {cmd_rm}'
+
+		elif tool in custom_subdomain_tools:
+			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
+			if not tool_query.exists():
+				logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+				continue
+			custom_tool = tool_query.first()
+			cmd = custom_tool.subdomain_gathering_command
+			if '{TARGET}' in cmd and '{OUTPUT}' in cmd:
+				cmd = cmd.replace('{TARGET}', host)
+				cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
+				cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
+		else:
+			logger.warning(
+				f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
+			continue
+
+		# Run tool
 		try:
-			cmd = None
-			logger.info(f'Scanning subdomains with {tool}')
-			proxy = get_random_proxy()
-
-			if tool in default_subdomain_tools:
-				if tool == 'amass-passive':
-					cmd = f'amass enum -passive -d {host} -o {self.results_dir}/subdomains_amass.txt'
-					cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
-
-				elif tool == 'amass-active':
-					use_amass_config = config.get(USE_AMASS_CONFIG, False)
-					amass_wordlist_name = config.get(AMASS_WORDLIST, 'deepmagic.com-prefixes-top50000')
-					wordlist_path = f'/usr/src/wordlist/{amass_wordlist_name}.txt'
-					cmd = f'amass enum -active -d {host} -o {self.results_dir}/subdomains_amass_active.txt'
-					cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
-					cmd += f' -brute -w {wordlist_path}'
-
-				elif tool == 'assetfinder':
-					cmd = f'assetfinder --subs-only {host} > {self.results_dir}/subdomains_assetfinder.txt'
-
-				elif tool == 'sublist3r':
-					cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt'
-
-				elif tool == 'subfinder':
-					cmd = f'subfinder -d {host} -o {self.results_dir}/subdomains_subfinder.txt'
-					use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
-					cmd += ' -v' if DEBUG else ''
-					cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
-					cmd += f' -proxy {proxy}' if proxy else ''
-					cmd += f' -timeout {timeout}' if timeout else ''
-					cmd += f' -t {threads}' if threads else ''
-
-				elif tool == 'oneforall':
-					cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
-					cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv >> {self.results_dir}/subdomains_oneforall.txt'
-					cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
-					cmd += f' && {cmd_extract} && {cmd_rm}'
-
-				run_command(cmd, shell=True, history_file=self.history_file)
-
-			elif tool in custom_subdomain_tools:
-				tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
-				if not tool_query.exists():
-					logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
-					continue
-				custom_tool = tool_query.first()
-				cmd = custom_tool.subdomain_gathering_command
-				if '{TARGET}' in cmd and '{OUTPUT}' in cmd:
-					cmd = cmd.replace('{TARGET}', host)
-					cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
-					cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
-
-				run_command(cmd, shell=True, history_file=self.history_file)
-			else:
-				logger.warning(
-					f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
-
+			run_command(
+				cmd,
+				shell=True,
+				echo=DEBUG,
+				history_file=self.history_file)
 		except Exception as e:
 			logger.error(
 				f'Subdomain discovery tool "{tool}" raised an exception')
@@ -475,7 +478,7 @@ def subdomain_discovery(
 	# Parse the output_file file and store Subdomain and EndPoint objects found
 	# in db.
 	subdomain_count = 0
-	results = []
+	subdomains = []
 	urls = []
 	for line in lines:
 		subdomain_name = line.strip()
@@ -499,28 +502,23 @@ def subdomain_discovery(
 
 		# Add subdomain
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
-		results.append(subdomain.name)
-
 		subdomain_count += 1
+		subdomains.append(subdomain)
+		urls.append(subdomain.name)
 
-		# Add endpoints
-		endpoint, _ = save_endpoint(
-			subdomain_name,
-			crawl=False,
-			ctx=ctx,
-			subdomain=subdomain)
-		if endpoint:
-			urls.append(subdomain.name)
-	
 	# Bulk crawl subdomains
 	if enable_http_crawl:
 		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
+	# Find root subdomain endpoints
+	for subdomain in subdomains:
+		pass
+
 	# Send notifications
-	subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in results])
+	subdomains_str = '\n'.join([f'• `{subdomain.name}`' for subdomain in subdomains])
 	self.notify(fields={
-		'Subdomain count': len(results),
+		'Subdomain count': len(subdomains),
 		'Subdomains': subdomains_str,
 	})
 	if send_subdomain_changes and self.scan_id and self.domain_id:
@@ -541,7 +539,7 @@ def subdomain_discovery(
 			subdomains_str = '\n'.join([f'• `{subdomain}`' for subdomain in interesting_subdomains])
 			self.notify(fields={'Interesting subdomains': subdomains_str})
 
-	return results
+	return SubdomainSerializer(subdomains, many=True).data
 
 
 @app.task(base=RengineTask, bind=True)
@@ -1029,7 +1027,7 @@ def theHarvester(self, host=None, ctx={}):
 	# 		ip_address,
 	# 		subscan=subscan)
 	# 	if ip:
-	# 		send_task_status_notification.delay(
+	# 		send_task_notif.delay(
 	# 			'osint',
 	# 			scan_history_id=scan_history_id,
 	# 			subscan_id=subscan_id,
@@ -1092,7 +1090,7 @@ def screenshot(self, ctx={}, description=None):
 	config = self.yaml_configuration.get(SCREENSHOT) or {}
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or self.yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
-	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
+	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT + 5)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 
 	# If intensity is normal, grab only the root endpoints of each subdomain
@@ -1113,7 +1111,7 @@ def screenshot(self, ctx={}, description=None):
 	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_endpoints_file} -d {screenshots_path} --no-prompt'
 	cmd += f' --timeout {timeout}' if timeout > 0 else ''
 	cmd += f' --threads {threads}' if threads > 0 else ''
-	run_command(cmd, shell=True, echo=False, history_file=self.history_file)
+	run_command(cmd, shell=False, echo=False, history_file=self.history_file)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not load EyeWitness results at {output_path} for {self.domain.name}.')
 		return
@@ -1131,9 +1129,8 @@ def screenshot(self, ctx={}, description=None):
 				subdomain_query = subdomain_query.filter(scan_history=self.scan)
 			if status == 'Successful' and subdomain_query.exists():
 				subdomain = subdomain_query.first()
-				if send_output_file:
-					screenshot_paths.append(screenshot_path)
-				subdomain.screenshot_path = screenshot_path.replace('/usr/src/scan_results/', '')
+				screenshot_paths.append(screenshot_path)
+				subdomain.screenshot_path = screenshot_path.replace(self.results_dir, '')
 				subdomain.save()
 				logger.warning(f'Added screenshot for {subdomain.name} to DB')
 
@@ -2178,9 +2175,9 @@ def http_crawl(
 		endpoint.save()
 		response_time_ms = int(response_time * 1000)
 		endpoint_str = f'{http_url} `{http_status}` `{content_length}B` `{webserver}` `{response_time_ms}ms`'
-		logger.warning(endpoint_str)
+		logger.info(endpoint_str)
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
-			logger.warning(f'Found new alive endpoint {endpoint.http_url}')
+			logger.warning(f'Found new alive endpoint {endpoint.http_url} [{endpoint.http_status}]')
 			self.notify(
 				fields={'Alive endpoint': f'• {endpoint_str}'},
 				add_meta_info=False)
@@ -2260,7 +2257,7 @@ def http_crawl(
 #---------------------#
 
 @app.task
-def send_notification(
+def send_notif(
 		message,
 		scan_history_id=None,
 		subscan_id=None,
@@ -2273,7 +2270,7 @@ def send_notification(
 
 
 @app.task
-def send_scan_status_notification(
+def send_scan_notif(
 		scan_history_id,
 		subscan_id=None,
 		engine_id=None,
@@ -2316,7 +2313,7 @@ def send_scan_status_notification(
 	logger.warning(f'Sending notification "{title}" [{severity}]')
 
 	# Send notification
-	send_notification(
+	send_notif(
 		msg,
 		scan_history_id,
 		subscan_id,
@@ -2324,7 +2321,7 @@ def send_scan_status_notification(
 
 
 @app.task
-def send_task_status_notification(
+def send_task_notif(
 		task_name,
 		status=None,
 		result=None,
@@ -2336,6 +2333,21 @@ def send_task_status_notification(
 		severity=None,
 		add_meta_info=True,
 		update_fields={}):
+	"""Send task status notification.
+
+	Args:
+		task_name (str): Task name.
+		status (str, optional): Task status.
+		result (str, optional): Task result.
+		output_path (str, optional): Task output path.
+		traceback (str, optional): Task traceback.
+		scan_history_id (int, optional): ScanHistory id.
+		subscan_id (int, optional): SuScan id.
+		engine_id (int, optional): EngineType id.
+		severity (str, optional): Severity (will be mapped to notif colors)
+		add_meta_info (bool, optional): Wheter to add scan / subscan info to notif.
+		update_fields (dict, optional): Fields key / value to update.
+	"""
 
 	# Skip send if notification settings are not configured
 	notif = Notification.objects.first()
@@ -2395,7 +2407,7 @@ def send_task_status_notification(
 		'fields': fields,
 		'fields_append': update_fields.keys()
 	}
-	send_notification(
+	send_notif(
 		msg,
 		scan_history_id=scan_history_id,
 		subscan_id=subscan_id,
@@ -2506,7 +2518,7 @@ def parse_nmap_results(xml_file, output_file=None):
 		try:
 			nmap_results = xmltodict.parse(content) # parse XML to dict
 		except Exception as e:
-			logger.info(content)
+			logger.exception(e)
 			logger.error(f'Cannot parse {xml_file} to valid JSON. Skipping.')
 			return []
 
@@ -3307,10 +3319,10 @@ def save_endpoint(
 	"""
 	# If run_http_crawl is set, probe URL to find meta info and return created
 	# endpoint.
-	run_http_crawl = crawl or not urlparse(http_url).scheme
+	scheme = urlparse(http_url).scheme
 	endpoint = None
 	created = False
-	if run_http_crawl:
+	if crawl:
 		ctx['track'] = False
 		results = http_crawl(
 			urls=[http_url],
@@ -3320,8 +3332,9 @@ def save_endpoint(
 			endpoint_id = results[0]['endpoint-id']
 			created = results[0]['endpoint-created']
 			endpoint = EndPoint.objects.get(pk=endpoint_id)
-	else:
-		# Otherwise, add dumb endpoint without probing it
+	elif not scheme:
+		return None, False
+	else: # add dumb endpoint without probing it
 		scan = ScanHistory.objects.filter(pk=ctx.get('scan_history_id')).first()
 		domain = Domain.objects.filter(pk=ctx.get('domain_id')).first()
 		if not validators.url(http_url):

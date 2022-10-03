@@ -270,7 +270,7 @@ def start_scan_ui(request, domain_id):
 
         # Create ScanHistory object
         scan_history_id = create_scan_object(domain_id, engine_id)
-        scan = ScanHistory.objects.filter(id=scan_history_id).first()
+        scan = ScanHistory.objects.get(pk=scan_history_id)
 
         # Start the celery task
         kwargs = {
@@ -509,7 +509,7 @@ def schedule_scan(request, host_id):
             kwargs = {
                 'domain_id': host_id,
                 'engine_id': engine.id,
-                'scan_history_id': LIVE_SCAN,
+                'scan_history_id': 1,
                 'scan_type': SCHEDULED_SCAN,
                 'imported_subdomains': subdomains_in,
                 'out_of_scope_subdomains': subdomains_out

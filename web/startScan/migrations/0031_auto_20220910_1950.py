@@ -28,6 +28,20 @@ class Migration(migrations.Migration):
             field=models.IntegerField(blank=True, null=True),
         ),
 
+        # Subdomain
+        migrations.AlterField(
+            model_name='subdomain',
+            name='scan_history',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='startScan.scanhistory'),
+        ),
+
+        # Vulnerability
+        migrations.AlterField(
+            model_name='vulnerability',
+            name='scan_history',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='startScan.scanhistory'),
+        ),
+
         # ScanHistory
         migrations.RemoveField(
             model_name='scanhistory',
@@ -143,5 +157,17 @@ class Migration(migrations.Migration):
             model_name='scanactivity',
             name='celery_id',
             field=models.CharField(blank=True, max_length=100, null=True),
+        ),
+        migrations.AlterField(
+            model_name='scanactivity',
+            name='scan_of',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='startScan.scanhistory'),
+        ),
+
+        # MetaFinderDocument
+        migrations.AlterField(
+            model_name='metafinderdocument',
+            name='scan_history',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='startScan.scanhistory'),
         ),
     ]
