@@ -6,7 +6,7 @@ from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
 from reNgine.common_func import (fmt_traceback, get_output_file_name,
-                                 get_task_cache_key, get_traceback_path)
+								 get_task_cache_key, get_traceback_path)
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import EngineType
@@ -121,7 +121,7 @@ class RengineTask(Task):
 			self.traceback = fmt_traceback(exc)
 			self.result = self.traceback
 			self.output_path = get_traceback_path(
-				self.name,
+				self.task_name,
 				self.results_dir,
 				self.scan_id,
 				self.subscan_id)
@@ -200,8 +200,8 @@ class RengineTask(Task):
 
 	def notify(self, name=None, severity=None, fields={}, add_meta_info=True):
 		# Import here to avoid Celery circular import and be able to use `delay`
-		from reNgine.tasks import send_task_status_notification
-		return send_task_status_notification.delay(
+		from reNgine.tasks import send_task_notif
+		return send_task_notif.delay(
 			name or self.task_name,
 			status=self.status_str,
 			result=self.result,

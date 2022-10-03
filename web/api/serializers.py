@@ -1737,8 +1737,9 @@ class SubdomainSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 	def get_is_interesting(self, subdomain):
+		scan_id = subdomain.scan_history.id if subdomain.scan_history else None
 		return (
-			get_interesting_subdomains(subdomain.scan_history.id)
+			get_interesting_subdomains(scan_id)
 			.filter(name=subdomain.name)
 			.exists()
 		)
