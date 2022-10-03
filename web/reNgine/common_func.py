@@ -1,12 +1,10 @@
 import json
-import logging
 import os
 import pickle
 import random
 import shutil
 import traceback
-# from ftplib import FTP
-from http.client import HTTPConnection, HTTPSConnection
+import uuid
 from time import sleep
 from urllib.parse import urlparse
 
@@ -646,8 +644,9 @@ def send_discord_message(
 					existing_val = str(existing_val)
 					if value not in existing_val:
 						value = f'{existing_val}\n{value}'
+					
 					if len(value) > 1024: # character limit for embed field
-						value = value[0:512] + '\n[TRUNCATED]\n' + value[512:1009]
+						value = value[0:1016] + '\n[...]'
 
 				# Update existing embed
 				ix = embed.fields.index(field)
@@ -770,13 +769,12 @@ def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 
 
 def get_task_title(task_name, scan_id=None, subscan_id=None):
-	title = ''
 	if scan_id:
-		title += f'`#{scan_id}`'
+		prefix = f'`#{scan_id}`'
 		if subscan_id:
-			title += f'`-#{subscan_id}`'
-	title += f' - `{task_name}`'
-	return title
+			prefix += f'`-#{subscan_id}`'
+		return f'{prefix} - `{task_name}`'
+	return f'`{task_name}` [unbound]'
 
 
 def get_task_header_message(name, scan_history_id, subscan_id):
