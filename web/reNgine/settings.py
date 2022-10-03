@@ -1,5 +1,6 @@
 import mimetypes
 import os
+from celery.app.log import TaskFormatter
 
 from reNgine.init import first_run
 
@@ -179,13 +180,7 @@ CELERY_TRACK_STARTED = True
 '''
 Cache settings
 '''
-RENGINE_TASK_IGNORE_CACHE_KWARGS = [
-    'scan_history_id',
-    'subscan_id',
-    'yaml_configuration',
-    'results_dir',
-    'description'
-]
+RENGINE_TASK_IGNORE_CACHE_KWARGS = ['ctx']
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -195,20 +190,72 @@ LOGGING settings
 '''
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,
+    'disable_existing_loggers': True,
     'handlers': {
+        'null': {
+            'class': 'logging.NullHandler'
+        },
+        'default': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'default',
+        },
+        'brief': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'brief'
+        },
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'brief'
         },
+        'task': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'task'
+        },
+        'db': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'brief',
+            'filename': 'db.log',
+            'maxBytes': 1024,
+            'backupCount': 3
+        }
+    },
+    'formatters': {
+        'default': {
+            'format': '%(message)s'
+        },
+        'brief': {
+            'format': '%(name)-25s | %(message)s'
+        },
+        'task': {
+            '()': lambda : TaskFormatter('%(task_name)-25s | %(message)s')
+        }
     },
     'loggers': {
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'WARNING'
-        },
         '': {
-            'handlers': ['console'],
+            'handlers': ['brief'],
             'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False
+        },
+        'celery.app.trace': {
+            'handlers': ['null'],
+            'propagate': False,
+        },
+        'celery.worker': {
+            'handlers': ['null'],
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'propagate': False
+        },
+        'django.db.backends': {
+            'handlers': ['db'],
+            'level': 'INFO',
+            'propagate': False
+        },
+        'reNgine.tasks': {
+            'handlers': ['task'],
+            'propagate': False
         },
     },
 }
