@@ -345,7 +345,7 @@ def get_http_urls(
 		endpoints = [e for e in endpoints if not urlparse(e).path.endswith(extensions)]
 
 	if not endpoints:
-		logger.error(f'No endpoints were found in query for {domain.name}!')
+		logger.error(f'No endpoints were found in query !')
 
 	if write_filepath:
 		with open(write_filepath, 'w') as f:
@@ -769,10 +769,14 @@ def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 	return fields
 
 
-def get_task_title(task_name, scan_id, subscan_id=None):
-	if subscan_id:
-		return f'`#{scan_id}-#{subscan_id}` - `{task_name}`'
-	return f'`#{scan_id}` - `{task_name}`'
+def get_task_title(task_name, scan_id=None, subscan_id=None):
+	title = ''
+	if scan_id:
+		title += f'`#{scan_id}`'
+		if subscan_id:
+			title += f'`-#{subscan_id}`'
+	title += f' - `{task_name}`'
+	return title
 
 
 def get_task_header_message(name, scan_history_id, subscan_id):

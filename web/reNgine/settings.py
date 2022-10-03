@@ -1,8 +1,8 @@
 import mimetypes
 import os
-from celery.app.log import TaskFormatter
 
 from reNgine.init import first_run
+from reNgine.utilities import RengineTaskFormatter
 
 mimetypes.add_type("text/javascript", ".js", True)
 mimetypes.add_type("text/css", ".css", True)
@@ -227,7 +227,7 @@ LOGGING = {
             'format': '%(name)-10s | %(message)s'
         },
         'task': {
-            '()': lambda : TaskFormatter('%(task_name)-34s | %(message)s')
+            '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(message)s')
         }
     },
     'loggers': {
