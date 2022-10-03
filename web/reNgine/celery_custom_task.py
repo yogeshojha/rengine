@@ -6,14 +6,17 @@ from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
 from reNgine.common_func import (fmt_traceback, get_output_file_name,
-								 get_task_cache_key, get_traceback_path)
+                                 get_task_cache_key, get_traceback_path)
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import EngineType
 from startScan.models import ScanActivity, ScanHistory, SubScan
 
-cache = Redis.from_url(os.environ['CELERY_BROKER'])
 logger = get_task_logger(__name__)
+
+cache = None
+if 'CELERY_BROKER' in os.environ: 
+	cache = Redis.from_url(os.environ['CELERY_BROKER'])
 
 
 class RengineRequest(Request):
