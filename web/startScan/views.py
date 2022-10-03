@@ -479,7 +479,7 @@ def schedule_scan(request, host_id):
         engine_type = int(request.POST['scan_mode'])
 
         # Get imported and out-of-scope subdomains
-        subdomains_in = request.POST['importSubdomainTextarea'].split()
+        subdomains_in = request.POST['importSubdomainTextArea'].split()
         subdomains_in = [s.rstrip() for s in subdomains_in if s]
         subdomains_out = request.POST['outOfScopeSubdomainTextarea'].split()
         subdomains_out = [s.rstrip() for s in subdomains_out if s]
