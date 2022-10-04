@@ -482,11 +482,11 @@ def delete_organization(request, id):
 def update_organization(request, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
-    data = form.cleaned_data
     if request.method == "POST":
         print(request.POST.getlist("domains"))
         form = UpdateOrganizationForm(request.POST, instance=organization)
         if form.is_valid():
+            data = form.cleaned_data
             for domain in organization.get_domains():
                 organization.domains.remove(domain)
 
