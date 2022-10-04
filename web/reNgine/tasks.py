@@ -154,7 +154,19 @@ def initiate_scan(
 		crawl=enable_http_crawl,
 		subdomain=subdomain)
 	if endpoint and endpoint.is_alive:
-		logger.warning(f'Found root HTTP URL {endpoint.http_url}')
+		# TODO: add `root_endpoint` property to subdomain and simply do
+		# subdomain.root_endpoint = endpoint instead
+		logger.warning(f'Found subdomain root HTTP URL {endpoint.http_url}')
+		subdomain.http_url = endpoint.http_url
+		subdomain.http_status = endpoint.http_status
+		subdomain.response_time = endpoint.response_time
+		subdomain.page_title = endpoint.page_title
+		subdomain.content_type = endpoint.content_type
+		subdomain.content_length = endpoint.content_length
+		for tech in endpoint.technologies.all():
+			subdomain.technologies.add(tech)
+		subdomain.save()
+
 
 	# Build Celery tasks, crafted according to the dependency graph below:
 	# subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
@@ -277,7 +289,7 @@ def initiate_subscan(
 	if endpoint and endpoint.is_alive:
 		# TODO: add `root_endpoint` property to subdomain and simply do
 		# subdomain.root_endpoint = endpoint instead
-		logger.warning(f'Found subdomain HTTP URL {endpoint.http_url}')
+		logger.warning(f'Found subdomain root HTTP URL {endpoint.http_url}')
 		subdomain.http_url = endpoint.http_url
 		subdomain.http_status = endpoint.http_status
 		subdomain.response_time = endpoint.response_time
@@ -1484,19 +1496,20 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or self.yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
-	delay = config.get(DELAY, 0)
+	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	extensions = config.get(EXTENSIONS, [])
 	extensions_str = ','.join(map(str, extensions))
-	follow_redirect = config.get(FOLLOW_REDIRECT, False)
+	follow_redirect = config.get(FOLLOW_REDIRECT, FFUF_DEFAULT_FOLLOW_REDIRECT)
 	max_time = config.get(MAX_TIME, 0)
 	match_http_status = config.get(MATCH_HTTP_STATUS, FFUF_DEFAULT_MATCH_HTTP_STATUS)
 	mc = ','.join([str(c) for c in match_http_status])
-	recursive_level = config.get(RECURSIVE_LEVEL, 1)	
+	recursive_level = config.get(RECURSIVE_LEVEL, FFUF_DEFAULT_RECURSIVE_LEVEL)	
 	stop_on_error = config.get(STOP_ON_ERROR, False)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	use_extensions = config.get(USE_EXTENSIONS)
 	wordlist_name = config.get(WORDLIST, 'dicc')
+	delay = rate_limit / (threads * 100) # calculate request pause delay from rate_limit and number of threads
 
 	# Get wordlist
 	wordlist_name = 'dicc' if wordlist_name == 'default' else wordlist_name
@@ -1506,8 +1519,8 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += f' -w {wordlist_path}'
 	cmd += f' -e {extensions_str}' if extensions and use_extensions else ''
 	cmd += f' -maxtime {max_time}' if max_time > 0 else ''
-	cmd += f' -p "{delay}"' if delay > 0 else ''
-	cmd += f' -recursion -recursion-depth {recursive_level} ' if recursive_level else ''
+	cmd += f' -p {delay}' if delay > 0 else ''
+	cmd += f' -recursion -recursion-depth {recursive_level} ' if recursive_level > 0 else ''
 	cmd += f' -t {threads}' if threads and threads > 0 else ''
 	cmd += f' -timeout {timeout}' if timeout and timeout > 0 else ''
 	cmd += ' -se' if stop_on_error else ''
@@ -1523,8 +1536,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	if self.subdomain_id: # scan only subdomain
 		subdomains_fuzz = subdomains_fuzz.filter(pk=self.subdomain_id)
-	elif intensity == 'normal': # scan only domain, not subdomains
-		subdomains_fuzz = subdomains_fuzz.filter(name=self.domain.name)
 
 	if not subdomains_fuzz:
 		logger.error('No subdomains found. Skipping.')
@@ -1532,69 +1543,49 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	# Loop through subdomains and run command
 	urls = []
-	all_results = []
+	results = []
 	for subdomain in subdomains_fuzz:
 		proxy = get_random_proxy()
 
-		# Delete any existing dirs.json
-		if os.path.isfile(self.output_path):
-			run_command(
-				f'rm -rf {self.output_path}',
-				shell=True,
-				echo=False,
-				history_file=self.history_file)
+		# Strip any query string parameters from HTTP URL
+		protocol = urlparse(subdomain.http_url).scheme
+		http_url = f'{protocol}://{subdomain.name}/FUZZ'
 
-		# Probe HTTP URL and get final URL
-		http_url = subdomain.http_url
-		if not http_url:
-			logger.warning(f'Subdomain URL is empty. Skipping {subdomain.name}')
-			continue
-
-		if not http_url.endswith('/FUZZ'):
-			http_url += '/FUZZ'
-		logger.info(f'Running ffuf on {http_url} ...')
-		
 		# Build final cmd
 		final_cmd = cmd
 		final_cmd += f' -x {proxy}' if proxy else ''
-		final_cmd += f' -u {http_url} -o {self.output_path} -of json'
-
-		# Run cmd
-		run_command(
-			final_cmd,
-			echo=DEBUG,
-			history_file=self.history_file)
-		
-		if not os.path.isfile(self.output_path):
-			logger.error(f'Could not read output file "{self.output_path}"')
-			return
-
-		# Get results
-		with open(self.output_path, "r") as f:
-			data = json.load(f)
-			all_results.append(data)
-			results = data.get('results', [])
+		final_cmd += f' -u {http_url} -json'
 
 		# Initialize DirectoryScan object
 		dirscan = DirectoryScan()
 		dirscan.scanned_date = timezone.now()
-		dirscan.command_line = data['commandline']
+		dirscan.command_line = final_cmd
 		dirscan.save()
 
 		# Loop through results and populate EndPoint and DirectoryFile in DB
-		for result in results:
-			logger.info(result)
-			name = result['input'].get('FUZZ')
-			length = result['length']
-			status = result['status']
-			words = result['words']
-			url = result['url']
-			lines = result['lines']
-			content_type = result['content-type']
+		results = []
+		for line in stream_command(final_cmd, echo=DEBUG, shell=True, history_file=self.history_file):
+			if not isinstance(line, dict):
+				continue
+			results.append(line)
+			logger.info(line)
+			name = line['input'].get('FUZZ')
+			length = line['length']
+			status = line['status']
+			words = line['words']
+			url = line['url']
+			lines = line['lines']
+			content_type = line['content-type']
+			duration = line['duration']
 			if not name:
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
-			endpoint, created = save_endpoint(http_url, crawl=False, ctx=ctx)
+			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
+			endpoint.is_default = True
+			endpoint.http_status = status
+			endpoint.content_length = length
+			endpoint.response_time = duration / 1000000000
+			endpoint.save()
 			if created:
 				urls.append(endpoint.http_url)
 			endpoint.status = status
@@ -1625,7 +1616,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
-	return all_results
+	return results
 
 
 @app.task(base=RengineTask, bind=True)
@@ -1695,7 +1686,7 @@ def fetch_url(self, ctx={}, description=None):
 	# Cleanup task
 	sort_output = [
 		f'cat {self.results_dir}/urls_* > {self.output_path}',
-		f'cat {input_path}/endpoints_alive.txt >> {self.output_path}',
+		f'cat {input_path} >> {self.output_path}',
 		f'sort -u {self.output_path} -o {self.output_path}',
 	]
 	if ignore_file_extension:
@@ -1830,8 +1821,7 @@ def parse_curl_output(response):
 
 @app.task(base=RengineTask, bind=True)
 def vulnerability_scan(self, urls=[], ctx={}, description=None):
-	"""
-	This function will run nuclei as a vulnerability scanner
+	"""HTTP vulnerability scan using `nuclei`.
 
 	Args:
 		urls (list, optional): If passed, filter on those URLs.
