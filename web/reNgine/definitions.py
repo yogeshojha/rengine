@@ -21,7 +21,6 @@ ALL = 'all'
 AMASS_WORDLIST = 'amass_wordlist'
 AUTO_CALIBRATION = 'auto_calibration'
 CUSTOM_HEADER = 'custom_header'
-DELAY = 'delay'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FOLLOW_REDIRECT = 'follow_redirect'
 EXTENSIONS = 'extensions'
@@ -113,6 +112,8 @@ DORKS_DEFAULT_NAMES = [
 # ffuf
 FFUF_DEFAULT_WORDLIST_PATH = '/usr/src/wordlist/dicc.txt'
 FFUF_DEFAULT_MATCH_HTTP_STATUS = [200, 204]
+FFUF_DEFAULT_RECURSIVE_LEVEL = 2
+FFUF_DEFAULT_FOLLOW_REDIRECT = False
 
 # naabu
 NAABU_DEFAULT_PORTS = ['top-1000']

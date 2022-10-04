@@ -770,10 +770,10 @@ def get_scan_fields(engine, scan, subscan=None, status='RUNNING', tasks=[]):
 
 def get_task_title(task_name, scan_id=None, subscan_id=None):
 	if scan_id:
-		prefix = f'`#{scan_id}`'
+		prefix = f'#{scan_id}'
 		if subscan_id:
-			prefix += f'`-#{subscan_id}`'
-		return f'{prefix} - `{task_name}`'
+			prefix += f'-#{subscan_id}'
+		return f'`{prefix}` - `{task_name}`'
 	return f'`{task_name}` [unbound]'
 
 
