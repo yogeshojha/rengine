@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import unittest
@@ -8,31 +9,50 @@ os.environ['CELERY_ALWAYS_EAGER'] = 'True'
 import yaml
 from celery.utils.log import get_task_logger
 from reNgine.settings import DEBUG
-from reNgine.tasks import (http_crawl, port_scan, subdomain_discovery,
-                           vulnerability_scan, fetch_url, dir_file_fuzz, osint, initiate_scan)
+from reNgine.tasks import (dir_file_fuzz, fetch_url, http_crawl, initiate_scan,
+                           osint, port_scan, subdomain_discovery,
+                           vulnerability_scan)
 from startScan.models import *
+
 
 logger = get_task_logger(__name__)
 DOMAIN_NAME = os.environ['DOMAIN_NAME']
 if not DEBUG:
     logging.disable(logging.CRITICAL)
 
-class TestFullScanDefaultConfig(unittest.TestCase):
+
+class TestOnlineScan(unittest.TestCase):
     def setUp(self):
+        self.url = f'https://{DOMAIN_NAME}'
         self.yaml_configuration = {
             'subdomain_discovery': {},
             'port_scan': {},
             'vulnerability_scan': {},
             'osint': {},
+            'fetch_url': {},
             'dir_file_fuzz': {},
             'screenshot': {}
         }
         self.domain, _ = Domain.objects.get_or_create(name=DOMAIN_NAME)
-        self.subdomain = Subdomain.objects.get_or_create(name=DOMAIN_NAME, target_domain=self.domain)
-        self.engine = EngineType(engine_name='test_engine', yaml_configuration=yaml.dump(self.yaml_configuration))
-        self.scan = ScanHistory(domain=self.domain, scan_type=self.engine, start_scan_date=timezone.now())
+        self.engine = EngineType(
+            engine_name='test_engine',
+            yaml_configuration=yaml.dump(self.yaml_configuration))
         self.engine.save()
+        self.scan = ScanHistory(
+            domain=self.domain,
+            scan_type=self.engine,
+            start_scan_date=timezone.now())
         self.scan.save()
+        self.endpoint, _ = EndPoint.objects.get_or_create(
+            scan_history=self.scan,
+            target_domain=self.domain,
+            http_url=self.url)
+        self.subdomain, _ = Subdomain.objects.get_or_create(
+            name=DOMAIN_NAME,
+            target_domain=self.domain,
+            scan_history=self.scan,
+            http_url=self.url)
+
         self.ctx = {
             'track': False,
             'yaml_configuration': self.yaml_configuration,
@@ -40,42 +60,43 @@ class TestFullScanDefaultConfig(unittest.TestCase):
             'scan_history_id': self.scan.id,
             'engine_id': self.engine.id
         }
-        self.url = f'https://{DOMAIN_NAME}'
 
     def tearDown(self):
         self.domain.delete()
+        self.subdomain.delete()
+        self.endpoint.delete()
         self.scan.delete()
         self.engine.delete()
 
-    def test_http_crawl(self):
-        results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
-        self.assertGreater(len(results), 0)
-        self.assertIn('final-url', results[0])
-        url = results[0]['final-url']
-        if DEBUG:
-            print(url)
+    # def test_http_crawl(self):
+    #     results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
+    #     self.assertGreater(len(results), 0)
+    #     self.assertIn('final-url', results[0])
+    #     url = results[0]['final-url']
+    #     if DEBUG:
+    #         print(url)
 
-    def test_subdomain_discovery(self):
-        subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
-        if DEBUG:
-            print(subdomains)
-        self.assertTrue(subdomains is not None)
-        self.assertGreater(len(subdomains), 0)
+    # def test_subdomain_discovery(self):
+    #     subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
+    #     if DEBUG:
+    #         print(json.dumps(subdomains, indent=4))
+    #     self.assertTrue(subdomains is not None)
+    #     self.assertGreater(len(subdomains), 0)
 
-    # def test_fetch_url(self):
-    #     urls = fetch_url(urls=[self.url], ctx=self.ctx)
+    def test_fetch_url(self):
+        urls = fetch_url(urls=[self.url], ctx=self.ctx)
+        if DEBUG:
+            print(urls)
+        self.assertGreater(len(urls), 0)
 
     # def test_dir_file_fuzz(self):
-    #     subdomain = Subdomain(name=DOMAIN_NAME, domain=domain)
-    #     subdomain.save()
     #     urls = dir_file_fuzz(ctx=self.ctx)
     #     self.assertGreater(len(urls), 0)
-    #     domain.delete()
-    #     subdomain.delete()
 
     # def test_vulnerability_scan(self):
-    #     url = f'https://{DOMAIN_NAME}'
     #     vulns = vulnerability_scan(urls=[self.url], ctx=self.ctx)
+    #     if DEBUG:
+    #         print(json.dumps(vulns, indent=4))
     #     self.assertTrue(vulns is not None)
 
     # def test_network_scan(self):
