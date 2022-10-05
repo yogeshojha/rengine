@@ -622,7 +622,6 @@ class InitiateSubTask(APIView):
 	def post(self, request):
 		req = self.request
 		data = req.data
-		logger.error(data)
 		engine_id = data.get('engine_id')
 		scan_types = data['tasks']
 		for subdomain_id in data['subdomain_ids']:
