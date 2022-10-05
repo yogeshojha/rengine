@@ -1542,7 +1542,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	if not subdomains_fuzz:
 		logger.error('No subdomains found. Skipping.')
-		return
+		return []
 
 	# Loop through subdomains and run command
 	urls = []
@@ -1720,7 +1720,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them 
 	# to the final URL list
-	urls = []
+	all_urls = []
 	for url in discovered_urls:
 		url = url.strip()
 		urlpath = None
@@ -1742,16 +1742,21 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
 
-		urls.append(url)
+		all_urls.append(url)
 
 	# Filter out URLs if a path filter was passed
 	if self.url_filter:
-		urls = [url for url in urls if self.url_filter in url]
+		all_urls = [url for url in all_urls if self.url_filter in url]
 
 	# Write result to output path
 	with open(self.output_path, 'w') as f:
-		f.write('\n'.join(urls))
-	logger.warning(f'Found {len(urls)} usable URLs')
+		f.write('\n'.join(all_urls))
+	logger.warning(f'Found {len(all_urls)} usable URLs')
+
+	# Crawl discovered URLs
+	if enable_http_crawl:
+		ctx['track'] = False
+		http_crawl(all_urls, ctx=ctx)
 
 
 	#-------------------#
@@ -1765,7 +1770,6 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 	# Run gf patterns on saved endpoints
 	# TODO: refactor to Celery task
-	urls = []
 	for gf_pattern in gf_patterns:
 		# TODO: js var is causing issues, removing for now
 		if gf_pattern == 'jsvar':
@@ -1790,7 +1794,6 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		# Add endpoints / subdomains to DB
 		for url in lines:
 			http_url = sanitize_url(url)
-			urls.append(http_url)
 			subdomain_name = get_subdomain_from_url(http_url)
 			subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 			if not subdomain:
@@ -1807,12 +1810,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			endpoint.matched_gf_patterns = pattern
 			endpoint.save()
 
-	# Crawl discovered URLs
-	if enable_http_crawl:
-		ctx['track'] = False
-		http_crawl(urls, ctx=ctx)
-
-	return urls
+	return all_urls
 
 
 def parse_curl_output(response):
@@ -1864,7 +1862,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	
 	# Get alive endpoints
 	if urls:
-		with open(input_path) as f:
+		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
 		get_http_urls(
@@ -1912,7 +1910,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 	# Build CMD
 	cmd = 'nuclei -json'
-	cmd += ' -debug' if DEBUG else ''
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
 	cmd += f' -H "{custom_header}"' if custom_header else ''
@@ -1932,6 +1929,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	for line in stream_command(cmd, echo=DEBUG, history_file=self.history_file):
 		if not isinstance(line, dict):
 			continue
+
+		results.append(line)
 
 		# Gather nuclei results
 		template = line['template']
@@ -2072,6 +2071,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			'Unknown': unknown_count
 		}
 		self.notify(fields=fields)
+
+	return results
 
 
 @app.task(base=RengineTask, bind=True)
