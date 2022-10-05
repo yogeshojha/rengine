@@ -68,20 +68,20 @@ class TestOnlineScan(unittest.TestCase):
         self.scan.delete()
         self.engine.delete()
 
-    # def test_http_crawl(self):
-    #     results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
-    #     self.assertGreater(len(results), 0)
-    #     self.assertIn('final-url', results[0])
-    #     url = results[0]['final-url']
-    #     if DEBUG:
-    #         print(url)
+    def test_http_crawl(self):
+        results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
+        self.assertGreater(len(results), 0)
+        self.assertIn('final-url', results[0])
+        url = results[0]['final-url']
+        if DEBUG:
+            print(url)
 
-    # def test_subdomain_discovery(self):
-    #     subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
-    #     if DEBUG:
-    #         print(json.dumps(subdomains, indent=4))
-    #     self.assertTrue(subdomains is not None)
-    #     self.assertGreater(len(subdomains), 0)
+    def test_subdomain_discovery(self):
+        subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
+        if DEBUG:
+            print(json.dumps(subdomains, indent=4))
+        self.assertTrue(subdomains is not None)
+        self.assertGreater(len(subdomains), 0)
 
     def test_fetch_url(self):
         urls = fetch_url(urls=[self.url], ctx=self.ctx)
@@ -93,11 +93,11 @@ class TestOnlineScan(unittest.TestCase):
     #     urls = dir_file_fuzz(ctx=self.ctx)
     #     self.assertGreater(len(urls), 0)
 
-    # def test_vulnerability_scan(self):
-    #     vulns = vulnerability_scan(urls=[self.url], ctx=self.ctx)
-    #     if DEBUG:
-    #         print(json.dumps(vulns, indent=4))
-    #     self.assertTrue(vulns is not None)
+    def test_vulnerability_scan(self):
+        vulns = vulnerability_scan(urls=[self.url], ctx=self.ctx)
+        if DEBUG:
+            print(json.dumps(vulns, indent=4))
+        self.assertTrue(vulns is not None)
 
     # def test_network_scan(self):
     #     subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
