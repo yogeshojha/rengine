@@ -1488,6 +1488,9 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	Args:
 		description (str, optional): Task description shown in UI.
+
+	Returns:
+		list: List of URLs discovered.
 	"""
 	# Config
 	cmd = 'ffuf'
@@ -1620,10 +1623,11 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 
 @app.task(base=RengineTask, bind=True)
-def fetch_url(self, ctx={}, description=None):
+def fetch_url(self, urls=[], ctx={}, description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
 	Args:
+		urls (list): List of URLs to start from.
 		description (str, optional): Task description shown in UI.
 	"""
 	input_path = f'{self.results_dir}/input_endpoints_fetch_url.txt'
@@ -1636,18 +1640,24 @@ def fetch_url(self, ctx={}, description=None):
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	custom_header = self.domain.request_headers or self.yaml_configuration.get(CUSTOM_HEADER)
+	domain_request_headers = self.domain.request_headers if self.domain else None
+	custom_header = domain_request_headers or self.yaml_configuration.get(CUSTOM_HEADER)
 	exclude_subdomains = config.get('exclude_subdomains', False)
 
 	# Get URLs to scan and save to input file
-	get_http_urls(
-		is_alive=enable_http_crawl,
-		write_filepath=input_path,
-		exclude_subdomains=exclude_subdomains,
-		ctx=ctx)
+	if urls:
+		with open(input_path, 'w') as f:
+			f.write('\n'.join(urls))
+	else:
+		urls = get_http_urls(
+			is_alive=enable_http_crawl,
+			write_filepath=input_path,
+			exclude_subdomains=exclude_subdomains,
+			ctx=ctx)
 
 	# Domain regex
-	domain_regex = f"\'https?://([a-z0-9]+[.])*{self.domain.name}.*\'"
+	host = self.domain.name if self.domain else urlparse(urls[0]).netloc
+	host_regex = f"\'https?://([a-z0-9]+[.])*{host}.*\'"
 
 	# Tools cmds
 	cmd_map = {
@@ -1672,7 +1682,7 @@ def fetch_url(self, ctx={}, description=None):
 		for flag in header_flags:
 			cmd_map['gospider'] += f' -H {flag}'
 	cat_input = f'cat {input_path}'
-	grep_output = f'grep -Eo {domain_regex}'
+	grep_output = f'grep -Eo {host_regex}'
 	cmd_map = {
 		tool: f'{cat_input} | {cmd} | {grep_output} > {self.results_dir}/urls_{tool}.txt'
 		for tool, cmd in cmd_map.items()
@@ -1765,7 +1775,7 @@ def fetch_url(self, ctx={}, description=None):
 		# Run gf on current pattern
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
-		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {domain_regex} >> {gf_output_file}'
+		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} >> {gf_output_file}'
 		run_command(cmd, shell=True, echo=DEBUG, history_file=self.history_file)
 
 		# Check output file
@@ -1801,6 +1811,8 @@ def fetch_url(self, ctx={}, description=None):
 	if enable_http_crawl:
 		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
+
+	return urls
 
 
 def parse_curl_output(response):
@@ -2981,6 +2993,9 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		if echo:
 			logger.info(item)
 	return_code = popen.returncode
+	popen.stdout.close()
+	popen.stderr.close()
+	popen.wait()
 	if history_file:
 		mode = 'a'
 		if not os.path.exists(history_file):
@@ -3032,8 +3047,11 @@ def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		if echo:
 			logger.info(item)
 		yield item
-		popen.stdout.close()
+
+	popen.stdout.close()
+	popen.stderr.close()
 	popen.wait()
+
 	if history_file:
 		mode = 'a'
 		if not os.path.exists(history_file):
@@ -3044,6 +3062,7 @@ def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 
 def process_httpx_response(line):
 	"""TODO: implement this"""
+
 
 def extract_httpx_url(line):
 	"""Extract final URL from httpx results. Always follow redirects to find
