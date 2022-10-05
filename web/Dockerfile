@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:latest
+FROM ubuntu:22.04
 
 # Labels and Credits
 LABEL \
