@@ -1329,7 +1329,7 @@ def directory_fuzz(
 		# proxy
 		proxy = get_random_proxy()
 		if proxy:
-			ffuf_command = "{} -x '{}'".format(
+			ffuf_command = '{} -x {} '.format(
 				ffuf_command,
 				proxy
 			)
