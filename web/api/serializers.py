@@ -1269,11 +1269,13 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 
 	def get_children(self, subdomain_name):
 		scan_history = self.context.get('scan_history')
-		subdomain = Subdomain.objects.filter(
-			scan_history=self.context.get('scan_history')).filter(
-			name=subdomain_name)
+		subdomains = (
+			Subdomain.objects
+			.filter(scan_history=scan_history)
+			.filter(name=subdomain_name)
+		)
 
-		ips = IpAddress.objects.filter(ip_addresses__in=subdomain)
+		ips = IpAddress.objects.filter(ip_addresses__in=subdomains)
 		ip_serializer = VisualiseIpSerializer(ips, many=True)
 
 		# endpoint = EndPoint.objects.filter(
@@ -1281,7 +1283,7 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 		#     subdomain__name=subdomain_name)
 		# endpoint_serializer = VisualiseEndpointSerializer(endpoint, many=True)
 
-		technologies = Technology.objects.filter(technologies__in=subdomain)
+		technologies = Technology.objects.filter(technologies__in=subdomains)
 		tech_serializer = VisualiseTechnologySerializer(technologies, many=True)
 
 		vulnerability = (
