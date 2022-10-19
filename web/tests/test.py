@@ -14,7 +14,6 @@ from reNgine.tasks import (dir_file_fuzz, fetch_url, http_crawl, initiate_scan,
                            vulnerability_scan)
 from startScan.models import *
 
-
 logger = get_task_logger(__name__)
 DOMAIN_NAME = os.environ['DOMAIN_NAME']
 if not DEBUG:
