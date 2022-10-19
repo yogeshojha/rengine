@@ -1822,7 +1822,7 @@ def parse_curl_output(response):
 		regex = re.compile(CURL_REGEX_HTTP_STATUS, re.MULTILINE)
 		try:
 			http_status = int(regex.findall(response)[0])
-		except (KeyError, TypeError):
+		except (KeyError, TypeError, IndexError):
 			pass
 	return {
 		'http_status': http_status,
