@@ -546,7 +546,8 @@ def subdomain_scan(
 
 	try:
 		for tool in tools.split(' '):
-			if tool in default_subdomain_tools:
+			# fixing amass-passive and amass-active
+			if tool in tools:
 				if tool == 'amass-passive':
 					amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
 							domain.name, results_dir)
@@ -1329,7 +1330,7 @@ def directory_fuzz(
 		# proxy
 		proxy = get_random_proxy()
 		if proxy:
-			ffuf_command = "{} -x '{}'".format(
+			ffuf_command = '{} -x {} '.format(
 				ffuf_command,
 				proxy
 			)
