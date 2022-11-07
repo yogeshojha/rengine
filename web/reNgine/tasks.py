@@ -900,7 +900,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 						)
 						ip.geo_iso = iso_object
 					ip.save()
-				if json_st.get('status-code') < 400:
+				if json_st.get('status_code') < 400:
 					alive_file.write(json_st['url'] + '\n')
 				subdomain.save()
 				endpoint.save()
