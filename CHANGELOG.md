@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.3
+**Release Date: October 9, 2022**
+
+# Fixes
+- #723, Upgraded Go to 1.18.2
+
+
 ## 1.3.2
 **Release Date: August 20, 2022**
 
