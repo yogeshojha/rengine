@@ -1952,7 +1952,9 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 		# Get corresponding subdomain
 		subdomain_name = get_subdomain_from_url(url)
-		subdomain = Subdomain.objects.get(
+
+		# TODO: this should be get only
+		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
 			scan_history=self.scan,
 			target_domain=self.domain)

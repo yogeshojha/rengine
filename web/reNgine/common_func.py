@@ -307,8 +307,7 @@ def get_http_urls(
 	if scan:
 		query = query.filter(scan_history=scan)
 	if subdomain_id:
-		subdomain = Subdomain.objects.get(pk=subdomain_id)
-		query = query.filter(http_url__contains=subdomain.name)
+		query = query.filter(subdomain__id=subdomain_id)
 	elif exclude_subdomains and domain:
 		query = query.filter(http_url=domain.http_url)
 
