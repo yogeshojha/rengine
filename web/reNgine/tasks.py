@@ -900,7 +900,7 @@ def http_crawler(task, domain, yaml_configuration, results_dir, activity_id, thr
 						)
 						ip.geo_iso = iso_object
 					ip.save()
-				elif 'status_code' in json_st:
+				if 'status_code' in json_st:
 					sts_code = json_st.get('status_code')
 					if str(sts_code).isdigit() and int(sts_code) < 400:
 						alive_file.write(json_st['url'] + '\n')
