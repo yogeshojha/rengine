@@ -95,7 +95,7 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
       # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
-      - RENGINE_CURRENT_VERSION='1.3.3'
+      - RENGINE_CURRENT_VERSION='1.3.4'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github

@@ -13,11 +13,12 @@ Dashboard
 {% block custom_js_css_link %}
 <link rel="stylesheet" type="text/css" href="{% static 'custom/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/6.6.3/css/flag-icons.min.css" integrity="sha512-uvXdJud8WaOlQFjlz9B15Yy2Au/bMAvz79F7Xa6OakCl2jvQPdHD0hb3dEqZRdSwG4/sknePXlE7GiarwA/9Wg==" crossorigin="anonymous"
+	referrerpolicy="no-referrer" />
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<span class="badge badge-soft-info">reNgine 1.3.3</span>
+<span class="badge badge-soft-info">reNgine 1.3.4</span>
 {% endblock breadcrumb_title %}
 
 {% block main_content %}
@@ -180,7 +181,8 @@ Dashboard
 							<a class="mt-1 font-14 text-reset">
 								<strong>{{item.title}}:</strong>
 								<span class="text-muted">
-									{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
+									{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for
+									<span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
 									<span class="waves-effect waves-light float-end badge {% if item.status == 0 %}
 									badge-soft-danger
 									{% elif item.status == 1 %}
@@ -267,414 +269,656 @@ Dashboard
 
 
 {% block page_level_script %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/3.29.0/apexcharts.min.js" integrity="sha512-fe6OklXva8AWoqdwgkE7Ni4uWgHGWxFQWZx4lYehzY2Qrst5YfogjAbnLd6egsoTrnjGI9/LYt1Ont2cKNbP2A==" crossorigin="anonymous" referrerpolicy="no-referrer">
+</script>
 <script src="https://apexcharts.com/samples/assets/irregular-data-series.js"></script>
 <script src="https://apexcharts.com/samples/assets/ohlc.js"></script>
 <script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
 <script type="text/javascript">
+	$(document).ready(function() {
+		get_most_vulnerable_target(scan_id = null, target_id = null, ignore_info = false);
+		get_most_common_vulnerability(scan_id = null, target_id = null, ignore_info = false);
+		// listener for info checkbox on most vulnerable target
 
-$(document).ready(function() {
-	get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false);
-	get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=false);
-	// listener for info checkbox on most vulnerable target
-
-	$('#ignore_info_most_vuln_checkbox').change(function() {
-		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored in Most Vulnerable Targets.';
-		}
-		else{
-			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
-		}
-		get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=this.checked);
-		Snackbar.show({
-			text: text_msg,
-			pos: 'top-right',
-			duration: 2500
+		$('#ignore_info_most_vuln_checkbox').change(function() {
+			if (this.checked) {
+				var text_msg = 'Informational Vulnerabilities ignored in Most Vulnerable Targets.';
+			} else {
+				var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
+			}
+			get_most_vulnerable_target(scan_id = null, target_id = null, ignore_info = this.checked);
+			Snackbar.show({
+				text: text_msg,
+				pos: 'top-right',
+				duration: 2500
+			});
 		});
-	});
 
-	$('#ignore_info_most_common_vuln_checkbox').change(function() {
-		if (this.checked) {
-			var text_msg = 'Informational Vulnerabilities ignored for Most Common Vulnerabilities.';
-		}
-		else{
-			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
-		}
-		get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=this.checked);
-		Snackbar.show({
-			text: text_msg,
-			pos: 'top-right',
-			duration: 2500
+		$('#ignore_info_most_common_vuln_checkbox').change(function() {
+			if (this.checked) {
+				var text_msg = 'Informational Vulnerabilities ignored for Most Common Vulnerabilities.';
+			} else {
+				var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
+			}
+			get_most_common_vulnerability(scan_id = null, target_id = null, ignore_info = this.checked);
+			Snackbar.show({
+				text: text_msg,
+				pos: 'top-right',
+				duration: 2500
+			});
 		});
-	});
 
-	{% include 'base/_items/most_common_cve_cwe_tags.js' %}
+		{
+			%
+			include 'base/_items/most_common_cve_cwe_tags.js' %
+		}
 
-	var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
+		var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
 
-	var fill_options = {
-		type:"gradient",
-		gradient: {
-			type: "vertical",
-			shadeIntensity: 1,
-			inverseColors: !1,
-			opacityFrom: .30,
-			opacityTo: .05,
-			stops: [35, 100]
-		},
-	}
+		var fill_options = {
+			type: "gradient",
+			gradient: {
+				type: "vertical",
+				shadeIntensity: 1,
+				inverseColors: !1,
+				opacityFrom: .30,
+				opacityTo: .05,
+				stops: [35, 100]
+			},
+		}
 
-	var target_chart_option = {
-		chart: {
-			type: "area",
-			height: 50,
-			sparkline: {
-				enabled: !0
-			}
-		},
-		stroke: {
-			width: 2,
-			curve: "smooth"
-		},
-		fill: {
-			opacity: .2
-		},
-		series: [{
-			name: "Targets Added",
-			data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
-		}],
-		yaxis: {
-			min: 0
-		},
-		labels: label_dates,
-		colors: ['#2196f3'],
-		subtitle: {
-			text: "",
-			offsetX: 10,
-			offsetY: 35,
-			style: {
-				fontSize: "13px"
-			}
-		},
-		fill: fill_options,
-	};
-	new ApexCharts(document.querySelector("#targets_chart"), target_chart_option).render();
+		var target_chart_option = {
+			chart: {
+				type: "area",
+				height: 50,
+				sparkline: {
+					enabled: !0
+				}
+			},
+			stroke: {
+				width: 2,
+				curve: "smooth"
+			},
+			fill: {
+				opacity: .2
+			},
+			series: [{
+				name: "Targets Added",
+				data: [{
+					{
+						targets_in_last_week .0
+					}
+				}, {
+					{
+						targets_in_last_week .1
+					}
+				}, {
+					{
+						targets_in_last_week .2
+					}
+				}, {
+					{
+						targets_in_last_week .3
+					}
+				}, {
+					{
+						targets_in_last_week .4
+					}
+				}, {
+					{
+						targets_in_last_week .5
+					}
+				}, {
+					{
+						targets_in_last_week .6
+					}
+				}]
+			}],
+			yaxis: {
+				min: 0
+			},
+			labels: label_dates,
+			colors: ['#2196f3'],
+			subtitle: {
+				text: "",
+				offsetX: 10,
+				offsetY: 35,
+				style: {
+					fontSize: "13px"
+				}
+			},
+			fill: fill_options,
+		};
+		new ApexCharts(document.querySelector("#targets_chart"), target_chart_option).render();
 
-	var subdomains_chart_options = {
-		chart: {
-			type: "area",
-			height: 50,
-			sparkline: {
-				enabled: !0
-			}
-		},
-		stroke: {
-			width: 2,
-			curve: "smooth"
-		},
-		fill: {
-			opacity: .2
-		},
-		series: [{
-			name: "Subdomains Discovered",
-			data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
-		}],
-		yaxis: {
-			min: 0
-		},
-		labels: label_dates,
-		colors: ['#2196f3'],
-		subtitle: {
-			text: "",
-			offsetX: 10,
-			offsetY: 35,
-			style: {
-				fontSize: "13px"
-			}
-		},
-		fill: fill_options,
-	};
-	new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options).render();
+		var subdomains_chart_options = {
+			chart: {
+				type: "area",
+				height: 50,
+				sparkline: {
+					enabled: !0
+				}
+			},
+			stroke: {
+				width: 2,
+				curve: "smooth"
+			},
+			fill: {
+				opacity: .2
+			},
+			series: [{
+				name: "Subdomains Discovered",
+				data: [{
+					{
+						subdomains_in_last_week .0
+					}
+				}, {
+					{
+						subdomains_in_last_week .1
+					}
+				}, {
+					{
+						subdomains_in_last_week .2
+					}
+				}, {
+					{
+						subdomains_in_last_week .3
+					}
+				}, {
+					{
+						subdomains_in_last_week .4
+					}
+				}, {
+					{
+						subdomains_in_last_week .5
+					}
+				}, {
+					{
+						subdomains_in_last_week .6
+					}
+				}]
+			}],
+			yaxis: {
+				min: 0
+			},
+			labels: label_dates,
+			colors: ['#2196f3'],
+			subtitle: {
+				text: "",
+				offsetX: 10,
+				offsetY: 35,
+				style: {
+					fontSize: "13px"
+				}
+			},
+			fill: fill_options,
+		};
+		new ApexCharts(document.querySelector("#subdomains_chart"), subdomains_chart_options).render();
 
-	var endpoint_chart_options = {
-		chart: {
-			type: "area",
-			height: 50,
-			sparkline: {
-				enabled: !0
-			}
-		},
-		stroke: {
-			width: 2,
-			curve: "smooth"
-		},
-		fill: {
-			opacity: .2
-		},
-		series: [{
-			name: "Endpoints Discovered",
-			data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
-		}],
-		yaxis: {
-			min: 0
-		},
-		labels: label_dates,
-		colors: ['#2196f3'],
-		subtitle: {
-			text: "",
-			offsetX: 10,
-			offsetY: 35,
-			style: {
-				fontSize: "13px"
-			}
-		},
-		fill: fill_options,
-	};
-	new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options).render();
+		var endpoint_chart_options = {
+			chart: {
+				type: "area",
+				height: 50,
+				sparkline: {
+					enabled: !0
+				}
+			},
+			stroke: {
+				width: 2,
+				curve: "smooth"
+			},
+			fill: {
+				opacity: .2
+			},
+			series: [{
+				name: "Endpoints Discovered",
+				data: [{
+					{
+						endpoints_in_last_week .0
+					}
+				}, {
+					{
+						endpoints_in_last_week .1
+					}
+				}, {
+					{
+						endpoints_in_last_week .2
+					}
+				}, {
+					{
+						endpoints_in_last_week .3
+					}
+				}, {
+					{
+						endpoints_in_last_week .4
+					}
+				}, {
+					{
+						endpoints_in_last_week .5
+					}
+				}, {
+					{
+						endpoints_in_last_week .6
+					}
+				}]
+			}],
+			yaxis: {
+				min: 0
+			},
+			labels: label_dates,
+			colors: ['#2196f3'],
+			subtitle: {
+				text: "",
+				offsetX: 10,
+				offsetY: 35,
+				style: {
+					fontSize: "13px"
+				}
+			},
+			fill: fill_options,
+		};
+		new ApexCharts(document.querySelector("#endpoint_chart"), endpoint_chart_options).render();
 
 
-	var vuln_chart_options = {
-		chart: {
-			type: "area",
-			height: 50,
-			sparkline: {
-				enabled: !0
-			}
-		},
-		stroke: {
-			width: 2,
-			curve: "smooth"
-		},
-		fill: {
-			opacity: .2
-		},
-		series: [{
-			name: "Vulnerabilities Discovered",
-			data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
-		}],
-		yaxis: {
-			min: 0
-		},
-		labels: label_dates,
-		colors: ['#e7515a'],
-		subtitle: {
-			text: "",
-			offsetX: 10,
-			offsetY: 35,
-			style: {
-				fontSize: "13px"
-			}
-		},
-		fill: fill_options,
-	};
-	new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options).render();
+		var vuln_chart_options = {
+			chart: {
+				type: "area",
+				height: 50,
+				sparkline: {
+					enabled: !0
+				}
+			},
+			stroke: {
+				width: 2,
+				curve: "smooth"
+			},
+			fill: {
+				opacity: .2
+			},
+			series: [{
+				name: "Vulnerabilities Discovered",
+				data: [{
+					{
+						vulns_in_last_week .0
+					}
+				}, {
+					{
+						vulns_in_last_week .1
+					}
+				}, {
+					{
+						vulns_in_last_week .2
+					}
+				}, {
+					{
+						vulns_in_last_week .3
+					}
+				}, {
+					{
+						vulns_in_last_week .4
+					}
+				}, {
+					{
+						vulns_in_last_week .5
+					}
+				}, {
+					{
+						vulns_in_last_week .6
+					}
+				}]
+			}],
+			yaxis: {
+				min: 0
+			},
+			labels: label_dates,
+			colors: ['#e7515a'],
+			subtitle: {
+				text: "",
+				offsetX: 10,
+				offsetY: 35,
+				style: {
+					fontSize: "13px"
+				}
+			},
+			fill: fill_options,
+		};
+		new ApexCharts(document.querySelector("#vuln_chart"), vuln_chart_options).render();
 
 
-	// vulnerability summary pie chart
-	var options = {
-		chart: {
-			type: 'donut',
-			height: 320,
-		},
-		colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
-		dataLabels: {
-			enabled: false
-		},
-		legend: {
-			show: !0,
-			position: "bottom",
-			horizontalAlign: "center",
-			verticalAlign: "middle",
-			floating: !1,
-			fontSize: "15px",
-			offsetX: 0,
-			offsetY: 7
-		},
-		plotOptions: {
-			pie: {
-				donut: {
-					size: '70%',
-					background: 'transparent',
-					labels: {
-						show: true,
-						name: {
+		// vulnerability summary pie chart
+		var options = {
+			chart: {
+				type: 'donut',
+				height: 320,
+			},
+			colors: ['#D50000', '#F44336', '#FF6D00', '#FFD600', '#2962FF', '#03A9F4'],
+			dataLabels: {
+				enabled: false
+			},
+			legend: {
+				show: !0,
+				position: "bottom",
+				horizontalAlign: "center",
+				verticalAlign: "middle",
+				floating: !1,
+				fontSize: "15px",
+				offsetX: 0,
+				offsetY: 7
+			},
+			plotOptions: {
+				pie: {
+					donut: {
+						size: '70%',
+						background: 'transparent',
+						labels: {
 							show: true,
-							fontSize: '29px',
-							fontFamily: 'Nunito, sans-serif',
-							color: undefined,
-							offsetY: -10
-						},
-						value: {
-							show: true,
-							fontSize: '26px',
-							fontFamily: 'Nunito, sans-serif',
-							color: '20',
-							offsetY: 16,
-							formatter: function (val) {
-								return val
-							}
-						},
-						total: {
-							show: true,
-							showAlways: true,
-							label: 'Total',
-							color: '#888ea8',
-							formatter: function (w) {
-								return w.globals.seriesTotals.reduce( function(a, b) {
-									return a + b
-								}, 0)
+							name: {
+								show: true,
+								fontSize: '29px',
+								fontFamily: 'Nunito, sans-serif',
+								color: undefined,
+								offsetY: -10
+							},
+							value: {
+								show: true,
+								fontSize: '26px',
+								fontFamily: 'Nunito, sans-serif',
+								color: '20',
+								offsetY: 16,
+								formatter: function(val) {
+									return val
+								}
+							},
+							total: {
+								show: true,
+								showAlways: true,
+								label: 'Total',
+								color: '#888ea8',
+								formatter: function(w) {
+									return w.globals.seriesTotals.reduce(function(a, b) {
+										return a + b
+									}, 0)
+								}
 							}
 						}
 					}
 				}
-			}
-		},
-		series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
-		labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
-		responsive: [{
-			breakpoint: 1599,
-			options: {
-				chart: {
-					height: 240
+			},
+			series: [{
+				{
+					critical_count
+				}
+			}, {
+				{
+					high_count
+				}
+			}, {
+				{
+					medium_count
+				}
+			}, {
+				{
+					low_count
+				}
+			}, {
+				{
+					info_count
+				}
+			}, {
+				{
+					unknown_count
+				}
+			}],
+			labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
+			responsive: [{
+				breakpoint: 1599,
+				options: {
+					chart: {
+						height: 240
+					},
+					legend: {
+						position: 'bottom'
+					}
 				},
-				legend: {
-					position: 'bottom'
+				breakpoint: 1439,
+				options: {
+					chart: {
+						width: '250px',
+						height: '390px'
+					},
+				},
+			}],
+		}
+
+		var chart = new ApexCharts(
+			document.querySelector("#vulnerability-pie-chart"),
+			options
+		);
+
+		chart.render()
+
+		var options = {
+			series: [{
+				name: "Ip is Used By Subdomains",
+				data: [{
+					{
+						most_used_ip .6.count
+					}
+				}, {
+					{
+						most_used_ip .5.count
+					}
+				}, {
+					{
+						most_used_ip .4.count
+					}
+				}, {
+					{
+						most_used_ip .3.count
+					}
+				}, {
+					{
+						most_used_ip .2.count
+					}
+				}, {
+					{
+						most_used_ip .1.count
+					}
+				}, {
+					{
+						most_used_ip .0.count
+					}
+				}]
+			}],
+			chart: {
+				type: 'bar',
+				height: 350
+			},
+			plotOptions: {
+				bar: {
+					borderRadius: 4,
+					horizontal: true,
 				}
 			},
-			breakpoint: 1439,
-			options: {
-				chart: {
-					width: '250px',
-					height: '390px'
-				},
+			dataLabels: {
+				enabled: false
 			},
-		}],
-	}
-
-	var chart = new ApexCharts(
-		document.querySelector("#vulnerability-pie-chart"),
-		options
-	);
-
-	chart.render()
-
-	var options = {
-		series: [{
-			name: "Ip is Used By Subdomains",
-			data: [{{most_used_ip.6.count}}, {{most_used_ip.5.count}}, {{most_used_ip.4.count}}, {{most_used_ip.3.count}}, {{most_used_ip.2.count}}, {{most_used_ip.1.count}}, {{most_used_ip.0.count}}]
-		}],
-		chart: {
-			type: 'bar',
-			height: 350
-		},
-		plotOptions: {
-			bar: {
-				borderRadius: 4,
-				horizontal: true,
+			xaxis: {
+				categories: ['{{most_used_ip.6.address}}', '{{most_used_ip.5.address}}', '{{most_used_ip.4.address}}', '{{most_used_ip.3.address}}', '{{most_used_ip.2.address}}', '{{most_used_ip.1.address}}', '{{most_used_ip.0.address}}'],
 			}
-		},
-		dataLabels: {
-			enabled: false
-		},
-		xaxis: {
-			categories: ['{{most_used_ip.6.address}}', '{{most_used_ip.5.address}}', '{{most_used_ip.4.address}}', '{{most_used_ip.3.address}}', '{{most_used_ip.2.address}}', '{{most_used_ip.1.address}}', '{{most_used_ip.0.address}}'],
-		}
-	};
+		};
 
-	var chart = new ApexCharts(document.querySelector("#most_common_ip_chart"), options);
-	chart.render();
+		var chart = new ApexCharts(document.querySelector("#most_common_ip_chart"), options);
+		chart.render();
 
-	var options = {
-		series: [{
-			name: "Ports used by IPs",
-			data: [{{most_used_port.6.count}}, {{most_used_port.5.count}}, {{most_used_port.4.count}}, {{most_used_port.3.count}}, {{most_used_port.2.count}}, {{most_used_port.1.count}}, {{most_used_port.0.count}}]
-		}],
-		chart: {
-			type: 'bar',
-			height: 350
-		},
-		plotOptions: {
-			bar: {
-				borderRadius: 4,
-				horizontal: true,
+		var options = {
+			series: [{
+				name: "Ports used by IPs",
+				data: [{
+					{
+						most_used_port .6.count
+					}
+				}, {
+					{
+						most_used_port .5.count
+					}
+				}, {
+					{
+						most_used_port .4.count
+					}
+				}, {
+					{
+						most_used_port .3.count
+					}
+				}, {
+					{
+						most_used_port .2.count
+					}
+				}, {
+					{
+						most_used_port .1.count
+					}
+				}, {
+					{
+						most_used_port .0.count
+					}
+				}]
+			}],
+			chart: {
+				type: 'bar',
+				height: 350
+			},
+			plotOptions: {
+				bar: {
+					borderRadius: 4,
+					horizontal: true,
+				}
+			},
+			dataLabels: {
+				enabled: false
+			},
+			xaxis: {
+				categories: ['{{most_used_port.6.number}}/{{most_used_port.6.service_name}}', '{{most_used_port.5.number}}/{{most_used_port.5.service_name}}', '{{most_used_port.4.number}}/{{most_used_port.4.service_name}}',
+					'{{most_used_port.3.number}}/{{most_used_port.3.service_name}}', '{{most_used_port.2.number}}/{{most_used_port.2.service_name}}', '{{most_used_port.1.number}}/{{most_used_port.1.service_name}}',
+					'{{most_used_port.0.number}}/{{most_used_port.0.service_name}}'
+				],
 			}
-		},
-		dataLabels: {
-			enabled: false
-		},
-		xaxis: {
-			categories: ['{{most_used_port.6.number}}/{{most_used_port.6.service_name}}', '{{most_used_port.5.number}}/{{most_used_port.5.service_name}}', '{{most_used_port.4.number}}/{{most_used_port.4.service_name}}', '{{most_used_port.3.number}}/{{most_used_port.3.service_name}}', '{{most_used_port.2.number}}/{{most_used_port.2.service_name}}', '{{most_used_port.1.number}}/{{most_used_port.1.service_name}}', '{{most_used_port.0.number}}/{{most_used_port.0.service_name}}'],
-		}
-	};
+		};
 
-	var chart = new ApexCharts(document.querySelector("#most_common_port_chart"), options);
-	chart.render();
+		var chart = new ApexCharts(document.querySelector("#most_common_port_chart"), options);
+		chart.render();
 
 
-	var options = {
-		series: [{
-			name: "Tech used by Subdomains",
-			data: [{{most_used_tech.6.count}}, {{most_used_tech.5.count}}, {{most_used_tech.4.count}}, {{most_used_tech.3.count}}, {{most_used_tech.2.count}}, {{most_used_tech.1.count}}, {{most_used_tech.0.count}}]
-		}],
-		chart: {
-			type: 'bar',
-			height: 350
-		},
-		plotOptions: {
-			bar: {
-				borderRadius: 4,
-				horizontal: true,
+		var options = {
+			series: [{
+				name: "Tech used by Subdomains",
+				data: [{
+					{
+						most_used_tech .6.count
+					}
+				}, {
+					{
+						most_used_tech .5.count
+					}
+				}, {
+					{
+						most_used_tech .4.count
+					}
+				}, {
+					{
+						most_used_tech .3.count
+					}
+				}, {
+					{
+						most_used_tech .2.count
+					}
+				}, {
+					{
+						most_used_tech .1.count
+					}
+				}, {
+					{
+						most_used_tech .0.count
+					}
+				}]
+			}],
+			chart: {
+				type: 'bar',
+				height: 350
+			},
+			plotOptions: {
+				bar: {
+					borderRadius: 4,
+					horizontal: true,
+				}
+			},
+			dataLabels: {
+				enabled: false
+			},
+			xaxis: {
+				categories: ['{{most_used_tech.6.name}}', '{{most_used_tech.5.name}}', '{{most_used_tech.4.name}}', '{{most_used_tech.3.name}}', '{{most_used_tech.2.name}}', '{{most_used_tech.1.name}}', '{{most_used_tech.0.name}}'],
 			}
-		},
-		dataLabels: {
-			enabled: false
-		},
-		xaxis: {
-			categories: ['{{most_used_tech.6.name}}', '{{most_used_tech.5.name}}', '{{most_used_tech.4.name}}', '{{most_used_tech.3.name}}', '{{most_used_tech.2.name}}', '{{most_used_tech.1.name}}', '{{most_used_tech.0.name}}'],
-		}
-	};
+		};
 
-	var chart = new ApexCharts(document.querySelector("#most_common_tech_chart"), options);
-	chart.render();
+		var chart = new ApexCharts(document.querySelector("#most_common_tech_chart"), options);
+		chart.render();
 
-	var countriesData = {
-		{% for country in asset_countries %}
-			"{{country.iso}}": {{country.count}},
-		{% endfor %}
-	};
+		var countriesData = {
+			{
+				%
+				for country in asset_countries %
+			}
+			"{{country.iso}}": {
+				{
+					country.count
+				}
+			},
+			{
+				%
+				endfor %
+			}
+		};
 
-	$('#world_map').vectorMap({
-		map: 'world_mill_en',
-		hoverOpacity: 0.7,
-		hoverColor: false,
-		regionStyle: {
+		$('#world_map').vectorMap({
+			map: 'world_mill_en',
+			hoverOpacity: 0.7,
+			hoverColor: false,
+			regionStyle: {
 				initial: {
 					fill: '#d4dadd'
 				}
 			},
-		backgroundColor: 'transparent',
-		series: {
-			regions: [{
-				values: countriesData,
-				scale: [
-					{% for country in asset_countries %}
-						shadeColor('#2C3E50', {{country.count}}),
-					{% endfor %}
-				],
-				normalizeFunction: 'polynomial'
-			}]
-		},
-		onRegionTipShow: function(e, el, code){
-			if (code in countriesData) {
-				el.html(el.html()+' (Total Assets : '+ countriesData[code]+')');
+			backgroundColor: 'transparent',
+			series: {
+				regions: [{
+					values: countriesData,
+					scale: [{
+							%
+							for country in asset_countries %
+						}
+						shadeColor('#2C3E50', {
+							{
+								country.count
+							}
+						}),
+						{
+							%
+							endfor %
+						}
+					],
+					normalizeFunction: 'polynomial'
+				}]
+			},
+			onRegionTipShow: function(e, el, code) {
+				if (code in countriesData) {
+					el.html(el.html() + ' (Total Assets : ' + countriesData[code] + ')');
+				} else {
+					el.html(el.html() + ' (Total Assets : 0)');
+				}
 			}
-			else{
-				el.html(el.html()+' (Total Assets : 0)');
-			}
-		}
-	});
+		});
 
-});
+	});
 </script>
 {% endblock page_level_script %}
