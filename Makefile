@@ -43,6 +43,9 @@ restart:		## Restart all services.
 rm:				## Remove all services containers.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) rm -f ${SERVICES}
 
+test:
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) exec celery python3 -m unittest tests/test.py
+
 logs:			## Tail all logs with -n 1000.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${SERVICES}
 

@@ -1,8 +1,6 @@
 
-from django.db import models
-from django.utils import timezone
 from django.apps import apps
-from django.contrib.postgres.fields import ArrayField
+from django.db import models
 
 
 class AssociatedDomain(models.Model):
@@ -122,8 +120,8 @@ class DomainWhoisStatus(models.Model):
     id = models.AutoField(primary_key=True)
     status = models.CharField(max_length=500)
 
-    def __str__(self):
-        return self.status
+    # def __str__(self):
+    #     return self.status or ''
 
 
 class DomainRegistrarID(models.Model):
@@ -189,8 +187,8 @@ class DomainInfo(models.Model):
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
-    def __str__(self):
-        return self.id
+    # def __str__(self):
+    #     return self.id or ''
 
 
 class Organization(models.Model):
@@ -213,8 +211,9 @@ class Domain(models.Model):
     h1_team_handle = models.CharField(max_length=100, blank=True, null=True)
     ip_address_cidr = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    insert_date = models.DateTimeField()
+    insert_date = models.DateTimeField(null=True)
     start_scan_date = models.DateTimeField(null=True)
+    request_headers = models.JSONField(null=True)
     domain_info = models.ForeignKey(DomainInfo, on_delete=models.CASCADE, null=True, blank=True)
 
     def get_organization(self):
@@ -224,7 +223,7 @@ class Domain(models.Model):
         ScanHistory = apps.get_model('startScan.ScanHistory')
         obj = ScanHistory.objects.filter(domain__id=self.id).order_by('-id')
         if obj:
-	          return obj[0].id
+            return obj[0].id
 
     def __str__(self):
         return str(self.name)

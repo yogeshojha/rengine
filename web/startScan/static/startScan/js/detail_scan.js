@@ -710,13 +710,13 @@ function get_metadata(scan_id){
 			rand_id = get_randid();
 			$('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
 			if (doc['doc_name']) {
-				file_name = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
+				filename = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
 			}
 			else{
-				file_name = ''
+				filename = ''
 			}
 			subdomain = `<span class='text-muted bs-tooltip' title='Subdomain'>${doc['subdomain']['name']}</span>`;
-			$(`#${rand_id}`).append(`<td class="td-content">${file_name}</br>${subdomain}</td>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${filename}</br>${subdomain}</td>`);
 			if (doc['author']){
 				$(`#${rand_id}`).append(`<td class="td-content text-center">${doc['author']}</td>`);
 			}
@@ -1349,33 +1349,31 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 	});
 }
 
-
-function initiate_subtask(subdomain_ids){
-	var port_scan = $('#port_scan_subtask').is(':checked');
-	var osint = $('#osint_subtask').is(':checked');
-	var endpoint = $('#endpoint_subtask').is(':checked');
-	var dir_fuzz = $('#dir_fuzz_subtask').is(':checked');
-	var vuln_scan = $('#vuln_subtask').is(':checked');
+function initiate_subscan(subdomain_ids){
 	var engine_id = $('#subtaskScanEngine').val();
-	if (!port_scan && !osint && !endpoint && !dir_fuzz && !vuln_scan) {
+	var tasks = []
+	var $engine_tasks = $('#engineTasks').find('input')
+	$engine_tasks.each(function(i){
+		if ($(this).is(':checked')){
+			tasks.push(this.id)
+		}
+	})
+	console.log(tasks)
+	if (tasks.length === 0) {
 		Swal.fire({
 			title: 'Oops!',
-			text: 'No Subtasks Selected. Please choose atleast one subtask!',
+			text: 'No subtasks selected. Please choose at least one subtask !',
 			icon: 'error'
 		});
 		return;
 	}
 	var data = {
 		'subdomain_ids': subdomain_ids,
-		'port_scan': port_scan,
-		'osint': osint,
-		'endpoint': endpoint,
-		'dir_fuzz': dir_fuzz,
-		'vuln_scan': vuln_scan,
+		'tasks': tasks,
 		'engine_id': engine_id,
 	};
 	Swal.fire({
-		title: 'Initiating Subtask...',
+		title: 'Initiating subtask...',
 		allowOutsideClick: false
 	});
 	swal.showLoading();
@@ -1420,13 +1418,56 @@ $('#btn-initiate-subtask').on('click', function(){
 				subdomain_ids.push($(subdomain_item[i]).val());
 			}
 		}
-		initiate_subtask(subdomain_ids);
+		initiate_subscan(subdomain_ids);
 	}
 	else{
 		var subdomain_id = $('#subtask_subdomain_id').val();
-		initiate_subtask([subdomain_id]);
+		initiate_subscan([subdomain_id]);
 	}
 });
+
+
+// Load engine tasks on modal load and engine input change
+function load_engine_tasks(engine_name){
+	var tasks = []
+	var html = ''
+	var url = `/api/listEngines/?format=json`;
+	console.log(url);
+	$.getJSON(url, function(data) {
+		console.log(data);
+		var engines = data.engines
+		console.log(engines);
+		console.log(engine_name);
+		$.each(engines, function(i, engine){
+			console.log(`${engine.engine_name} == ${engine_name}`)
+			if (engine.engine_name === engine_name){
+				tasks = engine.tasks
+				console.log(tasks)
+			}
+		})
+		$.each(tasks, function(i, task){
+			html += `
+			<div class="mt-1">
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" id="${task}">
+					<label class="form-check-label" for="${task}">${task}</label>
+				</div>
+			</div>`
+		});
+		console.log(html)
+		$('#engineTasks').html(html);
+	})
+}
+
+$('#subscan-modal').on('shown.bs.modal', function () {
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
+
+$('#subtaskScanEngine').on('change', function(){
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
 
 // download subdomains
 function downloadSelectedSubdomains(domain_name){

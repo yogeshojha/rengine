@@ -1,6 +1,7 @@
 from django.db import models
 from startScan.models import *
 
+
 class TodoNote(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=1000, null=True, blank=True)

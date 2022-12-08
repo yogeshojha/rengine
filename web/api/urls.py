@@ -1,6 +1,7 @@
-from django.conf.urls import url, include
+from django.conf.urls import include, url
 from django.urls import path
 from rest_framework import routers
+
 from .views import *
 
 app_name = 'api'
@@ -189,7 +190,7 @@ urlpatterns = [
     path(
         'action/initiate/subtask/',
         InitiateSubTask.as_view(),
-        name='initiate_subtask'),
+        name='initiate_subscan'),
     path(
         'action/stop/scan/',
         StopScan.as_view(),

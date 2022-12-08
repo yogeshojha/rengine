@@ -36,7 +36,7 @@ function truncate(str, n) {
 function return_str_if_not_null(val) {
 	return val ? val : '';
 }
-// seperate hostname and url
+// separate hostname and url
 // Referenced from https://stackoverflow.com/questions/736513/how-do-i-parse-a-url-into-hostname-and-path-in-javascript
 function getParsedURL(url) {
 	var parser = new URL(url);
@@ -165,7 +165,7 @@ function test_white_space(x) {
 	const white = new RegExp(/^\s$/);
 	return white.test(x.charAt(0));
 };
-// span values function will seperate the values by comma and put badge around it
+// span values function will separate the values by comma and put badge around it
 function parse_comma_values_into_span(data, color, outline = null) {
 	if (data) {
 		var badge = `<span class='badge badge-soft-` + color + ` m-1'>`;
@@ -358,7 +358,7 @@ function parse_technology(data, color, scan_id = null, domain_id=null) {
 	}
 	return data_with_span;
 }
-// span values function will seperate the values by comma and put badge around it
+// span values function will separate the values by comma and put badge around it
 function parse_ip(data, cdn) {
 	if (cdn) {
 		var badge = `<span class='badge badge-soft-warning m-1 bs-tooltip' title="CDN IP Address">`;
@@ -576,7 +576,7 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 	});
 }
 
-function get_interesting_endpoint(target_id, scan_history_id) {
+function get_interesting_endpoints(target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
 		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
@@ -688,7 +688,7 @@ function get_important_subdomains(target_id, scan_history_id) {
 			}
 		} else {
 			$('#important-count').html(`<span class="badge badge-soft-primary ms-1 me-1">0</span>`);
-			$('#important-subdomains-list').append(`<p>No subdomains markerd as important!</p>`);
+			$('#important-subdomains-list').append(`<p>No subdomains marked as important!</p>`);
 		}
 		$('.bs-tooltip').tooltip();
 	});
@@ -911,12 +911,13 @@ function show_subscan_results(subscan_id) {
 				button: "Okay",
 			});
 			return;
-		} else if (response['subscan']['status'] == 1) {
-			swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
-				button: "Okay",
-			});
-			return;
-		}
+		} 
+		// else if (response['subscan']['status'] == 1) {
+		// 	swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
+		// 		button: "Okay",
+		// 	});
+		// 	return;
+		// }
 		$('#xl-modal-title').empty();
 		$('#xl-modal-content').empty();
 		$('#xl-modal-footer').empty();
@@ -926,7 +927,7 @@ function show_subscan_results(subscan_id) {
 		} else if (response['subscan']['task'] == 'vulnerability_scan') {
 			task_name = 'Vulnerability Scan';
 		} else if (response['subscan']['task'] == 'fetch_url') {
-			task_name = 'EndPoint Gathering';
+			task_name = 'Fetch URLs';
 		} else if (response['subscan']['task'] == 'dir_file_fuzz') {
 			task_name = 'Directory and Files Fuzzing';
 		}
@@ -1329,8 +1330,9 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 			for (var result in data['results']) {
 
 				var result_obj = data['results'][result];
+				console.log(result_obj)
 				var error_message = '';
-				var task_name = get_task_name(result_obj);
+				var task_name = result_obj.type;
 
 				if (result_obj.status == 0) {
 					color = 'danger';
@@ -1374,13 +1376,10 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 	});
 }
 
-function fetch_whois(domain_name, save_db) {
+function fetch_whois(domain_name) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
-	if (save_db) {
-		url += '&save_db';
-	}
 	$('[data-toggle="tooltip"]').tooltip('hide');
 	Snackbar.show({
 		text: 'Fetching WHOIS...',
@@ -1421,9 +1420,7 @@ function fetch_whois(domain_name, save_db) {
 }
 
 function get_target_whois(domain_name) {
-	// this function will fetch whois from db, if not fetched, will make a fresh
-	// query and will display whois on a modal
-	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}&fetch_from_db`
+	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
 
 	Swal.fire({
 		title: `Fetching WHOIS details for ${domain_name}...`
@@ -1442,7 +1439,7 @@ function get_target_whois(domain_name) {
 			swal.close();
 			display_whois_on_modal(response);
 		} else {
-			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}&save_db`, {
+			fetch(`/api/tools/whois/?format=json&ip_domain=${domain_name}`, {
 				method: 'GET',
 				credentials: "same-origin",
 				headers: {
@@ -1725,25 +1722,19 @@ function add_quick_target() {
 	var domain_name = $('#target_name_modal').val();
 	var description = $('#target_description_modal').val();
 	var h1_handle = $('#h1_handle_modal').val();
-
-	const data = {
-		'domain_name': domain_name,
-		'h1_team_handle': h1_handle,
-		'description': description
-	};
 	add_target(domain_name, h1_handle = h1_handle, description = description);
 }
 
 
 function add_target(domain_name, h1_handle = null, description = null) {
 	// this function will add domain_name as target
+	console.log('Adding new target ' + domain_name)
 	const add_api = '/api/add/target/?format=json';
 	const data = {
 		'domain_name': domain_name,
 		'h1_team_handle': h1_handle,
 		'description': description
 	};
-
 	swal.queue([{
 		title: 'Add Target',
 		text: `Would you like to add ${domain_name} as target?`,
@@ -1762,10 +1753,11 @@ function add_target(domain_name, h1_handle = null, description = null) {
 				},
 				body: JSON.stringify(data)
 			}).then(function(response) {
+				console.log(response)
 				return response.json();
 			}).then(function(data) {
+				console.log(data)
 				if (data.status) {
-
 					swal.queue([{
 						title: 'Target Successfully added!',
 						text: `Do you wish to initiate the scan on new target?`,
@@ -1787,7 +1779,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 			}).catch(function() {
 				swal.insertQueueStep({
 					icon: 'error',
-					title: 'Oops! Unable to delete the scan history!'
+					title: 'Oops! Unable to add target !'
 				});
 			})
 		}

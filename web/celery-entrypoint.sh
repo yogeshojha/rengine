@@ -15,10 +15,11 @@ python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
-python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
-#Load Default keywords
+# Load default engines
+# python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
+# Load default keywords
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
-#Load Default External Tools
+# Load default external tools
 python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
 # update whatportis
@@ -79,12 +80,8 @@ then
 fi
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
 
-# clone pwndb
-if [ ! -d "/usr/src/github/pwndb" ]
-then
-  echo "Cloning pwndb"
-  git clone https://github.com/davidtavarez/pwndb /usr/src/github/pwndb
-fi
+# install h8mail
+python3 -m pip install h8mail
 
 # install gf patterns
 if [ ! -d "/root/Gf-Patterns" ];
@@ -115,12 +112,6 @@ else
   echo "Removing old Geeknik Nuclei templates and updating new one"
   rm -rf ~/nuclei-templates/geeknik_nuclei_templates
   git clone https://github.com/geeknik/the-nuclei-templates.git ~/nuclei-templates/geeknik_nuclei_templates
-fi
-
-if [ ! -f ~/nuclei-templates/ssrf_nagli.yaml ];
-then
-  echo "Downloading ssrf_nagli for Nuclei"
-  wget https://raw.githubusercontent.com/NagliNagli/BountyTricks/main/ssrf.yaml -O ~/nuclei-templates/ssrf_nagli.yaml
 fi
 
 if [ ! -f ~/nuclei-templates/ssrf_nagli.yaml ];

@@ -1,6 +1,8 @@
 from django import forms
-from .models import *
 from reNgine.validators import validate_domain
+
+from .models import *
+
 
 class AddTargetForm(forms.Form):
     name = forms.CharField(
@@ -22,7 +24,6 @@ class AddTargetForm(forms.Form):
                 "placeholder": "Target Description"
             }
         ))
-
     h1_team_handle = forms.CharField(
         required=False,
         widget=forms.TextInput(
@@ -32,13 +33,6 @@ class AddTargetForm(forms.Form):
                 "placeholder": "team_handle"
             }
         ))
-
-    def clean_name(self):
-        data = self.cleaned_data['name']
-        if Domain.objects.filter(name=data).count() > 0:
-            raise forms.ValidationError("{} target/domain already exists".format(data))
-        return data
-
 
 class AddOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):

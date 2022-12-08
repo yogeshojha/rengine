@@ -1,103 +1,139 @@
-import datetime
-
-from django.db import models
-from django.db.models import JSONField
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from django.utils import timezone
 from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
-
-from targetApp.models import Domain
-from scanEngine.models import EngineType
-
+from django.db import models
+from django.utils import timezone
+from reNgine.definitions import (CELERY_TASK_STATUSES,
+                                 NUCLEI_REVERSE_SEVERITY_MAP)
 from reNgine.utilities import *
+from scanEngine.models import EngineType
+from targetApp.models import Domain
 
 
-class ScanHistory(models.Model):
+class hybrid_property:
+    def __init__(self, func):
+        self.func = func
+        self.name = func.__name__
+        self.exp = None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return self.func(instance)
+
+    def __set__(self, instance, value):
+        pass
+
+    def expression(self, exp):
+        self.exp = exp
+        return self
+
+
+class ScanHistory(models.Model): 
 	id = models.AutoField(primary_key=True)
 	start_scan_date = models.DateTimeField()
-	scan_status = models.IntegerField()
+	scan_status = models.IntegerField(choices=CELERY_TASK_STATUSES, default=-1)
 	results_dir = models.CharField(max_length=100, blank=True)
 	domain = models.ForeignKey(Domain, on_delete=models.CASCADE)
 	scan_type = models.ForeignKey(EngineType, on_delete=models.CASCADE)
-	celery_id = models.CharField(max_length=100, blank=True)
-	subdomain_discovery = models.BooleanField(null=True, default=False)
-	waf_detection = models.BooleanField(null=True, default=False)
-	dir_file_fuzz = models.BooleanField(null=True, default=False)
-	port_scan = models.BooleanField(null=True, default=False)
-	fetch_url = models.BooleanField(null=True, default=False)
-	vulnerability_scan = models.BooleanField(null=True, default=False)
-	osint = models.BooleanField(null=True, default=False)
-	screenshot = models.BooleanField(null=True, default=True)
+	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
+	tasks = ArrayField(models.CharField(max_length=200), null=True)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	used_gf_patterns = models.CharField(max_length=500, null=True, blank=True)
 	error_message = models.CharField(max_length=300, blank=True, null=True)
-	# osint is directly linked to scan history and not subdomains
 	emails = models.ManyToManyField('Email', related_name='emails', blank=True)
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 
 	def __str__(self):
-		# debug purpose remove scan type and id in prod
 		return self.domain.name
 
 	def get_subdomain_count(self):
 		return Subdomain.objects.filter(scan_history__id=self.id).count()
 
 	def get_subdomain_change_count(self):
-		last_scan = ScanHistory.objects.filter(id=self.id).filter(
-			scan_type__subdomain_discovery=True).order_by('-start_scan_date')
-
-		scanned_host_q1 = Subdomain.objects.filter(
-			target_domain__id=self.domain.id).exclude(
-				scan_history__id=last_scan[0].id).values('name')
-
-		scanned_host_q2 = Subdomain.objects.filter(
-			scan_history__id=last_scan[0].id).values('name')
-
+		last_scan = (
+			ScanHistory.objects
+			.filter(id=self.id)
+			.filter(tasks__overlap=['subdomain_discovery'])
+			.order_by('-start_scan_date')
+		)
+		scanned_host_q1 = (
+			Subdomain.objects
+			.filter(target_domain__id=self.domain.id)
+			.exclude(scan_history__id=last_scan[0].id)
+			.values('name')
+		)
+		scanned_host_q2 = (
+			Subdomain.objects
+			.filter(scan_history__id=last_scan[0].id)
+			.values('name')
+		)
 		new_subdomains = scanned_host_q2.difference(scanned_host_q1).count()
 		removed_subdomains = scanned_host_q1.difference(scanned_host_q2).count()
-
 		return [new_subdomains, removed_subdomains]
 
 
 	def get_endpoint_count(self):
-		return EndPoint.objects.filter(scan_history__id=self.id).count()
+		return (
+			EndPoint.objects
+			.filter(scan_history__id=self.id)
+			.count()
+		)
 
 	def get_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.count()
+		)
 
 	def get_unknown_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=-1).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=-1)
+			.count()
+		)
 
 	def get_info_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=0).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=0)
+			.count()
+		)
 
 	def get_low_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=1).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=1)
+			.count()
+		)
 
 	def get_medium_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=2).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=2)
+			.count()
+		)
 
 	def get_high_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=3).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=3)
+			.count()
+		)
 
 	def get_critical_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history__id=self.id).filter(
-			severity=4).count()
+		return (
+			Vulnerability.objects
+			.filter(scan_history__id=self.id)
+			.filter(severity=4)
+			.count()
+		)
 
 	def get_progress(self):
 		'''
@@ -105,19 +141,10 @@ class ScanHistory(models.Model):
 		count number of true things to do, for http crawler, it is always +1
 		divided by total scan activity associated - 2 (Start and Stop)
 		'''
-		number_of_steps = sum([
-			self.subdomain_discovery,
-			self.dir_file_fuzz,
-			self.port_scan,
-			self.fetch_url,
-			self.vulnerability_scan,
-			self.osint,
-			self.screenshot,
-			True
-		])
+		number_of_steps = len(self.tasks) if self.tasks else 0
 		steps_done = len(self.scanactivity_set.all())
 		if steps_done and number_of_steps:
-			return round((number_of_steps / (steps_done))*100, 2)
+			return round((number_of_steps / (steps_done)) * 100, 2)
 
 	def get_completed_ago(self):
 		if self.stop_scan_date:
@@ -137,19 +164,19 @@ class ScanHistory(models.Model):
 		minutes = (seconds % 3600) // 60
 		seconds = seconds % 60
 		if not hours and not minutes:
-			return '{} seconds'.format(seconds)
+			return f'{seconds} seconds'
 		elif not hours:
-			return '{} minutes'.format(minutes)
+			return f'{minutes} minutes'
 		elif not minutes:
-			return '{} hours'.format(hours)
-		return '{} hours {} minutes'.format(hours, minutes)
+			return f'{hours} hours'
+		return f'{hours} hours {minutes} minutes'
 
 
 class Subdomain(models.Model):
+	# TODO: Add endpoint property instead of replicating endpoint fields here
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
-	target_domain = models.ForeignKey(
-		Domain, on_delete=models.CASCADE, null=True, blank=True)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
+	target_domain = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 	name = models.CharField(max_length=1000)
 	is_imported_subdomain = models.BooleanField(default=False)
 	is_important = models.BooleanField(default=False, null=True, blank=True)
@@ -176,83 +203,110 @@ class Subdomain(models.Model):
 
 	@property
 	def get_endpoint_count(self):
-		return EndPoint.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).count()
+		endpoints = EndPoint.objects.filter(subdomain__name=self.name)
+		if self.scan_history:
+			endpoints = endpoints.filter(scan_history=self.scan_history)
+		return endpoints.count()
 
 	@property
 	def get_info_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).filter(severity=0).count()
+		return (
+			self.get_vulnerabilities
+			.filter(severity=0)
+			.count()
+		)
 
 	@property
 	def get_low_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).filter(severity=1).count()
+		return (
+			self.get_vulnerabilities
+			.filter(severity=1)
+			.count()
+		)
 
 	@property
 	def get_medium_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).filter(severity=2).count()
+		return (
+			self.get_vulnerabilities
+			.filter(severity=2)
+			.count()
+		)
 
 	@property
 	def get_high_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).filter(severity=3).count()
+		return (
+			self.get_vulnerabilities
+			.filter(severity=3)
+			.count()
+		)
 
 	@property
 	def get_critical_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).filter(severity=4).count()
+		return (
+			self.get_vulnerabilities
+			.filter(severity=4)
+			.count()
+		)
 
 	@property
 	def get_total_vulnerability_count(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name).count()
+		return self.get_vulnerabilities.count()
 
 	@property
 	def get_vulnerabilities(self):
-		return Vulnerability.objects.filter(
-			scan_history=self.scan_history).filter(
-			subdomain__name=self.name)
+		vulns = Vulnerability.objects.filter(subdomain__name=self.name)
+		if self.scan_history:
+			vulns = vulns.filter(scan_history=self.scan_history)
+		return vulns
 
 	@property
 	def get_directories_count(self):
-		return DirectoryFile.objects.filter(directory_files__in=DirectoryScan.objects.filter(directories__in=Subdomain.objects.filter(id=self.id))).distinct().count()
+		subdomains = (
+			Subdomain.objects
+			.filter(id=self.id)
+		)
+		dirscan = (
+			DirectoryScan.objects
+			.filter(directories__in=subdomains)
+		)
+		return (
+			DirectoryFile.objects
+			.filter(directory_files__in=dirscan)
+			.distinct()
+			.count()
+		)
 
 	@property
 	def get_todos(self):
 		TodoNote = apps.get_model('recon_note', 'TodoNote')
-		notes = TodoNote.objects.filter(scan_history__id=self.scan_history.id).filter(subdomain__id=self.id)
+		notes = TodoNote.objects
+		if self.scan_history:
+			notes = notes.filter(scan_history=self.scan_history)
+		notes = notes.filter(subdomain__id=self.id)
 		return notes.values()
 
 	@property
 	def get_subscan_count(self):
-		return SubScan.objects.filter(subdomain__id=self.id).distinct().count()
+		return (
+			SubScan.objects
+			.filter(subdomain__id=self.id)
+			.distinct()
+			.count()
+		)
 
 
 class SubScan(models.Model):
 	id = models.AutoField(primary_key=True)
+	type = models.CharField(max_length=100, blank=True, null=True)
 	start_scan_date = models.DateTimeField()
 	status = models.IntegerField()
-	celery_id = models.CharField(max_length=100, blank=True)
+	celery_ids = ArrayField(models.CharField(max_length=100), blank=True, default=list)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
 	subdomain = models.ForeignKey(Subdomain, on_delete=models.CASCADE)
-	dir_file_fuzz = models.BooleanField(null=True, default=False)
-	port_scan = models.BooleanField(null=True, default=False)
-	fetch_url = models.BooleanField(null=True, default=False)
-	vulnerability_scan = models.BooleanField(null=True, default=False)
-	osint = models.BooleanField(null=True, default=False)
 	stop_scan_date = models.DateTimeField(null=True, blank=True)
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	engine = models.ForeignKey(EngineType, on_delete=models.CASCADE, blank=True, null=True)
-
+	subdomain_subscan_ids = models.ManyToManyField('Subdomain', related_name='subdomain_subscan_ids', blank=True)
 
 	def get_completed_ago(self):
 		if self.stop_scan_date:
@@ -266,23 +320,21 @@ class SubScan(models.Model):
 		return get_time_taken(timezone.now(), self.start_scan_date)
 
 	def get_task_name_str(self):
-		if self.dir_file_fuzz:
-			return "Directory and File fuzzing"
-		elif self.port_scan:
-			return "Port Scan"
-		elif self.fetch_url:
-			return "Endpoint Gathering"
-		elif self.vulnerability_scan:
-			return "Vulnerability Scan"
-		elif self.osint:
-			return "OSINT"
-		else:
-			return "Unknown"
-
+		taskmap = {
+			'subdomain_discovery': 'Subdomain discovery',
+			'dir_file_fuzz': 'Directory and File fuzzing',
+			'port_scan': 'Port Scan',
+			'fetch_url': 'Fetch URLs',
+			'vulnerability_scan': 'Vulnerability Scan',
+			'screenshot': 'Screenshot',
+			'waf_detection': 'Waf Detection',
+			'osint': 'Open-Source Intelligence'
+		}
+		return taskmap.get(self.type, 'Unknown')
 
 class EndPoint(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(
@@ -306,6 +358,10 @@ class EndPoint(models.Model):
 
 	def __str__(self):
 		return self.http_url
+
+	@hybrid_property
+	def is_alive(self):
+		return self.http_status and (0 < self.http_status < 500) and self.http_status != 404
 
 
 class VulnerabilityTags(models.Model):
@@ -342,7 +398,7 @@ class CweId(models.Model):
 
 class Vulnerability(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(
 		Subdomain,
 		on_delete=models.CASCADE,
@@ -384,19 +440,35 @@ class Vulnerability(models.Model):
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
 	def __str__(self):
-		return self.name
+		cve_str = ', '.join(f'`{cve.name}`' for cve in self.cve_ids.all())
+		severity = NUCLEI_REVERSE_SEVERITY_MAP[self.severity]
+		return f'{self.http_url} | `{severity.upper()}` | `{self.name}` | `{cve_str}`'
 
 	def get_severity(self):
 		return self.severity
 
+	def get_cve_str(self):
+		return ', '.join(f'`{cve.name}`' for cve in self.cve_ids.all())
+
+	def get_cwe_str(self):
+		return ', '.join(f'`{cwe.name}`' for cwe in self.cwe_ids.all())
+
+	def get_tags_str(self):
+		return ', '.join(f'`{tag.name}`' for tag in self.tags.all())
+
+	def get_refs_str(self):
+		return '•' + '\n• '.join(f'`{ref.url}`' for ref in self.references.all())
 
 class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, blank=True, null=True)
 	title = models.CharField(max_length=1000)
+	name = models.CharField(max_length=1000)
 	time = models.DateTimeField()
 	status = models.IntegerField()
 	error_message = models.CharField(max_length=300, blank=True, null=True)
+	traceback = models.TextField(blank=True, null=True)
+	celery_id = models.CharField(max_length=100, blank=True, null=True)
 
 	def __str__(self):
 		return str(self.title)
@@ -435,6 +507,9 @@ class IpAddress(models.Model):
 	ports = models.ManyToManyField('Port', related_name='ports')
 	geo_iso = models.ForeignKey(
 		CountryISO, on_delete=models.CASCADE, null=True, blank=True)
+	version = models.IntegerField(blank=True, null=True)
+	is_private = models.BooleanField(default=False)
+	reverse_pointer = models.CharField(max_length=100, blank=True, null=True)
 	# this is used for querying which ip was discovered during subcan
 	ip_subscan_ids = models.ManyToManyField('SubScan', related_name='ip_subscan_ids')
 
@@ -478,7 +553,7 @@ class DirectoryScan(models.Model):
 
 class MetaFinderDocument(models.Model):
 	id = models.AutoField(primary_key=True)
-	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
 	target_domain = models.ForeignKey(
 		Domain, on_delete=models.CASCADE, null=True, blank=True)
 	subdomain = models.ForeignKey(

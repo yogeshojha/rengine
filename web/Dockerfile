@@ -25,6 +25,7 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     libpq-dev \
     libpcap-dev \
     netcat \
+    nmap \
     postgresql \
     python3 \
     python3-dev \
@@ -41,10 +42,10 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     geoip-database
 
 
-# Download and install go 1.17
-RUN wget https://golang.org/dl/go1.17.2.linux-amd64.tar.gz
-RUN tar -xvf go1.17.2.linux-amd64.tar.gz
-RUN rm go1.17.2.linux-amd64.tar.gz
+# Download and install go 1.18
+RUN wget https://golang.org/dl/go1.18.2.linux-amd64.tar.gz
+RUN tar -xvf go1.18.2.linux-amd64.tar.gz
+RUN rm go1.18.2.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
