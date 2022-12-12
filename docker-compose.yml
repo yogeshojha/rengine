@@ -9,8 +9,6 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:
@@ -58,7 +56,6 @@ services:
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - POSTGRES_DB=${POSTGRES_DB}
@@ -142,6 +139,7 @@ services:
     networks:
       - rengine_network
 
+
 networks:
   rengine_network:
 
@@ -153,6 +151,11 @@ volumes:
   github_repos:
   wordlist:
   scan_results:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: /volume1/homes/jahmyst/Workspace/nas/docker/rengine/scan_results
   static_volume:
 
 secrets:
