@@ -118,14 +118,6 @@ services:
         aliases:
           - rengine
 
-  tor:
-    image: peterdavehello/tor-socks-proxy
-    restart: always
-    networks:
-      - rengine_network
-    depends_on:
-      - web
-
   proxy:
     restart: always
     image: nginx:alpine
