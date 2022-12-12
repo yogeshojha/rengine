@@ -89,7 +89,7 @@ def initiate_scan(
 	domain.save()
 
 	# Get path filter
-	url_filter = url_filter.rstrip('/').lstrip('/')
+	url_filter = url_filter.rstrip('/')
 
 	# Create results directory
 	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
@@ -147,7 +147,7 @@ def initiate_scan(
 
 	# If enable_http_crawl is set, create an initial root HTTP endpoint so that 
 	# HTTP crawling can start somewhere
-	http_url = f'{domain.name}/{url_filter}' if url_filter else domain.name
+	http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
 	endpoint, _ = save_endpoint(
 		http_url,
 		ctx=ctx,
@@ -280,7 +280,7 @@ def initiate_subscan(
 
 	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP 
 	# crawling can start somewhere
-	base_url = f'{subdomain.name}/{url_filter}' if url_filter else subdomain.name
+	base_url = f'{subdomain.name}{url_filter}' if url_filter else subdomain.name
 	endpoint, _ = save_endpoint(
 		base_url,
 		crawl=enable_http_crawl,
@@ -1737,7 +1737,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 		if base_url and urlpath:
 			subdomain = urlparse(base_url)
-			url = f'{subdomain.scheme}://{subdomain.netloc}/{self.url_filter}'
+			url = f'{subdomain.scheme}://{subdomain.netloc}{self.url_filter}'
 
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
@@ -2109,7 +2109,7 @@ def http_crawl(
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
 		if self.url_filter:
-			urls = [u for u in urls if u.contains(self.url_filter)]
+			urls = [u for u in urls if self.url_filter in u]
 		with open(input_file, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
@@ -3341,8 +3341,9 @@ def save_endpoint(
 			method='HEAD',
 			ctx=ctx)
 		if results:
-			endpoint_id = results[0]['endpoint-id']
-			created = results[0]['endpoint-created']
+			endpoint_data = results[0]
+			endpoint_id = endpoint_data['endpoint-id']
+			created = endpoint_data['endpoint-created']
 			endpoint = EndPoint.objects.get(pk=endpoint_id)
 	elif not scheme:
 		return None, False
