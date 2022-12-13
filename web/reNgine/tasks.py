@@ -2188,7 +2188,7 @@ def http_crawl(
 				add_meta_info=False)
 
 		# Add endpoint to results
-		line['final-url'] = http_url
+		line['final_url'] = http_url
 		line['endpoint-id'] = endpoint.id
 		line['endpoint-created'] = created
 		line['is_redirect'] = is_redirect
@@ -3077,10 +3077,10 @@ def extract_httpx_url(line):
 	Returns:
 		tuple: (final_url, redirect_bool) tuple.
 	"""
-	status_code = line.get('status-code', 0)
-	final_url = line.get('final-url')
+	status_code = line.get('status_code', 0)
+	final_url = line.get('final_url')
 	location = line.get('location')
-	chain_status_codes = line.get('chain-status-codes', [])
+	chain_status_codes = line.get('chain_status_codes', [])
 
 	# Final URL is already looking nice, if it exists return it
 	if final_url:
