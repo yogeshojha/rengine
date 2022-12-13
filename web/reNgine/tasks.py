@@ -2157,8 +2157,8 @@ def http_crawl(
 		cdn = line.get('cdn', False)
 		response_time = line.get('response_time', -1)
 		if response_time:
-			response_time = float(''.join(ch for ch in line['response_time'] if not ch.isalpha()))
-			if line['response_time'][-2:] == 'ms':
+			response_time = float(''.join(ch for ch in response_time if not ch.isalpha()))
+			if response_time[-2:] == 'ms':
 				response_time = response_time / 1000
 
 		# Create Subdomain object in DB
