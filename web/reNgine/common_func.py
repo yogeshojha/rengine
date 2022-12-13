@@ -292,7 +292,7 @@ def get_http_urls(
 		write_filepath (str): Write info back to a file.
 
 	Returns:
-		list: List of subdomains matching query.
+		list: List of URLs matching query.
 	"""
 	domain_id = ctx.get('domain_id')
 	scan_id = ctx.get('scan_history_id')
@@ -318,8 +318,7 @@ def get_http_urls(
 
 	# If a path is passed, select only endpoints that contains it
 	if url_filter and domain:
-		url = f'{domain.name}/{url_filter}'
-		url = url.rstrip('/')
+		url = f'{domain.name}{url_filter}'
 		if strict:
 			query = query.filter(http_url=url)
 		else:
