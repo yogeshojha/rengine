@@ -151,11 +151,6 @@ volumes:
   github_repos:
   wordlist:
   scan_results:
-    driver: local
-    driver_opts:
-      o: bind
-      type: none
-      device: /volume1/homes/jahmyst/Workspace/nas/docker/rengine/scan_results
   static_volume:
 
 secrets:
