@@ -2143,7 +2143,7 @@ def http_crawl(
 	for line in stream_command(cmd, echo=DEBUG, history_file=history_file):
 		if not line or not isinstance(line, dict):
 			continue
-		# logger.warning(line)
+		logger.warning(line)
 		error = line.get('error')
 		host = line.get('host', '')
 		if error:
