@@ -2155,7 +2155,7 @@ def http_crawl(
 		page_title = line.get('title')
 		webserver = line.get('webserver')
 		cdn = line.get('cdn', False)
-		response_time = line.get('response-time')
+		response_time = line.get('response-time', -1)
 		if response_time:
 			response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
 			if line['response-time'][-2:] == 'ms':
