@@ -2155,7 +2155,7 @@ def http_crawl(
 		page_title = line.get('title')
 		webserver = line.get('webserver')
 		cdn = line.get('cdn', False)
-		response_time = line.get('response_time', -1)
+		response_time = line.get('response_time')
 		if response_time:
 			response_time = float(''.join(ch for ch in response_time if not ch.isalpha()))
 			if response_time[-2:] == 'ms':
@@ -2178,7 +2178,10 @@ def http_crawl(
 		endpoint.webserver = webserver
 		endpoint.response_time = response_time
 		endpoint.save()
-		response_time_ms = int(response_time * 1000)
+		if response_time:
+			response_time_ms = int(response_time * 1000)
+		else:
+			response_time_ms = -1
 		endpoint_str = f'{http_url} `{http_status}` `{content_length}B` `{webserver}` `{response_time_ms}ms`'
 		logger.info(endpoint_str)
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
