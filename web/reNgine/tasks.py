@@ -2149,16 +2149,16 @@ def http_crawl(
 		if error:
 			logger.info(f'{host} - {error}')
 			continue
-		content_length = line.get('content-length')
-		http_status = line.get('status-code')
+		content_length = line.get('content_length')
+		http_status = line.get('status_code')
 		http_url, is_redirect = extract_httpx_url(line)
 		page_title = line.get('title')
 		webserver = line.get('webserver')
 		cdn = line.get('cdn', False)
-		response_time = line.get('response-time', -1)
+		response_time = line.get('response_time', -1)
 		if response_time:
-			response_time = float(''.join(ch for ch in line['response-time'] if not ch.isalpha()))
-			if line['response-time'][-2:] == 'ms':
+			response_time = float(''.join(ch for ch in line['response_time'] if not ch.isalpha()))
+			if line['response_time'][-2:] == 'ms':
 				response_time = response_time / 1000
 
 		# Create Subdomain object in DB
