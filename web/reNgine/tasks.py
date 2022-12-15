@@ -2114,7 +2114,7 @@ def http_crawl(
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json'
-	cmd += f' -u {urls[0]}' if len(urls) == 1 else f'-l {input_file}'
+	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_file}'
 	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
