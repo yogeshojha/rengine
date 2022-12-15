@@ -93,7 +93,7 @@ class RengineTask(Task):
 		if RENGINE_RECORD_ENABLED:
 			if self.engine: # task not in engine.tasks, skip it.
 				if self.track and self.task_name not in self.engine.tasks:
-					logger.info(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')
+					logger.debug(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')
 					return
 
 			# Create ScanActivity for this task and send start scan notifs
