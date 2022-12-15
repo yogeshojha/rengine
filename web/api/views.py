@@ -785,8 +785,8 @@ class GetExternalToolCurrentVersion(APIView):
 			return Response({'status': False, 'message': 'Version Lookup command not provided.'})
 
 		version_number = None
-		_, stdout, stderr = run_command(tool.version_lookup_command)
-		version_number = re.search(re.compile(tool.version_match_regex), str(stdout + stderr))
+		_, stdout = run_command(tool.version_lookup_command, echo=True)
+		version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
 		if not version_number:
 			return Response({'status': False, 'message': 'Invalid version lookup command.'})
 
