@@ -16,8 +16,8 @@ from startScan.models import *
 
 logger = get_task_logger(__name__)
 DOMAIN_NAME = os.environ['DOMAIN_NAME']
-if not DEBUG:
-    logging.disable(logging.CRITICAL)
+# if not DEBUG:
+#     logging.disable(logging.CRITICAL)
 
 
 class TestOnlineScan(unittest.TestCase):
@@ -70,13 +70,14 @@ class TestOnlineScan(unittest.TestCase):
     def test_http_crawl(self):
         results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
         self.assertGreater(len(results), 0)
-        self.assertIn('final-url', results[0])
-        url = results[0]['final-url']
+        self.assertIn('final_url', results[0])
+        url = results[0]['final_url']
         if DEBUG:
             print(url)
 
     def test_subdomain_discovery(self):
-        subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
+        domain = DOMAIN_NAME.lstrip('rengine.')
+        subdomains = subdomain_discovery(domain, ctx=self.ctx)
         if DEBUG:
             print(json.dumps(subdomains, indent=4))
         self.assertTrue(subdomains is not None)
