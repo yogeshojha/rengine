@@ -17,12 +17,11 @@ from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
-from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.utils import timezone
 from dotted_dict import DottedDict
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
-                                   get_emails_from_google)
+								   get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
 from pycvesearch import CVESearch
 from reNgine.celery import app
@@ -31,7 +30,7 @@ from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification,
-                               Proxy)
+							   Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
@@ -91,38 +90,33 @@ def initiate_scan(
 	# Get path filter
 	url_filter = url_filter.rstrip('/')
 
-	# Create results directory
-	timestr = datetime.strftime(timezone.now(), '%Y_%m_%d_%H_%M_%S')
-	scan_dirname = f'{domain.name}_{timestr}'
-	results_dir = f'{results_dir}/{scan_dirname}'
-	os.makedirs(results_dir)
-
 	# Get or create ScanHistory() object
 	if scan_type == LIVE_SCAN: # immediate
 		scan = ScanHistory.objects.get(pk=scan_history_id)
 		scan.scan_status = RUNNING_TASK
-		status = 'RUNNING'
 	elif scan_type == SCHEDULED_SCAN: # scheduled
 		scan = ScanHistory()
 		scan.scan_status = INITIATED_TASK
-		status = 'INITIATED'
 	scan.scan_type = engine
 	scan.celery_ids = [initiate_scan.request.id]
 	scan.domain = domain
 	scan.start_scan_date = timezone.now()
 	scan.tasks = engine.tasks
-	scan.results_dir = scan_dirname
+	scan.results_dir = f'{results_dir}/{domain.name}_{scan.id}'
 	add_gf_patterns = gf_patterns and 'fetch_url' in engine.tasks
 	if add_gf_patterns:
 		scan.used_gf_patterns = ','.join(gf_patterns)
 	scan.save()
+
+	# Create scan results dir
+	os.makedirs(scan.results_dir)
 
 	# Build task context
 	ctx = {
 		'scan_history_id': scan_history_id,
 		'engine_id': engine_id,
 		'domain_id': domain.id,
-		'results_dir': results_dir,
+		'results_dir': scan.results_dir,
 		'url_filter': url_filter,
 		'yaml_configuration': config,
 		'out_of_scope_subdomains': out_of_scope_subdomains
@@ -135,7 +129,7 @@ def initiate_scan(
 		scan_history_id,
 		subscan_id=None,
 		engine_id=engine_id,
-		status=status)
+		status=CELERY_TASK_STATUS_MAP[scan.scan_status])
 
 	# Save imported subdomains in DB
 	save_imported_subdomains(imported_subdomains, ctx=ctx)
@@ -249,7 +243,7 @@ def initiate_subscan(
 	config = yaml.safe_load(engine.yaml_configuration)
 
 	# Create results directory
-	results_dir = f'{results_dir}/{scan.results_dir}/subscans/{subscan.id}'
+	results_dir = f'{scan.results_dir}/subscans/{subscan.id}'
 	os.makedirs(results_dir, exist_ok=True)
 
 	# Run task
@@ -424,9 +418,6 @@ def subdomain_discovery(
 				cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
 				cmd += f' -brute -w {wordlist_path}'
 
-			elif tool == 'assetfinder':
-				cmd = f'assetfinder --subs-only {host} > {self.results_dir}/subdomains_assetfinder.txt'
-
 			elif tool == 'sublist3r':
 				cmd = f'python3 /usr/src/github/Sublist3r/sublist3r.py -d {host} -t {threads} -o {self.results_dir}/subdomains_sublister.txt'
 
@@ -478,10 +469,12 @@ def subdomain_discovery(
 	run_command(
 		f'cat {self.results_dir}/subdomains_*.txt > {self.output_path}',
 		shell=True,
+		echo=DEBUG,
 		history_file=self.history_file)
 	run_command(
 		f'sort -u {self.output_path} -o {self.output_path}',
 		shell=True,
+		echo=DEBUG,
 		history_file=self.history_file)
 
 	with open(self.output_path) as f:
@@ -564,7 +557,7 @@ def osint(self, host=None, ctx={}, description=None):
 	Returns:
 		dict: Results from osint discovery and dorking.
 	"""
-	config = self.yaml_configuration.get(OSINT) or {}
+	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
 	results = {}
 
 	if 'discover' in config:
@@ -591,11 +584,10 @@ def osint_discovery(self, host=None, ctx={}):
 	Returns:
 		dict: osint metadat and theHarvester and h8mail results.
 	"""
-	cfg = self.yaml_configuration
-	osint_config = cfg.get(OSINT) or {}
-	osint_lookup = osint_config.get(OSINT_DISCOVER, OSINT_DEFAULT_LOOKUPS)
-	osint_intensity = osint_config.get(INTENSITY, 'normal')
-	documents_limit = osint_config.get(OSINT_DOCUMENTS_LIMIT, 50)
+	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
+	osint_lookup = config.get(OSINT_DISCOVER, [])
+	osint_intensity = config.get(INTENSITY, 'normal')
+	documents_limit = config.get(OSINT_DOCUMENTS_LIMIT, 50)
 	results = {}
 	meta_info = []
 	emails = []
@@ -611,7 +603,7 @@ def osint_discovery(self, host=None, ctx={}):
 				'scan_id': self.scan_id,
 				'documents_limit': documents_limit
 			})
-			meta_info = save_metadata_info(meta_dict)
+			meta_info.append(save_metadata_info(meta_dict))
 		elif osint_intensity == 'deep':
 			subdomains = Subdomain.objects
 			if self.scan:
@@ -623,7 +615,7 @@ def osint_discovery(self, host=None, ctx={}):
 					'scan_id': self.scan_id,
 					'documents_limit': documents_limit
 				})
-				meta_info = save_metadata_info(meta_dict)
+				meta_info.append(save_metadata_info(meta_dict))
 
 	if 'emails' in osint_lookup:
 		emails = get_and_save_emails(self.scan, self.results_dir)
@@ -657,8 +649,8 @@ def dorking(self, host=None, ctx={}):
 		list: Dorking results for each dork ran.
 	"""
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
-	config = self.yaml_configuration.get(OSINT) or {}
-	dorks = config.get(OSINT_DORK, DORKS_DEFAULT_NAMES)
+	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
+	dorks = config.get(OSINT_DORK, [])
 	results = []
 	for dork in dorks:
 		if dork == 'stackoverflow':
@@ -1022,7 +1014,11 @@ def theHarvester(self, host=None, ctx={}):
 		http_url = split[0]
 		subdomain_name = get_subdomain_from_url(http_url)
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
-		endpoint, _ = save_endpoint(http_url, crawl=False, ctx=ctx, subdomain=subdomain)
+		endpoint, _ = save_endpoint(
+			http_url,
+			crawl=False,
+			ctx=ctx,
+			subdomain=subdomain)
 		if endpoint:
 			urls.append(endpoint.http_url)
 			self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
@@ -1080,7 +1076,7 @@ def h8mail(self, input_path=None, ctx={}):
 		logger.warning(cred)
 		email_address = cred['target']
 		pwn_num = cred['pwn_num']
-		pwn_data = cred.get('pwn_data', {})
+		pwn_data = cred.get('data', [])
 		email, created = save_email(email_address, scan_history=scan)
 		if email:
 			self.notify(fields={'Emails': f'• `{email.address}`'})
@@ -1123,7 +1119,7 @@ def screenshot(self, ctx={}, description=None):
 	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_endpoints_file} -d {screenshots_path} --no-prompt'
 	cmd += f' --timeout {timeout}' if timeout > 0 else ''
 	cmd += f' --threads {threads}' if threads > 0 else ''
-	run_command(cmd, shell=False, echo=False, history_file=self.history_file)
+	run_command(cmd, shell=False, echo=DEBUG, history_file=self.history_file)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not load EyeWitness results at {output_path} for {self.domain.name}.')
 		return
@@ -1150,12 +1146,12 @@ def screenshot(self, ctx={}, description=None):
 	run_command(
 		'rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path),
 		shell=True,
-		echo=False,
+		echo=DEBUG,
 		history_file=self.history_file)
 	run_command(
 		f'rm -rf {screenshots_path}/source',
 		shell=True,
-		echo=False,
+		echo=DEBUG,
 		history_file=self.history_file)
 
 	# Send finish notifs
@@ -1275,7 +1271,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		description = ''
 		if endpoint and endpoint.is_alive:
 			service_name = urlparse(http_url).scheme
-			description = endpoint.page_title
+			description = endpoint.webserver or endpoint.page_title
 		elif len(port_details) > 0:
 			service_name = port_details[0].name
 			description = port_details[0].description
@@ -1361,10 +1357,10 @@ def nmap(
 	"""
 	notif = Notification.objects.first()
 	ports_str = ','.join(str(port) for port in ports)
-	filename_xml = self.filename.replace('.json', '.xml')
-	filename_vulns = self.filename.replace('.json', '_vulns.json')
+	self.filename = self.filename.replace('.json', '.xml')
+	filename_vulns = self.filename.replace('.xml', '_vulns.json')
 	output_file = self.output_path
-	output_file_xml = f'{self.results_dir}/{filename_xml}'
+	output_file_xml = f'{self.results_dir}/{self.filename}'
 	vulns_file = f'{self.results_dir}/{filename_vulns}'
 	logger.warning(f'Running nmap on {host}:{ports}')
 
@@ -1410,7 +1406,7 @@ def nmap(
 			**vuln_data)
 		vulns_str += f'• {str(vuln)}\n'
 		if created:
-			logger.warning(f'Found new vulnerability: {str(vuln)}')
+			logger.warning(str(vuln))
 
 	# Send only 1 notif for all vulns to reduce number of notifs
 	if notif and notif.send_vuln_notif and vulns_str:
@@ -1688,7 +1684,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		for tool, cmd in cmd_map.items()
 	}
 	tasks = group(
-		run_command.si(cmd, shell=True)
+		run_command.si(cmd, echo=DEBUG, shell=True)
 		for tool, cmd in cmd_map.items()
 		if tool in tools
 	)
@@ -1706,7 +1702,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			f'mv {self.results_dir}/urls_filtered.txt {self.output_path}'
 		]
 		sort_output.extend(grep_ext_filtered_output)
-	cleanup = chain(run_command.si(cmd, shell=True) for cmd in sort_output)
+	cleanup = chain(run_command.si(cmd, echo=DEBUG, shell=True) for cmd in sort_output)
 	
 	# Run all commands
 	task = chord(tasks)(cleanup)
@@ -1780,7 +1776,11 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		logger.warning(f'Running gf on pattern "{gf_pattern}"')
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
 		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} >> {gf_output_file}'
-		run_command(cmd, shell=True, echo=DEBUG, history_file=self.history_file)
+		run_command(
+	  		cmd,
+			shell=True,
+		 	echo=DEBUG,
+		  	history_file=self.history_file)
 
 		# Check output file
 		if not os.path.exists(gf_output_file):
@@ -1891,10 +1891,13 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
-	# run_command('nuclei -update-templates', shell=True, history_file=history_file)
+	run_command(
+		'nuclei -update-templates',
+		echo=DEBUG,
+		shell=True,
+		history_file=self.history_file)
 	templates = []
 	if not (nuclei_templates or custom_nuclei_templates):
-		logger.info(f'Using default nuclei templates {NUCLEI_DEFAULT_TEMPLATES_PATH}.')
 		templates.append(NUCLEI_DEFAULT_TEMPLATES_PATH)
 
 	if nuclei_templates:
@@ -1933,25 +1936,11 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		results.append(line)
 
 		# Gather nuclei results
-		template = line['template']
-		url = line['host']
-		http_url = sanitize_url(line.get('matched-at'))
-		vuln_name = line['info'].get('name', '')
-		vuln_type = line['type']
-		vuln_severity = line['info'].get('severity', 'unknown')
-		vuln_severity_id = NUCLEI_SEVERITY_MAP[vuln_severity]
-		vuln_cvss_metrics = line['info'].get('classification', {}).get('cvss-metrics', '')
-		vuln_cvss_score = line['info'].get('classification', {}).get('cvss-score')
-		template_id = line['template-id']
-		template_url = line['template-url']
-		description = line['info'].get('description', '')
-		matcher_name = line.get('matcher-name', '')
-		curl_command = line.get('curl-command')
-		extracted_results = line.get('extracted-results', [])
-		response = line.get('response')
+		vuln_data = parse_nuclei_result(line)
 
 		# Get corresponding subdomain
-		subdomain_name = get_subdomain_from_url(url)
+		http_url = sanitize_url(line.get('matched-at'))
+		subdomain_name = get_subdomain_from_url(http_url)
 
 		# TODO: this should be get only
 		subdomain, _ = Subdomain.objects.get_or_create(
@@ -1960,6 +1949,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			target_domain=self.domain)
 
 		# Get or create EndPoint object
+		response = line.get('response')
 		httpx_crawl = False if response else enable_http_crawl # avoid yet another httpx crawl
 		endpoint, _ = save_endpoint(
 			http_url,
@@ -1975,29 +1965,17 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 		# Get or create Vulnerability object
 		vuln, _ = save_vulnerability(
-			name=vuln_name,
-			type=vuln_type,
 			target_domain=self.domain,
-			subdomain=subdomain,
-			endpoint=endpoint,
-			severity=vuln_severity_id,
-			template=template,
-			template_url=template_url,
-			template_id=template_id,
-			description=description,
-			matcher_name=matcher_name,
-			curl_command=curl_command,
-			extracted_results=extracted_results,
-			cvss_metrics=vuln_cvss_metrics,
-			cvss_score=vuln_cvss_score,
 			http_url=http_url,
 			scan_history=self.scan,
-			subscan=self.subscan)
+			subscan=self.subscan,
+			**vuln_data)
 		if not vuln:
 			continue
 
 		# Print vuln
-		logger.warning(f'Found new {vuln_severity.upper()} vulnerability:\n\t{str(vuln)}')
+		severity = line['info'].get('severity', 'unknown')
+		logger.warning(str(vuln))
 
 		# Send notification for all vulnerabilities except info
 		url = vuln.http_url or vuln.subdomain
@@ -2005,10 +1983,10 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			notif and
 			notif.send_vuln_notif and
 			vuln and
-			vuln_severity in ['low', 'medium', 'high', 'critical'])
+			severity in ['low', 'medium', 'high', 'critical'])
 		if send_vuln:
 			fields = {
-				'Severity': f'**{vuln_severity.upper()}**',
+				'Severity': f'**{severity.upper()}**',
 				'URL': http_url,
 				'Subdomain': subdomain_name,
 				'Name': vuln.name,
@@ -2026,10 +2004,9 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 				'high': 'error',
 				'critical': 'error'
 			}
-			severity = severity_map[vuln_severity]
 			self.notify(
 				f'vulnerability_scan_#{vuln.id}',
-				severity,
+				severity_map[severity],
 				fields,
 				add_meta_info=False)
 
@@ -2037,16 +2014,16 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		hackerone_query = Hackerone.objects.all()
 		send_report = (
 			hackerone_query.exists() and
-			vuln_severity not in ('info', 'low') and
+			severity not in ('info', 'low') and
 			vuln.target_domain.h1_team_handle
 		)
 		if send_report:
 			hackerone = hackerone_query.first()
-			if hackerone.send_critical and vuln_severity == 'critical':
+			if hackerone.send_critical and severity == 'critical':
 				send_hackerone_report.delay(vuln.id)
-			elif hackerone.send_high and vuln_severity == 'high':
+			elif hackerone.send_high and severity == 'high':
 				send_hackerone_report.delay(vuln.id)
-			elif hackerone.send_medium and vuln_severity == 'medium':
+			elif hackerone.send_medium and severity == 'medium':
 				send_hackerone_report.delay(vuln.id)
 
 	# Write results to JSON file
@@ -2132,33 +2109,39 @@ def http_crawl(
 	proxy = get_random_proxy()
 
 	# Run command
-	cmd += f' -cl -ct -location -td -websocket -cname -asn -cdn -probe -random-agent'
+	cmd += f' -cl -ct -rt -location -td -websocket -cname -asn -cdn -probe -random-agent'
 	cmd += f' -t {threads}' if threads > 0 else ''
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
-	cmd += f' -json -l {input_file}'
+	cmd += f' -json'
+	cmd += f' -u {urls[0]}' if len(urls) == 1 else f'-l {input_file}'
 	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
 	for line in stream_command(cmd, echo=DEBUG, history_file=history_file):
 		if not line or not isinstance(line, dict):
 			continue
-		logger.warning(line)
-		error = line.get('error')
-		host = line.get('host', '')
-		if error:
-			logger.info(f'{host} - {error}')
+
+		logger.debug(line)
+
+		# No response from endpoint
+		if line.get('failed', False):
 			continue
-		content_length = line.get('content_length')
+
+		# Parse httpx output
+		host = line.get('host', '')
+		content_length = line.get('content_length', 0)
 		http_status = line.get('status_code')
 		http_url, is_redirect = extract_httpx_url(line)
 		page_title = line.get('title')
 		webserver = line.get('webserver')
 		cdn = line.get('cdn', False)
-		response_time = line.get('response_time')
-		if response_time:
-			response_time = float(''.join(ch for ch in response_time if not ch.isalpha()))
-			if response_time[-2:] == 'ms':
+		rt = line.get('time')
+		techs = line.get('tech', [])
+		response_time = -1
+		if rt:
+			response_time = float(''.join(ch for ch in rt if not ch.isalpha()))
+			if rt[-2:] == 'ms':
 				response_time = response_time / 1000
 
 		# Create Subdomain object in DB
@@ -2178,34 +2161,30 @@ def http_crawl(
 		endpoint.webserver = webserver
 		endpoint.response_time = response_time
 		endpoint.save()
-		if response_time:
-			response_time_ms = int(response_time * 1000)
-		else:
-			response_time_ms = -1
-		endpoint_str = f'{http_url} `{http_status}` `{content_length}B` `{webserver}` `{response_time_ms}ms`'
+		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
 		logger.info(endpoint_str)
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
-			logger.warning(f'Found new alive endpoint {endpoint.http_url} [{endpoint.http_status}]')
 			self.notify(
 				fields={'Alive endpoint': f'• {endpoint_str}'},
 				add_meta_info=False)
 
 		# Add endpoint to results
 		line['final_url'] = http_url
-		line['endpoint-id'] = endpoint.id
-		line['endpoint-created'] = created
+		line['endpoint_id'] = endpoint.id
+		line['endpoint_created'] = created
 		line['is_redirect'] = is_redirect
 		results.append(line)
 
 		# Add technology objects to DB
-		technologies = line.get('technologies', [])
-		for technology in technologies:
+		for technology in techs:
 			tech, _ = Technology.objects.get_or_create(name=technology)
+			# TODO: Add tech version check and vulnerability check here
+			# Add tech version in technology model
 			subdomain.technologies.add(tech)
 			endpoint.technologies.add(tech)
 			subdomain.save()
 			endpoint.save()
-		techs_str = ', '.join([f'`{tech}`' for tech in technologies])
+		techs_str = ', '.join([f'`{tech}`' for tech in techs])
 		self.notify(
 			fields={'Technologies': techs_str},
 			add_meta_info=False)
@@ -2254,7 +2233,7 @@ def http_crawl(
 	run_command(
 		f'rm {input_file}',
 		shell=True,
-		echo=False,
+		echo=DEBUG,
 		history_file=self.history_file)
 
 	return results
@@ -2535,12 +2514,12 @@ def parse_nmap_results(xml_file, output_file=None):
 		with open(output_file, 'w') as f:
 			json.dump(nmap_results, f, indent=4)
 	logger.warning(json.dumps(nmap_results, indent=4))
-	vulns = []
 	hosts = (
 		nmap_results
 		.get('nmaprun', {})
 		.get('host', {})
 	)
+	all_vulns = []
 	if isinstance(hosts, dict):
 		hosts = [hosts]
 
@@ -2559,7 +2538,9 @@ def parse_nmap_results(xml_file, output_file=None):
 			ports = [ports]
 
 		for port in ports:
+			url_vulns = []
 			port_number = port['@portid']
+			url = sanitize_url(f'{hostname}:{port_number}')
 			logger.info(f'Parsing nmap results for {hostname}:{port_number} ...')
 			if not port_number or not port_number.isdigit():
 				continue
@@ -2571,70 +2552,212 @@ def parse_nmap_results(xml_file, output_file=None):
 			for script in scripts:
 				script_id = script['@id']
 				script_output = script['@output']
+				script_output_table = script.get('table', [])
 				logger.debug(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
+				if script_id == 'vulscan':
+					vulns = parse_nmap_vulscan_output(script_output)
+					url_vulns.extend(vulns)
+				elif script_id == 'vulners':
+					vulns = parse_nmap_vulners_output(script_output)
+					url_vulns.extend(vulns)
+				# elif script_id == 'http-server-header':
+				# 	TODO: nmap can help find technologies as well using the http-server-header script
+				# 	regex = r'(\w+)/([\d.]+)\s?(?:\((\w+)\))?'
+				# 	tech_name, tech_version, tech_os = re.match(regex, test_string).groups()
+				# 	Technology.objects.get_or_create(...)
+				# elif script_id == 'http_csrf':
+				# 	vulns = parse_nmap_http_csrf_output(script_output)
+				# 	url_vulns.extend(vulns)
+				else:
+					logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
 
-				# Check for CVE in script output
-				CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
-				matches = CVE_REGEX.findall(script_output)
-				matches = list(dict.fromkeys(matches))
-				for cve_id in matches: # get CVE info
-					cve_info = CVESearch('https://cve.circl.lu').id(cve_id)
-					if not cve_info:
-						logger.error(f'Could not fetch CVE info for cve {cve_id}. Skipping.')
-						continue
-					vuln_cve_id = cve_info['id']
-					vuln_description = cve_info.get('summary', 'none').replace(vuln_cve_id, '').strip()
-					vuln_name = f'nmap-{script_id}'
-					try:
-						vuln_cvss = float(cve_info.get('cvss', -1))
-					except (ValueError, TypeError):
-						vuln_cvss = -1
-					vuln_type = 'unknown'
-					vuln_cwe_id = cve_info.get('cwe', '')
-					exploit_ids = cve_info.get('refmap', {}).get('exploit-db', [])
-					osvdb_ids = cve_info.get('refmap', {}).get('osvdb', [])
-					references = cve_info.get('references', [])
-					capec_objects = cve_info.get('capec', [])
+			# Add URL to vuln
+			for vuln in url_vulns:
+				# TODO: This should extend to any URL, not just HTTP
+				vuln['http_url'] = url
+				if 'http_path' in vuln:
+					vuln['http_url'] += vuln['http_path']
+				all_vulns.append(vuln)
 
-					# Parse ovals for a better vuln name / type
-					ovals = cve_info.get('oval', [])
-					if ovals:
-						vuln_name = ovals[0]['title']
-						vuln_type = ovals[0]['family']
+	return all_vulns
 
-					# Set vulnerability severity based on CVSS score
-					vuln_severity = 'info'
-					if vuln_cvss < 4:
-						vuln_severity = 'low'
-					elif vuln_cvss < 7:
-						vuln_severity = 'medium'
-					elif vuln_cvss < 9:
-						vuln_severity = 'high'
-					else:
-						vuln_severity = 'critical'
 
-					# Build console warning message
-					msg = f'{vuln_name} | {vuln_severity.upper()} | {vuln_cve_id} | {vuln_cwe_id} | {vuln_cvss}'
-					for id in osvdb_ids:
-						msg += f'\n\tOSVDB: {id}'
-					for exploit_id in exploit_ids:
-						msg += f'\n\tEXPLOITDB: {exploit_id}'
-					logger.warning(msg)
+def parse_nmap_http_csrf_output(script_output):
+	pass
 
-					http_url = f'{hostname}:{port_number}'
-					vuln = {
-						'name': vuln_name,
-						'type': vuln_type,
-						'severity': NUCLEI_SEVERITY_MAP[vuln_severity],
-						'description': vuln_description,
-						'cvss_score': vuln_cvss,
-						'references': references,
-						'http_url': http_url,
-						'cve_ids': [vuln_cve_id],
-						'cwe_ids': [vuln_cwe_id]
-					}
-					vulns.append(vuln)
+
+def parse_nmap_vulscan_output(script_output):
+	"""Parse nmap vulscan script output.
+
+	Args:
+		script_output (str): Vulscan script output.
+
+	Returns:
+		list: List of Vulnerability dicts.
+	"""
+	data = {}
+	vulns = []
+	provider_name = ''
+
+	# Sort all vulns found by provider so that we can match each provider with
+	# a function that pulls from its API to get more info about the 
+	# vulnerability.
+	for line in script_output.splitlines():
+		if not line:
+			continue
+		if not line.startswith('['): # provider line
+			provider_name, provider_url = tuple(line.split(' - '))
+			data[provider_name] = {'url': provider_url.rstrip(':'), 'entries': []}
+			continue
+		reg = r'\[(.*)\] (.*)'
+		matches = re.match(reg, line)
+		id, title = matches.groups()
+		entry = {'id': id, 'title': title}
+		data[provider_name]['entries'].append(entry)
+
+	logger.warning('Vulscan parsed output:')
+	logger.warning(pprint.pformat(data))
+
+	for provider_name in data:
+		if provider == 'Exploit-DB':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		elif provider == 'IBM X-Force':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		elif provider == 'MITRE CVE':
+			logger.error(f'Provider {provider} is not supported YET.')
+			for entry in data[provider_name]['entries']:
+				cve_id = entry['id']
+				vuln = cve_to_vuln(cve_id)
+				vulns.append(vuln)
+		elif provider == 'OSVDB':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		elif provider == 'OpenVAS (Nessus)':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		elif provider == 'SecurityFocus':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		elif provider == 'VulDB':
+			logger.error(f'Provider {provider} is not supported YET.')
+			pass
+		else:
+			logger.error(f'Provider {provider} is not supported.')
 	return vulns
+
+
+def parse_nmap_vulners_output(script_output, url=''):
+	"""Parse nmap vulners script output.
+
+	TODO: Rework this as it's currently matching all CVEs no matter the
+	confidence.
+
+	Args:
+		script_output (str): Script output.
+
+	Returns:
+		list: List of found vulnerabilities.
+	"""
+	vulns = []
+	# Check for CVE in script output
+	CVE_REGEX = re.compile(r'.*(CVE-\d\d\d\d-\d+).*')
+	matches = CVE_REGEX.findall(script_output)
+	matches = list(dict.fromkeys(matches))
+	for cve_id in matches: # get CVE info
+		vuln = cve_to_vuln(cve_id, vuln_type='nmap-vulners-nse')
+		if vuln:
+			vulns.append(vuln)
+	return vulns
+
+
+def cve_to_vuln(cve_id, vuln_type=''):
+	"""Search for a CVE using CVESearch and return Vulnerability data.
+
+	Args:
+		cve_id (str): CVE ID in the form CVE-*
+
+	Returns:
+		dict: Vulnerability dict.
+	"""
+	cve_info = CVESearch('https://cve.circl.lu').id(cve_id)
+	if not cve_info:
+		logger.error(f'Could not fetch CVE info for cve {cve_id}. Skipping.')
+		return None
+	vuln_cve_id = cve_info['id']
+	vuln_name = vuln_cve_id
+	vuln_description = cve_info.get('summary', 'none').replace(vuln_cve_id, '').strip()
+	try:
+		vuln_cvss = float(cve_info.get('cvss', -1))
+	except (ValueError, TypeError):
+		vuln_cvss = -1
+	vuln_cwe_id = cve_info.get('cwe', '')
+	exploit_ids = cve_info.get('refmap', {}).get('exploit-db', [])
+	osvdb_ids = cve_info.get('refmap', {}).get('osvdb', [])
+	references = cve_info.get('references', [])
+	capec_objects = cve_info.get('capec', [])
+
+	# Parse ovals for a better vuln name / type
+	ovals = cve_info.get('oval', [])
+	if ovals:
+		vuln_name = ovals[0]['title']
+		vuln_type = ovals[0]['family']
+
+	# Set vulnerability severity based on CVSS score
+	vuln_severity = 'info'
+	if vuln_cvss < 4:
+		vuln_severity = 'low'
+	elif vuln_cvss < 7:
+		vuln_severity = 'medium'
+	elif vuln_cvss < 9:
+		vuln_severity = 'high'
+	else:
+		vuln_severity = 'critical'
+
+	# Build console warning message
+	msg = f'{vuln_name} | {vuln_severity.upper()} | {vuln_cve_id} | {vuln_cwe_id} | {vuln_cvss}'
+	for id in osvdb_ids:
+		msg += f'\n\tOSVDB: {id}'
+	for exploit_id in exploit_ids:
+		msg += f'\n\tEXPLOITDB: {exploit_id}'
+	logger.warning(msg)
+	vuln = {
+		'name': vuln_name,
+		'type': vuln_type,
+		'severity': NUCLEI_SEVERITY_MAP[vuln_severity],
+		'description': vuln_description,
+		'cvss_score': vuln_cvss,
+		'references': references,
+		'cve_ids': [vuln_cve_id],
+		'cwe_ids': [vuln_cwe_id]
+	}
+	return vuln
+
+
+def parse_nuclei_result(line):
+	"""Parse results from nuclei JSON output.
+
+	Args:
+		line (dict): Nuclei JSON line output.
+
+	Returns:
+		dict: Vulnerability data.
+	"""
+	return {
+		'name': line['info'].get('name', ''),
+		'type': line['type'],
+		'severity': NUCLEI_SEVERITY_MAP[line['info'].get('severity', 'unknown')],
+		'template': line['template'],
+		'template_url': line['template-url'],
+		'template_id': line['template-id'],
+		'description': line['info'].get('description', ''),
+		'matcher_name': line.get('matcher-name', ''),
+		'curl_command': line.get('curl-command'),
+		'extracted_results': line.get('extracted-results', []),
+		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
+		'cvss_score': line['info'].get('classification', {}).get('cvss-score')
+	}
 
 
 @app.task
@@ -2652,7 +2775,7 @@ def geo_localize(host, ip_id=None):
 		logger.info(f'Ipv6 "{host}" is not supported by geoiplookup. Skipping.')
 		return None
 	cmd = f'geoiplookup {host}'
-	_, out, err = run_command(cmd, echo=False)
+	_, out = run_command(cmd, echo=DEBUG)
 	if 'IP Address not found' not in out and "can't resolve hostname" not in out:
 		country_iso = out.split(':')[1].strip().split(',')[0]
 		country_name = out.split(':')[1].strip().split(',')[1].strip()
@@ -2976,14 +3099,14 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		history_file (str): Write command + output to history file.
 
 	Returns:
-		tuple: Tuple with return_code, stdout, stderr.
+		tuple: Tuple with return_code, output.
 	"""
 	logger.info(cmd)
 	popen = subprocess.Popen(
 		cmd if shell else cmd.split(),
 		shell=shell,
 		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
 		cwd=cwd,
 		universal_newlines=True)
 	out = ''
@@ -2992,25 +3115,18 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		out += '\n' + item
 		if echo:
 			logger.info(item)
-	err = ''
-	for stderr_line in iter(popen.stderr.readline, ""):
-		item = stderr_line.strip()
-		err += '\n' + item
-		if echo:
-			logger.info(item)
 	return_code = popen.returncode
 	popen.stdout.close()
-	popen.stderr.close()
 	popen.wait()
 	if history_file:
 		mode = 'a'
 		if not os.path.exists(history_file):
 			mode = 'w'
 		with open(history_file, mode) as f:
-			f.write(f'\n{cmd}\n{return_code}\n{out}\n{err}\n\n')
+			f.write(f'\n{cmd}\n{return_code}\n{out}\n------------------\n')
 	if echo:
-		logger.info(out + err)
-	return return_code, out, err
+		logger.info(out)
+	return return_code, out
 
 
 #-------------#
@@ -3036,11 +3152,13 @@ def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		cmd if shell else cmd.split(),
 		shell=shell,
 		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
 		cwd=cwd,
 		universal_newlines=True)
+	out = ''
 	for stdout_line in iter(popen.stdout.readline, ""):
 		item = stdout_line.strip()
+		out += item + '\n'
 		if item.startswith(('{', '[')) and item.endswith(('}', ']')):
 			try:
 				item = json.loads(item)
@@ -3055,15 +3173,18 @@ def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		yield item
 
 	popen.stdout.close()
-	popen.stderr.close()
 	popen.wait()
+
+	if popen.returncode != 0:
+		logger.error(out)
+		logger.error(f'Command "{cmd}" failed with status {popen.returncode}.')
 
 	if history_file:
 		mode = 'a'
 		if not os.path.exists(history_file):
 			mode = 'w'
 		with open(history_file, mode) as f:
-			f.write(f'\n{cmd}\n{popen.returncode}\n[STREAMED OUTPUT]\n\n')
+			f.write(f'\n{cmd}\n{popen.returncode}\n{out}\n------------------\n')
 
 
 def process_httpx_response(line):
@@ -3214,7 +3335,7 @@ def save_metadata_info(meta_dict):
 		subdomain = Subdomain.objects.get(
 			scan_history=meta_dict.scan_id,
 			name=meta_dict.osint_target)
-		metadata = DottedDict({k: v.rstrip('\x00') for k, v in data.items()})
+		metadata = DottedDict({k: v for k, v in data.items()})
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
@@ -3260,53 +3381,46 @@ def save_vulnerability(**vuln_data):
 	tags = vuln_data.pop('tags', [])
 	subscan = vuln_data.pop('subscan', None)
 
-	try:
-		with transaction.atomic():
+	# Create vulnerability
+	vuln, created = Vulnerability.objects.get_or_create(**vuln_data)
+	if created:
+		vuln.discovered_date = timezone.now()
+		vuln.open_status = True
+		vuln.save()
 
-			# Create vulnerability
-			vuln, created = Vulnerability.objects.get_or_create(**vuln_data)
-			if created:
-				vuln.discovered_date = timezone.now()
-				vuln.open_status = True
-				vuln.save()
+	# Save vuln tags
+	for tag_name in tags:
+		tag, created = VulnerabilityTags.objects.get_or_create(name=tag_name)
+		if tag:
+			vuln.tags.add(tag)
+			vuln.save()
 
-			# Save vuln tags
-			for tag_name in tags:
-				tag, created = VulnerabilityTags.objects.get_or_create(name=tag_name)
-				if tag:
-					vuln.tags.add(tag)
-					vuln.save()
+	# Save CVEs
+	for cve_id in cve_ids:
+		cve, created = CveId.objects.get_or_create(name=cve_id)
+		if cve:
+			vuln.cve_ids.add(cve)
+			vuln.save()
 
-			# Save CVEs
-			for cve_id in cve_ids:
-				cve, created = CveId.objects.get_or_create(name=cve_id)
-				if cve:
-					vuln.cve_ids.add(cve)
-					vuln.save()
+	# Save CWEs
+	for cve_id in cwe_ids:
+		cwe, created = CweId.objects.get_or_create(name=cve_id)
+		if cwe:
+			vuln.cwe_ids.add(cwe)
+			vuln.save()
 
-			# Save CWEs
-			for cve_id in cwe_ids:
-				cwe, created = CweId.objects.get_or_create(name=cve_id)
-				if cwe:
-					vuln.cwe_ids.add(cwe)
-					vuln.save()
+	# Save vuln reference
+	for url in references:
+		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+		if created:
+			vuln.references.add(ref)
+			vuln.save()
 
-			# Save vuln reference
-			for url in references:
-				ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-				if created:
-					vuln.references.add(ref)
-					vuln.save()
-
-			# Save subscan id in vuln object
-			if subscan:
-				vuln.vuln_subscan_ids.add(subscan)
-				vuln.save()
+	# Save subscan id in vuln object
+	if subscan:
+		vuln.vuln_subscan_ids.add(subscan)
+		vuln.save()
 	
-	except IntegrityError:
-		logger.error('Could not save vulnerability to DB.')
-		return None, False
-
 	return vuln, created
 
 
@@ -3332,8 +3446,6 @@ def save_endpoint(
 		tuple: (startScan.models.EndPoint, created) where `created` is a boolean 
 			indicating if the object is new or already existed.
 	"""
-	# If run_http_crawl is set, probe URL to find meta info and return created
-	# endpoint.
 	scheme = urlparse(http_url).scheme
 	endpoint = None
 	created = False
@@ -3345,8 +3457,8 @@ def save_endpoint(
 			ctx=ctx)
 		if results:
 			endpoint_data = results[0]
-			endpoint_id = endpoint_data['endpoint-id']
-			created = endpoint_data['endpoint-created']
+			endpoint_id = endpoint_data['endpoint_id']
+			created = endpoint_data['endpoint_created']
 			endpoint = EndPoint.objects.get(pk=endpoint_id)
 	elif not scheme:
 		return None, False
@@ -3361,6 +3473,7 @@ def save_endpoint(
 			target_domain=domain,
 			http_url=http_url,
 			**endpoint_data)
+
 	if created:
 		endpoint.discovered_date = timezone.now()
 		endpoint.save()
@@ -3368,6 +3481,7 @@ def save_endpoint(
 		if subscan_id:
 			endpoint.endpoint_subscan_ids.add(subscan_id)
 			endpoint.save()
+
 	return endpoint, created
 
 
