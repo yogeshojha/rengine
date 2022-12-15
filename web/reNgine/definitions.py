@@ -133,6 +133,27 @@ NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
 
 # osint
 OSINT_DEFAULT_LOOKUPS = ['emails', 'metainfo', 'employees']
+OSINT_DEFAULT_DORKS = [
+    'stackoverflow',
+    '3rdparty',
+    'social_media',
+    'project_management',
+    'code_sharing',
+    'config_files',
+    'jenkins',
+    'wordpress_files',
+    'cloud_buckets',
+    'php_error',
+    'exposed_documents',
+    'struts_rce',
+    'db_files',
+    'traefik',
+    'git_exposed',
+]
+OSINT_DEFAULT_CONFIG = {
+    'discover': OSINT_DEFAULT_LOOKUPS,
+    'dork': OSINT_DEFAULT_DORKS
+}
 
 # subdomain scan
 SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder']
