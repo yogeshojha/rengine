@@ -67,57 +67,57 @@ class TestOnlineScan(unittest.TestCase):
         self.scan.delete()
         self.engine.delete()
 
-    def test_http_crawl(self):
-        results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
-        self.assertGreater(len(results), 0)
-        self.assertIn('final_url', results[0])
-        url = results[0]['final_url']
-        if DEBUG:
-            print(url)
+    # def test_http_crawl(self):
+    #     results = http_crawl([DOMAIN_NAME], ctx=self.ctx)
+    #     self.assertGreater(len(results), 0)
+    #     self.assertIn('final_url', results[0])
+    #     url = results[0]['final_url']
+    #     if DEBUG:
+    #         print(url)
 
-    def test_subdomain_discovery(self):
-        domain = DOMAIN_NAME.lstrip('rengine.')
-        subdomains = subdomain_discovery(domain, ctx=self.ctx)
-        if DEBUG:
-            print(json.dumps(subdomains, indent=4))
-        self.assertTrue(subdomains is not None)
-        self.assertGreater(len(subdomains), 0)
-
-    def test_fetch_url(self):
-        urls = fetch_url(urls=[self.url], ctx=self.ctx)
-        if DEBUG:
-            print(urls)
-        self.assertGreater(len(urls), 0)
-
-    # def test_dir_file_fuzz(self):
-    #     urls = dir_file_fuzz(ctx=self.ctx)
-    #     self.assertGreater(len(urls), 0)
-
-    def test_vulnerability_scan(self):
-        vulns = vulnerability_scan(urls=[self.url], ctx=self.ctx)
-        if DEBUG:
-            print(json.dumps(vulns, indent=4))
-        self.assertTrue(vulns is not None)
-
-    # def test_network_scan(self):
-    #     subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
+    # def test_subdomain_discovery(self):
+    #     domain = DOMAIN_NAME.lstrip('rengine.')
+    #     subdomains = subdomain_discovery(domain, ctx=self.ctx)
+    #     if DEBUG:
+    #         print(json.dumps(subdomains, indent=4))
+    #     self.assertTrue(subdomains is not None)
     #     self.assertGreater(len(subdomains), 0)
-    #     print([subdomain['name'] for subdomain in subdomains])
-    #     ports = port_scan(hosts=subdomains, ctx=self.ctx)
-    #     urls = []
-    #     for host, ports in ports.items():
-    #         print(f'Host {host} opened ports: {ports}')
-    #         self.assertGreater(len(ports), 0)
-    #         self.assertIn(80, ports)
-    #         self.assertIn(443, ports)
-    #         for port in ports:
-    #             if port in [80, 443]: # http
-    #                 results = http_crawl(urls=[f'{host}:{port}'])
-    #                 self.assertGreater(len(results), 0)
-    #                 final_url = results[0]['final-url']
-    #                 urls.append(final_url)
+
+    # def test_fetch_url(self):
+    #     urls = fetch_url(urls=[self.url], ctx=self.ctx)
+    #     if DEBUG:
+    #         print(urls)
     #     self.assertGreater(len(urls), 0)
-    #     vulns = vulnerability_scan(urls=urls, ctx=self.ctx)
+
+    # # def test_dir_file_fuzz(self):
+    # #     urls = dir_file_fuzz(ctx=self.ctx)
+    # #     self.assertGreater(len(urls), 0)
+
+    # def test_vulnerability_scan(self):
+    #     vulns = vulnerability_scan(urls=[self.url], ctx=self.ctx)
+    #     if DEBUG:
+    #         print(json.dumps(vulns, indent=4))
+    #     self.assertTrue(vulns is not None)
+
+    def test_network_scan(self):
+        subdomains = subdomain_discovery(DOMAIN_NAME, ctx=self.ctx)
+        self.assertGreater(len(subdomains), 0)
+        host = subdomains[0]['name']
+        ports = port_scan(hosts=[host], ctx=self.ctx)
+        urls = []
+        for host, ports in ports.items():
+            print(f'Host {host} opened ports: {ports}')
+            self.assertGreater(len(ports), 0)
+            self.assertIn(80, ports)
+            self.assertIn(443, ports)
+            for port in ports:
+                if port in [80, 443]: # http
+                    results = http_crawl(urls=[f'{host}:{port}'])
+                    self.assertGreater(len(results), 0)
+                    final_url = results[0]['final_url']
+                    urls.append(final_url)
+        self.assertGreater(len(urls), 0)
+        vulns = vulnerability_scan(urls=urls, ctx=self.ctx)
 
     # def test_initiate_scan(self):
     #     scan = ScanHistory()
