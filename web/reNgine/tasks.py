@@ -1198,7 +1198,10 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
 	exclude_ports_str = ','.join(exclude_ports)
 
-	if not hosts:
+	if hosts:
+		with open(input_file, 'w') as f:
+			f.write('\n'.join(hosts))
+	else:
 		hosts = get_subdomains(
 			write_filepath=input_file,
 			exclude_subdomains=exclude_subdomains,
@@ -1206,7 +1209,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 
 	# Build cmd
 	cmd = 'naabu -json -exclude-cdn'
-	cmd += f' -list {input_file}'
+	cmd += f' -list {input_file}' if len(hosts) > 0 else f' -host {hosts[0]}'
 	if 'full' in ports or 'all' in ports:
 		ports_str = ' -p "-"'
 	elif 'top-100' in ports:
