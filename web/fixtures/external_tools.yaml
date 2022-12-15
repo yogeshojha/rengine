@@ -47,7 +47,7 @@
       with increased threads.
     github_url: https://github.com/projectdiscovery/httpx
     license_url: https://github.com/projectdiscovery/httpx/blob/master/LICENSE.md
-    version_lookup_command: httpx -version
+    version_lookup_command: /go/bin/httpx -version
     update_command: go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
     install_command: go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
     version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
@@ -133,23 +133,6 @@
   pk: 8
   fields:
     logo_url: null
-    name: assetfinder
-    description: Find domains and subdomains potentially related to a given domain.
-    github_url: https://github.com/tomnomnom/assetfinder
-    license_url: https://github.com/tomnomnom/assetfinder/blob/master/LICENSE
-    version_lookup_command: null
-    update_command: go install -v github.com/tomnomnom/assetfinder@latest
-    install_command: go install -v github.com/tomnomnom/assetfinder@latest
-    version_match_regex: null
-    is_default: true
-    is_subdomain_gathering: true
-    is_github_cloned: false
-    github_clone_path: null
-    subdomain_gathering_command: null
-- model: scanEngine.installedexternaltool
-  pk: 9
-  fields:
-    logo_url: null
     name: sublist3r
     description: Sublist3r is a python tool designed to enumerate subdomains of websites
       using OSINT. It helps penetration testers and bug hunters collect and gather
@@ -169,7 +152,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 10
+  pk: 9
   fields:
     logo_url: null
     name: hakrawler
@@ -187,7 +170,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 11
+  pk: 10
   fields:
     logo_url: null
     name: gauplus
@@ -204,7 +187,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 12
+  pk: 11
   fields:
     logo_url: null
     name: OneForAll
@@ -221,7 +204,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 13
+  pk: 12
   fields:
     logo_url: https://raw.githubusercontent.com/laramies/theHarvester/master/theHarvester-logo.png
     name: theHarvester
