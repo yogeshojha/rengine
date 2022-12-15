@@ -5,6 +5,7 @@
 <p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v1.2.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/issues" target="_blank"><img src="https://img.shields.io/github/issues/yogeshojha/rengine?color=red&logo=none" alt="reNgine Issues" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;</p>
 
 
+
 <p align="center">
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/Open--Source--Summit-2022-blue.svg?logo=none" alt="" /></a>&nbsp;
   <a href="https://cyberweek.ae/2021/hitb-armory/" target="_blank"><img src="https://img.shields.io/badge/HITB--Armory-2021-blue.svg?logo=none" alt="" /></a>&nbsp;
@@ -19,6 +20,11 @@
 
 <p align="center">
 <a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461" alt="" /></a>&nbsp;
+</p>
+
+<p align="center">
+<a href="https://opensourcesecurityindex.io/" target="_blank" rel="noopener">
+<img style="width: 282px; height: 56px" src="https://opensourcesecurityindex.io/badge.svg" alt="Open Source Security Index - Fastest Growing Open Source Security Projects" width="282" height="56" /> </a>
 </p>
 
 <h3>reNgine 1.1<br>More than just recon!</h3>
@@ -65,22 +71,6 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 * [License](#license)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-### 💐💐💐 Tribute to Jasper 💐💐💐
- 
- ;             |  ;
-:-------------------------:|:-------------------------:
-<img src=https://user-images.githubusercontent.com/17223002/191900102-fbb05cb0-6007-49cc-9c5a-40be690d2bc0.jpg height=300> | <img src=https://user-images.githubusercontent.com/17223002/191901331-af2bd0e8-c63d-4f19-8c6c-09a181234626.png height=300>
-
-
-September 18, 2022 10:58 IST, Jasper crossed the rainbow bridge peacefully in my arms. He battled a long time with Cardiac Fibrosis and Chronic Kidney Disease. Jasper was a wonder dog, my everything and my love. We both lived together for 7 years, he was 60 days old and I was 19 years old back then, and we pretty much grew together. 
-
-My biological family lived in another country thousand miles away while Jasper by my side always every waking hours. He meant so much to me, more than just a dog, he was my brother, my son and probably everything.
-
-Every lines of code I have written for reNgine, Jasper was a part of it, every failured I had, Jasper cheered me up. He knew my best and worst. A part of me has gone forever and I am deeply broken. I take this space to honor Jasper's life.
-
-Shine brighter and fly higher Jasper!
-
 
 #### reNgine 2.0 codenamed Jasper
 
