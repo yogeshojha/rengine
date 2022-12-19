@@ -309,10 +309,7 @@ Dashboard
 			});
 		});
 
-		{
-			%
-			include 'base/_items/most_common_cve_cwe_tags.js' %
-		}
+		{% include 'base/_items/most_common_cve_cwe_tags.js' %}
 
 		var label_dates = ['{{last_7_dates.6}}', '{{last_7_dates.5}}', '{{last_7_dates.4}}', '{{last_7_dates.3}}', '{{last_7_dates.2}}', '{{last_7_dates.1}}', '{{last_7_dates.0}}'];
 
@@ -345,35 +342,7 @@ Dashboard
 			},
 			series: [{
 				name: "Targets Added",
-				data: [{
-					{
-						targets_in_last_week .0
-					}
-				}, {
-					{
-						targets_in_last_week .1
-					}
-				}, {
-					{
-						targets_in_last_week .2
-					}
-				}, {
-					{
-						targets_in_last_week .3
-					}
-				}, {
-					{
-						targets_in_last_week .4
-					}
-				}, {
-					{
-						targets_in_last_week .5
-					}
-				}, {
-					{
-						targets_in_last_week .6
-					}
-				}]
+				data: [{{targets_in_last_week.0}},{{targets_in_last_week.1}},{{targets_in_last_week.2}},{{targets_in_last_week.3}},{{targets_in_last_week.4}},{{targets_in_last_week.5}},{{targets_in_last_week.6}}]
 			}],
 			yaxis: {
 				min: 0
@@ -409,35 +378,7 @@ Dashboard
 			},
 			series: [{
 				name: "Subdomains Discovered",
-				data: [{
-					{
-						subdomains_in_last_week .0
-					}
-				}, {
-					{
-						subdomains_in_last_week .1
-					}
-				}, {
-					{
-						subdomains_in_last_week .2
-					}
-				}, {
-					{
-						subdomains_in_last_week .3
-					}
-				}, {
-					{
-						subdomains_in_last_week .4
-					}
-				}, {
-					{
-						subdomains_in_last_week .5
-					}
-				}, {
-					{
-						subdomains_in_last_week .6
-					}
-				}]
+				data: [{{subdomains_in_last_week.0}},{{subdomains_in_last_week.1}},{{subdomains_in_last_week.2}},{{subdomains_in_last_week.3}},{{subdomains_in_last_week.4}},{{subdomains_in_last_week.5}},{{subdomains_in_last_week.6}}]
 			}],
 			yaxis: {
 				min: 0
@@ -473,35 +414,7 @@ Dashboard
 			},
 			series: [{
 				name: "Endpoints Discovered",
-				data: [{
-					{
-						endpoints_in_last_week .0
-					}
-				}, {
-					{
-						endpoints_in_last_week .1
-					}
-				}, {
-					{
-						endpoints_in_last_week .2
-					}
-				}, {
-					{
-						endpoints_in_last_week .3
-					}
-				}, {
-					{
-						endpoints_in_last_week .4
-					}
-				}, {
-					{
-						endpoints_in_last_week .5
-					}
-				}, {
-					{
-						endpoints_in_last_week .6
-					}
-				}]
+				data: [{{endpoints_in_last_week.0}},{{endpoints_in_last_week.1}},{{endpoints_in_last_week.2}},{{endpoints_in_last_week.3}},{{endpoints_in_last_week.4}},{{endpoints_in_last_week.5}},{{endpoints_in_last_week.6}}]
 			}],
 			yaxis: {
 				min: 0
@@ -538,35 +451,7 @@ Dashboard
 			},
 			series: [{
 				name: "Vulnerabilities Discovered",
-				data: [{
-					{
-						vulns_in_last_week .0
-					}
-				}, {
-					{
-						vulns_in_last_week .1
-					}
-				}, {
-					{
-						vulns_in_last_week .2
-					}
-				}, {
-					{
-						vulns_in_last_week .3
-					}
-				}, {
-					{
-						vulns_in_last_week .4
-					}
-				}, {
-					{
-						vulns_in_last_week .5
-					}
-				}, {
-					{
-						vulns_in_last_week .6
-					}
-				}]
+				data: [{{vulns_in_last_week.0}},{{vulns_in_last_week.1}},{{vulns_in_last_week.2}},{{vulns_in_last_week.3}},{{vulns_in_last_week.4}},{{vulns_in_last_week.5}},{{vulns_in_last_week.6}}]
 			}],
 			yaxis: {
 				min: 0
@@ -645,31 +530,7 @@ Dashboard
 					}
 				}
 			},
-			series: [{
-				{
-					critical_count
-				}
-			}, {
-				{
-					high_count
-				}
-			}, {
-				{
-					medium_count
-				}
-			}, {
-				{
-					low_count
-				}
-			}, {
-				{
-					info_count
-				}
-			}, {
-				{
-					unknown_count
-				}
-			}],
+			series: [{{critical_count}}, {{high_count}}, {{medium_count}}, {{low_count}}, {{info_count}}, {{unknown_count}}],
 			labels: ['Critical', 'High', 'Medium', 'Low', 'Info', 'Unknown'],
 			responsive: [{
 				breakpoint: 1599,
@@ -701,35 +562,7 @@ Dashboard
 		var options = {
 			series: [{
 				name: "Ip is Used By Subdomains",
-				data: [{
-					{
-						most_used_ip .6.count
-					}
-				}, {
-					{
-						most_used_ip .5.count
-					}
-				}, {
-					{
-						most_used_ip .4.count
-					}
-				}, {
-					{
-						most_used_ip .3.count
-					}
-				}, {
-					{
-						most_used_ip .2.count
-					}
-				}, {
-					{
-						most_used_ip .1.count
-					}
-				}, {
-					{
-						most_used_ip .0.count
-					}
-				}]
+				data: [{{most_used_ip.6.count}}, {{most_used_ip.5.count}}, {{most_used_ip.4.count}}, {{most_used_ip.3.count}}, {{most_used_ip.2.count}}, {{most_used_ip.1.count}}, {{most_used_ip.0.count}}]
 			}],
 			chart: {
 				type: 'bar',
@@ -755,35 +588,7 @@ Dashboard
 		var options = {
 			series: [{
 				name: "Ports used by IPs",
-				data: [{
-					{
-						most_used_port .6.count
-					}
-				}, {
-					{
-						most_used_port .5.count
-					}
-				}, {
-					{
-						most_used_port .4.count
-					}
-				}, {
-					{
-						most_used_port .3.count
-					}
-				}, {
-					{
-						most_used_port .2.count
-					}
-				}, {
-					{
-						most_used_port .1.count
-					}
-				}, {
-					{
-						most_used_port .0.count
-					}
-				}]
+				data: [{{most_used_port.6.count}}, {{most_used_port.5.count}}, {{most_used_port.4.count}}, {{most_used_port.3.count}}, {{most_used_port.2.count}}, {{most_used_port.1.count}}, {{most_used_port.0.count}}]
 			}],
 			chart: {
 				type: 'bar',
@@ -813,35 +618,7 @@ Dashboard
 		var options = {
 			series: [{
 				name: "Tech used by Subdomains",
-				data: [{
-					{
-						most_used_tech .6.count
-					}
-				}, {
-					{
-						most_used_tech .5.count
-					}
-				}, {
-					{
-						most_used_tech .4.count
-					}
-				}, {
-					{
-						most_used_tech .3.count
-					}
-				}, {
-					{
-						most_used_tech .2.count
-					}
-				}, {
-					{
-						most_used_tech .1.count
-					}
-				}, {
-					{
-						most_used_tech .0.count
-					}
-				}]
+				data: [{{most_used_tech.6.count}}, {{most_used_tech.5.count}}, {{most_used_tech.4.count}}, {{most_used_tech.3.count}}, {{most_used_tech.2.count}}, {{most_used_tech.1.count}}, {{most_used_tech.0.count}}]
 			}],
 			chart: {
 				type: 'bar',
@@ -864,21 +641,11 @@ Dashboard
 		var chart = new ApexCharts(document.querySelector("#most_common_tech_chart"), options);
 		chart.render();
 
-		var countriesData = {
-			{
-				%
-				for country in asset_countries %
-			}
-			"{{country.iso}}": {
-				{
-					country.count
-				}
-			},
-			{
-				%
-				endfor %
-			}
-		};
+	var countriesData = {
+		{% for country in asset_countries %}
+			"{{country.iso}}": {{country.count}},
+		{% endfor %}
+	};
 
 		$('#world_map').vectorMap({
 			map: 'world_mill_en',
@@ -893,19 +660,10 @@ Dashboard
 			series: {
 				regions: [{
 					values: countriesData,
-					scale: [{
-							%
-							for country in asset_countries %
-						}
-						shadeColor('#2C3E50', {
-							{
-								country.count
-							}
-						}),
-						{
-							%
-							endfor %
-						}
+					scale: [
+						{% for country in asset_countries %}
+							shadeColor('#2C3E50', {{country.count}}),
+						{% endfor %}
 					],
 					normalizeFunction: 'polynomial'
 				}]
