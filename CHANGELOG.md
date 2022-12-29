@@ -1,5 +1,12 @@
 # Changelog
 
+
+## 1.3.5
+**Release Date: December 29, 2022**
+
+- Fixed #769, #768, #766, #761, Thanks to, @bin-maker, @carsonchan12345, @paweloque, @opabravo
+
+
 ## 1.3.4
 **Release Date: November 16, 2022**
 
