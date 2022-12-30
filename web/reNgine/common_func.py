@@ -753,8 +753,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 name=registrant_country
             )[0] if registrant_country else None
             domain_info.registrant_email = DomainEmail.objects.get_or_create(
-                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group()
-            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(registrant_email)).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(registrant_email)) else None
             domain_info.registrant_phone = DomainPhone.objects.get_or_create(
                 name=registrant_phone
             )[0] if registrant_phone else None
@@ -788,8 +788,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 name=admin_country
             )[0] if admin_country else None
             domain_info.admin_email = DomainEmail.objects.get_or_create(
-                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email).group()
-            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email) else None
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(admin_email)).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(admin_email)) else None
             domain_info.admin_phone = DomainPhone.objects.get_or_create(
                 name=admin_phone
             )[0] if admin_phone else None
@@ -823,8 +823,8 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 name=tech_country
             )[0] if tech_country else None
             domain_info.tech_email = DomainEmail.objects.get_or_create(
-                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group()
-            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None
+                name=re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(tech_email)).group()
+            )[0] if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(tech_email)) else None
             domain_info.tech_phone = DomainPhone.objects.get_or_create(
                 name=tech_phone
             )[0] if tech_phone else None
@@ -872,7 +872,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'country': registrant_country,
                 'phone': registrant_phone,
                 'fax': registrant_fax,
-                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", registrant_email) else None,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(registrant_email)).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(registrant_email)) else None,
             },
             'admin': {
                 'name': admin_name,
@@ -885,7 +885,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'country': admin_country,
                 'phone': admin_phone,
                 'fax': admin_fax,
-                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", admin_email) else None,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(admin_email)).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(admin_email)) else None,
             },
             'technical_contact': {
                 'name': tech_name,
@@ -898,7 +898,7 @@ def get_whois(ip_domain, save_db=False, fetch_from_db=True):
                 'country': tech_country,
                 'phone': tech_phone,
                 'fax': tech_fax,
-                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", tech_email) else None,
+                'email': re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(tech_email)).group() if re.search(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", str(tech_email)) else None,
             },
             'nameservers': name_servers,
             'raw_text': result.query_output.strip()
