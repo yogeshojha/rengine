@@ -41,10 +41,10 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     geoip-database
 
 
-# Download and install go 1.18
-RUN wget https://golang.org/dl/go1.18.2.linux-amd64.tar.gz
-RUN tar -xvf go1.18.2.linux-amd64.tar.gz
-RUN rm go1.18.2.linux-amd64.tar.gz
+# Download and install go 1.19
+RUN wget https://golang.org/dl/go1.19.4.linux-amd64.tar.gz
+RUN tar -xvf go1.19.4.linux-amd64.tar.gz
+RUN rm go1.19.4.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
