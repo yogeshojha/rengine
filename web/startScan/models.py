@@ -459,6 +459,7 @@ class Vulnerability(models.Model):
 	def get_refs_str(self):
 		return '•' + '\n• '.join(f'`{ref.url}`' for ref in self.references.all())
 
+
 class ScanActivity(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_of = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, blank=True, null=True)

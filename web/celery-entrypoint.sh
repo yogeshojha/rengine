@@ -1,25 +1,12 @@
 #!/bin/bash
 
-if [ "$DATABASE" = "postgres" ]
-then
-    echo "Waiting for postgres..."
-
-    while ! nc -z ${POSTGRES_HOST} ${POSTGRES_PORT}; do
-      sleep 0.1
-    done
-
-    echo "PostgreSQL started"
-fi
-
 python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
-# Load default engines
-# python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
-# Load default keywords
+# Load default engines, keywords, and external tools
+python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.EngineType
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
-# Load default external tools
 python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
 # update whatportis
@@ -45,14 +32,12 @@ then
   wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
 fi
 
-
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
 then
   echo "Cloning Sublist3r"
   git clone https://github.com/aboul3la/Sublist3r /usr/src/github/Sublist3r
 fi
-
 python3 -m pip install -r /usr/src/github/Sublist3r/requirements.txt
 
 # clone OneForAll
@@ -61,7 +46,6 @@ then
   echo "Cloning OneForAll"
   git clone https://github.com/shmilylty/OneForAll /usr/src/github/OneForAll
 fi
-
 python3 -m pip install -r /usr/src/github/OneForAll/requirements.txt
 
 # clone eyewitness
@@ -101,7 +85,6 @@ fi
 
 # test tools, required for configuration
 naabu && subfinder && amass
-
 nuclei
 
 if [ ! -d "/root/nuclei-templates/geeknik_nuclei_templates" ];
