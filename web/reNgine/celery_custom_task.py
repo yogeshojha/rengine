@@ -155,6 +155,8 @@ class RengineTask(Task):
 		if not self.result:
 			return False
 		is_json_results = isinstance(self.result, dict) or isinstance(self.result, list)
+		if not self.output_path:
+			return False
 		if not os.path.exists(self.output_path):
 			with open(self.output_path, 'w') as f:
 				if is_json_results:
@@ -194,10 +196,10 @@ class RengineTask(Task):
 		if self.error and len(self.error) > 300:
 			error_message = self.error[:288] + '...[trimmed]'
 
-		self.activity.status=self.status
-		self.activity.error_message=error_message
-		self.activity.traceback=self.traceback
-		self.activity.time=timezone.now()
+		self.activity.status = self.status
+		self.activity.error_message = error_message
+		self.activity.traceback = self.traceback
+		self.activity.time = timezone.now()
 		self.activity.save()
 		self.notify()
 

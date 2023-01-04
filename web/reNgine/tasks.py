@@ -940,7 +940,7 @@ def theHarvester(self, host=None, ctx={}):
 	Returns:
 		dict: Dict of emails, employees, hosts and ips found during crawling.
 	"""
-	config = self.yaml_configuration.get(OSINT, {})
+	config = self.yaml_configuration.get(OSINT) or {}
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	host = self.domain.name if self.domain else host
 	if not host:
@@ -1234,7 +1234,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	urls = []
 	ports_data = {}
 	for line in stream_command(cmd, echo=DEBUG, shell=True, history_file=self.history_file):
-		# TODO: Update Celery task status continously
+		# TODO: Update Celery task status and log continously
 		if not isinstance(line, dict):
 			continue
 		results.append(line)
@@ -1480,7 +1480,7 @@ def waf_detection(self, ctx={}, description=None):
 
 	return wafs
 
-# TODO: stream_command() for dir_file_fuzz
+
 @app.task(base=RengineTask, bind=True)
 def dir_file_fuzz(self, ctx={}, description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
@@ -1493,7 +1493,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	"""
 	# Config
 	cmd = 'ffuf'
-	config = self.yaml_configuration.get(DIR_FILE_FUZZ, {})
+	config = self.yaml_configuration.get(DIR_FILE_FUZZ) or {}
 	custom_header = self.yaml_configuration.get(CUSTOM_HEADER)
 	auto_calibration = config.get(AUTO_CALIBRATION, True)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
@@ -1512,6 +1512,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	use_extensions = config.get(USE_EXTENSIONS)
 	wordlist_name = config.get(WORDLIST, 'dicc')
 	delay = rate_limit / (threads * 100) # calculate request pause delay from rate_limit and number of threads
+	input_path = f'{self.results_dir}/input_dir_file_fuzz.txt'
 
 	# Get wordlist
 	wordlist_name = 'dicc' if wordlist_name == 'default' else wordlist_name
@@ -1531,46 +1532,50 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	cmd += f' -mc {mc}' if mc else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 
-	# Grab subdomains to fuzz
-	subdomains_fuzz = Subdomain.objects.filter(http_url__isnull=False)
-	if self.scan:
-		subdomains_fuzz = subdomains_fuzz.filter(scan_history=self.scan)
+	# Grab URLs to fuzz
+	urls = get_http_urls(
+		is_alive=True,
+		write_filepath=input_path,
+		ctx=ctx)
+	unfurl_path = f'{self.results_dir}/urls_unfurled.txt'
+	run_command(
+		f'cat {input_path} | unfurl -u format %s://%a > {unfurl_path}',
+		shell=True,
+		echo=DEBUG,
+		history_file=self.history_file)
+	run_command(
+		f'sort -u {unfurl_path} -o  {unfurl_path}',
+		shell=True,
+		echo=DEBUG,
+		history_file=self.history_file)
+	input_path = unfurl_path
+	with open(input_path, 'r') as f:
+		urls = f.read().splitlines()
+	logger.warning(urls)
 
-	if self.subdomain_id: # scan only subdomain
-		subdomains_fuzz = subdomains_fuzz.filter(pk=self.subdomain_id)
-
-	if not subdomains_fuzz:
-		logger.error('No subdomains found. Skipping.')
-		return []
-
-	# Loop through subdomains and run command
-	urls = []
+	# Loop through URLs and run command
 	results = []
-	for subdomain in subdomains_fuzz:
+	for url in urls:
+		url += '/FUZZ' # TODO: fuzz not only URL but also POST / PUT / headers
 		proxy = get_random_proxy()
 
-		# Strip any query string parameters from HTTP URL
-		protocol = urlparse(subdomain.http_url).scheme
-		http_url = f'{protocol}://{subdomain.name}/FUZZ'
-
 		# Build final cmd
-		final_cmd = cmd
-		final_cmd += f' -x {proxy}' if proxy else ''
-		final_cmd += f' -u {http_url} -json'
+		fcmd = cmd
+		fcmd += f' -x {proxy}' if proxy else ''
+		fcmd += f' -u {url} -json'
 
 		# Initialize DirectoryScan object
 		dirscan = DirectoryScan()
 		dirscan.scanned_date = timezone.now()
-		dirscan.command_line = final_cmd
+		dirscan.command_line = fcmd
 		dirscan.save()
 
 		# Loop through results and populate EndPoint and DirectoryFile in DB
 		results = []
-		for line in stream_command(final_cmd, echo=DEBUG, shell=True, history_file=self.history_file):
+		for line in stream_command(fcmd, echo=DEBUG, shell=True, history_file=self.history_file, encoding='ansi'):
 			if not isinstance(line, dict):
 				continue
 			results.append(line)
-			logger.info(line)
 			name = line['input'].get('FUZZ')
 			length = line['length']
 			status = line['status']
@@ -1607,11 +1612,13 @@ def dir_file_fuzz(self, ctx={}, description=None):
 			dirscan.directory_files.add(dfile)
 			dirscan.save()
 
-		if self.subscan:
-			dirscan.dir_subscan_ids.add(self.subscan)
+			if self.subscan:
+				dirscan.dir_subscan_ids.add(self.subscan)
 
-		subdomain.directories.add(dirscan)
-		subdomain.save()
+			subdomain_name = get_subdomain_from_url(endpoint.http_url)
+			subdomain = Subdomain.objects.get(name=subdomain_name, scan_history=self.scan)
+			subdomain.directories.add(dirscan)
+			subdomain.save()
 
 	# Crawl discovered URLs
 	if enable_http_crawl:
@@ -1741,7 +1748,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		if not validators.url(url):
 			logger.warning(f'Invalid URL "{url}". Skipping.')
 
-		all_urls.append(url)
+		if url not in all_urls:
+			all_urls.append(url)
 
 	# Filter out URLs if a path filter was passed
 	if self.url_filter:
@@ -2079,23 +2087,22 @@ def http_crawl(
 	Returns:
 		list: httpx results.
 	"""
-	timestamp = time.time()
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration
 	custom_header = cfg.get(CUSTOM_HEADER)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
-	output_path = f'{self.results_dir}/httpx_output_{timestamp}.json'
-	input_file = f'{self.results_dir}/httpx_input_{timestamp}.txt'
+	self.output_path = None
+	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
 	if urls: # direct passing URLs to check
 		if self.url_filter:
 			urls = [u for u in urls if self.url_filter in u]
-		with open(input_file, 'w') as f:
+		with open(input_path, 'w') as f:
 			f.write('\n'.join(urls))
 	else:
 		urls = get_http_urls(
 			is_uncrawled=not recrawl,
-			write_filepath=input_file,
+			write_filepath=input_path,
 			ctx=ctx)
 		logger.debug(urls)
 
@@ -2117,7 +2124,7 @@ def http_crawl(
 	cmd += f' --http-proxy {proxy}' if proxy else ''
 	cmd += f' -H "{custom_header}"' if custom_header else ''
 	cmd += f' -json'
-	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_file}'
+	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
 	results = []
 	endpoint_ids = []
@@ -2172,6 +2179,7 @@ def http_crawl(
 				add_meta_info=False)
 
 		# Add endpoint to results
+		line['_cmd'] = cmd
 		line['final_url'] = http_url
 		line['endpoint_id'] = endpoint.id
 		line['endpoint_created'] = created
@@ -2228,13 +2236,9 @@ def http_crawl(
 		self.subdomain_id,
 		filter_ids=endpoint_ids)
 
-	# Write results to JSON file
-	with open(output_path, 'a') as f:
-		json.dump(results, f, indent=4)
-
 	# Remove input file
 	run_command(
-		f'rm {input_file}',
+		f'rm {input_path}',
 		shell=True,
 		echo=DEBUG,
 		history_file=self.history_file)
@@ -2622,32 +2626,32 @@ def parse_nmap_vulscan_output(script_output):
 	logger.warning(pprint.pformat(data))
 
 	for provider_name in data:
-		if provider == 'Exploit-DB':
-			logger.error(f'Provider {provider} is not supported YET.')
+		if provider_name == 'Exploit-DB':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
-		elif provider == 'IBM X-Force':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'IBM X-Force':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
-		elif provider == 'MITRE CVE':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'MITRE CVE':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			for entry in data[provider_name]['entries']:
 				cve_id = entry['id']
 				vuln = cve_to_vuln(cve_id)
 				vulns.append(vuln)
-		elif provider == 'OSVDB':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'OSVDB':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
-		elif provider == 'OpenVAS (Nessus)':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'OpenVAS (Nessus)':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
-		elif provider == 'SecurityFocus':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'SecurityFocus':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
-		elif provider == 'VulDB':
-			logger.error(f'Provider {provider} is not supported YET.')
+		elif provider_name == 'VulDB':
+			logger.error(f'Provider {provider_name} is not supported YET.')
 			pass
 		else:
-			logger.error(f'Provider {provider} is not supported.')
+			logger.error(f'Provider {provider_name} is not supported.')
 	return vulns
 
 
@@ -3135,59 +3139,44 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 #-------------#
 # Other utils #
 #-------------#
-
-def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
-	"""Run a given command using subprocess module and stream its output live.
-
-	Args:
-		cmd (str): Command to run.
-		cwd (str): Current working directory.
-		echo (bool): Log response items to console.
-		shell (bool): Run within separate shell if True.
-		history_file (str): Write command + output to history file.
-
-	Yields:
-		dict: stdout output converted to JSON.
-		str: stdout output.
-	"""
-	logger.info(cmd)
-	popen = subprocess.Popen(
-		cmd if shell else cmd.split(),
-		shell=shell,
-		stdout=subprocess.PIPE,
-		stderr=subprocess.STDOUT,
-		cwd=cwd,
-		universal_newlines=True)
-	out = ''
-	for stdout_line in iter(popen.stdout.readline, ""):
-		item = stdout_line.strip()
-		out += item + '\n'
-		if item.startswith(('{', '[')) and item.endswith(('}', ']')):
-			try:
-				item = json.loads(item)
-				if echo:
-					logger.info(json.dumps(item, indent=4))
-				yield item
-				continue
-			except Exception as e:
-				pass
-		if echo:
-			logger.info(item)
-		yield item
-
-	popen.stdout.close()
-	popen.wait()
-
-	if popen.returncode != 0:
-		logger.error(out)
-		logger.error(f'Command "{cmd}" failed with status {popen.returncode}.')
-
-	if history_file:
-		mode = 'a'
-		if not os.path.exists(history_file):
-			mode = 'w'
-		with open(history_file, mode) as f:
-			f.write(f'\n{cmd}\n{popen.returncode}\n{out}\n------------------\n')
+import shlex
+def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None, encoding='utf-8'):
+    """
+    Runs the specified command and streams both the stdout and stderr streams in real-time.
+    If the 'echo' argument is True, each line is logged to the console.
+    If the 'history_file' argument is not None, the command execution history is written to the file.
+    """
+    tokens = shlex.split(cmd)
+    process = subprocess.Popen(tokens, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    lines = []
+    while True:
+        stdout_line = process.stdout.readline()
+        stderr_line = process.stderr.readline()
+        if not stdout_line and not stderr_line:
+            break
+        if stdout_line:
+            # Remove ANSI escape codes from the stdout line
+            stdout_line = re.sub(r'\x1b[^m]*m', '', stdout_line.decode())
+            lines.append(stdout_line.strip())
+            try:
+                data = json.loads(stdout_line)
+                yield data
+            except json.JSONDecodeError:
+                yield stdout_line.strip()
+        if stderr_line:
+            lines.append(stderr_line.strip().decode())
+            yield stderr_line.strip().decode()
+        if echo:
+            logger.info(stdout_line.strip())
+            logger.info(stderr_line.strip().decode())
+    if history_file is not None:
+        # Open the history file in write mode if it doesn't exist, or append mode if it does
+        mode = 'w' if not os.path.exists(history_file) else 'a'
+        with open(history_file, mode) as f:
+            f.write(f'{cmd}\n{process.returncode}\n')
+            for line in lines:
+                f.write(line)
+            f.write('---\n')
 
 
 def process_httpx_response(line):
