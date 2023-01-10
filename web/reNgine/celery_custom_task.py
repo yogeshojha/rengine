@@ -79,6 +79,7 @@ class RengineTask(Task):
 		self.domain_id = self.domain.id if self.domain else None
 		self.subdomain = self.subscan.subdomain if self.subscan else None
 		self.subdomain_id = self.subdomain.id if self.subdomain else None
+		self.activity_id = None
 
 		# Set file self.task_name if not already set
 		if not self.filename:
@@ -175,6 +176,8 @@ class RengineTask(Task):
 			time=timezone.now(),
 			status=RUNNING_TASK,
 			celery_id=celery_id)
+		self.activity.save()
+		self.activity_id = self.activity.id
 		if self.scan:
 			self.activity.scan_of = self.scan
 			self.activity.save()

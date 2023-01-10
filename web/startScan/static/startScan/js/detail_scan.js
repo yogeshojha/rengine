@@ -974,6 +974,60 @@ function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=nul
 
 }
 
+function create_log_element(log) {
+	let logElement = document.createElement("p");
+	innerHTML = `
+	<p>
+	  <p data-bs-toggle="collapse" data-bs-target="#collapse${log.id}">
+		<b>${log.command}</b>
+	  </p>
+	</p>`
+	if (log.output != ''){
+		innerHTML += `<div class="collapse" id="collapse${log.id}"><div style="white-space: pre-line" class="card card-body">${log.output}</div></div>`;
+	}
+	logElement.innerHTML = innerHTML;
+	return logElement;
+}
+
+function get_logs_modal(scan_id=null, activity_id=null) {
+
+	// This function will display a xl modal with datatable for displaying endpoints
+	// associated with the subdomain
+	$('#xl-modal-title').empty();
+	$('#xl-modal-content').empty();
+	$('#xl-modal-footer').empty();
+
+	if (scan_id) {
+		url = `/api/listScanLogs?scan_id=${scan_id}&format=json`
+		title = `Fetching logs for scan ${scan_id}`
+	}
+	else{
+		url = `/api/listActivityLogs?activity_id=${activity_id}&format=json`
+		title = `Fetching logs for activity ${activity_id}`
+	}
+
+	Swal.fire({
+		title: title
+	});
+	swal.showLoading();
+
+	// Get the initial logs
+	fetch(url)
+	.then(response => response.json())
+	.then(data => {
+		console.log(data);
+		swal.close();
+		$('#xl-modal_title').html(`Logs for scan #${scan_history_id}`);
+		data.results.forEach(log => {
+			$('#xl-modal-content').append(create_log_element(log));
+		})
+	});
+	$('#modal_xl_scroll_dialog').modal('show');
+	$("body").tooltip({
+		selector: '[data-toggle=tooltip]'
+	});
+}
+
 function add_todo_for_scanhistory_modal(scan_history_id){
 	$("#todoTitle").val('');
 	$("#todoDescription").val('');

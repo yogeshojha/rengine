@@ -136,11 +136,10 @@ class ScanHistory(models.Model):
 		)
 
 	def get_progress(self):
-		'''
-		formulae to calculate
-		count number of true things to do, for http crawler, it is always +1
-		divided by total scan activity associated - 2 (Start and Stop)
-		'''
+		"""Formulae to calculate count number of true things to do, for http 
+		crawler, it is always +1 divided by total scan activity associated - 2 
+		(start and stop).
+		"""
 		number_of_steps = len(self.tasks) if self.tasks else 0
 		steps_done = len(self.scanactivity_set.all())
 		if steps_done and number_of_steps:
@@ -473,6 +472,16 @@ class ScanActivity(models.Model):
 
 	def __str__(self):
 		return str(self.title)
+
+
+class Command(models.Model):
+	id = models.AutoField(primary_key=True)
+	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, blank=True, null=True)
+	activity = models.ForeignKey(ScanActivity, on_delete=models.CASCADE, blank=True, null=True)
+	command = models.TextField(blank=True, null=True)
+	return_code = models.IntegerField(blank=True, null=True)
+	output = models.TextField(blank=True, null=True)
+	time = models.DateTimeField()
 
 
 class Waf(models.Model):

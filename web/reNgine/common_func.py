@@ -448,9 +448,10 @@ def sanitize_url(http_url):
 # Utils #
 #-------#
 
+
 def get_random_proxy():
 	"""Get a random proxy from the list of proxies input by user in the UI.
-	
+
 	Returns:
 		str: Proxy name or '' if no proxy defined in db or use_proxy is False.
 	"""

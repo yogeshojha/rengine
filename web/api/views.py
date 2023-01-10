@@ -401,7 +401,6 @@ class AddReconNote(APIView):
 		return Response(response)
 
 
-
 class ToggleSubdomainImportantStatus(APIView):
 	def post(self, request):
 		req = self.request
@@ -418,6 +417,7 @@ class ToggleSubdomainImportantStatus(APIView):
 		response = {'status': True}
 
 		return Response(response)
+
 
 class AddTarget(APIView):
 	def post(self, request):
@@ -444,6 +444,7 @@ class AddTarget(APIView):
 			'domain_name': domain_name,
 			'domain_id': domain.id
 		})
+
 
 class FetchSubscanResults(APIView):
 	def post(self, request):
@@ -1861,6 +1862,26 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 					print(e)
 
 		return qs
+
+
+class ListActivityLogsViewSet(viewsets.ModelViewSet):
+	serializer_class = CommandSerializer
+	queryset = Command.objects.none()
+	def get_queryset(self):
+		req = self.request
+		activity_id = req.query_params.get('activity_id')
+		self.queryset = Command.objects.filter(activity__id=activity_id)
+		return self.queryset
+
+
+class ListScanLogsViewSet(viewsets.ModelViewSet):
+	serializer_class = CommandSerializer
+	queryset = Command.objects.none()
+	def get_queryset(self):
+		req = self.request
+		scan_id = req.query_params.get('scan_id')
+		self.queryset = Command.objects.filter(scan_history__id=scan_id)
+		return self.queryset
 
 
 class ListEndpoints(APIView):

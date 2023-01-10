@@ -6,28 +6,19 @@ from .views import *
 
 app_name = 'api'
 router = routers.DefaultRouter()
-
 router.register(r'listDatatableSubdomain', SubdomainDatatableViewSet)
-
 router.register(r'listTargets', ListTargetsDatatableViewSet)
-
 router.register(r'listSubdomains', SubdomainsViewSet)
-
 router.register(r'listEndpoints', EndPointViewSet)
-
 router.register(r'listDirectories', DirectoryViewSet)
-
 router.register(r'listVulnerability', VulnerabilityViewSet)
-
 router.register(r'listInterestingSubdomains', InterestingSubdomainViewSet)
-
 router.register(r'listInterestingEndpoints', InterestingEndpointViewSet)
-
 router.register(r'listSubdomainChanges', SubdomainChangesViewSet)
-
 router.register(r'listEndPointChanges', EndPointChangesViewSet)
-
 router.register(r'listIps', IpAddressViewSet)
+router.register(r'listActivityLogs', ListActivityLogsViewSet)
+router.register(r'listScanLogs', ListScanLogsViewSet)
 
 urlpatterns = [
     url('^', include(router.urls)),
