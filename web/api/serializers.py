@@ -1079,6 +1079,13 @@ class SubScanSerializer(serializers.ModelSerializer):
 		return ''
 
 
+class CommandSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Command
+		fields = '__all__'
+		depth = 1
+
+
 class ScanHistorySerializer(serializers.ModelSerializer):
 
 	subdomain_count = serializers.SerializerMethodField('get_subdomain_count')
