@@ -223,7 +223,7 @@ def initiate_subscan(
 	# Get EngineType
 	engine_id = engine_id or scan.scan_type.id
 	engine = EngineType.objects.get(pk=engine_id)
-	
+
 	# Get YAML config
 	config = yaml.safe_load(engine.yaml_configuration)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
@@ -424,11 +424,11 @@ def subdomain_discovery(
 			elif tool == 'subfinder':
 				cmd = f'subfinder -d {host} -o {self.results_dir}/subdomains_subfinder.txt'
 				use_subfinder_config = config.get(USE_SUBFINDER_CONFIG, False)
-				cmd += ' -v' if DEBUG else ''
 				cmd += ' -config /root/.config/subfinder/config.yaml' if use_subfinder_config else ''
 				cmd += f' -proxy {proxy}' if proxy else ''
 				cmd += f' -timeout {timeout}' if timeout else ''
 				cmd += f' -t {threads}' if threads else ''
+				cmd += f' -silent'
 
 			elif tool == 'oneforall':
 				cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
@@ -457,8 +457,9 @@ def subdomain_discovery(
 			run_command(
 				cmd,
 				shell=True,
-				echo=DEBUG,
-				history_file=self.history_file)
+				history_file=self.history_file,
+				scan_id=self.scan_id,
+				activity_id=self.activity_id)
 		except Exception as e:
 			logger.error(
 				f'Subdomain discovery tool "{tool}" raised an exception')
@@ -469,13 +470,15 @@ def subdomain_discovery(
 	run_command(
 		f'cat {self.results_dir}/subdomains_*.txt > {self.output_path}',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	run_command(
 		f'sort -u {self.output_path} -o {self.output_path}',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	with open(self.output_path) as f:
 		lines = f.readlines()
@@ -967,8 +970,9 @@ def theHarvester(self, host=None, ctx={}):
 		cmd,
 		shell=False,
 		cwd=theHarvester_dir,
-		echo=DEBUG,
-		history_file=history_file)
+		history_file=history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	# Get file location
 	if not os.path.isfile(output_path_json):
@@ -1064,8 +1068,9 @@ def h8mail(self, input_path=None, ctx={}):
 
 	run_command(
 		cmd,
-		echo=DEBUG,
-		history_file=history_file)
+		history_file=history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	with open(output_path) as f:
 		data = json.load(f)
@@ -1119,7 +1124,12 @@ def screenshot(self, ctx={}, description=None):
 	cmd = f'python3 /usr/src/github/EyeWitness/Python/EyeWitness.py -f {alive_endpoints_file} -d {screenshots_path} --no-prompt'
 	cmd += f' --timeout {timeout}' if timeout > 0 else ''
 	cmd += f' --threads {threads}' if threads > 0 else ''
-	run_command(cmd, shell=False, echo=DEBUG, history_file=self.history_file)
+	run_command(
+		cmd,
+		shell=False,
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	if not os.path.isfile(output_path):
 		logger.error(f'Could not load EyeWitness results at {output_path} for {self.domain.name}.')
 		return
@@ -1146,13 +1156,15 @@ def screenshot(self, ctx={}, description=None):
 	run_command(
 		'rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path),
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	run_command(
 		f'rm -rf {screenshots_path}/source',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	# Send finish notifs
 	screenshots_str = '• ' + '\n• '.join([f'`{path}`' for path in screenshot_paths])
@@ -1227,14 +1239,20 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	cmd += f' -timeout {timeout*1000}' if timeout > 0 else ''
 	cmd += f' -passive' if passive else ''
 	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
+	cmd += f' -silent'
 	nmap_enabled = nmap_cli or nmap_script
 
 	# Execute cmd and gather results
 	results = []
 	urls = []
 	ports_data = {}
-	for line in stream_command(cmd, echo=DEBUG, shell=True, history_file=self.history_file):
-		# TODO: Update Celery task status and log continously
+	for line in stream_command(
+			cmd,
+			shell=True,
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id):
+
 		if not isinstance(line, dict):
 			continue
 		results.append(line)
@@ -1381,9 +1399,10 @@ def nmap(
 	# Run cmd
 	run_command(
 		nmap_cmd,
-		echo=DEBUG,
 		shell=True,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	# Get nmap XML results and convert to JSON
 	vulns = parse_nmap_results(output_file_xml, output_file)
@@ -1442,8 +1461,9 @@ def waf_detection(self, ctx={}, description=None):
 	cmd = f'wafw00f -i {input_path} -o {self.output_path}'
 	run_command(
 		cmd,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	if not os.path.isfile(self.output_path):
 		logger.error(f'Could not find {self.output_path}')
 		return
@@ -1541,13 +1561,15 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	run_command(
 		f'cat {input_path} | unfurl -u format %s://%a > {unfurl_path}',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	run_command(
 		f'sort -u {unfurl_path} -o  {unfurl_path}',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	input_path = unfurl_path
 	with open(input_path, 'r') as f:
 		urls = f.read().splitlines()
@@ -1572,7 +1594,12 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 		# Loop through results and populate EndPoint and DirectoryFile in DB
 		results = []
-		for line in stream_command(fcmd, echo=DEBUG, shell=True, history_file=self.history_file, encoding='ansi'):
+		for line in stream_command(
+				fcmd,
+				shell=True,
+				history_file=self.history_file,
+				scan_id=self.scan_id,
+				activity_id=self.activity_id):
 			if not isinstance(line, dict):
 				continue
 			results.append(line)
@@ -1694,7 +1721,11 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		for tool, cmd in cmd_map.items()
 	}
 	tasks = group(
-		run_command.si(cmd, echo=DEBUG, shell=True)
+		run_command.si(
+			cmd,
+			shell=True,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
 		for tool, cmd in cmd_map.items()
 		if tool in tools
 	)
@@ -1712,8 +1743,15 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			f'mv {self.results_dir}/urls_filtered.txt {self.output_path}'
 		]
 		sort_output.extend(grep_ext_filtered_output)
-	cleanup = chain(run_command.si(cmd, echo=DEBUG, shell=True) for cmd in sort_output)
-	
+	cleanup = chain(
+		run_command.si(
+			cmd,
+			shell=True,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
+		for cmd in sort_output
+	)
+
 	# Run all commands
 	task = chord(tasks)(cleanup)
 	with allow_join_result():
@@ -1790,8 +1828,9 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		run_command(
 	  		cmd,
 			shell=True,
-		 	echo=DEBUG,
-		  	history_file=self.history_file)
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
 
 		# Check output file
 		if not os.path.exists(gf_output_file):
@@ -1887,13 +1926,15 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		run_command(
 			f'cat {input_path} | unfurl -u format %s://%d%p > {unfurl_filter}',
 			shell=True,
-			echo=DEBUG,
-			history_file=self.history_file)
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
 		run_command(
 			f'sort -u {unfurl_filter} -o  {unfurl_filter}',
 			shell=True,
-			echo=DEBUG,
-			history_file=self.history_file)
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id)
 		input_path = unfurl_filter
 
 	# Send start notification
@@ -1904,9 +1945,10 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	# logger.info('Updating Nuclei templates ...')
 	run_command(
 		'nuclei -update-templates',
-		echo=DEBUG,
 		shell=True,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 	templates = []
 	if not (nuclei_templates or custom_nuclei_templates):
 		templates.append(NUCLEI_DEFAULT_TEMPLATES_PATH)
@@ -1935,12 +1977,18 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -severity {severities_str}'
 	cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
 	cmd += f' -tags {tags}' if tags else ''
+	cmd += f' -silent'
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
 	# Run cmd
 	results = []
-	for line in stream_command(cmd, echo=DEBUG, history_file=self.history_file):
+	for line in stream_command(
+			cmd,
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id):
+
 		if not isinstance(line, dict):
 			continue
 
@@ -2126,9 +2174,15 @@ def http_crawl(
 	cmd += f' -json'
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
+	cmd += f' -silent'
 	results = []
 	endpoint_ids = []
-	for line in stream_command(cmd, echo=DEBUG, history_file=history_file):
+	for line in stream_command(
+			cmd,
+			history_file=history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id):
+
 		if not line or not isinstance(line, dict):
 			continue
 
@@ -2172,7 +2226,7 @@ def http_crawl(
 		endpoint.response_time = response_time
 		endpoint.save()
 		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
-		logger.info(endpoint_str)
+		logger.warning(endpoint_str)
 		if endpoint and endpoint.is_alive and endpoint.http_status != 403:
 			self.notify(
 				fields={'Alive endpoint': f'• {endpoint_str}'},
@@ -2240,8 +2294,9 @@ def http_crawl(
 	run_command(
 		f'rm {input_path}',
 		shell=True,
-		echo=DEBUG,
-		history_file=self.history_file)
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id)
 
 	return results
 
@@ -2782,7 +2837,7 @@ def geo_localize(host, ip_id=None):
 		logger.info(f'Ipv6 "{host}" is not supported by geoiplookup. Skipping.')
 		return None
 	cmd = f'geoiplookup {host}'
-	_, out = run_command(cmd, echo=DEBUG)
+	_, out = run_command(cmd)
 	if 'IP Address not found' not in out and "can't resolve hostname" not in out:
 		country_iso = out.split(':')[1].strip().split(',')[0]
 		country_name = out.split(':')[1].strip().split(',')[1].strip()
@@ -3095,7 +3150,7 @@ def remove_duplicate_endpoints(
 
 
 @app.task
-def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
+def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
 	"""Run a given command using subprocess module.
 
 	Args:
@@ -3109,6 +3164,16 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		tuple: Tuple with return_code, output.
 	"""
 	logger.info(cmd)
+	logger.warning(activity_id)
+
+	# Create a command record in the database
+	command_obj = Command.objects.create(
+		command=cmd,
+		time=timezone.now(),
+		scan_history_id=scan_id,
+		activity_id=activity_id)
+
+	# Run the command using subprocess
 	popen = subprocess.Popen(
 		cmd if shell else cmd.split(),
 		shell=shell,
@@ -3116,67 +3181,89 @@ def run_command(cmd, cwd=None, echo=True, shell=False, history_file=None):
 		stderr=subprocess.STDOUT,
 		cwd=cwd,
 		universal_newlines=True)
-	out = ''
+	output = ''
 	for stdout_line in iter(popen.stdout.readline, ""):
 		item = stdout_line.strip()
-		out += '\n' + item
-		if echo:
-			logger.info(item)
-	return_code = popen.returncode
+		output += '\n' + item
+		logger.debug(item)
 	popen.stdout.close()
 	popen.wait()
+	return_code = popen.returncode
+	command_obj.output = output
+	command_obj.return_code = return_code
+	command_obj.save()
 	if history_file:
 		mode = 'a'
 		if not os.path.exists(history_file):
 			mode = 'w'
 		with open(history_file, mode) as f:
-			f.write(f'\n{cmd}\n{return_code}\n{out}\n------------------\n')
-	if echo:
-		logger.info(out)
-	return return_code, out
+			f.write(f'\n{cmd}\n{return_code}\n{output}\n------------------\n')
+	return return_code, output
 
 
 #-------------#
 # Other utils #
 #-------------#
-import shlex
-def stream_command(cmd, cwd=None, echo=True, shell=False, history_file=None, encoding='utf-8'):
-    """
-    Runs the specified command and streams both the stdout and stderr streams in real-time.
-    If the 'echo' argument is True, each line is logged to the console.
-    If the 'history_file' argument is not None, the command execution history is written to the file.
-    """
-    tokens = shlex.split(cmd)
-    process = subprocess.Popen(tokens, cwd=cwd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    lines = []
-    while True:
-        stdout_line = process.stdout.readline()
-        stderr_line = process.stderr.readline()
-        if not stdout_line and not stderr_line:
-            break
-        if stdout_line:
-            # Remove ANSI escape codes from the stdout line
-            stdout_line = re.sub(r'\x1b[^m]*m', '', stdout_line.decode())
-            lines.append(stdout_line.strip())
-            try:
-                data = json.loads(stdout_line)
-                yield data
-            except json.JSONDecodeError:
-                yield stdout_line.strip()
-        if stderr_line:
-            lines.append(stderr_line.strip().decode())
-            yield stderr_line.strip().decode()
-        if echo:
-            logger.info(stdout_line.strip())
-            logger.info(stderr_line.strip().decode())
-    if history_file is not None:
-        # Open the history file in write mode if it doesn't exist, or append mode if it does
-        mode = 'w' if not os.path.exists(history_file) else 'a'
-        with open(history_file, mode) as f:
-            f.write(f'{cmd}\n{process.returncode}\n')
-            for line in lines:
-                f.write(line)
-            f.write('---\n')
+
+def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-8', scan_id=None, activity_id=None):
+	# Log cmd
+	logger.info(cmd)
+	logger.warning(activity_id)
+
+	# Create a command record in the database
+	command_obj = Command.objects.create(
+		command=cmd,
+		time=timezone.now(),
+		scan_history_id=scan_id,
+		activity_id=activity_id)
+
+	# Sanitize the cmd
+	command = cmd if shell else cmd.split()
+
+	# Run the command using subprocess
+	process = subprocess.Popen(
+		command,
+		stdout=subprocess.PIPE,
+		stderr=subprocess.PIPE,
+		shell=shell)
+
+	# Log the output in real-time to the database
+	output = ""
+
+	# Process the output
+	for line in iter(lambda: process.stdout.readline() or process.stderr.readline(), b''):
+		line = re.sub(r'\x1b[^m]*m', '', line.decode('utf-8').strip())
+		item = line
+
+		# Try to parse the line as JSON
+		try:
+			item = json.loads(line)
+		except json.JSONDecodeError:
+			pass
+
+		# Yield the line
+		logger.debug(item)
+		yield item
+
+		# Add the log line to the output
+		output += line + "\n"
+
+		# Update the command record in the database
+		command_obj.output = output
+		command_obj.save()
+
+	# Retrieve the return code and output
+	process.wait()
+	return_code = process.returncode
+
+	# Update the return code and final output in the database
+	command_obj.return_code = return_code
+	command_obj.save()
+
+	# Append the command, return code and output to the history file
+	if history_file is not None:
+		with open(history_file, "a") as f:
+			f.write(f"{cmd}\n{return_code}\n{output}\n")
 
 
 def process_httpx_response(line):

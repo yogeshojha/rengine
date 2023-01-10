@@ -227,7 +227,7 @@ LOGGING = {
             'format': '%(name)-10s | %(message)s'
         },
         'task': {
-            '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(message)s')
+            '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(levelname)s | %(message)s')
         }
     },
     'loggers': {
@@ -259,6 +259,7 @@ LOGGING = {
         },
         'reNgine.tasks': {
             'handlers': ['task'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False
         }
     },

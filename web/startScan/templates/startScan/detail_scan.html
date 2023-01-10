@@ -54,7 +54,7 @@ Scan Findings
 					<a class="nav-link" id="pills-screenshot-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#screenshot-tab">Screenshots</a>
 				</li>
 				{% endif %}
-				{% if 'dir_fuzz' in history.tasks %}
+				{% if 'dir_file_fuzz' in history.tasks %}
 				<li class="nav-item">
 					<a class="nav-link" id="pills-directories-tab" data-bs-toggle="tab" aria-expanded="false" href="#directories-tab">Directories</a>
 				</li>
@@ -141,7 +141,10 @@ Scan Findings
 							<p class="text-danger">Scan failed due to ERROR: {{history.error_message}}</p>
 						{% endif %}
 						{% endif %}
-						<h6 class="font-13 text-muted text-uppercase">Scan Engine <span class="badge badge-soft-primary float-end">{{history.scan_type.engine_name}}</span></h6>
+						<h6 class="font-13 text-muted text-uppercase">Scan Logs</h6>
+						<span><a href="javascript:get_logs_modal({{history.id}})"><i class="fe-file"></i> Logs</a></span>
+						<h6 class="font-13 text-muted text-uppercase">Scan Engine</h6>
+						<span class="badge badge-soft-primary">{{history.scan_type.engine_name}}</span>
 						<h6 class="font-13 text-muted text-uppercase mt-3">Scan Duration </h6>
 						{% if history.scan_status == -1 %}
 						<p class="mt-1 mb-0 text-warning font-14"><small class="text-center text-muted">Scan not yet started.</small></p>
@@ -212,6 +215,7 @@ Scan Findings
 												<p class="badge badge-soft-danger">Error: {{activity.error_message}}</p>
 											{% endif %}
 										{% endif %}
+										<span><a href="javascript:get_logs_modal(null, {{activity.id}})"><i class="fe-file"></i> Logs</a></span>
 									</li>
 									{% endfor %}
 								</ul>
