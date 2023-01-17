@@ -1555,24 +1555,9 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Grab URLs to fuzz
 	urls = get_http_urls(
 		is_alive=True,
+		ignore_files=True,
 		write_filepath=input_path,
 		ctx=ctx)
-	unfurl_path = f'{self.results_dir}/urls_unfurled.txt'
-	run_command(
-		f'cat {input_path} | unfurl -u format %s://%a > {unfurl_path}',
-		shell=True,
-		history_file=self.history_file,
-		scan_id=self.scan_id,
-		activity_id=self.activity_id)
-	run_command(
-		f'sort -u {unfurl_path} -o  {unfurl_path}',
-		shell=True,
-		history_file=self.history_file,
-		scan_id=self.scan_id,
-		activity_id=self.activity_id)
-	input_path = unfurl_path
-	with open(input_path, 'r') as f:
-		urls = f.read().splitlines()
 	logger.warning(urls)
 
 	# Loop through URLs and run command
