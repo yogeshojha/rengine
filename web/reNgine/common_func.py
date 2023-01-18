@@ -334,8 +334,7 @@ def get_http_urls(
 	# Grab only http_url from endpoint objects
 	endpoints = [e.http_url for e in endpoints]
 	if ignore_files: # ignore all files
-		# TODO: not hardcode this
-		extensions_path = '/usr/src/app/fixtures/extensions.txt'
+		extensions_path = f'{RENGINE_HOME}/fixtures/extensions.txt'
 		with open(extensions_path, 'r') as f:
 			extensions = tuple(f.readlines())
 		endpoints = [e for e in endpoints if not urlparse(e).path.endswith(extensions)]
