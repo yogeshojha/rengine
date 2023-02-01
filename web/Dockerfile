@@ -41,7 +41,7 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     geoip-database
 
 
-# Download and install go 1.18
+# Download and install go 1.19
 RUN wget https://go.dev/dl/go1.19.5.linux-amd64.tar.gz
 RUN tar -xvf go1.19.5.linux-amd64.tar.gz
 RUN rm go1.19.5.linux-amd64.tar.gz
