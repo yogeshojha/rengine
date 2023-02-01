@@ -42,9 +42,9 @@ RUN apt update -y && apt install -y  --no-install-recommends \
 
 
 # Download and install go 1.18
-RUN wget https://golang.org/dl/go1.18.2.linux-amd64.tar.gz
-RUN tar -xvf go1.18.2.linux-amd64.tar.gz
-RUN rm go1.18.2.linux-amd64.tar.gz
+RUN wget https://go.dev/dl/go1.19.5.linux-amd64.tar.gz
+RUN tar -xvf go1.19.5.linux-amd64.tar.gz
+RUN rm go1.19.5.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
@@ -73,7 +73,7 @@ RUN go install -v github.com/hakluke/hakrawler@latest
 
 RUN GO111MODULE=on go install -v -v github.com/bp0lr/gauplus@latest
 
-RUN GO111MODULE=on go install -v github.com/jaeles-project/gospider@latest
+RUN GO111MODULE=on go install github.com/jaeles-project/gospider@latest
 
 RUN go install -v github.com/OWASP/Amass/v3/...@latest
 
