@@ -583,13 +583,14 @@ def subdomain_scan(
 					process.wait()
 
 				elif tool == 'assetfinder':
-					assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
-						domain.name, results_dir)
+					assetfinder_command = 'assetfinder --subs-only {}'.format(
+						domain.name)
 
 					# Run Assetfinder
 					logging.info(assetfinder_command)
-					process = subprocess.Popen(assetfinder_command.split())
-					process.wait()
+					with open("{}/from_assetfinder.txt".format(results_dir), "w+") as f:
+						process = subprocess.Popen(assetfinder_command.split(), stdout=f)
+						process.wait()
 
 				elif tool == 'sublist3r':
 					sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
