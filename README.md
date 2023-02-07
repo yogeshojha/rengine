@@ -74,9 +74,9 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 
 #### reNgine 2.0 codenamed Jasper
 
-I am currently working on reNgine 2.0 likely to be announced sometimes between May to August 2023. This version will be codenamed for Jasper. reNgine 2.0 will be the most advanced reNgine ever, a tons of work will be done in how scans are performed, things such as Pause and Resume Scan, Axiom Integration, more deeper coorelation, Project Options, Multiple Tenants, etc.
+I am currently working on reNgine 2.0 likely to be announced sometimes between May to August 2023. This version will be codenamed for Jasper. reNgine 2.0 will be the most advanced reNgine ever, tons of work will be done in how scans are performed, things such as Pause and Resume Scan, Axiom Integration, more deeper correlation, Project Options, Multiple Tenants, etc.
 
-Please submit your feature requests via github issues or you can [use this form](https://docs.google.com/forms/d/1Ow0XYVm8nKirG5Gvnn4Jlvx0NZ9I6CQzShXXfzhE8aE/viewform?edit_requested=true) as well.
+Please submit your feature requests via GitHub issues, or you can [use this form](https://docs.google.com/forms/d/1Ow0XYVm8nKirG5Gvnn4Jlvx0NZ9I6CQzShXXfzhE8aE/viewform) as well.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -90,19 +90,19 @@ You can watch [reNgine 1.1 release trailer here.](https://www.youtube.com/watch?
 
 reNgine is a web application reconnaissance suite with a focus on a highly configurable streamlined recon process. reNgine is backed by a database, with data correlation and organization, the custom query “like” language for recon data filtering, reNgine aims to address the shortcomings of traditional recon workflow.
 
-Developers behind the reNgine understand that recon data can be huge, and manually looking up for entries to attack could be cumbersome, with features like identifying Interesting Subdomains, helping penetration testers focus on attack rather than recon.
+Developers behind reNgine understand that recon data can be huge, and manually looking up for entries to attack could be cumbersome, with features like identifying Interesting Subdomains, helping penetration testers focus on attack rather than recon.
 
 reNgine is also focused on continuous monitoring. Penetration testers can choose to schedule the scan at periodic intervals and get notified on notification channels like Discord, Slack, and Telegram for any new subdomains or vulnerabilities identified, or any recon data changes.
 
 Interoperability is something every recon tool needs, and reNgine is no different. Beginning reNgine 1.0, we additionally developed features such as import and export subdomains, endpoints, GF pattern matched endpoints, etc. This will allow you to use your favorite recon workflow in conjunction with reNgine.
 
-PDF reports are something every individual or a team needs. Beginning reNgine 1.1, reNgine also comes with an option to download PDF reports. One can also choose the type of report, Full Scan Report or just a reconnaissance report. Also, we understand that PDF reports need to be customizable. Choose the color of the report you like, customize the executive summary, etc. You choose the way your pdf report looks!
+PDF reports are something every individual or team needs. Beginning reNgine 1.1, reNgine also comes with an option to download PDF reports. One can also choose the type of report, Full Scan Report or just a reconnaissance report. Also, we understand that PDF reports need to be customizable. Choose the color of the report you like, customize the executive summary, etc. You choose the way your pdf report looks!
 
-reNgine features Highly configurable scan engines based on YAML, that allows penetration testers to create as many recon engines as they want of their choice, configure as they wish, and use them against any targets for the scan. These engines allow penetration testers to use tools of their choice, the configuration of their choice. Out of the box, reNgine comes with several scan engines like Full Scan, Passive Scan, Screenshot gathering, OSINT Engine, etc.
+reNgine features Highly configurable scan engines based on YAML, that allow penetration testers to create as many recon engines as they want of their choice, configure as they wish, and use them against any targets for the scan. These engines allow penetration testers to use tools of their choice, the configuration of their choice. Out of the box, reNgine comes with several scan engines like Full Scan, Passive Scan, Screenshot gathering, OSINT Engine, etc.
 
 Our focus has always been on finding the right recon data with very minimal effort. After having several discussions with fellow hackers/pentesters, a screenshots gallery was a must, reNgine also comes with a screenshot gallery, and what's more exciting than having a screenshot gallery with filters, filter screenshots with HTTP status, technology, ports, and services.
 
-We also want our fellow hackers to stay ahead of the game, reNgine also comes with automatic vulnerability reporting (ATM only Hackerone is supported, other platforms may come soon). This allows hackers to define their vulnerability report template and reNgine will do the rest of the job to report vulnerability as soon as it is identified.
+We also want our fellow hackers to stay ahead of the game, reNgine also comes with automatic vulnerability reporting (ATM only Hackerone is supported, other platforms may come soon). This allows hackers to define their vulnerability report template, and reNgine will do the rest of the job to report vulnerability as soon as it is identified.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -111,19 +111,19 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 ## Features
 
 - Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
-- Highly configurable YAML based Scan Engines
+- Highly configurable YAML-based Scan Engines
 - Support for Parallel Scans and Subscans
-- Automatically report Vulnerabilities to Hackerone
+- Automatically report Vulnerabilities to HackerOne
 - Recon Data visualization
-- OSINT Capabilities (Meta info Gathering, Employees Gathering, Email Address with an option to look password in the leaked database, - dorks, etc)
-- Customizable Alerts/Notification on Slack, Discord, and Telegram
+- OSINT Capabilities (Meta info Gathering, Employees Gathering, Email Address with an option to look password in the leaked database, - dorks, etc.)
+- Customizable Alerts/Notifications on Slack, Discord, and Telegram
 - Perform Advanced Query lookup using natural language alike and, or, not operations
 - Recon Notes and Todos
 - Clocked Scans (Run reconnaissance exactly at X Hours and Y minutes) and Periodic Scans (Runs reconnaissance every X minutes/- hours/days/week)
 - Proxy Support
 - Screenshot Gallery with Filters
 - Powerful recon data filtering with autosuggestions
-- Recon Data changes, finds new/removed subdomains/endpoints
+- Recon Data changes, find new/removed subdomains/endpoints
 - Tag targets into the Organization
 - Identify Interesting Subdomains
 - Custom GF patterns and custom Nuclei Templates
@@ -140,7 +140,7 @@ We also want our fellow hackers to stay ahead of the game, reNgine also comes wi
 
 ## Documentation
 
-You can find reNgine documentation on [https://rengine.wiki](https://rengine.wiki)
+You can find reNgine documentation at [https://rengine.wiki](https://rengine.wiki)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -203,7 +203,7 @@ The bounty reward is determined by an industry-first equation from huntr.dev to 
 
 **What do you get in return?**
 
-* Much thanks from Maintainer
+* Many thanks from Maintainer
 * Monetary Rewards
 * CVE ID(s)
 
@@ -264,7 +264,7 @@ You can begin with resolving any [open issues](https://github.com/yogeshojha/ren
 
 ## reNgine Support
 
-Please do not raise any github issues for support requests. Instead, [join our discord channel #support](https://discord.gg/azv6fzhNCE)
+Please do not raise any GitHub issues for support requests. Instead, [join our discord channel #support](https://discord.gg/azv6fzhNCE)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -289,10 +289,10 @@ OR
 
 - Add a [GitHub Star](https://github.com/yogeshojha/rengine) to the project.
 - Tweet about this project, or maybe blogs?
-- Maybe nominate me for [github stars?](https://stars.github.com/nominate/)
+- Maybe nominate me for [GitHub Stars?](https://stars.github.com/nominate/)
 - Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features.
 
-It takes a considerable amount of time to add new features and make sure everything is working. A donation is your way of saying: **reNgine is awesome**
+It takes a considerable amount of time to add new features and make sure everything is working. A donation is your way of saying: **reNgine is awesome**.
 
 Any support is greatly appreciated! Thank you!
 
