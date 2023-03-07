@@ -1069,7 +1069,7 @@ def port_scanning(
 		lines = port_json_result.readlines()
 		for line in lines:
 			json_st = json.loads(line.strip())
-			port_number = json_st['port']
+			port_number = json_st['port']['Port']
 			ip_address = json_st['ip']
 			host = json_st['host']
 
