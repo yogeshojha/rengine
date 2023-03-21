@@ -59,6 +59,7 @@ ENV PATH="${PATH}:${GOROOT}/bin"
 ENV PATH="${PATH}:${GOPATH}/bin"
 
 ENV GOPATH=$HOME/go
+ENV GOPROXY="https://goproxy.cn"
 ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
 # Make directory for app
