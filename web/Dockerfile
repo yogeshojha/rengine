@@ -97,6 +97,7 @@ RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
+RUN pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple
 RUN pip3 install --upgrade setuptools pip && \
     pip3 install -r /tmp/requirements.txt
 
