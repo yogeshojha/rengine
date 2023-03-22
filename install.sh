@@ -95,6 +95,9 @@ echo "#########################################################################"
 if systemctl is-active docker >/dev/null 2>&1; then
   tput setaf 4;
   echo "Docker is running."
+ elif service docker status > /dev/null 2>&1; then
+  tput setaf 4;
+  echo "Docker is running"
 else
   tput setaf 1;
   echo "Docker is not running. Please run docker and try again."
