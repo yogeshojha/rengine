@@ -44,7 +44,7 @@ reNgine makes it easy for penetration testers and security auditors to gather re
     ·
     <a href="https://rengine.wiki/changelog/">What's new</a>
     ·
-    <a href="https://github.com/yogeshojha/rengine/blob/master/CONTRIBUTING.md">Contribute</a>
+    <a href="https://github.com/yogeshojha/rengine/blob/master/.github/CONTRIBUTING.md">Contribute</a>
     ·
     <a href="https://github.com/yogeshojha/rengine/issues">Report Bug</a>
     ·
