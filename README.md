@@ -154,7 +154,7 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 git clone https://github.com/yogeshojha/rengine && cd rengine
 ```
 
-2. Edit the dotenv file, **please make sure to change the password for postgresql POSTGRES_PASSWORD !**
+2. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
 
 ```
 nano .env
