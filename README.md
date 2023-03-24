@@ -164,7 +164,7 @@ nano .env
 sudo ./install.sh
 ```
 
-if `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
+If `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
 
@@ -173,6 +173,16 @@ A detailed installation guide can also be found [here](https://www.rffuste.com/2
 ## Installation (Mac/Windows/Other)
 
 Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
+
+## Updating
+
+1. Updating is as simple as running the following command:
+
+```bash
+sudo ./update.sh
+```
+
+If `./update.sh` does not have install permission, please change it, `chmod +x update.sh`
 
 ## Changelog
 
