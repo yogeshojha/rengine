@@ -72,7 +72,7 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 
 ### reNgine 2.0 codenamed Jasper
 
-I am currently working on reNgine 2.0 likely to be announced sometimes between May to August 2023. This version will be codenamed for Jasper. reNgine 2.0 will be the most advanced reNgine ever, tons of work will be done in how scans are performed, things such as Pause and Resume Scan, Axiom Integration, more deeper correlation, Project Options, Multiple Tenants, etc.
+I am currently working on reNgine 2.0 likely to be announced sometime between May and August 2023. This version will be codenamed for Jasper. reNgine 2.0 will be the most advanced reNgine ever, tons of work will be done in how scans are performed, things such as Pause and Resume Scan, Axiom Integration, more deeper correlation, Project Options, Multiple Tenants, etc.
 
 Please submit your feature requests via GitHub issues.
 
