@@ -85,7 +85,7 @@ services:
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:
-      - DEBUG=0
+      - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - POSTGRES_DB=${POSTGRES_DB}
