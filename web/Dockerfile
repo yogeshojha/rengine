@@ -75,7 +75,7 @@ RUN GO111MODULE=on go install -v -v github.com/bp0lr/gauplus@latest
 
 RUN GO111MODULE=on go install -v github.com/jaeles-project/gospider@latest
 
-RUN go install -v github.com/OWASP/Amass/v3/...@latest
+RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 
 RUN go install -v github.com/ffuf/ffuf@latest
 
