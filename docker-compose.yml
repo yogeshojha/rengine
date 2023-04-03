@@ -112,7 +112,9 @@ services:
       - celery
       - celery-beat
     networks:
-      - rengine_network
+      rengine_network:
+        aliases:
+          - rengine
 
   tor:
     image: peterdavehello/tor-socks-proxy
