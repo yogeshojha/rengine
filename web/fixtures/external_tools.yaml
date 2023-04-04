@@ -96,16 +96,16 @@
 - model: scanEngine.installedexternaltool
   pk: 6
   fields:
-    logo_url: https://raw.githubusercontent.com/OWASP/Amass/master/images/amass_logo.png
+    logo_url: https://raw.githubusercontent.com/owasp-amass/amass/master/images/amass_logo.png
     name: amass
     description: The OWASP Amass Project performs network mapping of attack surfaces
       and external asset discovery using open source information gathering and active
       reconnaissance techniques.
-    github_url: https://github.com/OWASP/Amass
-    license_url: https://github.com/OWASP/Amass/blob/master/LICENSE
+    github_url: https://github.com/owasp-amass/amass
+    license_url: https://github.com/owasp-amass/amass/blob/master/LICENSE
     version_lookup_command: amass -version
-    update_command: go install -v github.com/OWASP/Amass/v3/...@latest
-    install_command: go install -v github.com/OWASP/Amass/v3/...@latest
+    update_command: go install -v github.com/owasp-amass/amass/v3/...@latest
+    install_command: go install -v github.com/owasp-amass/amass/v3/...@latest
     version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: true
