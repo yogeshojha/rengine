@@ -77,7 +77,7 @@ RUN GO111MODULE=on go install -v github.com/jaeles-project/gospider@latest
 
 RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 
-RUN go install -v github.com/ffuf/ffuf@latest
+RUN go install github.com/ffuf/ffuf/v2@latest
 
 RUN go install -v github.com/tomnomnom/assetfinder@latest
 RUN GO111MODULE=on go install -v github.com/tomnomnom/gf@latest

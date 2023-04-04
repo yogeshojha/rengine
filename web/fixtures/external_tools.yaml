@@ -121,8 +121,8 @@
     github_url: https://github.com/ffuf/ffuf
     license_url: https://github.com/ffuf/ffuf/blob/master/LICENSE
     version_lookup_command: ffuf -V
-    update_command: go install -v github.com/ffuf/ffuf@latest
-    install_command: ''
+    update_command: go install github.com/ffuf/ffuf/v2@latest
+    install_command: go install github.com/ffuf/ffuf/v2@latest
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: false
