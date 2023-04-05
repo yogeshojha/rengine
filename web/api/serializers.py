@@ -429,15 +429,15 @@ class VisualiseSubdomainSerializer(serializers.ModelSerializer):
 					'description': 'Informational',
 					'children': info_serializer.data
 				})
-			uknown = vulnerability.filter(severity=-1)
-			if uknown:
-				uknown_serializer = VisualiseVulnerabilitySerializer(
-					uknown,
+			unknown = vulnerability.filter(severity=-1)
+			if unknown:
+				unknown_serializer = VisualiseVulnerabilitySerializer(
+					unknown,
 					many=True
 				)
 				vulnerability_data.append({
 					'description': 'Unknown',
-					'children': uknown_serializer.data
+					'children': unknown_serializer.data
 				})
 
 			if vulnerability_data:

@@ -178,7 +178,7 @@ function get_external_tool_latest_version(tool_id, tool_name){
             // update available
             Swal.fire({
               title: 'Update available! Version: ' + latest_version,
-              text: `Your current version of ${ htmlEncode(tool_name)} is v${current_version}, but latest version v${latest_version} is available, please udpate!`,
+              text: `Your current version of ${ htmlEncode(tool_name)} is v${current_version}, but latest version v${latest_version} is available, please update!`,
               icon: 'info',
               confirmButtonText: 'Update ' +  htmlEncode(tool_name)
             }).then((result) => {
