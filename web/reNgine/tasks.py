@@ -1787,11 +1787,11 @@ def vulnerability_scan(
 
 		vulnerability_scan_input_file = results_dir + urls_path
 
-		nuclei_command = 'nuclei -json -l {} -o {}'.format(
+		nuclei_command = 'nuclei -j -l {} -o {}'.format(
 			vulnerability_scan_input_file, vulnerability_result_path)
 	else:
 		url_to_scan = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-		nuclei_command = 'nuclei -json -u {} -o {}'.format(url_to_scan, vulnerability_result_path)
+		nuclei_command = 'nuclei -j -u {} -o {}'.format(url_to_scan, vulnerability_result_path)
 		domain_id = scan_history.domain.id
 		domain = Domain.objects.get(id=domain_id)
 
