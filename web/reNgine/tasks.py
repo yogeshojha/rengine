@@ -2913,21 +2913,90 @@ def query_whois(ip_domain):
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 			domain.save()
-		domain_info = domain.domain_info
+		domain_info = DottedDict(domain.domain_info)
 		is_domain_exists = True
 	else:
 		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
 		command = f'netlas host {ip_domain} -f json'
 		result = subprocess.check_output(command.split()).decode('utf-8')
+		if 'Failed to parse response data' in result:
+			# do fallback
+			return {
+				'status': False,
+				'ip_domain': ip_domain,
+				'result': "Netlas limit exceeded.",
+				'message': 'Netlas limit exceeded.'
+			}
 		try:
 			result = json.loads(result)
-			whois = result.get('whois')
+			logger.info(result)
+			whois = result.get('whois') if result.get('whois') else {}
 
 			domain_info = DottedDict()
 
 			domain_info.created = whois.get('created_date')
 			domain_info.expires = whois.get('expiration_date')
 			domain_info.updated = whois.get('updated_date')
+
+
+			if 'registrant' in whois:
+				registrant = whois.get('registrant')
+				domain_info.registrant_name = registrant.get('name')
+				domain_info.registrant_country = registrant.get('country')
+				domain_info.registrant_id = registrant.get('id')
+				domain_info.registrant_state = registrant.get('province')
+				domain_info.registrant_city = registrant.get('city')
+				domain_info.registrant_phone = registrant.get('phone')
+				domain_info.registrant_address = registrant.get('street')
+				domain_info.registrant_organization = registrant.get('organization')
+				domain_info.registrant_fax = registrant.get('fax')
+				domain_info.registrant_zip_code = registrant.get('postal_code')
+				email_search = EMAIL_REGEX.search(str(registrant.get('email')))
+				field_content = email_search.group(0) if email_search else None
+				domain_info.registrant_email = field_content
+
+			if 'administrative' in whois:
+				administrative = whois.get('administrative')
+				domain_info.admin_name = administrative.get('name')
+				domain_info.admin_country = administrative.get('country')
+				domain_info.admin_id = administrative.get('id')
+				domain_info.admin_state = administrative.get('province')
+				domain_info.admin_city = administrative.get('city')
+				domain_info.admin_phone = administrative.get('phone')
+				domain_info.admin_address = administrative.get('street')
+				domain_info.admin_organization = administrative.get('organization')
+				domain_info.admin_fax = administrative.get('fax')
+				domain_info.admin_zip_code = administrative.get('postal_code')
+				mail_search = EMAIL_REGEX.search(str(administrative.get('email')))
+				field_content = email_search.group(0) if email_search else None
+				domain_info.admin_email = field_content
+
+			if 'technical' in whois:
+				technical = whois.get('technical')
+				domain_info.tech_name = technical.get('name')
+				domain_info.tech_country = technical.get('country')
+				domain_info.tech_state = technical.get('province')
+				domain_info.tech_id = technical.get('id')
+				domain_info.tech_city = technical.get('city')
+				domain_info.tech_phone = technical.get('phone')
+				domain_info.tech_address = technical.get('street')
+				domain_info.tech_organization = technical.get('organization')
+				domain_info.tech_fax = technical.get('fax')
+				domain_info.tech_zip_code = technical.get('postal_code')
+				mail_search = EMAIL_REGEX.search(str(technical.get('email')))
+				field_content = email_search.group(0) if email_search else None
+				domain_info.tech_email = field_content
+
+			if 'dns' in result:
+				dns = result.get('dns')
+				domain_info.mx_records = dns.get('mx')
+				domain_info.txt_records = dns.get('txt')
+				domain_info.a_records = dns.get('a')
+
+			domain_info.ns_records = whois.get('name_servers')
+			domain_info.dnssec = whois.get('dnssec')
+			domain_info.status = whois.get('status')
+
 
 		except Exception as e:
 			return {
@@ -2940,55 +3009,58 @@ def query_whois(ip_domain):
 	return {
 		'status': True,
 		'ip_domain': ip_domain,
-		'domain': {
-			'created': domain_info.get('created'),
-			'updated': domain_info.get('updated'),
-			'expires': domain_info.get('expires'),
-			'registrar': DomainRegistrarSerializer(domain_info.get('registrar')).data['name'],
-			'geolocation_iso': DomainCountrySerializer(domain_info.get('registrant_country')).data['name'],
-			'dnssec': domain_info.get('dnssec'),
-			'status': [status['status'] for status in DomainWhoisStatusSerializer(domain_info.get('status'), many=True).data]
+		'created': domain_info.get('created'),
+		'updated': domain_info.get('updated'),
+		'expires': domain_info.get('expires'),
+		'registrar': domain_info.get('registrar'),
+		'geolocation_iso': domain_info.get('registrant_country'),
+		'dnssec': domain_info.get('dnssec'),
+		'status': domain_info.get('status'),
+		'dns': {
+			'a': domain_info.get('a_records'),
+			'mx': domain_info.get('mx_records'),
+			'txt': domain_info.get('txt_records'),
 		},
 		'registrant': {
-			'name': DomainRegisterNameSerializer(domain_info.get('registrant_name')).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.get('registrant_organization')).data['name'],
-			'address': DomainAddressSerializer(domain_info.get('registrant_address')).data['name'],
-			'city': DomainCitySerializer(domain_info.get('registrant_city')).data['name'],
-			'state': DomainStateSerializer(domain_info.get('registrant_state')).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.get('registrant_zip_code')).data['name'],
-			'country': DomainCountrySerializer(domain_info.get('registrant_country')).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.get('registrant_phone')).data['name'],
-			'fax': DomainFaxSerializer(domain_info.get('registrant_fax')).data['name'],
-			'email': DomainEmailSerializer(domain_info.get('registrant_email')).data['name'],
+			'name': domain_info.get('registrant_name'),
+			'id': domain_info.get('registrant_id'),
+			'organization': domain_info.get('registrant_organization'),
+			'address': domain_info.get('registrant_address'),
+			'city': domain_info.get('registrant_city'),
+			'state': domain_info.get('registrant_state'),
+			'zipcode': domain_info.get('registrant_zip_code'),
+			'country': domain_info.get('registrant_country'),
+			'phone': domain_info.get('registrant_phone'),
+			'fax': domain_info.get('registrant_fax'),
+			'email': domain_info.get('registrant_email'),
 		},
 		'admin': {
-			'name': DomainRegisterNameSerializer(domain_info.get('admin_name')).data['name'],
-			'id': DomainRegistrarIDSerializer(domain_info.get('admin_id')).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.get('admin_organization')).data['name'],
-			'address': DomainAddressSerializer(domain_info.get('admin_address')).data['name'],
-			'city': DomainCitySerializer(domain_info.get('admin_city')).data['name'],
-			'state': DomainStateSerializer(domain_info.get('admin_state')).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.get('admin_zip_code')).data['name'],
-			'country': DomainCountrySerializer(domain_info.get('admin_country')).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.get('admin_phone')).data['name'],
-			'fax': DomainFaxSerializer(domain_info.get('admin_fax')).data['name'],
-			'email': DomainEmailSerializer(domain_info.get('admin_email')).data['name'],
+			'name': domain_info.get('admin_name'),
+			'id': domain_info.get('admin_id'),
+			'organization': domain_info.get('admin_organization'),
+			'address':domain_info.get('admin_address'),
+			'city': domain_info.get('admin_city'),
+			'state': domain_info.get('admin_state'),
+			'zipcode': domain_info.get('admin_zip_code'),
+			'country': domain_info.get('admin_country'),
+			'phone': domain_info.get('admin_phone'),
+			'fax': domain_info.get('admin_fax'),
+			'email': domain_info.get('admin_email'),
 		},
 		'technical_contact': {
-			'name': DomainRegisterNameSerializer(domain_info.get('tech_name')).data['name'],
-			'id': DomainRegistrarIDSerializer(domain_info.get('tech_id')).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.get('tech_organization')).data['name'],
-			'address': DomainAddressSerializer(domain_info.get('tech_address')).data['name'],
-			'city': DomainCitySerializer(domain_info.get('tech_city')).data['name'],
-			'state': DomainStateSerializer(domain_info.get('tech_state')).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.get('tech_zip_code')).data['name'],
-			'country': DomainCountrySerializer(domain_info.get('tech_country')).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.get('tech_phone')).data['name'],
-			'fax': DomainFaxSerializer(domain_info.get('tech_fax')).data['name'],
-			'email': DomainEmailSerializer(domain_info.get('tech_email')).data['name'],
+			'name': domain_info.get('tech_name'),
+			'id': domain_info.get('tech_id'),
+			'organization': domain_info.get('tech_organization'),
+			'address': domain_info.get('tech_address'),
+			'city': domain_info.get('tech_city'),
+			'state': domain_info.get('tech_state'),
+			'zipcode': domain_info.get('tech_zip_code'),
+			'country': domain_info.get('tech_country'),
+			'phone': domain_info.get('tech_phone'),
+			'fax': domain_info.get('tech_fax'),
+			'email': domain_info.get('tech_email'),
 		},
-		'nameservers': [ns['name'] for ns in NameServersSerializer(domain_info.get('name_servers'), many=True).data],
-		'raw_text': domain_info.get('raw_text')
+		'nameservers': domain_info.get('ns_records'),
 	}
 
 
