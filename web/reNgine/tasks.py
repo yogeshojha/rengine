@@ -2997,6 +2997,13 @@ def query_whois(ip_domain):
 			domain_info.dnssec = whois.get('dnssec')
 			domain_info.status = whois.get('status')
 
+			if 'registrar' in whois:
+				registrar = whois.get('registrar')
+				domain_info.registrar_name = registrar.get('name')
+				domain_info.registrar_email = registrar.get('email')
+				domain_info.registrar_phone = registrar.get('phone')
+				domain_info.registrar_url = registrar.get('url')
+
 
 		except Exception as e:
 			return {
@@ -3009,13 +3016,19 @@ def query_whois(ip_domain):
 	return {
 		'status': True,
 		'ip_domain': ip_domain,
+		'dnssec': domain_info.get('dnssec'),
 		'created': domain_info.get('created'),
 		'updated': domain_info.get('updated'),
 		'expires': domain_info.get('expires'),
-		'registrar': domain_info.get('registrar'),
+		'registrar': {
+			'name': domain_info.get('registrar_name'),
+			'phone': domain_info.get('registrar_phone'),
+			'email': domain_info.get('registrar_email'),
+			'url': domain_info.get('registrar_url'),
+		},
 		'geolocation_iso': domain_info.get('registrant_country'),
-		'dnssec': domain_info.get('dnssec'),
 		'status': domain_info.get('status'),
+		'whois_server': domain_info.get('whois_server'),
 		'dns': {
 			'a': domain_info.get('a_records'),
 			'mx': domain_info.get('mx_records'),
