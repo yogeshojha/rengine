@@ -148,23 +148,23 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
 
 1. Clone this repo
 
-```bash
-git clone https://github.com/yogeshojha/rengine && cd rengine
-```
+    ```bash
+    git clone https://github.com/yogeshojha/rengine && cd rengine
+    ```
 
 1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
 
-```bash
-nano .env
-```
+    ```bash
+    nano .env
+    ```
 
 1. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
 
-```bash
-sudo ./install.sh
-```
+    ```bash
+    sudo ./install.sh
+    ```
 
-If `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
+    If `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
 
