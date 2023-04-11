@@ -3020,12 +3020,6 @@ def query_whois(ip_domain):
 		'created': domain_info.get('created'),
 		'updated': domain_info.get('updated'),
 		'expires': domain_info.get('expires'),
-		'registrar': {
-			'name': domain_info.get('registrar_name'),
-			'phone': domain_info.get('registrar_phone'),
-			'email': domain_info.get('registrar_email'),
-			'url': domain_info.get('registrar_url'),
-		},
 		'geolocation_iso': domain_info.get('registrant_country'),
 		'status': domain_info.get('status'),
 		'whois_server': domain_info.get('whois_server'),
@@ -3033,6 +3027,12 @@ def query_whois(ip_domain):
 			'a': domain_info.get('a_records'),
 			'mx': domain_info.get('mx_records'),
 			'txt': domain_info.get('txt_records'),
+		},
+		'registrar': {
+			'name': domain_info.get('registrar_name'),
+			'phone': domain_info.get('registrar_phone'),
+			'email': domain_info.get('registrar_email'),
+			'url': domain_info.get('registrar_url'),
 		},
 		'registrant': {
 			'name': domain_info.get('registrant_name'),
