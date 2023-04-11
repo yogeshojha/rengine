@@ -7,7 +7,6 @@ import time
 from datetime import datetime
 from urllib.parse import urlparse
 
-import asyncwhois
 import validators
 import whatportis
 import xmltodict
@@ -134,12 +133,12 @@ def initiate_scan(
 	# Save imported subdomains in DB
 	save_imported_subdomains(imported_subdomains, ctx=ctx)
 
-	# Create initial subdomain in DB: make a copy of domain as a subdomain so 
+	# Create initial subdomain in DB: make a copy of domain as a subdomain so
 	# that other tasks using subdomains can use it.
 	subdomain_name = domain.name
 	subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
-	# If enable_http_crawl is set, create an initial root HTTP endpoint so that 
+	# If enable_http_crawl is set, create an initial root HTTP endpoint so that
 	# HTTP crawling can start somewhere
 	http_url = f'{domain.name}{url_filter}' if url_filter else domain.name
 	endpoint, _ = save_endpoint(
@@ -272,7 +271,7 @@ def initiate_subscan(
 		'url_filter': url_filter
 	}
 
-	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP 
+	# Create initial endpoints in DB: find domain HTTP endpoint so that HTTP
 	# crawling can start somewhere
 	base_url = f'{subdomain.name}{url_filter}' if url_filter else subdomain.name
 	endpoint, _ = save_endpoint(
@@ -364,7 +363,7 @@ def subdomain_discovery(
 		host=None,
 		ctx=None,
 		description=None):
-	"""Uses a set of tools (see SUBDOMAIN_SCAN_DEFAULT_TOOLS) to scan all 
+	"""Uses a set of tools (see SUBDOMAIN_SCAN_DEFAULT_TOOLS) to scan all
 	subdomains associated with a domain.
 
 	Args:
@@ -465,7 +464,7 @@ def subdomain_discovery(
 				f'Subdomain discovery tool "{tool}" raised an exception')
 			logger.exception(e)
 
-	# Gather all the tools' results in one single file. Write subdomains into 
+	# Gather all the tools' results in one single file. Write subdomains into
 	# separate files, and sort all subdomains.
 	run_command(
 		f'cat {self.results_dir}/subdomains_*.txt > {self.output_path}',
@@ -492,7 +491,7 @@ def subdomain_discovery(
 		subdomain_name = line.strip()
 		valid_url = bool(validators.url(subdomain_name))
 		valid_domain = (
-			bool(validators.domain(subdomain_name)) or 
+			bool(validators.domain(subdomain_name)) or
 			bool(validators.ipv4(subdomain_name)) or
 			bool(validators.ipv6(subdomain_name)) or
 			valid_url
@@ -580,7 +579,7 @@ def osint(self, host=None, ctx={}, description=None):
 @app.task(base=RengineTask, bind=True)
 def osint_discovery(self, host=None, ctx={}):
 	"""Run OSInt discovery.
-	
+
 	Args:
 		host (str): Hostname to scan.
 
@@ -634,7 +633,7 @@ def osint_discovery(self, host=None, ctx={}):
 	if 'employees' in osint_lookup:
 		ctx['track'] = False
 		results = theHarvester(host=host, ctx=ctx)
-	
+
 	results['emails'] = results.get('emails', []) + emails
 	results['creds'] = creds
 	results['meta_info'] = meta_info
@@ -1031,7 +1030,7 @@ def theHarvester(self, host=None, ctx={}):
 		ctx['track'] = False
 		http_crawl(urls, ctx=ctx)
 
-	# TODO: Lots of ips unrelated with our domain are found, disabling 
+	# TODO: Lots of ips unrelated with our domain are found, disabling
 	# this for now.
 	# ips = data.get('ips', [])
 	# for ip_address in ips:
@@ -1075,7 +1074,7 @@ def h8mail(self, input_path=None, ctx={}):
 	with open(output_path) as f:
 		data = json.load(f)
 		creds = data.get('targets', [])
-	
+
 	# TODO: go through h8mail output and save emails to DB
 	for cred in creds:
 		logger.warning(cred)
@@ -1412,8 +1411,8 @@ def nmap(
 	# Save vulnerabilities found by nmap
 	vulns_str = ''
 	for vuln_data in vulns:
-		# URL is not necessarily an HTTP URL when running nmap (can be any 
-		# other vulnerable protocols). Look for existing endpoint and use its 
+		# URL is not necessarily an HTTP URL when running nmap (can be any
+		# other vulnerable protocols). Look for existing endpoint and use its
 		# URL as vulnerability.http_url if it exists.
 		url = vuln_data['http_url']
 		endpoint = EndPoint.objects.filter(http_url__contains=url).first()
@@ -1525,7 +1524,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	max_time = config.get(MAX_TIME, 0)
 	match_http_status = config.get(MATCH_HTTP_STATUS, FFUF_DEFAULT_MATCH_HTTP_STATUS)
 	mc = ','.join([str(c) for c in match_http_status])
-	recursive_level = config.get(RECURSIVE_LEVEL, FFUF_DEFAULT_RECURSIVE_LEVEL)	
+	recursive_level = config.get(RECURSIVE_LEVEL, FFUF_DEFAULT_RECURSIVE_LEVEL)
 	stop_on_error = config.get(STOP_ON_ERROR, False)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
@@ -1747,7 +1746,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		discovered_urls = f.readlines()
 		self.notify(fields={'Discovered URLs': len(discovered_urls)})
 
-	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them 
+	# Some tools can have an URL in the format <URL>] - <PATH> or <URL> - <PATH>, add them
 	# to the final URL list
 	all_urls = []
 	for url in discovered_urls:
@@ -1792,7 +1791,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	#-------------------#
 	# GF PATTERNS MATCH #
 	#-------------------#
-	
+
 	# Combine old gf patterns with new ones
 	if gf_patterns:
 		self.scan.used_gf_patterns = ','.join(gf_patterns)
@@ -1811,7 +1810,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		gf_output_file = f'{self.results_dir}/gf_patterns_{gf_pattern}.txt'
 		cmd = f'cat {self.output_path} | gf {gf_pattern} | grep -Eo {host_regex} >> {gf_output_file}'
 		run_command(
-	  		cmd,
+			cmd,
 			shell=True,
 			history_file=self.history_file,
 			scan_id=self.scan_id,
@@ -1822,7 +1821,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			logger.error(f'Could not find GF output file {gf_output_file}. Skipping GF pattern "{gf_pattern}"')
 			continue
 
-		# Read output file line by line and 
+		# Read output file line by line and
 		with open(gf_output_file, 'r') as f:
 			lines = f.readlines()
 
@@ -1894,7 +1893,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
 	severities_str = ','.join(severities)
-	
+
 	# Get alive endpoints
 	if urls:
 		with open(input_path, 'w') as f:
@@ -1944,7 +1943,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			templates.append(template)
 		else:
 			templates.extend(nuclei_templates)
-	
+
 	if custom_nuclei_templates:
 		custom_nuclei_template_paths = [f'{str(elem)}.yaml' for elem in custom_nuclei_templates]
 		template = templates.extend(custom_nuclei_template_paths)
@@ -2107,11 +2106,11 @@ def http_crawl(
 		ctx={},
 		track=True,
 		description=None):
-	"""Use httpx to query HTTP URLs for important info like page titles, http 
+	"""Use httpx to query HTTP URLs for important info like page titles, http
 	status, etc...
 
 	Args:
-		urls (list, optional): A set of URLs to check. Overrides default 
+		urls (list, optional): A set of URLs to check. Overrides default
 			behavior which queries all endpoints related to this scan.
 		method (str): HTTP method to use (GET, HEAD, POST, PUT, DELETE).
 		recrawl (bool, optional): If False, filter out URLs that have already
@@ -2142,7 +2141,7 @@ def http_crawl(
 	# If no URLs found, skip it
 	if not urls:
 		return
-	
+
 	# Re-adjust thread number if few URLs to avoid spinning up a monster to
 	# kill a fly.
 	if len(urls) < threads:
@@ -2309,9 +2308,9 @@ def send_scan_notif(
 		subscan_id=None,
 		engine_id=None,
 		status='RUNNING'):
-	"""Send scan status notification. Works for scan or a subscan if subscan_id 
+	"""Send scan status notification. Works for scan or a subscan if subscan_id
 	is passed.
-	
+
 	Args:
 		scan_history_id (int, optional): ScanHistory id.
 		subscan_id (int, optional): SuScan id.
@@ -2399,7 +2398,7 @@ def send_task_notif(
 		if status:
 			fields['Status'] = f'**{status}**'
 		if engine:
-			fields['Engine'] = engine.engine_name 
+			fields['Engine'] = engine.engine_name
 		if scan:
 			fields['Scan ID'] = f'[#{scan.id}]({url})'
 		if subscan:
@@ -2423,7 +2422,7 @@ def send_task_notif(
 	# Add files to notif
 	files = []
 	attach_file = (
-		notif.send_scan_output_file and 
+		notif.send_scan_output_file and
 		output_path and
 		result and
 		not traceback
@@ -2469,7 +2468,7 @@ def send_file_to_discord(file_path, title=None):
 @app.task
 def send_hackerone_report(vulnerability_id):
 	"""Send HackerOne vulnerability report.
-	
+
 	Args:
 		vulnerability_id (int): Vulnerability id.
 
@@ -2647,7 +2646,7 @@ def parse_nmap_vulscan_output(script_output):
 	provider_name = ''
 
 	# Sort all vulns found by provider so that we can match each provider with
-	# a function that pulls from its API to get more info about the 
+	# a function that pulls from its API to get more info about the
 	# vulnerability.
 	for line in script_output.splitlines():
 		if not line:
@@ -2901,25 +2900,35 @@ def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, fi
 @app.task
 def query_whois(ip_domain):
 	"""Query WHOIS information for an IP or a domain name.
-	
+
 	Args:
 		ip_domain (str): IP address or domain name.
-
+		save_domain (bool): Whether to save domain or not, default False
 	Returns:
 		dict: WHOIS information.
 	"""
-	domain, _ = Domain.objects.get_or_create(name=ip_domain)
-	if not domain.insert_date:
-		domain.insert_date = timezone.now()
-		domain.save()
-	domain_info = domain.domain_info
-	if not domain_info:
-		logger.info(f'Domain info for "{domain}" not found in DB, querying whois')
+	is_domain_exists = False
+	if Domain.objects.filter(name=ip_domain).exists() and Domain.objects.get(name=ip_domain).domain_info:
+		domain = Domain.objects.get(name=ip_domain)
+		if not domain.insert_date:
+			domain.insert_date = timezone.now()
+			domain.save()
+		domain_info = domain.domain_info
+		is_domain_exists = True
+	else:
+		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
+		command = f'netlas host {ip_domain} -f json'
+		result = subprocess.check_output(command.split()).decode('utf-8')
 		try:
-			result = asyncwhois.whois_domain(ip_domain)
-			whois = result.parser_output
-			if not whois.get('domain_name'):
-				raise Warning('No domain name in output')
+			result = json.loads(result)
+			whois = result.get('whois')
+
+			domain_info = DottedDict()
+
+			domain_info.created = whois.get('created_date')
+			domain_info.expires = whois.get('expiration_date')
+			domain_info.updated = whois.get('updated_date')
+
 		except Exception as e:
 			return {
 				'status': False,
@@ -2927,150 +2936,59 @@ def query_whois(ip_domain):
 				'result': "unable to fetch records from WHOIS database.",
 				'message': str(e)
 			}
-		created = whois.get('created')
-		expires = whois.get('expires')
-		updated = whois.get('updated')
-		dnssec = whois.get('dnssec')
-
-		# Save whois information in various tables
-		domain_info = DomainInfo(
-			raw_text=result.query_output.strip(),
-			dnssec=dnssec,
-			created=created,
-			updated=updated,
-			expires=expires)
-		domain_info.save()
-		
-		# Record whois subfields in various DB models
-		whois_fields = {
-			'registrant':
-				[
-					('name', DomainRegisterName),
-					('organization', DomainRegisterOrganization),
-					('address', DomainAddress),
-					('city', DomainCity),
-					('state', DomainState),
-					('zipcode', DomainZipCode),
-					('country', DomainCountry),
-					('phone', DomainPhone),
-					('fax', DomainFax),
-					('email', DomainEmail)
-				],
-			'admin': [
-				('name', DomainRegisterName),
-				('id', DomainRegistrarID),
-				('organization', DomainRegisterOrganization),
-				('address', DomainAddress),
-				('city', DomainCity),
-				('state', DomainState),
-				('zipcode', DomainZipCode),
-				('country', DomainCountry),
-				('email', DomainEmail),
-				('phone', DomainPhone),
-				('fax', DomainFax)
-			]
-		}
-		whois_fields['tech'] = whois_fields['admin'] # same fields
-		logger.info(f'Gathering domain details for {ip_domain}...')
-		for field_parent, fields in whois_fields.items():
-			for (field_name, model_cls) in fields:
-				field_fullname = f'{field_parent}_{field_name}' if field_parent != 'default' else field_name
-				logger.info(f'Processing field {field_fullname}')
-				field_content = whois.get(field_fullname)
-				# serializer_cls = globals()[model_cls.__name__ + 'Serializer']
-
-				# Skip empty fields
-				if not field_content:
-					continue
-
-				# If field is an email, parse it with a regex
-				if field_name == 'email':
-					email_search = EMAIL_REGEX.search(str(field_content))
-					field_content = email_search.group(0) if email_search else None
-
-				# Create object in database
-				try:
-					obj, created = model_cls.objects.get_or_create(name=field_content)
-				except Exception as e:
-					logger.error(e)
-					logger.error(f'Offending field: {field_parent}.{field_name}={field_content}')
-					continue
-
-				# Set attribute in domain_info
-				setattr(domain_info, field_fullname, obj)
-				domain_info.save()
-
-			logger.warning(f'Saved DomainInfo for {ip_domain}.')
-
-			# Whois status
-			whois_status = whois.get('status', [])
-			for _status in whois_status:
-				domain_whois, _ = DomainWhoisStatus.objects.get_or_create(status=_status)
-				domain_info.status.add(domain_whois)
-				# domain_whois_json = DomainWhoisStatusSerializer(domain_whois, many=False).data
-
-			# Nameservers
-			nameservers = whois.get('name_servers', [])
-			for name_server in nameservers:
-				ns, _ = NameServers.objects.get_or_create(name=name_server)
-				domain_info.name_servers.add(ns)
-
-			# Save domain in DB
-			domain.domain_info = domain_info
-			domain.save()
 
 	return {
 		'status': True,
 		'ip_domain': ip_domain,
 		'domain': {
-			'created': domain_info.created,
-			'updated': domain_info.updated,
-			'expires': domain_info.expires,
-			'registrar': DomainRegistrarSerializer(domain_info.registrar).data['name'],
-			'geolocation_iso': DomainCountrySerializer(domain_info.registrant_country).data['name'],
-			'dnssec': domain_info.dnssec,
-			'status': [status['status'] for status in DomainWhoisStatusSerializer(domain_info.status, many=True).data]
+			'created': domain_info.get('created'),
+			'updated': domain_info.get('updated'),
+			'expires': domain_info.get('expires'),
+			'registrar': DomainRegistrarSerializer(domain_info.get('registrar')).data['name'],
+			'geolocation_iso': DomainCountrySerializer(domain_info.get('registrant_country')).data['name'],
+			'dnssec': domain_info.get('dnssec'),
+			'status': [status['status'] for status in DomainWhoisStatusSerializer(domain_info.get('status'), many=True).data]
 		},
 		'registrant': {
-			'name': DomainRegisterNameSerializer(domain_info.registrant_name).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.registrant_organization).data['name'],
-			'address': DomainAddressSerializer(domain_info.registrant_address).data['name'],
-			'city': DomainCitySerializer(domain_info.registrant_city).data['name'],
-			'state': DomainStateSerializer(domain_info.registrant_state).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.registrant_zip_code).data['name'],
-			'country': DomainCountrySerializer(domain_info.registrant_country).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.registrant_phone).data['name'],
-			'fax': DomainFaxSerializer(domain_info.registrant_fax).data['name'],
-			'email': DomainEmailSerializer(domain_info.registrant_email).data['name'],
+			'name': DomainRegisterNameSerializer(domain_info.get('registrant_name')).data['name'],
+			'organization': DomainRegisterOrganizationSerializer(domain_info.get('registrant_organization')).data['name'],
+			'address': DomainAddressSerializer(domain_info.get('registrant_address')).data['name'],
+			'city': DomainCitySerializer(domain_info.get('registrant_city')).data['name'],
+			'state': DomainStateSerializer(domain_info.get('registrant_state')).data['name'],
+			'zipcode': DomainZipCodeSerializer(domain_info.get('registrant_zip_code')).data['name'],
+			'country': DomainCountrySerializer(domain_info.get('registrant_country')).data['name'],
+			'phone': DomainPhoneSerializer(domain_info.get('registrant_phone')).data['name'],
+			'fax': DomainFaxSerializer(domain_info.get('registrant_fax')).data['name'],
+			'email': DomainEmailSerializer(domain_info.get('registrant_email')).data['name'],
 		},
 		'admin': {
-			'name': DomainRegisterNameSerializer(domain_info.admin_name).data['name'],
-			'id': DomainRegistrarIDSerializer(domain_info.admin_id).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.admin_organization).data['name'],
-			'address': DomainAddressSerializer(domain_info.admin_address).data['name'],
-			'city': DomainCitySerializer(domain_info.admin_city).data['name'],
-			'state': DomainStateSerializer(domain_info.admin_state).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.admin_zip_code).data['name'],
-			'country': DomainCountrySerializer(domain_info.admin_country).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.admin_phone).data['name'],
-			'fax': DomainFaxSerializer(domain_info.admin_fax).data['name'],
-			'email': DomainEmailSerializer(domain_info.admin_email).data['name'],
+			'name': DomainRegisterNameSerializer(domain_info.get('admin_name')).data['name'],
+			'id': DomainRegistrarIDSerializer(domain_info.get('admin_id')).data['name'],
+			'organization': DomainRegisterOrganizationSerializer(domain_info.get('admin_organization')).data['name'],
+			'address': DomainAddressSerializer(domain_info.get('admin_address')).data['name'],
+			'city': DomainCitySerializer(domain_info.get('admin_city')).data['name'],
+			'state': DomainStateSerializer(domain_info.get('admin_state')).data['name'],
+			'zipcode': DomainZipCodeSerializer(domain_info.get('admin_zip_code')).data['name'],
+			'country': DomainCountrySerializer(domain_info.get('admin_country')).data['name'],
+			'phone': DomainPhoneSerializer(domain_info.get('admin_phone')).data['name'],
+			'fax': DomainFaxSerializer(domain_info.get('admin_fax')).data['name'],
+			'email': DomainEmailSerializer(domain_info.get('admin_email')).data['name'],
 		},
 		'technical_contact': {
-			'name': DomainRegisterNameSerializer(domain_info.tech_name).data['name'],
-			'id': DomainRegistrarIDSerializer(domain_info.tech_id).data['name'],
-			'organization': DomainRegisterOrganizationSerializer(domain_info.tech_organization).data['name'],
-			'address': DomainAddressSerializer(domain_info.tech_address).data['name'],
-			'city': DomainCitySerializer(domain_info.tech_city).data['name'],
-			'state': DomainStateSerializer(domain_info.tech_state).data['name'],
-			'zipcode': DomainZipCodeSerializer(domain_info.tech_zip_code).data['name'],
-			'country': DomainCountrySerializer(domain_info.tech_country).data['name'],
-			'phone': DomainPhoneSerializer(domain_info.tech_phone).data['name'],
-			'fax': DomainFaxSerializer(domain_info.tech_fax).data['name'],
-			'email': DomainEmailSerializer(domain_info.tech_email).data['name'],
+			'name': DomainRegisterNameSerializer(domain_info.get('tech_name')).data['name'],
+			'id': DomainRegistrarIDSerializer(domain_info.get('tech_id')).data['name'],
+			'organization': DomainRegisterOrganizationSerializer(domain_info.get('tech_organization')).data['name'],
+			'address': DomainAddressSerializer(domain_info.get('tech_address')).data['name'],
+			'city': DomainCitySerializer(domain_info.get('tech_city')).data['name'],
+			'state': DomainStateSerializer(domain_info.get('tech_state')).data['name'],
+			'zipcode': DomainZipCodeSerializer(domain_info.get('tech_zip_code')).data['name'],
+			'country': DomainCountrySerializer(domain_info.get('tech_country')).data['name'],
+			'phone': DomainPhoneSerializer(domain_info.get('tech_phone')).data['name'],
+			'fax': DomainFaxSerializer(domain_info.get('tech_fax')).data['name'],
+			'email': DomainEmailSerializer(domain_info.get('tech_email')).data['name'],
 		},
-		'nameservers': [ns['name'] for ns in NameServersSerializer(domain_info.name_servers, many=True).data],
-		'raw_text': domain_info.raw_text
+		'nameservers': [ns['name'] for ns in NameServersSerializer(domain_info.get('name_servers'), many=True).data],
+		'raw_text': domain_info.get('raw_text')
 	}
 
 
@@ -3278,8 +3196,8 @@ def extract_httpx_url(line):
 	# Handle redirects manually
 	REDIRECT_STATUS_CODES = [301, 302]
 	is_redirect = (
-		status_code in REDIRECT_STATUS_CODES 
-		or 
+		status_code in REDIRECT_STATUS_CODES
+		or
 		any(x in REDIRECT_STATUS_CODES for x in chain_status_codes)
 	)
 	if is_redirect and location:
@@ -3484,7 +3402,7 @@ def save_vulnerability(**vuln_data):
 	if subscan:
 		vuln.vuln_subscan_ids.add(subscan)
 		vuln.save()
-	
+
 	return vuln, created
 
 
@@ -3507,7 +3425,7 @@ def save_endpoint(
 		subscan (startScan.models.SubScan, optional): SubScan object.
 
 	Returns:
-		tuple: (startScan.models.EndPoint, created) where `created` is a boolean 
+		tuple: (startScan.models.EndPoint, created) where `created` is a boolean
 			indicating if the object is new or already existed.
 	"""
 	scheme = urlparse(http_url).scheme
@@ -3557,7 +3475,7 @@ def save_subdomain(subdomain_name, ctx={}):
 		scan_history (startScan.models.ScanHistory): ScanHistory object.
 
 	Returns:
-		tuple: (startScan.models.Subdomain, created) where `created` is a 
+		tuple: (startScan.models.Subdomain, created) where `created` is a
 			boolean indicating if the object has been created in DB.
 	"""
 	scan_id = ctx.get('scan_history_id')
@@ -3598,7 +3516,7 @@ def save_email(email_address, scan_history=None):
 	email, created = Email.objects.get_or_create(address=email_address)
 	if created:
 		logger.warning(f'Found new email address {email_address}')
-	
+
 	# Add email to ScanHistory
 	if scan_history:
 		scan_history.emails.add(email)
@@ -3613,7 +3531,7 @@ def save_employee(name, designation, scan_history=None):
 		designation=designation)
 	if created:
 		logger.warning(f'Found new employee {name}')
-	
+
 	# Add employee to ScanHistory
 	if scan_history:
 		scan_history.employees.add(employee)
@@ -3666,7 +3584,7 @@ def save_imported_subdomains(subdomains, ctx={}):
 
 	# Validate each subdomain and de-duplicate entries
 	subdomains = list(set([
-		subdomain for subdomain in subdomains 
+		subdomain for subdomain in subdomains
 		if validators.domain(subdomain) and domain.name == get_domain_from_subdomain(subdomain)
 	]))
 	if not subdomains:

@@ -1,6 +1,5 @@
 aiodns==3.0.0
 argh==0.26.2
-asyncwhois==1.0.1
 beautifulsoup4==4.9.3
 celery==5.2.7
 degoogle==1.0.1
@@ -22,6 +21,7 @@ humanize==4.3.0
 Markdown==3.3.4
 metafinder==1.1
 netaddr==0.8.0
+netlas==0.4.0
 PyYAML==5.4.1
 PySocks==1.7.1
 psycopg2==2.9.1
