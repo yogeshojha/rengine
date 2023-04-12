@@ -2907,14 +2907,37 @@ def query_whois(ip_domain):
 	Returns:
 		dict: WHOIS information.
 	"""
-	is_domain_exists = False
 	if Domain.objects.filter(name=ip_domain).exists() and Domain.objects.get(name=ip_domain).domain_info:
 		domain = Domain.objects.get(name=ip_domain)
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 			domain.save()
-		domain_info = DottedDict(domain.domain_info)
-		is_domain_exists = True
+		domain_info_db = domain.domain_info
+		domain_info = DottedDict(
+			dnssec=domain_info_db.dnssec,
+			created=domain_info_db.created,
+			updated=domain_info_db.updated,
+			expires=domain_info_db.expires,
+			geolocation_iso=domain_info_db.geolocation_iso,
+			status=[status['name'] for status in DomainWhoisStatusSerializer(domain_info_db.status, many=True).data],
+			whois_server=domain_info_db.whois_server,
+			nameservers=[ns['name'] for ns in NameServersSerializer(domain_info_db.name_servers, many=True).data],
+		)
+		if domain_info_db.dns_records:
+			a_records = []
+			txt_records = []
+			mx_records = []
+			dns_records = [dns for dns in DomainDNSRecordSerializer(domain_info_db.dns_records, many=True).data]
+			for dns in dns_records:
+				if dns.type == 'a':
+					a_records.append(dns.name)
+				elif dns.type == 'txt':
+					txt_records.append(dns.name)
+				elif dns.type == 'mx':
+					mx_records.append(dns.name)
+			domain_info.a_records = a_records
+			domain_info.txt_records = txt_records
+			domain_info.mx_records = mx_records
 	else:
 		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
 		command = f'netlas host {ip_domain} -f json'
@@ -3004,6 +3027,106 @@ def query_whois(ip_domain):
 				domain_info.registrar_phone = registrar.get('phone')
 				domain_info.registrar_url = registrar.get('url')
 
+
+			# save to db if domain exists
+			if Domain.objects.filter(name=ip_domain).exists():
+				domain = Domain.objects.get(name=ip_domain)
+				db_domain_info = DomainInfo()
+				db_domain_info.save()
+				db_domain_info.dnssec = domain_info.get('dnssec')
+				#dates
+				db_domain_info.created = domain_info.get('created')
+				db_domain_info.updated = domain_info.get('updated')
+				db_domain_info.expires = domain_info.get('expires')
+				#registrar
+				db_domain_info.registrar = Registrar.objects.get_or_create(
+					name=domain_info.get('registrar_name'),
+					email=domain_info.get('registrar_email'),
+					phone=domain_info.get('registrar_phone'),
+					url=domain_info.get('registrar_url'),
+				)[0]
+				db_domain_info.registrant = DomainRegistration.objects.get_or_create(
+					name=domain_info.get('registrant_name'),
+					organization=domain_info.get('registrant_organization'),
+					address=domain_info.get('registrant_address'),
+					city=domain_info.get('registrant_city'),
+					state=domain_info.get('registrant_state'),
+					zip_code=domain_info.get('registrant_zip_code'),
+					country=domain_info.get('registrant_country'),
+					email=domain_info.get('registrant_email'),
+					phone=domain_info.get('registrant_phone'),
+					fax=domain_info.get('registrant_fax'),
+					id_str=domain_info.get('registrant_id'),
+				)[0]
+				db_domain_info.admin = DomainRegistration.objects.get_or_create(
+					name=domain_info.get('admin_name'),
+					organization=domain_info.get('admin_organization'),
+					address=domain_info.get('admin_address'),
+					city=domain_info.get('admin_city'),
+					state=domain_info.get('admin_state'),
+					zip_code=domain_info.get('admin_zip_code'),
+					country=domain_info.get('admin_country'),
+					email=domain_info.get('admin_email'),
+					phone=domain_info.get('admin_phone'),
+					fax=domain_info.get('admin_fax'),
+					id_str=domain_info.get('admin_id'),
+				)[0]
+				db_domain_info.tech = DomainRegistration.objects.get_or_create(
+					name=domain_info.get('tech_name'),
+					organization=domain_info.get('tech_organization'),
+					address=domain_info.get('tech_address'),
+					city=domain_info.get('tech_city'),
+					state=domain_info.get('tech_state'),
+					zip_code=domain_info.get('tech_zip_code'),
+					country=domain_info.get('tech_country'),
+					email=domain_info.get('tech_email'),
+					phone=domain_info.get('tech_phone'),
+					fax=domain_info.get('tech_fax'),
+					id_str=domain_info.get('tech_id'),
+				)[0]
+				for status in domain_info.get('status') or []:
+					_status = WhoisStatus.objects.get_or_create(
+						name=status
+					)[0]
+					_status.save()
+					db_domain_info.status.add(_status)
+
+				for ns in domain_info.get('nameservers') or []:
+					_ns = NameServer.objects.get_or_create(
+						name=ns
+					)[0]
+					_ns.save()
+					db_domain_info.name_servers.add(_ns)
+
+				if 'dns' in domain_info and 'a' in domain_info.get('dns'):
+					for a in domain_info.get('dns').get('a'):
+						_a = NameServer.objects.get_or_create(
+							name=a,
+							type='a'
+						)[0]
+						_a.save()
+						db_domain_info.dns_records.add(_a)
+				if 'dns' in domain_info and 'mx' in domain_info.get('dns'):
+					for mx in domain_info.get('dns').get('mx'):
+						_mx = NameServer.objects.get_or_create(
+							name=mx,
+							type='mx'
+						)[0]
+						_mx.save()
+						db_domain_info.dns_records.add(_mx)
+				if 'dns' in domain_info and 'txt' in domain_info.get('dns'):
+					for txt in domain_info.get('dns').get('txt'):
+						_txt = NameServer.objects.get_or_create(
+							name=txt,
+							type='txt'
+						)[0]
+						_txt.save()
+						db_domain_info.dns_records.add(_txt)
+
+				print('&'*10)
+				db_domain_info.save()
+				domain.domain_info = db_domain_info
+				domain.save()
 
 		except Exception as e:
 			return {

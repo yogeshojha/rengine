@@ -11,11 +11,11 @@ class AssociatedDomain(models.Model):
 		return self.name
 
 
-class DomainRegistrar(models.Model):
+class Registrar(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=500, null=True, blank=True)
 	phone = models.CharField(max_length=150, null=True, blank=True)
-	email = models.CharField(max_length=150, null=True, blank=True)
+	email = models.CharField(max_length=350, null=True, blank=True)
 	url = models.CharField(max_length=1000, null=True, blank=True)
 
 	def __str__(self):
@@ -24,29 +24,45 @@ class DomainRegistrar(models.Model):
 
 class DomainRegistration(models.Model):
 	id = models.AutoField(primary_key=True)
-	name = models.CharField(max_length=100, null=True, blank=True)
-	organization = models.CharField(max_length=100, null=True, blank=True)
+	name = models.CharField(max_length=500, null=True, blank=True)
+	organization = models.CharField(max_length=500, null=True, blank=True)
 	address = models.CharField(max_length=500, null=True, blank=True)
 	city = models.CharField(max_length=100, null=True, blank=True)
 	state = models.CharField(max_length=100, null=True, blank=True)
 	zip_code = models.CharField(max_length=100, null=True, blank=True)
 	country = models.CharField(max_length=100, null=True, blank=True)
 	email = models.CharField(max_length=500, null=True, blank=True)
-	phone = models.CharField(max_length=100, null=True, blank=True)
-	fax = models.CharField(max_length=100, null=True, blank=True)
+	phone = models.CharField(max_length=150, null=True, blank=True)
+	fax = models.CharField(max_length=150, null=True, blank=True)
+	id_str = models.CharField(max_length=500, null=True, blank=True)
 
 	def __str__(self):
 		return self.name
 
 
-class DomainWhoisStatus(models.Model):
-    id = models.AutoField(primary_key=True)
-    status = models.CharField(max_length=500)
+class WhoisStatus(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.name
 
 
-class NameServers(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=500, null=True, blank=True)
+class NameServer(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.name
+
+
+class DNSRecord(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=500)
+	type = models.CharField(max_length=50)
+
+	def __str__(self):
+		return self.name
 
 
 class DomainInfo(models.Model):
@@ -56,13 +72,15 @@ class DomainInfo(models.Model):
 	created = models.DateTimeField(null=True, blank=True)
 	updated = models.DateTimeField(null=True, blank=True)
 	expires = models.DateTimeField(null=True, blank=True)
+	# geolocation
+	geolocation_iso = models.CharField(max_length=10, null=True, blank=True)
 	# registrar
-	registrar = models.ForeignKey(DomainRegistrar, blank=True, on_delete=models.CASCADE, null=True)
+	registrar = models.ForeignKey(Registrar, blank=True, on_delete=models.CASCADE, null=True)
 	# registrant
 	registrant = models.ForeignKey(
 		DomainRegistration,
 		blank=True,
-		null=True, 
+		null=True,
 		on_delete=models.CASCADE,
 		related_name='registrant'
 	)
@@ -83,14 +101,17 @@ class DomainInfo(models.Model):
 		related_name='tech'
 	)
 	# status
-	status = models.ManyToManyField(DomainWhoisStatus, blank=True)
-	name_servers = models.ManyToManyField(NameServers, blank=True)
-
+	status = models.ManyToManyField(WhoisStatus, blank=True)
+	# ns
+	name_servers = models.ManyToManyField(NameServer, blank=True)
+	dns_records = models.ManyToManyField(DNSRecord, blank=True)
+	# whois server
+	whois_server = models.CharField(max_length=150, null=True, blank=True)
 	associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
 	# related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
 
 	def __str__(self):
-	    return self.id or ''
+		return str(self.id)
 
 
 class Organization(models.Model):
