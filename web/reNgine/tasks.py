@@ -2922,13 +2922,49 @@ def query_whois(ip_domain):
 			status=[status['name'] for status in DomainWhoisStatusSerializer(domain_info_db.status, many=True).data],
 			whois_server=domain_info_db.whois_server,
 			nameservers=[ns['name'] for ns in NameServersSerializer(domain_info_db.name_servers, many=True).data],
+			registrar_name=domain_info_db.registrar.name,
+			registrar_phone=domain_info_db.registrar.phone,
+			registrar_email=domain_info_db.registrar.email,
+			registrar_url=domain_info_db.registrar.url,
+			registrant_name=domain_info_db.registrant.name,
+			registrant_id=domain_info_db.registrant.id_str,
+			registrant_organization=domain_info_db.registrant.organization,
+			registrant_city=domain_info_db.registrant.city,
+			registrant_state=domain_info_db.registrant.state,
+			registrant_zip_code=domain_info_db.registrant.zip_code,
+			registrant_country=domain_info_db.registrant.country,
+			registrant_phone=domain_info_db.registrant.phone,
+			registrant_fax=domain_info_db.registrant.fax,
+			registrant_email=domain_info_db.registrant.email,
+			registrant_address=domain_info_db.registrant.address,
+			admin_name=domain_info_db.admin.name,
+			admin_id=domain_info_db.admin.id_str,
+			admin_organization=domain_info_db.admin.organization,
+			admin_city=domain_info_db.admin.city,
+			admin_state=domain_info_db.admin.state,
+			admin_zip_code=domain_info_db.admin.zip_code,
+			admin_country=domain_info_db.admin.country,
+			admin_phone=domain_info_db.admin.phone,
+			admin_fax=domain_info_db.admin.fax,
+			admin_email=domain_info_db.admin.email,
+			admin_address=domain_info_db.admin.address,
+			tech_name=domain_info_db.tech.name,
+			tech_id=domain_info_db.tech.id_str,
+			tech_organization=domain_info_db.tech.organization,
+			tech_city=domain_info_db.tech.city,
+			tech_state=domain_info_db.tech.state,
+			tech_zip_code=domain_info_db.tech.zip_code,
+			tech_country=domain_info_db.tech.country,
+			tech_phone=domain_info_db.tech.phone,
+			tech_fax=domain_info_db.tech.fax,
+			tech_email=domain_info_db.tech.email,
+			tech_address=domain_info_db.tech.address,
 		)
 		if domain_info_db.dns_records:
 			a_records = []
 			txt_records = []
 			mx_records = []
 			dns_records = [{'name': dns['name'], 'type': dns['type']} for dns in DomainDNSRecordSerializer(domain_info_db.dns_records, many=True).data]
-			print(dns_records)
 			for dns in dns_records:
 				if dns['type'] == 'a':
 					a_records.append(dns['name'])
@@ -3018,7 +3054,7 @@ def query_whois(ip_domain):
 				domain_info.a_records = dns.get('a')
 
 			domain_info.ns_records = whois.get('name_servers')
-			domain_info.dnssec = whois.get('dnssec')
+			domain_info.dnssec = True if whois.get('dnssec') else False
 			domain_info.status = whois.get('status')
 
 			if 'registrar' in whois:
