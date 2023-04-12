@@ -2960,6 +2960,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			tech_email=domain_info_db.tech.email,
 			tech_address=domain_info_db.tech.address,
 			similar_domains=[domain['name'] for domain in AssociatedDomainSerializer(domain_info_db.similar_domains, many=True).data],
+			associated_domains=[domain['name'] for domain in AssociatedDomainSerializer(domain_info_db.associated_domains, many=True).data],
 		)
 		if domain_info_db.dns_records:
 			a_records = []
@@ -2988,7 +2989,8 @@ def query_whois(ip_domain, force_reload_whois=False):
 			db_domain_info.save()
 			for _domain in similar_domains:
 				domain_similar = AssociatedDomain.objects.get_or_create(
-					name=_domain['name']
+					name=_domain['name'],
+					created_on=_domain['created_on'],
 				)[0]
 				db_domain_info.similar_domains.add(domain_similar)
 				similar_domains_list.append(_domain['name'])
@@ -3079,12 +3081,25 @@ def query_whois(ip_domain, force_reload_whois=False):
 				domain_info.registrar_phone = registrar.get('phone')
 				domain_info.registrar_url = registrar.get('url')
 
+			# find associated domains if registrant email is found
+			associated_domains = get_associated_domains(domain_info.get('registrant_email')) if domain_info.get('registrant_email') else []
+			associated_domains_list = []
+			for _domain in associated_domains:
+				associated_domains_list.append(_domain['name'])
+			domain_info.associated_domains = associated_domains_list
+
 
 			# save to db if domain exists
 			if Domain.objects.filter(name=ip_domain).exists():
 				domain = Domain.objects.get(name=ip_domain)
 				db_domain_info = domain.domain_info if domain.domain_info else DomainInfo()
 				db_domain_info.save()
+				for _domain in associated_domains:
+					domain_ass = AssociatedDomain.objects.get_or_create(
+						name=_domain['name'],
+						created_on=_domain['created_on'],
+					)[0]
+					db_domain_info.associated_domains.add(domain_ass)
 				db_domain_info.dnssec = domain_info.get('dnssec')
 				#dates
 				db_domain_info.created = domain_info.get('created')
@@ -3248,6 +3263,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 		},
 		'nameservers': domain_info.get('ns_records'),
 		'similar_domains': domain_info.get('similar_domains'),
+		'associated_domains': domain_info.get('associated_domains'),
 	}
 
 
