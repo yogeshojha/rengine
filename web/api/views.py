@@ -15,7 +15,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
-                           run_command, send_hackerone_report)
+						   run_command, send_hackerone_report)
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -892,7 +892,9 @@ class Whois(APIView):
 		if not (validators.domain(ip_domain) or validators.ipv4(ip_domain) or validators.ipv6(ip_domain)):
 			print(f'Ip address or domain "{ip_domain}" did not pass validator.')
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
-		task = query_whois.apply_async(args=(ip_domain,))
+		is_force_update = req.query_params.get('is_reload')
+		is_force_update = True if is_force_update and 'true' == is_force_update.lower() else False
+		task = query_whois.apply_async(args=(ip_domain,is_force_update))
 		response = task.wait()
 		return Response(response)
 
