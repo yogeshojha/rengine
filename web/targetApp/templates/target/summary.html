@@ -203,13 +203,14 @@ Target Summary
 										<div class="nav flex-column nav-pills nav-pills-tab" id="v-pills-tab" role="tablist" aria-orientation="vertical">
 											<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
+											<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
 											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver"aria-selected="false">Nameservers</a>
 											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">NS History</a>
 										</div>
 									</div> <!-- end col-->
 									<div class="col-sm-9">
 										<div class="tab-content pt-0">
-											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="min-height: 300px;">
 												{% if not target.domain_info %}
 												<div class="alert alert-danger alert-dismissible fade show" role="alert" id="whois_not_fetched_alert">
 													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -223,7 +224,63 @@ Target Summary
 												<div class="alert alert-success alert-dismissible fade show" role="alert" id="whois_fetched_alert" style="display: none">
 													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
 												</div>
-												<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
+												<div class="row">
+													<div class="col-4">
+														<small>Domain</small>
+														<h5>{{target.name}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Dnssec</small>
+														<h5>{{target.domain_info.dnssec}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Geolocation</small>
+														<h5>{{target.domain_info.geolocation_iso|upper}}<span class="ms-2 fi fi-{{target.domain_info.geolocation_iso|lower}}"></span></h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-4">
+														<small>Created</small>
+														<h5>{{target.domain_info.created}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Updated</small>
+														<h5>{{target.domain_info.updated}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Expires</small>
+														<h5>{{target.domain_info.expires}}</h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-6">
+														<small>Whois Server</small>
+														<h5>{{target.domain_info.whois_server}}</h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-4">
+														<small>Registrar Name</small>
+														<h5>{{target.domain_info.registrar.name}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Registrar Phone</small>
+														<h5>{{target.domain_info.registrar.phone}}</h5>
+													</div>
+													<div class="col-4">
+														<small>Registrar Email</small>
+														<h5>{{target.domain_info.registrar.email}}</h5>
+													</div>
+												</div>
+												{% for status in target.domain_info.status.all %}
+													{% if 'prohibited' in status.name %}
+														<span class="badge badge-soft-danger mt-1">{{status.name}}</span>
+													{% else %}
+														<span class="badge badge-soft-success mt-1">{{status.name}}</span>
+													{% endif %}
+												{% endfor %}
+											</div>
+											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 												<ul class="nav nav-tabs nav-bordered nav-justified">
 													<li class="nav-item">
 														<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
@@ -232,7 +289,7 @@ Target Summary
 													</li>
 													<li class="nav-item">
 														<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-															Admin
+															Administrative
 														</a>
 													</li>
 													<li class="nav-item">
@@ -246,37 +303,41 @@ Target Summary
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
+																	<tr class="table-info">
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.registrant.id_str}}</td>
+																	</tr>
 																	<tr class="">
 																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.registrant_name}}</td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.registrant.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
 																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.registrant_organization}}</td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.registrant.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.registrant_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.registrant.email}}</td>
 																	</tr>
 																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if target.domain_info.registrant_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.registrant_phone}}
+																			{% if target.domain_info.registrant.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.registrant.phone}}
 																			{% endif %}
-																			{% if target.domain_info.registrant_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.registrant_fax}}
+																			{% if target.domain_info.registrant.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.registrant.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
 																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.registrant_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.registrant.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.registrant_city}} <b>State: </b>{{target.domain_info.registrant_state}} <b>Zip Code: </b>{{target.domain_info.registrant_zip_code}} <b>Country:
-																			</b>{{target.domain_info.registrant_country}} </td>
+																		<td><b>City: </b>{{target.domain_info.registrant.city}} <b>State: </b>{{target.domain_info.registrant.state}} <b>Zip Code: </b>{{target.domain_info.registrant.zip_code}} <b>Country:
+																		</b>{{target.domain_info.registrant.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -286,41 +347,41 @@ Target Summary
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
-																	<tr class="table-primary">
-																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin_name}}</td>
+																	<tr class="table-info">
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin_organization}}</td>
+																		<td><b>Name</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.name}}</td>
 																	</tr>
-																	<tr class="table-info">
-																		<td><b>Admin ID</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin_id}}</td>
+																	<tr class="table-primary">
+																		<td><b>Organization</b></td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin.email}}</td>
 																	</tr>
-																	<tr class="table-success">
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if target.domain_info.admin_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.admin_phone}}
+																			{% if target.domain_info.admin.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.admin.phone}}
 																			{% endif %}
-																			{% if target.domain_info.admin_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.admin_fax}}
+																			{% if target.domain_info.admin.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.admin.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
 																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.admin_city}} <b>State: </b>{{target.domain_info.admin_state}} <b>Zip Code: </b>{{target.domain_info.admin_zip_code}} <b>Country:
-																			</b>{{target.domain_info.admin_country}} </td>
+																		<td><b>City: </b>{{target.domain_info.admin.city}} <b>State: </b>{{target.domain_info.admin.state}} <b>Zip Code: </b>{{target.domain_info.admin.zip_code}} <b>Country:
+																		</b>{{target.domain_info.admin.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -331,40 +392,40 @@ Target Summary
 															<table class="table mb-0">
 																<tbody>
 																	<tr class="table-info">
-																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.tech_name}}</td>
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.tech_organization}}</td>
+																		<td><b>Name</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.admin.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
-																		<td><b>Tech ID</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{target.domain_info.tech_id}}</td>
+																		<td><b>Organization</b></td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{target.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.tech_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{target.domain_info.admin.email}}</td>
 																	</tr>
-																	<tr class="table-success">
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if target.domain_info.tech_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.tech_phone}}
+																			{% if target.domain_info.admin.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{target.domain_info.admin.phone}}
 																			{% endif %}
-																			{% if target.domain_info.tech_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.tech_phone}}
+																			{% if target.domain_info.admin.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{target.domain_info.admin.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr>
+																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.tech_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{target.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{target.domain_info.tech_city}} <b>State: </b>{{target.domain_info.tech_state}} <b>Zip Code: </b>{{target.domain_info.tech_zip_code}} <b>Country:
-																			</b>{{target.domain_info.tech_country}} </td>
+																		<td><b>City: </b>{{target.domain_info.tech.city}} <b>State: </b>{{target.domain_info.tech.state}} <b>Zip Code: </b>{{target.domain_info.tech.zip_code}} <b>Country:
+																		</b>{{target.domain_info.tech.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -372,23 +433,35 @@ Target Summary
 													</div>
 												</div>
 											</div>
-											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-												<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{target.domain_info.raw_text}}</pre>
-											</div>
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+											</div>
+											<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
+												<h4>A Records</h4>
+												{% for dns in target.domain_info.dns_records.all %}
+													{% if dns.type == 'a' %}
+														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
+												<h4>MX Records</h4>
+												{% for dns in target.domain_info.dns_records.all %}
+													{% if dns.type == 'mx' %}
+														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
+												<h4>TXT Records</h4>
+												{% for dns in target.domain_info.dns_records.all %}
+													{% if dns.type == 'txt' %}
+														<span class="badge badge-soft-secondary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% for nameserver in target.domain_info.name_servers.all %}
-												<span class="badge badge-soft-primary me-1 ms-1">{{ nameserver}}</span>
+													<span class="badge badge-soft-primary me-1 mt-1">{{ nameserver}}</span>
 												{% endfor %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% for domain in target.domain_info.associated_domains.all %}
-												<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-												{% endfor %}
-											</div>
-											<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for domain in target.domain_info.related_tlds.all %}
 												<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
 												{% endfor %}
 											</div>

@@ -2898,7 +2898,7 @@ def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, fi
 
 
 @app.task
-def query_whois(ip_domain):
+def query_whois(ip_domain, force_reload_whois=False):
 	"""Query WHOIS information for an IP or a domain name.
 
 	Args:
@@ -2907,7 +2907,7 @@ def query_whois(ip_domain):
 	Returns:
 		dict: WHOIS information.
 	"""
-	if Domain.objects.filter(name=ip_domain).exists() and Domain.objects.get(name=ip_domain).domain_info:
+	if not force_reload_whois and Domain.objects.filter(name=ip_domain).exists() and Domain.objects.get(name=ip_domain).domain_info:
 		domain = Domain.objects.get(name=ip_domain)
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
@@ -2921,7 +2921,7 @@ def query_whois(ip_domain):
 			geolocation_iso=domain_info_db.geolocation_iso,
 			status=[status['name'] for status in DomainWhoisStatusSerializer(domain_info_db.status, many=True).data],
 			whois_server=domain_info_db.whois_server,
-			nameservers=[ns['name'] for ns in NameServersSerializer(domain_info_db.name_servers, many=True).data],
+			ns_records=[ns['name'] for ns in NameServersSerializer(domain_info_db.name_servers, many=True).data],
 			registrar_name=domain_info_db.registrar.name,
 			registrar_phone=domain_info_db.registrar.phone,
 			registrar_email=domain_info_db.registrar.email,
@@ -3129,28 +3129,28 @@ def query_whois(ip_domain):
 					_status.save()
 					db_domain_info.status.add(_status)
 
-				for ns in domain_info.get('nameservers') or []:
+				for ns in domain_info.get('ns_records') or []:
 					_ns = NameServer.objects.get_or_create(
 						name=ns
 					)[0]
 					_ns.save()
 					db_domain_info.name_servers.add(_ns)
 
-				for a in domain_info.get('a_records'):
+				for a in domain_info.get('a_records') or []:
 					_a = DNSRecord.objects.get_or_create(
 						name=a,
 						type='a'
 					)[0]
 					_a.save()
 					db_domain_info.dns_records.add(_a)
-				for mx in domain_info.get('mx_records'):
+				for mx in domain_info.get('mx_records') or []:
 					_mx = DNSRecord.objects.get_or_create(
 						name=mx,
 						type='mx'
 					)[0]
 					_mx.save()
 					db_domain_info.dns_records.add(_mx)
-				for txt in domain_info.get('txt_records'):
+				for txt in domain_info.get('txt_records') or []:
 					_txt = DNSRecord.objects.get_or_create(
 						name=txt,
 						type='txt'
@@ -3158,6 +3158,8 @@ def query_whois(ip_domain):
 					_txt.save()
 					db_domain_info.dns_records.add(_txt)
 
+				db_domain_info.geolocation_iso = domain_info.get('registrant_country')
+				db_domain_info.whois_server = domain_info.get('whois_server')
 				db_domain_info.save()
 				domain.domain_info = db_domain_info
 				domain.save()
