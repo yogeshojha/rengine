@@ -2927,14 +2927,15 @@ def query_whois(ip_domain):
 			a_records = []
 			txt_records = []
 			mx_records = []
-			dns_records = [dns for dns in DomainDNSRecordSerializer(domain_info_db.dns_records, many=True).data]
+			dns_records = [{'name': dns['name'], 'type': dns['type']} for dns in DomainDNSRecordSerializer(domain_info_db.dns_records, many=True).data]
+			print(dns_records)
 			for dns in dns_records:
-				if dns.type == 'a':
-					a_records.append(dns.name)
-				elif dns.type == 'txt':
-					txt_records.append(dns.name)
-				elif dns.type == 'mx':
-					mx_records.append(dns.name)
+				if dns['type'] == 'a':
+					a_records.append(dns['name'])
+				elif dns['type'] == 'txt':
+					txt_records.append(dns['name'])
+				elif dns['type'] == 'mx':
+					mx_records.append(dns['name'])
 			domain_info.a_records = a_records
 			domain_info.txt_records = txt_records
 			domain_info.mx_records = mx_records
@@ -3098,32 +3099,28 @@ def query_whois(ip_domain):
 					_ns.save()
 					db_domain_info.name_servers.add(_ns)
 
-				if 'dns' in domain_info and 'a' in domain_info.get('dns'):
-					for a in domain_info.get('dns').get('a'):
-						_a = NameServer.objects.get_or_create(
-							name=a,
-							type='a'
-						)[0]
-						_a.save()
-						db_domain_info.dns_records.add(_a)
-				if 'dns' in domain_info and 'mx' in domain_info.get('dns'):
-					for mx in domain_info.get('dns').get('mx'):
-						_mx = NameServer.objects.get_or_create(
-							name=mx,
-							type='mx'
-						)[0]
-						_mx.save()
-						db_domain_info.dns_records.add(_mx)
-				if 'dns' in domain_info and 'txt' in domain_info.get('dns'):
-					for txt in domain_info.get('dns').get('txt'):
-						_txt = NameServer.objects.get_or_create(
-							name=txt,
-							type='txt'
-						)[0]
-						_txt.save()
-						db_domain_info.dns_records.add(_txt)
+				for a in domain_info.get('a_records'):
+					_a = DNSRecord.objects.get_or_create(
+						name=a,
+						type='a'
+					)[0]
+					_a.save()
+					db_domain_info.dns_records.add(_a)
+				for mx in domain_info.get('mx_records'):
+					_mx = DNSRecord.objects.get_or_create(
+						name=mx,
+						type='mx'
+					)[0]
+					_mx.save()
+					db_domain_info.dns_records.add(_mx)
+				for txt in domain_info.get('txt_records'):
+					_txt = DNSRecord.objects.get_or_create(
+						name=txt,
+						type='txt'
+					)[0]
+					_txt.save()
+					db_domain_info.dns_records.add(_txt)
 
-				print('&'*10)
 				db_domain_info.save()
 				domain.domain_info = db_domain_info
 				domain.save()
