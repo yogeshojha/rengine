@@ -2997,6 +2997,7 @@ def query_whois(ip_domain):
 			domain_info.created = whois.get('created_date')
 			domain_info.expires = whois.get('expiration_date')
 			domain_info.updated = whois.get('updated_date')
+			domain_info.whois_server = whois.get('whois_server')
 
 
 			if 'registrant' in whois:
