@@ -10,13 +10,13 @@ class AssociatedDomainSerializer(serializers.ModelSerializer):
 
 class NameServersSerializer(serializers.ModelSerializer):
     class Meta:
-        model = NameServers
+        model = NameServer
         fields = ['name']
 
 
 class DomainRegistrarSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DomainRegistrar
+        model = Registrar
         fields = ['name', 'phone', 'email', 'url']
 
 
@@ -38,5 +38,11 @@ class DomainRegistrationSerializer(serializers.ModelSerializer):
 
 class DomainWhoisStatusSerializer(serializers.ModelSerializer):
     class Meta:
-        model = DomainWhoisStatus
-        fields = ['status']
+        model = WhoisStatus
+        fields = ['name']
+
+
+class DomainDNSRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DNSRecord
+        fields = ['name', 'type']
