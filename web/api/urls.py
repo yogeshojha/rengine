@@ -135,6 +135,10 @@ urlpatterns = [
         Whois.as_view(),
         name='whois'),
     path(
+        'tools/reverse/whois/',
+        ReverseWhois.as_view(),
+        name='reverse_whois'),
+    path(
         'tools/cms_detector/',
         CMSDetector.as_view(),
         name='cms_detector'),

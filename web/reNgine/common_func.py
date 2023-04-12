@@ -6,16 +6,19 @@ import shutil
 import traceback
 import uuid
 from time import sleep
-from urllib.parse import urlparse
 
 import humanize
 import redis
 import requests
 import tldextract
 import xmltodict
+
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 from celery.utils.log import get_task_logger
 from discord_webhook import DiscordEmbed, DiscordWebhook
 from django.db.models import Q
+
 from reNgine.common_serializers import *
 from reNgine.definitions import *
 from reNgine.settings import *
@@ -31,7 +34,7 @@ DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 #------------------#
 def dump_custom_scan_engines(results_dir):
 	"""Dump custom scan engines to YAML files.
-	
+
 	Args:
 		results_dir (str): Results directory (will be created if non-existent).
 	"""
@@ -44,7 +47,7 @@ def dump_custom_scan_engines(results_dir):
 			yaml.dump(config, f, indent=4)
 
 def load_custom_scan_engines(results_dir):
-	"""Load custom scan engines from YAML files. The filename without .yaml will 
+	"""Load custom scan engines from YAML files. The filename without .yaml will
 	be used as the engine name.
 
 	Args:
@@ -280,7 +283,7 @@ def get_http_urls(
 		write_filepath=None,
 		exclude_subdomains=False,
 		ctx={}):
-	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a 
+	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a
 	specific path.
 
 	Args:
@@ -401,7 +404,7 @@ def get_interesting_endpoints(scan_history=None, target=None):
 
 def get_subdomain_from_url(url):
 	"""Get subdomain from HTTP URL.
-	
+
 	Args:
 		url (str): HTTP URL.
 
@@ -415,7 +418,7 @@ def get_subdomain_from_url(url):
 
 def get_domain_from_subdomain(subdomain):
 	"""Get domain from subdomain.
-	
+
 	Args:
 		subdomain (str): Subdomain name.
 
@@ -468,7 +471,7 @@ def get_random_proxy():
 
 def get_cms_details(url):
 	"""Get CMS details using cmseek.py.
-	
+
 	Args:
 		url (str): HTTP URL.
 
@@ -520,7 +523,7 @@ def get_cms_details(url):
 
 def send_telegram_message(message):
 	"""Send Telegram message.
-	
+
 	Args:
 		message (str): Message.
 	"""
@@ -540,7 +543,7 @@ def send_telegram_message(message):
 
 def send_slack_message(message):
 	"""Send Slack message.
-	
+
 	Args:
 		message (str): Message.
 	"""
@@ -548,7 +551,7 @@ def send_slack_message(message):
 	message = {'text': message}
 	notif = Notification.objects.first()
 	do_send = (
-		notif and 
+		notif and
 		notif.send_to_slack and
 		notif.slack_hook_url)
 	if not do_send:
@@ -566,7 +569,7 @@ def send_discord_message(
 		fields={},
 		fields_append=[]):
 	"""Send Discord message.
-	
+
 	If title and fields are specified, ignore the 'message' and create a Discord
 	embed that can be updated later if specifying the same title (title is the
 	cache key).
@@ -612,7 +615,7 @@ def send_discord_message(
 	embed = None
 	cached_embed = DISCORD_WEBHOOKS_CACHE.get(title + '_embed') if title else None
 	if cached_embed:
-		embed = pickle.loads(cached_embed) 
+		embed = pickle.loads(cached_embed)
 	elif use_discord_embed:
 		embed = DiscordEmbed(title=title)
 
@@ -642,7 +645,7 @@ def send_discord_message(
 					existing_val = str(existing_val)
 					if value not in existing_val:
 						value = f'{existing_val}\n{value}'
-					
+
 					if len(value) > 1024: # character limit for embed field
 						value = value[0:1016] + '\n[...]'
 
@@ -697,12 +700,12 @@ def send_discord_message(
 
 def enrich_notification(message, scan_history_id, subscan_id):
 	"""Add scan id / subscan id to notification message.
-	
+
 	Args:
 		message (str): Original notification message.
 		scan_history_id (int): Scan history id.
 		subscan_id (int): Subscan id.
-	
+
 	Returns:
 		str: Message.
 	"""
@@ -856,10 +859,43 @@ def get_nmap_cmd(
 # build_cmd(cmd, proxy=proxy, option_prefix='-')
 
 
-def xml2json(xml): 
-    xmlfile = open(xml)
-    xml_content = xmlfile.read()
-    xmlfile.close()
-    xmljson = json.dumps(xmltodict.parse(xml_content), indent=4, sort_keys=True)
-    jsondata = json.loads(xmljson)
-    return jsondata
+def xml2json(xml):
+	xmlfile = open(xml)
+	xml_content = xmlfile.read()
+	xmlfile.close()
+	xmljson = json.dumps(xmltodict.parse(xml_content), indent=4, sort_keys=True)
+	jsondata = json.loads(xmljson)
+	return jsondata
+
+
+def get_associated_domains(lookup_keyword):
+	domains = []
+	'''
+		This function will use viewdns to fetch associated domains
+		Input: lookup keyword like email or registrar name
+		Returns a list of domains as string.
+	'''
+	url = f"https://viewdns.info:443/reversewhois/?q={lookup_keyword}"
+	headers = {
+		"Sec-Ch-Ua": "\" Not A;Brand\";v=\"99\", \"Chromium\";v=\"104\"",
+		"Sec-Ch-Ua-Mobile": "?0",
+		"Sec-Ch-Ua-Platform": "\"Linux\"",
+		"Upgrade-Insecure-Requests": "1",
+		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.5112.102 Safari/537.36",
+		"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+		"Sec-Fetch-Site": "same-origin",
+		"Sec-Fetch-Mode": "navigate",
+		"Sec-Fetch-User": "?1",
+		"Sec-Fetch-Dest": "document",
+		"Referer": "https://viewdns.info/",
+		"Accept-Encoding": "gzip, deflate",
+		"Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8"
+	}
+	response = requests.get(url, headers=headers)
+	soup = BeautifulSoup(response.content, 'lxml')
+	table = soup.find("table", {"border" : "1"})
+	for row in table:
+		dom = row.findAll('td')[0].getText()
+		created_on = row.findAll('td')[1].getText()
+		domains.append({'name': dom, 'created_on': created_on})
+	return domains
