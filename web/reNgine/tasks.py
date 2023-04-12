@@ -3842,3 +3842,16 @@ def save_imported_subdomains(subdomains, ctx={}):
 			subdomain.is_imported_subdomain = True
 			subdomain.save()
 			output_file.write(f'{subdomain}\n')
+
+
+@app.task
+def query_reverse_whois(lookup_keyword):
+	"""Queries Reverse WHOIS information for an organization or email address.
+
+	Args:
+		lookup_keyword (str): Registrar Name or email
+	Returns:
+		dict: Reverse WHOIS information.
+	"""
+
+	return get_associated_domains(lookup_keyword)
