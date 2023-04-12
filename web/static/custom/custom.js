@@ -911,7 +911,7 @@ function show_subscan_results(subscan_id) {
 				button: "Okay",
 			});
 			return;
-		} 
+		}
 		// else if (response['subscan']['status'] == 1) {
 		// 	swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
 		// 		button: "Okay",
@@ -1376,10 +1376,13 @@ function get_and_render_subscan_history(subdomain_id, subdomain_name) {
 	});
 }
 
-function fetch_whois(domain_name) {
+function fetch_whois(domain_name, force_reload_whois=false) {
 	// this function will fetch WHOIS record for any subdomain and also display
 	// snackbar once whois is fetched
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`;
+	if (force_reload_whois) {
+		url+='&is_reload=true'
+	}
 	$('[data-toggle="tooltip"]').tooltip('hide');
 	Snackbar.show({
 		text: 'Fetching WHOIS...',
