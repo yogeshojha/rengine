@@ -2959,6 +2959,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			tech_fax=domain_info_db.tech.fax,
 			tech_email=domain_info_db.tech.email,
 			tech_address=domain_info_db.tech.address,
+			similar_domains=[domain['name'] for domain in AssociatedDomainSerializer(domain_info_db.similar_domains, many=True).data],
 		)
 		if domain_info_db.dns_records:
 			a_records = []
@@ -2977,6 +2978,21 @@ def query_whois(ip_domain, force_reload_whois=False):
 			domain_info.mx_records = mx_records
 	else:
 		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
+		domain_info = DottedDict()
+		# find associated domains using ip_domain
+		similar_domains = get_associated_domains(ip_domain)
+		similar_domains_list = []
+		if Domain.objects.filter(name=ip_domain).exists():
+			domain = Domain.objects.get(name=ip_domain)
+			db_domain_info = domain.domain_info if domain.domain_info else DomainInfo()
+			db_domain_info.save()
+			for _domain in similar_domains:
+				domain_similar = AssociatedDomain.objects.get_or_create(
+					name=_domain['name']
+				)[0]
+				db_domain_info.similar_domains.add(domain_similar)
+				similar_domains_list.append(_domain['name'])
+		domain_info.similar_domains = similar_domains_list
 		command = f'netlas host {ip_domain} -f json'
 		result = subprocess.check_output(command.split()).decode('utf-8')
 		if 'Failed to parse response data' in result:
@@ -2991,8 +3007,6 @@ def query_whois(ip_domain, force_reload_whois=False):
 			result = json.loads(result)
 			logger.info(result)
 			whois = result.get('whois') if result.get('whois') else {}
-
-			domain_info = DottedDict()
 
 			domain_info.created = whois.get('created_date')
 			domain_info.expires = whois.get('expiration_date')
@@ -3069,7 +3083,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			# save to db if domain exists
 			if Domain.objects.filter(name=ip_domain).exists():
 				domain = Domain.objects.get(name=ip_domain)
-				db_domain_info = DomainInfo()
+				db_domain_info = domain.domain_info if domain.domain_info else DomainInfo()
 				db_domain_info.save()
 				db_domain_info.dnssec = domain_info.get('dnssec')
 				#dates
@@ -3233,6 +3247,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			'email': domain_info.get('tech_email'),
 		},
 		'nameservers': domain_info.get('ns_records'),
+		'similar_domains': domain_info.get('similar_domains'),
 	}
 
 

@@ -4,7 +4,8 @@ from django.db import models
 
 class AssociatedDomain(models.Model):
 	id = models.AutoField(primary_key=True)
-	name = models.CharField(max_length=250, null=True, blank=True)
+	name = models.CharField(max_length=250)
+	created_on = models.CharField(max_length=100)
 	# target_id = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
 	def __str__(self):
@@ -107,8 +108,9 @@ class DomainInfo(models.Model):
 	dns_records = models.ManyToManyField(DNSRecord, blank=True)
 	# whois server
 	whois_server = models.CharField(max_length=150, null=True, blank=True)
-	associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
-	# related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
+	# associated/similer domains
+	associated_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='associated_domains')
+	similar_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='similar_domains')
 
 	def __str__(self):
 		return str(self.id)

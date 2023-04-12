@@ -894,8 +894,10 @@ def get_associated_domains(lookup_keyword):
 	response = requests.get(url, headers=headers)
 	soup = BeautifulSoup(response.content, 'lxml')
 	table = soup.find("table", {"border" : "1"})
-	for row in table:
+	for row in table or []:
 		dom = row.findAll('td')[0].getText()
 		created_on = row.findAll('td')[1].getText()
+		if dom == 'Domain Name':
+			continue
 		domains.append({'name': dom, 'created_on': created_on})
 	return domains
