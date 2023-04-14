@@ -226,49 +226,49 @@ Target Summary
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small>Domain</small>
+														<small class="sub-header">Domain</small>
 														<h5>{{target.name}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Dnssec</small>
+														<small class="sub-header">Dnssec</small>
 														<h5>{{target.domain_info.dnssec}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Geolocation</small>
+														<small class="sub-header">Geolocation</small>
 														<h5>{{target.domain_info.geolocation_iso|upper}}<span class="ms-2 fi fi-{{target.domain_info.geolocation_iso|lower}}"></span></h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small>Created</small>
+														<small class="sub-header">Created</small>
 														<h5>{{target.domain_info.created}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Updated</small>
+														<small class="sub-header">Updated</small>
 														<h5>{{target.domain_info.updated}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Expires</small>
+														<small class="sub-header">Expires</small>
 														<h5>{{target.domain_info.expires}}</h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-6">
-														<small>Whois Server</small>
+														<small class="sub-header">Whois Server</small>
 														<h5>{{target.domain_info.whois_server}}</h5>
 													</div>
 												</div>
 												<div class="row">
 													<div class="col-4">
-														<small>Registrar Name</small>
+														<small class="sub-header">Registrar Name</small>
 														<h5>{{target.domain_info.registrar.name}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Registrar Phone</small>
+														<smal class="sub-header"l>Registrar Phone</small>
 														<h5>{{target.domain_info.registrar.phone}}</h5>
 													</div>
 													<div class="col-4">
-														<small>Registrar Email</small>
+														<small class="sub-header">Registrar Email</small>
 														<h5>{{target.domain_info.registrar.email}}</h5>
 													</div>
 												</div>
@@ -434,6 +434,30 @@ Target Summary
 												</div>
 											</div>
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if target.domain_info.historical_ips.all %}
+												<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+													<thead>
+															<tr>
+																	<th>IP</th>
+																	<th>Location</th>
+																	<th>Owner</th>
+																	<th>Last Seen</th>
+															</tr>
+													</thead>
+													<tbody>
+														{% for ip in target.domain_info.historical_ips.all %}
+														<tr>
+															<td>{{ip.ip}}</td>
+															<td>{{ip.location}}</td>
+															<td>{{ip.owner}}</td>
+															<td>{{ip.last_seen}}</td>
+														</tr>
+														{% endfor %}
+													</tbody>
+												</table>
+												{% else %}
+												<div class="alert alert-info">No historical IPs found!</div>
+												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
 												<h4>A Records</h4>
