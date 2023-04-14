@@ -1424,7 +1424,6 @@ function fetch_whois(domain_name, force_reload_whois=false) {
 
 function get_target_whois(domain_name) {
 	var url = `/api/tools/whois/?format=json&ip_domain=${domain_name}`
-
 	Swal.fire({
 		title: `Fetching WHOIS details for ${domain_name}...`
 	});
@@ -1510,13 +1509,77 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
-				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history" aria-selected="false">NS History</a>
+				<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
+				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">IP History</a>
+				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">Associated Domains</a>
+				<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">Similar Domains</a>
 			</div>
-		</div> <!-- end col-->
+		</div>
 		<div class="col-sm-9">
 			<div class="tab-content pt-0">
-				<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
+			<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="min-height: 300px;">
+				<div class="row">
+					<div class="col-4">
+						<small class="sub-header">Domain</small>
+						<h5>${response.ip_domain}</h5>
+					</div>
+					<div class="col-4">
+						<small class="sub-header">Dnssec</small>
+						<h5>${response.dnssec}</h5>
+					</div>
+					<div class="col-4">
+						<small class="sub-header">Geolocation</small>
+						<h5>${response.geolocation_iso}
+						<span class="ms-2 fi fi-${response.geolocation_iso.toLowerCase()}"></span></h5>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-4">
+						<small class="sub-header">Created</small>
+						<h5>${response.created}</h5>
+					</div>
+					<div class="col-4">
+						<small class="sub-header">Updated</small>
+						<h5>${response.updated}</h5>
+					</div>
+					<div class="col-4">
+						<small class="sub-header">Expires</small>
+						<h5>${response.expires}</h5>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-6">
+						<small class="sub-header">Whois Server</small>
+						<h5>${response.whois_server}</h5>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-4">
+						<small class="sub-header">Registrar Name</small>
+						<h5>${response.registrar.name}</h5>
+					</div>
+					<div class="col-4">
+						<smal class="sub-header"l>Registrar Phone</small>
+						<h5>${response.registrar.phone}</h5>
+					</div>
+					<div class="col-4">
+						<small class="sub-header">Registrar Email</small>
+						<h5>${response.registrar.email}</h5>
+					</div>
+				</div>`;
+
+				for (var status in response.status) {
+					var status_object = response.status[status];
+					if (status_object.includes('prohibited')) {
+						content += `<span class="badge badge-soft-danger me-1 mt-1">${status_object}</span>`;
+					}
+					else {
+						content += `<span class="badge badge-soft-info mt-1 me-1">${status_object}</span>`;
+					}
+				}
+				content += `
+				</div>
+				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 					<ul class="nav nav-tabs nav-bordered nav-justified">
 						<li class="nav-item">
 							<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
@@ -1525,7 +1588,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 						</li>
 						<li class="nav-item">
 							<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-								Admin
+								Administrative
 							</a>
 						</li>
 						<li class="nav-item">
@@ -1539,6 +1602,10 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							<div class="table-responsive">
 								<table class="table mb-0">
 									<tbody>
+										<tr class="table-info">
+											<td><b>ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.registrant.id}</td>
+										</tr>
 										<tr class="">
 											<td><b>Name</b></td>
 											<td><span class="fe-user"></span>&nbsp;${response.registrant.name}</td>
@@ -1565,7 +1632,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 										<tr class="table-danger">
 											<td><b>Address</b></td>
 											<td><b>City: </b>${response.registrant.city} <b>State: </b>${response.registrant.state} <b>Zip Code: </b>${response.registrant.zipcode} <b>Country:
-												</b>${response.registrant.country} </td>
+											</b>${response.registrant.country} </td>
 										</tr>
 									</tbody>
 								</table>
@@ -1575,23 +1642,23 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							<div class="table-responsive">
 								<table class="table mb-0">
 									<tbody>
-										<tr class="table-primary">
+										<tr class="table-info">
+											<td><b>ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.admin.id}</td>
+										</tr>
+										<tr class="">
 											<td><b>Name</b></td>
 											<td><span class="fe-user"></span>&nbsp;${response.admin.name}</td>
 										</tr>
-										<tr class="">
+										<tr class="table-primary">
 											<td><b>Organization</b></td>
 											<td><span class="fe-briefcase"></span>&nbsp;${response.admin.organization}</td>
-										</tr>
-										<tr class="table-info">
-											<td><b>Admin ID</b></td>
-											<td><span class="fe-user"></span>&nbsp;${response.admin.id}</td>
 										</tr>
 										<tr class="">
 											<td><b>Email</b></td>
 											<td><span class="fe-mail"></span>&nbsp;${response.admin.email}</td>
 										</tr>
-										<tr class="table-success">
+										<tr class="table-info">
 											<td><b>Phone/Fax</b></td>
 											<td>
 												<span class="fe-phone"></span>&nbsp;${response.admin.phone}
@@ -1605,7 +1672,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 										<tr class="table-danger">
 											<td><b>Address</b></td>
 											<td><b>City: </b>${response.admin.city} <b>State: </b>${response.admin.state} <b>Zip Code: </b>${response.admin.zipcode} <b>Country:
-												</b>${response.admin.country} </td>
+											</b>${response.admin.country} </td>
 										</tr>
 									</tbody>
 								</table>
@@ -1616,68 +1683,70 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 								<table class="table mb-0">
 									<tbody>
 										<tr class="table-info">
+											<td><b>ID</b></td>
+											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.id}</td>
+										</tr>
+										<tr class="">
 											<td><b>Name</b></td>
 											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.name}</td>
 										</tr>
-										<tr class="">
+										<tr class="table-primary">
 											<td><b>Organization</b></td>
 											<td><span class="fe-briefcase"></span>&nbsp;${response.technical_contact.organization}</td>
-										</tr>
-										<tr class="table-primary">
-											<td><b>Tech ID</b></td>
-											<td><span class="fe-user"></span>&nbsp;${response.technical_contact.id}</td>
 										</tr>
 										<tr class="">
 											<td><b>Email</b></td>
 											<td><span class="fe-mail"></span>&nbsp;${response.technical_contact.email}</td>
 										</tr>
-										<tr class="table-success">
+										<tr class="table-info">
 											<td><b>Phone/Fax</b></td>
 											<td>
 												<span class="fe-phone"></span>&nbsp;${response.technical_contact.phone}
 												<span class="fe-printer"></span>&nbsp;${response.technical_contact.fax}
 											</td>
 										</tr>
-										<tr>
+										<tr class="">
 											<td><b>Address</b></td>
 											<td><span class="fe-home"></span>&nbsp;${response.technical_contact.address}</td>
 										</tr>
 										<tr class="table-danger">
 											<td><b>Address</b></td>
 											<td><b>City: </b>${response.technical_contact.city} <b>State: </b>${response.technical_contact.state} <b>Zip Code: </b>${response.technical_contact.zipcode} <b>Country:
-												</b>${response.technical_contact.country} </td>
+											</b>${response.technical_contact.country} </td>
 										</tr>
 									</tbody>
 								</table>
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-					<pre data-simplebar style="max-height: 310px; min-height: 310px;">${response.raw_text}</pre>
-				</div>
-				<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				</div>
-				<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-				`;
-
-				for (var ns in response.nameservers) {
-					var ns_object = response.nameservers[ns];
-					content += `<span class="badge badge-soft-primary me-1 ms-1">${ns_object}</span>`;
-				}
+				</div>`;
 
 				content += `
-				</div>
-				<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
-				</div>
-				<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-					<!--<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>-->
-				</div>
+				<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
+					<h4>A Records</h4>`;
+					for (var a in response.dns.a) {
+						var a_object = response.dns.a[a];
+						content += `<span class="badge badge-soft-primary me-1 mt-1">${a_object}</span>`;
+					}
+					content += `<h4>MX Records</h4>`;
+
+					for (var mx in response.dns.mx) {
+						var mx_object = response.dns.mx[mx];
+						content += `<span class="badge badge-soft-primary me-1 mt-1">${mx_object}</span>`;
+					}
+					content += `<h4>TXT Records</h4>`;
+					for (var txt in response.dns.txt) {
+						var txt_object = response.dns.txt[txt];
+						content += `<span class="badge badge-soft-secondary me-1 mt-1">${txt_object}</span>`;
+					}
+					content += `</div>`;
+
+
+
+		content += `
 			</div>
 		</div>
-	</div>
-	`;
+	</div>`;
 
 	if (show_add_target_btn) {
 		content += `<div class="text-center">
