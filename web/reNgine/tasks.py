@@ -2990,7 +2990,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			historical_ips = []
 		# find associated domains using ip_domain
 		try:
-			similar_domains = get_associated_domains(ip_domain)
+			similar_domains = get_associated_domains(ip_domain.split('.')[0])
 		except Exception as e:
 			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
 			similar_domains = []
