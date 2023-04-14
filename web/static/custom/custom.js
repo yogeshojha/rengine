@@ -1510,7 +1510,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
 				<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
-				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">IP History</a>
+				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">Historical Ips</a>
 				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">Associated Domains</a>
 				<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">Similar Domains</a>
 			</div>
@@ -1741,7 +1741,33 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 					}
 					content += `</div>`;
 
+					content += `<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+						<div class="alert alert-success">${response.historical_ips.length} Historical Ips</div>
+						<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+							<thead>
+									<tr>
+											<th>IP</th>
+											<th>Location</th>
+											<th>Owner</th>
+											<th>Last Seen</th>
+									</tr>
+							</thead>
+							<tbody>`;
 
+							for (var ip in response.historical_ips) {
+								var ip_object = response.historical_ips[ip];
+								content += `<tr>
+									<td><b>${ip_object.ip}</b></td>
+									<td>${ip_object.location}</td>
+									<td>${ip_object.owner}</td>
+									<td>${ip_object.last_seen}</td>
+								</tr>`;
+							}
+
+							content +=`
+							</tbody>
+						</table>
+					</div>`;
 
 		content += `
 			</div>
