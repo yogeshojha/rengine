@@ -14,8 +14,7 @@ from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
-from reNgine.tasks import (create_scan_activity, initiate_subscan, query_whois,
-						   run_command, send_hackerone_report, query_reverse_whois)
+from reNgine.tasks import *
 from reNgine.utilities import is_safe_path
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -904,6 +903,15 @@ class ReverseWhois(APIView):
 		req = self.request
 		lookup_keyword = req.query_params.get('lookup_keyword')
 		task = query_reverse_whois.apply_async(args=(lookup_keyword,))
+		response = task.wait()
+		return Response(response)
+
+
+class DomainIPHistory(APIView):
+	def get(self, request):
+		req = self.request
+		domain = req.query_params.get('domain')
+		task = query_ip_history.apply_async(args=(domain,))
 		response = task.wait()
 		return Response(response)
 

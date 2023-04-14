@@ -2,6 +2,17 @@ from django.apps import apps
 from django.db import models
 
 
+class HistoricalIP(models.Model):
+	id = models.AutoField(primary_key=True)
+	ip = models.CharField(max_length=150)
+	location = models.CharField(max_length=500)
+	owner = models.CharField(max_length=500)
+	last_seen = models.CharField(max_length=500)
+
+	def __str__(self):
+		return self.name
+
+
 class AssociatedDomain(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=250)
@@ -111,6 +122,8 @@ class DomainInfo(models.Model):
 	# associated/similer domains
 	associated_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='associated_domains')
 	similar_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='similar_domains')
+	# historical ips
+	historical_ips = models.ManyToManyField(HistoricalIP, blank=True, related_name='similar_domains')
 
 	def __str__(self):
 		return str(self.id)
