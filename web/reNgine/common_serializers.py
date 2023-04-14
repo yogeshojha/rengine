@@ -2,6 +2,12 @@ from rest_framework import serializers
 from targetApp.models import *
 
 
+class HistoricalIPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HistoricalIP
+        fields = ['ip', 'location', 'owner', 'last_seen']
+
+
 class AssociatedDomainSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssociatedDomain

@@ -2961,6 +2961,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			tech_address=domain_info_db.tech.address,
 			similar_domains=[domain['name'] for domain in AssociatedDomainSerializer(domain_info_db.similar_domains, many=True).data],
 			associated_domains=[domain['name'] for domain in AssociatedDomainSerializer(domain_info_db.associated_domains, many=True).data],
+			historical_ips=[ip for ip in HistoricalIPSerializer(domain_info_db.historical_ips, many=True).data],
 		)
 		if domain_info_db.dns_records:
 			a_records = []
@@ -2980,8 +2981,19 @@ def query_whois(ip_domain, force_reload_whois=False):
 	else:
 		logger.info(f'Domain info for "{ip_domain}" not found in DB, querying whois')
 		domain_info = DottedDict()
+		# find domain historical ip
+		try:
+			historical_ips = get_domain_historical_ip_address(ip_domain)
+			domain_info.historical_ips = historical_ips
+		except Exception as e:
+			logger.error(f'HistoricalIP for {ip_domain} not found!\nError: {str(e)}')
+			historical_ips = []
 		# find associated domains using ip_domain
-		similar_domains = get_associated_domains(ip_domain)
+		try:
+			similar_domains = get_associated_domains(ip_domain)
+		except Exception as e:
+			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
+			similar_domains = []
 		similar_domains_list = []
 		if Domain.objects.filter(name=ip_domain).exists():
 			domain = Domain.objects.get(name=ip_domain)
@@ -2994,6 +3006,17 @@ def query_whois(ip_domain, force_reload_whois=False):
 				)[0]
 				db_domain_info.similar_domains.add(domain_similar)
 				similar_domains_list.append(_domain['name'])
+
+			for _ip in historical_ips:
+				historical_ip = HistoricalIP.objects.get_or_create(
+					ip=_ip['ip'],
+					owner=_ip['owner'],
+					location=_ip['location'],
+					last_seen=_ip['last_seen'],
+				)[0]
+				db_domain_info.historical_ips.add(historical_ip)
+
+
 		domain_info.similar_domains = similar_domains_list
 		command = f'netlas host {ip_domain} -f json'
 		result = subprocess.check_output(command.split()).decode('utf-8')
@@ -3264,6 +3287,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 		'nameservers': domain_info.get('ns_records'),
 		'similar_domains': domain_info.get('similar_domains'),
 		'associated_domains': domain_info.get('associated_domains'),
+		'historical_ips': domain_info.get('historical_ips'),
 	}
 
 
@@ -3886,3 +3910,16 @@ def query_reverse_whois(lookup_keyword):
 	"""
 
 	return get_associated_domains(lookup_keyword)
+
+
+@app.task
+def query_ip_history(domain):
+	"""Queries the IP history for a domain
+
+	Args:
+		domain (str): domain_name
+	Returns:
+		list: list of historical ip addresses
+	"""
+
+	return get_domain_historical_ip_address(domain)
