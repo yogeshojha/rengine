@@ -490,11 +490,6 @@ Target Summary
 													<div class="alert alert-info">No NameServers identified</div>
 												{% endif %}
 											</div>
-											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for domain in target.domain_info.associated_domains.all %}
-												<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-												{% endfor %}
-											</div>
 										</div>
 									</div>
 								</div>
@@ -546,14 +541,14 @@ Target Summary
 					<div class="col-xl-6 col-lg-6 col-12 mb-2">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
-								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.associated_domains.all.count}}</span> Related Domains</h4>
+								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.associated_domains.all.count}}</span> Associated Domains</h4>
 								<div class="row mt-3">
 									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 10px;">
 										{% for domain in target.domain_info.associated_domains.all %}
 										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
 										{% empty %}
 										<div class="alert alert-warning" role="alert">
-											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related domains.
+											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Associated Domains.
 										</div>
 										{% endfor %}
 									</div>
@@ -564,14 +559,14 @@ Target Summary
 					<div class="col-xl-6 col-lg-6 col-12 mb-2">
 						<div class="card" style="height: 95%">
 							<div class="card-body">
-								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.related_tlds.all.count}}</span> Related TLDs</h4>
+								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.related_tlds.all.count}}</span> Similar Domains</h4>
 								<div class="row mt-3">
 									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 10px;">
-										{% for domain in target.domain_info.related_tlds.all %}
-										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+										{% for domain in target.domain_info.similar_domains.all %}
+											<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
 										{% empty %}
 										<div class="alert alert-warning" role="alert">
-											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not find any related TLds.
+											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any similar domains.
 										</div>
 										{% endfor %}
 									</div>

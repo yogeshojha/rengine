@@ -406,24 +406,45 @@ Scan Findings
 											<a class="nav-link active show mb-1" id="v-pills-domain-tab" data-bs-toggle="pill" href="#v-pills-domain" role="tab" aria-controls="v-pills-domain-tab" aria-selected="true">Domain info</a>
 											<a class="nav-link mb-1" id="v-pills-whois-tab" data-bs-toggle="pill" href="#v-pills-whois" role="tab" aria-controls="v-pills-whois" aria-selected="false">Whois</a>
 											<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
-											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history" aria-selected="false">NS History</a>
+											<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
+											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">IP History</a>
 											<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">
-												Related Domains
+												Associated Domains
 												{% if history.domain.domain_info.associated_domains.count %}
 												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.associated_domains.count}}</span>
 												{% endif %}
 											</a>
-											<a class="nav-link mb-1" id="v-pills-related-tld-tab" data-bs-toggle="pill" href="#v-pills-related-tld" role="tab" aria-controls="v-pills-related-tld" aria-selected="false">
-												Related TLDs
-												{% if history.domain.domain_info.related_tlds.count %}
-												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.related_tlds.count}}</span>
+											<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">
+												Similar Domains
+												{% if history.domain.domain_info.similar_domains.count %}
+												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.similar_domains.count}}</span>
 												{% endif %}
 											</a>
 										</div>
 									</div> <!-- end col-->
 									<div class="col-sm-9">
 										<div class="tab-content pt-0">
-											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+											<div class="tab-pane fade" id="v-pills-dns" role="tabpanel" aria-labelledby="v-pills-dns-tab" data-simplebar style="min-height: 300px;">
+												<h4>A Records</h4>
+												{% for dns in history.domain.domain_info.dns_records.all %}
+													{% if dns.type == 'a' %}
+														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
+												<h4>MX Records</h4>
+												{% for dns in history.domain.domain_info.dns_records.all %}
+													{% if dns.type == 'mx' %}
+														<span class="badge badge-soft-primary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
+												<h4>TXT Records</h4>
+												{% for dns in history.domain.domain_info.dns_records.all %}
+													{% if dns.type == 'txt' %}
+														<span class="badge badge-soft-secondary me-1 mt-1">{{ dns }}</span>
+													{% endif %}
+												{% endfor %}
+											</div>
+											<div class="tab-pane fade active show" id="v-pills-domain" role="tabpanel" aria-labelledby="v-pills-domain-tab" data-simplebar style="min-height: 300px;">
 												{% if not history.domain.domain_info %}
 												<div class="alert alert-danger alert-dismissible fade show" role="alert" id="whois_not_fetched_alert">
 													<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -437,7 +458,63 @@ Scan Findings
 												<div class="alert alert-success alert-dismissible fade show" role="alert" id="whois_fetched_alert" style="display: none">
 													WHOIS Records have been fetched, please <a href="javascript:location.reload();">reload the page.</a>
 												</div>
-												<h4 class="header-title text-primary"><span class="fe-info"></span>&nbsp;Contact Information</h4>
+												<div class="row">
+													<div class="col-4">
+														<small class="sub-header">Domain</small>
+														<h5>{{history.domain.name}}</h5>
+													</div>
+													<div class="col-4">
+														<small class="sub-header">Dnssec</small>
+														<h5>{{history.domain.domain_info.dnssec}}</h5>
+													</div>
+													<div class="col-4">
+														<small class="sub-header">Geolocation</small>
+														<h5>{{history.domain.domain_info.geolocation_iso|upper}}<span class="ms-2 fi fi-{{history.domain.domain_info.geolocation_iso|lower}}"></span></h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-4">
+														<small class="sub-header">Created</small>
+														<h5>{{history.domain.domain_info.created}}</h5>
+													</div>
+													<div class="col-4">
+														<small class="sub-header">Updated</small>
+														<h5>{{history.domain.domain_info.updated}}</h5>
+													</div>
+													<div class="col-4">
+														<small class="sub-header">Expires</small>
+														<h5>{{history.domain.domain_info.expires}}</h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-6">
+														<small class="sub-header">Whois Server</small>
+														<h5>{{history.domain.domain_info.whois_server}}</h5>
+													</div>
+												</div>
+												<div class="row">
+													<div class="col-4">
+														<small class="sub-header">Registrar Name</small>
+														<h5>{{history.domain.domain_info.registrar.name}}</h5>
+													</div>
+													<div class="col-4">
+														<smal class="sub-header"l>Registrar Phone</small>
+														<h5>{{history.domain.domain_info.registrar.phone}}</h5>
+													</div>
+													<div class="col-4">
+														<small class="sub-header">Registrar Email</small>
+														<h5>{{history.domain.domain_info.registrar.email}}</h5>
+													</div>
+												</div>
+												{% for status in history.domain.domain_info.status.all %}
+													{% if 'prohibited' in status.name %}
+														<span class="badge badge-soft-danger mt-1">{{status.name}}</span>
+													{% else %}
+														<span class="badge badge-soft-success mt-1">{{status.name}}</span>
+													{% endif %}
+												{% endfor %}
+											</div>
+											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
 												<ul class="nav nav-tabs nav-bordered nav-justified">
 													<li class="nav-item">
 														<a href="#registrant-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
@@ -446,7 +523,7 @@ Scan Findings
 													</li>
 													<li class="nav-item">
 														<a href="#admin-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-															Admin
+															Administrative
 														</a>
 													</li>
 													<li class="nav-item">
@@ -460,37 +537,41 @@ Scan Findings
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
+																	<tr class="table-info">
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.registrant.id_str}}</td>
+																	</tr>
 																	<tr class="">
 																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.registrant_name}}</td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.registrant.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
 																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.registrant_organization}}</td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.registrant.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.registrant_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.registrant.email}}</td>
 																	</tr>
 																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if history.domain.domain_info.registrant_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.registrant_phone}}
+																			{% if history.domain.domain_info.registrant.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.registrant.phone}}
 																			{% endif %}
-																			{% if history.domain.domain_info.registrant_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.registrant_fax}}
+																			{% if history.domain.domain_info.registrant.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.registrant.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
 																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.registrant_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.registrant.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{history.domain.domain_info.registrant_city}} <b>State: </b>{{history.domain.domain_info.registrant_state}} <b>Zip Code: </b>{{history.domain.domain_info.registrant_zip_code}} <b>Country:
-																			</b>{{history.domain.domain_info.registrant_country}} </td>
+																		<td><b>City: </b>{{history.domain.domain_info.registrant.city}} <b>State: </b>{{history.domain.domain_info.registrant.state}} <b>Zip Code: </b>{{history.domain.domain_info.registrant.zip_code}} <b>Country:
+																		</b>{{history.domain.domain_info.registrant.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -500,41 +581,41 @@ Scan Findings
 														<div class="table-responsive">
 															<table class="table mb-0">
 																<tbody>
-																	<tr class="table-primary">
-																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_name}}</td>
+																	<tr class="table-info">
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin_organization}}</td>
+																		<td><b>Name</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin.name}}</td>
 																	</tr>
-																	<tr class="table-info">
-																		<td><b>Admin ID</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin_id}}</td>
+																	<tr class="table-primary">
+																		<td><b>Organization</b></td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.admin_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.admin.email}}</td>
 																	</tr>
-																	<tr class="table-success">
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if history.domain.domain_info.admin_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.admin_phone}}
+																			{% if history.domain.domain_info.admin.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.admin.phone}}
 																			{% endif %}
-																			{% if history.domain.domain_info.admin_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.admin_fax}}
+																			{% if history.domain.domain_info.admin.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.admin.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
 																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{history.domain.domain_info.admin_city}} <b>State: </b>{{history.domain.domain_info.admin_state}} <b>Zip Code: </b>{{history.domain.domain_info.admin_zip_code}} <b>Country:
-																			</b>{{history.domain.domain_info.admin_country}} </td>
+																		<td><b>City: </b>{{history.domain.domain_info.admin.city}} <b>State: </b>{{history.domain.domain_info.admin.state}} <b>Zip Code: </b>{{history.domain.domain_info.admin.zip_code}} <b>Country:
+																		</b>{{history.domain.domain_info.admin.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -545,40 +626,40 @@ Scan Findings
 															<table class="table mb-0">
 																<tbody>
 																	<tr class="table-info">
-																		<td><b>Name</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_name}}</td>
+																		<td><b>ID</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin.id_str}}</td>
 																	</tr>
 																	<tr class="">
-																		<td><b>Organization</b></td>
-																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.tech_organization}}</td>
+																		<td><b>Name</b></td>
+																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.admin.name}}</td>
 																	</tr>
 																	<tr class="table-primary">
-																		<td><b>Tech ID</b></td>
-																		<td><span class="fe-user"></span>&nbsp;{{history.domain.domain_info.tech_id}}</td>
+																		<td><b>Organization</b></td>
+																		<td><span class="fe-briefcase"></span>&nbsp;{{history.domain.domain_info.admin.organization}}</td>
 																	</tr>
 																	<tr class="">
 																		<td><b>Email</b></td>
-																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.tech_email}}</td>
+																		<td><span class="fe-mail"></span>&nbsp;{{history.domain.domain_info.admin.email}}</td>
 																	</tr>
-																	<tr class="table-success">
+																	<tr class="table-info">
 																		<td><b>Phone/Fax</b></td>
 																		<td>
-																			{% if history.domain.domain_info.tech_phone %}
-																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
+																			{% if history.domain.domain_info.admin.phone %}
+																			<span class="fe-phone"></span>&nbsp;{{history.domain.domain_info.admin.phone}}
 																			{% endif %}
-																			{% if history.domain.domain_info.tech_fax %}
-																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.tech_phone}}
+																			{% if history.domain.domain_info.admin.fax %}
+																			<span class="fe-printer"></span>&nbsp;{{history.domain.domain_info.admin.fax}}
 																		</td>
 																		{% endif %}
 																	</tr>
-																	<tr>
+																	<tr class="">
 																		<td><b>Address</b></td>
-																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.tech_address}}</td>
+																		<td><span class="fe-home"></span>&nbsp;{{history.domain.domain_info.admin.address}}</td>
 																	</tr>
 																	<tr class="table-danger">
 																		<td><b>Address</b></td>
-																		<td><b>City: </b>{{history.domain.domain_info.tech_city}} <b>State: </b>{{history.domain.domain_info.tech_state}} <b>Zip Code: </b>{{history.domain.domain_info.tech_zip_code}} <b>Country:
-																			</b>{{history.domain.domain_info.tech_country}} </td>
+																		<td><b>City: </b>{{history.domain.domain_info.tech.city}} <b>State: </b>{{history.domain.domain_info.tech.state}} <b>Zip Code: </b>{{history.domain.domain_info.tech.zip_code}} <b>Country:
+																		</b>{{history.domain.domain_info.tech.country}} </td>
 																	</tr>
 																</tbody>
 															</table>
@@ -586,25 +667,62 @@ Scan Findings
 													</div>
 												</div>
 											</div>
-											<div class="tab-pane fade" id="v-pills-whois" role="tabpanel" aria-labelledby="v-pills-whois-tab">
-												<pre data-simplebar style="max-height: 310px; min-height: 310px;">{{history.domain.domain_info.raw_text}}</pre>
-											</div>
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if history.domain.domain_info.historical_ips.all %}
+												<div class="alert alert-success">{{history.domain.domain_info.historical_ips.all.count}} Historical Ips</div>
+												<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+													<thead>
+															<tr>
+																	<th>IP</th>
+																	<th>Location</th>
+																	<th>Owner</th>
+																	<th>Last Seen</th>
+															</tr>
+													</thead>
+													<tbody>
+														{% for ip in history.domain.domain_info.historical_ips.all %}
+														<tr>
+															<td><b>{{ip.ip}}</b></td>
+															<td>{{ip.location}}</td>
+															<td>{{ip.owner}}</td>
+															<td>{{ip.last_seen}}</td>
+														</tr>
+														{% endfor %}
+													</tbody>
+												</table>
+												{% else %}
+												<div class="alert alert-info">No historical IPs found!</div>
+												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for nameserver in history.domain.domain_info.name_servers.all %}
-												<span class="badge badge-soft-primary me-1 ms-1">{{ nameserver}}</span>
-												{% endfor %}
+												{% if history.domain.domain_info.name_servers.all %}
+													<div class="alert alert-success">{{history.domain.domain_info.name_servers.all.count}} NameServers identified</div>
+													{% for nameserver in history.domain.domain_info.name_servers.all %}
+														<span class="badge badge-soft-primary me-1 mt-1">{{ nameserver}}</span>
+													{% endfor %}
+												{% else %}
+													<div class="alert alert-info">No NameServers identified</div>
+												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for domain in history.domain.domain_info.associated_domains.all %}
-												<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-												{% endfor %}
+												{% if history.domain.domain_info.associated_domains.all %}
+													<div class="alert alert-success">{{history.domain.domain_info.associated_domains.all.count}} Associated Domains identified</div>
+													{% for domain in history.domain.domain_info.associated_domains.all %}
+														<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+													{% endfor %}
+												{% else %}
+													<div class="alert alert-info">No Associated Domains identified</div>
+												{% endif %}
 											</div>
-											<div class="tab-pane fade" id="v-pills-related-tld" role="tabpanel" aria-labelledby="v-pills-related-tld-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% for domain in history.domain.domain_info.related_tlds.all %}
-												<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-												{% endfor %}
+											<div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
+												{% if history.domain.domain_info.similar_domains.all %}
+													<div class="alert alert-success">{{history.domain.domain_info.similar_domains.all.count}} Similar Domains identified</div>
+													{% for domain in history.domain.domain_info.similar_domains.all %}
+														<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+													{% endfor %}
+												{% else %}
+													<div class="alert alert-info">No Similar Domains identified</div>
+												{% endif %}
 											</div>
 										</div>
 									</div>
