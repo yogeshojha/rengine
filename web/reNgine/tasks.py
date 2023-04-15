@@ -3232,7 +3232,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 		'updated': domain_info.get('updated'),
 		'expires': domain_info.get('expires'),
 		'geolocation_iso': domain_info.get('registrant_country'),
-		'status': domain_info.get('status'),
+		'domain_statuses': domain_info.get('status'),
 		'whois_server': domain_info.get('whois_server'),
 		'dns': {
 			'a': domain_info.get('a_records'),

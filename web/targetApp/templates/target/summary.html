@@ -272,7 +272,7 @@ Target Summary
 														<h5>{{target.domain_info.registrar.email}}</h5>
 													</div>
 												</div>
-												{% for status in target.domain_info.status.all %}
+												{% for status in target.domain_info.domain_statuses.all %}
 													{% if 'prohibited' in status.name %}
 														<span class="badge badge-soft-danger mt-1">{{status.name}}</span>
 													{% else %}
