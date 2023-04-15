@@ -224,3 +224,22 @@
     is_github_cloned: true
     github_clone_path: /usr/src/github/theHarvester
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 13
+  fields:
+    logo_url: null
+    name: ctfr
+    description: This tool allows to get the subdomains from a HTTPS website in
+      a few seconds. CTFR does not use neither dictionary attack nor brute-force,
+      it just abuses of Certificate Transparency logs.
+    github_url: https://github.com/UnaPibaGeek/ctfr
+    license_url: https://github.com/UnaPibaGeek/ctfr/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: git pull
+    install_command: git clone https://github.com/UnaPibaGeek/ctfr/
+    version_match_regex: null
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/ctfr
+    subdomain_gathering_command: null
