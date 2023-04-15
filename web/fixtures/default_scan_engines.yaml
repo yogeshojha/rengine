@@ -8,7 +8,7 @@
   pk: 2
   fields:
     engine_name: Subdomain Scan
-    yaml_configuration: "subdomain_discovery: {}\r\n"
+    yaml_configuration: "subdomain_discovery: {uses_tools: [ctfr]}\r\n"
     default_engine: true
 - model: scanEngine.enginetype
   pk: 3

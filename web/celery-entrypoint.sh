@@ -110,6 +110,13 @@ then
   pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
+# clone ctfr
+if [ ! -d "/usr/src/github/ctfr" ]
+then
+  echo "Cloning CTFR"
+  git clone https://github.com/UnaPibaGeek/ctfr /usr/src/github/ctfr
+fi
+
 exec "$@"
 
 # httpx seems to have issue, use alias instead!!!

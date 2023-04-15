@@ -380,7 +380,7 @@ def subdomain_discovery(
 		return
 
 	# Config
-	config = self.yaml_configuration.get(SUBDOMAIN_DISCOVERY) or {}
+	config = self.yaml_configuration.get(SUBDOMAIN_DISCOVERY) or []
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
@@ -397,6 +397,10 @@ def subdomain_discovery(
 	if ALL in tools:
 		tools = SUBDOMAIN_SCAN_DEFAULT_TOOLS + custom_subdomain_tools
 	tools = [t.lower() for t in tools]
+
+	# Make exception for amass since tool name is amass, but command is amass-active/passive
+	default_subdomain_tools.append('amass-passive')
+	default_subdomain_tools.append('amass-active')
 
 	# Run tools
 	for tool in tools:
@@ -434,6 +438,12 @@ def subdomain_discovery(
 				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv >> {self.results_dir}/subdomains_oneforall.txt'
 				cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
 				cmd += f' && {cmd_extract} && {cmd_rm}'
+
+			elif tool == 'ctfr':
+				results_file = self.results_dir + '/ctfr.txt'
+				cmd = f'python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}'
+				cmd_extract = f"cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort >> {results_file}"
+				cmd += f' && {cmd_extract}'
 
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
