@@ -440,7 +440,7 @@ def subdomain_discovery(
 				cmd += f' && {cmd_extract} && {cmd_rm}'
 
 			elif tool == 'ctfr':
-				results_file = self.results_dir + '/ctfr.txt'
+				results_file = self.results_dir + '/subdomains_ctfr.txt'
 				cmd = f'python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}'
 				cmd_extract = f"cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort >> {results_file}"
 				cmd += f' && {cmd_extract}'
