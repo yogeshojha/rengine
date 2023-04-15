@@ -1530,7 +1530,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 					<div class="col-4">
 						<small class="sub-header">Geolocation</small>
 						<h5>${response.geolocation_iso}
-						<span class="ms-2 fi fi-${response.geolocation_iso.toLowerCase()}"></span></h5>
+						<span class="ms-2 fi fi-${response.geolocation_iso}"></span></h5>
 					</div>
 				</div>
 				<div class="row">
@@ -1768,6 +1768,42 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 							</tbody>
 						</table>
 					</div>`;
+
+					content += `<div class="tab-pane fade" id="v-pills-nameserver" role="tabpanel" aria-labelledby="v-pills-nameserver-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+
+					content += `<div class="alert alert-success">${response.nameservers.length} NameServers identified</div>`;
+
+					for (var ns in response.nameservers) {
+						var ns_object = response.nameservers[ns];
+						content += `<span class="badge badge-soft-primary me-1 mt-1">${ns_object}</span>`;
+					}
+
+					content += `</div><div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+
+					if (response.similar_domains.length > 0) {
+						for (var domain in response.similar_domains) {
+							var dom_object = response.similar_domains[domain];
+							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
+						}
+					}
+					else{
+						content += `<div class="alert alert-info">No Similar Domains identified</div>`
+					}
+					content += `</div>`
+
+
+					content += `<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
+
+					if (response.associated_domains.length > 0) {
+						for (var domain in response.associated_domains) {
+							var dom_object = response.associated_domains[domain];
+							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
+						}
+					}
+					else{
+						content += `<div class="alert alert-info">No Associated Domains identified</div>`
+					}
+					content += `</div>`
 
 		content += `
 			</div>
