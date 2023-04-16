@@ -13,15 +13,15 @@ fi
 echo "Stopping reNgine"
 docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 
-echo "Removing all Containers related to reNgine"
+echo "Removing all containers related to reNgine"
 docker rm rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
-echo "Removed all Containers"
+echo "Removed all containers"
 
-echo "Removing All volumes related to reNgine"
+echo "Removing all volumes related to reNgine"
 docker volume rm rengine_gf_patterns rengine_github_repos rengine_nuclei_templates rengine_postgres_data rengine_scan_results rengine_tool_config
-echo "Removed all Volumes"
+echo "Removed all volumes"
 
 echo "Removing all networks related to reNgine"
 docker network rm rengine_rengine_network rengine_default
 
-echo "Finished Uninstalling."
+echo "Finished uninstalling."
