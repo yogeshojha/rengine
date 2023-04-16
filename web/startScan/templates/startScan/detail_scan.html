@@ -377,11 +377,11 @@ Scan Findings
 							<i class="fe-trending-up me-2"></i> <span id="subdomain_changes_alert"></span> <a class="alert-link" id="recon-changes-tab-btn" href="#">Check it out!</a>
 						</div>
 					</div>
-					{% if history.domain.domain_info.associated_domains.all %}
+					{% if history.domain.domain_info.related_domains.all %}
 					<div class="col-6 related-domains-tab-show">
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
 							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-							<i class="fe-trending-up me-2"></i> reNgine identified {{history.domain.domain_info.associated_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').prev().tab('show');">Check it out!</a>
+							<i class="fe-trending-up me-2"></i> reNgine identified {{history.domain.domain_info.related_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').prev().tab('show');">Check it out!</a>
 						</div>
 					</div>
 					{% endif %}
@@ -409,15 +409,15 @@ Scan Findings
 											<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
 											<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">Historical Ips</a>
 											<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">
-												Associated Domains
-												{% if history.domain.domain_info.associated_domains.count %}
-												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.associated_domains.count}}</span>
+												Related Domains
+												{% if history.domain.domain_info.related_domains.count %}
+												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.related_domains.count}}</span>
 												{% endif %}
 											</a>
 											<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">
-												Similar Domains
-												{% if history.domain.domain_info.similar_domains.count %}
-												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.similar_domains.count}}</span>
+												Related TLDs
+												{% if history.domain.domain_info.related_tlds.count %}
+												<span class="badge badge-soft-primary float-end">{{history.domain.domain_info.related_tlds.count}}</span>
 												{% endif %}
 											</a>
 										</div>
@@ -705,23 +705,23 @@ Scan Findings
 												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% if history.domain.domain_info.associated_domains.all %}
-													<div class="alert alert-success">{{history.domain.domain_info.associated_domains.all.count}} Associated Domains identified</div>
-													{% for domain in history.domain.domain_info.associated_domains.all %}
+												{% if history.domain.domain_info.related_domains.all %}
+													<div class="alert alert-success">{{history.domain.domain_info.related_domains.all.count}} Related Domains identified</div>
+													{% for domain in history.domain.domain_info.related_domains.all %}
 														<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
 													{% endfor %}
 												{% else %}
-													<div class="alert alert-info">No Associated Domains identified</div>
+													<div class="alert alert-info">No Related Domains identified</div>
 												{% endif %}
 											</div>
 											<div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
-												{% if history.domain.domain_info.similar_domains.all %}
-													<div class="alert alert-success">{{history.domain.domain_info.similar_domains.all.count}} Similar Domains identified</div>
-													{% for domain in history.domain.domain_info.similar_domains.all %}
+												{% if history.domain.domain_info.related_tlds.all %}
+													<div class="alert alert-success">{{history.domain.domain_info.related_tlds.all.count}} Related TLDs identified</div>
+													{% for domain in history.domain.domain_info.related_tlds.all %}
 														<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
 													{% endfor %}
 												{% else %}
-													<div class="alert alert-info">No Similar Domains identified</div>
+													<div class="alert alert-info">No Related TLDs identified</div>
 												{% endif %}
 											</div>
 										</div>
