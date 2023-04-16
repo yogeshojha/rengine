@@ -8,9 +8,9 @@ class HistoricalIPSerializer(serializers.ModelSerializer):
         fields = ['ip', 'location', 'owner', 'last_seen']
 
 
-class AssociatedDomainSerializer(serializers.ModelSerializer):
+class RelatedDomainSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AssociatedDomain
+        model = RelatedDomain
         fields = '__all__'
 
 

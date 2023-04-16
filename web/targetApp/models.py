@@ -13,11 +13,9 @@ class HistoricalIP(models.Model):
 		return self.name
 
 
-class AssociatedDomain(models.Model):
+class RelatedDomain(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=250)
-	created_on = models.CharField(max_length=100)
-	# target_id = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
 	def __str__(self):
 		return self.name
@@ -120,8 +118,9 @@ class DomainInfo(models.Model):
 	# whois server
 	whois_server = models.CharField(max_length=150, null=True, blank=True)
 	# associated/similer domains
-	associated_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='associated_domains')
-	similar_domains = models.ManyToManyField(AssociatedDomain, blank=True, related_name='similar_domains')
+	related_domains = models.ManyToManyField(RelatedDomain, blank=True, related_name='associated_domains')
+	related_tlds = models.ManyToManyField(RelatedDomain, blank=True, related_name='related_tlds')
+	similar_domains = models.ManyToManyField(RelatedDomain, blank=True, related_name='similar_domains')
 	# historical ips
 	historical_ips = models.ManyToManyField(HistoricalIP, blank=True, related_name='similar_domains')
 
