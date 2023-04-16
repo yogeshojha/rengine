@@ -265,7 +265,7 @@ You can also [join our Discord channel #development](https://discord.gg/JuhHdHTt
 
 Please note that reNgine is beginner friendly. If you have never done open-source before, we encourage you to do so. **We will be happy and proud of your first PR ever.**
 
-You can start by resolving any [open issues] (https://github.com/yogeshojha/rengine/issues).
+You can start by resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
