@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cat ../web/art/rengine.txt
+cat ../web/art/reNgine.txt
 echo "Uninstalling reNgine"
 
 if [ "$EUID" -ne 0 ]
@@ -11,10 +11,10 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "Stopping reNgine"
-docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 
 echo "Removing all Containers related to reNgine"
-docker rm rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker rm rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 echo "Removed all Containers"
 
 echo "Removing All volumes related to reNgine"
@@ -22,6 +22,6 @@ docker volume rm rengine_gf_patterns rengine_github_repos rengine_nuclei_templat
 echo "Removed all Volumes"
 
 echo "Removing all networks related to reNgine"
-docker network rm rengine_rengine_network
+docker network rm rengine_rengine_network rengine_default
 
 echo "Finished Uninstalling."
