@@ -3023,7 +3023,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 			for doms in tlsx_output:
 				doms = doms.strip()
 				tldextract_res = tldextract.extract(doms)
-				if tldextract_res.domain == tldextract_target.domain and tldextract_res.subdomain == '':
+				if ip_domain != doms and tldextract_res.domain == tldextract_target.domain and tldextract_res.subdomain == '':
 					related_tlds.append(doms)
 
 			related_tlds = list(set(related_tlds))
@@ -3048,7 +3048,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 				domain_related = RelatedDomain.objects.get_or_create(
 					name=_domain,
 				)[0]
-				db_domain_info.related_domains.add(domain_related)
+				db_domain_info.related_tlds.add(domain_related)
 
 			for _ip in historical_ips:
 				historical_ip = HistoricalIP.objects.get_or_create(

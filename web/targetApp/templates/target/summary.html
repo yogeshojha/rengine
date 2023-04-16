@@ -162,6 +162,33 @@ Target Summary
 						</div>
 					</div>
 				</div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									<div class="header-title">
+										<span class="text-primary">
+										<span class="fe-link-2"></span></span>&nbsp;
+										Related TLDs
+									</div>
+									<div class="sub-header">
+										{{target.domain_info.related_tlds.all.count}} TLDs related to {{target.name}}
+									</div>
+								</h5>
+								<div data-simplebar style="max-height: 450px;" class="p-2">
+									{% for domain in target.domain_info.related_tlds.all %}
+										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+									{% empty %}
+									<div class="alert alert-warning" role="alert">
+										<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Related TLDs.
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="col-xl-9 col-lg-8">
 				<div class="row">
