@@ -135,6 +135,33 @@ Target Summary
 						</div>
 					</div>
 				</div>
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex align-items-start mb-3">
+							<div class="w-100">
+								<h5 class="mt-0 mb-0 font-15">
+									<div class="header-title">
+										<span class="text-primary">
+										<span class="fe-link-2"></span></span>&nbsp;
+										Related Domains
+									</div>
+									<div class="sub-header">
+										{{target.domain_info.related_domains.all.count}} Domains related to {{target.name}}
+									</div>
+								</h5>
+								<div data-simplebar style="max-height: 550px;" class="p-2">
+									{% for domain in target.domain_info.related_domains.all %}
+										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
+									{% empty %}
+									<div class="alert alert-warning" role="alert">
+										<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Related Domains.
+									</div>
+									{% endfor %}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div class="col-xl-9 col-lg-8">
 				<div class="row">
@@ -533,42 +560,6 @@ Target Summary
 												</tbody>
 											</table>
 										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-xl-6 col-lg-6 col-12 mb-2">
-						<div class="card" style="height: 95%">
-							<div class="card-body">
-								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.associated_domains.all.count}}</span> Associated Domains</h4>
-								<div class="row mt-3">
-									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 10px;">
-										{% for domain in target.domain_info.associated_domains.all %}
-										<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-										{% empty %}
-										<div class="alert alert-warning" role="alert">
-											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any Associated Domains.
-										</div>
-										{% endfor %}
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-xl-6 col-lg-6 col-12 mb-2">
-						<div class="card" style="height: 95%">
-							<div class="card-body">
-								<h4 class="header-title mb-0"><span class="text-primary"><i class="fe-link"></i></span>&nbsp;<span class="badge badge-soft-primary">{{target.domain_info.related_tlds.all.count}}</span> Similar Domains</h4>
-								<div class="row mt-3">
-									<div class="col-12" data-simplebar style="max-height: 250px; min-height: 10px;">
-										{% for domain in target.domain_info.similar_domains.all %}
-											<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add {{domain}} as target." onclick="add_target('{{domain}}')">{{domain}}</span>
-										{% empty %}
-										<div class="alert alert-warning" role="alert">
-											<i class="mdi mdi-alert-outline me-2"></i> Oops! Could not identify any similar domains.
-										</div>
-										{% endfor %}
 									</div>
 								</div>
 							</div>
