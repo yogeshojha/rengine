@@ -2969,8 +2969,8 @@ def query_whois(ip_domain, force_reload_whois=False):
 			tech_fax=domain_info_db.tech.fax,
 			tech_email=domain_info_db.tech.email,
 			tech_address=domain_info_db.tech.address,
-			similar_domains=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.similar_domains, many=True).data],
-			associated_domains=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.associated_domains, many=True).data],
+			related_tlds=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.related_tlds, many=True).data],
+			related_domains=[domain['name'] for domain in RelatedDomainSerializer(domain_info_db.related_domains, many=True).data],
 			historical_ips=[ip for ip in HistoricalIPSerializer(domain_info_db.historical_ips, many=True).data],
 		)
 		if domain_info_db.dns_records:
@@ -3296,6 +3296,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 		'nameservers': domain_info.get('ns_records'),
 		# 'similar_domains': domain_info.get('similar_domains'),
 		'related_domains': domain_info.get('related_domains'),
+		'related_tlds': domain_info.get('related_tlds'),
 		'historical_ips': domain_info.get('historical_ips'),
 	}
 
