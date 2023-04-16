@@ -4,21 +4,23 @@ import os
 import pprint
 import subprocess
 import time
-from datetime import datetime
-from urllib.parse import urlparse
-
 import validators
 import whatportis
 import xmltodict
 import yaml
+import tldextract
+
+from datetime import datetime
+from urllib.parse import urlparse
 from api.serializers import SubdomainSerializer
 from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
 from degoogle import degoogle
 from django.db.models import Count
-from django.utils import timezone
 from dotted_dict import DottedDict
+from django.utils import timezone
+
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
 								   get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
@@ -3004,6 +3006,31 @@ def query_whois(ip_domain, force_reload_whois=False):
 		except Exception as e:
 			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
 			similar_domains = []
+		# find related tlds using TLSx
+		try:
+			related_tlds = []
+			output_path = '/tmp/ip_domain_tlsx.txt'
+			tlsx_command = f'tlsx -san -cn -silent -ro -host {ip_domain} -o {output_path}'
+			run_command(
+				tlsx_command,
+				shell=True,
+			)
+			tlsx_output = []
+			with open(output_path) as f:
+				tlsx_output = f.readlines()
+
+			tldextract_target = tldextract.extract(ip_domain)
+			for doms in tlsx_output:
+				doms = doms.strip()
+				tldextract_res = tldextract.extract(doms)
+				if tldextract_res.domain == tldextract_target.domain and tldextract_res.subdomain == '':
+					related_tlds.append(doms)
+
+			related_tlds = list(set(related_tlds))
+			domain_info.related_tlds = related_tlds
+		except Exception as e:
+			logger.error(f'Associated domain not found for {ip_domain}\nError: {str(e)}')
+			similar_domains = []
 
 		related_domains_list = []
 		if Domain.objects.filter(name=ip_domain).exists():
@@ -3016,6 +3043,12 @@ def query_whois(ip_domain, force_reload_whois=False):
 				)[0]
 				db_domain_info.related_domains.add(domain_related)
 				related_domains_list.append(_domain['name'])
+
+			for _domain in related_tlds:
+				domain_related = RelatedDomain.objects.get_or_create(
+					name=_domain,
+				)[0]
+				db_domain_info.related_domains.add(domain_related)
 
 			for _ip in historical_ips:
 				historical_ip = HistoricalIP.objects.get_or_create(
