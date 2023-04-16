@@ -79,6 +79,7 @@ RUN go install -v -v github.com/bp0lr/gauplus@latest
 RUN go install -v github.com/jaeles-project/gospider@latest
 RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 RUN go install -v github.com/ffuf/ffuf@latest
+RUN go install github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
