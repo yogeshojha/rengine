@@ -243,3 +243,20 @@
     is_github_cloned: true
     github_clone_path: /usr/src/github/ctfr
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 14
+  fields:
+    logo_url: https://user-images.githubusercontent.com/8293321/174841003-01a62bad-2ecf-4874-89c4-efa53dd56884.png
+    name: tlsx
+    description: A fast and configurable TLS grabber focused on TLS based data collection and analysis.
+    github_url: https://github.com/projectdiscovery/tlsx/blob/main/README.md
+    license_url: https://github.com/projectdiscovery/tlsx/blob/main/LICENSE
+    version_lookup_command: tlsx -version
+    update_command: tlsx -update
+    install_command: go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null

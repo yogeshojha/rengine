@@ -156,7 +156,7 @@ OSINT_DEFAULT_CONFIG = {
 }
 
 # subdomain scan
-SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder', 'ctfr', 'sublist3r']
+SUBDOMAIN_SCAN_DEFAULT_TOOLS = ['subfinder', 'ctfr', 'sublist3r', 'tlsx']
 
 # endpoints scan
 ENDPOINT_SCAN_DEFAULT_TOOLS = ['gospider']

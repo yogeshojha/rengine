@@ -437,15 +437,21 @@ def subdomain_discovery(
 
 			elif tool == 'oneforall':
 				cmd = f'python3 /usr/src/github/OneForAll/oneforall.py --target {host} run'
-				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv >> {self.results_dir}/subdomains_oneforall.txt'
+				cmd_extract = f'cut -d\',\' -f6 /usr/src/github/OneForAll/results/{host}.csv > {self.results_dir}/subdomains_oneforall.txt'
 				cmd_rm = f'rm -rf /usr/src/github/OneForAll/results/{host}.csv'
 				cmd += f' && {cmd_extract} && {cmd_rm}'
 
 			elif tool == 'ctfr':
 				results_file = self.results_dir + '/subdomains_ctfr.txt'
 				cmd = f'python3 /usr/src/github/ctfr/ctfr.py -d {host} -o {results_file}'
-				cmd_extract = f"cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort >> {results_file}"
+				cmd_extract = f"cat {results_file} | sed 's/\*.//g' | tail -n +12 | uniq | sort > {results_file}"
 				cmd += f' && {cmd_extract}'
+
+			elif tool == 'tlsx':
+				results_file = self.results_dir + '/subdomains_tlsx.txt'
+				cmd = f'tlsx -san -cn -silent -ro -host {host}'
+				cmd += f" | sed -n '/^\([a-zA-Z0-9]\([-a-zA-Z0-9]*[a-zA-Z0-9]\)\?\.\)\+{host}$/p' | uniq | sort"
+				cmd += f' > {results_file}'
 
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
