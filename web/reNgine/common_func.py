@@ -868,10 +868,10 @@ def xml2json(xml):
 	return jsondata
 
 
-def get_associated_domains(lookup_keyword):
+def reverse_whois(lookup_keyword):
 	domains = []
 	'''
-		This function will use viewdns to fetch associated domains
+		This function will use viewdns to fetch reverse whois info
 		Input: lookup keyword like email or registrar name
 		Returns a list of domains as string.
 	'''

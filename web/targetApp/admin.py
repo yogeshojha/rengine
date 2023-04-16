@@ -4,7 +4,7 @@ from .models import *
 
 admin.site.register(Domain)
 admin.site.register(Organization)
-admin.site.register(AssociatedDomain)
+admin.site.register(RelatedDomain)
 # admin.site.register(RelatedTLD)
 #admin.site.register(NameServers)
 admin.site.register(Registrar)
