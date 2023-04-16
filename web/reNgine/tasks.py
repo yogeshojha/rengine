@@ -3058,6 +3058,8 @@ def query_whois(ip_domain, force_reload_whois=False):
 					last_seen=_ip['last_seen'],
 				)[0]
 				db_domain_info.historical_ips.add(historical_ip)
+			domain.domain_info = db_domain_info
+			domain.save()
 
 		command = f'netlas host {ip_domain} -f json'
 		result = subprocess.check_output(command.split()).decode('utf-8')
