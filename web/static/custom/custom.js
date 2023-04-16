@@ -1511,8 +1511,8 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 				<a class="nav-link mb-1" id="v-pills-nameserver-tab" data-bs-toggle="pill" href="#v-pills-nameserver" role="tab" aria-controls="v-pills-nameserver" aria-selected="false">Nameservers</a>
 				<a class="nav-link mb-1" id="v-pills-dns-tab" data-bs-toggle="pill" href="#v-pills-dns" role="tab" aria-controls="v-pills-dns" aria-selected="false">DNS Records</a>
 				<a class="nav-link mb-1" id="v-pills-history-tab" data-bs-toggle="pill" href="#v-pills-history" role="tab" aria-controls="v-pills-history"aria-selected="false">Historical Ips</a>
-				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">Associated Domains</a>
-				<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">Similar Domains</a>
+				<a class="nav-link mb-1" id="v-pills-related-tab" data-bs-toggle="pill" href="#v-pills-related" role="tab" aria-controls="v-pills-related" aria-selected="false">Related Domains</a>
+				<a class="nav-link mb-1" id="v-pills-similar-tab" data-bs-toggle="pill" href="#v-pills-similar" role="tab" aria-controls="v-pills-similar-tld" aria-selected="false">Related TLDs</a>
 			</div>
 		</div>
 		<div class="col-sm-9">
@@ -1780,28 +1780,28 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 					content += `</div><div class="tab-pane fade" id="v-pills-similar" role="tabpanel" aria-labelledby="v-pills-similar-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
 
-					if (response.similar_domains.length > 0) {
-						for (var domain in response.similar_domains) {
-							var dom_object = response.similar_domains[domain];
+					if (response.related_tlds.length > 0) {
+						for (var domain in response.related_tlds) {
+							var dom_object = response.related_tlds[domain];
 							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
 						}
 					}
 					else{
-						content += `<div class="alert alert-info">No Similar Domains identified</div>`
+						content += `<div class="alert alert-info">No Related TLDs identified</div>`
 					}
 					content += `</div>`
 
 
 					content += `<div class="tab-pane fade" id="v-pills-related" role="tabpanel" aria-labelledby="v-pills-related-tab" data-simplebar style="max-height: 300px; min-height: 300px;">`;
 
-					if (response.associated_domains.length > 0) {
-						for (var domain in response.associated_domains) {
-							var dom_object = response.associated_domains[domain];
+					if (response.related_domains.length > 0) {
+						for (var domain in response.related_domains) {
+							var dom_object = response.related_domains[domain];
 							content += `<span class="badge badge-soft-primary badge-link waves-effect waves-light me-1" data-toggle="tooltip" title="Add ${dom_object} as target." onclick="add_target('${dom_object}')">${dom_object}</span>`;
 						}
 					}
 					else{
-						content += `<div class="alert alert-info">No Associated Domains identified</div>`
+						content += `<div class="alert alert-info">No Related Domains identified</div>`
 					}
 					content += `</div>`
 
