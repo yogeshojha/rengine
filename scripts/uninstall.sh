@@ -11,7 +11,7 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "Stopping reNgine"
-docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
