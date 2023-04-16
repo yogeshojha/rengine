@@ -34,4 +34,4 @@ else
   exit 1
 fi
 
-echo "Finished Uninstalling."
+echo "Finished uninstalling."
