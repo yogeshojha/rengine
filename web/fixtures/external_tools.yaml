@@ -232,7 +232,7 @@
       names, subdomains, IPs and URLs using multiple public data sources.
     github_url: https://github.com/laramies/theHarvester
     license_url: https://github.com/laramies/theHarvester/blob/master/README/LICENSES
-    version_lookup_command: python3 /usr/src/github/theHarvester/theHarvester.py
+    version_lookup_command: python3 /usr/src/github/theHarvester/lib/version.py
     update_command: git pull
     install_command: git clone https://github.com/laramies/theHarvester
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
