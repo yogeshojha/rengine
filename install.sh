@@ -123,9 +123,9 @@ if [ "${failed}" -eq 0 ]; then
   echo "Creating an account"
   echo "#########################################################################"
   make username
-  make migrate
 
   tput setaf 2 && printf "\n%s\n" "Thank you for installing reNgine, happy recon!!"
+  echo "In case you have unapplied migrations (see above in red), run 'make migrate'"
 else
   tput setaf 1 && printf "\n%s\n" "reNgine installation failed!!"
 fi
