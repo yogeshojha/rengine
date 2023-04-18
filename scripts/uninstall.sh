@@ -36,16 +36,16 @@ else
   echo "Skipping removal of Docker images"
 fi
 
-read -p "Do you want to remove all unused Docker builders? [y/n] " -n 1 -r
+read -p "Do you want to remove all Docker builders? [y/n] " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Running docker builder prune -a command"
   docker builder prune -a
-  echo "Removed all unused Docker builders"
+  echo "Removed all Docker builders"
 else
-  echo "Skipping removal of unused Docker builders"
+  echo "Skipping removal of Docker builders"
 fi
 
 echo "Finished uninstalling."
