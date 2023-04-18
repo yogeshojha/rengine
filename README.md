@@ -164,7 +164,7 @@ You can find reNgine documentation at [https://rengine.wiki](https://rengine.wik
     sudo ./install.sh
     ```
     
-    If `./install.sh` does not have install permission, please change it, `chmod +x install.sh`
+    If `install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
 
@@ -182,7 +182,7 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
     sudo ./update.sh
     ```
 
-    If `./update.sh` does not have execution permissions, please change it, `chmod +x update.sh`
+    If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
 
 ## Changelog
 
@@ -265,7 +265,7 @@ You can also [join our Discord channel #development](https://discord.gg/JuhHdHTt
 
 Please note that reNgine is beginner friendly. If you have never done open-source before, we encourage you to do so. **We will be happy and proud of your first PR ever.**
 
-You can start by resolving any [open issues] (https://github.com/yogeshojha/rengine/issues).
+You can start by resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
