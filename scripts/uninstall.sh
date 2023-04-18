@@ -42,7 +42,7 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Running docker builder prune -a command"
-  docker builder prune -a
+  docker builder prune -a -f
   echo "Removed all Docker builders"
 else
   echo "Skipping removal of Docker builders"
