@@ -36,8 +36,11 @@ migrate:		## Apply migrations
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py migrate
 
 changepassword:	## Change password for user
-
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py changepassword
+
+migrate:		## Apply migrations
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py migrate
+
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} pull
