@@ -453,6 +453,12 @@ def subdomain_discovery(
 				cmd += f" | sed -n '/^\([a-zA-Z0-9]\([-a-zA-Z0-9]*[a-zA-Z0-9]\)\?\.\)\+{host}$/p' | uniq | sort"
 				cmd += f' > {results_file}'
 
+			elif tool == 'netlas':
+				results_file = self.results_dir + '/subdomains_netlas.txt'
+				cmd = f'netlas search -d domain -i domain domain:"*.{host}" -f json'
+				cmd_extract = f"grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}'"
+				cmd += f' | {cmd_extract} > {results_file}'
+
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
 			if not tool_query.exists():

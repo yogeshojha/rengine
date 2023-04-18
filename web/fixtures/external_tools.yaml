@@ -260,3 +260,20 @@
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 15
+  fields:
+    logo_url: https://avatars.githubusercontent.com/u/79084675?v=4
+    name: netlas
+    description: Non-intrusive Internet Scanner.
+    github_url: https://github.com/netlas-io/netlas-python
+    license_url: https://github.com/netlas-io/netlas-python/blob/master/LICENSE
+    version_lookup_command: null
+    update_command: pip3 install netlas --update
+    install_command: pip3 install netlas
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
