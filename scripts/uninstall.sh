@@ -24,4 +24,16 @@ echo "Removed all volumes"
 echo "Removing all networks related to reNgine"
 docker network rm rengine_rengine_network rengine_default
 
+read -p "Do you want to remove Docker images related to reNgine? [y/n] " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+  echo "Removing all Docker images related to reNgine"
+  docker rmi rengine_celery-beat rengine_celery docker.pkg.github.com/yogeshojha/rengine/rengine rengine_certs redis:alpine nginx:alpine peterdavehello/tor-socks-proxy postgres:12.3-alpine
+  echo "Removed all Docker images related to reNgine"
+else
+  echo "Skipping removal of Docker images"
+fi
+
 echo "Finished uninstalling."
