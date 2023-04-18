@@ -60,7 +60,6 @@ else
   tput setaf 2; echo "Docker installed!!!"
 fi
 
-
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -74,7 +73,6 @@ else
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "docker-compose installed!!!"
 fi
-
 
 echo " "
 tput setaf 4;
@@ -105,8 +103,6 @@ else
   exit 1
 fi
 
-
-
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -123,9 +119,9 @@ if [ "${failed}" -eq 0 ]; then
   echo "Creating an account"
   echo "#########################################################################"
   make username
-  make migrate
 
   tput setaf 2 && printf "\n%s\n" "Thank you for installing reNgine, happy recon!!"
+  echo "In case you have unapplied migrations (see above in red), run 'make migrate'"
 else
   tput setaf 1 && printf "\n%s\n" "reNgine installation failed!!"
 fi
