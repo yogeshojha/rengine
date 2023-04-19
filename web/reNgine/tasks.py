@@ -539,7 +539,7 @@ def subdomain_discovery(
 
 	# Bulk crawl subdomains
 	if enable_http_crawl:
-		ctx['track'] = False
+		ctx['track'] = True
 		http_crawl(urls, ctx=ctx)
 
 	# Find root subdomain endpoints
@@ -1279,7 +1279,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		if not isinstance(line, dict):
 			continue
 		results.append(line)
-		port_number = line['port']
+		port_number = line['port']['Port']
 		ip_address = line['ip']
 		host = line.get('host') or ip_address
 		if port_number == 0:
@@ -2143,6 +2143,7 @@ def http_crawl(
 	Returns:
 		list: httpx results.
 	"""
+	logger.info('Initiating HTTP Crawl')
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration
 	custom_header = cfg.get(CUSTOM_HEADER)
@@ -2226,6 +2227,8 @@ def http_crawl(
 			crawl=False,
 			ctx=ctx,
 			subdomain=subdomain)
+		if not endpoint:
+			continue
 		endpoint.is_default = True
 		endpoint.http_status = http_status
 		endpoint.page_title = page_title
