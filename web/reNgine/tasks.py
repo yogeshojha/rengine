@@ -1171,7 +1171,7 @@ def screenshot(self, ctx={}, description=None):
 			if status == 'Successful' and subdomain_query.exists():
 				subdomain = subdomain_query.first()
 				screenshot_paths.append(screenshot_path)
-				subdomain.screenshot_path = screenshot_path.replace(self.results_dir, '')
+				subdomain.screenshot_path = screenshot_path.replace('/usr/src/scan_results/', '')
 				subdomain.save()
 				logger.warning(f'Added screenshot for {subdomain.name} to DB')
 
@@ -2146,8 +2146,8 @@ def http_crawl(
 	"""
 	logger.info('Initiating HTTP Crawl')
 	cmd = '/go/bin/httpx'
-	cfg = self.yaml_configuration.get(HTTP_CRAWL)
-	custom_header = cfg.get(CUSTOM_HEADER)
+	cfg = self.yaml_configuration.get(HTTP_CRAWL) or {}
+	custom_header = cfg.get(CUSTOM_HEADER, '')
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
 	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
