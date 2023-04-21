@@ -3,29 +3,29 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
 from reNgine.definitions import (CELERY_TASK_STATUSES,
-                                 NUCLEI_REVERSE_SEVERITY_MAP)
+								 NUCLEI_REVERSE_SEVERITY_MAP)
 from reNgine.utilities import *
 from scanEngine.models import EngineType
 from targetApp.models import Domain
 
 
 class hybrid_property:
-    def __init__(self, func):
-        self.func = func
-        self.name = func.__name__
-        self.exp = None
+	def __init__(self, func):
+		self.func = func
+		self.name = func.__name__
+		self.exp = None
 
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return self.func(instance)
+	def __get__(self, instance, owner):
+		if instance is None:
+			return self
+		return self.func(instance)
 
-    def __set__(self, instance, value):
-        pass
+	def __set__(self, instance, value):
+		pass
 
-    def expression(self, exp):
-        self.exp = exp
-        return self
+	def expression(self, exp):
+		self.exp = exp
+		return self
 
 
 class ScanHistory(models.Model):
@@ -185,6 +185,7 @@ class Subdomain(models.Model):
 	discovered_date = models.DateTimeField(blank=True, null=True)
 	cname = models.CharField(max_length=5000, blank=True, null=True)
 	is_cdn = models.BooleanField(default=False, blank=True, null=True)
+	cdn_name = models.CharField(max_length=200, blank=True, null=True)
 	http_status = models.IntegerField(default=0)
 	content_type = models.CharField(max_length=100, null=True, blank=True)
 	response_time = models.FloatField(null=True, blank=True)

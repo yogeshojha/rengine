@@ -2146,9 +2146,10 @@ def http_crawl(
 	"""
 	logger.info('Initiating HTTP Crawl')
 	cmd = '/go/bin/httpx'
-	cfg = self.yaml_configuration
+	cfg = self.yaml_configuration.get(HTTP_CRAWL)
 	custom_header = cfg.get(CUSTOM_HEADER)
 	threads = cfg.get(THREADS, DEFAULT_THREADS)
+	follow_redirect = cfg.get(FOLLOW_REDIRECT, True)
 	self.output_path = None
 	input_path = f'{self.results_dir}/httpx_input.txt'
 	history_file = f'{self.results_dir}/commands.txt'
@@ -2185,6 +2186,8 @@ def http_crawl(
 	cmd += f' -u {urls[0]}' if len(urls) == 1 else f' -l {input_path}'
 	cmd += f' -x {method}' if method else ''
 	cmd += f' -silent'
+	if follow_redirect:
+		cmd += ' -fr'
 	results = []
 	endpoint_ids = []
 	for line in stream_command(
@@ -2212,6 +2215,8 @@ def http_crawl(
 		cdn = line.get('cdn', False)
 		rt = line.get('time')
 		techs = line.get('tech', [])
+		cname = line.get('cname', '')
+		content_type = line.get('content_type', '')
 		response_time = -1
 		if rt:
 			response_time = float(''.join(ch for ch in rt if not ch.isalpha()))
@@ -2236,6 +2241,7 @@ def http_crawl(
 		endpoint.content_length = content_length
 		endpoint.webserver = webserver
 		endpoint.response_time = response_time
+		endpoint.content_type = content_type
 		endpoint.save()
 		endpoint_str = f'{http_url} [{http_status}] `{content_length}B` `{webserver}` `{rt}`'
 		logger.warning(endpoint_str)
@@ -2297,6 +2303,11 @@ def http_crawl(
 			subdomain.content_length = content_length
 			subdomain.webserver = webserver
 			subdomain.response_time = response_time
+			subdomain.content_type = content_type
+			subdomain.cname = ','.join(cname)
+			subdomain.is_cdn = cdn
+			if cdn:
+				subdomain.cdn_name = line.get('cdn_name')
 			subdomain.save()
 		endpoint.save()
 		endpoint_ids.append(endpoint.id)
