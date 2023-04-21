@@ -15,7 +15,7 @@ from startScan.models import ScanActivity, ScanHistory, SubScan
 logger = get_task_logger(__name__)
 
 cache = None
-if 'CELERY_BROKER' in os.environ: 
+if 'CELERY_BROKER' in os.environ:
 	cache = Redis.from_url(os.environ['CELERY_BROKER'])
 
 
@@ -27,7 +27,7 @@ class RengineRequest(Request):
 class RengineTask(Task):
 	"""A Celery task that is tracked by reNgine. Save task output files and
 	tracebacks to RENGINE_RESULTS.
-	
+
 	The custom task meta-options are toggleable through environment variables:
 
 	RENGINE_RECORD_ENABLED:
@@ -113,7 +113,7 @@ class RengineTask(Task):
 					self.update_scan_activity()
 				return json.loads(result)
 
-		# Execute task, catch exceptions and update ScanActivity object after 
+		# Execute task, catch exceptions and update ScanActivity object after
 		# task has finished running.
 		try:
 			self.result = self.run(*args, **kwargs)
@@ -164,7 +164,7 @@ class RengineTask(Task):
 					json.dump(self.result, f, indent=4)
 				else:
 					f.write(self.result)
-			logger.warning(f'Wrote {self.task_name} results to {self.output_path}')	
+			logger.warning(f'Wrote {self.task_name} results to {self.output_path}')
 
 	def create_scan_activity(self):
 		if not self.track:
