@@ -540,7 +540,7 @@ def subdomain_discovery(
 	# Bulk crawl subdomains
 	if enable_http_crawl:
 		ctx['track'] = True
-		http_crawl(urls, ctx=ctx)
+		http_crawl(urls, ctx=ctx, is_ran_from_subdomain_scan=True)
 
 	# Find root subdomain endpoints
 	for subdomain in subdomains:
@@ -2129,7 +2129,8 @@ def http_crawl(
 		recrawl=False,
 		ctx={},
 		track=True,
-		description=None):
+		description=None,
+		is_ran_from_subdomain_scan=False):
 	"""Use httpx to query HTTP URLs for important info like page titles, http
 	status, etc...
 
@@ -2254,11 +2255,10 @@ def http_crawl(
 		# Add technology objects to DB
 		for technology in techs:
 			tech, _ = Technology.objects.get_or_create(name=technology)
-			# TODO: Add tech version check and vulnerability check here
-			# Add tech version in technology model
-			subdomain.technologies.add(tech)
 			endpoint.technologies.add(tech)
-			subdomain.save()
+			if is_ran_from_subdomain_scan:
+				subdomain.technologies.add(tech)
+				subdomain.save()
 			endpoint.save()
 		techs_str = ', '.join([f'`{tech}`' for tech in techs])
 		self.notify(
@@ -2290,7 +2290,14 @@ def http_crawl(
 				add_meta_info=False)
 
 		# Save subdomain and endpoint
-		subdomain.save()
+		if is_ran_from_subdomain_scan:
+			# save subdomain stuffs
+			subdomain.http_status = http_status
+			subdomain.page_title = page_title
+			subdomain.content_length = content_length
+			subdomain.webserver = webserver
+			subdomain.response_time = response_time
+			subdomain.save()
 		endpoint.save()
 		endpoint_ids.append(endpoint.id)
 

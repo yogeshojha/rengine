@@ -28,7 +28,7 @@ class hybrid_property:
         return self
 
 
-class ScanHistory(models.Model): 
+class ScanHistory(models.Model):
 	id = models.AutoField(primary_key=True)
 	start_scan_date = models.DateTimeField()
 	scan_status = models.IntegerField(choices=CELERY_TASK_STATUSES, default=-1)
@@ -136,8 +136,8 @@ class ScanHistory(models.Model):
 		)
 
 	def get_progress(self):
-		"""Formulae to calculate count number of true things to do, for http 
-		crawler, it is always +1 divided by total scan activity associated - 2 
+		"""Formulae to calculate count number of true things to do, for http
+		crawler, it is always +1 divided by total scan activity associated - 2
 		(start and stop).
 		"""
 		number_of_steps = len(self.tasks) if self.tasks else 0
