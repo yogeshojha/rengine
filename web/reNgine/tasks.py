@@ -1401,10 +1401,10 @@ def nmap(
 	"""
 	notif = Notification.objects.first()
 	ports_str = ','.join(str(port) for port in ports)
-	self.filename = self.filename.replace('.json', '.xml')
+	self.filename = self.filename.replace('.txt', '.xml')
 	filename_vulns = self.filename.replace('.xml', '_vulns.json')
 	output_file = self.output_path
-	output_file_xml = f'{self.results_dir}/{self.filename}'
+	output_file_xml = f'{self.results_dir}/{host}_{self.filename}'
 	vulns_file = f'{self.results_dir}/{filename_vulns}'
 	logger.warning(f'Running nmap on {host}:{ports}')
 
@@ -2615,11 +2615,10 @@ def parse_nmap_results(xml_file, output_file=None):
 		hosts = [hosts]
 
 	for host in hosts:
-
 		# Grab hostname / IP from output
 		hostnames = host.get('hostnames', {})
 		if hostnames:
-			hostname = hostnames.get('hostname', [])[0]['@name']
+			hostname = hostnames.get('hostname', {}).get('@name')
 		else:
 			hostname = host.get('address')['@addr']
 
