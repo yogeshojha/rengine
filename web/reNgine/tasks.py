@@ -1299,32 +1299,31 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 			ip.save()
 
 		# Add endpoint to DB
-		http_url = f'{host}:{port_number}'
-		endpoint, _ = save_endpoint(
-			http_url,
-			crawl=enable_http_crawl,
-			ctx=ctx,
-			subdomain=subdomain)
-		if endpoint:
-			http_url = endpoint.http_url
-		urls.append(http_url)
+		# port 80 and 443 not needed as http crawl already does that.
+		if port_number not in [80, 443]:
+			http_url = f'{host}:{port_number}'
+			endpoint, _ = save_endpoint(
+				http_url,
+				crawl=enable_http_crawl,
+				ctx=ctx,
+				subdomain=subdomain)
+			if endpoint:
+				http_url = endpoint.http_url
+			urls.append(http_url)
 
 		# Add Port in DB
 		port_details = whatportis.get_ports(str(port_number))
-		service_name = 'unknown'
-		description = ''
-		if endpoint and endpoint.is_alive:
-			service_name = urlparse(http_url).scheme
-			description = endpoint.webserver or endpoint.page_title
-		elif len(port_details) > 0:
-			service_name = port_details[0].name
-			description = port_details[0].description
+		service_name = port_details[0].name if len(port_details) > 0 else 'unknown'
+		description = port_details[0].description if len(port_details) > 0 else ''
+
+		# get or create port
 		port, created = Port.objects.get_or_create(
 			number=port_number,
 			service_name=service_name,
-			description=description)
-		if created:
-			port.is_uncommon = port_number in UNCOMMON_WEB_PORTS
+			description=description
+		)
+		if port_number in UNCOMMON_WEB_PORTS:
+			port.is_uncommon = True
 			port.save()
 		ip.ports.add(port)
 		ip.save()
