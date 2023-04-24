@@ -1406,7 +1406,7 @@ def nmap(
 	filename_vulns = self.filename.replace('.xml', '_vulns.json')
 	output_file = self.output_path
 	output_file_xml = f'{self.results_dir}/{host}_{self.filename}'
-	vulns_file = f'{self.results_dir}/{filename_vulns}'
+	vulns_file = f'{self.results_dir}/{host}_{filename_vulns}'
 	logger.warning(f'Running nmap on {host}:{ports}')
 
 	# Build cmd
