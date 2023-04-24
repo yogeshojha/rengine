@@ -1227,11 +1227,13 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	rate_limit = config.get(NAABU_RATE) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	passive = config.get(NAABU_PASSIVE, False)
-	nmap_cli = config.get(NAABU_NMAP_CLI, '')
-	nmap_script = config.get(NAABU_NMAP_SCRIPT)
-	nmap_script_args = config.get(NAABU_NMAP_SCRIPT_ARGS)
 	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
 	exclude_ports_str = ','.join(exclude_ports)
+	# nmap args
+	nmap_enabled = config.get(ENABLE_NMAP, False)
+	nmap_cmd = config.get(NMAP_COMMAND, '')
+	nmap_script = config.get(NAABU_NMAP_SCRIPT)
+	nmap_script_args = config.get(NAABU_NMAP_SCRIPT_ARGS)
 
 	if hosts:
 		with open(input_file, 'w') as f:
@@ -1263,7 +1265,6 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	cmd += f' -passive' if passive else ''
 	cmd += f' -exclude-ports {exclude_ports_str}' if exclude_ports else ''
 	cmd += f' -silent'
-	nmap_enabled = nmap_cli or nmap_script
 
 	# Execute cmd and gather results
 	results = []
@@ -1359,7 +1360,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 			ctx_nmap['description'] = get_task_title(f'nmap_{host}', self.scan_id, self.subscan_id)
 			ctx_nmap['track'] = False
 			sig = nmap.si(
-				cmd=nmap_cli,
+				cmd=nmap_cmd,
 				ports=port_list,
 				host=host,
 				script=nmap_script,
@@ -2590,7 +2591,7 @@ def parse_nmap_results(xml_file, output_file=None):
 	Returns:
 		list: List of vulnerabilities found from nmap results.
 	"""
-	with open(xml_file, 'r') as f:
+	with open(xml_file, encoding='utf8') as f:
 		content = f.read()
 		try:
 			nmap_results = xmltodict.parse(content) # parse XML to dict
