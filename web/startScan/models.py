@@ -342,9 +342,9 @@ class EndPoint(models.Model):
 		on_delete=models.CASCADE,
 		null=True,
 		blank=True)
-	http_url = models.CharField(max_length=10000)
+	http_url = models.CharField(max_length=30000)
 	content_length = models.IntegerField(default=0, null=True, blank=True)
-	page_title = models.CharField(max_length=10000, null=True, blank=True)
+	page_title = models.CharField(max_length=30000, null=True, blank=True)
 	http_status = models.IntegerField(default=0, null=True, blank=True)
 	content_type = models.CharField(max_length=100, null=True, blank=True)
 	discovered_date = models.DateTimeField(blank=True, null=True)
