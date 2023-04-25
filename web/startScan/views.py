@@ -418,7 +418,7 @@ def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
         delete_dir = obj.results_dir
-        run_command('rm -rf /usr/src/scan_results/' + delete_dir)
+        run_command('rm -rf ' + delete_dir)
         obj.delete()
         messageData = {'status': 'true'}
         messages.add_message(
@@ -742,7 +742,7 @@ def schedule_organization_scan(request, id):
                     interval=schedule,
                     name=task_name,
                     task='reNgine.tasks.initiate_scan',
-                    kwargs=_kwargs 
+                    kwargs=_kwargs
                 )
 
             # Clocked task
