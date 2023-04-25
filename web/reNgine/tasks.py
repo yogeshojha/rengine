@@ -1498,13 +1498,10 @@ def waf_detection(self, ctx={}, description=None):
 	for line in wafs:
 		# split by 3 space!
 		splitted = line.split('   ')
-		# remove all empty strings
-		strs = [string for string in splitted if string]
-		# 0th pos is url and 1st pos is waf, remove /n from waf
-		waf_info = strs[1].strip()
+		waf_info = splitted[2].strip()
 		waf_name = waf_info[:waf_info.find('(')].strip()
-		waf_manufacturer = waf_info[waf_info.find('(')+1:waf_info.find(')')].strip()
-		http_url = sanitize_url(strs[0].strip())
+		waf_manufacturer = waf_info[waf_info.find('(')+1:waf_info.find(')')].strip().replace('.', '')
+		http_url = sanitize_url(splitted[1].strip())
 		if not waf_name or waf_name == 'None':
 			continue
 
@@ -1513,15 +1510,12 @@ def waf_detection(self, ctx={}, description=None):
 			name=waf_name,
 			manufacturer=waf_manufacturer
 		)
-		waf.save()
 
 		# Add waf info to Subdomain in DB
-		subdomain_query = Subdomain.objects.filter(scan_history=self.scan, http_url=http_url)
-		if subdomain_query.exists():
-			subdomain = subdomain_query.first()
-			subdomain.waf.add(waf)
-			subdomain.save()
-
+		subdomain = get_subdomain_from_url(http_url)
+		subdomain_query, _ = Subdomain.objects.get_or_create(scan_history=self.scan, name=subdomain)
+		subdomain_query.waf.add(waf)
+		subdomain_query.save()
 	return wafs
 
 
