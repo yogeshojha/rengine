@@ -1496,12 +1496,12 @@ def waf_detection(self, ctx={}, description=None):
 		wafs = file.readlines()
 
 	for line in wafs:
-		# split by 3 space!
-		splitted = line.split('   ')
-		waf_info = splitted[2].strip()
+		line = " ".join(line.split())
+		splitted = line.split(' ', 1)
+		waf_info = splitted[1].strip()
 		waf_name = waf_info[:waf_info.find('(')].strip()
 		waf_manufacturer = waf_info[waf_info.find('(')+1:waf_info.find(')')].strip().replace('.', '')
-		http_url = sanitize_url(splitted[1].strip())
+		http_url = sanitize_url(splitted[0].strip())
 		if not waf_name or waf_name == 'None':
 			continue
 
@@ -1513,6 +1513,7 @@ def waf_detection(self, ctx={}, description=None):
 
 		# Add waf info to Subdomain in DB
 		subdomain = get_subdomain_from_url(http_url)
+		logger.info(f'Wafw00f Subdomain : {subdomain}')
 		subdomain_query, _ = Subdomain.objects.get_or_create(scan_history=self.scan, name=subdomain)
 		subdomain_query.waf.add(waf)
 		subdomain_query.save()
