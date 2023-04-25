@@ -73,6 +73,8 @@ USES_TOOLS = 'uses_tools'
 VULNERABILITY_SCAN = 'vulnerability_scan'
 WAF_DETECTION = 'waf_detection'
 WORDLIST = 'wordlist'
+REMOVE_DUPLICATE_ENDPOINTS = 'remove_duplicate_endpoints'
+DUPLICATE_REMOVAL_FIELDS = 'duplicate_fields'
 
 ###############################################################################
 # Scan DEFAULTS

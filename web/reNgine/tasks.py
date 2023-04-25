@@ -1672,6 +1672,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 	# Config
 	config = self.yaml_configuration.get(FETCH_URL) or {}
+	should_remove_duplicate_endpoints = config.get(REMOVE_DUPLICATE_ENDPOINTS, True)
+	duplicate_removal_fields = config.get(DUPLICATE_REMOVAL_FIELDS, ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	gf_patterns = config.get(GF_PATTERNS, [])
 	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
@@ -1805,7 +1807,12 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	# Crawl discovered URLs
 	if enable_http_crawl:
 		ctx['track'] = False
-		http_crawl(all_urls, ctx=ctx)
+		http_crawl(
+			all_urls,
+			ctx=ctx,
+			should_remove_duplicate_endpoints=should_remove_duplicate_endpoints,
+			duplicate_removal_fields=duplicate_removal_fields
+		)
 
 
 	#-------------------#
@@ -2126,7 +2133,9 @@ def http_crawl(
 		ctx={},
 		track=True,
 		description=None,
-		is_ran_from_subdomain_scan=False):
+		is_ran_from_subdomain_scan=False,
+		should_remove_duplicate_endpoints=True,
+		duplicate_removal_fields=[]):
 	"""Use httpx to query HTTP URLs for important info like page titles, http
 	status, etc...
 
@@ -2136,6 +2145,8 @@ def http_crawl(
 		method (str): HTTP method to use (GET, HEAD, POST, PUT, DELETE).
 		recrawl (bool, optional): If False, filter out URLs that have already
 			been crawled.
+		should_remove_duplicate_endpoints (bool): Whether to remove duplicate endpoints
+		duplicate_removal_fields (list): List of Endpoint model fields to check for duplicates
 
 	Returns:
 		list: httpx results.
@@ -2308,12 +2319,14 @@ def http_crawl(
 		endpoint.save()
 		endpoint_ids.append(endpoint.id)
 
-	# Remove 'fake' alive endpoints that are just redirects to the same page
-	remove_duplicate_endpoints(
-		self.scan_id,
-		self.domain_id,
-		self.subdomain_id,
-		filter_ids=endpoint_ids)
+	if should_remove_duplicate_endpoints:
+		# Remove 'fake' alive endpoints that are just redirects to the same page
+		remove_duplicate_endpoints(
+			self.scan_id,
+			self.domain_id,
+			self.subdomain_id,
+			filter_ids=endpoint_ids
+		)
 
 	# Remove input file
 	run_command(
@@ -2881,62 +2894,6 @@ def geo_localize(host, ip_id=None):
 	logger.info(f'Geo IP lookup failed for host "{host}"')
 	return None
 
-
-@app.task
-def remove_duplicate_endpoints(scan_history_id, domain_id, subdomain_id=None, filter_ids=[], filter_status=[200, 301, 302, 404]):
-	"""Remove duplicate endpoints.
-
-	Check for implicit redirections by comparing endpoints:
-	- [x] `content_length` similarities indicating redirections
-	- [x] `page_title` (check for same page title)
-	- [ ] Sign-in / login page (check for endpoints with the same words)
-
-	Args:
-		scan_history_id: ScanHistory id.
-		domain_id (int): Domain id.
-		subdomain_id (int, optional): Subdomain id.
-		filter_ids (list): List of endpoint ids to filter on.
-		filter_status (list): List of HTTP status codes to filter on.
-	"""
-	endpoints = (
-		EndPoint.objects
-		.filter(scan_history__id=scan_history_id)
-		.filter(target_domain__id=domain_id)
-	)
-	if filter_status:
-		endpoints = endpoints.filter(http_status__in=filter_status)
-
-	if subdomain_id:
-		endpoints = endpoints.filter(subdomain__id=subdomain_id)
-
-	if filter_ids:
-		endpoints = endpoints.filter(id__in=filter_ids)
-
-	for field_name in ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS:
-		cl_query = (
-			endpoints
-			.values_list(field_name)
-			.annotate(mc=Count(field_name))
-			.order_by('-mc')
-		)
-		for (field_value, count) in cl_query:
-			if count > DELETE_DUPLICATES_THRESHOLD:
-				eps_to_delete = (
-					endpoints
-					.filter(**{field_name: field_value})
-					.order_by('discovered_date')
-					.all()[1:]
-				)
-				msg = f'Deleting {len(eps_to_delete)} endpoints [reason: same {field_name} {field_value}]'
-				for ep in eps_to_delete:
-					url = urlparse(ep.http_url)
-					if url.path in ['', '/', '/login']: # try do not delete the original page that other pages redirect to
-						continue
-					msg += f'\n\t {ep.http_url} [{ep.http_status}] [{field_name}={field_value}]'
-					ep.delete()
-				logger.warning(msg)
-
-
 @app.task
 def query_whois(ip_domain, force_reload_whois=False):
 	"""Query WHOIS information for an IP or a domain name.
@@ -3370,7 +3327,9 @@ def remove_duplicate_endpoints(
 		domain_id,
 		subdomain_id=None,
 		filter_ids=[],
-		filter_status=[200, 301, 404]):
+		filter_status=[200, 301, 404],
+		duplicate_removal_fields=ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS
+	):
 	"""Remove duplicate endpoints.
 
 	Check for implicit redirections by comparing endpoints:
@@ -3384,7 +3343,9 @@ def remove_duplicate_endpoints(
 		subdomain_id (int, optional): Subdomain id.
 		filter_ids (list): List of endpoint ids to filter on.
 		filter_status (list): List of HTTP status codes to filter on.
+		duplicate_removal_fields (list): List of Endpoint model fields to check for duplicates
 	"""
+	logger.info(f'Removing duplicate endpoints based on {duplicate_removal_fields}')
 	endpoints = (
 		EndPoint.objects
 		.filter(scan_history__id=scan_history_id)
@@ -3399,7 +3360,7 @@ def remove_duplicate_endpoints(
 	if filter_ids:
 		endpoints = endpoints.filter(id__in=filter_ids)
 
-	for field_name in ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS:
+	for field_name in duplicate_removal_fields:
 		cl_query = (
 			endpoints
 			.values_list(field_name)
