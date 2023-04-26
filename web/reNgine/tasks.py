@@ -1232,7 +1232,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	# nmap args
 	nmap_enabled = config.get(ENABLE_NMAP, False)
 	nmap_cmd = config.get(NMAP_COMMAND, '')
-	nmap_script = config.get(NMAP_SCRIPT)
+	nmap_script = config.get(NMAP_SCRIPT, '')
 	nmap_script = ','.join(nmap_script)
 	nmap_script_args = config.get(NMAP_SCRIPT_ARGS)
 
