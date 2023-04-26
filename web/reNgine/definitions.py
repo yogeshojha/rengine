@@ -342,3 +342,30 @@ IGNORE_WHOIS_RELATED_KEYWORD = [
     'Domain Administrator',
     'Administrator',
 ]
+
+
+# Default FETCH URL params
+DEFAULT_IGNORE_FILE_EXTENSIONS = [
+    'png',
+    'jpg',
+    'jpeg',
+    'gif',
+    'mp4',
+    'mpeg',
+    'mp3',
+]
+
+DEFAULT_GF_PATTERNS = [
+    'debug_logic',
+    'idor',
+    'interestingEXT',
+    'interestingparams',
+    'interestingsubs',
+    'lfi',
+    'rce',
+    'redirect',
+    'sqli',
+    'ssrf',
+    'ssti',
+    'xss'
+]

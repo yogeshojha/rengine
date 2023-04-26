@@ -1675,8 +1675,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	should_remove_duplicate_endpoints = config.get(REMOVE_DUPLICATE_ENDPOINTS, True)
 	duplicate_removal_fields = config.get(DUPLICATE_REMOVAL_FIELDS, ENDPOINT_SCAN_DEFAULT_DUPLICATE_FIELDS)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	gf_patterns = config.get(GF_PATTERNS, [])
-	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, [])
+	gf_patterns = config.get(GF_PATTERNS, DEFAULT_GF_PATTERNS)
+	ignore_file_extension = config.get(IGNORE_FILE_EXTENSION, DEFAULT_IGNORE_FILE_EXTENSIONS)
 	tools = config.get(USES_TOOLS, ENDPOINT_SCAN_DEFAULT_TOOLS)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	domain_request_headers = self.domain.request_headers if self.domain else None
