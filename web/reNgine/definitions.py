@@ -65,7 +65,6 @@ ENABLE_HTTP_CRAWL = 'enable_http_crawl'
 THREADS = 'threads'
 TIMEOUT = 'timeout'
 USE_AMASS_CONFIG = 'use_amass_config'
-USE_EXTENSIONS = 'use_extensions'
 USE_NAABU_CONFIG = 'use_naabu_config'
 USE_NUCLEI_CONFIG = 'use_nuclei_config'
 USE_SUBFINDER_CONFIG = 'use_subfinder_config'
@@ -368,4 +367,29 @@ DEFAULT_GF_PATTERNS = [
     'ssrf',
     'ssti',
     'xss'
+]
+
+
+# Default Dir File Fuzz Params
+DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
+    'php',
+    'git',
+    'yaml',
+    'conf',
+    'cnf',
+    'config',
+    'gz',
+    'env',
+    'log',
+    'db',
+    'mysql',
+    'bak',
+    'asp',
+    'aspx',
+    'txt',
+    'conf',
+    'sql',
+    'json',
+    'yml',
+    'pdf',
 ]

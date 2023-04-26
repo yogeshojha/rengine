@@ -1538,7 +1538,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	intensity = config.get(INTENSITY) or self.yaml_configuration.get(INTENSITY, DEFAULT_SCAN_INTENSITY)
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
-	extensions = config.get(EXTENSIONS, [])
+	extensions = config.get(EXTENSIONS, DEFAULT_DIR_FILE_FUZZ_EXTENSIONS)
 	extensions_str = ','.join(map(str, extensions))
 	follow_redirect = config.get(FOLLOW_REDIRECT, FFUF_DEFAULT_FOLLOW_REDIRECT)
 	max_time = config.get(MAX_TIME, 0)
@@ -1548,7 +1548,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	stop_on_error = config.get(STOP_ON_ERROR, False)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	use_extensions = config.get(USE_EXTENSIONS)
 	wordlist_name = config.get(WORDLIST, 'dicc')
 	delay = rate_limit / (threads * 100) # calculate request pause delay from rate_limit and number of threads
 	input_path = f'{self.results_dir}/input_dir_file_fuzz.txt'
@@ -1559,7 +1558,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 	# Build command
 	cmd += f' -w {wordlist_path}'
-	cmd += f' -e {extensions_str}' if extensions and use_extensions else ''
+	cmd += f' -e {extensions_str}' if extensions else ''
 	cmd += f' -maxtime {max_time}' if max_time > 0 else ''
 	cmd += f' -p {delay}' if delay > 0 else ''
 	cmd += f' -recursion -recursion-depth {recursive_level} ' if recursive_level > 0 else ''
