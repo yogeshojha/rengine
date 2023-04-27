@@ -1137,7 +1137,9 @@ def screenshot(self, ctx={}, description=None):
 		is_alive=enable_http_crawl,
 		strict=strict,
 		write_filepath=alive_endpoints_file,
-		ctx=ctx)
+		get_only_default_urls=True,
+		ctx=ctx
+	)
 
 	# Send start notif
 	notification = Notification.objects.first()
@@ -1481,7 +1483,8 @@ def waf_detection(self, ctx={}, description=None):
 		is_alive=enable_http_crawl,
 		write_filepath=input_path,
 		get_only_default_urls=True,
-		ctx=ctx)
+		ctx=ctx
+	)
 
 	cmd = f'wafw00f -i {input_path} -o {self.output_path}'
 	run_command(
@@ -1576,7 +1579,9 @@ def dir_file_fuzz(self, ctx={}, description=None):
 		is_alive=True,
 		ignore_files=True,
 		write_filepath=input_path,
-		ctx=ctx)
+		get_only_default_urls=True,
+		ctx=ctx
+	)
 	logger.warning(urls)
 
 	# Loop through URLs and run command
@@ -1692,7 +1697,9 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			is_alive=enable_http_crawl,
 			write_filepath=input_path,
 			exclude_subdomains=exclude_subdomains,
-			ctx=ctx)
+			get_only_default_urls=True
+			ctx=ctx
+		)
 
 	# Domain regex
 	host = self.domain.name if self.domain else urlparse(urls[0]).netloc
@@ -1930,7 +1937,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			is_alive=enable_http_crawl,
 			ignore_files=True,
 			write_filepath=input_path,
-			ctx=ctx)
+			ctx=ctx
+		)
 
 	if intensity == 'normal': # reduce number of endpoints to scan
 		unfurl_filter = f'{self.results_dir}/urls_unfurled.txt'
@@ -2171,7 +2179,8 @@ def http_crawl(
 		urls = get_http_urls(
 			is_uncrawled=not recrawl,
 			write_filepath=input_path,
-			ctx=ctx)
+			ctx=ctx
+		)
 		# logger.debug(urls)
 
 	# If no URLs found, skip it
