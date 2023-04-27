@@ -339,7 +339,7 @@ def get_http_urls(
 	if ignore_files: # ignore all files
 		extensions_path = f'{RENGINE_HOME}/fixtures/extensions.txt'
 		with open(extensions_path, 'r') as f:
-			extensions = tuple(f.readlines())
+			extensions = tuple(f.strip() for f in f.readlines())
 		endpoints = [e for e in endpoints if not urlparse(e).path.endswith(extensions)]
 
 	if not endpoints:
