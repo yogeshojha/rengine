@@ -282,6 +282,7 @@ def get_http_urls(
 		ignore_files=False,
 		write_filepath=None,
 		exclude_subdomains=False,
+		get_only_default_urls=False,
 		ctx={}):
 	"""Get HTTP urls from EndPoint objects in DB. Support filtering out on a
 	specific path.
@@ -293,6 +294,7 @@ def get_http_urls(
 		is_uncrawled (bool): If True, select only urls that have not been crawled.
 		path (str): URL path.
 		write_filepath (str): Write info back to a file.
+		get_only_default_urls (bool):
 
 	Returns:
 		list: List of URLs matching query.
@@ -305,6 +307,8 @@ def get_http_urls(
 	scan = ScanHistory.objects.filter(pk=scan_id).first()
 
 	query = EndPoint.objects
+	if get_only_default_urls:
+		query = query.filter(is_default=True)
 	if domain:
 		query = query.filter(target_domain=domain)
 	if scan:
