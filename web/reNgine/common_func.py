@@ -307,8 +307,6 @@ def get_http_urls(
 	scan = ScanHistory.objects.filter(pk=scan_id).first()
 
 	query = EndPoint.objects
-	if get_only_default_urls:
-		query = query.filter(is_default=True)
 	if domain:
 		query = query.filter(target_domain=domain)
 	if scan:
@@ -317,6 +315,8 @@ def get_http_urls(
 		query = query.filter(subdomain__id=subdomain_id)
 	elif exclude_subdomains and domain:
 		query = query.filter(http_url=domain.http_url)
+	if get_only_default_urls:
+		query = query.filter(is_default=True)
 
 	# If is_uncrawled is True, select only endpoints that have not been crawled
 	# yet (no status)
