@@ -2152,6 +2152,8 @@ def http_crawl(
 		list: httpx results.
 	"""
 	logger.info('Initiating HTTP Crawl')
+	if is_ran_from_subdomain_scan:
+		logger.info('Running From Subdomain Scan...')
 	cmd = '/go/bin/httpx'
 	cfg = self.yaml_configuration.get(HTTP_CRAWL) or {}
 	custom_header = cfg.get(CUSTOM_HEADER, '')
@@ -2170,7 +2172,7 @@ def http_crawl(
 			is_uncrawled=not recrawl,
 			write_filepath=input_path,
 			ctx=ctx)
-		logger.debug(urls)
+		# logger.debug(urls)
 
 	# If no URLs found, skip it
 	if not urls:
@@ -2305,6 +2307,7 @@ def http_crawl(
 		# Save subdomain and endpoint
 		if is_ran_from_subdomain_scan:
 			# save subdomain stuffs
+			subdomain.http_url = http_url
 			subdomain.http_status = http_status
 			subdomain.page_title = page_title
 			subdomain.content_length = content_length
