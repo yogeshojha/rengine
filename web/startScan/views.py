@@ -794,7 +794,7 @@ def delete_scans(request):
                 continue
             scan = get_object_or_404(ScanHistory, id=value)
             delete_dir = scan.results_dir
-            run_command('rm -rf /usr/src/scan_results/' + delete_dir)
+            run_command('rm -rf ' + delete_dir)
             scan.delete()
         messages.add_message(
             request,
