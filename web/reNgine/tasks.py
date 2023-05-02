@@ -147,7 +147,9 @@ def initiate_scan(
 		http_url,
 		ctx=ctx,
 		crawl=enable_http_crawl,
-		subdomain=subdomain)
+		is_default=True,
+		subdomain=subdomain
+	)
 	if endpoint and endpoint.is_alive:
 		# TODO: add `root_endpoint` property to subdomain and simply do
 		# subdomain.root_endpoint = endpoint instead
@@ -1577,7 +1579,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Grab URLs to fuzz
 	urls = get_http_urls(
 		is_alive=True,
-		ignore_files=True,
+		ignore_files=False,
 		write_filepath=input_path,
 		get_only_default_urls=True,
 		ctx=ctx
@@ -1587,6 +1589,16 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	# Loop through URLs and run command
 	results = []
 	for url in urls:
+		'''
+			Above while fetching urls, we are not ignoring files, because some
+			default urls may redirect to https://example.com/login.php
+			so, ignore_files is set to False
+			but, during fuzzing, we will only need part of the path, in above example
+			it is still a good idea to ffuf base url https://example.com
+			so files from base url
+		'''
+		url_parse = urlparse(url)
+		url = url_parse.scheme + '://' + url_parse.netloc
 		url += '/FUZZ' # TODO: fuzz not only URL but also POST / PUT / headers
 		proxy = get_random_proxy()
 
@@ -1697,7 +1709,7 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 			is_alive=enable_http_crawl,
 			write_filepath=input_path,
 			exclude_subdomains=exclude_subdomains,
-			get_only_default_urls=True
+			get_only_default_urls=True,
 			ctx=ctx
 		)
 
@@ -3755,12 +3767,14 @@ def save_endpoint(
 		http_url,
 		ctx={},
 		crawl=False,
+		is_default=False,
 		**endpoint_data):
 	"""Get or create EndPoint object. If crawl is True, also crawl the endpoint
 	HTTP URL with httpx.
 
 	Args:
 		http_url (str): Input HTTP URL.
+		is_default (bool): If the url is a default url for SubDomains.
 		scan_history (startScan.models.ScanHistory): ScanHistory object.
 		domain (startScan.models.Domain): Domain object.
 		subdomain (starScan.models.Subdomain): Subdomain object.
@@ -3802,6 +3816,7 @@ def save_endpoint(
 			**endpoint_data)
 
 	if created:
+		endpoint.is_default = is_default
 		endpoint.discovered_date = timezone.now()
 		endpoint.save()
 		subscan_id = ctx.get('subscan_id')
