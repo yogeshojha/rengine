@@ -399,6 +399,7 @@ class CweId(models.Model):
 class Vulnerability(models.Model):
 	id = models.AutoField(primary_key=True)
 	scan_history = models.ForeignKey(ScanHistory, on_delete=models.CASCADE, null=True, blank=True)
+	source = models.CharField(max_length=200, null=True, blank=True)
 	subdomain = models.ForeignKey(
 		Subdomain,
 		on_delete=models.CASCADE,

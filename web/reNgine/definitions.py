@@ -74,6 +74,11 @@ WAF_DETECTION = 'waf_detection'
 WORDLIST = 'wordlist'
 REMOVE_DUPLICATE_ENDPOINTS = 'remove_duplicate_endpoints'
 DUPLICATE_REMOVAL_FIELDS = 'duplicate_fields'
+DALFOX = 'dalfox'
+WAF_EVASION = 'waf_evasion'
+BLIND_XSS_SERVER = 'blind_xss_server'
+USER_AGENT = 'blind_xss_server'
+DELAY = 'delay'
 
 ###############################################################################
 # Scan DEFAULTS
