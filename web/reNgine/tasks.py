@@ -2160,7 +2160,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	dalfox_config = vuln_config.get(DALFOX) or {}
 	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
-	is_waf_evasion = dalfox_config.get(WAF_EVASION, True)
+	is_waf_evasion = dalfox_config.get(WAF_EVASION, False)
 	blind_xss_server = dalfox_config.get(BLIND_XSS_SERVER)
 	user_agent = dalfox_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
 	timeout = dalfox_config.get(TIMEOUT)
@@ -2196,15 +2196,36 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' --user-agent {user_agent}' if user_agent else ''
 	cmd += f' --header {custom_header}' if custom_header else ''
 	cmd += f' --worker {threads}' if threads else ''
+	cmd += f' --format json'
 
 	results = []
 	for line in stream_command(
 			cmd,
 			history_file=self.history_file,
 			scan_id=self.scan_id,
-			activity_id=self.activity_id
+			activity_id=self.activity_id,
+			trunc_char=','
 		):
-		print(line)
+		if not isinstance(line, dict):
+			continue
+
+		results.append(line)
+
+		type = line.get('type')
+		inject_type = line.get('inject_type')
+		poc_type = line.get('poc_type')
+		method = line.get('method')
+		data = line.get('data')
+		param = line.get('param')
+		payload = line.get('payload')
+		evidence = line.get('evidence')
+		cwe = line.get('cwe')
+		severity = line.get('severity')
+
+
+
+
+	return results
 
 
 @app.task(base=RengineTask, bind=True)
@@ -2943,7 +2964,33 @@ def parse_nuclei_result(line):
 		'curl_command': line.get('curl-command'),
 		'extracted_results': line.get('extracted-results', []),
 		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
-		'cvss_score': line['info'].get('classification', {}).get('cvss-score')
+		'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
+		'source': 'nuclei'
+	}
+
+
+def parse_dalfox_result(line):
+	"""Parse results from nuclei JSON output.
+
+	Args:
+		line (dict): Nuclei JSON line output.
+
+	Returns:
+		dict: Vulnerability data.
+	"""
+
+	description = ''
+	description += f' Evidence: {line.get('evidence')} <br>' if line.get('evidence') else ''
+	description += f' Message: {line.get('message')} <br>' if line.get('message') else ''
+	description += f' Payload: {line.get('message_str')} <br>' if line.get('message_str') else ''
+	description += f' Vulnerable Parameter: {line.get('param')} <br>' if line.get('param') else ''
+
+	return {
+		'name': 'XSS (Cross Site Scripting)',
+		'type': 'XSS',
+		'severity': line.get('severity', 'unknown'),
+		'description': description,
+		'source': 'Dalfox'
 	}
 
 
@@ -3529,7 +3576,7 @@ def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, act
 # Other utils #
 #-------------#
 
-def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-8', scan_id=None, activity_id=None):
+def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-8', scan_id=None, activity_id=None, trunc_char=None):
 	# Log cmd
 	logger.info(cmd)
 	# logger.warning(activity_id)
@@ -3557,6 +3604,8 @@ def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-
 	# Process the output
 	for line in iter(lambda: process.stdout.readline() or process.stderr.readline(), b''):
 		line = re.sub(r'\x1b[^m]*m', '', line.decode('utf-8').strip())
+		if trunc_char and line.endswith(trunc_char):
+			line = line[:-1]
 		item = line
 
 		# Try to parse the line as JSON
