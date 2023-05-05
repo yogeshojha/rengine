@@ -168,6 +168,7 @@ def initiate_scan(
 	# Build Celery tasks, crafted according to the dependency graph below:
 	# subdomain_discovery --> port_scan --> fetch_url --> dir_file_fuzz
 	# osint								             	  vulnerability_scan
+	# osint								             	  dalfox xss scan
 	#						 	   		         	  	  screenshot
 	#													  waf_detection
 	workflow = chain(
@@ -180,6 +181,7 @@ def initiate_scan(
 		group(
 			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
+			dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
 			screenshot.si(ctx=ctx, description='Screenshot'),
 			waf_detection.si(ctx=ctx, description='WAF detection')
 		)
@@ -1921,6 +1923,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
 	ignore certain file extensions. Thanks: https://github.com/six2dez/reconftw
 	"""
+	return
 	# Config
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{self.results_dir}/input_endpoints_vulnerability_scan.txt'
@@ -1996,7 +1999,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		template = templates.extend(custom_nuclei_template_paths)
 
 	# Build CMD
-	cmd = 'nuclei -json'
+	cmd = 'nuclei -j'
 	cmd += ' -config /root/.config/nuclei/config.yaml' if use_nuclei_conf else ''
 	cmd += f' -irr'
 	cmd += f' -H "{custom_header}"' if custom_header else ''
@@ -2141,7 +2144,67 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		}
 		self.notify(fields=fields)
 
-	return results
+	# return results
+	return None
+
+
+@app.task(base=RengineTask, bind=True)
+def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
+	"""XSS Scan using dalfox
+
+	Args:
+		urls (list, optional): If passed, filter on those URLs.
+		description (str, optional): Task description shown in UI.
+	"""
+	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	dalfox_config = vuln_config.get(DALFOX) or {}
+	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	proxy = get_random_proxy()
+	is_waf_evasion = dalfox_config.get(WAF_EVASION, True)
+	blind_xss_server = dalfox_config.get(BLIND_XSS_SERVER)
+	user_agent = dalfox_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
+	timeout = dalfox_config.get(TIMEOUT)
+	delay = dalfox_config.get(DELAY)
+	threads = dalfox_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
+	input_path = f'{self.results_dir}/input_endpoints_dalfox_xss.txt'
+
+	if urls:
+		with open(input_path, 'w') as f:
+			f.write('\n'.join(urls))
+	else:
+		get_http_urls(
+			is_alive=False,
+			ignore_files=False,
+			write_filepath=input_path,
+			ctx=ctx
+		)
+
+	notif = Notification.objects.first()
+	send_status = notif.send_scan_status_notif if notif else False
+
+	# command builder
+	cmd = 'dalfox --silence --no-color --no-spinner'
+	cmd += f' --only-poc r '
+	cmd += f' --ignore-return 302,404,403'
+	cmd += f' --skip-bav'
+	cmd += f' file {input_path}'
+	cmd += f' --proxy {proxy}' if proxy else ''
+	cmd += f' --waf-evasion' if is_waf_evasion else ''
+	cmd += f' -b {blind_xss_server}' if blind_xss_server else ''
+	cmd += f' --delay {delay}' if delay else ''
+	cmd += f' --timeout {timeout}' if timeout else ''
+	cmd += f' --user-agent {user_agent}' if user_agent else ''
+	cmd += f' --header {custom_header}' if custom_header else ''
+	cmd += f' --worker {threads}' if threads else ''
+
+	results = []
+	for line in stream_command(
+			cmd,
+			history_file=self.history_file,
+			scan_id=self.scan_id,
+			activity_id=self.activity_id
+		):
+		print(line)
 
 
 @app.task(base=RengineTask, bind=True)
@@ -3469,7 +3532,7 @@ def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, act
 def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-8', scan_id=None, activity_id=None):
 	# Log cmd
 	logger.info(cmd)
-	logger.warning(activity_id)
+	# logger.warning(activity_id)
 
 	# Create a command record in the database
 	command_obj = Command.objects.create(
@@ -3503,7 +3566,7 @@ def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-
 			pass
 
 		# Yield the line
-		logger.debug(item)
+		#logger.debug(item)
 		yield item
 
 		# Add the log line to the output

@@ -6,7 +6,7 @@ from celery.worker.request import Request
 from django.utils import timezone
 from redis import Redis
 from reNgine.common_func import (fmt_traceback, get_output_file_name,
-                                 get_task_cache_key, get_traceback_path)
+								 get_task_cache_key, get_traceback_path)
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import EngineType
@@ -93,7 +93,11 @@ class RengineTask(Task):
 
 		if RENGINE_RECORD_ENABLED:
 			if self.engine: # task not in engine.tasks, skip it.
-				if self.track and self.task_name not in self.engine.tasks:
+				# create a rule for tasks that has to run parallel like dalfox
+				# xss scan but not necessarily part of main task rather part like
+				# dalfox scan being part of vulnerability task
+				dependent_tasks = {'dalfox_xss_scan': 'vulnerability_scan'}
+				if self.track and self.task_name not in self.engine.tasks and dependent_tasks.get(self.task_name) not in self.engine.tasks:
 					logger.debug(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')
 					return
 
