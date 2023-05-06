@@ -178,8 +178,8 @@
     github_url: https://github.com/bp0lr/gauplus
     license_url: https://github.com/bp0lr/gauplus/blob/main/LICENSE
     version_lookup_command: null
-    update_command: go install -v -v github.com/bp0lr/gauplus@latest
-    install_command: go install -v -v github.com/bp0lr/gauplus@latest
+    update_command: go install -v github.com/bp0lr/gauplus@latest
+    install_command: go install -v github.com/bp0lr/gauplus@latest
     version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
@@ -274,6 +274,24 @@
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 16
+  fields:
+    logo_url: https://github.githubassets.com/images/icons/emoji/unicode/1f98a.png
+    name: dalfox
+    description: DalFox is a powerful open-source tool that focuses on automation, making it ideal for quickly scanning for XSS flaws and analyzing parameters. Its advanced testing engine and niche features are designed to streamline the process of detecting and verifying vulnerabilities.
+      As for the name, Dal(달) is the Korean word for "moon," while "Fox" stands for "Finder Of XSS".
+    github_url: https://github.com/hahwul/dalfox
+    license_url: https://github.com/hahwul/dalfox/blob/main/LICENSE.txt
+    version_lookup_command: null
+    update_command: go install -v github.com/hahwul/dalfox/v2@latest
+    install_command: go install -v github.com/hahwul/dalfox/v2@latest
+    version_match_regex: bull
+    is_default: true
+    is_subdomain_gathering: false
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
