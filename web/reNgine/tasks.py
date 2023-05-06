@@ -21,8 +21,7 @@ from django.db.models import Count
 from dotted_dict import DottedDict
 from django.utils import timezone
 
-from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing,
-								   get_emails_from_google)
+from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
 from metafinder.extractor import extract_metadata_from_google_search
 from pycvesearch import CVESearch
 from reNgine.celery import app
@@ -30,8 +29,7 @@ from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
-from scanEngine.models import (EngineType, InstalledExternalTool, Notification,
-							   Proxy)
+from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain
 from targetApp.models import Domain
@@ -1923,7 +1921,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
 	ignore certain file extensions. Thanks: https://github.com/six2dez/reconftw
 	"""
-	return
 	# Config
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{self.results_dir}/input_endpoints_vulnerability_scan.txt'
