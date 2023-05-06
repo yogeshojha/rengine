@@ -138,6 +138,14 @@ NUCLEI_SEVERITY_MAP = {
 NUCLEI_REVERSE_SEVERITY_MAP = {v: k for k, v in NUCLEI_SEVERITY_MAP.items()}
 NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
 
+# dalfox
+DALFOX_SEVERITY_MAP = {
+    'Low': 1,
+    'Medium': 2,
+    'High': 3,
+    'unknown': -1,
+}
+
 # osint
 OSINT_DEFAULT_LOOKUPS = ['emails', 'metainfo', 'employees']
 OSINT_DEFAULT_DORKS = [

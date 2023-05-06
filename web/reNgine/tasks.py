@@ -2039,7 +2039,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
 			scan_history=self.scan,
-			target_domain=self.domain)
+			target_domain=self.domain
+		)
 
 		# Get or create EndPoint object
 		response = line.get('response')
@@ -2211,16 +2212,37 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 
 		results.append(line)
 
-		type = line.get('type')
-		inject_type = line.get('inject_type')
-		poc_type = line.get('poc_type')
-		method = line.get('method')
-		data = line.get('data')
-		param = line.get('param')
-		payload = line.get('payload')
-		evidence = line.get('evidence')
-		cwe = line.get('cwe')
-		severity = line.get('severity')
+		vuln_data = parse_dalfox_result(line)
+
+		http_url = sanitize_url(line.get('data'))
+		subdomain_name = get_subdomain_from_url(http_url)
+
+		# TODO: this should be get only
+		subdomain, _ = Subdomain.objects.get_or_create(
+			name=subdomain_name,
+			scan_history=self.scan,
+			target_domain=self.domain
+		)
+		endpoint, _ = save_endpoint(
+			http_url,
+			crawl=True,
+			subdomain=subdomain,
+			ctx=ctx
+		)
+		if endpoint:
+			http_url = endpoint.http_url
+			endpoint.save()
+
+		vuln, _ = save_vulnerability(
+			target_domain=self.domain,
+			http_url=http_url,
+			scan_history=self.scan,
+			subscan=self.subscan,
+			**vuln_data
+		)
+
+		if not vuln:
+			continue
 
 
 
@@ -2980,17 +3002,18 @@ def parse_dalfox_result(line):
 	"""
 
 	description = ''
-	description += f' Evidence: {line.get('evidence')} <br>' if line.get('evidence') else ''
-	description += f' Message: {line.get('message')} <br>' if line.get('message') else ''
-	description += f' Payload: {line.get('message_str')} <br>' if line.get('message_str') else ''
-	description += f' Vulnerable Parameter: {line.get('param')} <br>' if line.get('param') else ''
+	description += f" Evidence: {line.get('evidence')} <br>" if line.get('evidence') else ''
+	description += f" Message: {line.get('message')} <br>" if line.get('message') else ''
+	description += f" Payload: {line.get('message_str')} <br>" if line.get('message_str') else ''
+	description += f" Vulnerable Parameter: {line.get('param')} <br>" if line.get('param') else ''
 
 	return {
 		'name': 'XSS (Cross Site Scripting)',
 		'type': 'XSS',
-		'severity': line.get('severity', 'unknown'),
+		'severity': DALFOX_SEVERITY_MAP[line.get('severity', 'unknown')],
 		'description': description,
-		'source': 'Dalfox'
+		'source': 'Dalfox',
+		'cwe_ids': [line.get('cwe')]
 	}
 
 
