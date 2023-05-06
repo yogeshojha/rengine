@@ -289,7 +289,24 @@
     version_lookup_command: null
     update_command: go install -v github.com/hahwul/dalfox/v2@latest
     install_command: go install -v github.com/hahwul/dalfox/v2@latest
-    version_match_regex: bull
+    version_match_regex: null
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 17
+  fields:
+    logo_url: https://user-images.githubusercontent.com/8293321/196779266-421c79d4-643a-4f73-9b54-3da379bbac09.png
+    name: katana
+    description: A next-generation crawling and spidering framework.
+    github_url: https://github.com/projectdiscovery/katana
+    license_url: https://github.com/projectdiscovery/katana/blob/main/LICENSE.md
+    version_lookup_command: katana -version
+    update_command: go install -v github.com/projectdiscovery/katana/cmd/katana@latest
+    install_command: go install -v github.com/projectdiscovery/katana/cmd/katana@latest
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false

@@ -1723,19 +1723,23 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
+		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn',
 	}
 	if proxy:
 		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
+		cmd_map['katana'] += f' -proxy {proxy}'
 	if threads > 0:
 		cmd_map['gauplus'] += f' -t {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
+		cmd_map['katana'] += f' -c {threads}'
 	if custom_header:
 		header_string = ';;'.join([
 			f'{key}: {value}' for key, value in custom_header.items()
 		])
 		cmd_map['hakrawler'] += f' -h {header_string}'
+		cmd_map['katana'] += f' -H {header_string}'
 		header_flags = [':'.join(h) for h in header_string.split(';;')]
 		for flag in header_flags:
 			cmd_map['gospider'] += f' -H {flag}'
