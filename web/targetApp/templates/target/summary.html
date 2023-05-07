@@ -1657,7 +1657,7 @@ $(document).ready(function(){
 				},
 				{
 					"render": function(data, type, row) {
-						description = row['description'] ? `<div>${row['description']}</div>` : '';
+						description = row['description'] ? `<div>${htmlEncode(row['description'])}</div>` : '';
 						// show extracted results, and show matcher names, matcher names can be in badges
 						if (row['matcher_name']) {
 							description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
@@ -1667,7 +1667,7 @@ $(document).ready(function(){
 							description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
 							description += `<div class="collapse" id="results_${row['id']}"><ul>`;
 							row['extracted_results'].forEach(results => {
-								description += `<li>${results}</li>`;
+								description += `<li>${htmlEncode(results)}</li>`;
 							});
 							description += '</ul></div>';
 						}
@@ -1676,7 +1676,7 @@ $(document).ready(function(){
 							description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
 							description += `<div class="collapse" id="references_${row['id']}"><ul>`;
 							row['references'].forEach(reference => {
-								description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
+								description += `<li><a href="${htmlEncode(reference.url)}" target="_blank">${htmlEncode(reference.url)}</a></li>`;
 							});
 							description += '</ul></div>';
 						}
