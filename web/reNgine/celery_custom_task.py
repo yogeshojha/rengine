@@ -96,7 +96,10 @@ class RengineTask(Task):
 				# create a rule for tasks that has to run parallel like dalfox
 				# xss scan but not necessarily part of main task rather part like
 				# dalfox scan being part of vulnerability task
-				dependent_tasks = {'dalfox_xss_scan': 'vulnerability_scan'}
+				dependent_tasks = {
+					'dalfox_xss_scan': 'vulnerability_scan',
+					'crlfuzz': 'vulnerability_scan'
+				}
 				if self.track and self.task_name not in self.engine.tasks and dependent_tasks.get(self.task_name) not in self.engine.tasks:
 					logger.debug(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')
 					return

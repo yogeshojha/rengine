@@ -312,3 +312,20 @@
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 18
+  fields:
+    logo_url: https://user-images.githubusercontent.com/25837540/90128972-fc3bdf00-dd91-11ea-8c3b-0d6f4e8c6ba3.png
+    name: crlfuzz
+    description: A fast tool to scan CRLF vulnerability written in Go
+    github_url: https://github.com/dwisiswant0/crlfuzz
+    license_url: https://github.com/dwisiswant0/crlfuzz/blob/master/README.md
+    version_lookup_command: null
+    update_command: go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
+    install_command: go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
+    version_match_regex: null
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
