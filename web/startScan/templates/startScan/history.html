@@ -505,15 +505,15 @@ Quick Scan History
   }
 
   function preview_report(id, domain_name){
-    var url = `/scan/create_report/${id}?report_type=${report_type}`;
     var report_type = $("#report_type_select option:selected").val();
+    var url = `/scan/create_report/${id}?report_type=${report_type}`;
     $('#generateReportModal').modal('hide');
     window.open(url, '_blank').focus();
   }
 
   function generate_report(id, domain_name) {
-    var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
     var report_type = $("#report_type_select option:selected").val();
+    var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
     $('#generateReportModal').modal('hide');
     swal.queue([{
       title: 'Generating Report!',
