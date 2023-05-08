@@ -813,8 +813,8 @@ def customize_report(request, id):
 
 
 def create_report(request, id):
-    # primary_color = '#FFB74D'
-    # secondary_color = '#212121'
+    primary_color = '#FFB74D'
+    secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
     if report_type == 'recon':
@@ -866,7 +866,7 @@ def create_report(request, id):
     data = {
         'scan_object': scan,
         'unique_vulnerabilities': unique_vulns,
-        'vulns': vulns,
+        'all_vulnerabilities': vulns,
         'subdomain_alive_count': subdomain_alive_count,
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
@@ -908,8 +908,11 @@ def create_report(request, id):
         # Convert to Markdown
         data['executive_summary_description'] = markdown.markdown(description)
 
-    data['primary_color'] = report.primary_color
-    data['secondary_color'] = report.secondary_color
+        primary_color = report.primary_color
+        secondary_color = report.secondary_color
+
+    data['primary_color'] = primary_color
+    data['secondary_color'] = secondary_color
 
     template = get_template('report/template.html')
     html = template.render(data)
