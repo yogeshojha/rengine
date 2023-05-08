@@ -181,7 +181,7 @@ Quick Scan History
                         {% endif %}
                         {% if scan.scan_status != -1%}
                           <div class="dropdown-divider"></div>
-                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{{scan_history.subdomain_discovery}}', '{{scan_history.vulnerability_scan}}', '{{ scan_history.domain.name }}')">
+                          <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{% if 'subdomain_discovery' in scan_history.scan_type.tasks %}True{% endif %}', '{% if 'vulnerability_scan' in scan_history.scan_type.tasks %}True{% endif %}', '{{ scan_history.domain.name }}')">
                           <i class="fe-download"></i>&nbsp;Download Report</a>
                         {% endif %}
                         </div>
