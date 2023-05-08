@@ -182,7 +182,7 @@ Quick Scan History
                         {% if scan.scan_status != -1%}
                           <div class="dropdown-divider"></div>
                           <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{% if 'subdomain_discovery' in scan_history.scan_type.tasks %}True{% endif %}', '{% if 'vulnerability_scan' in scan_history.scan_type.tasks %}True{% endif %}', '{{ scan_history.domain.name }}')">
-                          <i class="fe-download"></i>&nbsp;Download Report</a>
+                          <i class="fe-download"></i>&nbsp;Scan Report</a>
                         {% endif %}
                         </div>
                       </div>
@@ -213,7 +213,8 @@ Quick Scan History
           <select class="form-control" id="report_type_select" name="report_type">
           </select>
         </div>
-        <a id='generateReportButton' href="#" class="btn btn-primary float-end">Download Report</a>
+        <a id='generateReportButton' href="#" class="btn btn-primary float-end m-2">Download Report</a>
+        <a id='previewReportButton' href="#" class="btn btn-secondary float-end m-2">Preview Report</a>
       </div>
     </div>
   </div>
@@ -500,9 +501,18 @@ Quick Scan History
         }));
     }
     $('#generateReportButton').attr('onClick', `generate_report(${id}, '${domain_name}')`);
+    $('#previewReportButton').attr('onClick', `preview_report(${id}, '${domain_name}')`);
+  }
+
+  function preview_report(id, domain_name){
+    var url = `/scan/create_report/${id}?report_type=${report_type}`;
+    var report_type = $("#report_type_select option:selected").val();
+    $('#generateReportModal').modal('hide');
+    window.open(url, '_blank').focus();
   }
 
   function generate_report(id, domain_name) {
+    var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
     var report_type = $("#report_type_select option:selected").val();
     $('#generateReportModal').modal('hide');
     swal.queue([{
@@ -511,7 +521,7 @@ Quick Scan History
       padding: '2em',
       onOpen: function() {
         swal.showLoading()
-        return fetch(`/scan/create_report/${id}?download&report_type=${report_type}`, {
+        return fetch(url, {
           method: 'POST',
           credentials: "same-origin",
           headers: {
