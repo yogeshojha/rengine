@@ -180,6 +180,7 @@ def initiate_scan(
 			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
 			dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
+			crlfuzz.si(ctx=ctx, description='CRLF Fuzz'),
 			screenshot.si(ctx=ctx, description='Screenshot'),
 			waf_detection.si(ctx=ctx, description='WAF detection')
 		)
@@ -2244,10 +2245,97 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 
 		if not vuln:
 			continue
+	return results
 
 
+@app.task(base=RengineTask, bind=True)
+def crlfuzz(self, urls=[], ctx={}, description=None):
+	"""CRLF Fuzzing with CRLFuzz
 
+	Args:
+		urls (list, optional): If passed, filter on those URLs.
+		description (str, optional): Task description shown in UI.
+	"""
+	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	custom_header = vuln_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	proxy = get_random_proxy()
+	user_agent = vuln_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
+	threads = vuln_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
+	input_path = f'{self.results_dir}/input_endpoints_crlf.txt'
+	output_path = f'{self.results_dir}/{self.filename}'
 
+	if urls:
+		with open(input_path, 'w') as f:
+			f.write('\n'.join(urls))
+	else:
+		get_http_urls(
+			is_alive=False,
+			ignore_files=True,
+			write_filepath=input_path,
+			ctx=ctx
+		)
+
+	notif = Notification.objects.first()
+	send_status = notif.send_scan_status_notif if notif else False
+
+	# command builder
+	cmd = 'crlfuzz -s'
+	cmd += f' -l {input_path}'
+	cmd += f' -x {proxy}' if proxy else ''
+	cmd += f' --H {custom_header}' if custom_header else ''
+	cmd += f' -o {output_path}'
+
+	run_command(
+		cmd,
+		shell=False,
+		history_file=self.history_file,
+		scan_id=self.scan_id,
+		activity_id=self.activity_id
+	)
+
+	if not os.path.isfile(output_path):
+		logger.info('No Results from CRLFuzz')
+		return
+
+	crlfs = []
+	results = []
+	with open(output_path, 'r') as file:
+		crlfs = file.readlines()
+
+	for crlf in crlfs:
+		url = crlf.strip()
+
+		vuln_data = parse_crlfuzz_result(url)
+
+		http_url = sanitize_url(url)
+		subdomain_name = get_subdomain_from_url(http_url)
+
+		subdomain, _ = Subdomain.objects.get_or_create(
+			name=subdomain_name,
+			scan_history=self.scan,
+			target_domain=self.domain
+		)
+
+		endpoint, _ = save_endpoint(
+			http_url,
+			crawl=True,
+			subdomain=subdomain,
+			ctx=ctx
+		)
+		if endpoint:
+			http_url = endpoint.http_url
+			endpoint.save()
+
+		vuln, _ = save_vulnerability(
+			target_domain=self.domain,
+			http_url=http_url,
+			scan_history=self.scan,
+			subscan=self.subscan,
+			**vuln_data
+		)
+
+		if not vuln:
+			continue
 	return results
 
 
@@ -3015,6 +3103,25 @@ def parse_dalfox_result(line):
 		'description': description,
 		'source': 'Dalfox',
 		'cwe_ids': [line.get('cwe')]
+	}
+
+
+def parse_crlfuzz_result(url):
+	"""Parse CRLF results
+
+	Args:
+		url (str): CRLF Vulnerable URL
+
+	Returns:
+		dict: Vulnerability data.
+	"""
+
+	return {
+		'name': 'CRLF (HTTP Response Splitting)',
+		'type': 'CRLF',
+		'severity': 2,
+		'description': '',
+		'source': 'CRLFUZZ',
 	}
 
 

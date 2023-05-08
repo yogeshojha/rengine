@@ -81,7 +81,8 @@ RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 RUN go install -v github.com/ffuf/ffuf@latest
 RUN go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 RUN go install -v github.com/hahwul/dalfox/v2@latest
-RUN go install github.com/projectdiscovery/katana/cmd/katana@latest
+RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest
+RUN go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
 
 
 # Update Nuclei and Nuclei-Templates
