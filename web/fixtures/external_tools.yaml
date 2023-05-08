@@ -320,10 +320,10 @@
     description: A fast tool to scan CRLF vulnerability written in Go
     github_url: https://github.com/dwisiswant0/crlfuzz
     license_url: https://github.com/dwisiswant0/crlfuzz/blob/master/README.md
-    version_lookup_command: null
+    version_lookup_command: crlfuzz -V
     update_command: go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
     install_command: go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
-    version_match_regex: null
+    version_match_regex: '(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
