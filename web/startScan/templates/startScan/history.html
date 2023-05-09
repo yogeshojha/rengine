@@ -213,6 +213,12 @@ Quick Scan History
           <select class="form-control" id="report_type_select" name="report_type">
           </select>
         </div>
+        <div class="form-group mb-4">
+          <div class="form-check" id="report_info_vuln_div">
+            <input type="checkbox" class="form-check-input" id="report_ignore_info_vuln" checked="">
+            <label class="form-check-label" for="report_ignore_info_vuln">Ignore Informational Vulnerabilities</label>
+          </div>
+        </div>
         <a id='generateReportButton' href="#" class="btn btn-primary float-end m-2">Download Report</a>
         <a id='previewReportButton' href="#" class="btn btn-secondary float-end m-2">Preview Report</a>
       </div>
@@ -464,6 +470,18 @@ Quick Scan History
     }
   }
 
+  // select option listener for report_type_select
+  var report_type = document.getElementById("report_type_select");
+  report_type.addEventListener("change", function() {
+    if(report_type.value == "recon")
+    {
+      $("#report_info_vuln_div").hide();
+    }
+    else{
+      $("#report_info_vuln_div").show();
+    }
+});
+
   function initiate_report(id, is_subdomain_scan, is_vulnerability_scan, domain_name) {
     $('#generateReportModal').modal('show');
     $('#report_alert_message').empty();
@@ -507,6 +525,9 @@ Quick Scan History
   function preview_report(id, domain_name){
     var report_type = $("#report_type_select option:selected").val();
     var url = `/scan/create_report/${id}?report_type=${report_type}`;
+    if ($('#report_ignore_info_vuln').is(":checked")) {
+      url += `&ignore_info_vuln`
+    }
     $('#generateReportModal').modal('hide');
     window.open(url, '_blank').focus();
   }
@@ -514,6 +535,9 @@ Quick Scan History
   function generate_report(id, domain_name) {
     var report_type = $("#report_type_select option:selected").val();
     var url = `/scan/create_report/${id}?report_type=${report_type}&download`;
+    if ($('#report_ignore_info_vuln').is(":checked")) {
+      url += `&ignore_info_vuln`
+    }
     $('#generateReportModal').modal('hide');
     swal.queue([{
       title: 'Generating Report!',
