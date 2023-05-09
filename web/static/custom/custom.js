@@ -396,6 +396,56 @@ function vuln_status_change(checkbox, id) {
 	change_vuln_status(id);
 }
 
+$("#vulnerability_results").on('click', '.btn-delete-vulnerability', function () {
+	var vulnerability_id = $(this).attr('id');
+	var data = {'vulnerability_ids': [vulnerability_id]};
+	var row = this;
+	Swal.fire({
+		showCancelButton: true,
+		title: 'Delete Vulnerability!',
+		text: 'Do you really want to delete this Vulnerability? This action cannot be undone.',
+		icon: 'error',
+		confirmButtonText: 'Delete',
+	}).then((result) => {
+		if (result.isConfirmed) {
+			Swal.fire({
+				title: 'Deleting Vulnerability...',
+				allowOutsideClick: false
+			});
+			swal.showLoading();
+			fetch('/api/action/vulnerability/delete/', {
+				method: 'POST',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken"),
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => response.json())
+			.then(function (response) {
+				swal.close();
+				if (response['status']) {
+					$(row).parent().parent().parent().remove();
+					Snackbar.show({
+						text: 'Vulnerability successfully deleted!',
+						pos: 'top-right',
+						duration: 2500
+					});
+				}
+				else{
+					Swal.fire({
+						title:  'Could not delete Vulnerability!',
+						icon: 'fail',
+					});
+				}
+			});
+		}
+	});;
+	$('a[data-toggle="tooltip"]').tooltip("hide")
+});
+
+
 function report_hackerone(vulnerability_id, severity) {
 	message = ""
 	if (severity == 'Info' || severity == 'Low' || severity == 'Medium') {
