@@ -817,6 +817,7 @@ def create_report(request, id):
     secondary_color = '#212121'
     # get report type
     report_type = request.GET['report_type'] if 'report_type' in request.GET  else 'full'
+    is_ignore_info_vuln = True if 'ignore_info_vuln' in request.GET else False
     if report_type == 'recon':
         show_recon = True
         show_vuln = False
@@ -836,6 +837,11 @@ def create_report(request, id):
         Vulnerability.objects
         .filter(scan_history=scan)
         .order_by('-severity')
+    ) if not is_ignore_info_vuln else (
+        Vulnerability.objects
+        .filter(scan_history=scan)
+        .exclude(severity=0)
+        .order_by('-severity')
     )
     unique_vulns = (
         Vulnerability.objects
@@ -843,7 +849,15 @@ def create_report(request, id):
         .values("name", "severity")
         .annotate(count=Count('name'))
         .order_by('-severity', '-count')
+    ) if not is_ignore_info_vuln else (
+        Vulnerability.objects
+        .filter(scan_history=scan)
+        .exclude(severity=0)
+        .values("name", "severity")
+        .annotate(count=Count('name'))
+        .order_by('-severity', '-count')
     )
+
     subdomains = (
         Subdomain.objects
         .filter(scan_history=scan)
