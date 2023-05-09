@@ -1709,6 +1709,7 @@ $(document).ready(function() {
 								</a>
 								<div class="dropdown-menu" style="">
 								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+								<a class="text-danger dropdown-item" href="javascript:delete_vulnerability(${row['id']});">Delete Vulnerability</a>
 								</div>
 								</div>`;
 							}

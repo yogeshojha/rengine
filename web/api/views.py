@@ -645,6 +645,14 @@ class DeleteSubdomain(APIView):
 		return Response({'status': True})
 
 
+class DeleteVulnerability(APIView):
+	def post(self, request):
+		req = self.request
+		for id in req.data['vulnerability_ids']:
+			Vulnerability.objects.get(id=id).delete()
+		return Response({'status': True})
+
+
 class ListInterestingKeywords(APIView):
 	def get(self, request, format=None):
 		req = self.request

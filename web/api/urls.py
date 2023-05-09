@@ -179,6 +179,10 @@ urlpatterns = [
         DeleteSubdomain.as_view(),
         name='delete_subdomain'),
     path(
+        'action/vulnerability/delete/',
+        DeleteVulnerability.as_view(),
+        name='delete_vulnerability'),
+    path(
         'action/rows/delete/',
         DeleteMultipleRows.as_view(),
         name='delete_rows'),
