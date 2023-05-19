@@ -45,12 +45,12 @@ body:
         - **Docker compose**: 2.15.1
         - **Browser**: Microsoft Edge 112.0.1722.58
     value: |
-        - rengine:
-        - OS:
-        - python:
-        - docker:
-        - docker-compose:
-        - browser
+        - reNgine: 
+        - OS: 
+        - Python: 
+        - Docker Engine: 
+        - Docker Compose: 
+        - Browser: 
     render: markdown
   validations:
     required: false
