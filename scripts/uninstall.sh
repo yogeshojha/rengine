@@ -11,10 +11,10 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "Stopping reNgine"
-docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery_beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
 
 echo "Removing all containers related to reNgine"
-docker rm rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery_beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker rm rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
 echo "Removed all containers"
 
 echo "Removing all volumes related to reNgine"
