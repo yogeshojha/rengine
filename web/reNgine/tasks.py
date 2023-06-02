@@ -1329,19 +1329,19 @@ def directory_fuzz(
 		else:
 			http_url = subdomain
 
-		# proxy
-		proxy = get_random_proxy()
-		if proxy:
-			ffuf_command = '{} -x {} '.format(
-				ffuf_command,
-				proxy
-			)
-
-		command = '{} -u {} -o {} -of json'.format(
+		command = '{} -u {} -o {} -of json '.format(
 			ffuf_command,
 			http_url,
 			dirs_results
 		)
+
+		# proxy
+		proxy = get_random_proxy()
+		if proxy:
+			command = '{} -x {} '.format(
+				command,
+				proxy
+			)
 
 		logger.info(command)
 		process = subprocess.Popen(command.split())
