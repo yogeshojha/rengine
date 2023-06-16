@@ -2120,7 +2120,7 @@ $(document).ready(function() {
 
 							var directory_count_badge = '';
 							if (row['directories_count']){
-								directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id={{history.id}}, subdomain_id${row['id']}, subdomain_name'${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
+								directory_count_badge = `<span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories" onclick="get_directory_modal(scan_id={{history.id}}, subdomain_id=${row['id']}, subdomain_name='${row['name']}')">${row['directories_count']} <i class="far fa-folder"></i></span>`;
 							}
 
 							var subscan_count_badge = '';
