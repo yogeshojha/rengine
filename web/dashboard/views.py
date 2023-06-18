@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -9,8 +10,11 @@ from django.db.models.functions import TruncDay
 from django.dispatch import receiver
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from rolepermissions.decorators import has_permission_decorator
+
 from startScan.models import *
 from targetApp.models import Domain
+from reNgine.definitions import *
 
 
 def index(request):
@@ -164,6 +168,19 @@ def profile(request):
     return render(request, 'dashboard/profile.html', {
         'form': form
     })
+
+
+@has_permission_decorator(PERM_ADD_MODIFY_SYSTEM_SETTINGS)
+def admin_interface(request):
+    UserModel = get_user_model()
+    users = UserModel.objects.all()
+    return render(
+        request,
+        'dashboard/admin.html',
+        {
+            'users': users
+        }
+    )
 
 
 @receiver(user_logged_out)
