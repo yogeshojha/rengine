@@ -13,6 +13,10 @@ urlpatterns = [
         views.profile,
         name='profile'),
     path(
+        'admin_interface/',
+        views.admin_interface,
+        name='admin_interface'),
+    path(
         'search/',
         views.search,
         name='search'),

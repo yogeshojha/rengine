@@ -1,0 +1,115 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load permission_tags %}
+{% load static %}
+
+{% block title %}
+Profile
+{% endblock title %}
+
+{% block custom_js_css_link %}
+<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+Admin Settings
+{% endblock page_title %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+<li class="breadcrumb-item active">Admin Settings</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row">
+   <div class="col-12">
+      <div class="card">
+         <div class="card-body">
+            <div class="row justify-content-between">
+               <div class="col-md-12">
+                  <div class="text-md-end mt-3 mt-md-0">
+                     <button type="button" class="btn btn-primary waves-effect waves-light" data-bs-toggle="modal" data-bs-target="#add-user-modal"><i class="mdi mdi-plus-circle me-1"></i> Add User</button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <h4>Users</h4>
+        <div class="table-responsive pt-3">
+          <table class="table table-centered table-nowrap table-borderless mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created on</th>
+                <th>Last Logged in</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in users %}
+              <tr>
+                <th>
+                  {% if user.get_full_name %}
+                  {{user.get_full_name}}
+                  {% else %}
+                  {{user.username}}
+                  {% endif %}
+                </th>
+                <th>
+                  {% if user|has_role:'admin' %}
+                    <span class="badge bg-soft-success text-success p-1">{{user.username}}</span>
+                  {% elif user|has_role:'auditor' %}
+                    <span class="badge bg-soft-pink text-pink p-1">{{user.username}}</span>
+                  {% else %}
+                    <span class="badge bg-soft-primary text-primary p-1">{{user.username}}</span>
+                  {% endif %}
+
+                </th>
+                <th>
+                  {% if user|has_role:'admin' %}
+                    <span class="badge bg-soft-success text-success p-1">Admin</span>
+                  {% elif user|has_role:'auditor' %}
+                    <span class="badge bg-soft-pink text-pink p-1">Auditor</span>
+                  {% else %}
+                  <span class="badge bg-soft-primary text-primary p-1">Penetration Tester</span>
+                  {% endif %}
+                </th>
+                <td>{{user.date_joined|naturaltime}}</td>
+                <td>
+                  {% if user.last_login %}
+                    {{user.last_login|naturaltime}}
+                  {% else %}
+                    <span class="badge bg-soft-danger text-danger p-1">Never Logged In</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if user.is_active %}
+                  <span class="badge bg-soft-success text-success p-1">Active</span>
+                  {% else %}
+                  <span class="badge bg-soft-danger text-danger p-1">Disabled</span>
+                  {% endif %}
+                </td>
+                <td>Halette Boivin</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div> <!-- .table-responsive -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+{% endblock page_level_script %}

@@ -409,9 +409,10 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
 
 
 # Roles and Permissions
-ADD_MODIFY_USERS = 'add_modify_users'
-ADD_MODIFY_SCAN_ENGINES = 'add_modify_scan_engines'
-ADD_MODIFY_EXTERNAL_TOOLS = 'add_modify_external_tools'
-ADD_MODIFY_TARGET = 'add_modify_target'
-ADD_MODIFY_SETTINGS = 'add_modify_settings'
-VIEW_DOWNLOAD_REPORT = 'view_download_report'
+PERM_ADD_MODIFY_SYSTEM_SETTINGS = 'add_modify_system_settings'
+PERM_ADD_MODIFY_SCAN_SETTINGS = 'add_modify_scan_settings'
+PERM_ADD_MODIFY_SCAN_ENGINES = 'add_modify_scan_engines'
+PERM_ADD_MODIFY_EXTERNAL_TOOLS = 'add_modify_external_tools'
+PERM_ADD_MODIFY_TARGET = 'add_modify_target'
+PERM_VIEW_DOWNLOAD_REPORT = 'view_download_report'
+PERM_INITATE_SCANS = 'initiate_scans'
