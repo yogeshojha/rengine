@@ -69,7 +69,8 @@ INSTALLED_APPS = [
     'django_ace',
     'django_celery_beat',
     'mathfilters',
-    'drf_yasg'
+    'drf_yasg',
+    'rolepermissions'
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -176,6 +177,11 @@ CELERY_TIMEZONE = 'UTC'
 CELERY_IGNORE_RESULTS = False
 CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 CELERY_TRACK_STARTED = True
+
+'''
+ROLES and PERMISSIONS
+'''
+ROLEPERMISSIONS_MODULE = 'reNgine.roles'
 
 '''
 Cache settings
