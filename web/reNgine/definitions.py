@@ -406,3 +406,12 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
     'yml',
     'pdf',
 ]
+
+
+# Roles and Permissions
+ADD_MODIFY_USERS = 'add_modify_users'
+ADD_MODIFY_SCAN_ENGINES = 'add_modify_scan_engines'
+ADD_MODIFY_EXTERNAL_TOOLS = 'add_modify_external_tools'
+ADD_MODIFY_TARGET = 'add_modify_target'
+ADD_MODIFY_SETTINGS = 'add_modify_settings'
+VIEW_DOWNLOAD_REPORT = 'view_download_report'
