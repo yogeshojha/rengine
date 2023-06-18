@@ -407,7 +407,6 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
     'pdf',
 ]
 
-
 # Roles and Permissions
 PERM_ADD_MODIFY_SYSTEM_SETTINGS = 'add_modify_system_settings'
 PERM_ADD_MODIFY_SCAN_SETTINGS = 'add_modify_scan_settings'
@@ -416,3 +415,6 @@ PERM_ADD_MODIFY_EXTERNAL_TOOLS = 'add_modify_external_tools'
 PERM_ADD_MODIFY_TARGET = 'add_modify_target'
 PERM_VIEW_DOWNLOAD_REPORT = 'view_download_report'
 PERM_INITATE_SCANS = 'initiate_scans'
+
+# 404 page url
+FOUR_OH_FOUR_URL = '/404/'

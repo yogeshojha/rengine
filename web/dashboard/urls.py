@@ -20,4 +20,8 @@ urlpatterns = [
         'search/',
         views.search,
         name='search'),
+    path(
+        '404/',
+        views.four_oh_four,
+        name='four_oh_four'),
 ]

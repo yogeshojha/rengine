@@ -170,7 +170,7 @@ def profile(request):
     })
 
 
-@has_permission_decorator(PERM_ADD_MODIFY_SYSTEM_SETTINGS)
+@has_permission_decorator(PERM_ADD_MODIFY_SYSTEM_SETTINGS, redirect_url=FOUR_OH_FOUR_URL)
 def admin_interface(request):
     UserModel = get_user_model()
     users = UserModel.objects.all()
@@ -204,3 +204,7 @@ def on_user_logged_in(sender, request, **kwargs):
 
 def search(request):
     return render(request, 'dashboard/search.html')
+
+
+def four_oh_four(request):
+    return render(request, '404.html')
