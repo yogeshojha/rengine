@@ -1,3 +1,5 @@
+{% load permission_tags %}
+
 <div id="wrapper">
 <div class="topnav">
   <div class="container-fluid">
@@ -44,6 +46,7 @@
               <i class="fe-briefcase me-1"></i> Organization
             </a>
           </li>
+          {% if user|can:'add_modify_scan_settings' %}
           <li class="nav-item dropdown {{scan_engine_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-scanengine" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -72,6 +75,7 @@
               <a href="{% url 'notification_settings' %}" class="dropdown-item">Notification Settings</a>
             </div>
           </li>
+          {% endif %}
         </ul>
       </div>
     </nav>

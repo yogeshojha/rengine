@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load permission_tags %}
 
 {% block title %}
 List all targets
@@ -43,9 +44,13 @@ Targets
 						</div>
 					</div>
 					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+						{% if user|can:'initiate_scans' %}
 						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
 						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
+						{% endif %}
+						{% if user|can:'add_modify_scan_settings' %}
 						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
+						{% endif %}
 					</div>
 				</div>
 			</div>
@@ -209,24 +214,33 @@ $(document).ready(function(){
 				{
 					"render": function(data, type, row) {
 						var content = '';
-
+						{% if user|has_role:'penetration_tester' or user|has_role:'admin'%}
 						content += `
 						<div class="btn-group float-end">
-							<a class="btn btn-soft-primary" href="/target/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
-							<a href="/scan/start/${row.id}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
-							<div class="btn-group dropstart" role="group">
-								<button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-									<i class="mdi mdi-chevron-right"></i>
-								</button>
-								<div class="dropdown-menu" style="">
-									<a class="dropdown-item" href="/scan/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
-									<div class="dropdown-divider"></div>
-									<a class="dropdown-item" href="/target/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
-									<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
-								</div>
-							</div>
+						<a class="btn btn-soft-primary" href="/target/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
+						<a href="/scan/start/${row.id}" class="btn btn-soft-primary"><i class="fe-zap"></i>&nbsp;&nbsp;Initiate Scan</a>
+						<div class="btn-group dropstart" role="group">
+						<button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<i class="mdi mdi-chevron-right"></i>
+						</button>
+						<div class="dropdown-menu" style="">
+						<a class="dropdown-item" href="/scan/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+						<div class="dropdown-divider"></div>
+						<a class="dropdown-item" href="/target/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
+						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
+						</div>
+						</div>
 						</div>
 						`;
+						{% else %}
+						content += `
+						<div class="btn-group float-end">
+						<a class="btn btn-soft-primary" href="/target/summary/${row.id}"><i class="fe-info"></i>&nbsp;&nbsp;Target Summary</a>
+						</div>
+						</div>
+						</div>
+						`;
+						{% endif %}
 
 						return content;
 					},
