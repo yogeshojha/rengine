@@ -1,3 +1,5 @@
+{% load permission_tags %}
+
 <div class="row justify-content-center">
   <div class="col-xl-8 col-lg-8 col-sm-8">
     <div class="wrapper">
@@ -21,18 +23,22 @@
       <div class="card-body">
         <div class="row">
           <div class="col-6 float-start">
+            {% if user|can:'initiate_scans' %}
             <a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
               <i class="fe-zap"></i>
               Initiate Subscan
             </a>
+            {% endif %}
             <a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
               <i class="fe-download"></i>
               Download Selected Subdomains
             </a>
+            {% if user|can:'initiate_scans' %}
             <a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
               <i class="fe-trash"></i>
               Delete Multiple Subdomains
             </a>
+            {% endif %}
             <div class="ms-2 mt-2" id="">
               <a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
             </div>

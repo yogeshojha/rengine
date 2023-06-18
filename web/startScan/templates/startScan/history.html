@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load permission_tags %}
 
 {% block title %}
 Scan history
@@ -166,21 +167,23 @@ Quick Scan History
                         <i class="mdi mdi-chevron-right"></i>
                       </button>
                       <div class="dropdown-menu" style="">
-                        {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
+                        {% if user|can:'initiate_scans' %}
+                          {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
                           <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
                           <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
-                        {% endif %}
+                          {% endif %}
 
-                        {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
+                          {% if scan_history.scan_status == 1 or scan_history.scan_status == -1%}
                           <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id={{ scan_history.id }}, subscan_id=null, reload_scan_bar=false, reload_location=true)">
                           <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
-                        {% endif %}
-                        {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                          <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
-                          <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
+                          {% endif %}
+                          {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
+                            <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
+                            <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
+                          {% endif %}
+                          <div class="dropdown-divider"></div>
                         {% endif %}
                         {% if scan.scan_status != -1%}
-                          <div class="dropdown-divider"></div>
                           <a href="#" class="dropdown-item text-dark" onclick="initiate_report({{scan_history.id}}, '{% if 'subdomain_discovery' in scan_history.scan_type.tasks %}True{% endif %}', '{% if 'vulnerability_scan' in scan_history.scan_type.tasks %}True{% endif %}', '{{ scan_history.domain.name }}')">
                           <i class="fe-download"></i>&nbsp;Scan Report</a>
                         {% endif %}
