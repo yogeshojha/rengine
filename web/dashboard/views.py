@@ -10,6 +10,8 @@ from django.db.models.functions import TruncDay
 from django.dispatch import receiver
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.http import HttpResponseRedirect, JsonResponse
+from django.urls import reverse
 from rolepermissions.decorators import has_permission_decorator
 
 from startScan.models import *
@@ -173,7 +175,7 @@ def profile(request):
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def admin_interface(request):
     UserModel = get_user_model()
-    users = UserModel.objects.all()
+    users = UserModel.objects.all().order_by('date_joined')
     return render(
         request,
         'dashboard/admin.html',
@@ -181,6 +183,31 @@ def admin_interface(request):
             'users': users
         }
     )
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def admin_interface_update(request):
+    mode = request.GET.get('mode')
+    user_id = request.GET.get('user')
+    UserModel = get_user_model()
+    user = UserModel.objects.get(id=user_id)
+    if request.method == 'GET':
+        if mode == 'change_status':
+            user.is_active = not user.is_active
+            user.save()
+    elif request.method == 'POST':
+        if mode == 'delete':
+            try:
+                user.delete()
+                messages.add_message(
+                request,
+                messages.INFO,
+                    f'User {user.username} successfully deleted.'
+                )
+                messageData = {'status': 'true'}
+            except Exception as e:
+                messageData = {'status': 'true'}
+            return JsonResponse(messageData)
+    return HttpResponseRedirect(reverse('admin_interface'))
 
 
 @receiver(user_logged_out)

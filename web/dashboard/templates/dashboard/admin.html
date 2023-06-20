@@ -55,50 +55,64 @@ Admin Settings
               </tr>
             </thead>
             <tbody>
-              {% for user in users %}
+              {% for muser in users %}
               <tr>
                 <th>
-                  {% if user.get_full_name %}
-                  {{user.get_full_name}}
+                  {% if muser.get_full_name %}
+                  {{muser.get_full_name}}
                   {% else %}
-                  {{user.username}}
+                  {{muser.username}}
                   {% endif %}
                 </th>
                 <th>
-                  {% if user|has_role:'admin' %}
-                    <span class="badge bg-soft-success text-success p-1">{{user.username}}</span>
-                  {% elif user|has_role:'auditor' %}
-                    <span class="badge bg-soft-pink text-pink p-1">{{user.username}}</span>
+                  {% if muser|has_role:'admin' %}
+                    <span class="badge bg-soft-success text-success p-1">{{muser.username}}</span>
+                  {% elif muser|has_role:'auditor' %}
+                    <span class="badge bg-soft-pink text-pink p-1">{{muser.username}}</span>
                   {% else %}
-                    <span class="badge bg-soft-primary text-primary p-1">{{user.username}}</span>
+                    <span class="badge bg-soft-primary text-primary p-1">{{muser.username}}</span>
                   {% endif %}
 
                 </th>
                 <th>
-                  {% if user|has_role:'admin' %}
+                  {% if muser|has_role:'admin' %}
                     <span class="badge bg-soft-success text-success p-1">Admin</span>
-                  {% elif user|has_role:'auditor' %}
+                  {% elif muser|has_role:'auditor' %}
                     <span class="badge bg-soft-pink text-pink p-1">Auditor</span>
                   {% else %}
                   <span class="badge bg-soft-primary text-primary p-1">Penetration Tester</span>
                   {% endif %}
                 </th>
-                <td>{{user.date_joined|naturaltime}}</td>
+                <td>{{muser.date_joined|naturaltime}}</td>
                 <td>
-                  {% if user.last_login %}
-                    {{user.last_login|naturaltime}}
+                  {% if muser.last_login %}
+                    {{muser.last_login|naturaltime}}
                   {% else %}
                     <span class="badge bg-soft-danger text-danger p-1">Never Logged In</span>
                   {% endif %}
                 </td>
                 <td>
-                  {% if user.is_active %}
+                  {% if muser.is_active %}
                   <span class="badge bg-soft-success text-success p-1">Active</span>
                   {% else %}
                   <span class="badge bg-soft-danger text-danger p-1">Disabled</span>
                   {% endif %}
                 </td>
-                <td>Halette Boivin</td>
+                <td>
+                  {% if user != muser %}
+                    {% if muser.is_active %}
+                    <a href="./update?mode=change_status&user={{ muser.id }}" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Disable Account"> <i class="mdi mdi-account-cancel"></i></a>
+                    {% else %}
+                    <a href="./update?mode=change_status&user={{ muser.id }}" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Enable Account"> <i class="mdi mdi-account-check"></i></a>
+                    {% endif %}
+                  {% else %}
+                  &nbsp;
+                  {% endif %}
+                  <a href="#" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Update Account"> <i class="mdi mdi-account-edit"></i></a>
+                  {% if user != muser %}
+                    <a href="#" onclick="delete_user({{muser.id}}, '{{muser.username}}')" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete Account"> <i class="mdi mdi-trash-can"></i></a>
+                  {% endif %}
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -112,4 +126,39 @@ Admin Settings
 
 
 {% block page_level_script %}
+<script type="text/javascript">
+function delete_user(id, username) {
+  const delAPI = "./update?mode=delete&user=" + id;
+  swal.queue([{
+    title: 'Are you sure you want to delete user '+ username +'?',
+    text: "You won't be able to revert this!",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    padding: '2em',
+    showLoaderOnConfirm: true,
+    preConfirm: function() {
+      return fetch(delAPI, {
+        method: 'POST',
+        credentials: "same-origin",
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken")
+        }
+      })
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function(data) {
+        return location.reload();
+      })
+      .catch(function() {
+        swal.insertQueueStep({
+          type: 'error',
+          title: 'Oops! Unable to delete the User!'
+        })
+      })
+    }
+  }])
+}
+</script>
 {% endblock page_level_script %}
