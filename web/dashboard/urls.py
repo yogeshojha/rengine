@@ -17,6 +17,10 @@ urlpatterns = [
         views.admin_interface,
         name='admin_interface'),
     path(
+        'admin_interface/update',
+        views.admin_interface_update,
+        name='admin_interface_update'),
+    path(
         'search/',
         views.search,
         name='search'),
