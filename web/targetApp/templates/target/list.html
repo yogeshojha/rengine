@@ -44,11 +44,13 @@ Targets
 						</div>
 					</div>
 					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-						{% if user|can:'initiate_scans' %}
+						{% if user|can:'modify_targets' %}
 						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
+						{% endif %}
+						{% if user|can:'initiate_scans_subscans' %}
 						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
 						{% endif %}
-						{% if user|can:'add_modify_scan_settings' %}
+						{% if user|can:'modify_targets' %}
 						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
 						{% endif %}
 					</div>

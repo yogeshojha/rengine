@@ -167,7 +167,7 @@ Quick Scan History
                         <i class="mdi mdi-chevron-right"></i>
                       </button>
                       <div class="dropdown-menu" style="">
-                        {% if user|can:'initiate_scans' %}
+                        {% if user|can:'initiate_scans_subscans' %}
                           {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
                           <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
                           <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
@@ -177,6 +177,8 @@ Quick Scan History
                           <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id={{ scan_history.id }}, subscan_id=null, reload_scan_bar=false, reload_location=true)">
                           <i class="fe-alert-triangle"></i>&nbsp;Stop Scan</a>
                           {% endif %}
+                        {% endif %}
+                        {% if user|can:'modify_scan_results' %}
                           {% if scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
                             <a href="#" class="dropdown-item text-danger" onclick="delete_scan('{{ scan_history.id }}')">
                             <i class="fe-trash-2"></i>&nbsp;Delete Scan Results</a>
