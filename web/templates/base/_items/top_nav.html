@@ -46,7 +46,6 @@
               <i class="fe-briefcase me-1"></i> Organization
             </a>
           </li>
-          {% if user|can:'add_modify_scan_settings' %}
           <li class="nav-item dropdown {{scan_engine_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-scanengine" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -54,12 +53,17 @@
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-scanengine">
+              {% if user|can:'modify_scan_configurations' %}
               <a href="{% url 'scan_engine_index' %}" class="dropdown-item">Scan Engines</a>
+              {% endif %}
+              {% if user|can:'modify_wordlists' %}
               <a href="{% url 'wordlist_list' %}" class="dropdown-item">Wordlists</a>
+              {% endif %}
+              {% if user|can:'modify_interesting_lookup' %}
               <a href="{% url 'interesting_lookup' %}" class="dropdown-item">Interesting Lookup</a>
+              {% endif %}
             </div>
           </li>
-          {% endif %}
           <li class="nav-item dropdown {{settings_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-settings" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -67,12 +71,20 @@
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-settings">
-              {% if user|can:'add_modify_system_settings' %}
+              {% if user|can:'modify_scan_configurations' %}
               <a href="{% url 'proxy_settings' %}" class="dropdown-item">Proxies</a>
               <a href="{% url 'tool_settings' %}" class="dropdown-item">Tool Settings</a>
+              {% endif %}
+              {% if user|can:'modify_system_configurations' %}
               <a href="{% url 'tool_arsenal' %}" class="dropdown-item">Tools Arsenal</a>
+              {% endif %}
+              {% if user|can:'modify_scan_report' %}
               <a href="{% url 'report_settings' %}" class="dropdown-item">Report Settings</a>
+              {% endif %}
+              {% if user|can:'modify_system_configurations' %}
               <a href="{% url 'rengine_settings' %}" class="dropdown-item">reNgine Settings</a>
+              {% endif %}
+              {% if user|can:'modify_scan_configurations' %}
               <a href="{% url 'hackerone_settings' %}" class="dropdown-item">Hackerone Settings</a>
               <a href="{% url 'notification_settings' %}" class="dropdown-item">Notification Settings</a>
               {% endif %}

@@ -308,6 +308,7 @@ def start_scan_ui(request, domain_id):
     return render(request, 'startScan/start_scan_ui.html', context)
 
 
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
 def start_multiple_scan(request):
     # domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
@@ -414,6 +415,7 @@ def export_urls(request, scan_id):
     return response
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_scan(request, id):
     obj = get_object_or_404(ScanHistory, id=id)
     if request.method == "POST":
@@ -436,6 +438,7 @@ def delete_scan(request, id):
     return JsonResponse(messageData)
 
 
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
 def stop_scan(request, id):
     if request.method == "POST":
         scan = get_object_or_404(ScanHistory, id=id)
@@ -472,6 +475,8 @@ def stop_scan(request, id):
         return JsonResponse(response)
     return scan_history(request)
 
+
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
 def schedule_scan(request, host_id):
     domain = Domain.objects.get(id=host_id)
     if request.method == "POST":
@@ -570,6 +575,7 @@ def scheduled_scan_view(request):
     return render(request, 'startScan/schedule_scan_list.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_scheduled_task(request, id):
     task_object = get_object_or_404(PeriodicTask, id=id)
     if request.method == "POST":
@@ -588,6 +594,7 @@ def delete_scheduled_task(request, id):
     return JsonResponse(messageData)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
 def change_scheduled_task_status(request, id):
     if request.method == 'POST':
         task = PeriodicTask.objects.get(id=id)
@@ -626,6 +633,7 @@ def create_scan_object(host_id, engine_id):
     return scan.id
 
 
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_all_scan_results(request):
     if request.method == 'POST':
         ScanHistory.objects.all().delete()
@@ -637,6 +645,7 @@ def delete_all_scan_results(request):
     return JsonResponse(messageData)
 
 
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_all_screenshots(request):
     if request.method == 'POST':
         run_command('rm -rf /usr/src/scan_results/*')
@@ -657,6 +666,7 @@ def visualise(request, id):
     return render(request, 'startScan/visualise.html', context)
 
 
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
 def start_organization_scan(request, id):
     organization = get_object_or_404(Organization, id=id)
     if request.method == "POST":
@@ -700,6 +710,7 @@ def start_organization_scan(request, id):
     return render(request, 'organization/start_scan.html', context)
 
 
+@has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
 def schedule_organization_scan(request, id):
     organization =Organization.objects.get(id=id)
     if request.method == "POST":
@@ -787,6 +798,7 @@ def schedule_organization_scan(request, id):
     return render(request, 'organization/schedule_scan_ui.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_scans(request):
     if request.method == "POST":
         for key, value in request.POST.items():
@@ -803,6 +815,7 @@ def delete_scans(request):
     return HttpResponseRedirect(reverse('scan_history'))
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)
 def customize_report(request, id):
     scan = ScanHistory.objects.get(id=id)
     context = {
@@ -812,6 +825,7 @@ def customize_report(request, id):
     return render(request, 'startScan/customize_report.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)
 def create_report(request, id):
     primary_color = '#FFB74D'
     secondary_color = '#212121'
