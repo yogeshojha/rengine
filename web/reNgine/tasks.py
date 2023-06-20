@@ -20,10 +20,10 @@ from degoogle import degoogle
 from django.db.models import Count
 from dotted_dict import DottedDict
 from django.utils import timezone
-
-from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
-from metafinder.extractor import extract_metadata_from_google_search
 from pycvesearch import CVESearch
+from metafinder.extractor import extract_metadata_from_google_search
+from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
+
 from reNgine.celery import app
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *

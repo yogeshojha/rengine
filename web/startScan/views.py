@@ -1,6 +1,7 @@
-from datetime import datetime
-
 import markdown
+
+from weasyprint import HTML
+from datetime import datetime
 from django.contrib import messages
 from django.db.models import Count
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -8,8 +9,9 @@ from django.shortcuts import get_object_or_404, render
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils import timezone
-from django_celery_beat.models import (ClockedSchedule, IntervalSchedule,
-                                       PeriodicTask)
+from django_celery_beat.models import (ClockedSchedule, IntervalSchedule, PeriodicTask)
+from rolepermissions.decorators import has_permission_decorator
+
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK, SUCCESS_TASK
@@ -17,7 +19,6 @@ from reNgine.tasks import create_scan_activity, initiate_scan, run_command
 from scanEngine.models import EngineType
 from startScan.models import *
 from targetApp.models import *
-from weasyprint import HTML
 
 
 def scan_history(request):

@@ -2,6 +2,7 @@ import json
 
 from django.http import JsonResponse
 from django.shortcuts import render
+
 from recon_note.models import *
 from startScan.models import *
 
