@@ -170,7 +170,7 @@ def profile(request):
     })
 
 
-@has_permission_decorator(PERM_ADD_MODIFY_SYSTEM_SETTINGS, redirect_url=FOUR_OH_FOUR_URL)
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def admin_interface(request):
     UserModel = get_user_model()
     users = UserModel.objects.all()

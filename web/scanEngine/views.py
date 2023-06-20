@@ -14,6 +14,7 @@ from reNgine.tasks import (run_command, send_discord_message,
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
+from rolepermissions.decorators import has_permission_decorator
 
 
 def index(request):
@@ -22,11 +23,11 @@ def index(request):
         'engine_ul_show': 'show',
         'engine_li': 'active',
         'scan_engine_nav_active': 'active',
-        'engine_type': engine_type, 
+        'engine_type': engine_type,
     }
     return render(request, 'scanEngine/index.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def add_engine(request):
     form = AddEngineForm()
     if request.method == "POST":
@@ -39,12 +40,12 @@ def add_engine(request):
                 'Scan Engine Added successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     context = {
-        'scan_engine_nav_active': 'active', 
+        'scan_engine_nav_active': 'active',
         'form': form
     }
     return render(request, 'scanEngine/add_engine.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_engine(request, id):
     obj = get_object_or_404(EngineType, id=id)
     if request.method == "POST":
@@ -62,7 +63,7 @@ def delete_engine(request, id):
             'Oops! Engine could not be deleted!')
     return http.JsonResponse(responseData)
 
-
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def update_engine(request, id):
     engine = get_object_or_404(EngineType, id=id)
     form = UpdateEngineForm(
@@ -80,12 +81,12 @@ def update_engine(request, id):
                 'Engine edited successfully')
             return http.HttpResponseRedirect(reverse('scan_engine_index'))
     context = {
-        'scan_engine_nav_active': 'active', 
+        'scan_engine_nav_active': 'active',
         'form': form
     }
     return render(request, 'scanEngine/update_engine.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def wordlist_list(request):
     wordlists = Wordlist.objects.all().order_by('id')
     context = {
@@ -94,7 +95,7 @@ def wordlist_list(request):
             'wordlists': wordlists}
     return render(request, 'scanEngine/wordlist/index.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def add_wordlist(request):
     context = {'scan_engine_nav_active': 'active', 'wordlist_li': 'active'}
     form = AddWordlistForm(request.POST or None, request.FILES or None)
@@ -122,7 +123,7 @@ def add_wordlist(request):
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
@@ -148,7 +149,7 @@ def delete_wordlist(request, id):
             'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
 
-
+@has_permission_decorator(PERM_MODIFY_INTERESTING_LOOKUP, redirect_url=FOUR_OH_FOUR_URL)
 def interesting_lookup(request):
     lookup_keywords = None
     context = {}
@@ -182,6 +183,7 @@ def interesting_lookup(request):
     context['default_lookup'] = InterestingLookupModel.objects.filter(id=1)
     return render(request, 'scanEngine/lookup.html', context)
 
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def tool_specific_settings(request):
     context = {}
     # check for incoming form requests
@@ -240,7 +242,7 @@ def tool_specific_settings(request):
                 fhandle.write(request.POST.get('amass_config_text_area'))
             messages.add_message(request, messages.INFO, 'Amass config updated!')
             return http.HttpResponseRedirect(reverse('tool_settings'))
-        
+
         elif 'theharvester_config_text_area' in request.POST:
             with open('/usr/src/github/theHarvester/api-keys.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('theharvester_config_text_area'))
@@ -256,6 +258,7 @@ def tool_specific_settings(request):
     context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/tool.html', context)
 
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def rengine_settings(request):
     context = {}
 
@@ -273,6 +276,7 @@ def rengine_settings(request):
 
     return render(request, 'scanEngine/settings/rengine.html', context)
 
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def notification_settings(request):
     context = {}
     form = NotificationForm()
@@ -307,6 +311,7 @@ def notification_settings(request):
 
     return render(request, 'scanEngine/settings/notification.html', context)
 
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def proxy_settings(request):
     context = {}
     form = ProxyForm()
@@ -332,8 +337,6 @@ def proxy_settings(request):
                 messages.INFO,
                 'Proxies updated.')
             return http.HttpResponseRedirect(reverse('proxy_settings'))
-
-
     context['settings_nav_active'] = 'active'
     context['proxy_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
@@ -341,6 +344,7 @@ def proxy_settings(request):
     return render(request, 'scanEngine/settings/proxy.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def test_hackerone(request):
     context = {}
     if request.method == "POST":
@@ -358,7 +362,7 @@ def test_hackerone(request):
 
     return http.JsonResponse({"status": 401})
 
-
+@has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def hackerone_settings(request):
     context = {}
     form = HackeroneForm()
@@ -392,7 +396,7 @@ def hackerone_settings(request):
 
     return render(request, 'scanEngine/settings/hackerone.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)
 def report_settings(request):
     context = {}
     form = ReportForm()
@@ -433,14 +437,14 @@ def report_settings(request):
 
     return render(request, 'scanEngine/settings/report.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def tool_arsenal_section(request):
     context = {}
     tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
 
-
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def add_tool(request):
     form = ExternalToolForm()
     if request.method == "POST":
@@ -477,6 +481,7 @@ def add_tool(request):
     return render(request, 'scanEngine/settings/add_tool.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def modify_tool_in_arsenal(request, id):
     external_tool = get_object_or_404(InstalledExternalTool, id=id)
     form = ExternalToolForm()

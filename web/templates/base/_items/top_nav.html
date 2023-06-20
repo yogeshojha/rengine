@@ -59,6 +59,7 @@
               <a href="{% url 'interesting_lookup' %}" class="dropdown-item">Interesting Lookup</a>
             </div>
           </li>
+          {% endif %}
           <li class="nav-item dropdown {{settings_nav_active}}">
             <a class="nav-link dropdown-toggle arrow-none" href="#" id="topnav-settings" role="button"
               data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -66,6 +67,7 @@
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-settings">
+              {% if user|can:'add_modify_system_settings' %}
               <a href="{% url 'proxy_settings' %}" class="dropdown-item">Proxies</a>
               <a href="{% url 'tool_settings' %}" class="dropdown-item">Tool Settings</a>
               <a href="{% url 'tool_arsenal' %}" class="dropdown-item">Tools Arsenal</a>
@@ -73,9 +75,9 @@
               <a href="{% url 'rengine_settings' %}" class="dropdown-item">reNgine Settings</a>
               <a href="{% url 'hackerone_settings' %}" class="dropdown-item">Hackerone Settings</a>
               <a href="{% url 'notification_settings' %}" class="dropdown-item">Notification Settings</a>
+              {% endif %}
             </div>
           </li>
-          {% endif %}
         </ul>
       </div>
     </nav>
