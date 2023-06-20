@@ -27,6 +27,7 @@ def index(request):
     }
     return render(request, 'scanEngine/index.html', context)
 
+
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def add_engine(request):
     form = AddEngineForm()
@@ -45,6 +46,7 @@ def add_engine(request):
     }
     return render(request, 'scanEngine/add_engine.html', context)
 
+
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_engine(request, id):
     obj = get_object_or_404(EngineType, id=id)
@@ -62,6 +64,7 @@ def delete_engine(request, id):
             messages.ERROR,
             'Oops! Engine could not be deleted!')
     return http.JsonResponse(responseData)
+
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def update_engine(request, id):
@@ -86,6 +89,7 @@ def update_engine(request, id):
     }
     return render(request, 'scanEngine/update_engine.html', context)
 
+
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def wordlist_list(request):
     wordlists = Wordlist.objects.all().order_by('id')
@@ -94,6 +98,7 @@ def wordlist_list(request):
             'wordlist_li': 'active',
             'wordlists': wordlists}
     return render(request, 'scanEngine/wordlist/index.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def add_wordlist(request):
@@ -123,6 +128,7 @@ def add_wordlist(request):
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
 
+
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_wordlist(request, id):
     obj = get_object_or_404(Wordlist, id=id)
@@ -148,6 +154,7 @@ def delete_wordlist(request, id):
             messages.ERROR,
             'Oops! Wordlist could not be deleted!')
     return http.JsonResponse(responseData)
+
 
 @has_permission_decorator(PERM_MODIFY_INTERESTING_LOOKUP, redirect_url=FOUR_OH_FOUR_URL)
 def interesting_lookup(request):
@@ -182,6 +189,7 @@ def interesting_lookup(request):
     context['form'] = form
     context['default_lookup'] = InterestingLookupModel.objects.filter(id=1)
     return render(request, 'scanEngine/lookup.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def tool_specific_settings(request):
@@ -258,6 +266,7 @@ def tool_specific_settings(request):
     context['gf_patterns'] = sorted(gf_list.split('\n'))
     return render(request, 'scanEngine/settings/tool.html', context)
 
+
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def rengine_settings(request):
     context = {}
@@ -275,6 +284,7 @@ def rengine_settings(request):
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/rengine.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def notification_settings(request):
@@ -310,6 +320,7 @@ def notification_settings(request):
     context['form'] = form
 
     return render(request, 'scanEngine/settings/notification.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def proxy_settings(request):
@@ -362,6 +373,7 @@ def test_hackerone(request):
 
     return http.JsonResponse({"status": 401})
 
+
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def hackerone_settings(request):
     context = {}
@@ -388,13 +400,12 @@ def hackerone_settings(request):
                 messages.INFO,
                 'Hackerone Settings updated.')
             return http.HttpResponseRedirect(reverse('hackerone_settings'))
-
-
     context['settings_nav_active'] = 'active'
     context['hackerone_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
 
     return render(request, 'scanEngine/settings/hackerone.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)
 def report_settings(request):
@@ -434,8 +445,8 @@ def report_settings(request):
     context['settings_ul_show'] = 'show'
     context['primary_color'] = primary_color
     context['secondary_color'] = secondary_color
-
     return render(request, 'scanEngine/settings/report.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def tool_arsenal_section(request):
@@ -443,6 +454,7 @@ def tool_arsenal_section(request):
     tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
+
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def add_tool(request):

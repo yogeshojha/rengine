@@ -35,8 +35,6 @@
             <i class="fe-crosshair me-1"></i>
             <span>Target</span>
           </a>
-          {% endif %}
-          {% if user|can:'modify_targets' %}
           <a href="{% url 'add_organization' %}" class="dropdown-item">
             <i class="fe-briefcase me-1"></i>
             <span>Organization</span>
@@ -114,7 +112,7 @@
             <i class="fe-user"></i>
             <span>My Account</span>
           </a>
-          {% if user|can:'add_modify_system_settings' %}
+          {% if user|can:'modify_system_configurations' %}
           <a href="{% url 'admin_interface' %}" class="dropdown-item notify-item">
             <i class="fe-settings"></i>
             <span>Admin Settings</span>
