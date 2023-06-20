@@ -29,6 +29,7 @@ def index(request):
     return render(request, 'target/index.html')
 
 
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def add_target(request):
     """Add a new target. Targets can be URLs, IPs, CIDR ranges, or Domains.
 
@@ -55,9 +56,9 @@ def add_target(request):
                     ports = []
                     ips = []
 
-                    # Validate input and find what type of address it is. 
+                    # Validate input and find what type of address it is.
                     # Valid inputs are URLs, Domains, or IP addresses.
-                    # TODO: support IP CIDR ranges (auto expand range and 
+                    # TODO: support IP CIDR ranges (auto expand range and
                     # save new found ips to DB)
                     is_domain = bool(validators.domain(target))
                     is_ip = bool(validators.ipv4(target)) or bool(validators.ipv6(target))
@@ -96,7 +97,7 @@ def add_target(request):
                         msg = f'{target} is not a valid domain, IP, or URL. Skipped.'
                         logger.warning(msg)
                         messages.add_message(
-                            request, 
+                            request,
                             messages.WARNING,
                             msg)
                         continue
@@ -114,7 +115,7 @@ def add_target(request):
                         added_target_count += 1
                         if created:
                             logger.info(f'Added new domain {domain.name}')
-                    
+
                     for http_url in http_urls:
                         http_url = sanitize_url(http_url)
                         endpoint, created = EndPoint.objects.get_or_create(
@@ -144,8 +145,8 @@ def add_target(request):
                 csv_file = request.FILES.get('csvFile')
                 if not (txt_file or csv_file):
                     messages.add_message(
-                        request, 
-                        messages.ERROR, 
+                        request,
+                        messages.ERROR,
                         'Files uploaded are not .txt or .csv files.')
                     return http.HttpResponseRedirect(reverse('add_target'))
 
@@ -235,6 +236,7 @@ def list_target(request):
     return render(request, 'target/list.html', context)
 
 
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
@@ -254,6 +256,7 @@ def delete_target(request, id):
     return http.JsonResponse(responseData)
 
 
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_targets(request):
     if request.method == "POST":
         list_of_domains = []
@@ -267,6 +270,7 @@ def delete_targets(request):
     return http.HttpResponseRedirect(reverse('list_target'))
 
 
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def update_target(request, id):
     domain = get_object_or_404(Domain, id=id)
     form = UpdateTargetForm()
@@ -290,7 +294,7 @@ def update_target(request, id):
     return render(request, 'target/update.html', context)
 
 def target_summary(request, id):
-    """Summary of a target (domain). Contains aggregated information on all 
+    """Summary of a target (domain). Contains aggregated information on all
     objects (Subdomain, EndPoint, Vulnerability, Emails, ...) found across all
     scans.
 
@@ -385,7 +389,7 @@ def target_summary(request, id):
     )
     context['exposed_count'] = emails.exclude(password__isnull=True).count()
     context['email_count'] = emails.count()
-    
+
     # Employees
     context['employees_count'] = (
         Employee.objects
@@ -400,7 +404,7 @@ def target_summary(request, id):
         .values('http_status')
         .annotate(Count('http_status'))
     )
-    
+
     # CVEs
     context['most_common_cve'] = (
         CveId.objects
@@ -431,6 +435,8 @@ def target_summary(request, id):
 
     return render(request, 'target/summary.html', context)
 
+
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def add_organization(request):
     form = AddOrganizationForm(request.POST or None)
     if request.method == "POST":
@@ -462,6 +468,8 @@ def list_organization(request):
     }
     return render(request, 'organization/list.html', context)
 
+
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def delete_organization(request, id):
     if request.method == "POST":
         obj = get_object_or_404(Organization, id=id)
@@ -479,6 +487,8 @@ def delete_organization(request, id):
             'Oops! Organization could not be deleted!')
     return http.JsonResponse(responseData)
 
+
+@has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
 def update_organization(request, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
