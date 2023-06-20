@@ -408,10 +408,14 @@ DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
 ]
 
 # Roles and Permissions
-PERM_ADD_MODIFY_SYSTEM_SETTINGS = 'add_modify_system_settings'
-PERM_ADD_MODIFY_SCAN_SETTINGS = 'add_modify_scan_settings'
-PERM_VIEW_DOWNLOAD_REPORT = 'view_download_report'
-PERM_INITATE_SCANS = 'initiate_scans'
+PERM_MODIFY_SYSTEM_CONFIGURATIONS = 'modify_system_configurations'
+PERM_MODIFY_SCAN_CONFIGURATIONS = 'modify_scan_configurations'
+PERM_MODIFY_TARGETS = 'modify_targets'
+PERM_MODIFY_SCAN_RESULTS = 'modify_scan_results'
+PERM_MODIFY_WORDLISTS = 'modify_wordlists'
+PERM_MODIFY_INTERESTING_LOOKUP = 'modify_interesting_lookup'
+PERM_MODIFY_SCAN_REPORT = 'modify_scan_report'
+PERM_INITATE_SCANS_SUBSCANS = 'initiate_scans_subscans'
 
 # 404 page url
 FOUR_OH_FOUR_URL = '/404/'
