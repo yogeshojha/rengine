@@ -1,6 +1,7 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load permission_tags %}
 
 {% block title %}
 Subscan History
@@ -60,9 +61,11 @@ SubScan History
               <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
             </div>
           </div>
+          {% if user|can:'modify_scan_results' %}
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">Delete Multiple SubScans</a>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -92,7 +95,7 @@ SubScan History
             <td class="">
               <span class="" data-toggle="tooltip" data-placement="top" title="Scanned Subdomain">{{ subscan.subdomain.name }}</span>
             </br>
-            <span class="badge bg-dark text-light" data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span>
+            <b><span data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span></b>
             {% for organization in subscan.scan_history.domain.get_organization %}
               <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
             {% endfor %}
@@ -132,10 +135,14 @@ SubScan History
                     <i class="mdi mdi-chevron-right"></i>
                   </button>
                   <div class="dropdown-menu" style="">
-                    {% if subscan.status == 1 %}
-                      <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                    {% if user|can:'initiate_scans_subscans' %}
+                      {% if subscan.status == 1 %}
+                        <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                      {% endif %}
                     {% endif %}
+                    {% if user|can:'modify_scan_results' %}
                     <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
+                    {% endif %}
                   </div>
                 </div>
               </div>

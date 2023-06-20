@@ -30,7 +30,7 @@ Organizations
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            {% if user|can:'add_modify_scan_settings' %}
+            {% if user|can:'modify_targets' %}
             <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
             {% endif %}
           </div>
@@ -60,19 +60,26 @@ Organizations
             <td class="text-center"><span class="badge bg-primary badge-link" onclick="get_target_modal({{organization.id}})">{{organization.get_domains.count}}</span></td>
             <td class="text-center"><span data-toggle="tooltip" data-placement="top" title="{{organization.insert_date}}">{{organization.insert_date|naturaltime}}</span></td></td>
             <td class="text-center">
+              {% if user|can:'initiate_scans_subscans' %}
               <a href="{% url 'start_organization_scan' organization.id %}" data-toggle="tooltip" data-placement="top" title="Quick Scan Entire Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-scan feather-zap" id="myInput" value="helloworld">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                 </svg>
               </a>
+              {% endif %}
+              {% if user|can:'initiate_scans_subscans' %}
               <a href="{% url 'schedule_organization_scan' organization.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Schedule Scan">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-watch table-schedule"><circle cx="12" cy="12" r="7"></circle><polyline points="12 9 12 12 13.5 13.5"></polyline><path d="M16.51 17.35l-.35 3.83a2 2 0 0 1-2 1.82H9.83a2 2 0 0 1-2-1.82l-.35-3.83m.01-10.7l.35-3.83A2 2 0 0 1 9.83 1h4.35a2 2 0 0 1 2 1.82l.35 3.83"></path></svg>
               </a>
+              {% endif %}
+              {% if user|can:'modify_targets' %}
               <a href="{% url 'update_organization' organization.id %}" class="text-primary open-domain" data-toggle="tooltip" data-placement="top" title="Update Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                   <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                 </svg>
               </a>
+              {% endif %}
+              {% if user|can:'modify_targets' %}
               <a onclick="delete_organization({{ organization.id }})" class="text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete Organization">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -80,6 +87,7 @@ Organizations
                   <line x1="9" y1="9" x2="15" y2="15"></line>
                 </svg>
               </a>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
