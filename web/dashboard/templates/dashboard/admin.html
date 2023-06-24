@@ -8,7 +8,6 @@ Profile
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
@@ -45,8 +44,8 @@ Admin Settings
           <table class="table table-centered table-nowrap table-borderless mb-0">
             <thead class="table-light">
               <tr>
-                <th>Name</th>
                 <th>Username</th>
+                <th>Name</th>
                 <th>Role</th>
                 <th>Created on</th>
                 <th>Last Logged in</th>
@@ -58,13 +57,6 @@ Admin Settings
               {% for muser in users %}
               <tr>
                 <th>
-                  {% if muser.get_full_name %}
-                  {{muser.get_full_name}}
-                  {% else %}
-                  {{muser.username}}
-                  {% endif %}
-                </th>
-                <th>
                   {% if muser|has_role:'admin' %}
                     <span class="badge bg-soft-success text-success p-1">{{muser.username}}</span>
                   {% elif muser|has_role:'auditor' %}
@@ -72,11 +64,17 @@ Admin Settings
                   {% else %}
                     <span class="badge bg-soft-primary text-primary p-1">{{muser.username}}</span>
                   {% endif %}
-
                 </th>
                 <th>
-                  {% if muser|has_role:'admin' %}
-                    <span class="badge bg-soft-success text-success p-1">Admin</span>
+                  {% if muser.get_full_name %}
+                  {{muser.get_full_name}}
+                  {% else %}
+                  {{muser.username}}
+                  {% endif %}
+                </th>
+                <th>
+                  {% if muser|has_role:'sys_admin' %}
+                    <span class="badge bg-soft-success text-success p-1">Sys Admin</span>
                   {% elif muser|has_role:'auditor' %}
                     <span class="badge bg-soft-pink text-pink p-1">Auditor</span>
                   {% else %}
@@ -108,7 +106,7 @@ Admin Settings
                   {% else %}
                   &nbsp;
                   {% endif %}
-                  <a href="#" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Update Account"> <i class="mdi mdi-account-edit"></i></a>
+                  <a href="#" onclick="update_user_modal({{muser.id}}, '{% if muser|has_role:'sys_admin' %}admin{% elif muser|has_role:'auditor'%}auditor{% elif muser|has_role:'penetration_tester'%}penetration_tester{%endif%}')" class="action-icon" id="change_user_details_btn" title="Update User Detail" data-bs-toggle="tooltip" data-bs-placement="bottom"> <i class="mdi mdi-account-edit"></i></a>
                   {% if user != muser %}
                     <a href="#" onclick="delete_user({{muser.id}}, '{{muser.username}}')" class="action-icon" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Delete Account"> <i class="mdi mdi-trash-can"></i></a>
                   {% endif %}
@@ -160,5 +158,53 @@ function delete_user(id, username) {
     }
   }])
 }
+
+function update_user_modal(user_id, permission){
+  var html_content = '';
+
+  html_content += `
+  <div class="form mb-3">
+    <label for="user_role" class="form-label float-start">Role</label>
+    <select class="form-select" id="user_role">
+    <option ${permission == 'sys_admin' ? 'selected': ''}>Sys Admin</option>
+    <option ${permission == 'penetration_tester' ? 'selected': ''}>Penetration Tester</option>
+    <option ${permission == 'auditor' ? 'selected': ''}>Auditor</option>
+    </select>
+  </div>
+  <div class="form mb-3">
+    <label for="password" class="form-label float-start">Change Password</label>
+    <div class="input-group input-group-merge">
+      <input type="password" id="password" class="form-control" placeholder="Password">
+    </div>
+    <div class="form-check form-switch float-end mt-2">
+      <input type="checkbox" class="form-check-input" id="show-password">
+      <label class="form-check-label text-small" for="show-password" style="font-size: 12px;">Show Password</label>
+    </div>
+  </div>
+
+  `;
+
+  Swal.fire({
+      title: 'Update User',
+      html: html_content,
+      showCloseButton: true,
+      showCancelButton: false,
+      confirmButtonText: 'Update',
+  });
+
+  const passwordInput = document.getElementById('password');
+  const showPasswordCheckbox = document.getElementById('show-password');
+
+
+  showPasswordCheckbox.addEventListener('change', function() {
+    if (showPasswordCheckbox.checked) {
+      passwordInput.type = 'text';
+    } else {
+      passwordInput.type = 'password';
+    }
+  });
+
+}
+
 </script>
 {% endblock page_level_script %}
