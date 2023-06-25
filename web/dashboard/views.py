@@ -194,8 +194,9 @@ def admin_interface(request):
 def admin_interface_update(request):
     mode = request.GET.get('mode')
     user_id = request.GET.get('user')
-    UserModel = get_user_model()
-    user = UserModel.objects.get(id=user_id)
+    if user_id:
+        UserModel = get_user_model()
+        user = UserModel.objects.get(id=user_id)
     if request.method == 'GET':
         if mode == 'change_status':
             user.is_active = not user.is_active
@@ -223,6 +224,19 @@ def admin_interface_update(request):
                 if change_password:
                     user.set_password(change_password)
                     user.save()
+                messageData = {'status': True}
+            except Exception as e:
+                logger.error(e)
+                messageData = {'status': False, 'error': str(e)}
+        elif mode == 'create':
+            try:
+                response = json.loads(request.body)
+                UserModel = get_user_model()
+                user = UserModel.objects.create_user(
+                    username=response.get('username'),
+                    password=response.get('password')
+                )
+                assign_role(user, response.get('role'))
                 messageData = {'status': True}
             except Exception as e:
                 logger.error(e)
