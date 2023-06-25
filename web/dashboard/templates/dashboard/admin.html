@@ -27,7 +27,7 @@ Admin Settings
             <div class="row justify-content-between">
                <div class="col-md-12">
                   <div class="text-md-end mt-3 mt-md-0">
-                     <button type="button" class="btn btn-primary waves-effect waves-light" data-bs-toggle="modal" data-bs-target="#add-user-modal"><i class="mdi mdi-plus-circle me-1"></i> Add User</button>
+                     <button type="button" class="btn btn-primary waves-effect waves-light" onclick="create_user_modal()"><i class="mdi mdi-plus-circle me-1"></i> Add User</button>
                   </div>
                </div>
             </div>
@@ -225,6 +225,101 @@ function update_user_modal(user_id, permission){
   });
 
   const passwordInput = document.getElementById('password');
+  const showPasswordCheckbox = document.getElementById('show-password');
+
+
+  showPasswordCheckbox.addEventListener('change', function() {
+    if (showPasswordCheckbox.checked) {
+      passwordInput.type = 'text';
+    } else {
+      passwordInput.type = 'password';
+    }
+  });
+
+}
+
+function create_user_modal(){
+  var html_content = '';
+
+  html_content += `
+  <div class="form mb-3">
+    <label for="create_username" class="form-label float-start">Username</label>
+    <input id="create_username" class="form-control" placeholder="Username" autocomplete="off">
+  </div>
+  <div class="form mb-3">
+    <label for="create_user_role" class="form-label float-start">Role</label>
+    <select class="form-select" id="create_user_role">
+    <option value='sys_admin'>Sys Admin</option>
+    <option value='penetration_tester'>Penetration Tester</option>
+    <option value='auditor'>Auditor</option>
+    </select>
+  </div>
+  <div class="form mb-3">
+    <label for="create_password" class="form-label float-start">Create Password</label>
+    <div class="input-group input-group-merge">
+      <input type="password" id="create_password" class="form-control" placeholder="Password">
+    </div>
+    <div class="form-check form-switch float-end mt-2">
+      <input type="checkbox" class="form-check-input" id="show-password">
+      <label class="form-check-label text-small" for="show-password" style="font-size: 12px;">Show Password</label>
+    </div>
+  </div>
+
+  `;
+
+  Swal.fire({
+      title: 'Create User',
+      html: html_content,
+      showCloseButton: true,
+      showCancelButton: false,
+      confirmButtonText: 'Create User',
+      showLoaderOnConfirm: true,
+      preConfirm: function () {
+        return new Promise(function (resolve) {
+          var create_username = document.getElementById('create_username').value;
+          var role_selected = document.getElementById('create_user_role').value;
+          var create_password = document.getElementById('create_password').value;
+          const data = {
+            'username': create_username,
+            'role': role_selected,
+            'password': create_password
+          };
+          fetch('./update?mode=create', {
+            method: 'POST',
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify(data)
+          })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function(data) {
+            if (data.status) {
+              return location.reload();
+            }
+            else{
+              Swal.fire({
+                title: "Oops! Can't create user!",
+                icon: 'error',
+                text: 'Error: ' + data.error,
+              })
+            }
+
+          })
+          .catch(function() {
+            swal.insertQueueStep({
+              type: 'error',
+              title: 'Oops! Unable to updte user!'
+            })
+          })
+          resolve()
+        })
+      }
+  });
+
+  const passwordInput = document.getElementById('create_password');
   const showPasswordCheckbox = document.getElementById('show-password');
 
 
