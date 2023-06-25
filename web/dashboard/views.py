@@ -1,3 +1,6 @@
+import json
+import logging
+
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -12,12 +15,15 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
+from rolepermissions.roles import assign_role, clear_roles
 from rolepermissions.decorators import has_permission_decorator
 
 from startScan.models import *
 from targetApp.models import Domain
 from reNgine.definitions import *
 
+
+logger = logging.getLogger(__name__)
 
 def index(request):
     domain_count = Domain.objects.all().count()
@@ -203,10 +209,25 @@ def admin_interface_update(request):
                 messages.INFO,
                     f'User {user.username} successfully deleted.'
                 )
-                messageData = {'status': 'true'}
+                messageData = {'status': True}
             except Exception as e:
-                messageData = {'status': 'true'}
-            return JsonResponse(messageData)
+                logger.error(e)
+                messageData = {'status': False}
+        elif mode == 'update':
+            try:
+                response = json.loads(request.body)
+                role = response.get('role')
+                change_password = response.get('change_password')
+                clear_roles(user)
+                assign_role(user, role)
+                if change_password:
+                    user.set_password(change_password)
+                    user.save()
+                messageData = {'status': True}
+            except Exception as e:
+                logger.error(e)
+                messageData = {'status': False, 'error': str(e)}
+        return JsonResponse(messageData)
     return HttpResponseRedirect(reverse('admin_interface'))
 
 
