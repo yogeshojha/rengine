@@ -166,9 +166,9 @@ function update_user_modal(user_id, permission){
   <div class="form mb-3">
     <label for="user_role" class="form-label float-start">Role</label>
     <select class="form-select" id="user_role">
-    <option ${permission == 'sys_admin' ? 'selected': ''}>Sys Admin</option>
-    <option ${permission == 'penetration_tester' ? 'selected': ''}>Penetration Tester</option>
-    <option ${permission == 'auditor' ? 'selected': ''}>Auditor</option>
+    <option ${permission == 'sys_admin' ? 'selected': ''} value='sys_admin'>Sys Admin</option>
+    <option ${permission == 'penetration_tester' ? 'selected': ''} value='penetration_tester'>Penetration Tester</option>
+    <option ${permission == 'auditor' ? 'selected': ''} value='auditor'>Auditor</option>
     </select>
   </div>
   <div class="form mb-3">
@@ -190,6 +190,38 @@ function update_user_modal(user_id, permission){
       showCloseButton: true,
       showCancelButton: false,
       confirmButtonText: 'Update',
+      showLoaderOnConfirm: true,
+      preConfirm: function () {
+        return new Promise(function (resolve) {
+          var role_selected = document.getElementById('user_role').value;
+          var change_password = document.getElementById('password').value;
+          const data = {
+            'role': role_selected,
+            'change_password': change_password
+          };
+          fetch('./update?mode=update&user=' + user_id, {
+            method: 'POST',
+            credentials: "same-origin",
+            headers: {
+              "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify(data)
+          })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function(data) {
+            return location.reload();
+          })
+          .catch(function() {
+            swal.insertQueueStep({
+              type: 'error',
+              title: 'Oops! Unable to updte user!'
+            })
+          })
+          resolve()
+        })
+      }
   });
 
   const passwordInput = document.getElementById('password');
