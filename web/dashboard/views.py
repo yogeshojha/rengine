@@ -20,23 +20,34 @@ from rolepermissions.decorators import has_permission_decorator
 
 from startScan.models import *
 from targetApp.models import Domain
+from dashboard.models import Project
 from reNgine.definitions import *
 
 
 logger = logging.getLogger(__name__)
 
-def index(request):
-    domain_count = Domain.objects.all().count()
-    endpoint_count = EndPoint.objects.all().count()
-    scan_count = ScanHistory.objects.all().count()
-    subdomain_count = Subdomain.objects.all().count()
-    subdomain_with_ip_count = Subdomain.objects.filter(ip_addresses__isnull=False).count()
-    alive_count = \
-        Subdomain.objects.all().exclude(http_status__exact=0).count()
-    endpoint_alive_count = \
-        EndPoint.objects.filter(http_status__exact=200).count()
+def index(request, slug):
+    try:
+        project = Project.objects.get(slug=slug)
+    except Exception as e:
+        # if project not found redirect to 404
+        return HttpResponseRedirect(reverse('four_oh_four'))
 
-    vulnerabilities = Vulnerability.objects.all()
+    domains = Domain.objects.filter(project=project)
+    subdomains = Subdomain.objects.filter(target_domain__project=project)
+    endpoints = EndPoint.objects.filter(target_domain__project=project)
+    scan_histories = ScanHistory.objects.filter(domain__project=project)
+    vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
+    scan_activities = ScanActivity.objects.filter(scan_of__in=scan_histories)
+
+    domain_count = domains.count()
+    endpoint_count = endpoints.count()
+    scan_count = scan_histories.count()
+    subdomain_count = subdomains.count()
+    subdomain_with_ip_count = subdomains.filter(ip_addresses__isnull=False).count()
+    alive_count = subdomains.exclude(http_status__exact=0).count()
+    endpoint_alive_count = endpoints.filter(http_status__exact=200).count()
+
     info_count = vulnerabilities.filter(severity=0).count()
     low_count = vulnerabilities.filter(severity=1).count()
     medium_count = vulnerabilities.filter(severity=2).count()
@@ -44,9 +55,8 @@ def index(request):
     critical_count = vulnerabilities.filter(severity=4).count()
     unknown_count = vulnerabilities.filter(severity=-1).count()
 
-    vulnerability_feed = Vulnerability.objects.all().order_by(
-        '-discovered_date')[:20]
-    activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
+    vulnerability_feed = vulnerabilities.order_by('-discovered_date')[:20]
+    activity_feed = scan_activities.order_by('-time')[:20]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count + unknown_count
     total_vul_ignore_info_count = low_count + \
@@ -159,7 +169,7 @@ def index(request):
     return render(request, 'dashboard/index.html', context)
 
 
-def profile(request):
+def profile(request, slug):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():

@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
     path(
-        '',
+        '<slug:slug>/dashboard/',
         views.index,
         name='dashboardIndex'),
     path(
