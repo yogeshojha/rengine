@@ -23,6 +23,19 @@
         </div>
       </form>
       </li>
+      <li class="dropdown d-none d-xl-block">
+        <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+            Projects
+            <i class="mdi mdi-chevron-down ms-1"></i>
+        </a>
+        <div class="dropdown-menu">
+          {% for project in projects %}
+            <a href="#{{project.slug}}" class="dropdown-item">
+              <span>{{project.name}}</span>
+            </a>
+          {% endfor %}
+        </div>
+      </li>
       {% if user|can:'modify_targets' or user|can:'modify_scan_configurations' or user|can:'modify_system_configurations' or user|can:'modify_wordlists' %}
       <li class="dropdown d-none d-xl-block">
         <a class="nav-link dropdown-toggle waves-effect waves-light" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
@@ -153,20 +166,20 @@
       </li>
     </ul>
     <div class="logo-box">
-      <a href="{% url 'dashboardIndex' %}" class="logo logo-dark text-center">
+      <a href="{% url 'dashboardIndex' 'default' %}" class="logo logo-dark text-center">
         <span class="logo-sm">
-          <h3 class="text-logo vertical-center">reNgine<small>2.0.0</small></h3>
+          <h3 class="text-logo vertical-center">reNgine&nbsp;<small>2.0.0</small></h3>
         </span>
         <span class="logo-lg">
-          <h3 class="text-logo vertical-center">reNgine<small>2.0.0</small></h3>
+          <h3 class="text-logo vertical-center">reNgine&nbsp;<small>2.0.0</small></h3>
         </span>
       </a>
-      <a href="{% url 'dashboardIndex' %}" class="logo logo-light text-center">
+      <a href="{% url 'dashboardIndex' 'default' %}" class="logo logo-light text-center">
         <span class="logo-sm">
-          <h3 class="text-sm-logo vertical-center">reNgine<small>2.0.0</small></h3>
+          <h3 class="text-sm-logo vertical-center">reNgine&nbsp;<small>2.0.0</small></h3>
         </span>
         <span class="logo-lg">
-          <h3 class="text-lg-logo vertical-center">reNgine<small>2.0.0</small></h3>
+          <h3 class="text-lg-logo vertical-center">reNgine&nbsp;<small>2.0.0</small></h3>
         </span>
       </a>
     </div>
