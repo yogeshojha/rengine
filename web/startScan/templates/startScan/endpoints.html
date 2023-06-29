@@ -29,7 +29,7 @@ All Endpoints
 <script type="text/javascript">
 $(document).ready(function() {
   const ps = new PerfectScrollbar(document.querySelector('.endpoint-search'));
-  get_endpoints(null, null);
+  get_endpoints('{{request.resolver_match.kwargs.slug}}', null, null, null);
   var filter_cols = [
     'end_http_status_filter_checkbox',
     'end_page_title_filter_checkbox',

@@ -42,8 +42,8 @@ function render_ips(data)
 }
 
 
-function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
-	var lookup_url = '/api/listEndpoints/?format=datatables';
+function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null){
+	var lookup_url = '/api/listEndpoints/?format=datatables&project=' + project;
 
 	if (scan_history_id) {
 		lookup_url += `&scan_history=${scan_history_id}`;
