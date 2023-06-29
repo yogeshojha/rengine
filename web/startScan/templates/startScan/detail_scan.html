@@ -2102,13 +2102,13 @@ $(document).ready(function() {
 	});
 
 	$("#pills-endpoints-tab").click(function() {
-		get_endpoints(scan_history={{scan_history_id}}, gf_tags=null);
+		get_endpoints(project='{{request.resolver_match.kwargs.slug}}', scan_history={{scan_history_id}}, null, gf_tags=null);
 	});
 
 	{% if 'fetch_url' in history.tasks and history.used_gf_patterns %}
 		{% for pattern in history.used_gf_patterns|split:"," %}
 			$("#pills-{{pattern}}-tab").click(function() {
-				get_endpoints(scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
+				get_endpoints(project='{{request.resolver_match.kwargs.slug}}', scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
 			});
 		{% endfor %}
 	{% endif %}
@@ -2135,7 +2135,7 @@ $(document).ready(function() {
 			"lengthMenu": [50, 100, 500, 1000],
 			"pageLength": 50,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables',
+			"ajax": '/api/listDatatableSubdomain/?project={{request.resolver_match.kwargs.slug}}&scan_id={{scan_history_id}}&format=datatables',
 			"order": [[ 8, "desc" ]],
 			"columns": [
 				{'data': 'id'},
