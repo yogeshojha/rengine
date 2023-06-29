@@ -54,8 +54,7 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 	def get_queryset(self):
 		slug = self.request.GET.get('slug', None)
 		if slug:
-			project = Project.objects.get(slug=slug)
-			self.queryset = self.queryset.filter(project=project)
+			self.queryset = self.queryset.filter(project__slug=slug)
 		return self.queryset
 
 	def filter_queryset(self, qs):
@@ -2260,28 +2259,34 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		subdomain_id = req.query_params.get('subdomain_id')
 		subdomain_name = req.query_params.get('subdomain')
 		vulnerability_name = req.query_params.get('vulnerability_name')
+		slug = self.request.GET.get('project', None)
+
+		if slug:
+			vulnerabilities = Vulnerability.objects.filter(scan_history__domain__project__slug=slug)
+		else:
+			vulnerabilities = Vulnerability.objects.all()
 
 		if scan_id:
 			qs = (
-				Vulnerability.objects
+				vulnerabilities
 				.filter(scan_history__id=scan_id)
 				.distinct()
 			)
 		elif target_id:
 			qs = (
-				Vulnerability.objects
+				vulnerabilities
 				.filter(target_domain__id=target_id)
 				.distinct()
 			)
 		elif subdomain_name:
 			subdomains = Subdomain.objects.filter(name=subdomain_name)
 			qs = (
-				Vulnerability.objects
+				vulnerabilities
 				.filter(subdomain__in=subdomains)
 				.distinct()
 			)
 		else:
-			qs = Vulnerability.objects.distinct()
+			qs = vulnerabilities.distinct()
 
 		if domain:
 			qs = qs.filter(Q(target_domain__name=domain)).distinct()

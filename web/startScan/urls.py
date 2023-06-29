@@ -31,7 +31,7 @@ urlpatterns = [
         views.detail_vuln_scan,
         name='detail_vuln_scan'),
     path(
-        'detail/vuln',
+        '<slug:slug>/detail/vuln',
         views.detail_vuln_scan,
         name='all_vulns'),
     path(

@@ -169,7 +169,7 @@ Quick Scan History
                       <div class="dropdown-menu" style="">
                         {% if user|can:'initiate_scans_subscans' %}
                           {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                          <a class="dropdown-item text-primary" href="{% url 'start_scan' scan_history.domain.id %}">
+                          <a class="dropdown-item text-primary" href="/scan/{{request.resolver_match.kwargs.slug}}/start/{{scan_history.domain.id}}">
                           <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                           {% endif %}
 

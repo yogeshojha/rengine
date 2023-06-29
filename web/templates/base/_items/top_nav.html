@@ -32,7 +32,7 @@
             </div>
           </li>
           <li class="nav-item dropdown">
-            <a class="nav-link arrow-none" href="{% url 'all_vulns' %}">
+            <a class="nav-link arrow-none" href="{% url 'all_vulns' request.resolver_match.kwargs.slug %}">
               <i class="fe-alert-triangle me-1"></i> Vulnerabilities
             </a>
           </li>

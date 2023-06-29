@@ -47,13 +47,13 @@ $(document).ready(function() {
 		"pageLength": 50,
 		'serverSide': true,
 		{% if request.GET.domain %}
-		"ajax": '/api/listVulnerability/?format=datatables&domain={{request.GET.domain}}',
+		"ajax": '/api/listVulnerability/?project={{request.resolver_match.kwargs.slug}}&format=datatables&domain={{request.GET.domain}}',
 		{% elif request.GET.vulnerability_name %}
-		"ajax": '/api/listVulnerability/?format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
+		"ajax": '/api/listVulnerability/?project={{request.resolver_match.kwargs.slug}}&format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
 		{% elif request.GET.subdomain %}
-		"ajax": '/api/listVulnerability/?format=datatables&subdomain={{request.GET.subdomain}}',
+		"ajax": '/api/listVulnerability/?project={{request.resolver_match.kwargs.slug}}&format=datatables&subdomain={{request.GET.subdomain}}',
 		{% else %}
-		"ajax": '/api/listVulnerability/?format=datatables',
+		"ajax": '/api/listVulnerability/?project={{request.resolver_match.kwargs.slug}}&format=datatables',
 		{% endif %}
 		"order": [[ 4, "desc" ]],
 		"columns": [
