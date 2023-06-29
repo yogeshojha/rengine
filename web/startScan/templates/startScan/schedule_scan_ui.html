@@ -14,7 +14,7 @@ Schedule Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' %}">Target</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' request.resolver_match.kwargs.slug %}">Target</a></li>
 <li class="breadcrumb-item active">Schedule Scan</li>
 <li class="breadcrumb-item active" aria-current="page">{{domain.name}}</li>
 {% endblock breadcrumb_title %}

@@ -52,6 +52,10 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 	serializer_class = DomainSerializer
 
 	def get_queryset(self):
+		slug = self.request.GET.get('slug', None)
+		if slug:
+			project = Project.objects.get(slug=slug)
+			self.queryset = self.queryset.filter(project=project)
 		return self.queryset
 
 	def filter_queryset(self, qs):

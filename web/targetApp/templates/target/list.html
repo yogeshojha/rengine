@@ -14,7 +14,7 @@ List all targets
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active"><a href="{% url 'list_target' %}">Targets</a></li>
+<li class="breadcrumb-item active"><a href="{% url 'list_target' request.resolver_match.kwargs.slug %}">Targets</a></li>
 <li class="breadcrumb-item"><a href="#">All Targets</a></li>
 {% endblock breadcrumb_title %}
 
@@ -113,7 +113,7 @@ $(document).ready(function(){
 			"lengthMenu": [5, 10, 20, 30, 40, 50, 100, 500, 1000],
 			"pageLength": 20,
 			'serverSide': true,
-			"ajax": '/api/listTargets/?format=datatables',
+			"ajax": '/api/listTargets/?format=datatables&slug={{request.resolver_match.kwargs.slug}}',
 			"order": [
 				[1, "desc"]
 			],

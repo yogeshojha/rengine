@@ -24,7 +24,7 @@ urlpatterns = [
         views.update_organization,
         name='update_organization'),
     path(
-        'list/target',
+        '<slug:slug>/list/target',
         views.list_target,
         name='list_target'),
     path(

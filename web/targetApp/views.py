@@ -230,7 +230,8 @@ def add_target(request):
     }
     return render(request, 'target/add.html', context)
 
-def list_target(request):
+
+def list_target(request, slug):
     context = {
         'list_target_li': 'active',
         'target_data_active': 'active'
