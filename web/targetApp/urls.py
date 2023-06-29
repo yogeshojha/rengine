@@ -8,7 +8,7 @@ urlpatterns = [
         views.index,
         name='targetIndex'),
     path(
-        'add/target',
+        '<slug:slug>/add/target',
         views.add_target,
         name='add_target'),
     path(
