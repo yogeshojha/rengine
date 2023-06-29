@@ -161,7 +161,7 @@ Quick Scan History
               <td class="text-center">
                 <div class="btn-group mb-2 dropstart">
                   <div class="btn-group">
-                    <a href="{% url 'detail_scan' scan_history.id %}" class="btn btn-soft-primary">View Results</a>
+                    <a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan_history.id}}" class="btn btn-soft-primary">View Results</a>
                     <div class="btn-group dropstart" role="group">
                       <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="mdi mdi-chevron-right"></i>

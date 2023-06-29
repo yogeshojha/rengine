@@ -3,19 +3,19 @@ from . import views
 
 urlpatterns = [
     path(
-        'history/scan',
+        '<slug:slug>/history/scan',
         views.scan_history,
         name="scan_history"),
     path(
-        'history/subscan',
+        '<slug:slug>/history/subscan',
         views.subscan_history,
         name="subscan_history"),
     path(
-        'scheduled/',
+        '<slug:slug>/scheduled/',
         views.scheduled_scan_view,
         name="scheduled_scan_view"),
     path(
-        'detail/<int:id>',
+        '<slug:slug>/detail/<int:id>',
         views.detail_scan,
         name='detail_scan'),
     path(
