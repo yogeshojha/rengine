@@ -23,9 +23,9 @@
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-history">
-              <a href="{% url 'scan_history' %}" class="dropdown-item">Scan History</a>
-              <a href="{% url 'subscan_history' %}" class="dropdown-item">Sub Scan History</a>
-              <a href="{% url 'scheduled_scan_view' %}" class="dropdown-item">Scheduled Scan</a>
+              <a href="{% url 'scan_history' request.resolver_match.kwargs.slug %}" class="dropdown-item">Scan History</a>
+              <a href="{% url 'subscan_history' request.resolver_match.kwargs.slug %}" class="dropdown-item">Sub Scan History</a>
+              <a href="{% url 'scheduled_scan_view' request.resolver_match.kwargs.slug %}" class="dropdown-item">Scheduled Scan</a>
               <div class="dropdown-divider"></div>
               <a href="{% url 'all_subdomains' %}" class="dropdown-item">All Subdomains</a>
               <a href="{% url 'all_endpoints' %}" class="dropdown-item">All Endpoints</a>

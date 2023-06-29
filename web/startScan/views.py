@@ -21,22 +21,20 @@ from startScan.models import *
 from targetApp.models import *
 
 
-def scan_history(request):
-    host = ScanHistory.objects.all().order_by('-start_scan_date')
+def scan_history(request, slug):
+    host = ScanHistory.objects.filter(domain__project__slug=slug).order_by('-start_scan_date')
     context = {'scan_history_active': 'active', "scan_history": host}
     return render(request, 'startScan/history.html', context)
 
 
-def subscan_history(request):
-    subscans = SubScan.objects.all().order_by('-start_scan_date')
+def subscan_history(request, slug):
+    subscans = SubScan.objects.filter(scan_history__domain__project__slug=slug).order_by('-start_scan_date')
     context = {'scan_history_active': 'active', "subscans": subscans}
     return render(request, 'startScan/subscan_history.html', context)
 
 
-def detail_scan(request, id=None):
+def detail_scan(request, id, slug):
     ctx = {}
-    if not id:
-        return render(request, 'startScan/detail_scan.html', ctx)
 
     # Get scan objects
     scan = get_object_or_404(ScanHistory, id=id)
@@ -478,7 +476,7 @@ def stop_scan(request, id):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def schedule_scan(request, host_id):
+def schedule_scan(request, host_id, slug):
     domain = Domain.objects.get(id=host_id)
     if request.method == "POST":
         scheduled_mode = request.POST['scheduled_mode']
@@ -546,7 +544,7 @@ def schedule_scan(request, host_id):
             messages.INFO,
             f'Scan Scheduled for {domain.name}'
         )
-        return HttpResponseRedirect(reverse('scheduled_scan_view'))
+        return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug}))
 
     # GET request
     engines = EngineType.objects
@@ -563,7 +561,7 @@ def schedule_scan(request, host_id):
     return render(request, 'startScan/schedule_scan_ui.html', context)
 
 
-def scheduled_scan_view(request):
+def scheduled_scan_view(request, slug):
     scheduled_tasks = (
         PeriodicTask.objects
         .all()

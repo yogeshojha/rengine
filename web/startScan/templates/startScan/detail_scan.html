@@ -22,7 +22,7 @@ Detailed Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_history' %}">Scan History</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_history' request.resolver_match.kwargs.slug %}">Scan History</a></li>
 <li class="breadcrumb-item active">Summary</li>
 <li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li>
 {% endblock breadcrumb_title %}
@@ -234,7 +234,7 @@ Scan Findings
 									<ul class="list-unstyled">
 										{% for scan in most_recent_scans %}
 										<li class="completed">
-											<a href="{% url 'detail_scan' scan.id %}">
+											<a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan.id}}">
 												<h5 class="mt-0 mb-1">
 													{% if history.id == scan.id %}
 													<span class="active-dot dot"></span>
