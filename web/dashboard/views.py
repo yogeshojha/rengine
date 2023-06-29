@@ -55,32 +55,32 @@ def index(request, slug):
     critical_count = vulnerabilities.filter(severity=4).count()
     unknown_count = vulnerabilities.filter(severity=-1).count()
 
-    vulnerability_feed = vulnerabilities.order_by('-discovered_date')[:20]
-    activity_feed = scan_activities.order_by('-time')[:20]
+    vulnerability_feed = vulnerabilities.order_by('-discovered_date')[:50]
+    activity_feed = scan_activities.order_by('-time')[:50]
     total_vul_count = info_count + low_count + \
         medium_count + high_count + critical_count + unknown_count
     total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
-    most_common_vulnerability = Vulnerability.objects.values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
+    most_common_vulnerability = vulnerabilities.values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
     last_week = timezone.now() - timedelta(days=7)
 
-    count_targets_by_date = Domain.objects.filter(
+    count_targets_by_date = domains.filter(
         insert_date__gte=last_week).annotate(
         date=TruncDay('insert_date')).values("date").annotate(
             created_count=Count('id')).order_by("-date")
-    count_subdomains_by_date = Subdomain.objects.filter(
+    count_subdomains_by_date = subdomains.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_vulns_by_date = Vulnerability.objects.filter(
+    count_vulns_by_date = vulnerabilities.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_scans_by_date = ScanHistory.objects.filter(
+    count_scans_by_date = scan_histories.filter(
         start_scan_date__gte=last_week).annotate(
         date=TruncDay('start_scan_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_endpoints_by_date = EndPoint.objects.filter(
+    count_endpoints_by_date = endpoints.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
@@ -155,21 +155,23 @@ def index(request, slug):
         'last_7_dates': last_7_dates,
     }
 
-    context['total_ips'] = IpAddress.objects.all().count()
-    context['most_used_port'] = Port.objects.annotate(count=Count('ports')).order_by('-count')[:7]
-    context['most_used_ip'] = IpAddress.objects.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
-    context['most_used_tech'] = Technology.objects.annotate(count=Count('technologies')).order_by('-count')[:7]
+    ip_addresses = IpAddress.objects.filter(ip_addresses__in=subdomains)
 
-    context['most_common_cve'] = CveId.objects.annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
-    context['most_common_cwe'] = CweId.objects.annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
-    context['most_common_tags'] = VulnerabilityTags.objects.annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+    context['total_ips'] = ip_addresses.count()
+    context['most_used_port'] = Port.objects.filter(ports__in=ip_addresses).annotate(count=Count('ports')).order_by('-count')[:7]
+    context['most_used_ip'] = ip_addresses.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
+    context['most_used_tech'] = Technology.objects.filter(technologies__in=subdomains).annotate(count=Count('technologies')).order_by('-count')[:7]
 
-    context['asset_countries'] = CountryISO.objects.annotate(count=Count('ipaddress')).order_by('-count')
+    context['most_common_cve'] = CveId.objects.filter(cve_ids__in=vulnerabilities).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=vulnerabilities).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=vulnerabilities).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
+    context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=ip_addresses).annotate(count=Count('ipaddress')).order_by('-count')
 
     return render(request, 'dashboard/index.html', context)
 
 
-def profile(request, slug):
+def profile(request):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
