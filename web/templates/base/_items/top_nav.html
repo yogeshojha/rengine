@@ -12,7 +12,7 @@
             </a>
           </li>
           <li class="nav-item dropdown {{target_data_active}}">
-            <a class="nav-link arrow-none" href="{% url 'list_target' %}">
+            <a class="nav-link arrow-none" href="{% url 'list_target' request.resolver_match.kwargs.slug %}">
               <i class="fe-crosshair me-1"></i> Targets
             </a>
           </li>
