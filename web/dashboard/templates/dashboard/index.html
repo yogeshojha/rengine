@@ -292,8 +292,8 @@ Dashboard
 <script type="text/javascript">
 
 $(document).ready(function() {
-	get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false);
-	get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=false);
+	get_most_vulnerable_target(project_id={{project.id}}, scan_id=null, target_id=null, ignore_info=false);
+	get_most_common_vulnerability(project_id={{project.id}}, scan_id=null, target_id=null, ignore_info=false);
 	// listener for info checkbox on most vulnerable target
 
 	$('#ignore_info_most_vuln_checkbox').change(function() {
@@ -303,7 +303,7 @@ $(document).ready(function() {
 		else{
 			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
 		}
-		get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=this.checked);
+		get_most_vulnerable_target(project_id={{project.id}}, scan_id=null, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
 			text: text_msg,
 			pos: 'top-right',
@@ -318,7 +318,7 @@ $(document).ready(function() {
 		else{
 			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
 		}
-		get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=this.checked);
+		get_most_common_vulnerability(project_id={{project.id}}, scan_id=null, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
 			text: text_msg,
 			pos: 'top-right',

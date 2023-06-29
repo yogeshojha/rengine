@@ -182,6 +182,7 @@ class FetchMostCommonVulnerability(APIView):
 		data = req.data
 
 		limit = data.get('limit', 20)
+		project_id = data.get('project_id')
 		scan_history_id = data.get('scan_history_id')
 		target_id = data.get('target_id')
 		is_ignore_info = data.get('ignore_info', False)
@@ -189,9 +190,16 @@ class FetchMostCommonVulnerability(APIView):
 		response = {}
 		response['status'] = False
 
+		if project_id:
+			project = Project.objects.get(id=project_id)
+			vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
+		else:
+			vulnerabilities = Vulnerability.objects.all()
+
+
 		if scan_history_id:
 			vuln_query = (
-				Vulnerability.objects
+				vulnerabilities
 				.filter(scan_history__id=scan_history_id)
 				.values("name", "severity")
 			)
@@ -210,7 +218,7 @@ class FetchMostCommonVulnerability(APIView):
 				)
 
 		elif target_id:
-			vuln_query = Vulnerability.objects.filter(target_domain__id=target_id).values("name", "severity")
+			vuln_query = vulnerabilities.filter(target_domain__id=target_id).values("name", "severity")
 			if is_ignore_info:
 				most_common_vulnerabilities = (
 					vuln_query
@@ -226,7 +234,7 @@ class FetchMostCommonVulnerability(APIView):
 				)
 
 		else:
-			vuln_query = Vulnerability.objects.values("name", "severity")
+			vuln_query = vulnerabilities.values("name", "severity")
 			if is_ignore_info:
 				most_common_vulnerabilities = (
 					vuln_query.exclude(severity=0)

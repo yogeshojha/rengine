@@ -61,7 +61,6 @@ def index(request, slug):
         medium_count + high_count + critical_count + unknown_count
     total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
-    most_common_vulnerability = vulnerabilities.values("name", "severity").annotate(count=Count('name')).order_by("-count")[:10]
     last_week = timezone.now() - timedelta(days=7)
 
     count_targets_by_date = domains.filter(
@@ -142,7 +141,6 @@ def index(request, slug):
         'high_count': high_count,
         'critical_count': critical_count,
         'unknown_count': unknown_count,
-        'most_common_vulnerability': most_common_vulnerability,
         'total_vul_count': total_vul_count,
         'total_vul_ignore_info_count': total_vul_ignore_info_count,
         'vulnerability_feed': vulnerability_feed,
@@ -153,6 +151,7 @@ def index(request, slug):
         'scans_in_last_week': scans_in_last_week,
         'endpoints_in_last_week': endpoints_in_last_week,
         'last_7_dates': last_7_dates,
+        'project': project
     }
 
     ip_addresses = IpAddress.objects.filter(ip_addresses__in=subdomains)
