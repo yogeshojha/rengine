@@ -500,7 +500,7 @@ def delete_organization(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
-def update_organization(request, id):
+def update_organization(request, slug, id):
     organization = get_object_or_404(Organization, id=id)
     form = UpdateOrganizationForm()
     if request.method == "POST":
@@ -525,7 +525,7 @@ def update_organization(request, id):
                 request,
                 messages.INFO,
                 msg)
-            return http.HttpResponseRedirect(reverse('list_organization'))
+            return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
     else:
         domain_list = organization.get_domains().values_list('id', flat=True)
         domain_list = [str(id) for id in domain_list]
