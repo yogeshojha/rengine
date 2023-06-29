@@ -262,6 +262,7 @@ class FetchMostVulnerable(APIView):
 		req = self.request
 		data = req.data
 
+		project_id = data.get('project_id')
 		scan_history_id = data.get('scan_history_id')
 		target_id = data.get('target_id')
 		limit = data.get('limit', 20)
@@ -270,8 +271,16 @@ class FetchMostVulnerable(APIView):
 		response = {}
 		response['status'] = False
 
+		if project_id:
+			project = Project.objects.get(id=project_id)
+			subdomains = Subdomain.objects.filter(target_domain__project=project)
+			domains = Domain.objects.filter(project=project)
+		else:
+			subdomains = Subdomain.objects.all()
+			domains = Domain.objects.all()
+
 		if scan_history_id:
-			subdomain_query = Subdomain.objects.filter(scan_history__id=scan_history_id)
+			subdomain_query = subdomains.filter(scan_history__id=scan_history_id)
 			if is_ignore_info:
 				most_vulnerable_subdomains = (
 					subdomain_query
@@ -299,7 +308,7 @@ class FetchMostVulnerable(APIView):
 					)
 
 		elif target_id:
-			subdomain_query = Subdomain.objects.filter(target_domain__id=target_id)
+			subdomain_query = subdomains.filter(target_domain__id=target_id)
 			if is_ignore_info:
 				most_vulnerable_subdomains = (
 					subdomain_query
@@ -326,14 +335,14 @@ class FetchMostVulnerable(APIView):
 		else:
 			if is_ignore_info:
 				most_vulnerable_targets = (
-					Domain.objects
+					domains
 					.annotate(vuln_count=Count('subdomain__vulnerability__name', filter=~Q(subdomain__vulnerability__severity=0)))
 					.order_by('-vuln_count')
 					.exclude(vuln_count=0)[:limit]
 				)
 			else:
 				most_vulnerable_targets = (
-					Domain.objects
+					domains
 					.annotate(vuln_count=Count('subdomain__vulnerability__name'))
 					.order_by('-vuln_count')
 					.exclude(vuln_count=0)[:limit]
