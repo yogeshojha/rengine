@@ -12,7 +12,7 @@ urlpatterns = [
         views.add_target,
         name='add_target'),
     path(
-        'add/organization',
+        '<slug:slug>/add/organization',
         views.add_organization,
         name='add_organization'),
     path(
@@ -28,7 +28,7 @@ urlpatterns = [
         views.list_target,
         name='list_target'),
     path(
-        'list/organization',
+        '<slug:slug>/list/organization',
         views.list_organization,
         name='list_organization'),
     path(
@@ -44,7 +44,7 @@ urlpatterns = [
         views.delete_targets,
         name='delete_multiple_targets'),
     path(
-        'summary/<int:id>',
+        '<slug:slug>/summary/<int:id>',
         views.target_summary,
         name='target_summary'),
 ]

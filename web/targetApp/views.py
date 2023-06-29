@@ -237,7 +237,8 @@ def add_target(request, slug):
 def list_target(request, slug):
     context = {
         'list_target_li': 'active',
-        'target_data_active': 'active'
+        'target_data_active': 'active',
+        'slug': slug
     }
     return render(request, 'target/list.html', context)
 
@@ -299,7 +300,7 @@ def update_target(request, slug, id):
     }
     return render(request, 'target/update.html', context)
 
-def target_summary(request, id):
+def target_summary(request, slug, id):
     """Summary of a target (domain). Contains aggregated information on all
     objects (Subdomain, EndPoint, Vulnerability, Emails, ...) found across all
     scans.
@@ -439,18 +440,22 @@ def target_summary(request, id):
         .order_by('-count')
     )
 
+    context['slug'] = slug
+
     return render(request, 'target/summary.html', context)
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
-def add_organization(request):
-    form = AddOrganizationForm(request.POST or None)
+def add_organization(request, slug):
+    form = AddOrganizationForm(request.POST or None, project=slug)
     if request.method == "POST":
         if form.is_valid():
             data = form.cleaned_data
+            project = Project.objects.get(slug=slug)
             organization = Organization.objects.create(
                 name=data['name'],
                 description=data['description'],
+                project=project,
                 insert_date=timezone.now())
             for domain_id in request.POST.getlist("domains"):
                 domain = Domain.objects.get(id=domain_id)
@@ -459,15 +464,15 @@ def add_organization(request):
                 request,
                 messages.INFO,
                 f'Organization {data["name"]} added successfully')
-            return http.HttpResponseRedirect(reverse('list_organization'))
+            return http.HttpResponseRedirect(reverse('list_organization', kwargs={'slug': slug}))
     context = {
         "organization_active": "active",
         "form": form
     }
     return render(request, 'organization/add.html', context)
 
-def list_organization(request):
-    organizations = Organization.objects.all().order_by('-insert_date')
+def list_organization(request, slug):
+    organizations = Organization.objects.filter(project__slug=slug).order_by('-insert_date')
     context = {
         'organization_active': 'active',
         'organizations': organizations

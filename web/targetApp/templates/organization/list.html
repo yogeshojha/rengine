@@ -14,7 +14,7 @@ Organizations
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item active"><a href="{% url 'list_organization' %}">Organization</a></li>
+<li class="breadcrumb-item active"><a href="{% url 'list_organization' request.resolver_match.kwargs.slug %}">Organization</a></li>
 {% endblock breadcrumb_title %}
 
 {% block page_title %}
@@ -31,7 +31,7 @@ Organizations
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'modify_targets' %}
-            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_organization' request.resolver_match.kwargs.slug %}" data-toggle="tooltip" data-placement="top" title="Add Organization">Add New Organization</a>
             {% endif %}
           </div>
         </div>

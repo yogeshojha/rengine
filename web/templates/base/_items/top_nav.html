@@ -7,7 +7,7 @@
       <div class="collapse navbar-collapse" id="topnav-menu-content">
         <ul class="navbar-nav">
           <li class="nav-item dropdown {{target_data_active}}">
-            <a class="nav-link arrow-none" href="{% url 'dashboardIndex' 'default' %}">
+            <a class="nav-link arrow-none" href="{% url 'dashboardIndex' request.resolver_match.kwargs.slug %}">
               <i class="fe-home me-1"></i> Dashboard
             </a>
           </li>
@@ -42,7 +42,7 @@
             </a>
           </li>
           <li class="nav-item dropdown {{organization_active}}">
-            <a class="nav-link arrow-none" href="{% url 'list_organization' %}">
+            <a class="nav-link arrow-none" href="{% url 'list_organization' request.resolver_match.kwargs.slug %}">
               <i class="fe-briefcase me-1"></i> Organization
             </a>
           </li>
