@@ -48,7 +48,7 @@
             <i class="fe-crosshair me-1"></i>
             <span>Target</span>
           </a>
-          <a href="{% url 'add_organization' %}" class="dropdown-item">
+          <a href="{% url 'add_organization' request.resolver_match.kwargs.slug %}" class="dropdown-item">
             <i class="fe-briefcase me-1"></i>
             <span>Organization</span>
           </a>

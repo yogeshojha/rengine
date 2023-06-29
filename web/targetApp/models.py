@@ -135,6 +135,7 @@ class Organization(models.Model):
 	description = models.TextField(blank=True, null=True)
 	insert_date = models.DateTimeField()
 	domains = models.ManyToManyField('Domain', related_name='domains')
+	project = models.ForeignKey(Project, on_delete=models.CASCADE, null=True, blank=False)
 
 	def __str__(self):
 		return self.name
