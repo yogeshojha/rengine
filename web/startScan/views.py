@@ -212,8 +212,8 @@ def detail_scan(request, id, slug):
     return render(request, 'startScan/detail_scan.html', ctx)
 
 
-def all_subdomains(request):
-    subdomains = Subdomain.objects
+def all_subdomains(request, slug):
+    subdomains = Subdomain.objects.filter(target_domain__project__slug=slug)
     scan_engines = EngineType.objects.order_by('engine_name').all()
     alive_subdomains = subdomains.filter(http_status__exact=200) # TODO: replace this with is_alive() function
     important_subdomains = (
@@ -242,14 +242,14 @@ def detail_vuln_scan(request, id=None):
     return render(request, 'startScan/vulnerabilities.html', context)
 
 
-def all_endpoints(request):
+def all_endpoints(request, slug):
     context = {
         'scan_history_active': 'active'
     }
     return render(request, 'startScan/endpoints.html', context)
 
 
-def start_scan_ui(request, domain_id):
+def start_scan_ui(request, slug, domain_id):
     domain = get_object_or_404(Domain, id=domain_id)
     if request.method == "POST":
         # Get imported and out-of-scope subdomains
@@ -290,7 +290,7 @@ def start_scan_ui(request, domain_id):
             request,
             messages.INFO,
             f'Scan Started for {domain.name}')
-        return HttpResponseRedirect(reverse('scan_history'))
+        return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
     engine = EngineType.objects.order_by('engine_name')

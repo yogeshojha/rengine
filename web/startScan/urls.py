@@ -23,7 +23,7 @@ urlpatterns = [
         views.create_report,
         name='create_report'),
     path(
-        'all/subdomains',
+        '<slug:slug>/all/subdomains',
         views.all_subdomains,
         name='all_subdomains'),
     path(
@@ -39,11 +39,11 @@ urlpatterns = [
         views.visualise,
         name='visualise'),
     path(
-        'detail/all/endpoint',
+        '<slug:slug>/detail/all/endpoint',
         views.all_endpoints,
         name='all_endpoints'),
     path(
-        'start/<int:domain_id>',
+        '<slug:slug>/start/<int:domain_id>',
         views.start_scan_ui,
         name='start_scan'),
     path(

@@ -27,8 +27,8 @@
               <a href="{% url 'subscan_history' request.resolver_match.kwargs.slug %}" class="dropdown-item">Sub Scan History</a>
               <a href="{% url 'scheduled_scan_view' request.resolver_match.kwargs.slug %}" class="dropdown-item">Scheduled Scan</a>
               <div class="dropdown-divider"></div>
-              <a href="{% url 'all_subdomains' %}" class="dropdown-item">All Subdomains</a>
-              <a href="{% url 'all_endpoints' %}" class="dropdown-item">All Endpoints</a>
+              <a href="{% url 'all_subdomains' request.resolver_match.kwargs.slug %}" class="dropdown-item">All Subdomains</a>
+              <a href="{% url 'all_endpoints' request.resolver_match.kwargs.slug %}" class="dropdown-item">All Endpoints</a>
             </div>
           </li>
           <li class="nav-item dropdown">

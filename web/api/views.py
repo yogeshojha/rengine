@@ -1672,27 +1672,30 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		url_query = req.query_params.get('query_param')
 		ip_address = req.query_params.get('ip_address')
 		name = req.query_params.get('name')
+		project = req.query_params.get('project')
+
+		subdomains = Subdomain.objects.filter(target_domain__project__slug=project)
 
 		if target_id:
 			self.queryset = (
-				Subdomain.objects
+				subdomains
 				.filter(target_domain__id=target_id)
 				.distinct()
 			)
 		elif url_query:
 			self.queryset = (
-				Subdomain.objects
+				subdomains
 				.filter(Q(target_domain__name=url_query))
 				.distinct()
 			)
 		elif scan_id:
 			self.queryset = (
-				Subdomain.objects
+				subdomains
 				.filter(scan_history__id=scan_id)
 				.distinct()
 			)
 		else:
-			self.queryset = Subdomain.objects.distinct()
+			self.queryset = subdomains.distinct()
 
 		if 'only_directory' in req.query_params:
 			self.queryset = self.queryset.exclude(directories__isnull=True)
@@ -1981,23 +1984,27 @@ class EndPointViewSet(viewsets.ModelViewSet):
 		target_id = req.query_params.get('target_id')
 		url_query = req.query_params.get('query_param')
 		subdomain_id = req.query_params.get('subdomain_id')
+		project = req.query_params.get('project')
+
+		endpoints_obj = EndPoint.objects.filter(target_domain__project__slug=project)
 
 		gf_tag = req.query_params.get(
 			'gf_tag') if 'gf_tag' in req.query_params else None
+
 		if scan_id:
 			endpoints = (
-				EndPoint.objects
+				endpoints_obj
 				.filter(scan_history__id=scan_id)
 				.distinct()
 			)
 		elif target_id:
 			endpoints = (
-				EndPoint.objects
+				endpoints_obj
 				.filter(target_domain__id=target_id)
 				.distinct()
 			)
 		else:
-			endpoints = EndPoint.objects.distinct()
+			endpoints = endpoints_obj.distinct()
 
 		if url_query:
 			endpoints = (
