@@ -32,12 +32,13 @@ def index(request):
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
-def add_target(request):
+def add_target(request, slug):
     """Add a new target. Targets can be URLs, IPs, CIDR ranges, or Domains.
 
     Args:
         request: Django request.
     """
+    project = Project.objects.get(slug=slug)
     form = AddTargetForm(request.POST or None)
     if request.method == "POST":
         logger.info(request.POST)
@@ -111,6 +112,7 @@ def add_target(request):
                             name=domain_name,
                             description=description,
                             h1_team_handle=h1_team_handle,
+                            project=project,
                             ip_address_cidr=domain_name if is_ip else None)
                         domain.insert_date = timezone.now()
                         domain.save()
@@ -171,6 +173,7 @@ def add_target(request):
                                 continue
                             Domain.objects.create(
                                 name=target_domain,
+                                project=project,
                                 insert_date=timezone.now())
                             added_target_count += 1
 
@@ -195,6 +198,7 @@ def add_target(request):
                                 continue
                             Domain.objects.create(
                                 name=domain,
+                                project=project,
                                 description=description,
                                 insert_date=timezone.now())
                             added_target_count += 1
@@ -220,7 +224,7 @@ def add_target(request):
         msg = f'{added_target_count} targets added successfully'
         logger.info(msg)
         messages.add_message(request, messages.SUCCESS, msg)
-        return http.HttpResponseRedirect(reverse('list_target'))
+        return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
     # GET request
     context = {

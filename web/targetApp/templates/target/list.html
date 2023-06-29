@@ -51,7 +51,7 @@ Targets
 						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
 						{% endif %}
 						{% if user|can:'modify_targets' %}
-						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
+						<a class="btn btn-soft-primary float-end ms-1 mt-1" href="{% url 'add_target' request.resolver_match.kwargs.slug %}" data-toggle="tooltip" data-placement="top" title="Add New Targets">Add Targets</a>
 						{% endif %}
 					</div>
 				</div>
