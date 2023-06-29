@@ -20,7 +20,7 @@ urlpatterns = [
         views.update_target,
         name='update_target'),
     path(
-        'update/organization/<int:id>',
+        '<slug:slug>/update/organization/<int:id>',
         views.update_organization,
         name='update_organization'),
     path(
