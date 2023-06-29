@@ -222,7 +222,6 @@ def add_target(request, slug):
 
         # Targets added successfully, redirect to targets list
         msg = f'{added_target_count} targets added successfully'
-        logger.info(msg)
         messages.add_message(request, messages.SUCCESS, msg)
         return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
@@ -264,7 +263,7 @@ def delete_target(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
-def delete_targets(request):
+def delete_targets(request, slug):
     if request.method == "POST":
         list_of_domains = []
         for key, value in request.POST.items():
@@ -274,11 +273,11 @@ def delete_targets(request):
             request,
             messages.INFO,
             'Targets deleted!')
-    return http.HttpResponseRedirect(reverse('list_target'))
+    return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
 
 
 @has_permission_decorator(PERM_MODIFY_TARGETS, redirect_url=FOUR_OH_FOUR_URL)
-def update_target(request, id):
+def update_target(request, slug, id):
     domain = get_object_or_404(Domain, id=id)
     form = UpdateTargetForm()
     if request.method == "POST":
@@ -289,7 +288,7 @@ def update_target(request, id):
                 request,
                 messages.INFO,
                 f'Domain {domain.name} modified!')
-            return http.HttpResponseRedirect(reverse('list_target'))
+            return http.HttpResponseRedirect(reverse('list_target', kwargs={'slug': slug}))
     else:
         form.set_value(domain.name, domain.description, domain.h1_team_handle)
     context = {

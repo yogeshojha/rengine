@@ -16,7 +16,7 @@ urlpatterns = [
         views.add_organization,
         name='add_organization'),
     path(
-        'update/target/<int:id>',
+        '<slug:slug>/update/target/<int:id>',
         views.update_target,
         name='update_target'),
     path(
@@ -40,7 +40,7 @@ urlpatterns = [
         views.delete_organization,
         name='delete_organization'),
     path(
-        'delete/multiple',
+        '<slug:slug>/delete/multiple',
         views.delete_targets,
         name='delete_multiple_targets'),
     path(
