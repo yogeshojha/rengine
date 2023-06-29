@@ -80,183 +80,200 @@ Dashboard
 	</div>
 </div>
 <div class="row">
-	<div class="col-12">
+	<div class="col-xl-3 col-lg-3 col-md-2 col-sm-12 col-12">
 		<div class="card">
 			<div class="card-body">
-				<div class="row">
-					<div class="col-9">
-						<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
-						<div id="world_map" style="height: 520px"></div>
-					</div>
-					<div class="col-3">
-						<div class="table-responsive" data-simplebar style="max-height: 520px;">
-							<table class="table table-borderless table-hover table-centered m-0">
-								<thead class="table-light">
-									<tr>
-										<th>&nbsp;</th>
-										<th>Country</th>
-										<th>Assets</th>
-									</tr>
-								</thead>
-								<tbody>
-									{% for country in asset_countries %}
-									<tr>
-										<td><span class="fi fi-{{country.iso|lower}}"></span></td>
-										<td>{{country.name}}</td>
-										<td>{{country.count}}</td>
-									</tr>
-									{% endfor %}
-								</tbody>
-							</table>
-						</div>
+				<div class="d-flex align-items-start mb-3">
+					<div class="w-100">
+						<h5 class="mt-0 mb-0 font-15">
+							<i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> Activity Feed
+						</h5>
 					</div>
 				</div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-xl-4 col-lg-4 col-md-12 col-sm-12 col-12">
-		{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
-	</div>
-	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-		{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Target'%}
-	</div>
-	<div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12">
-		{% include 'base/_items/most_common_vuln.html' %}
-	</div>
-</div>
-<div class="row">
-	{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
-</div>
-<div class="row">
-	<div class="col-xl-4">
-		<div class="card">
-			<div class="card-body">
-				<h4 class="header-title mb-0">Most common IP Address</h4>
-				<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
-					<div id="most_common_ip_chart" class="apex-charts"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xl-4">
-		<div class="card">
-			<div class="card-body">
-				<h4 class="header-title mb-0">Most common Ports</h4>
-				<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
-					<div id="most_common_port_chart" class="apex-charts"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="col-xl-4">
-		<div class="card">
-			<div class="card-body">
-				<h4 class="header-title mb-0">Most common Technology</h4>
-				<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
-					<div id="most_common_tech_chart" class="apex-charts"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="row">
-	<div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
-		<div class="card" style="height: 95%">
-			<div class="card-body">
-				<h4 class="header-title mb-3"><i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> Activity Feed</h4>
-				<div class="" data-simplebar style="max-height: 290px;">
-					{% for item in activity_feed %}
-					<div class="d-flex align-items-start mt-3">
-						<i class="mdi mdi-checkbox-blank-circle-outline me-1 {% if item.status == 0 %}
-						text-danger
-						{% elif item.status == 1 %}
-						text-info
-						{% elif item.status == 2 %}
-						text-success
-						{% endif %}"></i>
-						<div class="w-100">
-							<a class="mt-1 font-14 text-reset">
-								<strong>{{item.title}}:</strong>
-								<span class="text-muted">
-									{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
-									<span class="waves-effect waves-light float-end badge {% if item.status == 0 %}
-									badge-soft-danger
-									{% elif item.status == 1 %}
-									badge-soft-info
-									{% elif item.status == 2 %}
-									badge-soft-success
-									{% endif %}">{{item.time|naturaltime}}</span>
-								</span>
-							</a>
-						</div>
+				<div data-simplebar style="max-height: 650px;" class="p-2">
+					<div class="track-order-list">
+						<ul class="list-unstyled">
+							{% for item in activity_feed %}
+							<div class="d-flex align-items-start mt-3">
+								<i class="mdi mdi-checkbox-blank-circle-outline me-1 {% if item.status == 0 %}
+								text-danger
+								{% elif item.status == 1 %}
+								text-info
+								{% elif item.status == 2 %}
+								text-success
+								{% endif %}"></i>
+								<div class="w-100">
+									<a class="mt-1 font-14 text-reset">
+										<strong>{{item.title}}</strong>
+										</br>
+										<span class="text-muted">
+											{% if item.status == 2 %} {% if item.title != 'Scan Completed' %} Completed {% endif %}{% elif item.status == 1 %} Initiated {% elif item.status == 0 %} {% if item.title != 'Scan aborted' %} Aborted {% endif %} {% endif %}</b>for <span class="badge badge-soft-info">{{item.scan_of.domain.name}}</span>
+										</span>
+										<br>
+										<span>{{item.time|naturaltime}}</span>
+									</a>
+								</div>
+							</div>
+							{% empty %}
+							Feed will be automatically generated while the scan is running.
+							{% endfor %}
+						</ul>
 					</div>
-					{% empty %}
-					Feed will be automatically generated while the scan is running.
-					{% endfor %}
 				</div>
 			</div>
 		</div>
-	</div>
-	<div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
-		<div class="card" style="height: 95%">
+		<div class="card">
 			<div class="card-body">
-				<h4 class="header-title mb-3"><i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> Vulnerability Feed</h4>
-				<div class="" data-simplebar style="max-height: 290px;">
-					{% for item in vulnerability_feed %}
-					<div class="d-flex align-items-start mt-3">
-						<i class="mdi mdi-checkbox-blank-circle-outline me-1 {% if item.severity == 0 %}
-						text-primary
-						{% elif item.severity == 1 %}
-						text-low
-						{% elif item.severity == 2 %}
-						text-warning
-						{% elif item.severity == 3 %}
-						text-danger
-						{% elif item.severity == 4 %}
-						text-critical
-						{% elif item.severity == -1 %}
-						text-info
-						{% endif %}"></i>
-						<div class="w-100">
-							<a href='scan/detail/vuln?query={{item.id}}' class="text-muted mt-1 font-14 text-muted">
-								<strong class="
-								{% if item.severity == 0 %}
-								badge badge-soft-primary
+				<div class="d-flex align-items-start mb-3">
+					<div class="w-100">
+						<h5 class="mt-0 mb-0 font-15">
+							<i class='mdi mdi-trending-up me-2 font-18 text-primary'></i> Activity Feed
+						</h5>
+					</div>
+				</div>
+				<div data-simplebar style="max-height: 910px;" class="p-2">
+					<div class="track-order-list">
+						<ul class="list-unstyled">
+							{% for item in vulnerability_feed %}
+							<div class="d-flex align-items-start mt-3">
+								<i class="mdi mdi-checkbox-blank-circle-outline me-1 {% if item.severity == 0 %}
+								text-primary
 								{% elif item.severity == 1 %}
-								badge badge-low
+								text-low
 								{% elif item.severity == 2 %}
-								badge badge-soft-warning
+								text-warning
 								{% elif item.severity == 3 %}
-								badge badge-soft-danger
+								text-danger
 								{% elif item.severity == 4 %}
-								badge badge-critical
+								text-critical
 								{% elif item.severity == -1 %}
-								badge badge-soft-info
-								{% endif %}
-								">{{item.name}}</strong>
-								detected on
-								{{item.subdomain.name}}, {{item.discovered_date|naturaltime}}
-								{% if item.severity == 0 %}
-								<span class='float-end badge badge-soft-primary'>Info</span>
-								{% elif item.severity == 1 %}
-								<span class='float-end badge badge-low'>Low</span>
-								{% elif item.severity == 2 %}
-								<span class='float-end badge badge-soft-warning'>Medium</span>
-								{% elif item.severity == 3 %}
-								<span class='float-end badge badge-soft-danger'>High</span>
-								{% elif item.severity == 4 %}
-								<span class='float-end badge badge-critical'>Critical</span>
-								{% elif item.severity == -1 %}
-								<span class='float-end badge badge-soft-info'>Unknoen</span>
-								{% endif %}
-							</a>
+								text-info
+								{% endif %}"></i>
+								<div class="w-100">
+									<a href='scan/detail/vuln?query={{item.id}}' class="mt-1 font-14 text-muted">
+										<strong class="
+										{% if item.severity == 0 %}
+										text-primary
+										{% elif item.severity == 1 %}
+										text-low
+										{% elif item.severity == 2 %}
+										text-warning
+										{% elif item.severity == 3 %}
+										text-danger
+										{% elif item.severity == 4 %}
+										text-critical
+										{% elif item.severity == -1 %}
+										text-info
+										{% endif %}
+										">{% if item.severity == 0 %}
+										<span class='badge badge-soft-primary'>Info</span>
+										{% elif item.severity == 1 %}
+										<span class='badge badge-low'>Low</span>
+										{% elif item.severity == 2 %}
+										<span class='badge badge-soft-warning'>Medium</span>
+										{% elif item.severity == 3 %}
+										<span class='badge badge-soft-danger'>High</span>
+										{% elif item.severity == 4 %}
+										<span class='badge badge-critical'>Critical</span>
+										{% elif item.severity == -1 %}
+										<span class='badge badge-soft-info'>Unknown</span>
+										{% endif %}{{item.name}}</strong>
+										</br>
+										detected on {{item.subdomain}}
+										<br>
+										<span class="text-muted">{{item.discovered_date|naturaltime}}</span>
+									</a>
+								</div>
+							</div>
+							{% empty %}
+							Feed will be automatically generated once the vulnerability scan is completed.
+							{% endfor %}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="col-xl-9 col-lg-9 col-md-9 col-sm-12 col-12">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="card-body">
+						<div class="row">
+							<div class="col-9">
+								<h4 class="header-title mb-0">Geographical Distribution of Assets</h4>
+								<div id="world_map" style="height: 520px"></div>
+							</div>
+							<div class="col-3">
+								<div class="table-responsive" data-simplebar style="max-height: 520px;">
+									<table class="table table-borderless table-hover table-centered m-0">
+										<thead class="table-light">
+											<tr>
+												<th>&nbsp;</th>
+												<th>Country</th>
+												<th>Assets</th>
+											</tr>
+										</thead>
+										<tbody>
+											{% for country in asset_countries %}
+											<tr>
+												<td><span class="fi fi-{{country.iso|lower}}"></span></td>
+												<td>{{country.name}}</td>
+												<td>{{country.count}}</td>
+											</tr>
+											{% endfor %}
+										</tbody>
+									</table>
+								</div>
+							</div>
 						</div>
 					</div>
-					{% empty %}
-					Feed will be automatically generated once the vulnerability scan is completed.
-					{% endfor %}
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+				{% include 'base/_items/widgets/vulnerability_breakdown_by_severity_chart.html' %}
+			</div>
+			<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
+				{% include 'base/_items/most_vuln_target.html' with most_vuln_widget_title='Most Vulnerable Target'%}
+			</div>
+			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+				{% include 'base/_items/most_common_vuln.html' %}
+			</div>
+		</div>
+		<div class="row">
+			{% include 'base/_items/most_common_cve_cwe_tag_template.html' %}
+		</div>
+		<div class="row">
+			<div class="col-xl-4">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">Most common IP Address</h4>
+						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
+							<div id="most_common_ip_chart" class="apex-charts"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-4">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">Most common Ports</h4>
+						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
+							<div id="most_common_port_chart" class="apex-charts"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-xl-4">
+				<div class="card">
+					<div class="card-body">
+						<h4 class="header-title mb-0">Most common Technology</h4>
+						<div id="cardCollpase8" class="collapse pt-3 show" dir="ltr">
+							<div id="most_common_tech_chart" class="apex-charts"></div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
