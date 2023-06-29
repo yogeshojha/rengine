@@ -45,7 +45,7 @@ Targets
 					</div>
 					<div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
 						{% if user|can:'modify_targets' %}
-						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets()" id="delete_multiple_button">Delete Multiple Targets</a>
+						<a class="btn btn-soft-danger float-end disabled ms-1 mt-1" href="#" onclick="deleteMultipleTargets(slug='{{request.resolver_match.kwargs.slug}}')" id="delete_multiple_button">Delete Multiple Targets</a>
 						{% endif %}
 						{% if user|can:'initiate_scans_subscans' %}
 						<a class="btn btn-soft-info float-end disabled ms-1 mt-1" href="#" onclick="scanMultipleTargets()" id="scan_multiple_button">Scan Multiple Targets</a>
@@ -228,7 +228,7 @@ $(document).ready(function(){
 						<div class="dropdown-menu" style="">
 						<a class="dropdown-item" href="/scan/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
 						<div class="dropdown-divider"></div>
-						<a class="dropdown-item" href="/target/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
+						<a class="dropdown-item" href="/target/{{request.resolver_match.kwargs.slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
 						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
 						</div>
 						</div>
