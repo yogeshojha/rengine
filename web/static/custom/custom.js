@@ -2535,7 +2535,7 @@ function get_and_render_cve_details(cve_id){
 }
 
 
-function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_vulnerable_target(project_id=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
 	$('#most_vulnerable_target_div').empty();
 	$('#most_vulnerable_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2544,6 +2544,9 @@ function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=fa
 	}
 	else if (target_id) {
 		data['target_id'] = target_id;
+	}
+	if (project_id) {
+		data['project_id'] = project_id;
 	}
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
@@ -2604,7 +2607,7 @@ function get_most_vulnerable_target(scan_id=null, target_id=null, ignore_info=fa
 }
 
 
-function get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_common_vulnerability(project_id=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
 	$('#most_common_vuln_div').empty();
 	$('#most_common_vuln_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2613,6 +2616,9 @@ function get_most_common_vulnerability(scan_id=null, target_id=null, ignore_info
 	}
 	else if (target_id) {
 		data['target_id'] = target_id;
+	}
+	if (project_id) {
+		data['project_id'] = project_id;
 	}
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
