@@ -7,7 +7,7 @@ from recon_note.models import *
 from startScan.models import *
 
 
-def list_note(request):
+def list_note(request, slug):
     context = {}
     context['recon_note_active'] = 'active'
     return render(request, 'note/index.html', context)
