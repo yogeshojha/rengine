@@ -17,7 +17,7 @@ from scanEngine.forms import ConfigurationForm
 from scanEngine.models import *
 
 
-def index(request):
+def index(request, slug):
     engine_type = EngineType.objects.order_by('engine_name').all()
     context = {
         'engine_ul_show': 'show',
@@ -29,7 +29,7 @@ def index(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def add_engine(request):
+def add_engine(request, slug):
     form = AddEngineForm()
     if request.method == "POST":
         form = AddEngineForm(request.POST)
@@ -39,7 +39,7 @@ def add_engine(request):
                 request,
                 messages.INFO,
                 'Scan Engine Added successfully')
-            return http.HttpResponseRedirect(reverse('scan_engine_index'))
+            return http.HttpResponseRedirect(reverse('scan_engine_index', kwargs={'slug': slug}))
     context = {
         'scan_engine_nav_active': 'active',
         'form': form
@@ -48,7 +48,7 @@ def add_engine(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def delete_engine(request, id):
+def delete_engine(request, slug, id):
     obj = get_object_or_404(EngineType, id=id)
     if request.method == "POST":
         obj.delete()
@@ -67,7 +67,7 @@ def delete_engine(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def update_engine(request, id):
+def update_engine(request, slug, id):
     engine = get_object_or_404(EngineType, id=id)
     form = UpdateEngineForm(
         initial={
@@ -82,7 +82,7 @@ def update_engine(request, id):
                 request,
                 messages.INFO,
                 'Engine edited successfully')
-            return http.HttpResponseRedirect(reverse('scan_engine_index'))
+            return http.HttpResponseRedirect(reverse('scan_engine_index', kwargs={'slug': slug}))
     context = {
         'scan_engine_nav_active': 'active',
         'form': form
@@ -91,7 +91,7 @@ def update_engine(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
-def wordlist_list(request):
+def wordlist_list(request, slug):
     wordlists = Wordlist.objects.all().order_by('id')
     context = {
             'scan_engine_nav_active': 'active',
@@ -101,7 +101,7 @@ def wordlist_list(request):
 
 
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
-def add_wordlist(request):
+def add_wordlist(request, slug):
     context = {'scan_engine_nav_active': 'active', 'wordlist_li': 'active'}
     form = AddWordlistForm(request.POST or None, request.FILES or None)
     if request.method == "POST":
@@ -124,13 +124,13 @@ def add_wordlist(request):
                     messages.INFO,
                     'Wordlist ' + form.cleaned_data['name'] +
                     ' added successfully')
-                return http.HttpResponseRedirect(reverse('wordlist_list'))
+                return http.HttpResponseRedirect(reverse('wordlist_list', kwargs={'slug': slug}))
     context['form'] = form
     return render(request, 'scanEngine/wordlist/add.html', context)
 
 
 @has_permission_decorator(PERM_MODIFY_WORDLISTS, redirect_url=FOUR_OH_FOUR_URL)
-def delete_wordlist(request, id):
+def delete_wordlist(request, slug, id):
     obj = get_object_or_404(Wordlist, id=id)
     if request.method == "POST":
         obj.delete()
@@ -157,7 +157,7 @@ def delete_wordlist(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_INTERESTING_LOOKUP, redirect_url=FOUR_OH_FOUR_URL)
-def interesting_lookup(request):
+def interesting_lookup(request, slug):
     lookup_keywords = None
     context = {}
     context['scan_engine_nav_active'] = 'active'
@@ -192,7 +192,7 @@ def interesting_lookup(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def tool_specific_settings(request):
+def tool_specific_settings(request, slug):
     context = {}
     # check for incoming form requests
     if request.method == "POST":
@@ -268,7 +268,7 @@ def tool_specific_settings(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def rengine_settings(request):
+def rengine_settings(request, slug):
     context = {}
 
     total, used, _ = shutil.disk_usage("/")
@@ -287,7 +287,7 @@ def rengine_settings(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def notification_settings(request):
+def notification_settings(request, slug):
     context = {}
     form = NotificationForm()
     notification = None
@@ -323,7 +323,7 @@ def notification_settings(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def proxy_settings(request):
+def proxy_settings(request, slug):
     context = {}
     form = ProxyForm()
     context['form'] = form
@@ -375,7 +375,7 @@ def test_hackerone(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def hackerone_settings(request):
+def hackerone_settings(request, slug):
     context = {}
     form = HackeroneForm()
     context['form'] = form
@@ -408,7 +408,7 @@ def hackerone_settings(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)
-def report_settings(request):
+def report_settings(request, slug):
     context = {}
     form = ReportForm()
     context['form'] = form
@@ -449,7 +449,7 @@ def report_settings(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def tool_arsenal_section(request):
+def tool_arsenal_section(request, slug):
     context = {}
     tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
@@ -457,7 +457,7 @@ def tool_arsenal_section(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def add_tool(request):
+def add_tool(request, slug):
     form = ExternalToolForm()
     if request.method == "POST":
         form = ExternalToolForm(request.POST)
@@ -485,7 +485,7 @@ def add_tool(request):
                 request,
                 messages.INFO,
                 'External Tool Successfully Added!')
-            return http.HttpResponseRedirect(reverse('tool_arsenal'))
+            return http.HttpResponseRedirect(reverse('tool_arsenal', kwargs={'slug': slug}))
     context = {
             'settings_nav_active': 'active',
             'form': form
@@ -494,7 +494,7 @@ def add_tool(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def modify_tool_in_arsenal(request, id):
+def modify_tool_in_arsenal(request, slug, id):
     external_tool = get_object_or_404(InstalledExternalTool, id=id)
     form = ExternalToolForm()
     if request.method == "POST":
@@ -505,7 +505,7 @@ def modify_tool_in_arsenal(request, id):
                 request,
                 messages.INFO,
                 'Tool modified successfully')
-            return http.HttpResponseRedirect(reverse('tool_arsenal'))
+            return http.HttpResponseRedirect(reverse('tool_arsenal', kwargs={'slug': slug}))
     else:
         form.set_value(external_tool)
     context = {

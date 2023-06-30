@@ -54,19 +54,19 @@
           </a>
           {% endif %}
           {% if user|can:'modify_scan_configurations' %}
-          <a href="{% url 'add_engine' %}" class="dropdown-item">
+          <a href="{% url 'add_engine' request.resolver_match.kwargs.slug %}" class="dropdown-item">
             <i class="fe-cpu me-1"></i>
             <span>Scan Engine</span>
           </a>
           {% endif %}
           {% if user|can:'modify_system_configurations' %}
-          <a href="{% url 'add_tool' %}" class="dropdown-item">
+          <a href="{% url 'add_tool' request.resolver_match.kwargs.slug %}" class="dropdown-item">
             <i class="mdi mdi-hammer-wrench me-1"></i>
             <span>External Tool</span>
           </a>
           {% endif %}
           {% if user|can:'modify_wordlists' %}
-          <a href="{% url 'add_wordlist' %}" class="dropdown-item">
+          <a href="{% url 'add_wordlist' request.resolver_match.kwargs.slug %}" class="dropdown-item">
             <i class="fe-list me-1"></i>
             <span>Wordlist</span>
           </a>

@@ -10,7 +10,7 @@ Add New Wordlist
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'wordlist_list' %}">Wordlist</a></li>
+<li class="breadcrumb-item"><a href="{% url 'wordlist_list' request.resolver_match.kwargs.slug %}">Wordlist</a></li>
 <li class="breadcrumb-item active">Add Worldlist</li>
 {% endblock breadcrumb_title %}
 
