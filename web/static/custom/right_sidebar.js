@@ -1,5 +1,5 @@
 function getScanStatusSidebar(reload) {
-  $.getJSON('/api/scan_status', function(data) {
+  $.getJSON('/api/scan_status/', function(data) {
     // main scans
     $('#currently_scanning').empty();
     $('#completed').empty();

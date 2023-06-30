@@ -1115,6 +1115,9 @@ class ListScanHistory(APIView):
 	def get(self, request, format=None):
 		req = self.request
 		scan_history = ScanHistory.objects.all().order_by('-start_scan_date')
+		project = req.query_params.get('project')
+		if project:
+			scan_history = scan_history.filter(domain__project__slug=project)
 		scan_history = ScanHistorySerializer(scan_history, many=True)
 		return Response(scan_history.data)
 

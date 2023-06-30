@@ -123,7 +123,7 @@ $('#subdomainDropdown').select2({
 $('#scanHistoryIDropdown').on('change', function() {
   $('#subdomainDropdown').find('option:not(:first)').remove();
   subdomain_dropdown = document.getElementById('subdomainDropdown');
-  $.getJSON(`/api/querySubdomains?scan_id=${this.value}&no_lookup_interesting&format=json`, function(data) {
+  $.getJSON(`/api/querySubdomains?project={{request.resolver_match.kwargs.slug}}&scan_id=${this.value}&no_lookup_interesting&format=json`, function(data) {
     document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains in selected history for domain ' + $("#scanHistoryIDropdown option:selected").text().split('-')[0];
     for (var subdomain in data['subdomains']){
       subdomain_obj = data['subdomains'][subdomain];
@@ -193,7 +193,7 @@ $.getJSON(`/api/listTodoNotes?format=json&project={{request.resolver_match.kwarg
       todo_item.classList.add("todo-task-important");
     }
   };
-  populateTodofunction();
+  populateTodofunction(project='{{request.resolver_match.kwargs.slug}}');
   $('.bs-tooltip').tooltip();
 });
 </script>

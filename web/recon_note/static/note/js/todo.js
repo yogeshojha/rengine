@@ -1,5 +1,5 @@
 
-function populateTodofunction(){
+function populateTodofunction(project=null){
   $('.input-search').on('keyup', function() {
     var rex = new RegExp($(this).val(), 'i');
     $('.todo-box .todo-item').hide();
@@ -41,7 +41,7 @@ function populateTodofunction(){
       suppressScrollX : true
     });
 
-    populateScanHistory();
+    populateScanHistory(project=project);
 
   });
   const ps = new PerfectScrollbar('.todo-box-scroll', {
@@ -371,11 +371,11 @@ function todoItem() {
   });
 }
 
-function populateScanHistory() {
+function populateScanHistory(project) {
   scan_history_select = document.getElementById('scanHistoryIDropdown');
-  $.getJSON(`/api/listScanHistory?format=json`, function(data) {
-    for (var history in data['scan_histories']){
-      history_object = data['scan_histories'][history];
+  $.getJSON(`/api/listScanHistory/?format=json&project=${project}`, function(data) {
+    for (var history in data){
+      history_object = data[history];
       var option = document.createElement('option');
       option.value = history_object['id'];
       option.innerHTML = history_object['domain']['name'] + ' - Scanned ' + moment.utc(history_object['start_scan_date']).fromNow();
