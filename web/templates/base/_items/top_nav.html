@@ -37,7 +37,7 @@
             </a>
           </li>
           <li class="nav-item dropdown {{recon_note_active}}">
-            <a class="nav-link arrow-none" href="{% url 'list_note' %}">
+            <a class="nav-link arrow-none" href="{% url 'list_note' request.resolver_match.kwargs.slug %}">
               <i class="fe-check-square me-1"></i> Todo
             </a>
           </li>

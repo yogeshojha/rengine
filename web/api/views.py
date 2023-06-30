@@ -1093,6 +1093,9 @@ class ListTodoNotes(APIView):
 		req = self.request
 		notes = TodoNote.objects.all().order_by('-id')
 		scan_id = req.query_params.get('scan_id')
+		project = req.query_params.get('project')
+		if project:
+			notes.filter(project__slug=project)
 		target_id = req.query_params.get('target_id')
 		todo_id = req.query_params.get('todo_id')
 		subdomain_id = req.query_params.get('subdomain_id')
@@ -1281,17 +1284,20 @@ class ListSubdomains(APIView):
 	def get(self, request, format=None):
 		req = self.request
 		scan_id = req.query_params.get('scan_id')
+		project = req.query_params.get('project')
 		target_id = req.query_params.get('target_id')
 		ip_address = req.query_params.get('ip_address')
 		port = req.query_params.get('port')
 		tech = req.query_params.get('tech')
 
+		subdomains = Subdomain.objects.filter(target_domain__project__slug=project) if project else Subdomain.objects.all()
+
 		if scan_id:
-			subdomain_query = Subdomain.objects.filter(scan_history__id=scan_id).distinct('name')
+			subdomain_query = subdomains.filter(scan_history__id=scan_id).distinct('name')
 		elif target_id:
-			subdomain_query = Subdomain.objects.filter(target_domain__id=target_id).distinct('name')
+			subdomain_query = subdomains.filter(target_domain__id=target_id).distinct('name')
 		else:
-			subdomain_query = Subdomain.objects.all().distinct('name')
+			subdomain_query = subdomains.all().distinct('name')
 
 		if ip_address:
 			subdomain_query = subdomain_query.filter(ip_addresses__address=ip_address)

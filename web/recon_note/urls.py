@@ -5,7 +5,7 @@ from . import views
 
 urlpatterns = [
     path(
-        'list_note',
+        '<slug:slug>/list_note',
         views.list_note,
         name='list_note'),
     path(
