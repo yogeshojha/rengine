@@ -13,7 +13,7 @@ Scan Engine
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' %}">Engines</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' request.resolver_match.kwargs.slug %}">Engines</a></li>
 <li class="breadcrumb-item active">All Scan Engines</li>
 {% endblock breadcrumb_title %}
 
@@ -31,7 +31,7 @@ Scan Engines
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             {% if user|can:'add_modify_scan_settings' %}
-            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_engine' %}" data-toggle="tooltip" data-placement="top" title="Add New Scan Engine">Add Scan Engine</a>
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_engine' request.resolver_match.kwargs.slug %}" data-toggle="tooltip" data-placement="top" title="Add New Scan Engine">Add Scan Engine</a>
             {% endif %}
           </div>
         </div>
@@ -129,7 +129,7 @@ Scan Engines
             </td>
             <td class="text-center">
               {% if user|can:'add_modify_scan_settings' %}
-                <a href="{% url 'update_engine' engine.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
+                <a href="/scanEngine/{{request.resolver_match.kwargs.slug}}/update/{{engine.id}} %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
                     <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                   </svg>

@@ -54,13 +54,13 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-scanengine">
               {% if user|can:'modify_scan_configurations' %}
-              <a href="{% url 'scan_engine_index' %}" class="dropdown-item">Scan Engines</a>
+              <a href="{% url 'scan_engine_index' request.resolver_match.kwargs.slug %}" class="dropdown-item">Scan Engines</a>
               {% endif %}
               {% if user|can:'modify_wordlists' %}
-              <a href="{% url 'wordlist_list' %}" class="dropdown-item">Wordlists</a>
+              <a href="{% url 'wordlist_list' request.resolver_match.kwargs.slug %}" class="dropdown-item">Wordlists</a>
               {% endif %}
               {% if user|can:'modify_interesting_lookup' %}
-              <a href="{% url 'interesting_lookup' %}" class="dropdown-item">Interesting Lookup</a>
+              <a href="{% url 'interesting_lookup' request.resolver_match.kwargs.slug %}" class="dropdown-item">Interesting Lookup</a>
               {% endif %}
             </div>
           </li>
@@ -72,21 +72,21 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-settings">
               {% if user|can:'modify_scan_configurations' %}
-              <a href="{% url 'proxy_settings' %}" class="dropdown-item">Proxies</a>
-              <a href="{% url 'tool_settings' %}" class="dropdown-item">Tool Settings</a>
+              <a href="{% url 'proxy_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">Proxies</a>
+              <a href="{% url 'tool_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">Tool Settings</a>
               {% endif %}
               {% if user|can:'modify_system_configurations' %}
-              <a href="{% url 'tool_arsenal' %}" class="dropdown-item">Tools Arsenal</a>
+              <a href="{% url 'tool_arsenal' request.resolver_match.kwargs.slug %}" class="dropdown-item">Tools Arsenal</a>
               {% endif %}
               {% if user|can:'modify_scan_report' %}
-              <a href="{% url 'report_settings' %}" class="dropdown-item">Report Settings</a>
+              <a href="{% url 'report_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">Report Settings</a>
               {% endif %}
               {% if user|can:'modify_system_configurations' %}
-              <a href="{% url 'rengine_settings' %}" class="dropdown-item">reNgine Settings</a>
+              <a href="{% url 'rengine_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">reNgine Settings</a>
               {% endif %}
               {% if user|can:'modify_scan_configurations' %}
-              <a href="{% url 'hackerone_settings' %}" class="dropdown-item">Hackerone Settings</a>
-              <a href="{% url 'notification_settings' %}" class="dropdown-item">Notification Settings</a>
+              <a href="{% url 'hackerone_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">Hackerone Settings</a>
+              <a href="{% url 'notification_settings' request.resolver_match.kwargs.slug %}" class="dropdown-item">Notification Settings</a>
               {% endif %}
             </div>
           </li>

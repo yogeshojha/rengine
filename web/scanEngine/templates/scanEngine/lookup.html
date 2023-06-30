@@ -10,7 +10,7 @@ Interesting entries Lookup
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' %}">Engines</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' request.resolver_match.kwargs.slug %}">Engines</a></li>
 <li class="breadcrumb-item active">Interesting Lookup</li>
 {% endblock breadcrumb_title %}
 
