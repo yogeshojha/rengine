@@ -248,7 +248,7 @@ function deleteDropdown() {
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {
-        return fetch('delete_note', {
+        return fetch('../delete_note', {
           method: 'POST',
           credentials: "same-origin",
           headers: {
@@ -303,7 +303,7 @@ function checkCheckbox() {
       $(this).parents('.todo-item').removeClass('todo-task-done');
     }
     new dynamicBadgeNotification('completedList');
-    fetch('flip_todo_status', {
+    fetch('../flip_todo_status', {
       method: 'post',
       headers: {
         "X-CSRFToken": getCookie("csrftoken")
@@ -344,7 +344,7 @@ function importantDropdown() {
       $("#important-badge-"+badge_id).empty();
     }
     new dynamicBadgeNotification('importantList');
-    fetch('flip_important_status', {
+    fetch('../flip_important_status', {
       method: 'post',
       headers: {
         "X-CSRFToken": getCookie("csrftoken")
