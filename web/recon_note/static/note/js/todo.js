@@ -143,6 +143,9 @@ function populateTodofunction(project=null){
       data['subdomain'] = parseInt($("#subdomainDropdown").val());
     }
 
+    if (project) {
+      data['project'] = project;
+    }
 
     fetch('/api/add/recon_note/', {
       method: 'post',

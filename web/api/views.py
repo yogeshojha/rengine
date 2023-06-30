@@ -392,8 +392,10 @@ class AddReconNote(APIView):
 		scan_history_id = data.get('scan_history_id')
 		title = data.get('title')
 		description = data.get('description')
+		project = data.get('project')
 
 		try:
+			project = Project.objects.get(slug=project)
 			note = TodoNote()
 			note.title = title
 			note.description = description
@@ -412,6 +414,7 @@ class AddReconNote(APIView):
 				scan_history = ScanHistory.objects.get(id=scan_history_id)
 				note.scan_history = scan_history
 
+			note.project = project
 			note.save()
 			response = {'status': True}
 		except Exception as e:
@@ -1095,7 +1098,7 @@ class ListTodoNotes(APIView):
 		scan_id = req.query_params.get('scan_id')
 		project = req.query_params.get('project')
 		if project:
-			notes.filter(project__slug=project)
+			notes = notes.filter(project__slug=project)
 		target_id = req.query_params.get('target_id')
 		todo_id = req.query_params.get('todo_id')
 		subdomain_id = req.query_params.get('subdomain_id')
