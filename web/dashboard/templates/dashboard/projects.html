@@ -43,7 +43,7 @@ All Projects
                       <span class="badge bg-soft-info text-info">{{project.slug}}</span>
                     </td>
                     <td>
-                      <a href="javascript: void(0);" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
+                      <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
                     </td>
                   </tr>
                 {% endfor %}
@@ -58,4 +58,40 @@ All Projects
 
 
 {% block page_level_script %}
+<script type="text/javascript">
+  function delete_project(id, project_name){
+    const delAPI = "../../delete/project/" + id;
+    swal.queue([{
+      title: 'Are you sure you want to delete '+project_name +'?',
+      text: "You won't be able to revert this, all targets and scan results also will be deleted!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(delAPI, {
+          method: 'POST',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        })
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function(data) {
+          // TODO Look for better way
+          return location.reload();
+        })
+        .catch(function() {
+          swal.insertQueueStep({
+            type: 'error',
+            title: 'Oops! Unable to delete the target!'
+          })
+        })
+      }
+    }]);
+  }
+</script>
 {% endblock page_level_script %}

@@ -32,4 +32,8 @@ urlpatterns = [
         '<slug:slug>/projects/',
         views.projects,
         name='list_projects'),
+    path(
+        'delete/project/<int:id>',
+        views.delete_project,
+        name='delete_project'),
 ]

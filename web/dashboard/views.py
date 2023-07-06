@@ -8,10 +8,11 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.signals import user_logged_in, user_logged_out
+from django.contrib import messages
 from django.db.models import Count
 from django.db.models.functions import TruncDay
 from django.dispatch import receiver
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -287,3 +288,23 @@ def projects(request, slug):
     context = {}
     context['projects'] = Project.objects.all()
     return render(request, 'dashboard/projects.html', context)
+
+
+def delete_project(request, id):
+    obj = get_object_or_404(Project, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {
+            'status': 'true'
+        }
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Project successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Oops! Project could not be deleted!')
+    return JsonResponse(responseData)
