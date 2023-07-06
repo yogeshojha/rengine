@@ -9,23 +9,27 @@ urlpatterns = [
         views.index,
         name='dashboardIndex'),
     path(
-        'profile/',
+        '<slug:slug>/profile/',
         views.profile,
         name='profile'),
     path(
-        'admin_interface/',
+        '<slug:slug>/admin_interface/',
         views.admin_interface,
         name='admin_interface'),
     path(
-        'admin_interface/update',
+        '<slug:slug>/admin_interface/update',
         views.admin_interface_update,
         name='admin_interface_update'),
     path(
-        'search/',
+        '<slug:slug>/search/',
         views.search,
         name='search'),
     path(
         '404/',
         views.four_oh_four,
         name='four_oh_four'),
+    path(
+        '<slug:slug>/projects/',
+        views.projects,
+        name='list_projects'),
 ]
