@@ -223,6 +223,10 @@ urlpatterns = [
         'scan_status/',
         ScanStatus.as_view(),
         name='scan_status'),
+    path(
+        'action/create/project',
+        CreateProjectApi.as_view(),
+        name='create_project'),
 ]
 
 urlpatterns += router.urls

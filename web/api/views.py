@@ -10,15 +10,18 @@ from django.db.models import CharField, Count, F, Q, Value
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from packaging import version
+from django.template.defaultfilters import slugify
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.status import HTTP_400_BAD_REQUEST
+
 from recon_note.models import *
 from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
 from reNgine.utilities import is_safe_path
-from rest_framework import viewsets
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from scanEngine.models import *
 from startScan.models import *
 from startScan.models import EndPoint
@@ -27,6 +30,33 @@ from targetApp.models import *
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class CreateProjectApi(APIView):
+	def get(self, request):
+		req = self.request
+		project_name = req.query_params.get('name')
+		slug = slugify(project_name)
+		insert_date = timezone.now()
+
+		try:
+			project = Project.objects.create(
+				name=project_name,
+				slug=slug,
+				insert_date =insert_date
+			)
+			response = {
+				'status': True,
+				'project_name': project_name
+			}
+			return Response(response)
+		except Exception as e:
+			response = {
+				'status': False,
+				'error': str(e)
+			}
+			return Response(response, status=HTTP_400_BAD_REQUEST)
+
 
 
 class QueryInterestingSubdomains(APIView):
