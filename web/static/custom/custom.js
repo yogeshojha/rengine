@@ -2774,7 +2774,13 @@ function add_project_modal(){
       if (result.isConfirmed) {
         Swal.fire({
           title: `${result.value.project_name} is created.`,
+          onClose: reloadPage
         })
       }
-    })
+    });
+}
+
+
+function reloadPage(){
+  location.reload();
 }
