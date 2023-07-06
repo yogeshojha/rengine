@@ -121,12 +121,12 @@
           <div class="dropdown-header noti-title">
             <h6 class="text-overflow m-0">Welcome {{user.get_username}}!</h6>
           </div>
-          <a href="{% url 'profile' %}" class="dropdown-item notify-item">
+          <a href="{% url 'profile' request.resolver_match.kwargs.slug %}" class="dropdown-item notify-item">
             <i class="fe-user"></i>
             <span>My Account</span>
           </a>
           {% if user|can:'modify_system_configurations' %}
-          <a href="{% url 'admin_interface' %}" class="dropdown-item notify-item">
+          <a href="{% url 'admin_interface' request.resolver_match.kwargs.slug %}" class="dropdown-item notify-item">
             <i class="fe-settings"></i>
             <span>Admin Settings</span>
           </a>

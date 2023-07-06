@@ -15,7 +15,7 @@ Admin Settings
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/{{request.resolver_match.kwargs.slug}}/">Dashboard</a></li>
 <li class="breadcrumb-item active">Admin Settings</li>
 {% endblock breadcrumb_title %}
 

@@ -170,7 +170,7 @@ def index(request, slug):
     return render(request, 'dashboard/index.html', context)
 
 
-def profile(request):
+def profile(request, slug):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
@@ -190,7 +190,7 @@ def profile(request):
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def admin_interface(request):
+def admin_interface(request, slug):
     UserModel = get_user_model()
     users = UserModel.objects.all().order_by('date_joined')
     return render(
@@ -202,7 +202,7 @@ def admin_interface(request):
     )
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
-def admin_interface_update(request):
+def admin_interface_update(request, slug):
     mode = request.GET.get('mode')
     user_id = request.GET.get('user')
     if user_id:
@@ -275,9 +275,15 @@ def on_user_logged_in(sender, request, **kwargs):
         ' welcome back!')
 
 
-def search(request):
+def search(request, slug):
     return render(request, 'dashboard/search.html')
 
 
 def four_oh_four(request):
     return render(request, '404.html')
+
+
+def projects(request, slug):
+    context = {}
+    context['projects'] = Project.objects.all()
+    return render(request, 'dashboard/projects.html', context)
