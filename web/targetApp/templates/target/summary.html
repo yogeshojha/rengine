@@ -76,7 +76,7 @@ Target Summary
 									<ul class="list-unstyled">
 										{% for scan in recent_scans %}
 										<li class="completed">
-											<a href="{% url 'detail_scan' scan.id %}">
+											<a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan.id}}">
 												<h5 class="mt-0 mb-1">
 													{{scan.scan_type.engine_name}}
 													{% if scan.scan_status == -1 %}
