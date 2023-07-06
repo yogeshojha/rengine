@@ -2741,3 +2741,40 @@ function shadeColor(color, percent) {
 
   return "#"+RR+GG+BB;
 }
+
+
+function add_project_modal(){
+  Swal.fire({
+    title: 'Enter the project name',
+    input: 'text',
+    inputAttributes: {
+      autocapitalize: 'off',
+      placeholder: 'Your Awesome Project'
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Create Project',
+    showLoaderOnConfirm: true,
+    preConfirm: (name) => {
+      return fetch(`/api/action/create/project?name=${name}`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(response.error)
+          }
+          return response.json()
+        })
+        .catch(error => {
+          Swal.showValidationMessage(
+            `Duplicate project name, choose another project name!`
+          )
+        })
+      },
+      allowOutsideClick: () => !Swal.isLoading()
+    }).then((result) => {
+      console.log(result);
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: `${result.value.project_name} is created.`,
+        })
+      }
+    })
+}
