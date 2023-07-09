@@ -2535,7 +2535,7 @@ function get_and_render_cve_details(cve_id){
 }
 
 
-function get_most_vulnerable_target(project_id=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
 	$('#most_vulnerable_target_div').empty();
 	$('#most_vulnerable_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2545,8 +2545,8 @@ function get_most_vulnerable_target(project_id=null, scan_id=null, target_id=nul
 	else if (target_id) {
 		data['target_id'] = target_id;
 	}
-	if (project_id) {
-		data['project_id'] = project_id;
+	if (slug) {
+		data['slug'] = slug;
 	}
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
@@ -2579,9 +2579,9 @@ function get_most_vulnerable_target(project_id=null, scan_id=null, target_id=nul
 
 			for (var res in response.result) {
 				var targ_obj = response.result[res];
-				var tr = `<tr onclick="window.location='/scan/detail/vuln?domain=${targ_obj.name}';" style="cursor: pointer;">`;
+				var tr = `<tr onclick="window.location='/scan/${slug}/detail/vuln?domain=${targ_obj.name}';" style="cursor: pointer;">`;
 				if (scan_id || target_id) {
-					tr = `<tr onclick="window.location='/scan/detail/vuln?subdomain=${targ_obj.name}';" style="cursor: pointer;">`;
+					tr = `<tr onclick="window.location='/scan/${slug}/detail/vuln?subdomain=${targ_obj.name}';" style="cursor: pointer;">`;
 				}
 				$('#most_vulnerable_target_tbody').append(`
 					${tr}
@@ -2607,7 +2607,7 @@ function get_most_vulnerable_target(project_id=null, scan_id=null, target_id=nul
 }
 
 
-function get_most_common_vulnerability(project_id=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
+function get_most_common_vulnerability(slug=null, scan_id=null, target_id=null, ignore_info=false, limit=50){
 	$('#most_common_vuln_div').empty();
 	$('#most_common_vuln_spinner').append(`<div class="spinner-border text-primary m-2" role="status"></div>`);
 	var data = {};
@@ -2617,8 +2617,8 @@ function get_most_common_vulnerability(project_id=null, scan_id=null, target_id=
 	else if (target_id) {
 		data['target_id'] = target_id;
 	}
-	if (project_id) {
-		data['project_id'] = project_id;
+	if (slug) {
+		data['slug'] = slug;
 	}
 	data['ignore_info'] = ignore_info;
 	data['limit'] = limit;
@@ -2676,7 +2676,7 @@ function get_most_common_vulnerability(project_id=null, scan_id=null, target_id=
 						vuln_badge = get_severity_badge('Unknown');
 				}
 				$('#most_common_vuln_tbody').append(`
-					<tr onclick="window.location='/scan/detail/vuln?vulnerability_name=${vuln_obj.name}';" style="cursor: pointer;">
+					<tr onclick="window.location='/scan/${slug}/detail/vuln?vulnerability_name=${vuln_obj.name}';" style="cursor: pointer;">
 						<td>
 							<h5 class="m-0 fw-normal">${vuln_obj.name}</h5>
 						</td>

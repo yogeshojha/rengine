@@ -190,7 +190,7 @@ def detail_scan(request, id, slug):
         'most_common_cwe': common_cwes,
         'most_common_tags': common_tags,
         'most_common_vulnerability': common_vulns,
-        'asset_countries': asset_countries
+        'asset_countries': asset_countries,
     }
 
     # Find number of matched GF patterns

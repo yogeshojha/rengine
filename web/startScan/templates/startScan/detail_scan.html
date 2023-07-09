@@ -2046,7 +2046,7 @@ $(document).ready(function() {
 
 	loadSubscanHistoryWidget(scan_history_id={{scan_history_id}}, domain_id=null);
 
-	get_most_vulnerable_target(scan_id={{scan_history_id}}, target_id=null, ignore_info=false);
+	get_most_vulnerable_target(slug='{{current_project.slug}}', scan_id={{scan_history_id}}, target_id=null, ignore_info=false);
 	// listener for info checkbox on most vulnerable target
 	$('#ignore_info_most_vuln_checkbox').change(function() {
 		if (this.checked) {
@@ -2055,7 +2055,7 @@ $(document).ready(function() {
 		else{
 			var text_msg = 'Informational Vulnerabilities included in Most Vulnerable Targets.';
 		}
-		get_most_vulnerable_target(scan_id={{scan_history_id}}, target_id=null, ignore_info=this.checked);
+		get_most_vulnerable_target(slug='{{current_project.slug}}', project_id={{current_project.id}}, scan_id={{scan_history_id}}, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
 			text: text_msg,
 			pos: 'top-right',
@@ -2063,7 +2063,7 @@ $(document).ready(function() {
 		});
 	});
 
-	get_most_common_vulnerability(scan_id={{scan_history_id}}, target_id=null, ignore_info=false);
+	get_most_common_vulnerability(slug='{{current_project.slug}}', scan_id={{scan_history_id}}, target_id=null, ignore_info=false);
 	// listener for info checkbox on most vulnerable target
 	$('#ignore_info_most_common_vuln_checkbox').change(function() {
 		if (this.checked) {
@@ -2072,7 +2072,7 @@ $(document).ready(function() {
 		else{
 			var text_msg = 'Informational Vulnerabilities included for Most Common Vulnerabilities.';
 		}
-		get_most_common_vulnerability(scan_id={{scan_history_id}}, target_id=null, ignore_info=this.checked);
+		get_most_common_vulnerability(slug='{{current_project.slug}}', scan_id={{scan_history_id}}, target_id=null, ignore_info=this.checked);
 		Snackbar.show({
 			text: text_msg,
 			pos: 'top-right',
