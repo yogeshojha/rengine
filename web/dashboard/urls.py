@@ -21,7 +21,7 @@ urlpatterns = [
         views.admin_interface_update,
         name='admin_interface_update'),
     path(
-        '<slug:slug>/search/',
+        '<slug:slug>/search',
         views.search,
         name='search'),
     path(
