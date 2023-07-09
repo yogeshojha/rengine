@@ -5,7 +5,7 @@
   <div class="container-fluid">
     <ul class="list-unstyled topnav-menu float-end mb-0">
       <li class="d-none d-lg-block">
-      <form class="app-search" method="get" action="/search">
+      <form class="app-search" method="get" action="/{{current_project.slug}}/search">
         <div class="app-search-box dropdown">
           <div class="input-group">
             <input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query">

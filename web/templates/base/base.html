@@ -100,7 +100,7 @@
     <script src="{% static 'plugins/datatable/datatables.js' %}"></script>
     <script type="text/javascript">
       $(document).ready(function(){
-        render_search_history();
+        render_search_history('{{current_project.slug}}');
 
         // rengine will also check everyday if update exists for rengine
         checkDailyUpdate();
@@ -125,14 +125,14 @@
         }
       });
 
-      function render_search_history(){
+      function render_search_history(slug){
         fetch('/api/search/history/')
         .then(response => response.json())
         .then(function (response) {
           if (response.status) {
             for (var history in response.results) {
               $('#search-history-items').append(`
-                <a href="/search/?query=${response.results[history].query}" class="dropdown-item notify-item">
+                <a href="/${slug}/search?query=${response.results[history].query}" class="dropdown-item notify-item">
                   <span>${response.results[history].query}</span>
                 </a>
               `);
