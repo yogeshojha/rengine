@@ -20,7 +20,7 @@ Tool Arsenal
 {% block main_content %}
 <div class="row mb-2">
   <div class="col-sm-4">
-    <a href="{% url 'add_tool' request.resolver_match.kwargs.slug %}" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new tool</a>
+    <a href="{% url 'add_tool' current_project.slug %}" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new tool</a>
     {# <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new Script</a> #}
   </div>
   <div class="col-sm-8">

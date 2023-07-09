@@ -161,7 +161,7 @@ Quick Scan History
               <td class="text-center">
                 <div class="btn-group mb-2 dropstart">
                   <div class="btn-group">
-                    <a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan_history.id}}" class="btn btn-soft-primary">View Results</a>
+                    <a href="/scan/{{current_project.slug}}/detail/{{scan_history.id}}" class="btn btn-soft-primary">View Results</a>
                     <div class="btn-group dropstart" role="group">
                       <button type="button" class="btn btn-soft-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <i class="mdi mdi-chevron-right"></i>
@@ -169,7 +169,7 @@ Quick Scan History
                       <div class="dropdown-menu" style="">
                         {% if user|can:'initiate_scans_subscans' %}
                           {% if scan_history.scan_status == 0 or scan_history.scan_status == 2 or scan_history.scan_status == 3 %}
-                          <a class="dropdown-item text-primary" href="/scan/{{request.resolver_match.kwargs.slug}}/start/{{scan_history.domain.id}}">
+                          <a class="dropdown-item text-primary" href="/scan/{{current_project.slug}}/start/{{scan_history.domain.id}}">
                           <i class="fe-refresh-ccw"></i>&nbsp;Rescan </a>
                           {% endif %}
 

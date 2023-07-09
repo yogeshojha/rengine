@@ -14,7 +14,7 @@ All Projects
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="/{{request.resolver_match.kwargs.slug}}/">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/">Dashboard</a></li>
 <li class="breadcrumb-item active">Projects</li>
 {% endblock breadcrumb_title %}
 

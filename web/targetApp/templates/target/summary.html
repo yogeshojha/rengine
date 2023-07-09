@@ -18,7 +18,7 @@ Target Summary for {{target.name}}
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' request.resolver_match.kwargs.slug %}">Targets</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Targets</a></li>
 <li class="breadcrumb-item active">Target Summary</li>
 <li class="breadcrumb-item active" aria-current="page">{{target.name}}</li>
 {% endblock breadcrumb_title %}
@@ -76,7 +76,7 @@ Target Summary
 									<ul class="list-unstyled">
 										{% for scan in recent_scans %}
 										<li class="completed">
-											<a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan.id}}">
+											<a href="/scan/{{current_project.slug}}/detail/{{scan.id}}">
 												<h5 class="mt-0 mb-1">
 													{{scan.scan_type.engine_name}}
 													{% if scan.scan_status == -1 %}

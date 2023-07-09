@@ -50,25 +50,25 @@
             <i class="fe-crosshair me-1"></i>
             <span>Target</span>
           </a>
-          <a href="{% url 'add_organization' request.resolver_match.kwargs.slug %}" class="dropdown-item">
+          <a href="{% url 'add_organization' current_project.slug %}" class="dropdown-item">
             <i class="fe-briefcase me-1"></i>
             <span>Organization</span>
           </a>
           {% endif %}
           {% if user|can:'modify_scan_configurations' %}
-          <a href="{% url 'add_engine' request.resolver_match.kwargs.slug %}" class="dropdown-item">
+          <a href="{% url 'add_engine' current_project.slug %}" class="dropdown-item">
             <i class="fe-cpu me-1"></i>
             <span>Scan Engine</span>
           </a>
           {% endif %}
           {% if user|can:'modify_system_configurations' %}
-          <a href="{% url 'add_tool' request.resolver_match.kwargs.slug %}" class="dropdown-item">
+          <a href="{% url 'add_tool' current_project.slug %}" class="dropdown-item">
             <i class="mdi mdi-hammer-wrench me-1"></i>
             <span>External Tool</span>
           </a>
           {% endif %}
           {% if user|can:'modify_wordlists' %}
-          <a href="{% url 'add_wordlist' request.resolver_match.kwargs.slug %}" class="dropdown-item">
+          <a href="{% url 'add_wordlist' current_project.slug %}" class="dropdown-item">
             <i class="fe-list me-1"></i>
             <span>Wordlist</span>
           </a>
@@ -123,12 +123,12 @@
           <div class="dropdown-header noti-title">
             <h6 class="text-overflow m-0">Welcome {{user.get_username}}!</h6>
           </div>
-          <a href="{% url 'profile' request.resolver_match.kwargs.slug %}" class="dropdown-item notify-item">
+          <a href="{% url 'profile' current_project.slug %}" class="dropdown-item notify-item">
             <i class="fe-user"></i>
             <span>My Account</span>
           </a>
           {% if user|can:'modify_system_configurations' %}
-          <a href="{% url 'admin_interface' request.resolver_match.kwargs.slug %}" class="dropdown-item notify-item">
+          <a href="{% url 'admin_interface' current_project.slug %}" class="dropdown-item notify-item">
             <i class="fe-settings"></i>
             <span>Admin Settings</span>
           </a>
