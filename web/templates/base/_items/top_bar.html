@@ -30,7 +30,7 @@
         </a>
         <div class="dropdown-menu">
           {% for project in projects %}
-            <a href="/{{project.slug}}/dashboard" class="dropdown-item">
+            <a href="/{{project.slug}}/dashboard" class="dropdown-item {% if project == current_project %} active {% endif %}">
               <span>{{project.name}}</span>
             </a>
           {% endfor %}
