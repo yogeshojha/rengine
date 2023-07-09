@@ -22,7 +22,7 @@ Detailed Scan
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_history' request.resolver_match.kwargs.slug %}">Scan History</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_history' current_project.slug %}">Scan History</a></li>
 <li class="breadcrumb-item active">Summary</li>
 <li class="breadcrumb-item active" aria-current="page">{{history.domain.name}}</li>
 {% endblock breadcrumb_title %}
@@ -234,7 +234,7 @@ Scan Findings
 									<ul class="list-unstyled">
 										{% for scan in most_recent_scans %}
 										<li class="completed">
-											<a href="/scan/{{request.resolver_match.kwargs.slug}}/detail/{{scan.id}}">
+											<a href="/scan/{{current_project.slug}}/detail/{{scan.id}}">
 												<h5 class="mt-0 mb-1">
 													{% if history.id == scan.id %}
 													<span class="active-dot dot"></span>
@@ -2102,13 +2102,13 @@ $(document).ready(function() {
 	});
 
 	$("#pills-endpoints-tab").click(function() {
-		get_endpoints(project='{{request.resolver_match.kwargs.slug}}', scan_history={{scan_history_id}}, null, gf_tags=null);
+		get_endpoints(project='{{current_project.slug}}', scan_history={{scan_history_id}}, null, gf_tags=null);
 	});
 
 	{% if 'fetch_url' in history.tasks and history.used_gf_patterns %}
 		{% for pattern in history.used_gf_patterns|split:"," %}
 			$("#pills-{{pattern}}-tab").click(function() {
-				get_endpoints(project='{{request.resolver_match.kwargs.slug}}', scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
+				get_endpoints(project='{{current_project.slug}}', scan_history={{scan_history_id}}, domain_id=null, gf_tags='{{pattern}}');
 			});
 		{% endfor %}
 	{% endif %}
@@ -2135,7 +2135,7 @@ $(document).ready(function() {
 			"lengthMenu": [50, 100, 500, 1000],
 			"pageLength": 50,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?project={{request.resolver_match.kwargs.slug}}&scan_id={{scan_history_id}}&format=datatables',
+			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables',
 			"order": [[ 8, "desc" ]],
 			"columns": [
 				{'data': 'id'},

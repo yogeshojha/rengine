@@ -10,7 +10,7 @@ Add targets
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_target' request.resolver_match.kwargs.slug %}">Targets</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_target' current_project.slug %}">Targets</a></li>
 <li class="breadcrumb-item active">Add Target</li>
 {% endblock breadcrumb_title %}
 

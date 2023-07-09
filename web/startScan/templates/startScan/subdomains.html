@@ -62,11 +62,11 @@ $(document).ready(function() {
 		"pageLength": 50,
 		'serverSide': true,
 		{% if request.GET.ip_address %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{request.resolver_match.kwargs.slug}}&format=datatables&ip_address={{request.GET.ip_address}}',
+		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&ip_address={{request.GET.ip_address}}',
 		{% elif request.GET.name %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{request.resolver_match.kwargs.slug}}&format=datatables&name={{request.GET.name}}',
+		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&name={{request.GET.name}}',
 		{% else %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{request.resolver_match.kwargs.slug}}&format=datatables',
+		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables',
 		{% endif %}
 		"order": [[ 8, "desc" ]],
 		"columns": [
