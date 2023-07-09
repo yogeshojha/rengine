@@ -215,7 +215,7 @@ class FetchMostCommonVulnerability(APIView):
 		data = req.data
 
 		limit = data.get('limit', 20)
-		project_id = data.get('project_id')
+		project_slug = data.get('slug')
 		scan_history_id = data.get('scan_history_id')
 		target_id = data.get('target_id')
 		is_ignore_info = data.get('ignore_info', False)
@@ -223,8 +223,8 @@ class FetchMostCommonVulnerability(APIView):
 		response = {}
 		response['status'] = False
 
-		if project_id:
-			project = Project.objects.get(id=project_id)
+		if project_slug:
+			project = Project.objects.get(slug=project_slug)
 			vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
 		else:
 			vulnerabilities = Vulnerability.objects.all()
@@ -295,7 +295,7 @@ class FetchMostVulnerable(APIView):
 		req = self.request
 		data = req.data
 
-		project_id = data.get('project_id')
+		project_slug = data.get('slug')
 		scan_history_id = data.get('scan_history_id')
 		target_id = data.get('target_id')
 		limit = data.get('limit', 20)
@@ -304,8 +304,8 @@ class FetchMostVulnerable(APIView):
 		response = {}
 		response['status'] = False
 
-		if project_id:
-			project = Project.objects.get(id=project_id)
+		if project_slug:
+			project = Project.objects.get(slug=project_slug)
 			subdomains = Subdomain.objects.filter(target_domain__project=project)
 			domains = Domain.objects.filter(project=project)
 		else:
@@ -328,7 +328,7 @@ class FetchMostVulnerable(APIView):
 					subdomain_query
 					.annotate(vuln_count=Count('vulnerability__name'))
 					.order_by('-vuln_count')
-					.exclude(vuln_count=0)[:limit]
+					# .exclude(vuln_count=0)[:limit]
 				)
 
 				if most_vulnerable_subdomains:
