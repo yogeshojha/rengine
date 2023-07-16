@@ -37,13 +37,20 @@ All Projects
                   <tr>
                     <td>
                       <h5 class="m-0 fw-normal">{{project.name}}</h5>
+                      {% if current_project.slug == project.slug %}
+                          <span class="badge bg-soft-primary text-primary mt-1">Current Project</span>
+                      {% endif %}
                       <p class="mb-0 text-muted"><small>Created {{project.insert_date|naturaltime}}</small></p>
                     </td>
                     <td>
                       <span class="badge bg-soft-info text-info">{{project.slug}}</span>
                     </td>
                     <td>
+                      {% if current_project.slug == project.slug %}
+                      <span class="badge bg-info text-white">Current Project cannot be deleted.</span>
+                      {% else %}
                       <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
+                      {% endif %}
                     </td>
                   </tr>
                 {% endfor %}
