@@ -2065,6 +2065,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			http_url=http_url,
 			scan_history=self.scan,
 			subscan=self.subscan,
+			subdomain=subdomain,
 			**vuln_data)
 		if not vuln:
 			continue
