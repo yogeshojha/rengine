@@ -3079,9 +3079,9 @@ def parse_nuclei_result(line):
 		'extracted_results': line.get('extracted-results', []),
 		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
 		'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
-		'cve_ids': line['info'].get('classification', {}).get('cve_id'),
-		'cwe_ids': line['info'].get('classification', {}).get('cwe_id'),
-		'references': line['info'].get('reference', []),
+		'cve_ids': line['info'].get('classification', {}).get('cve_id', []) or [],
+		'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
+		'references': line['info'].get('reference', []) or [],
 		'tags': line['info'].get('tags', []),
 		'source': 'nuclei',
 	}
