@@ -437,6 +437,8 @@ class Vulnerability(models.Model):
 	discovered_date = models.DateTimeField(null=True)
 	open_status = models.BooleanField(null=True, blank=True, default=True)
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
+	request = models.TextField(blank=True, null=True)
+	response = models.TextField(blank=True, null=True)
 	# used for subscans
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 

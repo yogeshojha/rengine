@@ -3074,10 +3074,16 @@ def parse_nuclei_result(line):
 		'description': line['info'].get('description', ''),
 		'matcher_name': line.get('matcher-name', ''),
 		'curl_command': line.get('curl-command'),
+		'request': line.get('request'),
+		'response': line.get('response'),
 		'extracted_results': line.get('extracted-results', []),
 		'cvss_metrics': line['info'].get('classification', {}).get('cvss-metrics', ''),
 		'cvss_score': line['info'].get('classification', {}).get('cvss-score'),
-		'source': 'nuclei'
+		'cve_ids': line['info'].get('classification', {}).get('cve_id'),
+		'cwe_ids': line['info'].get('classification', {}).get('cwe_id'),
+		'references': line['info'].get('reference', []),
+		'tags': line['info'].get('tags', []),
+		'source': 'nuclei',
 	}
 
 
