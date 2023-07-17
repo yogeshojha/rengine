@@ -777,7 +777,7 @@ function mark_important_subdomain(row, subdomain_id) {
 }
 
 function delete_scan(id) {
-	const delAPI = "../delete/scan/" + id;
+	const delAPI = "/scan/delete/scan/" + id;
 	swal.queue([{
 		title: 'Are you sure you want to delete this scan history?',
 		text: "You won't be able to revert this!",
