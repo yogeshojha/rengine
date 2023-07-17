@@ -2890,6 +2890,41 @@ function render_vuln_offcanvas(vuln){
 		</tr>`
 	}
 
+	if (vuln.cvss_score) {
+		var badge = 'danger';
+		if (vuln.cvss_score > 0.1 && vuln.cvss_score <= 3.9) {
+			badge = 'info';
+		}
+		else if (vuln.cvss_score > 3.9 && vuln.cvss_score <= 6.9) {
+			badge = 'warning';
+		}
+
+		body += `<tr>
+		<td>
+		CVSS Score:
+		</td>
+		<td>
+		<span class="ms-2 mt-2">
+		<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${vuln.cvss_score}</span>
+		</span>
+		</td>
+		</tr>`
+	}
+
+	if (vuln.cvss_metrics) {
+		body += `<tr>
+		<td>
+		CVSS Metrics:
+		</td>
+		<td>
+		<span class="ms-2">
+		${vuln.cvss_metrics}
+		</span>
+		</td>
+		</tr>`
+	}
+
+
 	body += `</table>
 	</div>
 	</div>`;
