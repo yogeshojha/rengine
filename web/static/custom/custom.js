@@ -2723,64 +2723,246 @@ function validURL(str) {
 
 function shadeColor(color, percent) {
 	//https://stackoverflow.com/a/13532993
-  var R = parseInt(color.substring(1,3),16);
-  var G = parseInt(color.substring(3,5),16);
-  var B = parseInt(color.substring(5,7),16);
+	var R = parseInt(color.substring(1,3),16);
+	var G = parseInt(color.substring(3,5),16);
+	var B = parseInt(color.substring(5,7),16);
 
-  R = parseInt(R * (100 + percent) / 100);
-  G = parseInt(G * (100 + percent) / 100);
-  B = parseInt(B * (100 + percent) / 100);
+	R = parseInt(R * (100 + percent) / 100);
+	G = parseInt(G * (100 + percent) / 100);
+	B = parseInt(B * (100 + percent) / 100);
 
-  R = (R<255)?R:255;
-  G = (G<255)?G:255;
-  B = (B<255)?B:255;
+	R = (R<255)?R:255;
+	G = (G<255)?G:255;
+	B = (B<255)?B:255;
 
-  var RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
-  var GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
-  var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
+	var RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
+	var GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
+	var BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
 
-  return "#"+RR+GG+BB;
+	return "#"+RR+GG+BB;
 }
 
 
 function add_project_modal(){
-  Swal.fire({
-    title: 'Enter the project name',
-    input: 'text',
-    inputAttributes: {
-      autocapitalize: 'off',
-      placeholder: 'Your Awesome Project'
-    },
-    showCancelButton: true,
-    confirmButtonText: 'Create Project',
-    showLoaderOnConfirm: true,
-    preConfirm: (name) => {
-      return fetch(`/api/action/create/project?name=${name}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(response.error)
-          }
-          return response.json()
-        })
-        .catch(error => {
-          Swal.showValidationMessage(
-            `Duplicate project name, choose another project name!`
-          )
-        })
-      },
-      allowOutsideClick: () => !Swal.isLoading()
-    }).then((result) => {
-      console.log(result);
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: `${result.value.project_name} is created.`,
-          onClose: reloadPage
-        })
-      }
-    });
+	Swal.fire({
+		title: 'Enter the project name',
+		input: 'text',
+		inputAttributes: {
+			autocapitalize: 'off',
+			placeholder: 'Your Awesome Project'
+		},
+		showCancelButton: true,
+		confirmButtonText: 'Create Project',
+		showLoaderOnConfirm: true,
+		preConfirm: (name) => {
+			return fetch(`/api/action/create/project?name=${name}`)
+				.then(response => {
+					if (!response.ok) {
+						throw new Error(response.error)
+					}
+					return response.json()
+				})
+				.catch(error => {
+					Swal.showValidationMessage(
+						`Duplicate project name, choose another project name!`
+					)
+				})
+			},
+			allowOutsideClick: () => !Swal.isLoading()
+		}).then((result) => {
+			console.log(result);
+			if (result.isConfirmed) {
+				Swal.fire({
+					title: `${result.value.project_name} is created.`,
+					onClose: reloadPage
+				})
+			}
+		});
 }
 
 
 function reloadPage(){
-  location.reload();
+	location.reload();
+}
+
+
+function render_vuln_offcanvas(vuln){
+	$('#offcanvas').addClass('offcanvas-size-lg');
+	console.log(vuln);
+	var default_color = 'primary';
+	var default_badge_color = 'soft-primary';
+	switch (vuln.severity) {
+		case 'Info':
+			default_color = 'primary';
+			default_badge_color = 'soft-primary';
+			break;
+		case 'Low':
+			default_color = 'low';
+			default_badge_color = 'soft-warning';
+			break;
+		case 'Medium':
+			default_color = 'warning';
+			default_badge_color = 'soft-warning';
+			break;
+		case 'High':
+			default_color = 'danger';
+			default_badge_color = 'soft-danger';
+			break;
+		case 'Critical':
+			default_color = 'critical';
+			default_badge_color = 'critical';
+			break;
+		case 'Unknown':
+			default_color = 'info';
+			default_badge_color = 'soft-info';
+			break;
+		default:
+	}
+	var offcanvas_title = document.getElementById('offcanvas-title');
+	var offcanvas_body = document.getElementById('offcanvas-body');
+	var title_content = '';
+	var body = '';
+	title_content += `<i class="mdi mdi-bug-outline me-1 text-${default_color}"></i>`;
+	title_content += `<span class="badge badge-${default_badge_color} text-${default_color}">${vuln.severity}</span>`;
+	title_content += `<span class="text-${default_color} ms-1">${vuln.name}</span>`;
+
+	body += `<p><b>Discovered on: </b>${vuln.discovered_date}</p>`;
+	body += `<p><b>URL: </b><a href="${vuln.http_url}" target="_blank">${vuln.http_url}</a></p>`;
+	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
+
+	if (vuln.description) {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#description"
+		aria-expanded="true" aria-controls="collapseNine">
+		Vulnerability Description <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="description" class="collapse show mt-2">
+		<p>${vuln.description}</p>
+		</div>
+		</div>`;
+	}
+
+	body += `<div class="accordion custom-accordion mt-2">
+	<h5 class="m-0 position-relative">
+	<a class="custom-accordion-title text-reset d-block"
+	data-bs-toggle="collapse" href="#classification"
+	aria-expanded="true" aria-controls="collapseNine">
+	Vulnerability Classification <i
+	class="mdi mdi-chevron-down accordion-arrow"></i>
+	</a>
+	</h5>
+	<div id="classification" class="collapse show mt-2">
+	<table>`;
+
+	if (vuln.cve_ids.length) {
+		body += `<tr>
+		<td>
+		CVE IDs:
+		</td>
+		<td><span class="ms-2">`
+
+		vuln.cve_ids.forEach(cve => {
+			body += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+		});
+
+	body += `</span>
+		</td>
+		</tr>`
+	}
+
+	if (vuln.cwe_ids.length) {
+		body += `<tr>
+		<td>
+		CWE IDs:
+		</td>
+		<td><span class="ms-2">`
+
+		vuln.cwe_ids.forEach(cwe => {
+			body += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+		});
+
+	body += `</span>
+		</td>
+		</tr>`
+	}
+
+	body += `</table>
+	</div>
+	</div>`;
+
+
+	if (vuln.curl_command) {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#curl_command"
+		aria-expanded="true" aria-controls="collapseNine">
+		CURL Command <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="curl_command" class="collapse show mt-2">
+		<code>${htmlEncode(vuln.curl_command)}</code>
+		</div>
+		</div>`;
+	}
+
+
+	if (vuln.references.length) {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#references"
+		aria-expanded="true" aria-controls="collapseNine">
+		References <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="references" class="collapse show mt-2">
+		<ul>`;
+
+		vuln.references.forEach(reference => {
+			body += `<li><a href="${htmlEncode(reference.url)}" target="_blank">${htmlEncode(reference.url)}</a></li>`;
+		});
+
+		body += `
+		</ul>
+		</div>
+		</div>`;
+	}
+
+	if (vuln.extracted_results.length) {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#extracted"
+		aria-expanded="true" aria-controls="collapseNine">
+		Extracted Results <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="extracted" class="collapse show mt-2">
+		<ul>`;
+
+		vuln.extracted_results.forEach(result => {
+			body += `<li>${htmlEncode(result)}</li>`;
+		});
+
+		body += `
+		</ul>
+		</div>
+		</div>`;
+	}
+
+
+
+
+
+	offcanvas_title.innerHTML = title_content;
+	offcanvas_body.innerHTML = body;
+	$('#offcanvas').offcanvas('show');
 }
