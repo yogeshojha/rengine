@@ -2993,8 +2993,33 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
+	body += `<div class="accordion custom-accordion mt-2">
+	<h5 class="m-0 position-relative">
+	<a class="custom-accordion-title text-reset d-block"
+	data-bs-toggle="collapse" href="#request"
+	aria-expanded="true" aria-controls="collapseNine">
+	HTTP Request <i
+	class="mdi mdi-chevron-down accordion-arrow"></i>
+	</a>
+	</h5>
+	<div id="request" class="collapse mt-2">
+	<code>${vuln.request.replaceAll('\\r', '').replaceAll('\\n', '</br>')}</code>
+	</div>
+	</div>`;
 
-
+	body += `<div class="accordion custom-accordion mt-2">
+	<h5 class="m-0 position-relative">
+	<a class="custom-accordion-title text-reset d-block"
+	data-bs-toggle="collapse" href="#response"
+	aria-expanded="true" aria-controls="collapseNine">
+	HTTP Response <i
+	class="mdi mdi-chevron-down accordion-arrow"></i>
+	</a>
+	</h5>
+	<div id="response" class="collapse mt-2">
+	<code>${vuln.response.replaceAll('\\r', '').replaceAll('\\n', '</br>')}</code>
+	</div>
+	</div>`;
 
 
 	offcanvas_title.innerHTML = title_content;

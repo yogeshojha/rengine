@@ -85,6 +85,8 @@ $(document).ready(function() {
 			{'data': 'extracted_results'},
 			{'data': 'curl_command'},
 			{'data': 'matcher_name'},
+			{'data': 'request'},
+			{'data': 'response'},
 		],
 		"columnDefs": [
 			{ "orderable": false, "targets": [9, 12]},
@@ -92,6 +94,11 @@ $(document).ready(function() {
 				"targets": [4, 5, 6, 10, 13, 17, 18, 19],
 				"visible": false,
 				"searchable": true,
+			},
+			{
+				"targets": [20, 21],
+				"visible": false,
+				"searchable": false,
 			},
 			{"className": "text-center", "targets": []},
 			{
