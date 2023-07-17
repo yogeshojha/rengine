@@ -402,6 +402,10 @@ $(document).ready(function() {
 		}
 		window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
 	});
+	vulnerability_table.on('click', 'tbody tr', function () {
+		let data = vulnerability_table.row(this).data();
+		render_vuln_offcanvas(data);
+	});
 });
 
 var vulnerability_cols = [

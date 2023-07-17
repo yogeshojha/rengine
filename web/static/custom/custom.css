@@ -377,3 +377,7 @@ mark{
   background-color: #FFEB3B;
   color: #000;
 }
+
+.offcanvas-size-lg {
+  width: min(95vw, 500px) !important;
+}
