@@ -799,7 +799,7 @@ def schedule_organization_scan(request, id):
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_RESULTS, redirect_url=FOUR_OH_FOUR_URL)
-def delete_scans(request):
+def delete_scans(request, slug):
     if request.method == "POST":
         for key, value in request.POST.items():
             if key == 'scan_history_table_length' or key == 'csrfmiddlewaretoken':
@@ -812,7 +812,7 @@ def delete_scans(request):
             request,
             messages.INFO,
             'All Scans deleted!')
-    return HttpResponseRedirect(reverse('scan_history'))
+    return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
 
 @has_permission_decorator(PERM_MODIFY_SCAN_REPORT, redirect_url=FOUR_OH_FOUR_URL)

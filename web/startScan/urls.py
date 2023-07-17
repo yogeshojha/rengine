@@ -103,7 +103,7 @@ urlpatterns = [
         views.delete_all_screenshots,
         name='delete_all_screenshots'),
     path(
-        'delete/multiple',
+        '<slug:slug>/delete/multiple',
         views.delete_scans,
         name='delete_multiple_scans'),
 ]
