@@ -3,7 +3,8 @@ version: '3.8'
 services:
   db:
     restart: always
-    image: "postgres:12.3-alpine"
+    build:
+      context: ./db
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
