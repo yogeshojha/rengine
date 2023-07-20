@@ -10,8 +10,8 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:"
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     networks:
@@ -106,8 +106,8 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     depends_on:
       - db
       - celery
