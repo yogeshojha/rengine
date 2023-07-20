@@ -1515,6 +1515,11 @@ $(document).ready(function() {
 					{'data': 'extracted_results'},
 					{'data': 'curl_command'},
 					{'data': 'matcher_name'},
+					{'data': 'request'},
+					{'data': 'response'},
+					{'data': 'template'},
+					{'data': 'template_url'},
+					{'data': 'template_id'},
 				],
 				"columnDefs": [
 					{ "orderable": false, "targets": [9, 12]},
@@ -1522,6 +1527,11 @@ $(document).ready(function() {
 						"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 						"visible": false,
 						"searchable": true,
+					},
+					{
+						"targets": [20, 21, 22, 23, 24],
+						"visible": false,
+						"searchable": false,
 					},
 					{"className": "text-center", "targets": []},
 					{
