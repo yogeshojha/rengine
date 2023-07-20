@@ -2946,30 +2946,6 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
-
-	if (vuln.references.length) {
-		body += `<div class="accordion custom-accordion mt-2">
-		<h5 class="m-0 position-relative">
-		<a class="custom-accordion-title text-reset d-block"
-		data-bs-toggle="collapse" href="#references"
-		aria-expanded="true" aria-controls="collapseNine">
-		References <i
-		class="mdi mdi-chevron-down accordion-arrow"></i>
-		</a>
-		</h5>
-		<div id="references" class="collapse show mt-2">
-		<ul>`;
-
-		vuln.references.forEach(reference => {
-			body += `<li><a href="${htmlEncode(reference.url)}" target="_blank">${htmlEncode(reference.url)}</a></li>`;
-		});
-
-		body += `
-		</ul>
-		</div>
-		</div>`;
-	}
-
 	if (vuln.extracted_results.length) {
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
@@ -2993,6 +2969,14 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
+	var http_request = vuln.request ? vuln.request : '';
+	var http_response = vuln.response ? vuln.response : '';
+
+	http_request = http_request.replace(new RegExp('\r?\n','g'), '<br />');
+	http_response = htmlEncode(http_response);
+
+	http_response = http_response.replace(new RegExp('&#13;&#10;','g'), '<br />');
+
 	body += `<div class="accordion custom-accordion mt-2">
 	<h5 class="m-0 position-relative">
 	<a class="custom-accordion-title text-reset d-block"
@@ -3003,7 +2987,7 @@ function render_vuln_offcanvas(vuln){
 	</a>
 	</h5>
 	<div id="request" class="collapse mt-2">
-	<code>${vuln.request.replaceAll('\\r', '').replaceAll('\\n', '</br>')}</code>
+	<code>${http_request}</code>
 	</div>
 	</div>`;
 
@@ -3017,9 +3001,32 @@ function render_vuln_offcanvas(vuln){
 	</a>
 	</h5>
 	<div id="response" class="collapse mt-2">
-	<code>${vuln.response.replaceAll('\\r', '').replaceAll('\\n', '</br>')}</code>
+	<code>${http_response}</code>
 	</div>
 	</div>`;
+
+	if (vuln.references.length) {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#references"
+		aria-expanded="true" aria-controls="collapseNine">
+		References <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="references" class="collapse show mt-2">
+		<ul>`;
+
+		vuln.references.forEach(reference => {
+			body += `<li><a href="${htmlEncode(reference.url)}" target="_blank">${htmlEncode(reference.url)}</a></li>`;
+		});
+
+		body += `
+		</ul>
+		</div>
+		</div>`;
+	}
 
 
 	offcanvas_title.innerHTML = title_content;
