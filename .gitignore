@@ -55,3 +55,5 @@ secret
 /secrets
 
 get-docker.sh
+
+filter_dns_leak.sh
