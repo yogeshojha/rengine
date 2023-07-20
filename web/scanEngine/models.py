@@ -14,6 +14,9 @@ class EngineType(models.Model):
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 
+    class Meta:
+        db_table = "scanengine_enginetype"
+
     def __str__(self):
         return self.engine_name
 
@@ -37,6 +40,9 @@ class Wordlist(models.Model):
     short_name = models.CharField(max_length=50, unique=True)
     count = models.IntegerField(default=0)
 
+    class Meta:
+        db_table = "scanengine_wordlist"
+
     def __str__(self):
         return self.name
 
@@ -46,6 +52,9 @@ class Configuration(models.Model):
     name = models.CharField(max_length=200)
     short_name = models.CharField(max_length=50, unique=True)
     content = models.TextField()
+
+    class Meta:
+        db_table = "scanengine_configuration"
 
     def __str__(self):
         return self.name
@@ -58,6 +67,9 @@ class InterestingLookupModel(models.Model):
     title_lookup = models.BooleanField(default=True)
     url_lookup = models.BooleanField(default=True)
     condition_200_http_lookup = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "scanengine_interestinglookupmodel"
 
 
 class Notification(models.Model):
@@ -78,11 +90,18 @@ class Notification(models.Model):
 
     send_scan_output_file = models.BooleanField(default=True)
 
+    class Meta:
+        db_table = "scanengine_notification"
+    
+
 
 class Proxy(models.Model):
     id = models.AutoField(primary_key=True)
     use_proxy = models.BooleanField(default=False)
     proxies = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = "scanengine_proxy"
 
 
 class Hackerone(models.Model):
@@ -93,6 +112,9 @@ class Hackerone(models.Model):
     send_high = models.BooleanField(default=True)
     send_medium = models.BooleanField(default=False)
     report_template = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = "scanengine_hackerone"
 
 
 class VulnerabilityReportSetting(models.Model):
@@ -108,6 +130,9 @@ class VulnerabilityReportSetting(models.Model):
     executive_summary_description = models.TextField(blank=True, null=True)
     show_footer = models.BooleanField(default=False)
     footer_text = models.CharField(max_length=200, null=True, blank=True)
+
+    class Meta:
+        db_table = "scanengine_vulnerabilityreportsetting"
 
 
 class InstalledExternalTool(models.Model):
@@ -126,6 +151,9 @@ class InstalledExternalTool(models.Model):
     is_github_cloned = models.BooleanField(default=False)
     github_clone_path = models.CharField(max_length=1500, null=True, blank=True)
     subdomain_gathering_command = models.CharField(max_length=300, null=True, blank=True)
+
+    class Meta:
+        db_table = "scanengine_installedexternaltool"
 
     def __str__(self):
         return self.name

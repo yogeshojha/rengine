@@ -10,6 +10,9 @@ class AssociatedDomain(models.Model):
     name = models.CharField(max_length=250, null=True, blank=True)
     # target_id = models.ForeignKey(Domain, on_delete=models.CASCADE, null=True, blank=True)
 
+    class Meta:
+        db_table = "targetapp_associateddomain"
+
     def __str__(self):
         return self.name
 
@@ -17,6 +20,9 @@ class AssociatedDomain(models.Model):
 class RelatedTLD(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=250, null=True, blank=True)
+
+    class Meta:
+        db_table = "targetapp_relatedtld"
 
     def __str__(self):
         return self.name
@@ -26,6 +32,9 @@ class NameServers(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500, null=True, blank=True)
 
+    class Meta:
+        db_table = "targetapp_nameservers"
+
     def __str__(self):
         return self.name
 
@@ -33,6 +42,9 @@ class NameServers(models.Model):
 class DomainRegistrar(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
+
+    class Meta:
+        db_table = "targetapp_domainregistrar"
 
     def __str__(self):
         return self.name
@@ -42,6 +54,9 @@ class DomainRegisterName(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
 
+    class Meta:
+        db_table = "targetapp_domainregistername"
+
     def __str__(self):
         return self.name
 
@@ -49,6 +64,9 @@ class DomainRegisterName(models.Model):
 class DomainRegisterOrganization(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
+
+    class Meta:
+        db_table = "targetapp_domainregisterorganization"
 
     def __str__(self):
         return self.name
@@ -58,6 +76,9 @@ class DomainAddress(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
 
+    class Meta:
+        db_table = "targetapp_domainaddress"
+
     def __str__(self):
         return self.name
 
@@ -65,6 +86,9 @@ class DomainAddress(models.Model):
 class DomainCity(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "targetapp_domaincity"
 
     def __str__(self):
         return self.name
@@ -74,6 +98,9 @@ class DomainState(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=50)
 
+    class Meta:
+        db_table = "targetapp_domainstate"
+
     def __str__(self):
         return self.name
 
@@ -81,6 +108,9 @@ class DomainState(models.Model):
 class DomainZipCode(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20)
+
+    class Meta:
+        db_table = "targetapp_domainzipcode"
 
     def __str__(self):
         return self.name
@@ -90,6 +120,9 @@ class DomainCountry(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=20)
 
+    class Meta:
+        db_table = "targetapp_domaincountry"
+
     def __str__(self):
         return self.name
 
@@ -97,6 +130,9 @@ class DomainCountry(models.Model):
 class DomainEmail(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
+
+    class Meta:
+        db_table = "targetapp_domainemail"
 
     def __str__(self):
         return self.name
@@ -106,6 +142,9 @@ class DomainPhone(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
 
+    class Meta:
+        db_table = "targetapp_domainphone"
+
     def __str__(self):
         return self.name
 
@@ -113,6 +152,9 @@ class DomainPhone(models.Model):
 class DomainFax(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = "targetapp_domainfax"
 
     def __str__(self):
         return self.name
@@ -122,6 +164,9 @@ class DomainWhoisStatus(models.Model):
     id = models.AutoField(primary_key=True)
     status = models.CharField(max_length=500)
 
+    class Meta:
+        db_table = "targetapp_domainwhoisstatus"
+
     def __str__(self):
         return self.status
 
@@ -129,6 +174,9 @@ class DomainWhoisStatus(models.Model):
 class DomainRegistrarID(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=500)
+
+    class Meta:
+        db_table = "targetapp_domainregistrarid"
 
     def __str__(self):
         return self.name
@@ -188,6 +236,9 @@ class DomainInfo(models.Model):
 
     associated_domains = models.ManyToManyField(AssociatedDomain, blank=True)
     related_tlds = models.ManyToManyField(RelatedTLD, blank=True)
+    
+    class Meta:
+        db_table = "targetapp_domaininfo"
 
     def __str__(self):
         return self.id
@@ -199,6 +250,9 @@ class Organization(models.Model):
     description = models.TextField(blank=True, null=True)
     insert_date = models.DateTimeField()
     domains = models.ManyToManyField('Domain', related_name='domains')
+    
+    class Meta:
+        db_table = "targetapp_organization"
 
     def __str__(self):
         return self.name
@@ -216,6 +270,9 @@ class Domain(models.Model):
     insert_date = models.DateTimeField()
     start_scan_date = models.DateTimeField(null=True)
     domain_info = models.ForeignKey(DomainInfo, on_delete=models.CASCADE, null=True, blank=True)
+    
+    class Meta:
+        db_table = "targetapp_domain"
 
     def get_organization(self):
         return Organization.objects.filter(domains__id=self.id)

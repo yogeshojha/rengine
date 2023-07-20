@@ -38,6 +38,9 @@ class ScanHistory(models.Model):
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 
+	class Meta:
+		db_table = "startscan_scanhistory"
+
 	def __str__(self):
 		# debug purpose remove scan type and id in prod
 		return self.domain.name
@@ -170,6 +173,9 @@ class Subdomain(models.Model):
 	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
 	waf = models.ManyToManyField('Waf', related_name='waf', blank=True)
 
+	class Meta:
+		db_table = "startscan_subdomain"
+
 
 	def __str__(self):
 		return str(self.name)
@@ -253,6 +259,9 @@ class SubScan(models.Model):
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	engine = models.ForeignKey(EngineType, on_delete=models.CASCADE, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_subscan"
+
 
 	def get_completed_ago(self):
 		if self.stop_scan_date:
@@ -304,6 +313,9 @@ class EndPoint(models.Model):
 	# used for subscans
 	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids', blank=True)
 
+	class Meta:
+		db_table = "startscan_endpoint"
+
 	def __str__(self):
 		return self.http_url
 
@@ -311,6 +323,9 @@ class EndPoint(models.Model):
 class VulnerabilityTags(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
+
+	class Meta:
+		db_table = "startscan_vulnerabilitytags"
 
 	def __str__(self):
 		return self.name
@@ -320,6 +335,9 @@ class VulnerabilityReference(models.Model):
 	id = models.AutoField(primary_key=True)
 	url = models.CharField(max_length=5000)
 
+	class Meta:
+		db_table = "startscan_vulnerabilityreference"
+
 	def __str__(self):
 		return self.url
 
@@ -328,6 +346,9 @@ class CveId(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
 
+	class Meta:
+		db_table = "startscan_cveid"
+
 	def __str__(self):
 		return self.name
 
@@ -335,6 +356,9 @@ class CveId(models.Model):
 class CweId(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=100)
+
+	class Meta:
+		db_table = "startscan_cweid"
 
 	def __str__(self):
 		return self.name
@@ -383,6 +407,9 @@ class Vulnerability(models.Model):
 	# used for subscans
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
+	class Meta:
+		db_table = "startscan_vulnerability"
+
 	def __str__(self):
 		return self.name
 
@@ -398,6 +425,9 @@ class ScanActivity(models.Model):
 	status = models.IntegerField()
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_scanactivity"
+
 	def __str__(self):
 		return str(self.title)
 
@@ -407,6 +437,9 @@ class Waf(models.Model):
 	name = models.CharField(max_length=500)
 	manufacturer = models.CharField(max_length=500, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_waf"
+
 	def __str__(self):
 		return str(self.name)
 
@@ -414,6 +447,9 @@ class Waf(models.Model):
 class Technology(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=500, blank=True, null=True)
+
+	class Meta:
+		db_table = "startscan_technology"
 
 	def __str__(self):
 		return str(self.name)
@@ -423,6 +459,9 @@ class CountryISO(models.Model):
 	id = models.AutoField(primary_key=True)
 	iso = models.CharField(max_length=10, blank=True)
 	name = models.CharField(max_length=100, blank=True)
+
+	class Meta:
+		db_table = "startscan_countryiso"
 
 	def __str__(self):
 		return str(self.name)
@@ -438,6 +477,9 @@ class IpAddress(models.Model):
 	# this is used for querying which ip was discovered during subcan
 	ip_subscan_ids = models.ManyToManyField('SubScan', related_name='ip_subscan_ids')
 
+	class Meta:
+		db_table = "startscan_ipaddress"
+
 	def __str__(self):
 		return str(self.address)
 
@@ -448,6 +490,9 @@ class Port(models.Model):
 	service_name = models.CharField(max_length=100, blank=True, null=True)
 	description = models.CharField(max_length=1000, blank=True, null=True)
 	is_uncommon = models.BooleanField(default=False)
+
+	class Meta:
+		db_table = "startscan_port"
 
 	def __str__(self):
 		return str(self.service_name)
@@ -463,6 +508,9 @@ class DirectoryFile(models.Model):
 	url = models.CharField(max_length=5000, blank=True, null=True)
 	content_type = models.CharField(max_length=100, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_directoryfile"
+
 	def __str__(self):
 		return str(self.name)
 
@@ -474,6 +522,9 @@ class DirectoryScan(models.Model):
 	scanned_date = models.DateTimeField(null=True)
 	# this is used for querying which ip was discovered during subcan
 	dir_subscan_ids = models.ManyToManyField('SubScan', related_name='dir_subscan_ids', blank=True)
+
+	class Meta:
+		db_table = "startscan_directoryscan"
 
 
 class MetaFinderDocument(models.Model):
@@ -497,16 +548,25 @@ class MetaFinderDocument(models.Model):
 	creation_date = models.CharField(max_length=1000, blank=True, null=True)
 	modified_date = models.CharField(max_length=1000, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_metafinderdocument"
+
 
 class Email(models.Model):
 	id = models.AutoField(primary_key=True)
 	address = models.CharField(max_length=200, blank=True, null=True)
 	password = models.CharField(max_length=200, blank=True, null=True)
 
+	class Meta:
+		db_table = "startscan_email"
+
 class Employee(models.Model):
 	id = models.AutoField(primary_key=True)
 	name = models.CharField(max_length=1000, null=True, blank=True)
 	designation = models.CharField(max_length=1000, null=True, blank=True)
+
+	class Meta:
+		db_table = "startscan_employee"
 
 
 class Dork(models.Model):
@@ -514,3 +574,6 @@ class Dork(models.Model):
 	type = models.CharField(max_length=500, null=True, blank=True)
 	description = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=10000, null=True, blank=True)
+
+	class Meta:
+		db_table = "startscan_dork"
