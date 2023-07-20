@@ -72,7 +72,7 @@ function jsEscape(str) {
 }
 
 function deleteScheduledScan(id) {
-	const delAPI = "../delete/scheduled_task/" + id;
+	const delAPI = "/scan/delete/scheduled_task/" + id;
 	swal.queue([{
 		title: 'Are you sure you want to delete this?',
 		text: "This action can not be undone.",
@@ -114,7 +114,7 @@ function change_scheduled_task_status(id, checkbox) {
 		pos: 'top-right',
 		duration: 2500
 	});
-	const taskStatusApi = "../toggle/scheduled_task/" + id;
+	const taskStatusApi = "/scan/toggle/scheduled_task/" + id;
 	return fetch(taskStatusApi, {
 		method: 'POST',
 		credentials: "same-origin",
@@ -125,7 +125,7 @@ function change_scheduled_task_status(id, checkbox) {
 }
 
 function change_vuln_status(id) {
-	const vulnStatusApi = "../toggle/vuln_status/" + id;
+	const vulnStatusApi = "/scan/toggle/vuln_status/" + id;
 	return fetch(vulnStatusApi, {
 		method: 'POST',
 		credentials: "same-origin",
@@ -249,7 +249,7 @@ function get_randid() {
 }
 
 function delete_all_scan_results() {
-	const delAPI = "../scan/delete/scan_results/";
+	const delAPI = "/scan/delete/scan_results/";
 	swal.queue([{
 		title: 'Are you sure you want to delete all scan results?',
 		text: "You won't be able to revert this!",
@@ -281,7 +281,7 @@ function delete_all_scan_results() {
 }
 
 function delete_all_screenshots() {
-	const delAPI = "../scan/delete/screenshots/";
+	const delAPI = "/scan/delete/screenshots/";
 	swal.queue([{
 		title: 'Are you sure you want to delete all Screenshots?',
 		text: "You won't be able to revert this!",
@@ -453,7 +453,7 @@ function report_hackerone(vulnerability_id, severity) {
 	} else {
 		message = "This vulnerability report will be sent to Hackerone.";
 	}
-	const vulnerability_report_api = "../../api/vulnerability/report/?vulnerability_id=" + vulnerability_id;
+	const vulnerability_report_api = "/api/vulnerability/report/?vulnerability_id=" + vulnerability_id;
 	swal.queue([{
 		title: 'Reporting vulnerability to hackerone',
 		text: message,
