@@ -409,8 +409,12 @@ $(document).ready(function() {
 		}
 		window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
 	});
-	vulnerability_table.on('click', 'tbody tr', function () {
-		let data = vulnerability_table.row(this).data();
+
+	$('#vulnerability_results').on('click', 'tr' , function (e) {
+		if ($(e.target).is('input[type="checkbox"]') || $(e.target).is('svg') || $(e.target).is('a')) {
+			return;
+		}
+		var data = vulnerability_table.row(this).data();
 		render_vuln_offcanvas(data);
 	});
 });
@@ -426,11 +430,11 @@ var vulnerability_cols = [
 		'vuln_status_checkbox'
 	];
 
-	for (var col in vulnerability_cols) {
-		if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
-			$('#' + vulnerability_cols[col]).prop('checked', false);
-		}
+for (var col in vulnerability_cols) {
+	if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
+		$('#' + vulnerability_cols[col]).prop('checked', false);
 	}
+}
 
 </script>
 {% endblock page_level_script %}
