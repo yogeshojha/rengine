@@ -2860,33 +2860,31 @@ function render_vuln_offcanvas(vuln){
 
 	if (vuln.cve_ids.length) {
 		body += `<tr>
-		<td>
-		CVE IDs:
+		<td style="width:30%">
+		<b>CVE IDs</b>
 		</td>
-		<td><span class="ms-2">`
+		<td>`;
 
 		vuln.cve_ids.forEach(cve => {
 			body += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
 		});
 
-	body += `</span>
-		</td>
+	body += `</td>
 		</tr>`
 	}
 
 	if (vuln.cwe_ids.length) {
 		body += `<tr>
-		<td>
-		CWE IDs:
+		<td style="width:30%">
+		<b>CWE IDs</b>
 		</td>
-		<td><span class="ms-2">`
+		<td>`
 
 		vuln.cwe_ids.forEach(cwe => {
 			body += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 		});
 
-	body += `</span>
-		</td>
+	body += `</td>
 		</tr>`
 	}
 
@@ -2900,35 +2898,62 @@ function render_vuln_offcanvas(vuln){
 		}
 
 		body += `<tr>
-		<td>
-		CVSS Score:
+		<td style="width:30%">
+		<b>CVSS Score</b>
 		</td>
 		<td>
-		<span class="ms-2 mt-2">
 		<span class="badge badge-outline-${badge}" data-toggle="tooltip" data-placement="top" title="CVSS Score">${vuln.cvss_score}</span>
-		</span>
 		</td>
 		</tr>`
 	}
 
 	if (vuln.cvss_metrics) {
 		body += `<tr>
-		<td>
-		CVSS Metrics:
+		<td style="width:30%">
+		<b>CVSS Metrics</b>
 		</td>
 		<td>
-		<span class="ms-2">
 		${vuln.cvss_metrics}
-		</span>
 		</td>
 		</tr>`
 	}
-
-
 	body += `</table>
 	</div>
 	</div>`;
 
+
+	if (vuln.source == 'nuclei') {
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#nuclei_div"
+		aria-expanded="true" aria-controls="collapseNine">
+		Nuclei Template Details <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="nuclei_div" class="collapse mt-2">
+		<table>
+		<tr>
+		<td style="width:20%"><b>Template</b></td>
+		<td>${vuln.template}</td>
+		</tr>
+		<tr>
+		<td style="width:20%"><b>Template URL</b></td>
+		<td><a target="_blank" href="${vuln.template_url}">${vuln.template_url}</a></td>
+		</tr>
+		<tr>
+		<td style="width:20%"><b>Template ID</b></td>
+		<td>${vuln.template_id}</td>
+		</tr>
+		<tr>
+		<td style="width:20%"><b>Matcher Name</b></td>
+		<td>${vuln.matcher_name}</td>
+		</tr>
+		</table>
+		</div>
+		</div>`;
+	}
 
 	if (vuln.curl_command) {
 		body += `<div class="accordion custom-accordion mt-2">

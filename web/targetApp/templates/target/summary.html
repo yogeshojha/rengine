@@ -1450,74 +1450,41 @@ $(document).ready(function(){
 			"order": [
 				[4, "desc"]
 			],
-			"columns": [{
-					'data': 'id'
-				},
-				{
-					'data': 'source'
-				},
-				{
-					'data': 'type'
-				},
+			"columns": [
+				{'data': 'id'},
+				{'data': 'source'},
+				{'data': 'type'},
 
-				{
-					'data': 'name'
-				},
-				{
-					'data': 'cvss_metrics'
-				},
-				{
-					'data': 'tags'
-				},
-				{
-					'data': 'hackerone_report_id'
-				},
+				{'data': 'name'},
+				{'data': 'cvss_metrics'},
+				{'data': 'tags'},
+				{'data': 'hackerone_report_id'},
 
-				{
-					'data': 'severity'
-				},
-				{
-					'data': 'cvss_score'
-				},
-				{
-					'data': 'cve_ids'
-				},
-				{
-					'data': 'cwe_ids'
-				},
-				{
-					'data': 'http_url'
-				},
+				{'data': 'severity'},
+				{'data': 'cvss_score'},
+				{'data': 'cve_ids'},
+				{'data': 'cwe_ids'},
+				{'data': 'http_url'},
 
-				{
-					'data': 'description'
-				},
-				{
-					'data': 'references'
-				},
+				{'data': 'description'},
+				{'data': 'references'},
 
-				{
-					'data': 'discovered_date'
-				},
+				{'data': 'discovered_date'},
 
-				{
-					'data': 'open_status'
-				},
+				{'data': 'open_status'},
 
-				{
-					'data': 'hackerone_report_id'
-				},
+				{'data': 'hackerone_report_id'},
 
-				// extras
-				{
-					'data': 'extracted_results'
-				},
-				{
-					'data': 'curl_command'
-				},
-				{
-					'data': 'matcher_name'
-				},
+				{'data': 'extracted_results'},
+				{'data': 'curl_command'},
+				{'data': 'matcher_name'},
+				{'data': 'request'},
+				{'data': 'response'},
+				{'data': 'template'},
+				{'data': 'template_url'},
+				{'data': 'template_id'},
+				{'data': 'matcher_name'},
+			]
 			],
 			"columnDefs": [{
 					"orderable": false,
@@ -1527,6 +1494,11 @@ $(document).ready(function(){
 					"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 					"visible": false,
 					"searchable": true,
+				},
+				{
+					"targets": [20, 21, 22, 23, 24],
+					"visible": false,
+					"searchable": false,
 				},
 				{
 					"className": "text-center",
