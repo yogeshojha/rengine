@@ -90,15 +90,15 @@ then
 fi
 
 echo " "
-tput setaf 4; echo "Quering last relation $organization / domain ID inserted ..."
+tput setaf 4; echo "Quering last Organization <-> Domain relation id inserted ..."
 
-last_relation_id=$(sudo docker-compose exec db psql -t -U rengine -d rengine -c "select max(id) from public.targetapp_organization_domains where organization_id = $organization_id;" | awk 'NF==1 {print $1}')
+last_relation_id=$(sudo docker-compose exec db psql -t -U rengine -d rengine -c "select max(id) from public.targetapp_organization_domains;" | awk 'NF==1 {print $1}')
 if [ -z "$last_relation_id" ]
 then
   last_relation_id=0
 fi
 
-tput setaf 2; echo "Last relation $organization / domain ID inserted = $last_relation_id"
+tput setaf 2; echo "Last Organization <-> Domain relation id inserted = $last_relation_id"
 
 timestamp=$(date +%s)
 data_fname=/imports/relation_insertion_$timestamp.csv
