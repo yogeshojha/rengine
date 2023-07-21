@@ -308,3 +308,8 @@ def delete_project(request, id):
             messages.ERROR,
             'Oops! Project could not be deleted!')
     return JsonResponse(responseData)
+
+
+def onboarding(request):
+    context = {}
+    return render(request, 'dashboard/onboarding.html', context)
