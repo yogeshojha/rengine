@@ -50,7 +50,7 @@ touch ./db$dup_fname && chmod o+w ./db$dup_fname
 
 echo " "
 tput setaf 4; echo "Creating pg_bulkload extension ..."
-sudo docker-compose exec db psql -U rengine -d rengine -c "CREATE EXTENSION pg_bulkload" &2>/dev/null
+sudo docker-compose exec db psql -U rengine -d rengine -c "CREATE EXTENSION pg_bulkload" 2>/dev/null
 
 echo " "
 tput setaf 4; echo "Start insertion using pg_bulkload ..."; tput setaf 6;
