@@ -18,6 +18,8 @@ from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from rolepermissions.roles import assign_role, clear_roles
 from rolepermissions.decorators import has_permission_decorator
+from django.template.defaultfilters import slugify
+
 
 from startScan.models import *
 from targetApp.models import Domain
@@ -314,7 +316,34 @@ def onboarding(request):
     context = {}
     # check is any projects exists, then redirect to project list else onboarding
     projects = Project.objects.all()
+    if request.method == "POST":
+        project_name = request.POST.get('project_name')
+        slug = slugify(project_name)
+        create_username = request.POST.get('create_username')
+        create_password = request.POST.get('create_password')
+        create_user_role = request.POST.get('create_user_role')
+        key_openai = request.POST.get('key_openai')
+        key_netlas = request.POST.get('key_netlas')
+
+        insert_date = timezone.now()
+
+        Project.objects.create(
+            name=project_name,
+            slug=slug,
+            insert_date=insert_date
+        )
+
+        if create_username and create_password and create_user_role:
+            UserModel = get_user_model()
+            user = UserModel.objects.create_user(
+                username=create_username,
+                password=create_password
+            )
+            assign_role(user, create_user_role)
+
+
+
     if len(projects):
         slug = projects[0].slug
-        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+        # return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
     return render(request, 'dashboard/onboarding.html', context)
