@@ -5,6 +5,10 @@ from . import views
 
 urlpatterns = [
     path(
+        '',
+        views.onboarding,
+        name='onboarding'),
+    path(
         '<slug:slug>/dashboard/',
         views.index,
         name='dashboardIndex'),
