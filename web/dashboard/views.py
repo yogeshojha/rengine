@@ -312,4 +312,9 @@ def delete_project(request, id):
 
 def onboarding(request):
     context = {}
+    # check is any projects exists, then redirect to project list else onboarding
+    projects = Project.objects.all()
+    if len(projects):
+        slug = projects[0].slug
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
     return render(request, 'dashboard/onboarding.html', context)
