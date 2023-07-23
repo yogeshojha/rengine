@@ -212,16 +212,6 @@ tput setaf 5; echo "Bad records that conflict with unique constraints available 
 echo " "
 tput setaf 4; echo "Start scaning tasks ..."
 
-timestamp=$(date +%s)
-data_fname=/imports/scanhistory_update_$timestamp.csv
-ldata_fname=./db$data_fname
-log_fname=/imports/scanhistory_update_$timestamp.log
-bad_fname=/imports/scanhistory_update_$timestamp.bad
-dup_fname=/imports/scanhistory_update_$timestamp.dup
-
-echo " "
-tput setaf 4; echo "Generating scan history data file at '$ldata_fname'..."
-
 touch $ldata_fname
 last_domain_id=$(($tmp_domain_id+1))
 last_scanhistory_id=$tmp_scanhistory_id
@@ -230,34 +220,7 @@ do
     ((last_scanhistory_id=last_scanhistory_id+1))
     tput setaf 4; echo "Starting scan on domain id = $domain_id ..."
     celery_id=$(sudo docker-compose exec celery celery -A reNgine -b redis://redis:6379/0 --result-backend redis://redis:6379/0 call reNgine.tasks.initiate_scan -a ["$domain_id","$last_scanhistory_id",0,"$engine_type"])
-    echo "$last_scanhistory_id,$insert_date,-1,'',$celery_id,False,False,False,False,False,False,True,,True,$domain_id,$engine_type,," | tee -a $ldata_fname >/dev/null
+    tput setaf 4; echo "Update scan history with celery task id ('$celery_id')"
+    sudo docker-compose exec db psql -t -U rengine -d rengine -c "update public.startscan_scanhistory set celery_id ='$celery_id' where id = $last_scanhistory_id;"
+
 done
-
-echo " "
-tput setaf 4; echo "Creating pg_bulkload log files ..."
-touch ./db$log_fname && chmod o+w ./db$log_fname
-touch ./db$bad_fname && chmod o+w ./db$bad_fname
-touch ./db$dup_fname && chmod o+w ./db$dup_fname
-
-echo " "
-tput setaf 4; echo "Updating scan history using pg_bulkload ..."; tput setaf 6;
-sudo docker-compose exec db pg_bulkload \
-            --infile=$data_fname \
-            --output=public.startscan_scanhistory \
-            --option="WRITER=PARALLEL" \
-            --option="TYPE=CSV" \
-            --option="DELIMITER=," \
-            --option="DUPLICATE_ERRORS=-1" \
-            --option="PARSE_ERRORS=-1" \
-            --option="ON_DUPLICATE_KEEP=NEW" \
-            --option="CHECK_CONSTRAINTS=YES" \
-            -U rengine \
-            -d rengine \
-            --logfile=$log_fname \
-            --parse-badfile=$bad_fname \
-            --duplicate-badfile=$dup_fname
-
-echo " "
-tput setaf 5; echo "Result log file available at './db$log_fname'"
-tput setaf 5; echo "Bad records that cannot be parsed correctly available at './db$bad_fname'"
-tput setaf 5; echo "Bad records that conflict with unique constraints available at './db$dup_fname'"
