@@ -221,6 +221,6 @@ do
     tput setaf 4; echo "Starting scan on domain id = $domain_id ..."
     celery_id=$(sudo docker-compose exec celery celery -A reNgine -b redis://redis:6379/0 --result-backend redis://redis:6379/0 call reNgine.tasks.initiate_scan -a ["$domain_id","$last_scanhistory_id",0,"$engine_type"])
     tput setaf 4; echo "Update scan history with celery task id ('$celery_id')"
-    sudo docker-compose exec db psql -t -U rengine -d rengine -c "update public.startscan_scanhistory set celery_id ='$celery_id' where id = $last_scanhistory_id;"
+    sudo docker-compose exec db psql -t -U rengine -d rengine -c "update public.startscan_scanhistory set celery_id ='$celery_id' where id = $last_scanhistory_id;" &>/dev/null
 done
 
