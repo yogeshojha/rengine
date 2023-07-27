@@ -23,7 +23,7 @@ from django.template.defaultfilters import slugify
 
 from startScan.models import *
 from targetApp.models import Domain
-from dashboard.models import Project
+from dashboard.models import *
 from reNgine.definitions import *
 
 
@@ -314,8 +314,8 @@ def delete_project(request, id):
 
 def onboarding(request):
     context = {}
-    # check is any projects exists, then redirect to project list else onboarding
-    projects = Project.objects.all()
+    error = ''
+
     if request.method == "POST":
         project_name = request.POST.get('project_name')
         slug = slugify(project_name)
@@ -327,23 +327,56 @@ def onboarding(request):
 
         insert_date = timezone.now()
 
-        Project.objects.create(
-            name=project_name,
-            slug=slug,
-            insert_date=insert_date
-        )
-
-        if create_username and create_password and create_user_role:
-            UserModel = get_user_model()
-            user = UserModel.objects.create_user(
-                username=create_username,
-                password=create_password
+        try:
+            Project.objects.create(
+                name=project_name,
+                slug=slug,
+                insert_date=insert_date
             )
-            assign_role(user, create_user_role)
+        except Exception as e:
+            error = ' Could not create project, Error: ' + str(e)
 
 
+        try:
+            if create_username and create_password and create_user_role:
+                UserModel = get_user_model()
+                user = UserModel.objects.create_user(
+                    username=create_username,
+                    password=create_password
+                )
+                assign_role(user, create_user_role)
+        except Exception as e:
+            error = ' Could not create User, Error: ' + str(e)
+
+
+
+        if key_openai:
+            openai_api_key = OpenAiAPIKey.objects.first()
+            if openai_api_key:
+                openai_api_key.key = key_openai
+                openai_api_key.save()
+            else:
+                OpenAiAPIKey.objects.create(key=key_openai)
+
+        if key_netlas:
+            netlas_api_key = NetlasAPIKey.objects.first()
+            if netlas_api_key:
+                netlas_api_key.key = key_netlas
+                netlas_api_key.save()
+            else:
+                NetlasAPIKey.objects.create(key=key_netlas)
+
+    context['error'] = error
+    # check is any projects exists, then redirect to project list else onboarding
+    projects = Project.objects.all()
+    openai_key = OpenAiAPIKey.objects.all()
+    netlas_key = NetlasAPIKey.objects.all()
+
+    context['openai_key'] = openai_key[0] if openai_key else None
+    context['netlas_key'] = netlas_key[0] if netlas_key else None
 
     if len(projects):
         slug = projects[0].slug
-        # return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+
     return render(request, 'dashboard/onboarding.html', context)
