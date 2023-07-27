@@ -13,12 +13,17 @@
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-xl-9">
-            <form method="POST">
+            <form method="POST" autocomplete="off">
               {% csrf_token %}
               <div class="card bg-pattern">
                 <div class="card-body p-4">
                   <h3 class="text-center">Hey {{user.username}}! Welcome to reNgine</h3>
                   <p>You will need to create your first project before you start using reNgine. Projects are now a part of reNgine 2.0! <a href="#">Learn more about projects.</a></p>
+                  {% if error %}
+                  <div class="alert alert-danger">
+                    {{error}}
+                  </div>
+                  {% endif %}
                   <div class="row">
                     <div class="col-lg-6">
                       <div class="p-sm-3">
@@ -31,11 +36,11 @@
                         <p class="text-muted">You can add additional users and assign them roles. You may add additional users and also change their roles at any point in future.</p>
                         <div class="mb-3">
                           <label for="create_username" class="form-label">User name</label>
-                          <input class="form-control" type="text" id="create_username" name="create_username">
+                          <input class="form-control" type="text" id="create_username" name="create_username" autocomplete="off">
                         </div>
                         <div class="mb-3">
                           <label for="create_password" class="form-label">Password</label>
-                          <input class="form-control" type="password" id="create_password" name="create_password">
+                          <input class="form-control" type="password" id="create_password" name="create_password" autocomplete="new-password">
                         </div>
                         <div class="form mb-3">
                           <label for="create_user_role" class="form-label float-start">Role</label>
@@ -54,13 +59,21 @@
                         <div class="mb-3">
                           <label for="key_openai" class="form-label">OpenAI <span class="ms-1 badge bg-soft-danger text-danger">🔥 Recommended</span><span class="ms-1 badge bg-soft-primary text-primary">Experimental</span></label>
                           <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p>
-                          <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
+                          {% if openai_key %}
+                            <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
+                          {% else %}
+                            <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
+                          {% endif %}
                           <span class="text-muted float-end">This is optional but recommended.</span>
                         </div>
                         <div class="mb-3">
                           <label for="key_netlas" class="form-label">Netlas</label>
                           <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p>
-                          <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
+                          {% if netlas_key %}
+                            <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
+                          {% else %}
+                            <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
+                          {% endif %}
                           <span class="text-muted float-end">This is optional</span>
                         </div>
                         <div class="mb-0">
