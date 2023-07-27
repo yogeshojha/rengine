@@ -41,8 +41,8 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 <p> now able to collaborate in real time with your bug bounty hunter team! </p>
 <p> hedgedoc can be accessed via scan history or target summary under the action column!</p>
 
-![alt text](https://raw.githubusercontent.com/andrew-gomez/rengine/blob/main/images/hedgedoc-1.png)
-![alt text](https://raw.githubusercontent.com/andrew-gomez/rengine/blob/main/images/hedgedoc-2.png)
+![alt text](https://github.com/andrew-gomez/rengine/blob/master/images/hedgedoc-1.png?raw=true)
+![alt text](https://github.com/andrew-gomez/rengine/blob/master/images/hedgedoc-2.png?raw=true)
 
 
 <h4> Troubleshooting </h4>
