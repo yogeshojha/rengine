@@ -948,3 +948,13 @@ def get_domain_historical_ip_address(domain):
 			}
 		)
 	return ips
+
+
+def get_open_ai_key():
+	openai_key = OpenAiAPIKey.objects.all()
+	return openai_key[0] if openai_key else None
+
+
+def get_netlas_key():
+	netlas_key = NetlasAPIKey.objects.all()
+	return netlas_key[0] if netlas_key else None
