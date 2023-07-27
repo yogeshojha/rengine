@@ -1119,9 +1119,11 @@ $(document).ready(function(){
 				{
 					"render": function(data, type, row) {
 						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
+						const hedgedoc_http_url = "{{ hedgedoc }}"+row['name'];
 						return `
 							<div class="btn-group mt-2">
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
+							<a href="${hedgedoc_http_url}" target="_blank"><button type="button" data-toggle="tooltip" data-placement="top" title="View Hedgedoc Notes" class="btn btn-primary me-1" id="${row['id']}"><i class="fe-file-text"></i></button></a>
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
 							<div class="dropdown-menu dropdown-menu-end">

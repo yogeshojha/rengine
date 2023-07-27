@@ -22,6 +22,7 @@ python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.Inter
 python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
 # update whatportis
+python3 -m pip install --upgrade whatportis
 yes | whatportis --update
 
 # clone dirsearch default wordlist
@@ -43,7 +44,12 @@ then
   echo "Downloading Deepmagic top 50000 Wordlist"
   wget https://raw.githubusercontent.com/danielmiessler/SecLists/master/Discovery/DNS/deepmagic.com-prefixes-top50000.txt -O /usr/src/wordlist/deepmagic.com-prefixes-top50000.txt
 fi
-
+# check if best-dns-wordlist for subdomain enum exists
+if [ ! -f /usr/src/wordlist/best-dns-wordlist.txt ];
+then
+  echo "Downloading Deepmagic top 50000 Wordlist"
+  wget https://wordlists-cdn.assetnote.io/data/manual/best-dns-wordlist.txt -O /usr/src/wordlist/best-dns-wordlist.txt
+fi
 
 # clone Sublist3r
 if [ ! -d "/usr/src/github/Sublist3r" ]
@@ -78,6 +84,7 @@ then
   git clone https://github.com/laramies/theHarvester /usr/src/github/theHarvester
 fi
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
+cp /root/.config/theharvester/api-keys.yaml /usr/src/github/theHarvester/api-keys.yaml 
 
 # clone pwndb
 if [ ! -d "/usr/src/github/pwndb" ]
@@ -130,7 +137,19 @@ then
   pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
+if [ ! -d "/usr/src/github/MassDNS" ]
+then
+  echo "Cloning CMSeeK"
+  git clone https://github.com/blechschmidt/massdns /usr/src/github/MassDNS
+  cd /usr/src/github/MassDNS
+  make
+  make install
+fi
+
+
+
 exec "$@"
 
-# httpx seems to have issue, use alias instead!!!
+# httpx/ripgen seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
+echo 'alias ripgen="/root/.cargo/bin/ripgen"' >> ~/.bashrc

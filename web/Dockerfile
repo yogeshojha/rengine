@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Labels and Credits
 LABEL \
@@ -15,6 +15,17 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Install essentials
+
+# Install Python
+RUN apt update -y && \
+    apt install -y software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt update -y && \
+    apt install -y \
+    python3.10 \
+    python3-dev \
+    python3-pip
+
 RUN apt update -y && apt install -y  --no-install-recommends \
     build-essential \
     cmake \
@@ -26,9 +37,6 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     libpcap-dev \
     netcat \
     postgresql \
-    python3 \
-    python3-dev \
-    python3-pip \
     python3-netaddr \
     wget \
     x11-utils \
@@ -77,7 +85,11 @@ RUN GO111MODULE=on go install -v github.com/jaeles-project/gospider@latest
 
 RUN go install -v github.com/owasp-amass/amass/v3/...@latest
 
+RUN go install -v github.com/d3mondev/puredns/v2@latest
+
 RUN go install -v github.com/ffuf/ffuf@latest
+
+RUN go install -v github.com/s0md3v/smap/cmd/smap@latest
 
 RUN go install -v github.com/tomnomnom/assetfinder@latest
 RUN GO111MODULE=on go install -v github.com/tomnomnom/gf@latest
@@ -96,8 +108,10 @@ RUN nuclei -update-templates
 
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
-RUN pip3 install --upgrade setuptools pip && \
-    pip3 install -r /tmp/requirements.txt
+RUN python3 -m pip install --upgrade setuptools pip && \
+    python3 -m pip install -r /tmp/requirements.txt
+
+
 
 # install eyewitness
 
@@ -107,8 +121,10 @@ RUN python3 -m pip install fuzzywuzzy \
     pyvirtualdisplay \
     netaddr
 
+
 # Copy source code
 COPY . /usr/src/app/
+#COPY ../tool_configs/ /root/.config
 
 # httpx seems to have issue, use alias instead!!!
 RUN echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc

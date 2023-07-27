@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.4.0
+- added hedgedoc, ripgen, smap, custom scan engine
+
 ## 1.3.6
 **Release Date: March 2, 2023**
 

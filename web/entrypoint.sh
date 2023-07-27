@@ -13,6 +13,7 @@ fi
 
 python3 manage.py migrate
 
-python3 manage.py runserver 0.0.0.0:8000
+python3 manage.py runserver 0.0.0.0:8000 --insecure
+python3 manage.py createsuperuser --noinput
 
 exec "$@"

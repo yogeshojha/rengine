@@ -35,6 +35,11 @@ Enjoy peace of mind with reNgine's continuous monitoring, deeper reconnaissance,
 <p align="left">reNgine is a web application reconnaissance suite with focus on a highly configurable streamlined recon process via Engines, recon data correlation, continuous monitoring, recon data backed by a database, and a simple yet intuitive User Interface. With features such as sub-scan, deeper co-relation, report generation, etc. reNgine aims to fix the gap in the traditional recon tools and probably a better alternative for existing commercial tools.
 
 reNgine makes it easy for penetration testers and security auditors to gather reconnaissance data with bare minimal configuration.
+
+<h4> What's different in this fork?</h4>
+<p> added rust tool install support, integrated smap for passive port and vuln scanning, added new OSINT features such as querying phonebook.ch for emails, and most importantly added hedgedoc support! </p>
+<p> now able to collaborate in real time with your bug bounty hunter team! </p>
+<p> hedgedoc can be accessed via scan history or target summary under the action column!</p>
 </p>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)

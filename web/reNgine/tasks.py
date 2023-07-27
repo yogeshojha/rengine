@@ -38,6 +38,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from reNgine.celery import app
 from reNgine.definitions import *
+from reNgine.settings import *
 
 from startScan.models import *
 from targetApp.models import Domain
@@ -111,14 +112,17 @@ def initiate_subtask(
 		sub_scan.start_scan_date = current_scan_time
 		sub_scan.status = RUNNING_TASK
 		sub_scan.save()
-
+		passive_only_flag = False
+		if 'global_overides' in yaml_configuration and yaml_configuration['global_overides'].get('passive_only', False):
+			passive_only_flag = True
 		if port_scan:
 			# delete any existing ports.json
 			rand_name = str(time.time()).split('.')[0]
 			file_name = 'ports_{}_{}.json'.format(subdomain.name, rand_name)
 			scan_history.port_scan = True
 			scan_history.save()
-			port_scanning(
+			if passive_only_flag:
+				passive_port_scanning(
 				scan_history,
 				0,
 				yaml_configuration,
@@ -126,21 +130,42 @@ def initiate_subtask(
 				subdomain=subdomain.name,
 				file_name=file_name,
 				subscan=sub_scan
-			)
+				)
+
+				port_scanning(
+					scan_history,
+					0,
+					yaml_configuration,
+					results_dir,
+					subdomain=subdomain.name,
+					file_name=file_name,
+					subscan=sub_scan
+				)
 		elif dir_fuzz:
 			rand_name = str(time.time()).split('.')[0]
 			file_name = 'dir_fuzz_{}_{}.json'.format(subdomain.name, rand_name)
 			scan_history.dir_file_fuzz = True
 			scan_history.save()
-			directory_fuzz(
-				scan_history,
-				0,
-				yaml_configuration,
-				results_dir,
-				subdomain=subdomain.name,
-				file_name=file_name,
-				subscan=sub_scan
-			)
+			if passive_only_flag:
+				passive_directory_fuzz(
+					scan_history,
+					0,
+					yaml_configuration,
+					results_dir,
+					subdomain=subdomain.name,
+					file_name=file_name,
+					subscan=sub_scan
+				)
+			else:
+				directory_fuzz(
+					scan_history,
+					0,
+					yaml_configuration,
+					results_dir,
+					subdomain=subdomain.name,
+					file_name=file_name,
+					subscan=sub_scan
+				)
 		elif endpoint:
 			rand_name = str(time.time()).split('.')[0]
 			file_name = 'endpoints_{}_{}.txt'.format(subdomain.name, rand_name)
@@ -160,7 +185,8 @@ def initiate_subtask(
 			file_name = 'vuln_{}_{}.txt'.format(subdomain.name, rand_name)
 			scan_history.vulnerability_scan = True
 			scan_history.save()
-			vulnerability_scan(
+			if passive_only_flag:
+				passive_vulnerability_scan(
 				scan_history,
 				0,
 				yaml_configuration,
@@ -168,7 +194,17 @@ def initiate_subtask(
 				subdomain=subdomain,
 				file_name=file_name,
 				subscan=sub_scan
-			)
+				)
+			else:
+				vulnerability_scan(
+					scan_history,
+					0,
+					yaml_configuration,
+					results_dir,
+					subdomain=subdomain,
+					file_name=file_name,
+					subscan=sub_scan
+				)
 		task_status = SUCCESS_TASK
 
 
@@ -222,7 +258,6 @@ def initiate_scan(
 	task.screenshot = True if engine_object.screenshot else False
 	task.vulnerability_scan = True if engine_object.vulnerability_scan else False
 	task.save()
-
 	activity_id = create_scan_activity(task, "Scanning Started", 2)
 	results_dir = '/usr/src/scan_results/'
 	os.chdir(results_dir)
@@ -280,6 +315,14 @@ def initiate_scan(
 	subdomain_file.write(domain.name + "\n")
 	subdomain_file.close()
 
+	# Check for global_overides and passive_only
+	passive_only_flag = False
+	if 'global_overides' in yaml_configuration and yaml_configuration['global_overides'].get('passive_only', False):
+		# Call the function from custom_tasks.py
+		passive_only_flag = True
+		# passive_only_process(task, domain, yaml_configuration, results_dir, out_of_scope_subdomains)
+		# return {"status": True}
+
 	if(task.subdomain_discovery):
 		activity_id = create_scan_activity(task, "Subdomain Scanning", 1)
 		try:
@@ -312,7 +355,10 @@ def initiate_scan(
 	if(task.waf_detection):
 		try:
 			activity_id = create_scan_activity(task, "Detecting WAF", 1)
-			check_waf(task, results_dir)
+			if passive_only_flag:
+				check_waf(task, results_dir)
+			else:
+				check_waf(task, results_dir)
 			update_last_activity(activity_id, 2)
 		except Exception as e:
 			logger.error(e)
@@ -322,12 +368,21 @@ def initiate_scan(
 		if task.screenshot:
 			activity_id = create_scan_activity(
 				task, "Visual Recon - Screenshot", 1)
-			grab_screenshot(
-				task,
-				domain,
-				yaml_configuration,
-				current_scan_dir,
-				activity_id)
+			if passive_only_flag:
+				grab_screenshot(
+					task,
+					domain,
+					yaml_configuration,
+					current_scan_dir,
+					activity_id)
+			else:
+				grab_screenshot(
+					task,
+					domain,
+					yaml_configuration,
+					current_scan_dir,
+					activity_id)
+			
 			update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -338,7 +393,10 @@ def initiate_scan(
 	try:
 		if(task.port_scan):
 			activity_id = create_scan_activity(task, "Port Scanning", 1)
-			port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
+			if passive_only_flag:
+				passive_port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
+			else:
+				port_scanning(task, activity_id, yaml_configuration, results_dir, domain)
 			update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -361,13 +419,22 @@ def initiate_scan(
 	try:
 		if task.dir_file_fuzz:
 			activity_id = create_scan_activity(task, "Directory Search", 1)
-			directory_fuzz(
+			if passive_only_flag:
+				passive_directory_fuzz(
 				task,
 				activity_id,
 				yaml_configuration,
 				results_dir,
 				domain=domain,
-			)
+				)
+			else:				
+				directory_fuzz(
+					task,
+					activity_id,
+					yaml_configuration,
+					results_dir,
+					domain=domain,
+				)
 			update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -395,13 +462,22 @@ def initiate_scan(
 	try:
 		if task.vulnerability_scan:
 			activity_id = create_scan_activity(task, "Vulnerability Scan", 1)
-			vulnerability_scan(
-				task,
-				activity_id,
-				yaml_configuration,
-				results_dir,
-				domain=domain,
-			)
+			if passive_only_flag:
+				passive_vulnerability_scan(
+					task,
+					activity_id,
+					yaml_configuration,
+					results_dir,
+					domain=domain,
+				)
+			else:
+				vulnerability_scan(
+					task,
+					activity_id,
+					yaml_configuration,
+					results_dir,
+					domain=domain,
+				)
 			update_last_activity(activity_id, 2)
 	except Exception as e:
 		logger.error(e)
@@ -523,7 +599,7 @@ def subdomain_scan(
 	# check for all the tools and add them into string
 	# if tool selected is all then make string, no need for loop
 	if ALL in yaml_configuration[SUBDOMAIN_DISCOVERY][USES_TOOLS]:
-		tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall'
+		tools = 'amass-active amass-passive assetfinder sublist3r subfinder oneforall ripgen'
 		# also put all custom subdomain tools
 		custom_tools = ' '.join(tool for tool in custom_subdomain_tools)
 		if custom_tools:
@@ -569,7 +645,7 @@ def subdomain_scan(
 					if AMASS_WORDLIST in yaml_configuration[SUBDOMAIN_DISCOVERY]:
 						wordlist = yaml_configuration[SUBDOMAIN_DISCOVERY][AMASS_WORDLIST]
 						if wordlist == 'default':
-							wordlist_path = '/usr/src/wordlist/deepmagic.com-prefixes-top50000.txt'
+							wordlist_path = '/usr/src/wordlist/best-dns-wordlist.txt'
 						else:
 							wordlist_path = '/usr/src/wordlist/' + wordlist + '.txt'
 							if not os.path.exists(wordlist_path):
@@ -629,7 +705,7 @@ def subdomain_scan(
 					# remove the results from oneforall directory
 					os.system(
 						'rm -rf /usr/src/github/OneForAll/results/{}.*'.format(domain.name))
-
+						
 			elif tool.lower() in custom_subdomain_tools:
 				# this is for all the custom tools, and tools runs based on instalaltion steps provided
 				if InstalledExternalTool.objects.filter(name__icontains=tool.lower()).exists():
@@ -680,6 +756,37 @@ def subdomain_scan(
 	'''
 	The final results will be stored in sorted_subdomain_collection.
 	'''
+	try:
+		if 'ripgen' in tools:
+			print("Debug: Running ripgen for permutation bruteforcing")
+			with open('{0}/ripgen_output.txt'.format(results_dir), 'w') as outfile:
+				ripgen_command = 'ripgen -d {0}/sorted_subdomain_collection.txt'.format(results_dir)
+				process = subprocess.Popen(ripgen_command.split(), stdout=outfile)
+				process.wait()
+			print("Debug: Running puredns to check for valid domains")
+			# Grab these from Yaml later but for now this is fine
+			os.system('echo "8.8.8.8" > {0}/resolvers.txt'.format(results_dir))
+			os.system('echo "8.8.4.4" >> {0}/resolvers.txt'.format(results_dir))
+			os.system('echo "208.67.222.222" >> {0}/resolvers.txt'.format(results_dir))
+			os.system('echo "208.67.220.220" >> {0}/resolvers.txt'.format(results_dir))
+			puredns_command = 'puredns resolve -r {0}/resolvers.txt {0}/ripgen_output.txt --write {0}/puredns_output.txt'.format(results_dir)
+			process = subprocess.Popen(puredns_command.split())
+			process.wait()
+
+			print("Debug: Storing the output of puredns")
+			# Take the output of the puredns and store it as a file
+			os.rename('{0}/puredns_output.txt'.format(results_dir), '{0}/bruteforced_subdomain_collection.txt'.format(results_dir))
+			
+			# Re-Sort
+			os.system('cat {0}/*.txt > {0}/subdomain_collection.txt'.format(results_dir))
+			os.system('cat {0}/target_domain.txt >> {0}/subdomain_collection.txt'.format(results_dir))
+			os.system('rm -f {}/from*'.format(results_dir))
+			os.system('sort -u {0}/subdomain_collection.txt -o {0}/sorted_subdomain_collection.txt'.format(results_dir))
+			os.system('rm -f {}/subdomain_collection.txt'.format(results_dir))
+
+	except Exception as e:
+		logger.error(e)
+
 	# parse the subdomain list file and store in db
 	with open(subdomain_scan_results_file) as subdomain_list:
 		for _subdomain in subdomain_list:
@@ -743,6 +850,7 @@ def get_new_added_subdomain(scan_id, domain_id):
 		return Subdomain.objects.filter(
 			scan_history=scan_id).filter(
 				name__in=added_subdomain)
+
 
 def get_removed_subdomain(scan_id, domain_id):
 	scan_history = ScanHistory.objects.filter(
@@ -1190,9 +1298,6 @@ def check_waf(scan_history, results_dir):
 							subdomain.waf.add(waf_obj)
 
 
-
-
-
 def directory_fuzz(
 		scan_history,
 		activity_id,
@@ -1497,21 +1602,24 @@ def fetch_endpoints(
 			os.system(waybackurls_command)
 
 		elif tool == 'gospider':
-			logger.info('Running gospider')
-			if subdomain:
-				subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
-				gospider_command = 'gospider -s {}'.format(subdomain_url)
-			elif scan_type == 'deep' and domain:
-				gospider_command = 'gospider -S '.format(alive_subdomains_path)
+			if 'global_overides' in yaml_configuration and yaml_configuration['global_overides'].get('passive_only', False):
+				logger.info('Skipping gospider - Passive Overides: True')
 			else:
-				gospider_command = 'gospider -s https://{} '.format(domain_name)
+				logger.info('Running gospider')
+				if subdomain:
+					subdomain_url = subdomain.http_url if subdomain.http_url else 'https://' + subdomain.name
+					gospider_command = 'gospider -s {}'.format(subdomain_url)
+				elif scan_type == 'deep' and domain:
+					gospider_command = 'gospider -S '.format(alive_subdomains_path)
+				else:
+					gospider_command = 'gospider -s https://{} '.format(domain_name)
 
-			gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
-				valid_url_of_domain_regex,
-				results_dir
-			)
-			logger.info(gospider_command)
-			os.system(gospider_command)
+				gospider_command += ' --js -t 100 -d 2 --sitemap --robots -w -r | grep -Eo {} > {}/urls_gospider.txt'.format(
+					valid_url_of_domain_regex,
+					results_dir
+				)
+				logger.info(gospider_command)
+				os.system(gospider_command)
 
 	# run cleanup of urls
 	os.system('cat {0}/urls* > {0}/final_urls.txt'.format(results_dir))
@@ -1582,7 +1690,7 @@ def fetch_endpoints(
 		logger.error(e)
 		if not subscan:
 			update_last_activity(activity_id, 0)
-		raise Exception(exception)
+		raise Exception(e)
 
 	if notification and notification[0].send_scan_output_file:
 		send_files_to_discord(results_dir + '/{}'.format(output_file_name))
@@ -2228,6 +2336,7 @@ def osint_discovery(scan_history, domain, yaml_configuration, results_dir):
 	if 'employees' in osint_lookup:
 		get_and_save_employees(scan_history, results_dir)
 
+
 def dorking(scan_history, yaml_configuration):
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
 	# look in stackoverflow
@@ -2692,3 +2801,240 @@ def get_and_save_meta_info(meta_dict):
 					meta_finder_document.os = metadata['OSInfo'].rstrip('\x00')
 
 			meta_finder_document.save()
+
+
+'''
+These are the global overides. The goal here
+was to add an easy way to exdtend to yaml without
+needed definitions or changing datamodles.
+
+It is a quick stop-gap solution and not the best.
+However, it helps ensure there is no touching of endpoints
+when required. 
+'''
+def passive_check_waf(task, results_dir):
+	print("Debug: Skipping WAF Detection Since it is an active Scanning task")
+	logger.info("Skipping WAF Detection - Global Overide Passive = True")
+	# Call your function or method for WAF detection here
+	pass
+
+def passive_directory_fuzz(
+		scan_history,
+		activity_id,
+		yaml_configuration,
+		results_dir,
+		domain=None,
+		subdomain=None,
+		file_name=None,
+		subscan=None
+	):
+	print("Debug: Skipping Directory/File Fuzzing")
+	logger.info("Skipping Directory/File Fuzzing - Global Overide Passive = True")        
+	# Call your function or method for directory/file fuzzing here
+	pass
+
+def passive_port_scanning(
+		scan_history,
+		activity_id,
+		yaml_configuration,
+		results_dir,
+		domain=None,
+		subdomain=None,
+		file_name=None,
+		subscan=None
+	):
+	print("Debug: Initiating Passive Port Scan")
+	logger.info("Skipping naabu | Using SMAP scan - Global Overide Passive = True")  
+	# Call your function or method for port scanning here
+	# Random sleep to prevent ip and port being overwritten
+	sleep(randint(1,5))
+	'''
+	This function is responsible for running the port scan
+	'''
+	output_file_name = file_name if file_name else 'ports.json'
+	port_results_file = results_dir + '/' + output_file_name
+
+	domain_name = domain.name if domain else subdomain
+	notification = Notification.objects.all()
+	if notification and notification[0].send_scan_status_notif:
+		send_notification('Port Scan initiated for {}'.format(domain_name))
+
+	# SMAP command
+	if domain:
+		print("DEBUG : DOMAIN")
+		subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+		
+		if os.path.getsize(subdomain_scan_results_file) > 0:
+			smap_command = 'smap -iL {} -oJ {}'.format(
+				subdomain_scan_results_file,
+				port_results_file
+			)
+		else:
+			smap_command = 'smap {} -oJ {}'.format(
+			domain_name,
+			port_results_file
+			)
+	elif subdomain:
+		print("DEBUG : SUBDOMAIN")
+		smap_command = 'smap {} -oJ {}'.format(
+		domain_name,
+		port_results_file
+		)
+	print(smap_command)
+	# run smap
+	logger.info(smap_command)
+	process = subprocess.Popen(smap_command.split())
+	process.wait()
+
+	# parsing smap output
+	try:
+		with open(port_results_file, 'r') as f:
+			smap_results = json.load(f)
+
+		for result in smap_results:
+			ip_address = result['ip']
+			host = result['user_hostname']
+			for port_info in result['ports']:
+				port_number = port_info['port']
+
+				# see if port already exists
+				if Port.objects.filter(number__exact=port_number).exists():
+					port = Port.objects.get(number=port_number)
+				else:
+					port = Port()
+					port.number = port_number
+
+					if port_number in UNCOMMON_WEB_PORTS:
+						port.is_uncommon = True
+					port_detail = whatportis.get_ports(str(port_number))
+					debug_port = len(port_detail)
+					if len(port_detail):
+						port.service_name = port_detail[0].name
+						port.description = port_detail[0].description
+					port.save()
+				
+				
+				if IpAddress.objects.filter(address=ip_address).exists():
+					ip = IpAddress.objects.get(address=ip_address)
+				else:
+					# create a new ip
+					ip = IpAddress()
+					ip.address = ip_address
+					ip.save()
+				ip.ports.add(port)
+				ip.save()
+
+				if subscan:
+					ip.ip_subscan_ids.add(subscan)
+					ip.save()
+
+				# if this ip does not belong to host, we also need to add to specific host
+				if not Subdomain.objects.filter(name=host, scan_history=scan_history, ip_addresses__address=ip_address).exists():
+					subdomain = Subdomain.objects.get(scan_history=scan_history, name=host)
+					subdomain.ip_addresses.add(ip)
+					subdomain.save()
+	except BaseException as exception:
+		logging.error(exception)
+		if not subscan:
+			update_last_activity(activity_id, 0)
+		raise Exception(exception)
+
+def passive_grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
+		print("Debug: Skipping Screenshot Task")
+		logger.info("Skipping Screenshot - Global Overide Passive = True")  
+		# Call your function or method for taking screenshots here
+		pass
+
+def passive_vulnerability_scan(
+		scan_history,
+		activity_id,
+		yaml_configuration,
+		results_dir,
+		domain=None,
+		subdomain=None,
+		file_name=None,
+		subscan=None
+	):
+	print("Debug: Initiating Vulnerability Scanning")
+	logger.info("Disabled naabu | Using Shocan for Vulnerability identification- Global Overide Passive = True") 
+	# Call your function or method for vulnerability scanning here
+	# SMAP command
+	output_file_name = file_name if file_name else 'vulnerability.json'
+	vulnerability_result_path = results_dir + '/' + output_file_name
+	domain_name = domain.name if domain else subdomain
+	if domain:
+		print("DEBUG : DOMAIN")
+		subdomain_scan_results_file = results_dir + '/sorted_subdomain_collection.txt'
+		
+		if os.path.getsize(subdomain_scan_results_file) > 0:
+			smap_command = 'smap -iL {} -oJ {}'.format(
+				subdomain_scan_results_file,
+				vulnerability_result_path
+			)
+		else:
+			smap_command = 'smap {} -oJ {}'.format(
+			domain_name,
+			vulnerability_result_path
+			)
+	elif subdomain:
+		print("DEBUG : SUBDOMAIN")
+		smap_command = 'smap {} -oJ {}'.format(
+		domain_name,
+		vulnerability_result_path
+		)
+	print(smap_command)
+	# run smap
+	logger.info(smap_command)
+	process = subprocess.Popen(smap_command.split())
+	process.wait()
+	# parsing smap output
+	domain_id = scan_history.domain.id
+	domain = Domain.objects.get(id=domain_id)
+	try:
+		with open(vulnerability_result_path, 'r') as f:
+			smap_results = json.load(f)
+
+		for result in smap_results:
+			ip_address = result['ip']
+			host = result['user_hostname']
+			tag = "Shodan_Histrical"
+			if 'vulns' in result:
+				for cve_id in result['vulns']:
+					#print(f"Domain: {host} is listed as histroically vuln to {cve_id}")
+					subdomain = Subdomain.objects.get(name=host, scan_history=scan_history)
+					name = f"{cve_id}_Shodan"
+					vulnerability = Vulnerability()
+					vulnerability.name = name
+					vulnerability.template = "SMAP"
+					vulnerability.type = "Historical"
+					vulnerability.subdomain = subdomain
+					vulnerability.http_url = f"Shodan-Histroical for host: {host}"
+					vulnerability.target_domain = domain
+					vulnerability.scan_history = scan_history
+					vulnerability.description = f"Shodan Discovery For Host: {host}"
+					vulnerability.discovered_date = timezone.now()
+					vulnerability.open_status = False
+					vulnerability.severity = -1
+					vulnerability.save()
+					if subscan:
+						vulnerability.vuln_subscan_ids.add(subscan)
+						vulnerability.save()
+					
+					# Create the CVE in the DB 
+					if CveId.objects.filter(name=cve_id).exists():
+						cve_obj = CveId.objects.get(name=cve_id)
+					else:
+						cve_obj = CveId(name=cve_id)
+						cve_obj.save()
+					vulnerability.cve_ids.add(cve_obj)
+					if VulnerabilityTags.objects.filter(name=tag).exists():
+						tag = VulnerabilityTags.objects.get(name=tag)
+					else:
+						tag = VulnerabilityTags(name=tag)
+						tag.save()
+					vulnerability.tags.add(tag)
+	except BaseException as exception:
+		logging.error(exception)
+		if not subscan:
+			update_last_activity(activity_id, 0)
+		raise Exception(exception)

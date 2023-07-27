@@ -29,7 +29,6 @@ def index(request):
     # TODO bring default target page
     return render(request, 'target/index.html')
 
-
 def add_target(request):
     add_target_form = AddTargetForm(request.POST or None)
     if request.method == "POST":
@@ -175,7 +174,6 @@ def list_target(request):
     }
     return render(request, 'target/list.html', context)
 
-
 def delete_target(request, id):
     obj = get_object_or_404(Domain, id=id)
     if request.method == "POST":
@@ -198,7 +196,6 @@ def delete_target(request, id):
             'Oops! Domain could not be deleted!')
     return http.JsonResponse(responseData)
 
-
 def delete_targets(request):
     context = {}
     if request.method == "POST":
@@ -211,7 +208,6 @@ def delete_targets(request):
             messages.INFO,
             'Targets deleted!')
     return http.HttpResponseRedirect(reverse('list_target'))
-
 
 def update_target(request, id):
     domain = get_object_or_404(Domain, id=id)
@@ -264,13 +260,16 @@ def target_summary(request, id):
     high_count = vulnerabilities.filter(severity=3).count()
     critical_count = vulnerabilities.filter(severity=4).count()
 
+    #adding hedgedoc url for new tab
+    context['hedgedoc'] = settings.HEDGEDOC_PUB_URL
+    
     context['unknown_count'] = unknown_count
     context['info_count'] = info_count
     context['low_count'] = low_count
     context['medium_count'] = medium_count
     context['high_count'] = high_count
     context['critical_count'] = critical_count
-
+    
     context['total_vul_ignore_info_count'] = low_count + \
         medium_count + high_count + critical_count
 
@@ -391,3 +390,15 @@ def update_organization(request, id):
         "form": form
     }
     return render(request, 'organization/update.html', context)
+
+# def show_hedgedoc(request, domain):
+#     # The 'domain' variable now contains the domain that was passed in the URL.
+#     # TODO:
+#     # Do something with 'domain' here, like storing Hedgedoc notes url in database.
+#     # Beter View or listing of the notes with content on the dashboard... Linking them to TO-DO notes.. ETC
+#     # More importantly Authentication and security updates. Hedgedoc is very premissive. This here for testing. 
+
+#     # For now, we'll just pass it to the template.
+#     note_id = domain  # default to empty string if no note_id is provided
+#     hedgedoc_url = f"http://rengine.local:3000/"
+#     return render(request, 'target/hedgedoc.html', {'note_id': note_id, 'hedgedoc_url': hedgedoc_url})

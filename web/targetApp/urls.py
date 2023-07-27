@@ -48,4 +48,8 @@ urlpatterns = [
         'summary/<int:id>',
         views.target_summary,
         name='target_summary'),
+    # path(
+    #     'hedgedoc/<str:domain>',
+    #     views.show_hedgedoc,
+    #     name='target_hedgedoc'),
 ]
