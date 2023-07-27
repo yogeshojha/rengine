@@ -40,7 +40,9 @@ reNgine makes it easy for penetration testers and security auditors to gather re
 <p> added rust tool install support, integrated smap for passive port and vuln scanning, added new OSINT features such as querying phonebook.ch for emails, and most importantly added hedgedoc support! </p>
 <p> now able to collaborate in real time with your bug bounty hunter team! </p>
 <p> hedgedoc can be accessed via scan history or target summary under the action column!</p>
-</p>
+
+<h4> Troubleshooting </h4>
+<p> When deploying the rengine for the first time the dependencies have failed to install once or twice, and sometimes cellery doesnt deploy properly. Current resolution is to bring docker the docker containers and bring them back up. </p>
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
