@@ -13,7 +13,7 @@ fi
 
 echo "Waiting for Celery to start"
 while ! celery -A reNgine status; do
-  sleep 0.5
+  sleep 1.0
 done
 
 python3 manage.py migrate

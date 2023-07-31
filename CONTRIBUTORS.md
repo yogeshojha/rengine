@@ -1,7 +1,7 @@
 ## Contributors
 
 Thanks to these individuals for making reNgine awesome by fixing bugs, resolving issues and by creating PR!
-
+* [aggr0cr4g](https://github.com/aggr0cr4g)
 * [Aju100](https://github.com/Aju100)
 * [d1pakda5](https://github.com/d1pakda5)
 * [subha7595](https://github.com/subha7595)

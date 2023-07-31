@@ -104,8 +104,8 @@
     github_url: https://github.com/owasp-amass/amass
     license_url: https://github.com/owasp-amass/amass/blob/master/LICENSE
     version_lookup_command: amass -version
-    update_command: go install -v github.com/owasp-amass/amass/v3/...@latest
-    install_command: go install -v github.com/owasp-amass/amass/v3/...@latest
+    update_command: go install -v github.com/owasp-amass/amass/v4/...@master
+    install_command: go install -v github.com/owasp-amass/amass/v4/...@master
     version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: true
@@ -240,4 +240,55 @@
     is_subdomain_gathering: false
     is_github_cloned: true
     github_clone_path: /usr/src/github/theHarvester
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 15
+  fields:
+    logo_url: https://github.com/s0md3v/Smap/raw/main/static/smap-logo.png
+    name: SMAP
+    description: SMAP is a passive Nmap like scanner built with shodan.io.
+    github_url: https://github.com/s0md3v/Smap
+    license_url: https://raw.githubusercontent.com/s0md3v/Smap/main/LICENSE
+    version_lookup_command: smap
+    update_command: go install -v github.com/s0md3v/smap/cmd/smap@latest
+    install_command: go install -v github.com/s0md3v/smap/cmd/smap@latest
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 16
+  fields:
+    logo_url: null  
+    name: ripgen
+    description: A rust-based version of the popular dnsgen python utility. A CLI utility that calls into ripgen_lib and uses dnsgen's transforms
+    github_url: https://github.com/resyncgg/ripgen
+    license_url: https://github.com/resyncgg/ripgen
+    version_lookup_command: ripgen -V
+    update_command: cargo install ripgen
+    install_command: cargo install ripgen
+    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    is_default: true
+    is_subdomain_gathering: true
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 17
+  fields:
+    logo_url: https://github.com/d3mondev/puredns/raw/master/assets/puredns-logo.png  
+    name: puredns 
+    description: puredns is a fast domain resolver and subdomain bruteforcing tool that can accurately filter out wildcard subdomains and DNS poisoned entries.
+    github_url: https://github.com/d3mondev/puredns
+    license_url: https://raw.githubusercontent.com/d3mondev/puredns/master/LICENSE
+    version_lookup_command: puredns -v
+    update_command: go install github.com/d3mondev/puredns/v2@latest
+    install_command: go install github.com/d3mondev/puredns/v2@latest
+    version_match_regex: (\d+\.\d+\.\d+)
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
     subdomain_gathering_command: null

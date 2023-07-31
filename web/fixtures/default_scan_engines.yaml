@@ -168,3 +168,68 @@
       [ all ]\r\n  # custom_templates: []\r\n  severity: [ critical, high, medium,
       low, info, unknown ]\r\n\r\n#custom_header: 'name: value'"
     default_engine: true
+- model: scanEngine.enginetype
+  pk: 7
+  fields:
+    engine_name: CUSTOM - passive options with WAF detection and subdomain bruteforce
+    subdomain_discovery: true
+    waf_detection: true
+    dir_file_fuzz: false
+    port_scan: true
+    fetch_url: true
+    vulnerability_scan: true
+    osint: true
+    screenshot: false
+    yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [amass-passive, amass-active, assetfinder,\
+      \ sublist3r, subfinder, ripgen]\r\n  threads: 10\r\n  amass_wordlist: default\r\n use_amass_config: true\r\n  use_subfinder_config:\
+      \ false\r\n\r\nosint:\r\n  discover: [emails, metainfo, employees]\r\n  intensity:\
+      \ normal\r\n  dork: [stackoverflow, 3rdparty, social_media, project_management,\
+      \ code_sharing, config_files, jenkins, wordpress_files, cloud_buckets, php_error,\
+      \ exposed_documents, struts_rce, db_files, traefik, git_exposed]\r\n\r\nfetch_url:\r\
+      \n  uses_tools: [gauplus, hakrawler, waybackurls, gospider]\r\n  intensity:\
+      \ normal\r\n  ignore_file_extension: [jpg, png, jpeg, gif]\r\n  gf_patterns:\
+      \ [debug_logic, idor, img-traversal, interestingEXT, interestingparams, interestingsubs,\
+      \ jsvar, lfi, rce, redirect, sqli, ssrf, ssti, xss]\r\n\r\nglobal_overides:\r\
+      \n  passive_only: true\r\n"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 8
+  fields:
+    engine_name: CUSTOM - Minimal Active
+    subdomain_discovery: true
+    waf_detection: true
+    dir_file_fuzz: false
+    port_scan: true
+    fetch_url: true
+    vulnerability_scan: true
+    osint: false
+    screenshot: true
+    yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [amass-passive, assetfinder,\
+      \ sublist3r, subfinder]\r\n  threads: 10\r\n  use_amass_config: false\r\n  use_subfinder_config:\
+      \ false\r\n\r\nosint:\r\n  discover: [emails, metainfo, employees]\r\n  intensity:\
+      \ normal\r\n  dork: [stackoverflow, 3rdparty, social_media, project_management,\
+      \ code_sharing, config_files, jenkins, wordpress_files, cloud_buckets, php_error,\
+      \ exposed_documents, struts_rce, db_files, traefik, git_exposed]\r\n\r\nfetch_url:\r\
+      \n  uses_tools: [gauplus, hakrawler, waybackurls, gospider]\r\n  intensity:\
+      \ normal\r\n  ignore_file_extension: [jpg, png, jpeg, gif]\r\n  gf_patterns:\
+      \ [debug_logic, idor, img-traversal, interestingEXT, interestingparams, interestingsubs,\
+      \ jsvar, lfi, rce, redirect, sqli, ssrf, ssti, xss]\r\n\r\nscreenshot:\r\n \
+      \ timeout: 10\r\n  threads: 5\r\n\r\nglobal_overides:\r\n  passive_only: true\r\
+      \n"
+    default_engine: true
+- model: scanEngine.enginetype
+  pk: 9
+  fields:
+    engine_name: 'CUSTOM - Subdomain Bruteforce (WARNING: Lots of results)'
+    subdomain_discovery: true
+    waf_detection: false
+    dir_file_fuzz: false
+    port_scan: false
+    fetch_url: false
+    vulnerability_scan: false
+    osint: false
+    screenshot: false
+    yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [amass-passive, assetfinder,\
+      \ sublist3r, subfinder, ripgen]\r\n  threads: 10\r\n  use_amass_config: false\r\
+      \n  use_subfinder_config: false\r\n"
+    default_engine: true

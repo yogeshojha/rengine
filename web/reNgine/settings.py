@@ -171,3 +171,14 @@ CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = 'UTC'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+'''
+Hedgedoc settings
+'''
+#HEDGEDOC_DOMAIN = os.environ.get("HEDGEDOC_DOMAIN", "hedgedoc.local")
+#HEDGEDOC_URL = os.environ.get("HEDGEDOC_DOMAIN", "http://localhost:3000")
+#HEDGEDOC_PUBLIC_URL = os.environ.get("HEDGEDOC_PUBLIC_URL", "http://hedgedoc.local:3000")
+#HEDGEDOC_PRIVATE_URL = os.environ.get("HEDGEDOC_PRIVATE_URL", "http://hedgedoc.local:3000")
+HEDGEDOC_DOMAIN = os.environ.get('DOMAIN_NAME')
+HEDGEDOC_PORT = '3000'
+HEDGEDOC_PUB_URL = f"http://{HEDGEDOC_DOMAIN}:{HEDGEDOC_PORT}/"
