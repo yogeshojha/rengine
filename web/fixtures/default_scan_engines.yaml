@@ -180,8 +180,8 @@
     vulnerability_scan: true
     osint: true
     screenshot: false
-    yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [amass-passive, assetfinder,\
-      \ sublist3r, subfinder]\r\n  threads: 10\r\n  use_amass_config: false\r\n  use_subfinder_config:\
+    yaml_configuration: "subdomain_discovery:\r\n  uses_tools: [amass-passive, amass-active, assetfinder,\
+      \ sublist3r, subfinder, ripgen]\r\n  threads: 10\r\n  amass_wordlist: default\r\n use_amass_config: true\r\n  use_subfinder_config:\
       \ false\r\n\r\nosint:\r\n  discover: [emails, metainfo, employees]\r\n  intensity:\
       \ normal\r\n  dork: [stackoverflow, 3rdparty, social_media, project_management,\
       \ code_sharing, config_files, jenkins, wordpress_files, cloud_buckets, php_error,\
