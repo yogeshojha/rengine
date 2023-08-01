@@ -374,7 +374,6 @@ class VulnerabilityTags(models.Model):
 
 class VulnerabilityReference(models.Model):
 	id = models.AutoField(primary_key=True)
-	title = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=5000)
 
 	def __str__(self):

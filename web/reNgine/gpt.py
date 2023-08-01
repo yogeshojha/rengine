@@ -56,18 +56,18 @@ class GPTVulnerabilityReportGenerator:
 			description_section = extract_between(response_content, vuln_description_pattern)
 			impact_section = extract_between(response_content, impact_pattern)
 			remediation_section = extract_between(response_content, remediation_pattern)
-
-			print(response_content)
-
 			references_start_index = response_content.find("References:")
 			references_section = response_content[references_start_index + len("References:"):].strip()
+
+			url_pattern = re.compile(r'https://\S+')
+			urls = url_pattern.findall(references_section)
 
 			return {
 				'status': True,
 				'description': description_section,
 				'impact': impact_section,
 				'remediation': remediation_section,
-				'references': references_section,
+				'references': urls,
 			}
 		except Exception as e:
 			return {

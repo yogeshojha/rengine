@@ -437,7 +437,7 @@ VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
     - Remediation
         Include steps to remediate this vulnerability. Separate each new remediations by - and a new line \n
     - References
-        Include any references about this vulnerability, any existing CVE ID, or news articles etc. Separate each new references by - and a new line \n
+        Include any references URL about this vulnerability, any existing CVE ID, or news articles etc. Separate each new references by - and a new line \n. Only include http urls
 
     Do not write 'Penetration Testing Report:' on the title.
 """

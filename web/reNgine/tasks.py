@@ -4244,7 +4244,6 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	Args:
 		vulnerability_id (Vulnerability Model ID): Vulnerabilty ID to fetch Description.
-		description (str, optional): Task description shown in UI.
 	"""
 	logger.info('Getting GPT Vulnerabilty Description')
 	try:
@@ -4262,4 +4261,15 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	gpt_generator = GPTVulnerabilityReportGenerator()
 	response = gpt_generator.get_vulnerabilty_description(vulnerability_description)
+
+	vulnerability.description = response.get('description', vulnerability.description)
+	vulnerability.impact = response.get('impact')
+	vulnerability.remediation = response.get('remediation')
+	vulnerability.save()
+
+	for url in response.get('references', []):
+		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+		vulnerability.references.add(ref)
+		vulnerability.save()
+
 	return response
