@@ -2831,6 +2831,7 @@ function render_vuln_offcanvas(vuln){
 	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
 
 	if (vuln.description) {
+		description = vuln.description.replace(new RegExp('\r?\n','g'), '<br />');
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
@@ -2841,7 +2842,41 @@ function render_vuln_offcanvas(vuln){
 		</a>
 		</h5>
 		<div id="description" class="collapse show mt-2">
-		<p>${vuln.description}</p>
+		<p>${description}</p>
+		</div>
+		</div>`;
+	}
+
+	if (vuln.impact) {
+		impact = vuln.impact.replace(new RegExp('\r?\n','g'), '<br />');
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#impact"
+		aria-expanded="true" aria-controls="collapseNine">
+		Vulnerability Impact <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="impact" class="collapse show mt-2">
+		<p>${impact}</p>
+		</div>
+		</div>`;
+	}
+
+	if (vuln.remediation) {
+		remediation = vuln.remediation.replace(new RegExp('\r?\n','g'), '<br />');
+		body += `<div class="accordion custom-accordion mt-2">
+		<h5 class="m-0 position-relative">
+		<a class="custom-accordion-title text-reset d-block"
+		data-bs-toggle="collapse" href="#remediation"
+		aria-expanded="true" aria-controls="collapseNine">
+		Remediation <i
+		class="mdi mdi-chevron-down accordion-arrow"></i>
+		</a>
+		</h5>
+		<div id="remediation" class="collapse show mt-2">
+		<p>${remediation}</p>
 		</div>
 		</div>`;
 	}
@@ -3057,4 +3092,22 @@ function render_vuln_offcanvas(vuln){
 	offcanvas_title.innerHTML = title_content;
 	offcanvas_body.innerHTML = body;
 	$('#offcanvas').offcanvas('show');
+}
+
+
+function fetch_gpt_vuln_details(id, title) {
+	const api = "/api/tools/gpt_vulnerability_report/?format=json&id=" + id;
+	Snackbar.show({
+		text: 'Fetching GPT Vulnerability Description for ' + title,
+		pos: 'top-right',
+		duration: 2500
+	});
+
+	return fetch(api, {
+		method: 'GET',
+		credentials: "same-origin",
+		headers: {
+			"X-CSRFToken": getCookie("csrftoken")
+		}
+	});
 }
