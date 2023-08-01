@@ -29,9 +29,10 @@ from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
+from reNgine.gpt import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
-from startScan.models import EndPoint, Subdomain
+from startScan.models import EndPoint, Subdomain, Vulnerability
 from targetApp.models import Domain
 
 """
@@ -4235,3 +4236,30 @@ def query_ip_history(domain):
 	"""
 
 	return get_domain_historical_ip_address(domain)
+
+
+@app.task
+def gpt_vulnerability_description(vulnerability_id):
+	"""Generate and store Vulnerabilty Description using GPT.
+
+	Args:
+		vulnerability_id (Vulnerability Model ID): Vulnerabilty ID to fetch Description.
+		description (str, optional): Task description shown in UI.
+	"""
+	logger.info('Getting GPT Vulnerabilty Description')
+	try:
+		vulnerability = Vulnerability.objects.get(id=vulnerability_id)
+	except Exception as e:
+		return {
+			'status': False,
+			'error': str(e)
+		}
+
+	vulnerability_description = ''
+	vulnerability_description += f'Vulnerability Title: {vulnerability.name}'
+	vulnerability_description += f'\nVulnerable URL: {vulnerability.http_url}'
+	# one can add more description here later
+
+	gpt_generator = GPTVulnerabilityReportGenerator()
+	response = gpt_generator.get_vulnerabilty_description(vulnerability_description)
+	return response

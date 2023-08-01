@@ -32,6 +32,20 @@ from .serializers import *
 logger = logging.getLogger(__name__)
 
 
+class GPTVulnerabilityReportGenerator(APIView):
+	def get(self, request):
+		req = self.request
+		vulnerability_id = req.query_params.get('id')
+		if not vulnerability_id:
+			return Response({
+				'status': False,
+				'error': 'Missing GET param Vulnerability `id`'
+			})
+		task = gpt_vulnerability_description.apply_async(args=(vulnerability_id,))
+		response = task.wait()
+		return Response(response)
+
+
 class CreateProjectApi(APIView):
 	def get(self, request):
 		req = self.request

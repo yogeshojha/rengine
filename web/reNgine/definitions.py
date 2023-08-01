@@ -419,3 +419,19 @@ PERM_INITATE_SCANS_SUBSCANS = 'initiate_scans_subscans'
 
 # 404 page url
 FOUR_OH_FOUR_URL = '/404/'
+
+
+# GPT Vulnerability Report Generator
+VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
+    You are a penetration tester, You will be given with a Vulnerability title and some description.
+    Your job is to write a detailed penetration testing report based on the Vulnerability details.
+
+    The penetration testing report must contain
+
+    - Vulnerability description
+    - Impact
+    - Remediation
+    - References
+
+    Do not write 'Penetration Testing Report:' on the title
+"""

@@ -23,6 +23,7 @@ Markdown==3.3.4
 metafinder==1.1
 netaddr==0.8.0
 netlas==0.4.0
+openai==0.27.4
 PyYAML==5.4.1
 PySocks==1.7.1
 psycopg2==2.9.1
