@@ -20,7 +20,7 @@ class GPTVulnerabilityReportGenerator:
 				'description': (str)
 				'impact': (str),
 				'remediation': (str),
-				'references': (str)
+				'references': (list) of urls
 			}
 		"""
 		if not self.api_key:

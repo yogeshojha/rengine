@@ -89,6 +89,8 @@ $(document).ready(function() {
 			{'data': 'template'},
 			{'data': 'template_url'},
 			{'data': 'template_id'},
+			{'data': 'impact'},
+			{'data': 'remediation'},
 		],
 		"columnDefs": [
 			{ "orderable": false, "targets": [9, 12]},
@@ -98,7 +100,7 @@ $(document).ready(function() {
 				"searchable": true,
 			},
 			{
-				"targets": [20, 21, 22, 23, 24],
+				"targets": [20, 21, 22, 23, 24, 25, 26],
 				"visible": false,
 				"searchable": false,
 			},
@@ -246,6 +248,7 @@ $(document).ready(function() {
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 						</a>
 						<div class="dropdown-menu" style="">
+						<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
 						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
 						<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">Delete Vulnerability</a>
 						</div>
