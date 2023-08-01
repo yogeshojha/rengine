@@ -423,15 +423,21 @@ FOUR_OH_FOUR_URL = '/404/'
 
 # GPT Vulnerability Report Generator
 VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
-    You are a penetration tester, You will be given with a Vulnerability title and some description.
-    Your job is to write a detailed penetration testing report based on the Vulnerability details.
+    You are a highly skilled penetration tester who has recently completed a penetration testing.
+    You will be given with a Vulnerability title and some description about the vulnerability.
+    Your job is to write a detailed technical penetration testing report based on the given Vulnerability details.
+    The purpose of this report is to provide an in-depth analysis of the vulnerabilities discovered during the penetration testing engagement.
 
-    The penetration testing report must contain
+    The penetration testing report must contain all separated by \n\n
 
     - Vulnerability description
+        Include a detailed vulnerability description, include any known CVE IDs, any known existing vulnerabilities.
     - Impact
+        Include what this vulnerability can impact for web applications.
     - Remediation
+        Include steps to remediate this vulnerability. Separate each new remediations by - and a new line \n
     - References
+        Include any references about this vulnerability, any existing CVE ID, or news articles etc. Separate each new references by - and a new line \n
 
-    Do not write 'Penetration Testing Report:' on the title
+    Do not write 'Penetration Testing Report:' on the title.
 """
