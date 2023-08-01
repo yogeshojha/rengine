@@ -374,6 +374,7 @@ class VulnerabilityTags(models.Model):
 
 class VulnerabilityReference(models.Model):
 	id = models.AutoField(primary_key=True)
+	title = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=5000)
 
 	def __str__(self):
@@ -418,7 +419,9 @@ class Vulnerability(models.Model):
 	matcher_name = models.CharField(max_length=500, null=True, blank=True)
 	name = models.CharField(max_length=2500)
 	severity = models.IntegerField()
-	description = models.CharField(max_length=20000, null=True, blank=True)
+	description = models.TextField(null=True, blank=True)
+	impact = models.TextField(null=True, blank=True)
+	remediation = models.TextField(null=True, blank=True)
 
 	extracted_results = ArrayField(
 		models.CharField(max_length=5000), blank=True, null=True

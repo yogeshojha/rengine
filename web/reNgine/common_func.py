@@ -23,6 +23,7 @@ from reNgine.common_serializers import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from scanEngine.models import *
+from dashboard.models import *
 from startScan.models import *
 from targetApp.models import *
 
@@ -958,3 +959,10 @@ def get_open_ai_key():
 def get_netlas_key():
 	netlas_key = NetlasAPIKey.objects.all()
 	return netlas_key[0] if netlas_key else None
+
+
+def extract_between(text, pattern):
+	match = pattern.search(text)
+	if match:
+		return match.group(1).strip()
+	return ""

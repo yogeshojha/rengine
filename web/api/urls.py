@@ -155,6 +155,10 @@ urlpatterns = [
         WafDetector.as_view(),
         name='waf_detector'),
     path(
+        'tools/gpt_vulnerability_report/',
+        GPTVulnerabilityReportGenerator.as_view(),
+        name='gpt_vulnerability_report_generator'),
+    path(
         'github/tool/get_latest_releases/',
         GithubToolCheckGetLatestRelease.as_view(),
         name='github_tool_latest_release'),
