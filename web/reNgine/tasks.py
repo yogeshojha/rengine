@@ -1845,7 +1845,7 @@ def vulnerability_scan(
 		nuclei_command = nuclei_command + ' -retries ' + str(retries)
 
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
-		nuclei_command += ' -H "{}" '.format(yaml_configuration[CUSTOM_HEADER])
+		nuclei_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
 	# for severity and new severity in nuclei
 	if NUCLEI_SEVERITY in yaml_configuration[VULNERABILITY_SCAN] and ALL not in yaml_configuration[VULNERABILITY_SCAN][NUCLEI_SEVERITY]:
