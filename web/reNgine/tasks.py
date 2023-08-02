@@ -1,50 +1,38 @@
-import os
-import traceback
-import yaml
-import json
 import csv
-import validators
-import random
-import requests
-import time
+import json
 import logging
-import metafinder.extractor as metadata_extractor
-import whatportis
+import os
+import random
 import subprocess
-
+import time
+import traceback
+from datetime import datetime
 from random import randint
 from time import sleep
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium import webdriver
-from emailfinder.extractor import *
-from dotted_dict import DottedDict
-from celery import shared_task
-from discord_webhook import DiscordWebhook
-from reNgine.celery import app
-from startScan.models import *
-from targetApp.models import Domain
-from scanEngine.models import EngineType
-from django.conf import settings
-from django.shortcuts import get_object_or_404
 
+import metafinder.extractor as metadata_extractor
+import requests
+import validators
+import whatportis
+import yaml
 from celery import shared_task
-from datetime import datetime
 from degoogle import degoogle
-
+from discord_webhook import DiscordWebhook
 from django.conf import settings
-from django.utils import timezone, dateformat
-from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.shortcuts import get_object_or_404
+from django.utils import dateformat, timezone
+from dotted_dict import DottedDict
+from emailfinder.extractor import *
 from reNgine.celery import app
 from reNgine.definitions import *
-
+from scanEngine.models import Configuration, EngineType, Wordlist
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from startScan.models import *
 from targetApp.models import Domain
-from scanEngine.models import EngineType, Configuration, Wordlist
 
 from .common_func import *
-
 
 '''
 	All the background tasks to be executed in celery will be here
