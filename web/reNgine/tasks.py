@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import random
+import shlex
 import subprocess
 import time
 import traceback
@@ -544,7 +545,7 @@ def subdomain_scan(
 						amass_command += ' -config /root/.config/amass.ini'
 					# Run Amass Passive
 					logging.info(amass_command)
-					process = subprocess.Popen(amass_command.split())
+					process = subprocess.Popen(shlex.split(amass_command))
 					process.wait()
 
 				elif tool == 'amass-active':
@@ -567,7 +568,7 @@ def subdomain_scan(
 
 					# Run Amass Active
 					logging.info(amass_command)
-					process = subprocess.Popen(amass_command.split())
+					process = subprocess.Popen(shlex.split(amass_command))
 					process.wait()
 
 				elif tool == 'assetfinder':
@@ -576,7 +577,7 @@ def subdomain_scan(
 
 					# Run Assetfinder
 					logging.info(assetfinder_command)
-					process = subprocess.Popen(assetfinder_command.split())
+					process = subprocess.Popen(shlex.split(assetfinder_command))
 					process.wait()
 
 				elif tool == 'sublist3r':
@@ -585,7 +586,7 @@ def subdomain_scan(
 
 					# Run sublist3r
 					logging.info(sublist3r_command)
-					process = subprocess.Popen(sublist3r_command.split())
+					process = subprocess.Popen(shlex.split(sublist3r_command))
 					process.wait()
 
 				elif tool == 'subfinder':
@@ -597,7 +598,7 @@ def subdomain_scan(
 
 					# Run Subfinder
 					logging.info(subfinder_command)
-					process = subprocess.Popen(subfinder_command.split())
+					process = subprocess.Popen(shlex.split(subfinder_command))
 					process.wait()
 
 				elif tool == 'oneforall':
@@ -606,7 +607,7 @@ def subdomain_scan(
 
 					# Run OneForAll
 					logging.info(oneforall_command)
-					process = subprocess.Popen(oneforall_command.split())
+					process = subprocess.Popen(shlex.split(oneforall_command))
 					process.wait()
 
 					extract_subdomain = "cut -d',' -f6 /usr/src/github/OneForAll/results/{}.csv >> {}/from_oneforall.txt".format(
@@ -630,7 +631,7 @@ def subdomain_scan(
 						execution_command = execution_command.replace('{OUTPUT}', '{}/from_{}.txt'.format(results_dir, tool))
 						execution_command = execution_command.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in execution_command else execution_command
 						logger.info('Custom tool {} running with command {}'.format(tool, execution_command))
-						process = subprocess.Popen(execution_command.split())
+						process = subprocess.Popen(shlex.split(execution_command))
 						process.wait()
 					else:
 						logger.error('Sorry can not run this tool! because TARGET and OUTPUT are not available!')
@@ -940,7 +941,7 @@ def grab_screenshot(task, domain, yaml_configuration, results_dir, activity_id):
 
 	logger.info(eyewitness_command)
 
-	process = subprocess.Popen(eyewitness_command.split())
+	process = subprocess.Popen(shlex.split(eyewitness_command))
 	process.wait()
 
 	if os.path.isfile(result_csv_path):
@@ -1048,7 +1049,7 @@ def port_scanning(
 
 	# run naabu
 	logger.info(naabu_command)
-	process = subprocess.Popen(naabu_command.split())
+	process = subprocess.Popen(shlex.split(naabu_command))
 	process.wait()
 
 	# writing port results
@@ -1132,7 +1133,7 @@ def check_waf(scan_history, results_dir):
 
 		logger.info(wafw00f_command)
 
-		process = subprocess.Popen(wafw00f_command.split())
+		process = subprocess.Popen(shlex.split(wafw00f_command))
 		process.wait()
 
 		# check if wafw00f has generated output file
@@ -1332,7 +1333,7 @@ def directory_fuzz(
 		)
 
 		logger.info(command)
-		process = subprocess.Popen(command.split())
+		process = subprocess.Popen(shlex.split(command))
 		process.wait()
 
 		try:
@@ -1871,7 +1872,7 @@ def vulnerability_scan(
 
 		logger.info('Running Nuclei Scanner!')
 		logger.info(final_nuclei_command)
-		process = subprocess.Popen(final_nuclei_command.split())
+		process = subprocess.Popen(shlex.split(final_nuclei_command))
 		process.wait()
 
 		try:
