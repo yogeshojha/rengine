@@ -3980,28 +3980,28 @@ def save_vulnerability(**vuln_data):
 		vuln.save()
 
 	# Save vuln tags
-	for tag_name in tags:
+	for tag_name in tags or []:
 		tag, created = VulnerabilityTags.objects.get_or_create(name=tag_name)
 		if tag:
 			vuln.tags.add(tag)
 			vuln.save()
 
 	# Save CVEs
-	for cve_id in cve_ids:
+	for cve_id in cve_ids or []:
 		cve, created = CveId.objects.get_or_create(name=cve_id)
 		if cve:
 			vuln.cve_ids.add(cve)
 			vuln.save()
 
 	# Save CWEs
-	for cve_id in cwe_ids:
+	for cve_id in cwe_ids or []:
 		cwe, created = CweId.objects.get_or_create(name=cve_id)
 		if cwe:
 			vuln.cwe_ids.add(cwe)
 			vuln.save()
 
 	# Save vuln reference
-	for url in references:
+	for url in references or []:
 		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
 		if created:
 			vuln.references.add(ref)
@@ -4256,7 +4256,7 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	vulnerability_description = ''
 	vulnerability_description += f'Vulnerability Title: {vulnerability.name}'
-	vulnerability_description += f'\nVulnerable URL: {vulnerability.http_url}'
+	# vulnerability_description += f'\nVulnerable URL: {vulnerability.http_url}'
 	# one can add more description here later
 
 	gpt_generator = GPTVulnerabilityReportGenerator()
@@ -4265,6 +4265,7 @@ def gpt_vulnerability_description(vulnerability_id):
 	vulnerability.description = response.get('description', vulnerability.description)
 	vulnerability.impact = response.get('impact')
 	vulnerability.remediation = response.get('remediation')
+	vulnerability.is_gpt_used = True
 	vulnerability.save()
 
 	for url in response.get('references', []):
