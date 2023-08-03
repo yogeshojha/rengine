@@ -41,15 +41,15 @@ class GPTVulnerabilityReportGenerator:
 			response_content = gpt_response['choices'][0]['message']['content']
 
 			vuln_description_pattern = re.compile(
-				r"Vulnerability Description:(.*?)(?:\n\nImpact:|$)",
+				r"[Vv]ulnerability [Dd]escription:(.*?)(?:\n\n[Ii]mpact:|$)",
 				re.DOTALL
 			)
 			impact_pattern = re.compile(
-				r"Impact:(.*?)(?:\n\nRemediation:|$)",
+				r"[Ii]mpact:(.*?)(?:\n\n[Rr]emediation:|$)",
 				re.DOTALL
 			)
 			remediation_pattern = re.compile(
-				r"Remediation:(.*?)(?:\n\nReferences:|$)",
+				r"[Rr]emediation:(.*?)(?:\n\n[Rr]eferences:|$)",
 				re.DOTALL
 			)
 
