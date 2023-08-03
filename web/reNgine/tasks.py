@@ -4248,6 +4248,8 @@ def gpt_vulnerability_description(vulnerability_id):
 	logger.info('Getting GPT Vulnerability Description')
 	try:
 		lookup_vulnerability = Vulnerability.objects.get(id=vulnerability_id)
+		lookup_url = urlparse(lookup_vulnerability.http_url)
+		path = lookup_url.path
 	except Exception as e:
 		return {
 			'status': False,
@@ -4256,15 +4258,17 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	vulnerability_description = ''
 	vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
-	# vulnerability_description += f'\nVulnerable URL: {vulnerability.http_url}'
+	# gpt gives concise vulnerability description when a vulnerable URL is provided
+	vulnerability_description += f'\nVulnerable URL: {path}'
 	# one can add more description here later
 
 	gpt_generator = GPTVulnerabilityReportGenerator()
 	response = gpt_generator.get_vulnerability_description(vulnerability_description)
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
+	# also the consition is that the url must contain a part of this.
 
-	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name):
+	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name, http_url__icontains=path):
 		vuln.description = response.get('description', vuln.description)
 		vuln.impact = response.get('impact')
 		vuln.remediation = response.get('remediation')
