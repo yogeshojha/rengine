@@ -3142,7 +3142,17 @@ async function fetch_gpt_vuln_details(id, title) {
 		const data = await send_gpt_api_request(id);
 		Swal.close();
 		console.log(data);
-		render_gpt_vuln_modal(data, title);
+		if (data.status) {
+			render_gpt_vuln_modal(data, title);
+		}
+		else{
+			Swal.close();
+			Swal.fire({
+				icon: 'error',
+				title: 'Oops...',
+				text: data.error,
+			});
+		}
 	} catch (error) {
 		console.error(error);
 		Swal.close();

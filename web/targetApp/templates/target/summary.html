@@ -1575,6 +1575,9 @@ $(document).ready(function(){
 						if (row['cvss_metrics']) {
 							cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
 						}
+						if (row['cve_ids'] || row['cwe_ids']) {
+							cve_cwe_badge += '<br>';
+						}
 						if (row['cve_ids']) {
 							row['cve_ids'].forEach(cve => {
 								cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
@@ -1585,9 +1588,9 @@ $(document).ready(function(){
 								cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
 							});
 						}
-						if (cve_cwe_badge != "") {
-							cve_cwe_badge
-						}
+						// if (cve_cwe_badge != "") {
+						// 	cve_cwe_badge
+						// }
 						hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
 						return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 					},
