@@ -4240,14 +4240,14 @@ def query_ip_history(domain):
 
 @app.task
 def gpt_vulnerability_description(vulnerability_id):
-	"""Generate and store Vulnerabilty Description using GPT.
+	"""Generate and store Vulnerability Description using GPT.
 
 	Args:
-		vulnerability_id (Vulnerability Model ID): Vulnerabilty ID to fetch Description.
+		vulnerability_id (Vulnerability Model ID): Vulnerability ID to fetch Description.
 	"""
-	logger.info('Getting GPT Vulnerabilty Description')
+	logger.info('Getting GPT Vulnerability Description')
 	try:
-		vulnerability = Vulnerability.objects.get(id=vulnerability_id)
+		lookup_vulnerability = Vulnerability.objects.get(id=vulnerability_id)
 	except Exception as e:
 		return {
 			'status': False,
@@ -4255,22 +4255,25 @@ def gpt_vulnerability_description(vulnerability_id):
 		}
 
 	vulnerability_description = ''
-	vulnerability_description += f'Vulnerability Title: {vulnerability.name}'
+	vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
 	# vulnerability_description += f'\nVulnerable URL: {vulnerability.http_url}'
 	# one can add more description here later
 
 	gpt_generator = GPTVulnerabilityReportGenerator()
-	response = gpt_generator.get_vulnerabilty_description(vulnerability_description)
+	response = gpt_generator.get_vulnerability_description(vulnerability_description)
 
-	vulnerability.description = response.get('description', vulnerability.description)
-	vulnerability.impact = response.get('impact')
-	vulnerability.remediation = response.get('remediation')
-	vulnerability.is_gpt_used = True
-	vulnerability.save()
+	# for all vulnerabilities with the same vulnerability name this description has to be stored.
 
-	for url in response.get('references', []):
-		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-		vulnerability.references.add(ref)
-		vulnerability.save()
+	for vuln in Vulnerability.objects.filter(name=lookup_vulnerability.name):
+		vuln.description = response.get('description', vuln.description)
+		vuln.impact = response.get('impact')
+		vuln.remediation = response.get('remediation')
+		vuln.is_gpt_used = True
+		vuln.save()
+
+		for url in response.get('references', []):
+			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+			vuln.references.add(ref)
+			vuln.save()
 
 	return response

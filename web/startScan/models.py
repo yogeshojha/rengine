@@ -441,6 +441,7 @@ class Vulnerability(models.Model):
 	hackerone_report_id = models.CharField(max_length=50, null=True, blank=True)
 	request = models.TextField(blank=True, null=True)
 	response = models.TextField(blank=True, null=True)
+	is_gpt_used = models.BooleanField(null=True, blank=True, default=False)
 	# used for subscans
 	vuln_subscan_ids = models.ManyToManyField('SubScan', related_name='vuln_subscan_ids', blank=True)
 
