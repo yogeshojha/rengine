@@ -3142,6 +3142,7 @@ async function fetch_gpt_vuln_details(id, title) {
 		const data = await send_gpt_api_request(id);
 		Swal.close();
 		console.log(data);
+		render_gpt_vuln_modal(data, title);
 	} catch (error) {
 		console.error(error);
 		Swal.close();
@@ -3151,4 +3152,32 @@ async function fetch_gpt_vuln_details(id, title) {
 			text: 'Something went wrong!',
 		});
 	}
+}
+
+
+function render_gpt_vuln_modal(data, title){
+	$('#modal-title').empty();
+	$('#modal-content').empty();
+	$('#modal-footer').empty();
+	$('#modal_title').html(`Vulnerability detail for ${title}`);
+
+	var modal_content = `
+		<h4>Description</h4>
+		<p>${data.description}</p>
+		<h4>Impact</h4>
+		<p>${data.impact}</p>
+		<h4>Remediation</h4>
+		<p>${data.remediation}</p>
+		<h4>References</h4>
+		<p><ul>
+	`;
+
+	data.references.forEach(reference => {
+		modal_content += `<li><a href="${reference}" target="_blank">${reference}</a></li>`;
+	});
+
+	modal_content += '</ul></p>';
+
+	$('#modal-content').append(modal_content);
+	$('#modal_dialog').modal('show');
 }
