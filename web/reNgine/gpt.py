@@ -9,11 +9,11 @@ class GPTVulnerabilityReportGenerator:
 		self.api_key = get_open_ai_key()
 		self.model_name = 'gpt-3.5-turbo'
 
-	def get_vulnerabilty_description(self, description):
-		"""Generate Vulnerabilty Description using GPT.
+	def get_vulnerability_description(self, description):
+		"""Generate Vulnerability Description using GPT.
 
 		Args:
-			description (str): Vulnerabilty Description message to pass to GPT.
+			description (str): Vulnerability Description message to pass to GPT.
 
 		Returns:
 			(dict) of {

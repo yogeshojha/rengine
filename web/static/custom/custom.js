@@ -3088,6 +3088,10 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
+	if (vuln.is_gpt_used) {
+		body += `<small class="text-muted float-end">(GPT was used to generate vulnerability details.)</small>`;
+	}
+
 
 	offcanvas_title.innerHTML = title_content;
 	offcanvas_body.innerHTML = body;
