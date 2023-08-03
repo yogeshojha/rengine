@@ -3099,19 +3099,56 @@ function render_vuln_offcanvas(vuln){
 }
 
 
-function fetch_gpt_vuln_details(id, title) {
-	const api = "/api/tools/gpt_vulnerability_report/?format=json&id=" + id;
-	Snackbar.show({
-		text: 'Fetching GPT Vulnerability Description for ' + title,
-		pos: 'top-right',
-		duration: 2500
-	});
-
-	return fetch(api, {
-		method: 'GET',
-		credentials: "same-origin",
-		headers: {
-			"X-CSRFToken": getCookie("csrftoken")
+function showSwalLoader(title, text){
+	Swal.fire({
+		title: title,
+		text: text,
+		allowOutsideClick: false,
+		allowEscapeKey: false,
+		allowEnterKey: false,
+		showConfirmButton: false,
+		willOpen: () => {
+			Swal.showLoading();
 		}
 	});
+}
+
+async function send_gpt_api_request(vuln_id){
+	const api = "/api/tools/gpt_vulnerability_report/?format=json&id=" + vuln_id;
+	try {
+		const response = await fetch(api, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+		});
+		if (!response.ok) {
+			throw new Error('Request failed');
+		}
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		throw new Error('Request failed');
+	}
+}
+
+
+async function fetch_gpt_vuln_details(id, title) {
+	var loader_title = "Loading...";
+	var text = 'Please wait while the GPT is generating vulnerability description.'
+	try {
+		showSwalLoader(loader_title, text);
+		const data = await send_gpt_api_request(id);
+		Swal.close();
+		console.log(data);
+	} catch (error) {
+		console.error(error);
+		Swal.close();
+		Swal.fire({
+			icon: 'error',
+			title: 'Oops...',
+			text: 'Something went wrong!',
+		});
+	}
 }
