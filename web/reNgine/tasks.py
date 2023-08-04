@@ -547,7 +547,7 @@ def subdomain_scan(
 	try:
 		for tool in tools.split(' '):
 			# fixing amass-passive and amass-active
-			if tool in tools:
+			if tool in default_subdomain_tools:
 				if tool == 'amass-passive':
 					amass_command = 'amass enum -passive -d {} -o {}/from_amass.txt'.format(
 							domain.name, results_dir)
