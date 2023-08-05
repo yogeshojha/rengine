@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from django.apps import apps
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -476,6 +477,9 @@ class Vulnerability(models.Model):
 
 	def get_refs_str(self):
 		return '•' + '\n• '.join(f'`{ref.url}`' for ref in self.references.all())
+
+	def get_path(self):
+		return urlparse(self.http_url).path
 
 
 class ScanActivity(models.Model):

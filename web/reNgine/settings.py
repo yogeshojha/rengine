@@ -28,6 +28,7 @@ DEFAULT_RATE_LIMIT = int(os.environ.get('DEFAULT_RATE_LIMIT', '150')) # requests
 DEFAULT_HTTP_TIMEOUT = int(os.environ.get('DEFAULT_HTTP_TIMEOUT', '5')) # seconds
 DEFAULT_RETRIES = int(os.environ.get('DEFAULT_RETRIES', '1'))
 DEFAULT_THREADS = int(os.environ.get('DEFAULT_THREADS', '30'))
+DEFAULT_GET_GPT_REPORT = bool(int(os.environ.get('DEFAULT_GET_GPT_REPORT', '1')))
 
 # Globals
 ALLOWED_HOSTS = ['*']

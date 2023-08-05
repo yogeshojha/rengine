@@ -9,6 +9,7 @@ import whatportis
 import xmltodict
 import yaml
 import tldextract
+import concurrent.futures
 
 from datetime import datetime
 from urllib.parse import urlparse
@@ -25,6 +26,7 @@ from metafinder.extractor import extract_metadata_from_google_search
 from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
 
 from reNgine.celery import app
+from reNgine.gpt import GPTVulnerabilityReportGenerator
 from reNgine.celery_custom_task import RengineTask
 from reNgine.common_func import *
 from reNgine.definitions import *
@@ -1937,6 +1939,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	retries = config.get(RETRIES) or self.yaml_configuration.get(RETRIES, DEFAULT_RETRIES)
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_header = config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
+	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	tags = config.get(NUCLEI_TAGS, [])
 	tags = ','.join(tags)
 	nuclei_templates = config.get(NUCLEI_TEMPLATE)
@@ -2149,8 +2152,99 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		}
 		self.notify(fields=fields)
 
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).exclude(
+			severity=0
+		)
+		# find all unique vulnerabilities based on path and title
+		# all unique vulnerability will go thru gpt function and get report
+		# once report is got, it will be matched with other vulnerabilities and saved
+		unique_vulns = set()
+		for vuln in vulns:
+			unique_vulns.add((vuln.name, vuln.get_path()))
+
+		unique_vulns = list(unique_vulns)
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in unique_vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
+
 	# return results
 	return None
+
+
+def get_vulnerability_gpt_report(vuln):
+	title = vuln[0]
+	path = vuln[1]
+	# check if in db already exists
+	stored = GPTVulnerabilityReport.objects.filter(
+		url_path=path
+	).filter(
+		title=title
+	).first()
+	if stored:
+		response = {
+			'description': stored.description,
+			'impact': stored.impact,
+			'remediation': stored.remediation,
+			'references': [url.url for url in stored.references.all()]
+		}
+	else:
+		report = GPTVulnerabilityReportGenerator()
+		vulnerability_description = get_gpt_vuln_input_description(
+			title,
+			path
+		)
+		response = report.get_vulnerability_description(vulnerability_description)
+		add_gpt_description_db(
+			title,
+			path,
+			response.get('description'),
+			response.get('impact'),
+			response.get('remediation'),
+			response.get('references', [])
+		)
+
+
+	for vuln in Vulnerability.objects.filter(name=title, http_url__icontains=path):
+		vuln.description = response.get('description', vuln.description)
+		vuln.impact = response.get('impact')
+		vuln.remediation = response.get('remediation')
+		vuln.is_gpt_used = True
+		vuln.save()
+
+		for url in response.get('references', []):
+			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+			vuln.references.add(ref)
+			vuln.save()
+
+
+def add_gpt_description_db(title, path, description, impact, remediation, references):
+	gpt_report = GPTVulnerabilityReport()
+	gpt_report.url_path = path
+	gpt_report.title = title
+	gpt_report.description = description
+	gpt_report.impact = impact
+	gpt_report.remediation = remediation
+	gpt_report.save()
+
+	for url in references:
+		ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+		gpt_report.references.add(ref)
+		gpt_report.save()
 
 
 @app.task(base=RengineTask, bind=True)
@@ -4258,7 +4352,6 @@ def gpt_vulnerability_description(vulnerability_id):
 
 	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
 	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
-	print(stored)
 	if stored:
 		response = {
 			'status': True,
@@ -4268,27 +4361,22 @@ def gpt_vulnerability_description(vulnerability_id):
 			'references': [url.url for url in stored.references.all()]
 		}
 	else:
-		vulnerability_description = ''
-		vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
-		# gpt gives concise vulnerability description when a vulnerable URL is provided
-		vulnerability_description += f'\nVulnerable URL: {path}'
+		vulnerability_description = get_gpt_vuln_input_description(
+			lookup_vulnerability.name,
+			path
+		)
 		# one can add more description here later
 
 		gpt_generator = GPTVulnerabilityReportGenerator()
 		response = gpt_generator.get_vulnerability_description(vulnerability_description)
-		gpt_report = GPTVulnerabilityReport()
-		gpt_report.url_path = path
-		gpt_report.title = lookup_vulnerability.name
-		gpt_report.description = response.get('description')
-		gpt_report.impact = response.get('impact')
-		gpt_report.remediation = response.get('remediation')
-		gpt_report.save()
-
-		for url in response.get('references', []):
-			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
-			gpt_report.references.add(ref)
-			gpt_report.save()
-
+		add_gpt_description_db(
+			lookup_vulnerability.name,
+			path,
+			response.get('description'),
+			response.get('impact'),
+			response.get('remediation'),
+			response.get('references', [])
+		)
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
 	# also the consition is that the url must contain a part of this.
