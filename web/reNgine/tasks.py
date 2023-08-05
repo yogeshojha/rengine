@@ -4256,14 +4256,39 @@ def gpt_vulnerability_description(vulnerability_id):
 			'error': str(e)
 		}
 
-	vulnerability_description = ''
-	vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
-	# gpt gives concise vulnerability description when a vulnerable URL is provided
-	vulnerability_description += f'\nVulnerable URL: {path}'
-	# one can add more description here later
+	# check in db GPTVulnerabilityReport model if vulnerability description and path matches
+	stored = GPTVulnerabilityReport.objects.filter(url_path=path).filter(title=lookup_vulnerability.name).first()
+	print(stored)
+	if stored:
+		response = {
+			'status': True,
+			'description': stored.description,
+			'impact': stored.impact,
+			'remediation': stored.remediation,
+			'references': [url.url for url in stored.references.all()]
+		}
+	else:
+		vulnerability_description = ''
+		vulnerability_description += f'Vulnerability Title: {lookup_vulnerability.name}'
+		# gpt gives concise vulnerability description when a vulnerable URL is provided
+		vulnerability_description += f'\nVulnerable URL: {path}'
+		# one can add more description here later
 
-	gpt_generator = GPTVulnerabilityReportGenerator()
-	response = gpt_generator.get_vulnerability_description(vulnerability_description)
+		gpt_generator = GPTVulnerabilityReportGenerator()
+		response = gpt_generator.get_vulnerability_description(vulnerability_description)
+		gpt_report = GPTVulnerabilityReport()
+		gpt_report.url_path = path
+		gpt_report.title = lookup_vulnerability.name
+		gpt_report.description = response.get('description')
+		gpt_report.impact = response.get('impact')
+		gpt_report.remediation = response.get('remediation')
+		gpt_report.save()
+
+		for url in response.get('references', []):
+			ref, created = VulnerabilityReference.objects.get_or_create(url=url)
+			gpt_report.references.add(ref)
+			gpt_report.save()
+
 
 	# for all vulnerabilities with the same vulnerability name this description has to be stored.
 	# also the consition is that the url must contain a part of this.
