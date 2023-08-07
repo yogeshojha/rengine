@@ -2826,6 +2826,7 @@ function render_vuln_offcanvas(vuln){
 	title_content += `<span class="badge badge-${default_badge_color} text-${default_color}">${vuln.severity}</span>`;
 	title_content += `<span class="text-${default_color} ms-1">${vuln.name}</span>`;
 
+	body += `<p><b>ID: </b>${vuln.id}</p>`;
 	body += `<p><b>Discovered on: </b>${vuln.discovered_date}</p>`;
 	body += `<p><b>URL: </b><a href="${vuln.http_url}" target="_blank">${vuln.http_url}</a></p>`;
 	body += `<p><b>Severity: </b>${vuln.severity}<br><b>Type: </b>${vuln.type.toUpperCase()}<br><b>Source: </b> ${vuln.source.toUpperCase()}</p>`;
@@ -2908,7 +2909,7 @@ function render_vuln_offcanvas(vuln){
 		</tr>`
 	}
 
-	if (vuln.cwe_ids.length) {
+	if (vuln.cwe_ids != null && vuln.cwe_ids.length) {
 		body += `<tr>
 		<td style="width:30%">
 		<b>CWE IDs</b>
@@ -3006,7 +3007,7 @@ function render_vuln_offcanvas(vuln){
 		</div>`;
 	}
 
-	if (vuln.extracted_results.length) {
+	if (vuln.extracted_results != null && vuln.extracted_results.length) {
 		body += `<div class="accordion custom-accordion mt-2">
 		<h5 class="m-0 position-relative">
 		<a class="custom-accordion-title text-reset d-block"
