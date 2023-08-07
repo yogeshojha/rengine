@@ -929,34 +929,24 @@
           {% for vulnerability in grouped_vulnerabilities %}
             <div>
               <h4 class="content-heading" id="vuln_{{vulnerability.list.0.name.split|join:'_'}}">
-                {% if vulnerability.list.0.severity == -1 %}
-                  <span class="grey-color">{{vulnerability.list.0.name}}
+                <span>{{vulnerability.list.0.name}}
                   <br>in {{vulnerability.grouper}}</span>
+                {% if vulnerability.list.0.severity == -1 %}
                   <span style="float: right;" class="badge bg-grey">Unknown</span>
                   <div class="grey-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 0 %}
-                  <span class="info-color">{{vulnerability.list.0.name}}
-                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-info">INFO</span>
                   <div class="info-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 1 %}
-                  <span class="low-color">{{vulnerability.list.0.name}}
-                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-low">LOW</span>
                   <div class="low-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 2 %}
-                  <span class="medium-color">{{vulnerability.list.0.name}}
-                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-medium">MEDIUM</span>
                   <div class="medium-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 3 %}
-                  <span class="high-color">{{vulnerability.list.0.name}}
-                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-high">HIGH</span>
                   <div class="high-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 4 %}
-                  <span class="critical-color">{{vulnerability.list.0.name}}
-                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-critical">CRITICAL</span>
                   <div class="critical-hr-line" ></div>
                 {% endif %}
@@ -987,26 +977,26 @@
               {% if vulnerability.list.0.description %}
                 <br>
                 <span class="mini-heading">Description</span><br>
-                {{vulnerability.list.0.description}}
+                {{vulnerability.list.0.description|linebreaks}}
               {% endif %}
               {% if vulnerability.list.0.impact %}
                 <br>
-                <br>
                 <span class="mini-heading">Impact</span><br>
-                {{vulnerability.list.0.impact}}
+                {{vulnerability.list.0.impact|linebreaks}}
               {% endif %}
-              <br>
-              <br>
               {% if vulnerability.list.0.remediation %}
                 <br>
-                <br>
                 <span class="mini-heading">Remediation</span><br>
-                {{vulnerability.list.0.remediation}}
+                {{vulnerability.list.0.remediation|linebreaks}}
               {% endif %}
               <br>
-              <br>
               <span class="mini-heading">Vulnerable URL(s)</span><br>
-              {% regroup vulnerability.list by http_url as vuln_http_url_list %}
+              <ul>
+                {% for vuln in vulnerability.list %}
+                  <li class="text-blue">{{vuln.http_url}}</li>
+                {% endfor %}
+              </ul>
+              <!-- {% regroup vulnerability.list by http_url as vuln_http_url_list %} -->
               <!-- <ul>
                 {% for vuln_urls in vuln_http_url_list %}
                   <li>{{vuln_urls.grouper}}</li>
@@ -1024,8 +1014,6 @@
                 {% endfor %}
               </ul> -->
               {% if vulnerability.list.0.references.all %}
-                <br>
-                <br>
                 <span class="mini-heading">References</span><br>
                 <ul>
                   {% for ref in vulnerability.list.0.references.all %}
