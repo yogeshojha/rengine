@@ -369,11 +369,9 @@ def onboarding(request):
     context['error'] = error
     # check is any projects exists, then redirect to project list else onboarding
     projects = Project.objects.all()
-    openai_key = OpenAiAPIKey.objects.all()
-    netlas_key = NetlasAPIKey.objects.all()
 
-    context['openai_key'] = openai_key[0] if openai_key else None
-    context['netlas_key'] = netlas_key[0] if netlas_key else None
+    context['openai_key'] = OpenAiAPIKey.objects.first()
+    context['netlas_key'] = NetlasAPIKey.objects.first()
 
     if len(projects):
         slug = projects[0].slug

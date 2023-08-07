@@ -49,6 +49,10 @@ urlpatterns = [
         views.tool_specific_settings,
         name='tool_settings'),
     path(
+        '<slug:slug>/api_vault',
+        views.api_vault,
+        name='api_vault'),
+    path(
         '<slug:slug>/tool_arsenal',
         views.tool_arsenal_section,
         name='tool_arsenal'),

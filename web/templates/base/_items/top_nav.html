@@ -81,6 +81,7 @@
               <a href="{% url 'tool_settings' current_project.slug %}" class="dropdown-item">Tool Settings</a>
               {% endif %}
               {% if user|can:'modify_system_configurations' %}
+              <a href="{% url 'api_vault' current_project.slug %}" class="dropdown-item">API Vault</a>
               <a href="{% url 'tool_arsenal' current_project.slug %}" class="dropdown-item">Tools Arsenal</a>
               {% endif %}
               {% if user|can:'modify_scan_report' %}
