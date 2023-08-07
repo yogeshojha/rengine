@@ -416,6 +416,10 @@
         text-decoration: none;
       }
 
+      .ml-8{
+        margin-left: 8px;
+      }
+
     </style>
   </head>
 
@@ -921,64 +925,89 @@
       {# start vulnerability #}
       {% if show_vuln %}
         <article class="">
-          {% regroup all_vulnerabilities by name as grouped_vulnerabilities %}
+          {% regroup all_vulnerabilities by get_path as grouped_vulnerabilities %}
           {% for vulnerability in grouped_vulnerabilities %}
             <div>
               <h4 class="content-heading" id="vuln_{{vulnerability.list.0.name.split|join:'_'}}">
-                {{vulnerability.grouper}}
                 {% if vulnerability.list.0.severity == -1 %}
+                  <span class="grey-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-grey">Unknown</span>
                   <div class="grey-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 0 %}
+                  <span class="info-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-info">INFO</span>
                   <div class="info-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 1 %}
+                  <span class="low-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-low">LOW</span>
                   <div class="low-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 2 %}
+                  <span class="medium-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-medium">MEDIUM</span>
                   <div class="medium-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 3 %}
+                  <span class="high-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-high">HIGH</span>
                   <div class="high-hr-line" ></div>
                 {% elif vulnerability.list.0.severity == 4 %}
+                  <span class="critical-color">{{vulnerability.list.0.name}}
+                  <br>in {{vulnerability.grouper}}</span>
                   <span style="float: right;" class="badge bg-critical">CRITICAL</span>
                   <div class="critical-hr-line" ></div>
                 {% endif %}
               </h4>
+              <!-- show vulnerability classification -->
+              <span class="mini-heading">Vulnerability Source: {{vulnerability.list.0.source|upper}}</span><br>
+              {% if vulnerability.list.0.cvss_metrics or vulnerability.list.0.cvss_score or vulnerability.list.0.cve_ids.all or vulnerability.list.0.cve_ids.all %}
+                <span class="mini-heading">Vulnerability Classification</span><br>
+                {% if vulnerability.list.0.cvss_metrics %}
+                  <span class="mini-heading ml-8">CVSS Metrics: {{vulnerability.list.0.cvss_metrics}}</span>
+                {% endif %}
+                {% if vulnerability.list.0.cvss_score %}
+                <br>
+                  <span class="mini-heading ml-8">CVSS Score:</span>&nbsp;<span class="high-color">{{vulnerability.list.0.cvss_score}}</span>
+                {% endif %}
+                {% if vulnerability.list.0.cve_ids.all %}
+                <br>
+                <span class="mini-heading ml-8">CVE IDs</span><br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;{% for cve in vulnerability.list.0.cve_ids.all %} {{cve}}{% if not forloop.last %}, {% endif %} {% endfor %}
+                {% endif %}
+                {% if vulnerability.list.0.cwe_ids.all %}
+                <br>
+                <span class="mini-heading ml-8">CWE IDs</span><br>
+                  &nbsp;&nbsp;&nbsp;&nbsp;{% for cwe in vulnerability.list.0.cwe_ids.all %} {{cwe}}{% if not forloop.last %}, {% endif %} {% endfor %}
+                {% endif %}
+                <br>
+              {% endif %}
               {% if vulnerability.list.0.description %}
+                <br>
                 <span class="mini-heading">Description</span><br>
                 {{vulnerability.list.0.description}}
               {% endif %}
-              <br>
-              {% if vulnerability.list.0.cvss_metrics %}
+              {% if vulnerability.list.0.impact %}
                 <br>
                 <br>
-                <span class="mini-heading">CVSS Metrics</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<span class="high-color">{{vulnerability.list.0.cvss_metrics}}</span>
+                <span class="mini-heading">Impact</span><br>
+                {{vulnerability.list.0.impact}}
               {% endif %}
-              {% if vulnerability.list.0.cvss_score %}
+              <br>
+              <br>
+              {% if vulnerability.list.0.remediation %}
                 <br>
                 <br>
-                <span class="mini-heading">CVSS Score:</span>&nbsp;<span class="high-color">{{vulnerability.list.0.cvss_score}}</span>
-              {% endif %}
-              {% if vulnerability.list.0.cve_ids.all %}
-              <br>
-              <br>
-              <span class="mini-heading">CVE IDs</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{% for cve in vulnerability.list.0.cve_ids.all %} {{cve}}{% if not forloop.last %}, {% endif %} {% endfor %}
-              {% endif %}
-              {% if vulnerability.list.0.cwe_ids.all %}
-              <br>
-              <br>
-              <span class="mini-heading">CWE IDs</span><br>
-                &nbsp;&nbsp;&nbsp;&nbsp;{% for cwe in vulnerability.list.0.cwe_ids.all %} {{cwe}}{% if not forloop.last %}, {% endif %} {% endfor %}
+                <span class="mini-heading">Remediation</span><br>
+                {{vulnerability.list.0.remediation}}
               {% endif %}
               <br>
               <br>
               <span class="mini-heading">Vulnerable URL(s)</span><br>
               {% regroup vulnerability.list by http_url as vuln_http_url_list %}
-              <ul>
+              <!-- <ul>
                 {% for vuln_urls in vuln_http_url_list %}
                   <li>{{vuln_urls.grouper}}</li>
                   <span class="mini-heading">Result/Findings</span><br>
@@ -993,7 +1022,7 @@
                     {% endif %}
                   {% endfor %}
                 {% endfor %}
-              </ul>
+              </ul> -->
               {% if vulnerability.list.0.references.all %}
                 <br>
                 <br>
