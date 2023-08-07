@@ -2159,6 +2159,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		logger.info('Getting Vulnerability GPT Report')
 		vulns = Vulnerability.objects.filter(
 			scan_history__id=self.scan_id
+		).filter(
+			source=NUCLEI
 		).exclude(
 			severity=0
 		)
@@ -2189,6 +2191,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 def get_vulnerability_gpt_report(vuln):
 	title = vuln[0]
 	path = vuln[1]
+	logger.info(f'Getting GPT Report for {title}, PATH: {path}')
 	# check if in db already exists
 	stored = GPTVulnerabilityReport.objects.filter(
 		url_path=path
@@ -2256,6 +2259,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 		description (str, optional): Task description shown in UI.
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	dalfox_config = vuln_config.get(DALFOX) or {}
 	custom_header = dalfox_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
@@ -2341,6 +2345,34 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 
 		if not vuln:
 			continue
+
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting Dalfox Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).filter(
+			source=DALFOX
+		).exclude(
+			severity=0
+		)
+
+		_vulns = []
+		for vuln in vulns:
+			_vulns.append((vuln.name, vuln.http_url))
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in _vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
 	return results
 
 
@@ -2353,6 +2385,7 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 		description (str, optional): Task description shown in UI.
 	"""
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	should_fetch_gpt_report = vuln_config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	custom_header = vuln_config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	proxy = get_random_proxy()
 	user_agent = vuln_config.get(USER_AGENT) or self.yaml_configuration.get(USER_AGENT)
@@ -2432,6 +2465,35 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 
 		if not vuln:
 			continue
+
+	# after vulnerability scan is done, we need to run gpt if
+	# should_fetch_gpt_report and openapi key exists
+
+	if should_fetch_gpt_report and OpenAiAPIKey.objects.all().first():
+		logger.info('Getting CRLFuzz Vulnerability GPT Report')
+		vulns = Vulnerability.objects.filter(
+			scan_history__id=self.scan_id
+		).filter(
+			source=CRLFUZZ
+		).exclude(
+			severity=0
+		)
+
+		_vulns = []
+		for vuln in vulns:
+			_vulns.append((vuln.name, vuln.http_url))
+
+		with concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as executor:
+			future_to_gpt = {executor.submit(get_vulnerability_gpt_report, vuln): vuln for vuln in _vulns}
+
+			# Wait for all tasks to complete
+			for future in concurrent.futures.as_completed(future_to_gpt):
+				gpt = future_to_gpt[future]
+				try:
+					future.result()
+				except Exception as e:
+					logger.error(f"Exception for Vulnerability {vuln}: {e}")
+
 	return results
 
 
@@ -3178,7 +3240,7 @@ def parse_nuclei_result(line):
 		'cwe_ids': line['info'].get('classification', {}).get('cwe_id', []) or [],
 		'references': line['info'].get('reference', []) or [],
 		'tags': line['info'].get('tags', []),
-		'source': 'nuclei',
+		'source': NUCLEI,
 	}
 
 
@@ -3203,7 +3265,7 @@ def parse_dalfox_result(line):
 		'type': 'XSS',
 		'severity': DALFOX_SEVERITY_MAP[line.get('severity', 'unknown')],
 		'description': description,
-		'source': 'Dalfox',
+		'source': DALFOX,
 		'cwe_ids': [line.get('cwe')]
 	}
 
@@ -3222,8 +3284,8 @@ def parse_crlfuzz_result(url):
 		'name': 'CRLF (HTTP Response Splitting)',
 		'type': 'CRLF',
 		'severity': 2,
-		'description': '',
-		'source': 'CRLFUZZ',
+		'description': 'A CRLF (HTTP Response Splitting) vulnerability has been discovered.',
+		'source': CRLFUZZ,
 	}
 
 
