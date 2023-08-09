@@ -1683,6 +1683,7 @@ $(document).ready(function() {
 								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 								</a>
 								<div class="dropdown-menu" style="">
+								<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
 								<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
 								<a class="text-danger dropdown-item" href="javascript:delete_vulnerability(${row['id']});">Delete Vulnerability</a>
 								</div>
