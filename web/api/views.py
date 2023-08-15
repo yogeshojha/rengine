@@ -2362,20 +2362,17 @@ class VulnerabilityViewSet(viewsets.ModelViewSet):
 		_order_direction = self.request.GET.get(u'order[0][dir]', None)
 		if search_value or _order_col or _order_direction:
 			order_col = 'severity'
-			if _order_col == '0' or _order_col == '14':
-				order_col = 'open_status'
-			elif _order_col == '1':
-				order_col = 'type'
-			elif _order_col == '2':
+			if _order_col == '1':
+				order_col = 'source'
+			elif _order_col == '3':
 				order_col = 'name'
-			elif _order_col == '6':
-				order_col = 'severity'
 			elif _order_col == '7':
-				order_col = 'cvss_score'
-			elif _order_col == '10':
+				order_col = 'severity'
+			elif _order_col == '11':
 				order_col = 'http_url'
-			elif _order_col == '13':
-				order_col = 'discovered_date'
+			elif _order_col == '15':
+				order_col = 'open_status'
+
 			if _order_direction == 'desc':
 				order_col = f'-{order_col}'
 			# if the search query is separated by = means, it is a specific lookup

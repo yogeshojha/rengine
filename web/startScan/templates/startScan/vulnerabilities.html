@@ -26,7 +26,7 @@ All Vulnerabilities
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
-<script src="{% static 'custom/config_vuln_datatables.js' %}"></script>
+<script src="{% static 'custom/vuln_datatables.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
@@ -56,10 +56,10 @@ $(document).ready(function() {
 		{% else %}
 		"ajax": '/api/listVulnerability/?project={{current_project.slug}}&format=datatables',
 		{% endif %}
-		"order": [[ 4, "desc" ]],
+		"order": [[ 7, "desc" ]],
 		"columns": vuln_datatable_columns,
 		"columnDefs": [
-			{ "orderable": false, "targets": [9, 12]},
+			{ "orderable": false, "targets": [16]},
 			{
 				"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 				"visible": false,
@@ -233,21 +233,9 @@ $(document).ready(function() {
 		drawCallback: function (settings) {
 			drawCallback_api = this.api();
 			// column visibility
-			if(!$('#vuln_source_checkbox').is(":checked")){
-				vulnerability_table.column(1).visible(false);
-			}
-			if(!$('#vuln_severity_checkbox').is(":checked")){
-				vulnerability_table.column(7).visible(false);
-			}
-			if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-				vulnerability_table.column(11).visible(false);
-			}
-			if(!$('#vuln_status_checkbox').is(":checked")){
-				vulnerability_table.column(15).visible(false);
-			}
-
+			vulnerability_datatable_col_visibility(vulnerability_table);
 			// row grouping
-			vulnerability_datatable_grouping(drawCallback_api, vuln_datatable_columns);
+			vulnerability_datatable_grouping(vulnerability_table, drawCallback_api, vuln_datatable_columns);
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){

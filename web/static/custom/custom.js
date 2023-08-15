@@ -3198,32 +3198,3 @@ function get_datatable_col_index(cols, lookup){
 	// this function will be used to return index of lookup string and cols are datatables cols
 	return cols.findIndex(column => column.data === lookup);
 }
-
-
-function vulnerability_datatable_grouping(api, cols){
-	var rows = api.rows({ page: 'current' }).nodes();
-	var last = null;
-
-	var radioGroup = document.getElementsByName('grouping_vuln_row');
-
-	radioGroup.forEach(function(radioButton) {
-		radioButton.addEventListener('change', function() {
-			if (this.checked) {
-				api.column(get_datatable_col_index(cols, this.value), { page: 'current' })
-					.data()
-					.each(function (group, i) {
-						if (last !== group) {
-							$(rows)
-								.eq(i)
-								.before(
-									'<tr class="group"><td colspan="5">' +
-										group +
-										'</td></tr>'
-								);
-							last = group;
-						}
-				});
-			}
-		});
-	});
-}
