@@ -1290,6 +1290,7 @@ Scan Findings
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
+<script src="{% static 'custom/subdomain_datatable.js' %}"></script>
 
 {% if total_vulnerability_count > 0 %}
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
@@ -2051,59 +2052,25 @@ $(document).ready(function() {
 	{% endif %}
 
 	$("#pills-subdomain-tab").click(function() {
+		var is_subd_grouping = false;
+		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 			},
 			"destroy": true,
 			"processing": true,
-			"oLanguage": {
-				"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-				"sInfo": "Showing page _PAGE_ of _PAGES_",
-				"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-				"sSearchPlaceholder": "Search...",
-				"sLengthMenu": "Results :  _MENU_",
-				"sProcessing": "Fetching Subdomains... Please wait..."
-			},
+			"oLanguage": subdomain_oLanguage,
 			"fnCreatedRow": function (nRow, aData, iDataIndex) {
 				$(nRow).attr('id', 'subdomain_row_' + aData['id']);
 			},
 			"stripeClasses": [],
-			"lengthMenu": [50, 100, 500, 1000],
-			"pageLength": 50,
+			"lengthMenu": subdomain_datatable_length_menu,
+			"pageLength": subdomain_datatable_page_length,
 			'serverSide': true,
 			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables',
 			"order": [[ 8, "desc" ]],
-			"columns": [
-				{'data': 'id'},
-				{'data': 'name'},
-				{'data': 'endpoint_count'},
-				{'data': 'endpoint_count'},
-				{'data': 'http_status'},
-				{'data': 'page_title'},
-				{'data': 'ip_addresses'},
-				{'data': 'ip_addresses'},
-				{'data': 'content_length', 'searchable': false},
-				{'data': 'screenshot_path', 'searchable': false},
-				{'data': 'response_time'},
-				{'data': 'technologies'},
-				{'data': 'http_url'},
-				{'data': 'cname'},
-				{'data': 'is_interesting'},
-				{'data': 'info_count'},
-				{'data': 'low_count'},
-				{'data': 'medium_count'},
-				{'data': 'high_count'},
-				{'data': 'critical_count'},
-				{'data': 'todos_count'},
-				{'data': 'is_important'},
-				{'data': 'webserver'},
-				{'data': 'content_type'},
-				{'data': 'id'},
-				{'data': 'directories_count'},
-				{'data': 'subscan_count'},
-				{'data': 'waf'},
-			],
+			"columns": subdomain_datatable_columns,
 			"columnDefs": [
 				{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 				{
@@ -2336,33 +2303,54 @@ $(document).ready(function() {
 				"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
 				"<'table-responsive'tr>" +
 				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-				drawCallback: function () {
+				"initComplete": function(settings, json) {
+					api = this.api();
+					subdomain_datatable_col_visibility(subdomain_datatables);
+					var radioGroup = document.getElementsByName('grouping_subd_row');
+					radioGroup.forEach(function(radioButton) {
+						radioButton.addEventListener('change', function() {
+							if (this.checked) {
+								var groupRows = document.querySelectorAll('tr.group');
+								// Remove each group row
+								groupRows.forEach(function(row) {
+									row.parentNode.removeChild(row);
+								});
+								var col_index = get_datatable_col_index(subdomain_datatable_columns, this.value);
+								api.page.len(-1).draw();
+								api.order([col_index, 'asc']).draw();
+								is_subd_grouping = true;
+								sudb_grouping_col = col_index;
+								Snackbar.show({
+									text: 'Subdomains grouped by ' + this.value,
+									pos: 'top-right',
+									duration: 2500
+								});
+							}
+						});
+					});
+				},
+				"drawCallback": function () {
 					$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 					$('.bs-tooltip').tooltip();
+					drawCallback_api = this.api();
+					var last = null;
+					var rows = drawCallback_api.rows({ page: 'current' }).nodes();
 
-					if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(4).visible(false);
-					}
-					if(!$('#sub_page_title_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(5).visible(false);
-					}
-					if(!$('#sub_ip_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(6).visible(false);
-					}
-					if(!$('#sub_ports_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(7).visible(false);
-					}
-					if(!$('#sub_content_length_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(8).visible(false);
-					}
-					if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(8).visible(false);
-					}
-					if(!$('#sub_response_time_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(10).visible(false);
-					}
-					if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
-						subdomain_datatables.column(9).visible(false);
+					if (is_subd_grouping) {
+						drawCallback_api.column(sudb_grouping_col)
+						.data()
+						.each(function (group, i) {
+							if (last !== group) {
+								$(rows)
+								.eq(i)
+								.before(
+									'<tr class="group"><td colspan="13"><b class="text-primary">' +
+									group +
+									'</b></td></tr>'
+								);
+								last = group;
+							}
+						});
 					}
 				},
 				"rowCallback": function( row, data, dataIndex ) {
