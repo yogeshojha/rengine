@@ -1789,7 +1789,7 @@ $(document).ready(function() {
 				"lengthMenu": [20, 50, 100, 500, 1000],
 				"pageLength": 20,
 				'serverSide': true,
-				"ajax": '/api/listDatatableSubdomain/?scan_id={{scan_history_id}}&format=datatables&only_directory',
+				"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables&only_directory',
 				"order": [[ 5, "desc" ]],
 				"columns": [
 					{'data': 'id'},

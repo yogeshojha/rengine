@@ -920,7 +920,7 @@ $(document).ready(function(){
 			"lengthMenu": subdomain_datatable_length_menu,
 			"pageLength": subdomain_datatable_page_length,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?target_id={{target.id}}&format=datatables',
+			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables',
 			"order": [[ 8, "desc" ]],
 			"columns": subdomain_datatable_columns,
 			"columnDefs": [{
