@@ -30,6 +30,8 @@ All Vulnerabilities
 <script type="text/javascript">
 $(document).ready(function() {
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
+	var is_grouping = false;
+	var grouping_col = 3;
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -230,12 +232,53 @@ $(document).ready(function() {
 				"targets": 16,
 			},
 		],
-		drawCallback: function (settings) {
-			drawCallback_api = this.api();
+		"initComplete": function(settings, json) {
+			api = this.api();
+			// row grouping
+			// vulnerability_datatable_grouping(vulnerability_table, drawCallback_api, vuln_datatable_columns);
+			var radioGroup = document.getElementsByName('grouping_vuln_row');
+			radioGroup.forEach(function(radioButton) {
+				radioButton.addEventListener('change', function() {
+					if (this.checked) {
+						var groupRows = document.querySelectorAll('tr.group');
+						// Remove each group row
+						groupRows.forEach(function(row) {
+							row.parentNode.removeChild(row);
+						});
+						var col_index = get_datatable_col_index(vuln_datatable_columns, this.value);
+						api.page.len(-1).draw();
+						api.order([col_index, 'asc']).draw();
+						is_grouping = true;
+						grouping_col = col_index;
+					}
+				});
+			});
 			// column visibility
 			vulnerability_datatable_col_visibility(vulnerability_table);
-			// row grouping
-			vulnerability_datatable_grouping(vulnerability_table, drawCallback_api, vuln_datatable_columns);
+		},
+		drawCallback: function (settings) {
+			drawCallback_api = this.api();
+			var last = null;
+			var rows = drawCallback_api.rows({ page: 'current' }).nodes();
+
+			if (is_grouping) {
+				drawCallback_api.column(grouping_col)
+				.data()
+				.each(function (group, i) {
+					console.log(group);
+					if (last !== group) {
+						$(rows)
+						.eq(i)
+						.before(
+							'<tr class="group"><td colspan="7"><b class="text-primary">' +
+							group +
+							'</b></td></tr>'
+						);
+						last = group;
+					}
+				});
+			}
+
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){

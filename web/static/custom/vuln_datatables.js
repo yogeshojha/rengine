@@ -54,39 +54,3 @@ function vulnerability_datatable_col_visibility(table){
 		table.column(get_datatable_col_index('status')).visible(false);
 	}
 }
-
-
-function vulnerability_datatable_grouping(table, api, cols){
-	var rows = api.rows({ page: 'current' }).nodes();
-	var last = null;
-
-	var radioGroup = document.getElementsByName('grouping_vuln_row');
-
-	radioGroup.forEach(function(radioButton) {
-		radioButton.addEventListener('change', function() {
-			if (this.checked) {
-				var groupRows = document.querySelectorAll('tr.group');
-				// Remove each group row
-				groupRows.forEach(function(row) {
-					row.parentNode.removeChild(row);
-				});
-				var col_index = get_datatable_col_index(cols, this.value);
-				// table.order([[col_index, 'asc']]).draw();
-				api.column(col_index, { page: 'current' })
-					.data()
-					.each(function (group, i) {
-						if (last !== group) {
-							$(rows)
-								.eq(i)
-								.before(
-									'<tr class="group"><td colspan="7">' +
-										group +
-										'</td></tr>'
-								);
-							last = group;
-						}
-				});
-			}
-		});
-	});
-}
