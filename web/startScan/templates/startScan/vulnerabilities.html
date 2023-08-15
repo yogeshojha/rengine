@@ -250,6 +250,11 @@ $(document).ready(function() {
 						api.order([col_index, 'asc']).draw();
 						is_grouping = true;
 						grouping_col = col_index;
+						Snackbar.show({
+							text: 'Vulnerabilities grouped by ' + this.value,
+							pos: 'top-right',
+							duration: 2500
+						});
 					}
 				});
 			});
