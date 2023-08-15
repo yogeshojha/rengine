@@ -1286,6 +1286,7 @@ Scan Findings
 <script src="{% static 'plugins/select2/select2.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/jquery-jvectormap.min.js' %}"></script>
 <script src="{% static 'plugins/j-map/maps/jquery-jvectormap-world-mill-en.js' %}"></script>
+<script src="{% static 'custom/vuln_datatables.js' %}"></script>
 {# search suggestions scripts #}
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'startScan/js/endpoint-datatables-suggestions.js' %}"></script>
@@ -1467,6 +1468,8 @@ $(document).ready(function() {
 		// vulnerability datatable
 		const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 		$("#pills-vulnerabilities-tab").click(function() {
+			var is_grouping = false;
+			var grouping_col = 3;
 			var vulnerability_table = $('#vulnerability_results').DataTable({
 				"destroy": true,
 				"oLanguage": {
@@ -1481,51 +1484,14 @@ $(document).ready(function() {
 				"<'table-responsive'tr>" +
 				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 				"stripeClasses": [],
-				"lengthMenu": [20, 50, 100, 500, 1000],
-				"pageLength": 100,
+				"lengthMenu": vuln_datatable_length_menu,
+				"pageLength": vuln_datatable_page_length,
 				'serverSide': true,
 				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
-				"order": [[ 4, "desc" ]],
-				"columns": [
-					{'data': 'id'},
-					{'data': 'source'},
-					{'data': 'type'},
-
-					{'data': 'name'},
-					{'data': 'cvss_metrics'},
-					{'data': 'tags'},
-					{'data': 'hackerone_report_id'},
-
-					{'data': 'severity'},
-					{'data': 'cvss_score'},
-					{'data': 'cve_ids'},
-					{'data': 'cwe_ids'},
-					{'data': 'http_url'},
-
-					{'data': 'description'},
-					{'data': 'references'},
-
-					{'data': 'discovered_date'},
-
-					{'data': 'open_status'},
-
-					{'data': 'hackerone_report_id'},
-
-					// extras
-					{'data': 'extracted_results'},
-					{'data': 'curl_command'},
-					{'data': 'matcher_name'},
-					{'data': 'request'},
-					{'data': 'response'},
-					{'data': 'template'},
-					{'data': 'template_url'},
-					{'data': 'template_id'},
-					{'data': 'impact'},
-					{'data': 'remediation'},
-					{'data': 'is_gpt_used'},
-				],
+				"order": [[ 7, "desc" ]],
+				"columns": vuln_datatable_columns,
 				"columnDefs": [
-					{ "orderable": false, "targets": [9, 12]},
+					{ "orderable": false, "targets": [16]},
 					{
 						"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 						"visible": false,
@@ -1696,21 +1662,58 @@ $(document).ready(function() {
 						"targets": 16,
 					},
 				],
-				drawCallback: function () {
-					if(!$('#vuln_source_checkbox').is(":checked")){
-						vulnerability_table.column(1).visible(false);
+				"initComplete": function(settings, json) {
+					api = this.api();
+					// row grouping
+					// vulnerability_datatable_grouping(vulnerability_table, drawCallback_api, vuln_datatable_columns);
+					var radioGroup = document.getElementsByName('grouping_vuln_row');
+					radioGroup.forEach(function(radioButton) {
+						radioButton.addEventListener('change', function() {
+							if (this.checked) {
+								var groupRows = document.querySelectorAll('tr.group');
+								// Remove each group row
+								groupRows.forEach(function(row) {
+									row.parentNode.removeChild(row);
+								});
+								var col_index = get_datatable_col_index(vuln_datatable_columns, this.value);
+								api.page.len(-1).draw();
+								api.order([col_index, 'asc']).draw();
+								is_grouping = true;
+								grouping_col = col_index;
+								Snackbar.show({
+									text: 'Vulnerabilities grouped by ' + this.value,
+									pos: 'top-right',
+									duration: 2500
+								});
+							}
+						});
+					});
+					// column visibility
+					vulnerability_datatable_col_visibility(vulnerability_table);
+				},
+				drawCallback: function (settings) {
+					drawCallback_api = this.api();
+					var last = null;
+					var rows = drawCallback_api.rows({ page: 'current' }).nodes();
+
+					if (is_grouping) {
+						drawCallback_api.column(grouping_col)
+						.data()
+						.each(function (group, i) {
+							console.log(group);
+							if (last !== group) {
+								$(rows)
+								.eq(i)
+								.before(
+									'<tr class="group"><td colspan="7"><b class="text-primary">' +
+									group +
+									'</b></td></tr>'
+								);
+								last = group;
+							}
+						});
 					}
 
-					if(!$('#vuln_severity_checkbox').is(":checked")){
-						vulnerability_table.column(7).visible(false);
-					}
-
-					if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-						vulnerability_table.column(11).visible(false);
-					}
-					if(!$('#vuln_status_checkbox').is(":checked")){
-						vulnerability_table.column(15).visible(false);
-					}
 				},
 				createdRow: function( row, data, dataIndex ) {
 					if (!data['open_status']){
