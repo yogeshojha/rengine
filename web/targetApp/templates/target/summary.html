@@ -906,6 +906,7 @@ $(document).ready(function(){
 	$("#pills-subdomain-tab").click(function() {
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables';
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML = '<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
@@ -920,7 +921,15 @@ $(document).ready(function(){
 			"lengthMenu": subdomain_datatable_length_menu,
 			"pageLength": subdomain_datatable_page_length,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables',
+			"ajax": {
+					'url': subdomain_ajax_url,
+					beforeSend: function(){
+						$.LoadingOverlay("show");
+					},
+					complete: function(){
+						$.LoadingOverlay("hide");
+					},
+			},
 			"order": [[ 8, "desc" ]],
 			"columns": subdomain_datatable_columns,
 			"columnDefs": [{
@@ -1352,6 +1361,7 @@ $(document).ready(function(){
 	$("#pills-vulnerabilities-tab").click(function() {
 		var is_grouping = false;
 		var grouping_col = 3;
+		var vuln_ajax_url = '/api/listVulnerability/?target_id={{target.id}}&format=datatables';
 		var vulnerability_table = $('#vulnerability_results').DataTable({
 			"destroy": true,
 			"oLanguage": {
@@ -1369,10 +1379,18 @@ $(document).ready(function(){
 				"<'table-responsive'tr>" +
 				"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
 			"stripeClasses": [],
-			"lengthMenu": [20, 50, 100, 500, 1000],
-			"pageLength": 100,
+			"lengthMenu": vuln_datatable_length_menu,
+			"pageLength": vuln_datatable_page_length,
 			'serverSide': true,
-			"ajax": '/api/listVulnerability/?target_id={{target.id}}&format=datatables',
+			"ajax": {
+					'url': vuln_ajax_url,
+					beforeSend: function(){
+						$.LoadingOverlay("show");
+					},
+					complete: function(){
+						$.LoadingOverlay("hide");
+					},
+			},
 			"order": [[ 7, "desc" ]],
 			"columns": vuln_datatable_columns,
 			"columnDefs": [

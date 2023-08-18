@@ -1471,6 +1471,7 @@ $(document).ready(function() {
 		$("#pills-vulnerabilities-tab").click(function() {
 			var is_grouping = false;
 			var grouping_col = 3;
+			var vuln_ajax_url = '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables';
 			var vulnerability_table = $('#vulnerability_results').DataTable({
 				"destroy": true,
 				"oLanguage": {
@@ -1488,7 +1489,15 @@ $(document).ready(function() {
 				"lengthMenu": vuln_datatable_length_menu,
 				"pageLength": vuln_datatable_page_length,
 				'serverSide': true,
-				"ajax": '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables',
+				"ajax": {
+						'url': vuln_ajax_url,
+						beforeSend: function(){
+							$.LoadingOverlay("show");
+						},
+						complete: function(){
+							$.LoadingOverlay("hide");
+						},
+				},
 				"order": [[ 7, "desc" ]],
 				"columns": vuln_datatable_columns,
 				"columnDefs": [
@@ -2052,6 +2061,7 @@ $(document).ready(function() {
 	{% endif %}
 
 	$("#pills-subdomain-tab").click(function() {
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables';
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
@@ -2068,7 +2078,15 @@ $(document).ready(function() {
 			"lengthMenu": subdomain_datatable_length_menu,
 			"pageLength": subdomain_datatable_page_length,
 			'serverSide': true,
-			"ajax": '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{scan_history_id}}&format=datatables',
+			"ajax": {
+					'url': subdomain_ajax_url,
+					beforeSend: function(){
+						$.LoadingOverlay("show");
+					},
+					complete: function(){
+						$.LoadingOverlay("hide");
+					},
+			},
 			"order": [[ 8, "desc" ]],
 			"columns": subdomain_datatable_columns,
 			"columnDefs": [

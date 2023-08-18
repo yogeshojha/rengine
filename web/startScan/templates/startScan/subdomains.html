@@ -42,12 +42,18 @@ $(document).ready(function() {
 	var clipboard = new Clipboard('.copyable');
 	var is_subd_grouping = false;
 	var subd_grouping_col = 8;
+	{% if request.GET.ip_address %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&ip_address={{request.GET.ip_address}}';
+	{% elif request.GET.name %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&name={{request.GET.name}}';
+	{% else %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables';
+	{% endif %}
 	var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 		"headerCallback": function(e, a, t, n, s) {
 			e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 		},
 		"destroy": true,
-		"processing": true,
 		"oLanguage": subdomain_oLanguage,
 		"fnCreatedRow": function (nRow, aData, iDataIndex) {
 			$(nRow).attr('id', 'subdomain_row_' + aData['id']);
@@ -55,14 +61,16 @@ $(document).ready(function() {
 		"stripeClasses": [],
 		"lengthMenu": subdomain_datatable_length_menu,
 		"pageLength": subdomain_datatable_page_length,
-		'serverSide': true,
-		{% if request.GET.ip_address %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&ip_address={{request.GET.ip_address}}',
-		{% elif request.GET.name %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&name={{request.GET.name}}',
-		{% else %}
-		"ajax": '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables',
-		{% endif %}
+		"serverSide": true,
+		"ajax": {
+				'url': url,
+				beforeSend: function(){
+					$.LoadingOverlay("show");
+				},
+				complete: function(){
+					$.LoadingOverlay("hide");
+				},
+		},
 		"order": [[ 8, "desc" ]],
 		"columns": subdomain_datatable_columns,
 		"columnDefs": [

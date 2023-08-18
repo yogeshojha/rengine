@@ -32,6 +32,15 @@ $(document).ready(function() {
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 	var is_vuln_grouping = false;
 	var vuln_grouping_col = 3;
+	{% if request.GET.domain %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&domain={{request.GET.domain}}';
+	{% elif request.GET.vulnerability_name %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&vulnerability_name={{request.GET.vulnerability_name}}';
+	{% elif request.GET.subdomain %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&subdomain={{request.GET.subdomain}}';
+	{% else %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables';
+	{% endif %}
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -49,15 +58,15 @@ $(document).ready(function() {
 		"lengthMenu": vuln_datatable_length_menu,
 		"pageLength": vuln_datatable_page_length,
 		'serverSide': true,
-		{% if request.GET.domain %}
-		"ajax": '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&domain={{request.GET.domain}}',
-		{% elif request.GET.vulnerability_name %}
-		"ajax": '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
-		{% elif request.GET.subdomain %}
-		"ajax": '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&subdomain={{request.GET.subdomain}}',
-		{% else %}
-		"ajax": '/api/listVulnerability/?project={{current_project.slug}}&format=datatables',
-		{% endif %}
+		"ajax": {
+				'url': vuln_ajax_url,
+				beforeSend: function(){
+					$.LoadingOverlay("show");
+				},
+				complete: function(){
+					$.LoadingOverlay("hide");
+				},
+		},
 		"order": [[ 7, "desc" ]],
 		"columns": vuln_datatable_columns,
 		"columnDefs": [
