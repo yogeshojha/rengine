@@ -1355,7 +1355,7 @@ $(document).ready(function(){
 	});
 
 	$("#pills-endpoints-tab").click(function() {
-		get_endpoints(scan_history=null, domain_id={{target.id}}, gf_tags=null);
+		get_endpoints(project='{{current_project.slug}}', scan_history=null, domain_id={{target.id}}, gf_tags=null);
 	});
 
 	$("#pills-vulnerabilities-tab").click(function() {
