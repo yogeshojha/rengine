@@ -3198,3 +3198,25 @@ function get_datatable_col_index(cols, lookup){
 	// this function will be used to return index of lookup string and cols are datatables cols
 	return cols.findIndex(column => column.data === lookup);
 }
+
+
+function endpoint_datatable_col_visibility(endpoint_table){
+	if(!$('#end_http_status_filter_checkbox').is(":checked")){
+		endpoint_table.column(2).visible(false);
+	}
+	if(!$('#end_page_title_filter_checkbox').is(":checked")){
+		endpoint_table.column(3).visible(false);
+	}
+	if(!$('#end_tags_filter_checkbox').is(":checked")){
+		endpoint_table.column(4).visible(false);
+	}
+	if(!$('#end_content_type_filter_checkbox').is(":checked")){
+		endpoint_table.column(5).visible(false);
+	}
+	if(!$('#end_content_length_filter_checkbox').is(":checked")){
+		endpoint_table.column(6).visible(false);
+	}
+	if(!$('#end_response_time_filter_checkbox').is(":checked")){
+		endpoint_table.column(9).visible(false);
+	}
+}

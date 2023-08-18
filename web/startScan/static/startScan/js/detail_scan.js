@@ -43,6 +43,9 @@ function render_ips(data)
 
 
 function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null){
+	var is_endpoint_grouping = false;
+	var endpoint_grouping_col = 6;
+
 	var lookup_url = '/api/listEndpoints/?format=datatables&project=' + project;
 
 	if (scan_history_id) {
@@ -55,6 +58,18 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 	if (gf_tags){
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
+	var endpoint_datatable_columns = [
+		{'data': 'id'},
+		{'data': 'http_url'},
+		{'data': 'http_status'},
+		{'data': 'page_title'},
+		{'data': 'matched_gf_patterns'},
+		{'data': 'content_type'},
+		{'data': 'content_length', 'searchable': false},
+		{'data': 'technologies'},
+		{'data': 'webserver'},
+		{'data': 'response_time', 'searchable': false},
+	];
 	var endpoint_table = $('#endpoint_results').DataTable({
 		"destroy": true,
 		"processing": true,
@@ -81,18 +96,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				},
 		},
 		"order": [[ 6, "desc" ]],
-		"columns": [
-			{'data': 'id'},
-			{'data': 'http_url'},
-			{'data': 'http_status'},
-			{'data': 'page_title'},
-			{'data': 'matched_gf_patterns'},
-			{'data': 'content_type'},
-			{'data': 'content_length', 'searchable': false},
-			{'data': 'technologies'},
-			{'data': 'webserver'},
-			{'data': 'response_time', 'searchable': false},
-		],
+		"columns": endpoint_datatable_columns,
 		"columnDefs": [
 			{
 				"targets": [ 0 ],
@@ -171,7 +175,33 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"targets": 9,
 			},
 		],
-		drawCallback: function () {
+		"initComplete": function(settings, json) {
+			api = this.api();
+			endpoint_datatable_col_visibility(endpoint_table);
+			var radioGroup = document.getElementsByName('grouping_endpoint_row');
+			radioGroup.forEach(function(radioButton) {
+				radioButton.addEventListener('change', function() {
+					if (this.checked) {
+						var groupRows = document.querySelectorAll('tr.group');
+						// Remove each group row
+						groupRows.forEach(function(row) {
+							row.parentNode.removeChild(row);
+						});
+						var col_index = get_datatable_col_index(endpoint_datatable_columns, this.value);
+						api.page.len(-1).draw();
+						api.order([col_index, 'asc']).draw();
+						is_endpoint_grouping = true;
+						endpoint_grouping_col = col_index;
+						Snackbar.show({
+							text: 'Endpoints grouped by ' + this.value,
+							pos: 'top-right',
+							duration: 2500
+						});
+					}
+				});
+			});
+		},
+		"drawCallback": function () {
 			$("body").tooltip({ selector: '[data-toggle=tooltip]' });
 			$('.dataTables_wrapper table').removeClass('table-striped');
 			var clipboard = new Clipboard('.copyable');
@@ -180,23 +210,24 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				setTooltip(e.trigger, 'Copied!');
 				hideTooltip(e.trigger);
 			});
-			if(!$('#end_http_status_filter_checkbox').is(":checked")){
-				endpoint_table.column(2).visible(false);
-			}
-			if(!$('#end_page_title_filter_checkbox').is(":checked")){
-				endpoint_table.column(3).visible(false);
-			}
-			if(!$('#end_tags_filter_checkbox').is(":checked")){
-				endpoint_table.column(4).visible(false);
-			}
-			if(!$('#end_content_type_filter_checkbox').is(":checked")){
-				endpoint_table.column(5).visible(false);
-			}
-			if(!$('#end_content_length_filter_checkbox').is(":checked")){
-				endpoint_table.column(6).visible(false);
-			}
-			if(!$('#end_response_time_filter_checkbox').is(":checked")){
-				endpoint_table.column(9).visible(false);
+				drawCallback_api = this.api();
+			var last = null;
+			var rows = drawCallback_api.rows({ page: 'current' }).nodes();
+			if (is_endpoint_grouping) {
+				drawCallback_api.column(endpoint_grouping_col)
+				.data()
+				.each(function (group, i) {
+					if (last !== group) {
+						$(rows)
+						.eq(i)
+						.before(
+							'<tr class="group"><td colspan="13"><b class="text-primary">' +
+							group +
+							'</b></td></tr>'
+						);
+						last = group;
+					}
+				});
 			}
 		}
 	});
