@@ -670,7 +670,7 @@ Scan Findings
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% if history.domain.domain_info.historical_ips.all %}
 												<div class="alert alert-success">{{history.domain.domain_info.historical_ips.all.count}} Historical Ips</div>
-												<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+												<table id="basic-datatable" class="table dt-responsive w-100">
 													<thead>
 															<tr>
 																	<th>IP</th>
@@ -984,7 +984,7 @@ Scan Findings
 				<div class="card">
 					<div class="card-body">
 						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-expanded="false">Display <span class="caret"></span></button>
-						<table id="directories-table" class="table style-3 table-hover">
+						<table id="directories-table" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th class="checkbox-column">Status</th>
@@ -1178,7 +1178,7 @@ Scan Findings
 							</div>
 						</div>
 						<h4 class="header-title mb-0"><span id="interesting_subdomain_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Subdomains</h4>
-						<table id="interesting_subdomains" class="table style-3 table-hover">
+						<table id="interesting_subdomains" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th>Subdomain</th>
@@ -1205,7 +1205,7 @@ Scan Findings
 							</div>
 						</div>
 						<h4 class="header-title mb-0"><span id="interesting_endpoint_count_badge"><span class="spinner-border spinner-border-sm me-1"></span></span> Interesting Endpoints</h4>
-						<table id="interesting_endpoints" class="table style-3 table-hover">
+						<table id="interesting_endpoints" class="table dt-responsive w-100">
 							<thead>
 								<tr>
 									<th>URL</th>
@@ -1228,7 +1228,7 @@ Scan Findings
 				<div class="card" id="recon_changes_subdomain_div">
 					<div class="card-body">
 						<h4 class="header-title mb-0"><span id="subdomain_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Subdomain Changes</h4>
-						<table class="table style-3 table-hover" id="table-subdomain-changes">
+						<table class="table dt-responsive w-100" id="table-subdomain-changes">
 							<thead>
 								<tr>
 									<th>Subdomain</th>
@@ -1246,7 +1246,7 @@ Scan Findings
 				<div class="card">
 					<div class="card-body">
 						<h4 class="header-title mb-0"><span id="endpoint_change_count"><span class="spinner-border spinner-border-sm me-1"></span></span> Endpoint Changes</h4>
-						<table class="table style-3 table-hover" id="table-endpoint-changes">
+						<table class="table dt-responsive w-100" id="table-endpoint-changes">
 							<thead>
 								<tr>
 									<th>Subdomain</th>

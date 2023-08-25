@@ -1062,7 +1062,7 @@ function render_endpoint_in_xlmodal(endpoint_count, subdomain_name, result) {
 	$('#xl-modal-content').append(`<h5> ${endpoint_count} Endpoints Discovered on subdomain ${subdomain_name}</h5>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="endpoint-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="endpoint-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>HTTP URL</th>
@@ -1133,7 +1133,7 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 	$('#xl-modal-content').append(`<ol id="vuln_results_ol" class="list-group list-group-numbered"></ol>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="vulnerability-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="vulnerability-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>Type</th>
@@ -1290,7 +1290,7 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 	$('#xl-modal-content').append(`<h5> ${directory_count} Directories Discovered on subdomain ${subdomain_name}</h5>`);
 	$('#xl-modal-content').append(`
 		<div class="">
-		<table id="directory-modal-datatable" class="table dt-responsive nowrap w-100">
+		<table id="directory-modal-datatable" class="table dt-responsive w-100">
 		<thead>
 		<tr>
 		<th>Directory</th>
@@ -1793,7 +1793,7 @@ function display_whois_on_modal(response, show_add_target_btn=false) {
 
 					content += `<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 						<div class="alert alert-success">${response.historical_ips.length} Historical Ips</div>
-						<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+						<table id="basic-datatable" class="table dt-responsive w-100">
 							<thead>
 									<tr>
 											<th>IP</th>

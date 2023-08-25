@@ -7,9 +7,6 @@ Scan Engine
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -42,7 +39,7 @@ Scan Engines
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="scan_engine_table" class="table style-3 table-hover">
+      <table id="scan_engine_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th>ID</th>
@@ -155,7 +152,6 @@ Scan Engines
 
 {% block page_level_script %}
 <script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script type="text/javascript">
   $(document).ready(function() {
     var scan_engine_table = $('#scan_engine_table').DataTable({

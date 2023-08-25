@@ -8,9 +8,6 @@ Target Summary for {{target.name}}
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/j-map/jquery-jvectormap.css' %}">
@@ -490,7 +487,7 @@ Target Summary
 											<div class="tab-pane fade" id="v-pills-history" role="tabpanel" aria-labelledby="v-pills-history-tab" data-simplebar style="max-height: 300px; min-height: 300px;">
 												{% if target.domain_info.historical_ips.all %}
 												<div class="alert alert-success">{{target.domain_info.historical_ips.all.count}} Historical Ips</div>
-												<table id="basic-datatable" class="table dt-responsive nowrap w-100">
+												<table id="basic-datatable" class="table dt-responsive w-100">
 													<thead>
 															<tr>
 																	<th>IP</th>

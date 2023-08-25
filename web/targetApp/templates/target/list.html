@@ -8,9 +8,6 @@ List all targets
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -64,7 +61,7 @@ Targets
 		<div class="card">
 			<form method="POST" id="multiple_targets_form" action="../../scan/start/multiple/">
 				{% csrf_token %}
-				<table id="list_target_table" class="table style-3 table-hover">
+				<table id="list_target_table" class="table dt-responsive w-100">
 					<thead>
 						<tr>
 							<th class="checkbox-column text-center">Serial Number</th>
@@ -87,7 +84,6 @@ Targets
 {% block page_level_script %}
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_domain.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function(){
 	var table = $('#list_target_table').DataTable({

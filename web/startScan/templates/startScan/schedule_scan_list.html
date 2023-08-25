@@ -8,9 +8,6 @@ Scheduled Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {% endblock custom_js_css_link %}
 
@@ -26,7 +23,7 @@ Scheduled Scans
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="scheduled_scan_table" class="table style-3 table-hover">
+      <table id="scheduled_scan_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th>Description</th>
@@ -87,7 +84,6 @@ Scheduled Scans
 </div>
 {% endblock main_content %}
 {% block page_level_script %}
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 // var e;
 $(document).ready(function() {

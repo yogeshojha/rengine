@@ -8,9 +8,6 @@ Organizations
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -42,7 +39,7 @@ Organizations
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="list_organization_table" class="table style-3 table-hover">
+      <table id="list_organization_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th class="">Organization</th>
@@ -100,7 +97,6 @@ Organizations
 
 
 {% block page_level_script %}
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_organization.js' %}"></script>
 <script>
