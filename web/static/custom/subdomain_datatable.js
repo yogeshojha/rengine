@@ -41,29 +41,29 @@ const subdomain_oLanguage = {
   "sProcessing": "Fetching Subdomains... Please wait..."
 };
 
-function subdomain_datatable_col_visibility(table){
+function subdomain_datatable_col_visibility(subdomain_datatables){
   if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_page_title_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('page_title', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('page_title', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_ip_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_ports_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('ip_addresses', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_content_length_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('content_length', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('content_length', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('http_status', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_response_time_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('response_time', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('response_time', subdomain_datatable_columns)).visible(false);
   }
   if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
-    subdomain_datatables.column(get_datatable_col_index('screenshot_path', subdomain_cols)).visible(false);
+    subdomain_datatables.column(get_datatable_col_index('screenshot_path', subdomain_datatable_columns)).visible(false);
   }
 }

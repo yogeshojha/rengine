@@ -3194,7 +3194,7 @@ function render_gpt_vuln_modal(data, title){
 }
 
 
-function get_datatable_col_index(cols, lookup){
+function get_datatable_col_index(lookup, cols){
 	// this function will be used to return index of lookup string and cols are datatables cols
 	return cols.findIndex(column => column.data === lookup);
 }
