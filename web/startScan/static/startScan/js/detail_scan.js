@@ -89,6 +89,11 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		"ajax": {
 				'url': lookup_url,
 		},
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Endpoints)';
+			}
+		},
 		"order": [[ 6, "desc" ]],
 		"columns": endpoint_datatable_columns,
 		"columnDefs": [
@@ -172,59 +177,46 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		"initComplete": function(settings, json) {
 			api = this.api();
 			endpoint_datatable_col_visibility(endpoint_table);
-			var radioGroup = document.getElementsByName('grouping_endpoint_row');
-			radioGroup.forEach(function(radioButton) {
-				radioButton.addEventListener('change', function() {
-					if (this.checked) {
-						var groupRows = document.querySelectorAll('tr.group');
-						// Remove each group row
-						groupRows.forEach(function(row) {
-							row.parentNode.removeChild(row);
-						});
-						var col_index = get_datatable_col_index(this.value, endpoint_datatable_columns);
-						api.page.len(-1).draw();
-						api.order([col_index, 'asc']).draw();
-						is_endpoint_grouping = true;
-						endpoint_grouping_col = col_index;
-						Snackbar.show({
-							text: 'Endpoints grouped by ' + this.value,
-							pos: 'top-right',
-							duration: 2500
-						});
-					}
-				});
-			});
+			$(".dtrg-group th:contains('No group')").remove();
 		},
 		"drawCallback": function () {
 			$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-			$('.dataTables_wrapper table').removeClass('table-striped');
+			// $('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dtrg-group').remove();
+			$('.bs-tooltip').tooltip();
 			var clipboard = new Clipboard('.copyable');
 			$('.bs-tooltip').tooltip();
 			clipboard.on('success', function(e) {
 				setTooltip(e.trigger, 'Copied!');
 				hideTooltip(e.trigger);
 			});
-				drawCallback_api = this.api();
-			var last = null;
-			var rows = drawCallback_api.rows({ page: 'current' }).nodes();
-			if (is_endpoint_grouping) {
-				drawCallback_api.column(endpoint_grouping_col)
-				.data()
-				.each(function (group, i) {
-					if (last !== group) {
-						$(rows)
-						.eq(i)
-						.before(
-							'<tr class="group"><td colspan="13"><b class="text-primary">' +
-							group +
-							'</b></td></tr>'
-						);
-						last = group;
-					}
-				});
-			}
+			drawCallback_api = this.api();
+			setTimeout(function() {
+				$(".dtrg-group th:contains('No group')").remove();
+			}, 1);
 		}
 	});
+
+	var radioGroup = document.getElementsByName('grouping_endpoint_row');
+	radioGroup.forEach(function(radioButton) {
+	  radioButton.addEventListener('change', function() {
+	    if (this.checked) {
+	      var groupRows = document.querySelectorAll('tr.group');
+	      // Remove each group row
+				var col_index = get_datatable_col_index(this.value, endpoint_datatable_columns);
+				api.page.len(-1).draw();
+				api.order([col_index, 'asc']).draw();
+				endpoint_table.rowGroup().dataSrc(this.value);
+	      Snackbar.show({
+	        text: 'Endpoints grouped by ' + this.value,
+	        pos: 'top-right',
+	        duration: 2500
+	      });
+	    }
+	  });
+	});
+
 	$('#endpoint-search-button').click(function () {
 		endpoint_table.search($('#endpoints-search').val()).draw() ;
 	});
