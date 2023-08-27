@@ -57,6 +57,11 @@ $(document).ready(function() {
 				'url': vuln_ajax_url
 		},
 		"order": [[ 7, "desc" ]],
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Vulnerabilities)';
+			}
+		},
 		"columns": vuln_datatable_columns,
 		"columnDefs": [
 			{ "orderable": false, "targets": [16]},
@@ -232,6 +237,9 @@ $(document).ready(function() {
 		],
 		"initComplete": function(settings, json) {
 			api = this.api();
+			// remove first rowGroup
+			// dtrg-group dtrg-start dtrg-level-0
+			$('.dtrg-group').remove();
 			// column visibility
 			vulnerability_datatable_col_visibility(vulnerability_table);
 		},
@@ -298,8 +306,11 @@ $(document).ready(function() {
 		radioButton.addEventListener('change', function() {
 			if (this.checked) {
 				var groupRows = document.querySelectorAll('tr.group');
+				// grouping code here
+				var col_index = get_datatable_col_index(this.value, vuln_datatable_columns);
 				api.page.len(-1).draw();
-
+				api.order([col_index, 'asc']).draw();
+				vulnerability_table.rowGroup().dataSrc(this.value);
 				Snackbar.show({
 					text: 'Vulnerabilities grouped by ' + this.value,
 					pos: 'top-right',
