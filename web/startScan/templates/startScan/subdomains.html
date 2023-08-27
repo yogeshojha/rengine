@@ -307,7 +307,7 @@ $(document).ready(function() {
 							groupRows.forEach(function(row) {
 								row.parentNode.removeChild(row);
 							});
-							var col_index = get_datatable_col_index(subdomain_datatable_columns, this.value);
+							var col_index = get_datatable_col_index(this.value, subdomain_datatable_columns);
 							api.page.len(-1).draw();
 							api.order([col_index, 'asc']).draw();
 							is_subd_grouping = true;

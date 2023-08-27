@@ -181,7 +181,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 						groupRows.forEach(function(row) {
 							row.parentNode.removeChild(row);
 						});
-						var col_index = get_datatable_col_index(endpoint_datatable_columns, this.value);
+						var col_index = get_datatable_col_index(this.value, endpoint_datatable_columns);
 						api.page.len(-1).draw();
 						api.order([col_index, 'asc']).draw();
 						is_endpoint_grouping = true;
