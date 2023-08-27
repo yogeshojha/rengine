@@ -237,14 +237,16 @@ $(document).ready(function() {
 		],
 		"initComplete": function(settings, json) {
 			api = this.api();
-			// remove first rowGroup
-			// dtrg-group dtrg-start dtrg-level-0
-			$('.dtrg-group').remove();
 			// column visibility
 			vulnerability_datatable_col_visibility(vulnerability_table);
+			$(".dtrg-group th:contains('No group')").remove();
 		},
 		drawCallback: function (settings) {
+			$('.dtrg-group').remove();
 			drawCallback_api = this.api();
+			setTimeout(function() {
+				$(".dtrg-group th:contains('No group')").remove();
+			}, 1);
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
@@ -294,7 +296,8 @@ $(document).ready(function() {
 	});
 
 	$('#vulnerability_results').on('click', 'tr' , function (e) {
-		if ($(e.target).is('input[type="checkbox"]') || $(e.target).is('svg') || $(e.target).is('a')) {
+		console.log(e.target);
+		if ($(e.target).is('input[type="checkbox"]') || $(e.target).is('svg') || $(e.target).is('a') || $(e.target).is('th')) {
 			return;
 		}
 		var data = vulnerability_table.row(this).data();
