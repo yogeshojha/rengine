@@ -59,13 +59,7 @@ $(document).ready(function() {
 		"pageLength": subdomain_datatable_page_length,
 		"serverSide": true,
 		"ajax": {
-				'url': url,
-				beforeSend: function(){
-					$.LoadingOverlay("show");
-				},
-				complete: function(){
-					$.LoadingOverlay("hide");
-				},
+				'url': url
 		},
 		"order": [[ 8, "desc" ]],
 		"columns": subdomain_datatable_columns,

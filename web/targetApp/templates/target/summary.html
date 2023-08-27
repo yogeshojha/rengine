@@ -920,12 +920,6 @@ $(document).ready(function(){
 			'serverSide': true,
 			"ajax": {
 					'url': subdomain_ajax_url,
-					beforeSend: function(){
-						$.LoadingOverlay("show");
-					},
-					complete: function(){
-						$.LoadingOverlay("hide");
-					},
 			},
 			"order": [[ 8, "desc" ]],
 			"columns": subdomain_datatable_columns,
@@ -1381,12 +1375,6 @@ $(document).ready(function(){
 			'serverSide': true,
 			"ajax": {
 					'url': vuln_ajax_url,
-					beforeSend: function(){
-						$.LoadingOverlay("show");
-					},
-					complete: function(){
-						$.LoadingOverlay("hide");
-					},
 			},
 			"order": [[ 7, "desc" ]],
 			"columns": vuln_datatable_columns,

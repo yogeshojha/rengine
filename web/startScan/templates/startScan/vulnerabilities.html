@@ -54,13 +54,7 @@ $(document).ready(function() {
 		"pageLength": vuln_datatable_page_length,
 		'serverSide': true,
 		"ajax": {
-				'url': vuln_ajax_url,
-				beforeSend: function(){
-					$.LoadingOverlay("show");
-				},
-				complete: function(){
-					$.LoadingOverlay("hide");
-				},
+				'url': vuln_ajax_url
 		},
 		"order": [[ 7, "desc" ]],
 		"columns": vuln_datatable_columns,

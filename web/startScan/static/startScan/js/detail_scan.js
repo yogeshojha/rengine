@@ -88,12 +88,6 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		'serverSide': true,
 		"ajax": {
 				'url': lookup_url,
-				beforeSend: function(){
-					$.LoadingOverlay("show");
-				},
-				complete: function(){
-					$.LoadingOverlay("hide");
-				},
 		},
 		"order": [[ 6, "desc" ]],
 		"columns": endpoint_datatable_columns,
