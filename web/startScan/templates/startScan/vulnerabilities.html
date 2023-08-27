@@ -243,7 +243,6 @@ $(document).ready(function() {
 		},
 		drawCallback: function (settings) {
 			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
-			$('.dtrg-group').remove();
 			$('.bs-tooltip').tooltip();
 			drawCallback_api = this.api();
 			setTimeout(function() {
