@@ -72,7 +72,7 @@ $(document).ready(function() {
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 			{
-				"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27],
+				"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28],
 				"visible": false,
 				"searchable": false,
 			},
@@ -284,8 +284,9 @@ $(document).ready(function() {
 						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 						return `
 						<div class="btn-group mt-2">
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1 bs-tooltip" id="${row['id']}"><i class="fe-zap"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1 bs-tooltip" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
 							<div class="dropdown-menu dropdown-menu-end">
 							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>

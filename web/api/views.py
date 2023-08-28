@@ -40,7 +40,7 @@ class GPTAttackSuggestion(APIView):
 		if not subdomain_id:
 			return Response({
 				'status': False,
-				'error': 'Missing GET param Vulnerability `subdomain_id`'
+				'error': 'Missing GET param Subdomain `subdomain_id`'
 			})
 		try:
 			subdomain = Subdomain.objects.get(id=subdomain_id)
@@ -52,6 +52,7 @@ class GPTAttackSuggestion(APIView):
 		if subdomain.attack_surface:
 			return Response({
 				'status': True,
+				'subdomain_name': subdomain.name,
 				'description': subdomain.attack_surface
 			})
 		ip_addrs = subdomain.ip_addresses.all()
@@ -74,6 +75,7 @@ class GPTAttackSuggestion(APIView):
 		'''
 		gpt = GPTAttackSuggestionGenerator()
 		response = gpt.get_attack_suggestion(input)
+		response['subdomain_name'] = subdomain.name
 		if response.get('status'):
 			subdomain.attack_surface = response.get('description')
 			subdomain.save()

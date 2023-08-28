@@ -3220,3 +3220,58 @@ function endpoint_datatable_col_visibility(endpoint_table){
 		endpoint_table.column(9).visible(false);
 	}
 }
+
+
+async function send_gpt__attack_surface_api_request(subdomain_id){
+	const api = `/api/tools/gpt_get_possible_attacks/?format=json&subdomain_id=${subdomain_id}`;
+	try {
+		const response = await fetch(api, {
+				method: 'GET',
+				credentials: "same-origin",
+				headers: {
+					"X-CSRFToken": getCookie("csrftoken")
+				}
+		});
+		if (!response.ok) {
+			throw new Error('Request failed');
+		}
+		const data = await response.json();
+		return data;
+	} catch (error) {
+		throw new Error('Request failed');
+	}
+}
+
+
+async function show_attack_surface_modal(id){
+	var loader_title = "Loading...";
+	var text = 'Please wait while the GPT is generating attack surface.'
+	try {
+		showSwalLoader(loader_title, text);
+		const data = await send_gpt__attack_surface_api_request(id);
+		Swal.close();
+		console.log(data);
+		if (data.status) {
+			$('#modal_title').html(`Attack Surface Suggestion for ${data.subdomain_name}`);
+			$('#modal-content').empty();
+			$('#modal-content').append(data.description.replace(new RegExp('\r?\n','g'), '<br />'));
+			$('#modal_dialog').modal('show');
+		}
+		else{
+			Swal.close();
+			Swal.fire({
+				icon: 'error',
+				title: 'Oops...',
+				text: data.error,
+			});
+		}
+	} catch (error) {
+		console.error(error);
+		Swal.close();
+		Swal.fire({
+			icon: 'error',
+			title: 'Oops...',
+			text: 'Something went wrong!',
+		});
+	}
+}
