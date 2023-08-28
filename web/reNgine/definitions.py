@@ -451,7 +451,8 @@ VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
 
 ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
     You are a highly skilled penetration tester who has recently completed a reconnaissance on a target.
-    You will be given with a
+    As a penetration tester, I've conducted a thorough reconnaissance on a specific subdomain.
+    Based on my reconnaissance you will be given with a
         - Subdomain Name
         - Subdomain Page Title
         - Open Ports if any detected
@@ -459,7 +460,8 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
         - Technologies Detected
         - Content Type
         - Web Server
-
-    Your job is to generate the attack surface, explore potential attack vectors and find possible attacks on the given subdomain.
-    You must give atlest one logical reason why you think the attack is likely to happen.
+        - Page Content Length
+    I'm seeking insights into potential technical web application attacks that could be executed on this subdomain, along with explanations for why these attacks are feasible given the discovered information.
+    Please provide a detailed list of these attack types and their underlying technical rationales on every attacks you suggested.
+    Also suggest if any CVE ID, known exploits, existing vulnerabilities, any news articles URL related to the information provided to you.
 """

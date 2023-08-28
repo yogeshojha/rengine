@@ -2282,6 +2282,7 @@ $(document).ready(function() {
 							const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 							return `
 							<div class="btn-group mt-2">
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
 							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>

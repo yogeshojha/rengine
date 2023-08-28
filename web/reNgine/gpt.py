@@ -89,9 +89,11 @@ class GPTAttackSuggestionGenerator:
 		if not self.api_key:
 			return {
 				'status': False,
-				'error': 'No OpenAI keys provided.'
+				'error': 'No OpenAI keys provided.',
+				'input': input
 			}
 		openai.api_key = self.api_key
+		print(input)
 		try:
 			gpt_response = openai.ChatCompletion.create(
 			model=self.model_name,
@@ -103,10 +105,12 @@ class GPTAttackSuggestionGenerator:
 			response_content = gpt_response['choices'][0]['message']['content']
 			return {
 				'status': True,
-				'description': response_content
+				'description': response_content,
+				'input': input
 			}
 		except Exception as e:
 			return {
 				'status': False,
-				'error': str(e)
+				'error': str(e),
+				'input': input
 			}

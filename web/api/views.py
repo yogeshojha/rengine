@@ -72,6 +72,7 @@ class GPTAttackSuggestion(APIView):
 			Technologies Used: {tech_used}
 			Content type: {subdomain.content_type}
 			Web Server: {subdomain.webserver}
+			Page Content Length: {subdomain.content_length}
 		'''
 		gpt = GPTAttackSuggestionGenerator()
 		response = gpt.get_attack_suggestion(input)

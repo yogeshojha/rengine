@@ -3250,9 +3250,8 @@ async function show_attack_surface_modal(id){
 		showSwalLoader(loader_title, text);
 		const data = await send_gpt__attack_surface_api_request(id);
 		Swal.close();
-		console.log(data);
 		if (data.status) {
-			$('#modal_title').html(`Attack Surface Suggestion for ${data.subdomain_name}`);
+			$('#modal_title').html(`Attack Surface Suggestion for ${data.subdomain_name} (BETA)`);
 			$('#modal-content').empty();
 			$('#modal-content').append(data.description.replace(new RegExp('\r?\n','g'), '<br />'));
 			$('#modal_dialog').modal('show');
