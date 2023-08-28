@@ -24,19 +24,19 @@ Add or Import Targets
     <div class="card">
       <div class="card-body">
         <ul class="nav nav-tabs nav-bordered">
-          <li class="nav-item">
+          <!-- <li class="nav-item">
             <a href="#pills-add" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
               Add Target
+            </a>
+          </li> -->
+          <li class="nav-item">
+            <a href="#add-multiple-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
+              Add Targets
             </a>
           </li>
           <li class="nav-item">
             <a href="#ip-address-tab" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
-              Add IP Address
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="#add-multiple-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
-              Add Multiple Targets
+              Resolve and add IP Address
             </a>
           </li>
           <li class="nav-item dropdown">
@@ -52,7 +52,7 @@ Add or Import Targets
         </li>
       </ul>
       <div class="tab-content" id="pills-tabContent">
-        <div class="tab-pane fade show active" id="pills-add" role="tabpanel" aria-labelledby="pills-add-tab">
+        <!-- <div class="tab-pane fade show active" id="pills-add" role="tabpanel" aria-labelledby="pills-add-tab">
           <div class="mb-4">
             <div class="row">
               <form class="simple-example" method="POST">
@@ -96,7 +96,7 @@ Add or Import Targets
               </form>
             </div>
           </div>
-        </div>
+        </div> -->
         <div class="tab-pane fade" id="ip-address-tab" role="tabpanel" aria-labelledby="ip-address-tab">
           <form method="post">
             {% csrf_token %}
@@ -136,7 +136,7 @@ Add or Import Targets
             </form>
           </div>
         </div>
-        <div class="tab-pane fade" id="add-multiple-tab" role="tabpanel" aria-labelledby="add-multiple-tab">
+        <div class="tab-pane fade show active" id="add-multiple-tab" role="tabpanel" aria-labelledby="add-multiple-tab">
           <form method="post">
             {% csrf_token %}
             <div class="row">
