@@ -1,7 +1,7 @@
 import openai
 import re
 from reNgine.common_func import get_open_ai_key, extract_between
-from reNgine.definitions import VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE
+from reNgine.definitions import VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE, ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT
 
 class GPTVulnerabilityReportGenerator:
 
@@ -68,6 +68,42 @@ class GPTVulnerabilityReportGenerator:
 				'impact': impact_section,
 				'remediation': remediation_section,
 				'references': urls,
+			}
+		except Exception as e:
+			return {
+				'status': False,
+				'error': str(e)
+			}
+
+
+class GPTAttackSuggestionGenerator:
+
+	def __init__(self):
+		self.api_key = get_open_ai_key()
+		self.model_name = 'gpt-3.5-turbo'
+
+	def get_attack_suggestion(self, input):
+		'''
+			input (str): input for gpt
+		'''
+		if not self.api_key:
+			return {
+				'status': False,
+				'error': 'No OpenAI keys provided.'
+			}
+		openai.api_key = self.api_key
+		try:
+			gpt_response = openai.ChatCompletion.create(
+			model=self.model_name,
+			messages=[
+					{'role': 'system', 'content': ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT},
+					{'role': 'user', 'content': input}
+				]
+			)
+			response_content = gpt_response['choices'][0]['message']['content']
+			return {
+				'status': True,
+				'description': response_content
 			}
 		except Exception as e:
 			return {

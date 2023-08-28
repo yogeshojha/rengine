@@ -21,6 +21,7 @@ from reNgine.celery import app
 from reNgine.common_func import *
 from reNgine.definitions import ABORTED_TASK
 from reNgine.tasks import *
+from reNgine.gpt import GPTAttackSuggestionGenerator
 from reNgine.utilities import is_safe_path
 from scanEngine.models import *
 from startScan.models import *
@@ -30,6 +31,53 @@ from targetApp.models import *
 from .serializers import *
 
 logger = logging.getLogger(__name__)
+
+
+class GPTAttackSuggestion(APIView):
+	def get(self, request):
+		req = self.request
+		subdomain_id = req.query_params.get('subdomain_id')
+		if not subdomain_id:
+			return Response({
+				'status': False,
+				'error': 'Missing GET param Vulnerability `subdomain_id`'
+			})
+		try:
+			subdomain = Subdomain.objects.get(id=subdomain_id)
+		except Exception as e:
+			return Response({
+				'status': False,
+				'error': 'Subdomain not found with id ' + subdomain_id
+			})
+		if subdomain.attack_surface:
+			return Response({
+				'status': True,
+				'description': subdomain.attack_surface
+			})
+		ip_addrs = subdomain.ip_addresses.all()
+		open_ports_str = ''
+		for ip in ip_addrs:
+			ports = ip.ports.all()
+			for port in ports:
+				open_ports_str += f'{port.number}/{port.service_name}, '
+		tech_used = ''
+		for tech in subdomain.technologies.all():
+			tech_used += f'{tech.name}, '
+		input = f'''
+			Subdomain Name: {subdomain.name}
+			Subdomain Page Title: {subdomain.page_title}
+			Open Ports: {open_ports_str}
+			HTTP Status: {subdomain.http_status}
+			Technologies Used: {tech_used}
+			Content type: {subdomain.content_type}
+			Web Server: {subdomain.webserver}
+		'''
+		gpt = GPTAttackSuggestionGenerator()
+		response = gpt.get_attack_suggestion(input)
+		if response.get('status'):
+			subdomain.attack_surface = response.get('description')
+			subdomain.save()
+		return Response(response)
 
 
 class GPTVulnerabilityReportGenerator(APIView):

@@ -159,6 +159,10 @@ urlpatterns = [
         GPTVulnerabilityReportGenerator.as_view(),
         name='gpt_vulnerability_report_generator'),
     path(
+        'tools/gpt_get_possible_attacks/',
+        GPTAttackSuggestion.as_view(),
+        name='gpt_get_possible_attacks'),
+    path(
         'github/tool/get_latest_releases/',
         GithubToolCheckGetLatestRelease.as_view(),
         name='github_tool_latest_release'),

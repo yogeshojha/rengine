@@ -197,6 +197,7 @@ class Subdomain(models.Model):
 	ip_addresses = models.ManyToManyField('IPAddress', related_name='ip_addresses', blank=True)
 	directories = models.ManyToManyField('DirectoryScan', related_name='directories', blank=True)
 	waf = models.ManyToManyField('Waf', related_name='waf', blank=True)
+	attack_surface = models.TextField(null=True, blank=True)
 
 
 	def __str__(self):

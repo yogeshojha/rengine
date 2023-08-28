@@ -447,3 +447,19 @@ VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
 
     Do not write 'Penetration Testing Report:' on the title.
 """
+
+
+ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
+    You are a highly skilled penetration tester who has recently completed a reconnaissance on a target.
+    You will be given with a
+        - Subdomain Name
+        - Subdomain Page Title
+        - Open Ports if any detected
+        - HTTP Status
+        - Technologies Detected
+        - Content Type
+        - Web Server
+
+    Your job is to generate the attack surface, explore potential attack vectors and find possible attacks on the given subdomain.
+    You must give atlest one logical reason why you think the attack is likely to happen.
+"""
