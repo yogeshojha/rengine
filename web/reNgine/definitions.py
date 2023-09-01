@@ -25,7 +25,7 @@ FETCH_GPT_REPORT = 'fetch_gpt_report'
 DIR_FILE_FUZZ = 'dir_file_fuzz'
 FOLLOW_REDIRECT = 'follow_redirect'
 EXTENSIONS = 'extensions'
-EXCLUDED_SUBDOMAINS = 'excluded_subdomains'
+EXCLUDED_SUBDOMAINS = 'exclude_subdomains'
 EXCLUDE_EXTENSIONS = 'exclude_extensions'
 EXCLUDE_TEXT = 'exclude_text'
 FETCH_URL = 'fetch_url'
@@ -388,6 +388,7 @@ DEFAULT_GF_PATTERNS = [
 
 # Default Dir File Fuzz Params
 DEFAULT_DIR_FILE_FUZZ_EXTENSIONS =  [
+    'html',
     'php',
     'git',
     'yaml',
