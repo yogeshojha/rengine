@@ -4263,7 +4263,7 @@ def save_subdomain(subdomain_name, ctx={}):
 	if ctx.get('domain_id'):
 		domain = Domain.objects.get(id=ctx.get('domain_id'))
 		if domain.name not in subdomain_name:
-			logger.error(f"{subdomain_name} is not a subdomain of domain {ctx.get('domain')}. Skipping.")
+			logger.error(f"{subdomain_name} is not a subdomain of domain {domain.name}. Skipping.")
 			return None, False
 
 	scan = ScanHistory.objects.filter(pk=scan_id).first()
