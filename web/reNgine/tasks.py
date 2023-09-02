@@ -4201,7 +4201,7 @@ def save_endpoint(
 	if ctx.get('domain_id'):
 		domain = Domain.objects.get(id=ctx.get('domain_id'))
 		if domain.name not in http_url:
-			logger.error(f"{subdomain_name} is not a subdomain of domain {domain.name}. Skipping.")
+			logger.error(f"{http_url} is not a URL of domain {domain.name}. Skipping.")
 			return None, False
 	if crawl:
 		ctx['track'] = False
