@@ -108,17 +108,18 @@ def add_target(request, slug):
                     logger.info(f'IPs: {ips} | Domains: {domains} | URLs: {http_urls} | Ports: {ports}')
 
                     for domain_name in domains:
-                        domain, created = Domain.objects.get_or_create(
-                            name=domain_name,
-                            description=description,
-                            h1_team_handle=h1_team_handle,
-                            project=project,
-                            ip_address_cidr=domain_name if is_ip else None)
-                        domain.insert_date = timezone.now()
-                        domain.save()
-                        added_target_count += 1
-                        if created:
-                            logger.info(f'Added new domain {domain.name}')
+                        if not Domain.objects.filter(name=domain_name).exists():
+                            domain, created = Domain.objects.get_or_create(
+                                name=domain_name,
+                                description=description,
+                                h1_team_handle=h1_team_handle,
+                                project=project,
+                                ip_address_cidr=domain_name if is_ip else None)
+                            domain.insert_date = timezone.now()
+                            domain.save()
+                            added_target_count += 1
+                            if created:
+                                logger.info(f'Added new domain {domain.name}')
 
                     for http_url in http_urls:
                         http_url = sanitize_url(http_url)
@@ -152,7 +153,7 @@ def add_target(request, slug):
                         request,
                         messages.ERROR,
                         'Files uploaded are not .txt or .csv files.')
-                    return http.HttpResponseRedirect(reverse('add_target'))
+                    return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
                 if txt_file:
                     is_txt = txt_file.content_type == 'text/plain' or txt_file.name.split('.')[-1] == 'txt'
@@ -161,7 +162,7 @@ def add_target(request, slug):
                             request,
                             messages.ERROR,
                             'File is not a valid TXT file')
-                        return http.HttpResponseRedirect(reverse('add_target'))
+                        return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     txt_content = txt_file.read().decode('UTF-8')
                     io_string = io.StringIO(txt_content)
                     for target in io_string:
@@ -185,7 +186,7 @@ def add_target(request, slug):
                             messages.ERROR,
                             'File is not a valid CSV file.'
                         )
-                        return http.HttpResponseRedirect(reverse('add_target'))
+                        return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
                     csv_content = csv_file.read().decode('UTF-8')
                     io_string = io.StringIO(csv_content)
                     for column in csv.reader(io_string, delimiter=','):
@@ -210,7 +211,7 @@ def add_target(request, slug):
                 messages.ERROR,
                 f'Exception while adding domain: {e}'
             )
-            return http.HttpResponseRedirect(reverse('add_target'))
+            return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
         # No targets added, redirect to add target page
         if added_target_count == 0:
@@ -218,7 +219,7 @@ def add_target(request, slug):
                 request,
                 messages.ERROR,
                 'Oops! Could not import any targets, either targets already exists or is not a valid target.')
-            return http.HttpResponseRedirect(reverse('add_target'))
+            return http.HttpResponseRedirect(reverse('add_target', kwargs={'slug': slug}))
 
         # Targets added successfully, redirect to targets list
         msg = f'{added_target_count} targets added successfully'
