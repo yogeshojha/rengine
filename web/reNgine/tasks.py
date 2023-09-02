@@ -4198,6 +4198,11 @@ def save_endpoint(
 	scheme = urlparse(http_url).scheme
 	endpoint = None
 	created = False
+	if ctx.get('domain_id'):
+		domain = Domain.objects.get(id=ctx.get('domain_id'))
+		if domain.name not in http_url:
+			logger.error(f"{subdomain_name} is not a subdomain of domain {domain.name}. Skipping.")
+			return None, False
 	if crawl:
 		ctx['track'] = False
 		results = http_crawl(
