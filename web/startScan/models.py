@@ -344,6 +344,7 @@ class EndPoint(models.Model):
 		on_delete=models.CASCADE,
 		null=True,
 		blank=True)
+	source = models.CharField(max_length=200, null=True, blank=True)
 	http_url = models.CharField(max_length=30000)
 	content_length = models.IntegerField(default=0, null=True, blank=True)
 	page_title = models.CharField(max_length=30000, null=True, blank=True)

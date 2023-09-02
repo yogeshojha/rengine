@@ -58,12 +58,12 @@ Add Scan Engine
 $(document).ready(function() {
   $('.ace_text-input').attr('id','editor');
   document.getElementById("editor").innerHTML = `subdomain_discovery: {
-  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas']
+  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],
   'enable_http_crawl': true,
   'threads': 30,
   'timeout': 5,
 }
-ports: {
+port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
   # 'exclude_ports': [],

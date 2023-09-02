@@ -4260,6 +4260,12 @@ def save_subdomain(subdomain_name, ctx={}):
 		logger.error(f'{subdomain_name} is out-of-scope. Skipping.')
 		return None, False
 
+	if ctx.get('domain_id'):
+		domain = Domain.objects.get(id=ctx.get('domain_id'))
+		if domain.name not in subdomain_name:
+			logger.error(f"{subdomain_name} is not a subdomain of domain {ctx.get('domain')}. Skipping.")
+			return None, False
+
 	scan = ScanHistory.objects.filter(pk=scan_id).first()
 	domain = scan.domain if scan else None
 	subdomain, created = Subdomain.objects.get_or_create(
