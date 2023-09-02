@@ -1889,6 +1889,8 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 				crawl=False,
 				subdomain=subdomain,
 				ctx=ctx)
+			if not endpoint:
+				continue
 			earlier_pattern = None
 			if not created:
 				earlier_pattern = endpoint.matched_gf_patterns
