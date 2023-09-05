@@ -46,9 +46,6 @@ RUN wget -qO - https://github.com/mozilla/geckodriver/releases/download/v0.26.0/
 
 # ENV for Go
 ENV GOROOT="/usr/local/go"
-ENV PATH="${PATH}:${GOROOT}/bin"
-ENV PATH="${PATH}:${GOPATH}/bin"
-
 ENV GOPATH=$HOME/go
 ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
