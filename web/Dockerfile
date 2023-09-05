@@ -45,10 +45,7 @@ RUN rm go1.20.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.26.0/geckodriver-v0.26.0-linux64.tar.gz
-RUN tar -xvf geckodriver-v0.26.0-linux64.tar.gz
-RUN rm geckodriver-v0.26.0-linux64.tar.gz
-RUN mv geckodriver /usr/bin
+RUN wget -qO - https://github.com/mozilla/geckodriver/releases/download/v0.26.0/geckodriver-v0.26.0-linux64.tar.gz | tar -zxvC /usr/bin
 
 # ENV for Go
 ENV GOROOT="/usr/local/go"
