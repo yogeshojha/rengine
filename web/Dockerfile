@@ -19,14 +19,11 @@ RUN apt update -y && apt install -y  --no-install-recommends \
     build-essential \
     cmake \
     firefox \
-    gcc \
     git \
-    libpq-dev \
     libpq-dev \
     libpcap-dev \
     netcat \
     postgresql \
-    python3 \
     python3-dev \
     python3-pip \
     python3-netaddr \
