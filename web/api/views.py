@@ -799,7 +799,7 @@ class GetExternalToolCurrentVersion(APIView):
 		p = subprocess.Popen(tool.version_lookup_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		version_number = None
 		for line in p.stdout.readlines():
-			version_number = re.search(re.compile(tool.version_match_regex), str(line))
+			version_number = re.search(re.compile(tool.version_match_regex), str(line, encoding='utf-8'))
 			if version_number:
 				break
 

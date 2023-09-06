@@ -66,7 +66,7 @@
       that does fast SYN/CONNECT scans on the host/list of hosts and lists all ports
       that return a reply.
     github_url: https://github.com/projectdiscovery/naabu
-    license_url: null
+    license_url: https://github.com/projectdiscovery/naabu/blob/main/LICENSE.md
     version_lookup_command: naabu -version
     update_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
     install_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
@@ -121,8 +121,8 @@
     github_url: https://github.com/ffuf/ffuf
     license_url: https://github.com/ffuf/ffuf/blob/master/LICENSE
     version_lookup_command: ffuf -V
-    update_command: go install -v github.com/ffuf/ffuf@latest
-    install_command: ''
+    update_command: go install github.com/ffuf/ffuf/v2@latest
+    install_command: go install github.com/ffuf/ffuf/v2@latest
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: false
@@ -231,8 +231,8 @@
       a company's external threat landscape on the internet. The tool gathers emails,
       names, subdomains, IPs and URLs using multiple public data sources.
     github_url: https://github.com/laramies/theHarvester
-    license_url: null
-    version_lookup_command: python3 /usr/src/github/theHarvester/theHarvester.py
+    license_url: https://github.com/laramies/theHarvester/blob/master/README/LICENSES
+    version_lookup_command: python3 /usr/src/github/theHarvester/lib/version.py
     update_command: git pull
     install_command: git clone https://github.com/laramies/theHarvester
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
