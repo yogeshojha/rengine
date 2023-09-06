@@ -30,7 +30,7 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Removing all Docker images related to reNgine"
-  docker rmi rengine_celery-beat rengine_celery docker.pkg.github.com/yogeshojha/rengine/rengine rengine_certs redis nginx peterdavehello/tor-socks-proxy postgres
+  docker rmi rengine_celery-beat rengine_celery docker.pkg.github.com/yogeshojha/rengine/rengine rengine_certs redis:alpine nginx:alpine peterdavehello/tor-socks-proxy postgres:12.3-alpine
   echo "Removed all Docker images"
 else
   echo "Skipping removal of Docker images"
