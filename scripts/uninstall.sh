@@ -30,7 +30,7 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Removing all Docker images related to reNgine"
-  docker rmi rengine_celery_beat rengine_celery docker.pkg.github.com/yogeshojha/rengine/rengine rengine_certs redis nginx peterdavehello/tor_socks_proxy postgres
+  docker rmi rengine_celery-beat rengine_celery docker.pkg.github.com/yogeshojha/rengine/rengine rengine_certs redis:alpine nginx:alpine peterdavehello/tor-socks-proxy postgres:12.3-alpine
   echo "Removed all Docker images"
 else
   echo "Skipping removal of Docker images"
@@ -42,7 +42,7 @@ echo ""
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Running docker builder prune -a command"
-  docker builder prune -a
+  docker builder prune -a -f
   echo "Removed all Docker builders"
 else
   echo "Skipping removal of Docker builders"
