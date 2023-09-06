@@ -11,10 +11,10 @@ if [ "$EUID" -ne 0 ]
 fi
 
 echo "Stopping reNgine"
-docker stop rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 
 echo "Removing all containers related to reNgine"
-docker rm rengine_web_1 rengine_db_1 rengine_celery_1 rengine_celery-beat_1 rengine_redis_1 rengine_tor_1 rengine_proxy_1
+docker rm rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
 echo "Removed all containers"
 
 echo "Removing all volumes related to reNgine"
@@ -36,16 +36,16 @@ else
   echo "Skipping removal of Docker images"
 fi
 
-read -p "Do you want to remove all Docker builders? [y/n] " -n 1 -r
+read -p "Do you want to remove all Docker-related leftovers? [y/n] " -n 1 -r
 echo ""
 
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  echo "Running docker builder prune -a command"
-  docker builder prune -a -f
-  echo "Removed all Docker builders"
+  echo "Removing all Docker-related leftovers"
+  docker system prune -a -f
+  echo "Removed all Docker-related leftovers"
 else
-  echo "Skipping removal of Docker builders"
+  echo "Skipping removal of Docker-related leftovers"
 fi
 
 echo "Finished uninstalling."
