@@ -400,7 +400,7 @@ class CweId(models.Model):
 
 
 class GPTVulnerabilityReport(models.Model):
-	url_path = models.CharField(max_length=200)
+	url_path = models.CharField(max_length=2000)
 	title = models.CharField(max_length=2500)
 	description = models.TextField(null=True, blank=True)
 	impact = models.TextField(null=True, blank=True)
