@@ -18,6 +18,7 @@ drf-yasg==1.21.3
 emailfinder==0.2.3b0
 fuzzywuzzy==0.18.0
 gunicorn==20.1.0
+gevent==23.9.0.post1
 humanize==4.3.0
 Markdown==3.3.4
 metafinder==1.1

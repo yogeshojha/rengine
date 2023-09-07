@@ -121,3 +121,38 @@ exec "$@"
 
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
+
+
+echo "Starting Workers..."
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q initiate_scan_queue -n initiate_scan_worker &
+celery -A reNgine worker --concurrency=500 --pool=gevent --loglevel=info -Q subscan_queue -n subscan_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q report_queue -n report_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q subdomain_discovery_queue -n subdomain_discovery_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q osint_queue -n osint_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q osint_discovery_queue -n osint_discovery_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q dorking_queue -n dorking_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q theHarvester_queue -n theHarvester_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q h8mail_queue -n h8mail_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q screenshot_queue -n screenshot_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q port_scan_queue -n port_scan_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q nmap_queue -n nmap_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q waf_detection_queue -n waf_detection_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q dir_file_fuzz_queue -n dir_file_fuzz_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q fetch_url_queue -n fetch_url_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q vulnerability_scan_queue -n vulnerability_scan_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q dalfox_xss_scan_queue -n dalfox_xss_scan_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q crlfuzz_queue -n crlfuzz_worker &
+celery -A reNgine worker --concurrency=5000 --pool=gevent --loglevel=info -Q http_crawl_queue -n http_crawl_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q send_notif_queue -n send_notif_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q send_scan_notif_queue -n send_scan_notif_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q send_task_notif_queue -n send_task_notif_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q send_file_to_discord_queue -n send_file_to_discord_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q send_hackerone_report_queue -n send_hackerone_report_worker &
+celery -A reNgine worker --concurrency=50 --pool=gevent --loglevel=info -Q parse_nmap_results_queue -n parse_nmap_results_worker &
+celery -A reNgine worker --concurrency=500 --pool=gevent --loglevel=info -Q geo_localize_queue -n geo_localize_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q query_whois_queue -n query_whois_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q remove_duplicate_endpoints_queue -n remove_duplicate_endpoints_worker &
+celery -A reNgine worker --concurrency=500 --pool=gevent --loglevel=info -Q run_command_queue -n run_command_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q query_reverse_whois_queue -n query_reverse_whois_worker &
+celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q query_ip_history_queue -n query_ip_history_worker
+exec "$@"

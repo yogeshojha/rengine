@@ -25,7 +25,7 @@ services:
       context: ./web
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
-    command: celery -A reNgine worker --autoscale=${MAX_CONCURRENCY},${MIN_CONCURRENCY} -l INFO
+    # command: celery -A reNgine worker --autoscale=${MAX_CONCURRENCY},${MIN_CONCURRENCY} -l INFO
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github

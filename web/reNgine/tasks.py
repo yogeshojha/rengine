@@ -49,7 +49,7 @@ logger = get_task_logger(__name__)
 #----------------------#
 
 
-@app.task
+@app.task(name='initiate_scan', bind=False, queue='initiate_scan_queue')
 def initiate_scan(
 		scan_history_id,
 		domain_id,
@@ -204,7 +204,7 @@ def initiate_scan(
 	}
 
 
-@app.task
+@app.task(name='initiate_subscan', bind=False, queue='subscan_queue')
 def initiate_subscan(
 		scan_history_id,
 		subdomain_id,
@@ -316,7 +316,7 @@ def initiate_subscan(
 	}
 
 
-@app.task
+@app.task(name='report', bind=False, queue='report_queue')
 def report(ctx={}, description=None):
 	"""Report task running after all other tasks.
 	Mark ScanHistory or SubScan object as completed and update with final
@@ -365,7 +365,7 @@ def report(ctx={}, description=None):
 # Tracked reNgine tasks    #
 #--------------------------#
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='subdomain_discovery', queue='subdomain_discovery_queue', base=RengineTask, bind=True)
 def subdomain_discovery(
 		self,
 		host=None,
@@ -579,7 +579,7 @@ def subdomain_discovery(
 	return SubdomainSerializer(subdomains, many=True).data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='osint', queue='osint_queue', base=RengineTask, bind=True)
 def osint(self, host=None, ctx={}, description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
@@ -606,7 +606,7 @@ def osint(self, host=None, ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='osint_discovery', queue='osint_discovery_queue', base=RengineTask, bind=True)
 def osint_discovery(self, host=None, ctx={}):
 	"""Run OSInt discovery.
 
@@ -655,8 +655,8 @@ def osint_discovery(self, host=None, ctx={}):
 		self.notify(fields={'Emails': emails_str})
 		for email in emails:
 			email, created = save_email(email, scan_history=self.scan)
-			if created:
-				logger.warning(f'Found new email address {email}')
+			# if created:
+			# 	logger.warning(f'Found new email address {email}')
 		ctx['track'] = False
 		creds = h8mail(ctx=ctx)
 
@@ -670,7 +670,7 @@ def osint_discovery(self, host=None, ctx={}):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='dorking', queue='dorking_queue', base=RengineTask, bind=True)
 def dorking(self, host=None, ctx={}):
 	"""Run Google dorks.
 
@@ -962,7 +962,7 @@ def dorking(self, host=None, ctx={}):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='theHarvester', queue='theHarvester_queue', base=RengineTask, bind=True)
 def theHarvester(self, host=None, ctx={}):
 	"""Run theHarvester to get save emails, hosts, employees found in domain.
 
@@ -1077,7 +1077,7 @@ def theHarvester(self, host=None, ctx={}):
 	return data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='h8mail', queue='h8mail_queue', base=RengineTask, bind=True)
 def h8mail(self, input_path=None, ctx={}):
 	"""Run h8mail.
 
@@ -1117,7 +1117,7 @@ def h8mail(self, input_path=None, ctx={}):
 	return creds
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='screenshot', queue='screenshot_queue', base=RengineTask, bind=True)
 def screenshot(self, ctx={}, description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
@@ -1209,7 +1209,7 @@ def screenshot(self, ctx={}, description=None):
 			send_file_to_discord.delay(path, title)
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='port_scan', queue='port_scan_queue', base=RengineTask, bind=True)
 def port_scan(self, hosts=[], ctx={}, description=None):
 	"""Run port scan.
 
@@ -1383,7 +1383,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	return ports_data
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='nmap', queue='nmap_queue', base=RengineTask, bind=True)
 def nmap(
 		self,
 		cmd=None,
@@ -1468,7 +1468,7 @@ def nmap(
 	return vulns
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='waf_detection', queue='waf_detection_queue', base=RengineTask, bind=True)
 def waf_detection(self, ctx={}, description=None):
 	"""
 	Uses wafw00f to check for the presence of a WAF.
@@ -1529,7 +1529,7 @@ def waf_detection(self, ctx={}, description=None):
 	return wafs
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='dir_file_fuzz', queue='dir_file_fuzz_queue', base=RengineTask, bind=True)
 def dir_file_fuzz(self, ctx={}, description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
 
@@ -1657,8 +1657,8 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				url=url)
 			dfile.http_status = status
 			dfile.save()
-			if created:
-				logger.warning(f'Found new directory or file {url}')
+			# if created:
+			# 	logger.warning(f'Found new directory or file {url}')
 			dirscan.directory_files.add(dfile)
 			dirscan.save()
 
@@ -1678,7 +1678,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='fetch_url', queue='fetch_url_queue', base=RengineTask, bind=True)
 def fetch_url(self, urls=[], ctx={}, description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1917,7 +1917,7 @@ def parse_curl_output(response):
 	}
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='vulnerability_scan', queue='vulnerability_scan_queue', base=RengineTask, bind=True)
 def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	"""HTTP vulnerability scan using `nuclei`.
 
@@ -2250,7 +2250,7 @@ def add_gpt_description_db(title, path, description, impact, remediation, refere
 		gpt_report.save()
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='dalfox_xss_scan', queue='dalfox_xss_scan_queue', base=RengineTask, bind=True)
 def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	"""XSS Scan using dalfox
 
@@ -2376,7 +2376,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='crlfuzz', queue='crlfuzz_queue', base=RengineTask, bind=True)
 def crlfuzz(self, urls=[], ctx={}, description=None):
 	"""CRLF Fuzzing with CRLFuzz
 
@@ -2497,7 +2497,7 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 	return results
 
 
-@app.task(base=RengineTask, bind=True)
+@app.task(name='http_crawl', queue='http_crawl_queue', base=RengineTask, bind=True)
 def http_crawl(
 		self,
 		urls=[],
@@ -2721,7 +2721,7 @@ def http_crawl(
 # Notifications tasks #
 #---------------------#
 
-@app.task
+@app.task(name='send_notif', bind=False, queue='send_notif_queue')
 def send_notif(
 		message,
 		scan_history_id=None,
@@ -2734,7 +2734,7 @@ def send_notif(
 	send_telegram_message(message)
 
 
-@app.task
+@app.task(name='send_scan_notif', bind=False, queue='send_scan_notif_queue')
 def send_scan_notif(
 		scan_history_id,
 		subscan_id=None,
@@ -2785,7 +2785,7 @@ def send_scan_notif(
 		**opts)
 
 
-@app.task
+@app.task(name='send_task_notif', bind=False, queue='send_task_notif_queue')
 def send_task_notif(
 		task_name,
 		status=None,
@@ -2879,7 +2879,7 @@ def send_task_notif(
 		**opts)
 
 
-@app.task
+@app.task(name='send_file_to_discord', bind=False, queue='send_file_to_discord_queue')
 def send_file_to_discord(file_path, title=None):
 	notif = Notification.objects.first()
 	do_send = notif and notif.send_to_discord and notif.discord_hook_url
@@ -2897,7 +2897,7 @@ def send_file_to_discord(file_path, title=None):
 	webhook.execute()
 
 
-@app.task
+@app.task(name='send_hackerone_report', bind=False, queue='send_hackerone_report_queue')
 def send_hackerone_report(vulnerability_id):
 	"""Send HackerOne vulnerability report.
 
@@ -2968,7 +2968,7 @@ def send_hackerone_report(vulnerability_id):
 #-------------#
 
 
-@app.task
+@app.task(name='parse_nmap_results', bind=False, queue='parse_nmap_results_queue')
 def parse_nmap_results(xml_file, output_file=None):
 	"""Parse results from nmap output file.
 
@@ -3289,7 +3289,7 @@ def parse_crlfuzz_result(url):
 	}
 
 
-@app.task
+@app.task(name='geo_localize', bind=False, queue='geo_localize_queue')
 def geo_localize(host, ip_id=None):
 	"""Uses geoiplookup to find location associated with host.
 
@@ -3324,7 +3324,8 @@ def geo_localize(host, ip_id=None):
 	logger.info(f'Geo IP lookup failed for host "{host}"')
 	return None
 
-@app.task
+
+@app.task(name='query_whois', bind=False, queue='query_whois_queue')
 def query_whois(ip_domain, force_reload_whois=False):
 	"""Query WHOIS information for an IP or a domain name.
 
@@ -3751,7 +3752,7 @@ def query_whois(ip_domain, force_reload_whois=False):
 	}
 
 
-@app.task
+@app.task(name='remove_duplicate_endpoints', bind=False, queue='remove_duplicate_endpoints_queue')
 def remove_duplicate_endpoints(
 		scan_history_id,
 		domain_id,
@@ -3815,7 +3816,7 @@ def remove_duplicate_endpoints(
 				logger.warning(msg)
 
 
-@app.task
+@app.task(name='run_command', bind=False, queue='run_command_queue')
 def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
 	"""Run a given command using subprocess module.
 
@@ -4280,7 +4281,7 @@ def save_subdomain(subdomain_name, ctx={}):
 		target_domain=domain,
 		name=subdomain_name)
 	if created:
-		logger.warning(f'Found new subdomain {subdomain_name}')
+		# logger.warning(f'Found new subdomain {subdomain_name}')
 		subdomain.discovered_date = timezone.now()
 		if subscan_id:
 			subdomain.subdomain_subscan_ids.add(subscan_id)
@@ -4293,8 +4294,8 @@ def save_email(email_address, scan_history=None):
 		logger.info(f'Email {email_address} is invalid. Skipping.')
 		return None, False
 	email, created = Email.objects.get_or_create(address=email_address)
-	if created:
-		logger.warning(f'Found new email address {email_address}')
+	# if created:
+	# 	logger.warning(f'Found new email address {email_address}')
 
 	# Add email to ScanHistory
 	if scan_history:
@@ -4308,8 +4309,8 @@ def save_employee(name, designation, scan_history=None):
 	employee, created = Employee.objects.get_or_create(
 		name=name,
 		designation=designation)
-	if created:
-		logger.warning(f'Found new employee {name}')
+	# if created:
+	# 	logger.warning(f'Found new employee {name}')
 
 	# Add employee to ScanHistory
 	if scan_history:
@@ -4324,8 +4325,8 @@ def save_ip_address(ip_address, subdomain=None, subscan=None, **kwargs):
 		logger.info(f'IP {ip_address} is not a valid IP. Skipping.')
 		return None, False
 	ip, created = IpAddress.objects.get_or_create(address=ip_address)
-	if created:
-		logger.warning(f'Found new IP {ip_address}')
+	# if created:
+	# 	logger.warning(f'Found new IP {ip_address}')
 
 	# Set extra attributes
 	for key, value in kwargs.items():
@@ -4379,7 +4380,7 @@ def save_imported_subdomains(subdomains, ctx={}):
 			output_file.write(f'{subdomain}\n')
 
 
-@app.task
+@app.task(name='query_reverse_whois', bind=False, queue='query_reverse_whois_queue')
 def query_reverse_whois(lookup_keyword):
 	"""Queries Reverse WHOIS information for an organization or email address.
 
@@ -4392,7 +4393,7 @@ def query_reverse_whois(lookup_keyword):
 	return get_associated_domains(lookup_keyword)
 
 
-@app.task
+@app.task(name='query_ip_history', bind=False, queue='query_ip_history_queue')
 def query_ip_history(domain):
 	"""Queries the IP history for a domain
 
@@ -4405,7 +4406,7 @@ def query_ip_history(domain):
 	return get_domain_historical_ip_address(domain)
 
 
-@app.task
+@app.task(name='gpt_vulnerability_description', bind=False, queue='gpt_queue')
 def gpt_vulnerability_description(vulnerability_id):
 	"""Generate and store Vulnerability Description using GPT.
 
