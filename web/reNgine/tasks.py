@@ -652,10 +652,6 @@ def osint_discovery(self, host=None, ctx={}):
 		emails = get_and_save_emails(self.scan, self.activity_id, self.results_dir)
 		emails_str = '\n'.join([f'• `{email}`' for email in emails])
 		self.notify(fields={'Emails': emails_str})
-		for email in emails:
-			email, created = save_email(email, scan_history=self.scan)
-			if created:
-				logger.warning(f'Found new email address {email}')
 		ctx['track'] = False
 		creds = h8mail(ctx=ctx)
 
@@ -4061,7 +4057,7 @@ def get_and_save_emails(scan_history, activity_id, results_dir):
 	# get_random_proxy()
 
 	# Gather emails from Google, Bing and Baidu
-	output_file = f'{results_dir}/emails.txt'
+	output_file = f'{results_dir}/emails_tmp.txt'
 	history_file = f'{results_dir}/commands.txt'
 	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
 	try:
@@ -4077,6 +4073,13 @@ def get_and_save_emails(scan_history, activity_id, results_dir):
 				if 'Email' in line:
 					split_email = line.split(' ')[2]
 					emails.append(split_email)
+
+		output_path = f'{results_dir}/emails.txt'
+		with open(output_path, 'w') as output_file:
+			for email_address in emails:
+				save_email(email_address, scan_history)
+				output_file.write(f'{email_address}\n')
+
 	except Exception as e:
 		logger.exception(e)
 	return emails
