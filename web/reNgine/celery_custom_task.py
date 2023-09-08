@@ -98,7 +98,8 @@ class RengineTask(Task):
 				# dalfox scan being part of vulnerability task
 				dependent_tasks = {
 					'dalfox_xss_scan': 'vulnerability_scan',
-					'crlfuzz': 'vulnerability_scan'
+					'crlfuzz': 'vulnerability_scan',
+					'vulnerability_scan_module': 'vulnerability_scan'
 				}
 				if self.track and self.task_name not in self.engine.tasks and dependent_tasks.get(self.task_name) not in self.engine.tasks:
 					logger.debug(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')

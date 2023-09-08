@@ -1947,7 +1947,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	proxy = get_random_proxy()
 	use_nuclei_conf = config.get(USE_NUCLEI_CONFIG, False)
 	severities = config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
-	severities_str = ','.join(severities)
+	# severities_str = ','.join(severities)
 
 	# Get alive endpoints
 	if urls:
@@ -1976,10 +1976,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			scan_id=self.scan_id,
 			activity_id=self.activity_id)
 		input_path = unfurl_filter
-
-	# Send start notification
-	notif = Notification.objects.first()
-	send_status = notif.send_scan_status_notif if notif else False
 
 	# Build templates
 	# logger.info('Updating Nuclei templates ...')
@@ -2014,15 +2010,59 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	cmd += f' -proxy {proxy} ' if proxy else ''
 	cmd += f' -retries {retries}' if retries > 0 else ''
 	cmd += f' -rl {rate_limit}' if rate_limit > 0 else ''
-	cmd += f' -severity {severities_str}'
+	# cmd += f' -severity {severities_str}'
 	cmd += f' -timeout {str(timeout)}' if timeout and timeout > 0 else ''
 	cmd += f' -tags {tags}' if tags else ''
 	cmd += f' -silent'
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
-	# Run cmd
+	grouped_tasks = []
+	vuln_call = {
+		'history_file': self.history_file,
+		'scan_id': self.scan_id,
+		'activity_id': self.activity_id,
+		'scan': self.scan,
+		'domain': self.domain,
+		'subscan': self.subscan,
+		'output_path': self.output_path,
+	}
+	for severity in severities:
+		_task = vulnerability_scan_module.si(
+			cmd,
+			severity,
+			enable_http_crawl,
+			should_fetch_gpt_report,
+			ctx=ctx,
+			description=f'Vulnerability Scan with severity {severity}'
+		)
+		grouped_tasks.append(_task)
+
+	celery_group = group(grouped_tasks)
+	job = celery_group.apply_async()
+
+	while not job.ready():
+		logger.info('Waiting for all vuln scans to complete')
+		time.sleep(3)
+
+	logger.info('Vulnerability scan with all severities completed...')
+
+	# return results
+	return None
+
+@app.task(name='vulnerability_scan_module', queue='vulnerability_scan_module_queue', base=RengineTask, bind=True)
+def vulnerability_scan_module(self, cmd, severity, enable_http_crawl, should_fetch_gpt_report, ctx={}, description=None):
+	'''
+		This celery task is supposed to run vulnerability scan in parallel.
+		All severities supplied should run in parallel.
+	'''
 	results = []
+	logger.info(f'Running vulnerability scan with severity: {severity}')
+	cmd += f' -severity {severity}'
+	# Send start notification
+	notif = Notification.objects.first()
+	send_status = notif.send_scan_status_notif if notif else False
+
 	for line in stream_command(
 			cmd,
 			history_file=self.history_file,
@@ -2044,8 +2084,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		# TODO: this should be get only
 		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
-			scan_history=self.scan,
-			target_domain=self.domain
+			scan_history=vuln_call.scan,
+			target_domain=vuln_call.domain
 		)
 
 		# Get or create EndPoint object
@@ -2077,6 +2117,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 		# Print vuln
 		severity = line['info'].get('severity', 'unknown')
 		logger.warning(str(vuln))
+
 
 		# Send notification for all vulnerabilities except info
 		url = vuln.http_url or vuln.subdomain
@@ -2184,8 +2225,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 				except Exception as e:
 					logger.error(f"Exception for Vulnerability {vuln}: {e}")
 
-	# return results
-	return None
+		return None
 
 
 def get_vulnerability_gpt_report(vuln):
