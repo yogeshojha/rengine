@@ -83,7 +83,7 @@ RUN go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 RUN go install -v github.com/hahwul/dalfox/v2@latest
 RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest
 RUN go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
-
+RUN go install -v github.com/sa7mon/s3scanner@latest 
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update

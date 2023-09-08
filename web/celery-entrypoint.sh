@@ -162,5 +162,6 @@ watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/re
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=500 --pool=gevent --loglevel=info -Q run_command_queue -n run_command_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q query_reverse_whois_queue -n query_reverse_whois_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q query_ip_history_queue -n query_ip_history_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q gpt_queue -n gpt_worker
+watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q gpt_queue -n gpt_worker &
+watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker --concurrency=100 --pool=gevent --loglevel=info -Q s3scanner_queue -n s3scanner_worker
 exec "$@"

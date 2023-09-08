@@ -43,6 +43,7 @@ class ScanHistory(models.Model):
 	error_message = models.CharField(max_length=300, blank=True, null=True)
 	emails = models.ManyToManyField('Email', related_name='emails', blank=True)
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
+	buckets = models.ManyToManyField('S3Bucket', related_name='buckets', blank=True)
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
 
 	def __str__(self):
@@ -624,3 +625,20 @@ class Dork(models.Model):
 	type = models.CharField(max_length=500, null=True, blank=True)
 	description = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=10000, null=True, blank=True)
+
+
+class S3Bucket(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=500, null=True, blank=True)
+	region = models.CharField(max_length=500, null=True, blank=True)
+	provider = models.CharField(max_length=100, null=True, blank=True)
+	owner_display_name = models.CharField(max_length=250, null=True, blank=True)
+	perm_auth_users_read = models.IntegerField(default=0)
+	perm_auth_users_write = models.IntegerField(default=0)
+	perm_auth_users_read_acl = models.IntegerField(default=0)
+	perm_auth_users_write_acl = models.IntegerField(default=0)
+	perm_auth_users_full_control = models.IntegerField(default=0)
+	perm_all_users_read = models.IntegerField(default=0)
+	perm_all_users_write = models.IntegerField(default=0)
+	perm_all_users_read_acl = models.IntegerField(default=0)
+	perm_all_users_full_control = models.IntegerField(default=0)

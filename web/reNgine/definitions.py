@@ -76,12 +76,14 @@ WORDLIST = 'wordlist'
 REMOVE_DUPLICATE_ENDPOINTS = 'remove_duplicate_endpoints'
 DUPLICATE_REMOVAL_FIELDS = 'duplicate_fields'
 DALFOX = 'dalfox'
+S3SCANNER = 's3scanner'
 NUCLEI = 'nuclei'
 CRLFUZZ = 'crlfuzz'
 WAF_EVASION = 'waf_evasion'
 BLIND_XSS_SERVER = 'blind_xss_server'
 USER_AGENT = 'blind_xss_server'
 DELAY = 'delay'
+PROVIDERS = 'providers'
 
 ###############################################################################
 # Scan DEFAULTS
@@ -140,6 +142,9 @@ NUCLEI_SEVERITY_MAP = {
 }
 NUCLEI_REVERSE_SEVERITY_MAP = {v: k for k, v in NUCLEI_SEVERITY_MAP.items()}
 NUCLEI_DEFAULT_SEVERITIES = list(NUCLEI_SEVERITY_MAP.keys())
+
+# s3scanner
+S3SCANNER_DEFAULT_PROVIDERS = ['gcp', 'aws', 'digitalocean', 'dreamhost', 'linode']
 
 # dalfox
 DALFOX_SEVERITY_MAP = {

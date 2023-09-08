@@ -179,12 +179,13 @@ def initiate_scan(
 		port_scan.si(ctx=ctx, description='Port scan'),
 		fetch_url.si(ctx=ctx, description='Fetch URL'),
 		group(
-			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
+			s3scanner.si(ctx=ctx, description='S3 Buckets Scanner'),
+			# dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
-			dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
-			crlfuzz.si(ctx=ctx, description='CRLF Fuzz'),
-			screenshot.si(ctx=ctx, description='Screenshot'),
-			waf_detection.si(ctx=ctx, description='WAF detection')
+			# dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
+			# crlfuzz.si(ctx=ctx, description='CRLF Fuzz'),
+			# screenshot.si(ctx=ctx, description='Screenshot'),
+			# waf_detection.si(ctx=ctx, description='WAF detection')
 		)
 	)
 
@@ -1924,6 +1925,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
 	ignore certain file extensions. Thanks: https://github.com/six2dez/reconftw
 	"""
+	return
 	# Config
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{self.results_dir}/input_endpoints_vulnerability_scan.txt'
@@ -2524,6 +2526,39 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 					logger.error(f"Exception for Vulnerability {vuln}: {e}")
 
 	return results
+
+
+@app.task(name='s3scanner', queue='s3scanner_queue', base=RengineTask, bind=True)
+def s3scanner(self, ctx={}, description=None):
+	"""Bucket Scanner
+
+	Args:
+		ctx (dict): Context
+		description (str, optional): Task description shown in UI.
+	"""
+	input_path = f'{self.results_dir}/#{self.scan_id}_subdomain_discovery.txt'
+	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
+	s3_config = vuln_config.get(S3SCANNER) or {}
+	threads = s3_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
+	# providers = s3_config.get(PROVIDERS, S3SCANNER_DEFAULT_PROVIDERS)
+	providers = ['linode']
+	scan_history = ScanHistory.objects.filter(pk=self.scan_id).first()
+	for provider in providers:
+		cmd = f's3scanner -bucket-file {input_path} -enumerate -provider {provider} -threads {threads} -json'
+		for line in stream_command(
+				cmd,
+				history_file=self.history_file,
+				scan_id=self.scan_id,
+				activity_id=self.activity_id):
+
+			if not isinstance(line, dict):
+				continue
+
+			if line['bucket']['exists']:
+				result = parse_s3scanner_result(line)
+				s3bucket, created = S3Bucket.objects.get_or_create(**result)
+				scan_history.buckets.add(s3bucket)
+				logger.info(f"s3 bucket added {result['provider']}-{result['name']}-{result['region']}")
 
 
 @app.task(name='http_crawl', queue='http_crawl_queue', base=RengineTask, bind=True)
@@ -3239,6 +3274,27 @@ def cve_to_vuln(cve_id, vuln_type=''):
 		'cwe_ids': [vuln_cwe_id]
 	}
 	return vuln
+
+
+def parse_s3scanner_result(line):
+	'''
+		Parses and returns s3Scanner Data
+	'''
+	return {
+		'name': line['bucket']['name'],
+		'region': line['bucket']['region'],
+		'provider': line['bucket']['provider'],
+		'owner_display_name': line['bucket']['owner_display_name'],
+		'perm_auth_users_read': line['bucket']['perm_auth_users_read'],
+		'perm_auth_users_write': line['bucket']['perm_auth_users_write'],
+		'perm_auth_users_read_acl': line['bucket']['perm_auth_users_read_acl'],
+		'perm_auth_users_write_acl': line['bucket']['perm_auth_users_write_acl'],
+		'perm_auth_users_full_control': line['bucket']['perm_auth_users_full_control'],
+		'perm_all_users_read': line['bucket']['perm_all_users_read'],
+		'perm_all_users_write': line['bucket']['perm_all_users_write'],
+		'perm_all_users_read_acl': line['bucket']['perm_all_users_read_acl'],
+		'perm_all_users_full_control': line['bucket']['perm_all_users_full_control'],
+	}
 
 
 def parse_nuclei_result(line):
