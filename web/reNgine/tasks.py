@@ -1964,7 +1964,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	if intensity == 'normal': # reduce number of endpoints to scan
 		unfurl_filter = f'{self.results_dir}/urls_unfurled.txt'
 		run_command(
-			f'cat {input_path} | unfurl -u format %s://%d%p | uro > {unfurl_filter}',
+			f"cat {input_path} | unfurl -u format %s://%d%p | sed 's/\/[^/]*$//' |uro > {unfurl_filter}",
 			shell=True,
 			history_file=self.history_file,
 			scan_id=self.scan_id,
