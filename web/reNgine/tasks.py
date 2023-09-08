@@ -626,27 +626,27 @@ def osint_discovery(self, host=None, ctx={}):
 	host = self.domain.name if self.domain else host
 
 	# Get and save meta info
-	# if 'metainfo' in osint_lookup:
-	# 	if osint_intensity == 'normal':
-	# 		meta_dict = DottedDict({
-	# 			'osint_target': host,
-	# 			'domain': self.domain if self.domain else host,
-	# 			'scan_id': self.scan_id,
-	# 			'documents_limit': documents_limit
-	# 		})
-	# 		meta_info.append(save_metadata_info(meta_dict))
-	# 	elif osint_intensity == 'deep':
-	# 		subdomains = Subdomain.objects
-	# 		if self.scan:
-	# 			subdomains = subdomains.filter(scan_history=self.scan)
-	# 		for subdomain in subdomains:
-	# 			meta_dict = DottedDict({
-	# 				'osint_target': subdomain.name,
-	# 				'domain': self.domain,
-	# 				'scan_id': self.scan_id,
-	# 				'documents_limit': documents_limit
-	# 			})
-	# 			meta_info.append(save_metadata_info(meta_dict))
+	if 'metainfo' in osint_lookup:
+		if osint_intensity == 'normal':
+			meta_dict = DottedDict({
+				'osint_target': host,
+				'domain': self.domain if self.domain else host,
+				'scan_id': self.scan_id,
+				'documents_limit': documents_limit
+			})
+			meta_info.append(save_metadata_info(meta_dict))
+		elif osint_intensity == 'deep':
+			subdomains = Subdomain.objects
+			if self.scan:
+				subdomains = subdomains.filter(scan_history=self.scan)
+			for subdomain in subdomains:
+				meta_dict = DottedDict({
+					'osint_target': subdomain.name,
+					'domain': self.domain,
+					'scan_id': self.scan_id,
+					'documents_limit': documents_limit
+				})
+				meta_info.append(save_metadata_info(meta_dict))
 
 	if 'emails' in osint_lookup:
 		emails = get_and_save_emails(self.scan, self.activity_id, self.results_dir)
@@ -655,9 +655,9 @@ def osint_discovery(self, host=None, ctx={}):
 		ctx['track'] = False
 		creds = h8mail(ctx=ctx)
 
-	# if 'employees' in osint_lookup:
-	# 	ctx['track'] = False
-	# 	results = theHarvester(host=host, ctx=ctx)
+	if 'employees' in osint_lookup:
+		ctx['track'] = False
+		results = theHarvester(host=host, ctx=ctx)
 
 	results['emails'] = results.get('emails', []) + emails
 	results['creds'] = creds
