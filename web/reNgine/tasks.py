@@ -3279,21 +3279,25 @@ def parse_s3scanner_result(line):
 	'''
 		Parses and returns s3Scanner Data
 	'''
+	bucket = line['bucket']
 	return {
-		'name': line['bucket']['name'],
-		'region': line['bucket']['region'],
-		'provider': line['bucket']['provider'],
-		'owner_display_name': line['bucket']['owner_display_name'],
-		'perm_auth_users_read': line['bucket']['perm_auth_users_read'],
-		'perm_auth_users_write': line['bucket']['perm_auth_users_write'],
-		'perm_auth_users_read_acl': line['bucket']['perm_auth_users_read_acl'],
-		'perm_auth_users_write_acl': line['bucket']['perm_auth_users_write_acl'],
-		'perm_auth_users_full_control': line['bucket']['perm_auth_users_full_control'],
-		'perm_all_users_read': line['bucket']['perm_all_users_read'],
-		'perm_all_users_write': line['bucket']['perm_all_users_write'],
-		'perm_all_users_read_acl': line['bucket']['perm_all_users_read_acl'],
-		'perm_all_users_write_acl': line['bucket']['perm_all_users_write_acl'],
-		'perm_all_users_full_control': line['bucket']['perm_all_users_full_control'],
+		'name': bucket['name'],
+		'region': bucket['region'],
+		'provider': bucket['provider'],
+		'owner_display_name': bucket['owner_display_name'],
+		'owner_id': bucket['owner_id'],
+		'perm_auth_users_read': bucket['perm_auth_users_read'],
+		'perm_auth_users_write': bucket['perm_auth_users_write'],
+		'perm_auth_users_read_acl': bucket['perm_auth_users_read_acl'],
+		'perm_auth_users_write_acl': bucket['perm_auth_users_write_acl'],
+		'perm_auth_users_full_control': bucket['perm_auth_users_full_control'],
+		'perm_all_users_read': bucket['perm_all_users_read'],
+		'perm_all_users_write': bucket['perm_all_users_write'],
+		'perm_all_users_read_acl': bucket['perm_all_users_read_acl'],
+		'perm_all_users_write_acl': bucket['perm_all_users_write_acl'],
+		'perm_all_users_full_control': bucket['perm_all_users_full_control'],
+		'num_objects': bucket['num_objects'],
+		'size': bucket['bucket_size']
 	}
 
 

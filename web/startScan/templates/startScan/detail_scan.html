@@ -918,6 +918,8 @@ Scan Findings
 										<th>Region</th>
 										<th>Provider</th>
 										<th>Owner</th>
+										<th>Objects Count</th>
+										<th>Bucket Size</th>
 										<th>Auth Users Permission</th>
 										<th>All Users Permission</th>
 									</tr>
@@ -928,23 +930,30 @@ Scan Findings
 											<td><h5 class="m-0 fw-normal">{{bucket.name}}</h5></td>
 											<td>{{bucket.region}}</td>
 											<td>{{bucket.provider}}</td>
-											<td>{{bucket.owner_display_name}}</td>
 											<td>
 												<ul>
-													<li><strong>Read: </strong>{{bucket.perm_auth_users_read}}</li>
-													<li><strong>Write: </strong>{{bucket.perm_auth_users_write}}</li>
-													<li><strong>Read ACL: </strong>{{bucket.perm_auth_users_read_acl}}</li>
-													<li><strong>Write ACL: </strong>{{bucket.perm_auth_users_write_acl}}</li>
-													<li><strong>Full Control: </strong>{{bucket.perm_auth_users_full_control}}</li>
+													<li>ID: {{bucket.owner_id}}</li>
+													<li>Display Name: {{bucket.owner_display_name}}</li>
+												</ul>
+											</td>
+											<td>{{bucket.num_objects}}</td>
+											<td>{{bucket.size}}</td>
+											<td>
+												<ul>
+													{% if bucket.perm_auth_users_read == 1 %}<li><strong>READ</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_write == 1 %}<li><strong>WRITE</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_read_acl == 1 %}<li><strong>Read_ACP</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_write_acl == 1 %}<li><strong>WRITE_ACP</strong></li>{% endif %}
+													{% if bucket.perm_auth_users_full_control == 1 %}<li><strong>FULL_CONTROL</strong></li>{% endif %}
 												</ul>
 											</td>
 											<td>
 												<ul>
-													<li><strong>Read: </strong>{{bucket.perm_all_users_read}}</li>
-													<li><strong>Write: </strong>{{bucket.perm_all_users_write}}</li>
-													<li><strong>Read ACL: </strong>{{bucket.perm_all_users_read_acl}}</li>
-													<li><strong>Write ACL: </strong>{{bucket.perm_all_users_write_acl}}</li>
-													<li><strong>Full Control: </strong>{{bucket.perm_all_users_full_control}}</li>
+													{% if bucket.perm_all_users_read == 1 %}<li><strong>READ</strong></li>{% endif %}
+													{% if bucket.perm_all_users_write == 1 %}<li><strong>WRITE</strong></li>{% endif %}
+													{% if bucket.perm_all_users_read_acl == 1 %}<li><strong>Read_ACP</strong></li>{% endif %}
+													{% if bucket.perm_all_users_write_acl == 1 %}<li><strong>WRITE_ACP</strong></li>{% endif %}
+													{% if bucket.perm_all_users_full_control == 1 %}<li><strong>FULL_CONTROL</strong></li>{% endif %}
 												</ul>
 											</td>
 										</tr>
