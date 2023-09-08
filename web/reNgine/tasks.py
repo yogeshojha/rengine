@@ -2017,23 +2017,17 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	for tpl in templates:
 		cmd += f' -t {tpl}'
 
+
 	grouped_tasks = []
-	vuln_call = {
-		'history_file': self.history_file,
-		'scan_id': self.scan_id,
-		'activity_id': self.activity_id,
-		'scan': self.scan,
-		'domain': self.domain,
-		'subscan': self.subscan,
-		'output_path': self.output_path,
-	}
+	custom_ctx = ctx
 	for severity in severities:
+		custom_ctx['custom_name'] = 'vulnerability_scan_module_' + severity
 		_task = vulnerability_scan_module.si(
 			cmd,
 			severity,
 			enable_http_crawl,
 			should_fetch_gpt_report,
-			ctx=ctx,
+			ctx=custom_ctx,
 			description=f'Vulnerability Scan with severity {severity}'
 		)
 		grouped_tasks.append(_task)
@@ -2042,8 +2036,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	job = celery_group.apply_async()
 
 	while not job.ready():
-		logger.info('Waiting for all vuln scans to complete')
-		time.sleep(3)
+		# wait for all jobs to complete
+		time.sleep(5)
 
 	logger.info('Vulnerability scan with all severities completed...')
 
@@ -2084,8 +2078,8 @@ def vulnerability_scan_module(self, cmd, severity, enable_http_crawl, should_fet
 		# TODO: this should be get only
 		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
-			scan_history=vuln_call.scan,
-			target_domain=vuln_call.domain
+			scan_history=self.scan,
+			target_domain=self.domain
 		)
 
 		# Get or create EndPoint object
