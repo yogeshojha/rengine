@@ -43,6 +43,11 @@ Scan Findings
 				<li class="nav-item">
 					<a class="nav-link" id="pills-subdomain-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#subdomain-tab">Subdomains</a>
 				</li>
+				{% if history.buckets.all %}
+				<li class="nav-item">
+					<a class="nav-link" id="pills-buckets-tab" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#buckets-tab">S3 Buckets</a>
+				</li>
+				{% endif %}
 				<li class="nav-item interesting-tab-show" style="display: none">
 					<a class="nav-link" data-bs-toggle="tab" aria-expanded="false" class="nav-link" href="#interesting-tab">Interesting Recon</a>
 				</li>
@@ -382,6 +387,14 @@ Scan Findings
 						<div class="alert alert-warning alert-dismissible fade show" role="alert">
 							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 							<i class="fe-trending-up me-2"></i> reNgine identified {{history.domain.domain_info.related_domains.count}} domains related to {{history.domain}}. <a href="#" onclick="$('#v-pills-tab a:last').prev().tab('show');">Check it out!</a>
+						</div>
+					</div>
+					{% endif %}
+					{% if history.buckets.all %}
+					<div class="col-6 related-domains-tab-show">
+						<div class="alert alert-warning alert-dismissible fade show" role="alert">
+							<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+							<i class="fe-trending-up me-2"></i> reNgine identified {{history.buckets.count}} Buckets related to {{history.domain}}. <a class="" id="buckets-tab-btn" href="#">Check it out!</a>
 						</div>
 					</div>
 					{% endif %}
@@ -891,6 +904,58 @@ Scan Findings
 	</div>
 	<div class="tab-pane" id="subdomain-tab">
 		{% include 'base/_items/subdomain_tab_content.html' with detail_scan=True%}
+	</div>
+	<div class="tab-pane" id="buckets-tab">
+		<div class="row">
+			<div class="col-12">
+				<div class="card">
+					<div class="p-2">
+						<div class="table-responsive">
+							<table id="s3-datatable" class="table dt-responsive w-100">
+								<thead>
+									<tr>
+										<th>Name</th>
+										<th>Region</th>
+										<th>Provider</th>
+										<th>Owner</th>
+										<th>Auth Users Permission</th>
+										<th>All Users Permission</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for bucket in history.buckets.all %}
+										<tr>
+											<td><h5 class="m-0 fw-normal">{{bucket.name}}</h5></td>
+											<td>{{bucket.region}}</td>
+											<td>{{bucket.provider}}</td>
+											<td>{{bucket.owner_display_name}}</td>
+											<td>
+												<ul>
+													<li><strong>Read: </strong>{{bucket.perm_auth_users_read}}</li>
+													<li><strong>Write: </strong>{{bucket.perm_auth_users_write}}</li>
+													<li><strong>Read ACL: </strong>{{bucket.perm_auth_users_read_acl}}</li>
+													<li><strong>Write ACL: </strong>{{bucket.perm_auth_users_write_acl}}</li>
+													<li><strong>Full Control: </strong>{{bucket.perm_auth_users_full_control}}</li>
+												</ul>
+											</td>
+											<td>
+												<ul>
+													<li><strong>Read: </strong>{{bucket.perm_all_users_read}}</li>
+													<li><strong>Write: </strong>{{bucket.perm_all_users_write}}</li>
+													<li><strong>Read ACL: </strong>{{bucket.perm_all_users_read_acl}}</li>
+													<li><strong>Write ACL: </strong>{{bucket.perm_all_users_write_acl}}</li>
+													<li><strong>Full Control: </strong>{{bucket.perm_all_users_full_control}}</li>
+												</ul>
+											</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 	{% if 'screenshot' in history.tasks %}
 	<div class="tab-pane" id="screenshot-tab">
@@ -2012,6 +2077,10 @@ $(document).ready(function() {
 		$('.nav-tabs a[href="#interesting-tab"]').tab('show')
 	});
 
+	$('#buckets-tab-btn').click(function(){
+		$('.nav-tabs a[href="#buckets-tab"]').tab('show')
+	});
+
 	$('#recon-changes-tab-btn').click(function(){
 		$('.nav-tabs a[href="#recon-changes-tab"]').tab('show')
 	});
@@ -2542,6 +2611,24 @@ $(document).ready(function() {
 				el.html(el.html()+' (Total Assets : 0)');
 			}
 		}
+	});
+
+	// s3buckets datatable
+	var s3_table = $('#s3-datatable').DataTable({
+		"order": [[0, 'asc']],
+		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center mt-sm-0 mt-3'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"<'table-responsive'tr>" +
+		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"oLanguage": {
+			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
+			"sInfo": "Showing page _PAGE_ of _PAGES_",
+			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
+			"sSearchPlaceholder": "Search...",
+			"sLengthMenu": "Results :  _MENU_",
+		},
+		"stripeClasses": [],
+		"lengthMenu": [[50, 100, 200, 300, 400, -1], [50, 100, 200, 300, 400, 'All']],
+		"pageLength": 50,
 	});
 
 });

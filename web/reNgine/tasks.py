@@ -2540,8 +2540,7 @@ def s3scanner(self, ctx={}, description=None):
 	vuln_config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	s3_config = vuln_config.get(S3SCANNER) or {}
 	threads = s3_config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
-	# providers = s3_config.get(PROVIDERS, S3SCANNER_DEFAULT_PROVIDERS)
-	providers = ['linode']
+	providers = s3_config.get(PROVIDERS, S3SCANNER_DEFAULT_PROVIDERS)
 	scan_history = ScanHistory.objects.filter(pk=self.scan_id).first()
 	for provider in providers:
 		cmd = f's3scanner -bucket-file {input_path} -enumerate -provider {provider} -threads {threads} -json'
@@ -2554,7 +2553,7 @@ def s3scanner(self, ctx={}, description=None):
 			if not isinstance(line, dict):
 				continue
 
-			if line['bucket']['exists']:
+			if line['bucket']['exists'] == 1:
 				result = parse_s3scanner_result(line)
 				s3bucket, created = S3Bucket.objects.get_or_create(**result)
 				scan_history.buckets.add(s3bucket)
@@ -3293,6 +3292,7 @@ def parse_s3scanner_result(line):
 		'perm_all_users_read': line['bucket']['perm_all_users_read'],
 		'perm_all_users_write': line['bucket']['perm_all_users_write'],
 		'perm_all_users_read_acl': line['bucket']['perm_all_users_read_acl'],
+		'perm_all_users_write_acl': line['bucket']['perm_all_users_write_acl'],
 		'perm_all_users_full_control': line['bucket']['perm_all_users_full_control'],
 	}
 
