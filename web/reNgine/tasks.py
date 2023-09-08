@@ -2021,7 +2021,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	grouped_tasks = []
 	custom_ctx = ctx
 	for severity in severities:
-		custom_ctx['custom_name'] = 'vulnerability_scan_module_' + severity
+		custom_ctx['track'] = False
 		_task = vulnerability_scan_module.si(
 			cmd,
 			severity,
