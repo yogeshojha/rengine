@@ -23,7 +23,6 @@ from dotted_dict import DottedDict
 from django.utils import timezone
 from pycvesearch import CVESearch
 from metafinder.extractor import extract_metadata_from_google_search
-from emailfinder.extractor import (get_emails_from_baidu, get_emails_from_bing, get_emails_from_google)
 
 from reNgine.celery import app
 from reNgine.gpt import GPTVulnerabilityReportGenerator
@@ -596,9 +595,9 @@ def osint(self, host=None, ctx={}, description=None):
 		ctx['track'] = False
 		results = osint_discovery(host=host, ctx=ctx)
 
-	if 'dork' in config:
-		ctx['track'] = False
-		results['dorks'] = dorking(host=host, ctx=ctx)
+	# if 'dork' in config:
+	# 	ctx['track'] = False
+	# 	results['dorks'] = dorking(host=host, ctx=ctx)
 
 	with open(self.output_path, 'w') as f:
 		json.dump(results, f, indent=4)
@@ -627,42 +626,42 @@ def osint_discovery(self, host=None, ctx={}):
 	host = self.domain.name if self.domain else host
 
 	# Get and save meta info
-	if 'metainfo' in osint_lookup:
-		if osint_intensity == 'normal':
-			meta_dict = DottedDict({
-				'osint_target': host,
-				'domain': self.domain if self.domain else host,
-				'scan_id': self.scan_id,
-				'documents_limit': documents_limit
-			})
-			meta_info.append(save_metadata_info(meta_dict))
-		elif osint_intensity == 'deep':
-			subdomains = Subdomain.objects
-			if self.scan:
-				subdomains = subdomains.filter(scan_history=self.scan)
-			for subdomain in subdomains:
-				meta_dict = DottedDict({
-					'osint_target': subdomain.name,
-					'domain': self.domain,
-					'scan_id': self.scan_id,
-					'documents_limit': documents_limit
-				})
-				meta_info.append(save_metadata_info(meta_dict))
+	# if 'metainfo' in osint_lookup:
+	# 	if osint_intensity == 'normal':
+	# 		meta_dict = DottedDict({
+	# 			'osint_target': host,
+	# 			'domain': self.domain if self.domain else host,
+	# 			'scan_id': self.scan_id,
+	# 			'documents_limit': documents_limit
+	# 		})
+	# 		meta_info.append(save_metadata_info(meta_dict))
+	# 	elif osint_intensity == 'deep':
+	# 		subdomains = Subdomain.objects
+	# 		if self.scan:
+	# 			subdomains = subdomains.filter(scan_history=self.scan)
+	# 		for subdomain in subdomains:
+	# 			meta_dict = DottedDict({
+	# 				'osint_target': subdomain.name,
+	# 				'domain': self.domain,
+	# 				'scan_id': self.scan_id,
+	# 				'documents_limit': documents_limit
+	# 			})
+	# 			meta_info.append(save_metadata_info(meta_dict))
 
 	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(self.scan, self.results_dir)
+		emails = get_and_save_emails(self.scan, self.activity_id, self.results_dir)
 		emails_str = '\n'.join([f'• `{email}`' for email in emails])
 		self.notify(fields={'Emails': emails_str})
 		for email in emails:
 			email, created = save_email(email, scan_history=self.scan)
-			# if created:
-			# 	logger.warning(f'Found new email address {email}')
+			if created:
+				logger.warning(f'Found new email address {email}')
 		ctx['track'] = False
 		creds = h8mail(ctx=ctx)
 
-	if 'employees' in osint_lookup:
-		ctx['track'] = False
-		results = theHarvester(host=host, ctx=ctx)
+	# if 'employees' in osint_lookup:
+	# 	ctx['track'] = False
+	# 	results = theHarvester(host=host, ctx=ctx)
 
 	results['emails'] = results.get('emails', []) + emails
 	results['creds'] = creds
@@ -4045,11 +4044,12 @@ def get_and_save_dork_results(dork, type, host=None, scan_history=None, in_targe
 	return results
 
 
-def get_and_save_emails(scan_history, results_dir):
+def get_and_save_emails(scan_history, activity_id, results_dir):
 	"""Get and save emails from Google, Bing and Baidu.
 
 	Args:
 		scan_history (startScan.ScanHistory): Scan history object.
+		activity_id: ScanActivity Object
 		results_dir (str): Results directory.
 
 	Returns:
@@ -4058,36 +4058,27 @@ def get_and_save_emails(scan_history, results_dir):
 	emails = []
 
 	# Proxy settings
-	get_random_proxy()
+	# get_random_proxy()
 
 	# Gather emails from Google, Bing and Baidu
+	output_file = f'{results_dir}/emails.txt'
+	history_file = f'{results_dir}/commands.txt'
+	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
 	try:
-		logger.info('Getting emails from Google ...')
-		email_from_google = get_emails_from_google(scan_history.domain.name)
-		logger.info('Getting emails from Bing ...')
-		email_from_bing = get_emails_from_bing(scan_history.domain.name)
-		logger.info('Getting emails from Baidu ...')
-		email_from_baidu = get_emails_from_baidu(scan_history.domain.name)
-		emails = list(set(email_from_google + email_from_bing + email_from_baidu))
-		logger.info(emails)
+		run_command(
+			command,
+			shell=False,
+			history_file=history_file,
+			scan_id=scan_history.id,
+			activity_id=activity_id)
+
+		with open(output_file) as f:
+			for line in f.readlines():
+				if 'Email' in line:
+					split_email = line.split(' ')[2]
+					emails.append(split_email)
 	except Exception as e:
 		logger.exception(e)
-
-	# Write to file
-	output_path = f'{results_dir}/emails.txt'
-	with open(output_path, 'w') as output_file:
-		for email_address in emails:
-			save_email(email_address, scan_history)
-			output_file.write(f'{email_address}\n')
-
-		# Fill output_file with possible email address
-		output_file.write(f'%@{scan_history.domain.name}\n')
-		output_file.write(f'%@%.{scan_history.domain.name}\n')
-		output_file.write(f'%.%@{scan_history.domain.name}\n')
-		output_file.write(f'%.%@%.{scan_history.domain.name}\n')
-		output_file.write(f'%_%@{scan_history.domain.name}\n')
-		output_file.write(f'%_%@%.{scan_history.domain.name}\n')
-
 	return emails
 
 
