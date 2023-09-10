@@ -2160,7 +2160,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif _order_col == '6':
 				order_col = 'content_length'
 			elif _order_col == '7':
-				order_col = 'technologies'
+				order_col = 'techs'
 			elif _order_col == '8':
 				order_col = 'webserver'
 			elif _order_col == '9':
@@ -2195,7 +2195,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 								 Q(http_status__icontains=search_value) |
 								 Q(content_type__icontains=search_value) |
 								 Q(webserver__icontains=search_value) |
-								 Q(technologies__name__icontains=search_value) |
+								 Q(techs__name__icontains=search_value) |
 								 Q(content_type__icontains=search_value) |
 								 Q(matched_gf_patterns__icontains=search_value))
 
@@ -2222,7 +2222,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif 'technology' in lookup_title:
 				qs = (
 					self.queryset
-					.filter(technologies__name__icontains=lookup_content)
+					.filter(techs__name__icontains=lookup_content)
 				)
 			elif 'gf_pattern' in lookup_title:
 				qs = (
@@ -2303,7 +2303,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif 'technology' in lookup_title:
 				qs = (
 					self.queryset
-					.exclude(technologies__name__icontains=lookup_content)
+					.exclude(techs__name__icontains=lookup_content)
 				)
 			elif 'gf_pattern' in lookup_title:
 				qs = (
