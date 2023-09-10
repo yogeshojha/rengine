@@ -45,7 +45,7 @@ function checkedCount () {
   return count;
 }
 
-function scanMultipleTargets() {
+function scanMultipleTargets(slug) {
   if (!checkedCount()) {
     swal({
       title: '',
@@ -57,7 +57,7 @@ function scanMultipleTargets() {
   else {
     // atleast one target is selected
     multipleScanForm = document.getElementById("multiple_targets_form");
-    multipleScanForm.action = '../../../scan/start/multiple/';
+    multipleScanForm.action = `/scan/${slug}/start/multiple/`;
     multipleScanForm.submit();
   }
 }

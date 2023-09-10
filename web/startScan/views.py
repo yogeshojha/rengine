@@ -309,7 +309,7 @@ def start_scan_ui(request, slug, domain_id):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def start_multiple_scan(request):
+def start_multiple_scan(request, slug):
     # domain = get_object_or_404(Domain, id=host_id)
     if request.method == "POST":
         if request.POST.get('scan_mode', 0):
@@ -321,8 +321,11 @@ def start_multiple_scan(request):
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_id)
+                scan = ScanHistory.objects.get(pk=scan_history_id)
+                domain = get_object_or_404(Domain, id=domain_id)
+
                 kwargs = {
-                    'scan_history_id': scan_history_id,
+                    'scan_history_id': scan.id,
                     'domain_id': domain.id,
                     'engine_id': engine_id,
                     'scan_type': LIVE_SCAN,
@@ -332,6 +335,7 @@ def start_multiple_scan(request):
                     # 'out_of_scope_subdomains': subdomains_out
                 }
                 initiate_scan.apply_async(kwargs=kwargs)
+                scan.save()
 
             # Send start notif
             messages.add_message(
@@ -339,7 +343,7 @@ def start_multiple_scan(request):
                 messages.INFO,
                 'Scan Started for multiple targets')
 
-            return HttpResponseRedirect(reverse('scan_history'))
+            return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
         else:
             # this else condition will have post request from the scan page
