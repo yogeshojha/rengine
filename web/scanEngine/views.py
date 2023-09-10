@@ -181,7 +181,7 @@ def interesting_lookup(request, slug):
                 request,
                 messages.INFO,
                 'Lookup Keywords updated successfully')
-            return http.HttpResponseRedirect(reverse('interesting_lookup'))
+            return http.HttpResponseRedirect(reverse('interesting_lookup', kwargs={'slug': slug}))
 
     if lookup_keywords:
         form.set_value(lookup_keywords)

@@ -66,7 +66,7 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 		{'data': 'matched_gf_patterns'},
 		{'data': 'content_type'},
 		{'data': 'content_length', 'searchable': false},
-		{'data': 'technologies'},
+		{'data': 'techs'},
 		{'data': 'webserver'},
 		{'data': 'response_time', 'searchable': false},
 	];
@@ -111,8 +111,8 @@ function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=nu
 				"render": function ( data, type, row ) {
 					var tech_badge = '';
 					var web_server = '';
-					if (row['technologies']){
-						tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true);
+					if (row['techs']){
+						tech_badge = `</br>` + parse_technology(row['techs'], "primary", outline=true);
 					}
 
 					if (row['webserver']) {
@@ -1224,20 +1224,19 @@ function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	});
 }
 
-function download_interesting_subdomains(scan_id=null, domain_id=null, domain_name=null){
+function download_interesting_subdomains(project, scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Interesting Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
-	var url = `/api/queryInterestingSubdomains/?format=json`;
+	var url = `/api/queryInterestingSubdomains/?format=json&project=${project}`;
 	if (scan_id) {
-		url = `/api/queryInterestingSubdomains/?scan_id=${scan_id}&format=json`;
+		url += `&scan_id=${scan_id}`;
 	}
 	else if(domain_id){
-		url = `/api/queryInterestingSubdomains/?target_id=${domain_id}&format=json`;
+		url += `&target_id=${domain_id}`;
 	}
-	console.log(url);
 
 	if (domain_name) {
 		$('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');

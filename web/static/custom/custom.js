@@ -514,14 +514,15 @@ function report_hackerone(vulnerability_id, severity) {
 	}])
 }
 
-function get_interesting_subdomains(target_id, scan_history_id) {
+function get_interesting_subdomains(project, target_id, scan_history_id) {
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&target_id=${target_id}&format=datatables`;
 		non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingSubdomains/?scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingSubdomains/?project=${project}&scan_id=${scan_history_id}&format=datatables`;
 		non_orderable_targets = [];
 	}
+	console.log(url);
 	var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
 		"drawCallback": function(settings, start, end, max, total, pre) {
 			// if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
@@ -566,8 +567,8 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 		"order": [
 			[3, "desc"]
 		],
-		"lengthMenu": [5, 10, 20, 50, 100],
-		"pageLength": 10,
+		"lengthMenu": [[50, 100, 200, 500, -1], [50, 100, 200, 500, 'All']],
+		"pageLength": 50,
 		"columns": [{
 			'data': 'name'
 		}, {
@@ -626,13 +627,13 @@ function get_interesting_subdomains(target_id, scan_history_id) {
 	});
 }
 
-function get_interesting_endpoints(target_id, scan_history_id) {
+function get_interesting_endpoints(project, target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project={project}&target_id=${target_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingEndpoints/?scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project={project}&scan_id=${scan_history_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	}
 	$('#interesting_endpoints').DataTable({

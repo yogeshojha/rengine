@@ -356,7 +356,7 @@ class EndPoint(models.Model):
 	webserver = models.CharField(max_length=1000, blank=True, null=True)
 	is_default = models.BooleanField(null=True, blank=True, default=False)
 	matched_gf_patterns = models.CharField(max_length=10000, null=True, blank=True)
-	technologies = models.ManyToManyField('Technology', related_name='technology')
+	techs = models.ManyToManyField('Technology', related_name='techs', null=True, blank=True)
 	# used for subscans
 	endpoint_subscan_ids = models.ManyToManyField('SubScan', related_name='endpoint_subscan_ids', blank=True)
 
