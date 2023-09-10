@@ -180,12 +180,12 @@ def initiate_scan(
 		fetch_url.si(ctx=ctx, description='Fetch URL'),
 		group(
 			s3scanner.si(ctx=ctx, description='S3 Buckets Scanner'),
-			# dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
+			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
-			# dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
-			# crlfuzz.si(ctx=ctx, description='CRLF Fuzz'),
-			# screenshot.si(ctx=ctx, description='Screenshot'),
-			# waf_detection.si(ctx=ctx, description='WAF detection')
+			dalfox_xss_scan.si(ctx=ctx, description='Dalfox XSS scan'),
+			crlfuzz.si(ctx=ctx, description='CRLF Fuzz'),
+			screenshot.si(ctx=ctx, description='Screenshot'),
+			waf_detection.si(ctx=ctx, description='WAF detection')
 		)
 	)
 
