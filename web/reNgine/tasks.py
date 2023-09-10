@@ -160,7 +160,7 @@ def initiate_scan(
 		subdomain.page_title = endpoint.page_title
 		subdomain.content_type = endpoint.content_type
 		subdomain.content_length = endpoint.content_length
-		for tech in endpoint.technologies.all():
+		for tech in endpoint.techs.all():
 			subdomain.technologies.add(tech)
 		subdomain.save()
 
@@ -297,7 +297,7 @@ def initiate_subscan(
 		subdomain.page_title = endpoint.page_title
 		subdomain.content_type = endpoint.content_type
 		subdomain.content_length = endpoint.content_length
-		for tech in endpoint.technologies.all():
+		for tech in endpoint.techs.all():
 			subdomain.technologies.add(tech)
 		subdomain.save()
 
@@ -2673,6 +2673,9 @@ def http_crawl(
 		subdomain_name = get_subdomain_from_url(http_url)
 		subdomain, _ = save_subdomain(subdomain_name, ctx=ctx)
 
+		if not subdomain:
+			continue
+
 		# Save default HTTP URL to endpoint object in DB
 		endpoint, created = save_endpoint(
 			http_url,
@@ -2708,7 +2711,7 @@ def http_crawl(
 		# Add technology objects to DB
 		for technology in techs:
 			tech, _ = Technology.objects.get_or_create(name=technology)
-			endpoint.technologies.add(tech)
+			endpoint.techs.add(tech)
 			if is_ran_from_subdomain_scan:
 				subdomain.technologies.add(tech)
 				subdomain.save()
