@@ -91,7 +91,7 @@ urlpatterns = [
         views.start_multiple_scan,
         name='start_multiple_scan'),
     path(
-        'start/organization/<int:id>',
+        '<slug:slug>/start/organization/<int:id>',
         views.start_organization_scan,
         name='start_organization_scan'),
     path(

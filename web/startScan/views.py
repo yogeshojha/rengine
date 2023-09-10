@@ -671,7 +671,7 @@ def visualise(request, id):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def start_organization_scan(request, id):
+def start_organization_scan(request, id, slug):
     organization = get_object_or_404(Organization, id=id)
     if request.method == "POST":
         engine_id = request.POST['scan_mode']
@@ -679,8 +679,10 @@ def start_organization_scan(request, id):
         # Start Celery task for each organization's domains
         for domain in organization.get_domains():
             scan_history_id = create_scan_object(domain.id, engine_id)
+            scan = ScanHistory.objects.get(pk=scan_history_id)
+
             kwargs = {
-                'scan_history_id': scan_history_id,
+                'scan_history_id': scan.id,
                 'domain_id': domain.id,
                 'engine_id': engine_id,
                 'scan_type': LIVE_SCAN,
@@ -690,6 +692,7 @@ def start_organization_scan(request, id):
                 # 'out_of_scope_subdomains': subdomains_out
             }
             initiate_scan.apply_async(kwargs=kwargs)
+            scan.save()
 
 
         # Send start notif
@@ -698,7 +701,7 @@ def start_organization_scan(request, id):
             request,
             messages.INFO,
             f'Scan Started for {ndomains} domains in organization {organization.name}')
-        return HttpResponseRedirect(reverse('scan_history'))
+        return HttpResponseRedirect(reverse('scan_history', kwargs={'slug': slug}))
 
     # GET request
     engine = EngineType.objects.order_by('engine_name')
