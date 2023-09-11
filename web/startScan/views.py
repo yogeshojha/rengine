@@ -1,5 +1,6 @@
 import markdown
 
+from celery import group
 from weasyprint import HTML
 from datetime import datetime
 from django.contrib import messages
@@ -318,15 +319,16 @@ def start_multiple_scan(request, slug):
             engine_id = request.POST['scan_mode']
             list_of_domains = request.POST['list_of_domain_id']
 
+            grouped_scans = []
+
             for domain_id in list_of_domains.split(","):
                 # Start the celery task
                 scan_history_id = create_scan_object(domain_id, engine_id)
-                scan = ScanHistory.objects.get(pk=scan_history_id)
-                domain = get_object_or_404(Domain, id=domain_id)
+                # domain = get_object_or_404(Domain, id=domain_id)
 
                 kwargs = {
-                    'scan_history_id': scan.id,
-                    'domain_id': domain.id,
+                    'scan_history_id': scan_history_id,
+                    'domain_id': domain_id,
                     'engine_id': engine_id,
                     'scan_type': LIVE_SCAN,
                     'results_dir': '/usr/src/scan_results',
@@ -334,8 +336,12 @@ def start_multiple_scan(request, slug):
                     # 'imported_subdomains': subdomains_in,
                     # 'out_of_scope_subdomains': subdomains_out
                 }
-                initiate_scan.apply_async(kwargs=kwargs)
-                scan.save()
+
+                _scan_task = initiate_scan.si(**kwargs)
+                grouped_scans.append(_scan_task)
+
+            celery_group = group(grouped_scans)
+            celery_group.apply_async()
 
             # Send start notif
             messages.add_message(
