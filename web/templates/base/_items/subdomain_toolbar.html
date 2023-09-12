@@ -1,21 +1,21 @@
-<div class="col-6 float-start">
+<div class="col-9 float-start">
     <a class="disabled btn btn-soft-primary ms-2" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
       <i class="fe-zap"></i>
-      Initiate Subscan
+      <span class="d-none d-md-inline">Initiate Subscan</span>
     </a>
     <a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
       <i class="fe-download"></i>
-      Download Selected Subdomains
+      <span class="d-none d-md-inline">Download Selected Subdomains</span>
     </a>
     <a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
       <i class="fe-trash"></i>
-      Delete Multiple Subdomains
+      <span class="d-none d-md-inline">Delete Multiple Subdomains</span>
     </a>
     <div class="ms-2 mt-2" id="">
       <a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
     </div>
   </div>
-  <div class="col-6">
+  <div class="col-3">
     <div class="btn-group mb-2 float-end dropstart">
       <button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
         <i class="fe-filter"></i>
