@@ -1317,8 +1317,6 @@ def directory_fuzz(
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
-	logger.info(ffuf_command)
-
 	for subdomain in subdomains_fuzz:
 		command = None
 		# delete any existing dirs.json
@@ -1345,8 +1343,7 @@ def directory_fuzz(
 		)
 
 		logger.info(command)
-		process = subprocess.Popen(command.split())
-		process.wait()
+		os.system(remove_cmd_injection_chars(command))
 
 		try:
 			if os.path.isfile(dirs_results):
@@ -1884,8 +1881,7 @@ def vulnerability_scan(
 
 		logger.info('Running Nuclei Scanner!')
 		logger.info(final_nuclei_command)
-		process = subprocess.Popen(final_nuclei_command.split())
-		process.wait()
+		os.system(remove_cmd_injection_chars(final_nuclei_command))
 
 		try:
 			if os.path.isfile(vulnerability_result_path):
