@@ -82,7 +82,7 @@ def detail_scan(request, id=None):
             medium_count + high_count + critical_count
         context['scan_history_active'] = 'active'
 
-        context['scan_engines'] = EngineType.objects.all()
+        context['scan_engines'] = EngineType.objects.all().order_by('engine_name')
 
         emails = Email.objects.filter(
             emails__in=ScanHistory.objects.filter(
@@ -133,7 +133,7 @@ def all_subdomains(request):
     context['important_count'] = Subdomain.objects.values('name').distinct().filter(
         is_important=True).count()
 
-    context['scan_engines'] = EngineType.objects.all()
+    context['scan_engines'] = EngineType.objects.all().order_by('engine_name')
 
     context['scan_history_active'] = 'active'
 
@@ -185,7 +185,7 @@ def start_scan_ui(request, domain_id):
             'Scan Started for ' +
             domain.name)
         return HttpResponseRedirect(reverse('scan_history'))
-    engine = EngineType.objects.order_by('id')
+    engine = EngineType.objects.order_by('engine_name')
     custom_engine_count = EngineType.objects.filter(
         default_engine=False).count()
     context = {
