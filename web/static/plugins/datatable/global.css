@@ -81,7 +81,7 @@ table.dataTable {
   padding-left: 0;
   -webkit-transition: all 0.1s ease;
   transition: all 0.1s ease;
-  padding: 10px 21px 10px 21px;
+  padding: 10px 8px;
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 1px;
@@ -105,7 +105,7 @@ table.dataTable {
   font-size: 13px;
   border: none;
   padding: 0;
-  padding: 10px 21px 10px 21px;
+  padding: 10px 8px;
   letter-spacing: normal;
 }
 
@@ -114,7 +114,7 @@ table.dataTable {
 
 .table > tfoot > tr > th {
   border: none;
-  padding: 10px 21px 10px 21px; }
+  padding: 10px 8px; }
 
 .table-hover:not(.table-dark) tbody tr:hover {
   background-color: transparent !important; }

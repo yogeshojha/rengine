@@ -111,10 +111,10 @@ $(document).ready(function() {
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+			{"className": "text-start text-lg-center", "targets": [2, 3, 4, 8, 10]},
 			// checkbox
 			{
-				"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+				"targets":0, "width":"15px", "className":"", "orderable":!1, render:function(e, a, t, n) {
 					return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
 				}},
 				// subdomain Name

@@ -377,3 +377,8 @@ mark{
   background-color: #FFEB3B;
   color: #000;
 }
+
+.tab-content .card-body {
+  padding-left: 0.8rem !important;
+  padding-right: 0.8rem !important;
+}

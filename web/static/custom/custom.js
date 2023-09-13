@@ -1,3 +1,16 @@
+$(document).ready(function() {
+	Object.assign(DataTable.defaults, {
+			"bAutoWidth": false,
+			responsive: true,
+			columnDefs: [{
+					className: 'dtr-control',
+					targets: 0,
+					orderable: false
+			}],
+			searching: false,
+	});
+});
+
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);
 	var multichk = $('.' + relChkbox);
@@ -1820,7 +1833,6 @@ function loadSubscanHistoryWidget(scan_history_id = null, domain_id = null) {
 	}).then(function(response) {
 		return response.json();
 	}).then(function(data) {
-		console.log(data);
 		$('#subscan_history_widget').empty();
 		if (data['status']) {
 			$('#sub_scan_history_count').append(`
