@@ -255,7 +255,7 @@ def target_summary(request, id):
     context['endpoint_count'] = endpoints.count()
     context['endpoint_alive_count'] = endpoints.filter(http_status__exact=200).count()
 
-    context['scan_engines'] = EngineType.objects.all()
+    context['scan_engines'] = EngineType.objects.all().order_by('engine_name')
 
     unknown_count = vulnerabilities.filter(severity=-1).count()
     info_count = vulnerabilities.filter(severity=0).count()

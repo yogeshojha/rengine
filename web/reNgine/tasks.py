@@ -583,13 +583,14 @@ def subdomain_scan(
 					process.wait()
 
 				elif tool == 'assetfinder':
-					assetfinder_command = 'assetfinder --subs-only {} > {}/from_assetfinder.txt'.format(
-						domain.name, results_dir)
+					assetfinder_command = 'assetfinder --subs-only {}'.format(
+						domain.name)
 
 					# Run Assetfinder
 					logging.info(assetfinder_command)
-					process = subprocess.Popen(assetfinder_command.split())
-					process.wait()
+					with open("{}/from_assetfinder.txt".format(results_dir), "w+") as f:
+						process = subprocess.Popen(assetfinder_command.split(), stdout=f)
+						process.wait()
 
 				elif tool == 'sublist3r':
 					sublist3r_command = 'python3 /usr/src/github/Sublist3r/sublist3r.py -d {} -t {} -o {}/from_sublister.txt'.format(
@@ -1069,7 +1070,7 @@ def port_scanning(
 		lines = port_json_result.readlines()
 		for line in lines:
 			json_st = json.loads(line.strip())
-			port_number = json_st['port']['Port']
+			port_number = json_st['port']
 			ip_address = json_st['ip']
 			host = json_st['host']
 
@@ -1316,8 +1317,6 @@ def directory_fuzz(
 	if CUSTOM_HEADER in yaml_configuration and yaml_configuration[CUSTOM_HEADER]:
 		ffuf_command += ' -H "{}"'.format(yaml_configuration[CUSTOM_HEADER])
 
-	logger.info(ffuf_command)
-
 	for subdomain in subdomains_fuzz:
 		command = None
 		# delete any existing dirs.json
@@ -1344,8 +1343,7 @@ def directory_fuzz(
 		)
 
 		logger.info(command)
-		process = subprocess.Popen(command.split())
-		process.wait()
+		os.system(remove_cmd_injection_chars(command))
 
 		try:
 			if os.path.isfile(dirs_results):
@@ -1883,8 +1881,7 @@ def vulnerability_scan(
 
 		logger.info('Running Nuclei Scanner!')
 		logger.info(final_nuclei_command)
-		process = subprocess.Popen(final_nuclei_command.split())
-		process.wait()
+		os.system(remove_cmd_injection_chars(final_nuclei_command))
 
 		try:
 			if os.path.isfile(vulnerability_result_path):
