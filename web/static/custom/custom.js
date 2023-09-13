@@ -1,12 +1,13 @@
 $(document).ready(function() {
 	Object.assign(DataTable.defaults, {
 			"bAutoWidth": false,
-			responsive: true,
-			columnDefs: [{
-					className: 'dtr-control',
-					targets: 0,
-					orderable: false
-			}],
+			responsive: {
+				details: {
+					display: DataTable.Responsive.display.childRowImmediate,
+					target: '',
+					type: 'none'
+				}
+			},
 			searching: false,
 	});
 });
