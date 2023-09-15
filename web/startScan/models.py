@@ -509,6 +509,9 @@ class Command(models.Model):
 	output = models.TextField(blank=True, null=True)
 	time = models.DateTimeField()
 
+	def __str__(self):
+		return str(self.command)
+
 
 class Waf(models.Model):
 	id = models.AutoField(primary_key=True)

@@ -365,7 +365,7 @@ def report(ctx={}, description=None):
 # Tracked reNgine tasks    #
 #--------------------------#
 
-@app.task(name='subdomain_discovery', queue='subdomain_discovery_queue', base=RengineTask, bind=True)
+@app.task(name='subdomain_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
 def subdomain_discovery(
 		self,
 		host=None,
@@ -413,9 +413,8 @@ def subdomain_discovery(
 	# Run tools
 	for tool in tools:
 		cmd = None
-		logger.info(f'Scanning subdomains with {tool}')
+		logger.info(f'Scanning subdomains for {host} with {tool}')
 		proxy = get_random_proxy()
-
 		if tool in default_subdomain_tools:
 			if tool == 'amass-passive':
 				cmd = f'amass enum -passive -d {host} -o {self.results_dir}/subdomains_amass.txt'
@@ -579,7 +578,7 @@ def subdomain_discovery(
 	return SubdomainSerializer(subdomains, many=True).data
 
 
-@app.task(name='osint', queue='osint_queue', base=RengineTask, bind=True)
+@app.task(name='osint', queue='main_scan_queue', base=RengineTask, bind=True)
 def osint(self, host=None, ctx={}, description=None):
 	"""Run Open-Source Intelligence tools on selected domain.
 
@@ -606,7 +605,7 @@ def osint(self, host=None, ctx={}, description=None):
 	return results
 
 
-@app.task(name='osint_discovery', queue='osint_discovery_queue', base=RengineTask, bind=True)
+@app.task(name='osint_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
 def osint_discovery(self, host=None, ctx={}):
 	"""Run OSInt discovery.
 
@@ -666,7 +665,7 @@ def osint_discovery(self, host=None, ctx={}):
 	return results
 
 
-@app.task(name='dorking', queue='dorking_queue', base=RengineTask, bind=True)
+@app.task(name='dorking', queue='main_scan_queue', base=RengineTask, bind=True)
 def dorking(self, host=None, ctx={}):
 	"""Run Google dorks.
 
@@ -958,7 +957,7 @@ def dorking(self, host=None, ctx={}):
 	return results
 
 
-@app.task(name='theHarvester', queue='theHarvester_queue', base=RengineTask, bind=True)
+@app.task(name='theHarvester', queue='main_scan_queue', base=RengineTask, bind=True)
 def theHarvester(self, host=None, ctx={}):
 	"""Run theHarvester to get save emails, hosts, employees found in domain.
 
@@ -1073,7 +1072,7 @@ def theHarvester(self, host=None, ctx={}):
 	return data
 
 
-@app.task(name='h8mail', queue='h8mail_queue', base=RengineTask, bind=True)
+@app.task(name='h8mail', queue='main_scan_queue', base=RengineTask, bind=True)
 def h8mail(self, input_path=None, ctx={}):
 	"""Run h8mail.
 
@@ -1113,7 +1112,7 @@ def h8mail(self, input_path=None, ctx={}):
 	return creds
 
 
-@app.task(name='screenshot', queue='screenshot_queue', base=RengineTask, bind=True)
+@app.task(name='screenshot', queue='main_scan_queue', base=RengineTask, bind=True)
 def screenshot(self, ctx={}, description=None):
 	"""Uses EyeWitness to gather screenshot of a domain and/or url.
 
@@ -1205,7 +1204,7 @@ def screenshot(self, ctx={}, description=None):
 			send_file_to_discord.delay(path, title)
 
 
-@app.task(name='port_scan', queue='port_scan_queue', base=RengineTask, bind=True)
+@app.task(name='port_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def port_scan(self, hosts=[], ctx={}, description=None):
 	"""Run port scan.
 
@@ -1379,7 +1378,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	return ports_data
 
 
-@app.task(name='nmap', queue='nmap_queue', base=RengineTask, bind=True)
+@app.task(name='nmap', queue='main_scan_queue', base=RengineTask, bind=True)
 def nmap(
 		self,
 		cmd=None,
@@ -1464,7 +1463,7 @@ def nmap(
 	return vulns
 
 
-@app.task(name='waf_detection', queue='waf_detection_queue', base=RengineTask, bind=True)
+@app.task(name='waf_detection', queue='main_scan_queue', base=RengineTask, bind=True)
 def waf_detection(self, ctx={}, description=None):
 	"""
 	Uses wafw00f to check for the presence of a WAF.
@@ -1525,7 +1524,7 @@ def waf_detection(self, ctx={}, description=None):
 	return wafs
 
 
-@app.task(name='dir_file_fuzz', queue='dir_file_fuzz_queue', base=RengineTask, bind=True)
+@app.task(name='dir_file_fuzz', queue='main_scan_queue', base=RengineTask, bind=True)
 def dir_file_fuzz(self, ctx={}, description=None):
 	"""Perform directory scan, and currently uses `ffuf` as a default tool.
 
@@ -1674,7 +1673,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	return results
 
 
-@app.task(name='fetch_url', queue='fetch_url_queue', base=RengineTask, bind=True)
+@app.task(name='fetch_url', queue='main_scan_queue', base=RengineTask, bind=True)
 def fetch_url(self, urls=[], ctx={}, description=None):
 	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
@@ -1913,7 +1912,7 @@ def parse_curl_output(response):
 	}
 
 
-@app.task(name='vulnerability_scan', queue='vulnerability_scan_queue', base=RengineTask, bind=True)
+@app.task(name='vulnerability_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	"""HTTP vulnerability scan using `nuclei`.
 
@@ -2041,7 +2040,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	# return results
 	return None
 
-@app.task(name='vulnerability_scan_module', queue='vulnerability_scan_module_queue', base=RengineTask, bind=True)
+@app.task(name='vulnerability_scan_module', queue='main_scan_queue', base=RengineTask, bind=True)
 def vulnerability_scan_module(self, cmd, severity, enable_http_crawl, should_fetch_gpt_report, ctx={}, description=None):
 	'''
 		This celery task is supposed to run vulnerability scan in parallel.
@@ -2281,7 +2280,7 @@ def add_gpt_description_db(title, path, description, impact, remediation, refere
 		gpt_report.save()
 
 
-@app.task(name='dalfox_xss_scan', queue='dalfox_xss_scan_queue', base=RengineTask, bind=True)
+@app.task(name='dalfox_xss_scan', queue='main_scan_queue', base=RengineTask, bind=True)
 def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	"""XSS Scan using dalfox
 
@@ -2407,7 +2406,7 @@ def dalfox_xss_scan(self, urls=[], ctx={}, description=None):
 	return results
 
 
-@app.task(name='crlfuzz', queue='crlfuzz_queue', base=RengineTask, bind=True)
+@app.task(name='crlfuzz', queue='main_scan_queue', base=RengineTask, bind=True)
 def crlfuzz(self, urls=[], ctx={}, description=None):
 	"""CRLF Fuzzing with CRLFuzz
 
@@ -2528,7 +2527,7 @@ def crlfuzz(self, urls=[], ctx={}, description=None):
 	return results
 
 
-@app.task(name='s3scanner', queue='s3scanner_queue', base=RengineTask, bind=True)
+@app.task(name='s3scanner', queue='main_scan_queue', base=RengineTask, bind=True)
 def s3scanner(self, ctx={}, description=None):
 	"""Bucket Scanner
 
@@ -2560,7 +2559,7 @@ def s3scanner(self, ctx={}, description=None):
 				logger.info(f"s3 bucket added {result['provider']}-{result['name']}-{result['region']}")
 
 
-@app.task(name='http_crawl', queue='http_crawl_queue', base=RengineTask, bind=True)
+@app.task(name='http_crawl', queue='main_scan_queue', base=RengineTask, bind=True)
 def http_crawl(
 		self,
 		urls=[],
