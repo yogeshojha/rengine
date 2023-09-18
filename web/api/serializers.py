@@ -927,7 +927,7 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 =======
 from dashboard.models import *
 from django.contrib.humanize.templatetags.humanize import (naturalday,
-                                                           naturaltime)
+														   naturaltime)
 from django.db.models import F, JSONField, Value
 from recon_note.models import *
 from reNgine.common_func import *
@@ -1099,7 +1099,26 @@ class ScanHistorySerializer(serializers.ModelSerializer):
 
 	class Meta:
 		model = ScanHistory
-		fields = '__all__'
+		fields = [
+			'id',
+			'subdomain_count',
+			'endpoint_count',
+			'vulnerability_count',
+			'current_progress',
+			'completed_time',
+			'elapsed_time',
+			'completed_ago',
+			'organizations',
+			'start_scan_date',
+			'scan_status',
+			'results_dir',
+			'celery_ids',
+			'tasks',
+			'stop_scan_date',
+			'error_message',
+			'domain',
+			'scan_type'
+		]
 		depth = 1
 
 	def get_subdomain_count(self, scan_history):
