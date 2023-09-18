@@ -1924,7 +1924,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	Unfurl the urls to keep only domain and path, will be sent to vuln scan and
 	ignore certain file extensions. Thanks: https://github.com/six2dez/reconftw
 	"""
-	return
 	# Config
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	input_path = f'{self.results_dir}/input_endpoints_vulnerability_scan.txt'

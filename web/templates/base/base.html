@@ -109,7 +109,7 @@
         // rengine will also check everyday if update exists for rengine
         checkDailyUpdate();
 
-        getScanStatusSidebar();
+        getScanStatusSidebar(project='{{current_project.slug}}', reload=false);
         // hide badge if update does not exists
         if (window.localStorage.getItem('update_available') && window.localStorage.getItem('update_available') === 'true') {
           $('.rengine_update_available').show();
