@@ -1,5 +1,5 @@
 # Base image
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 # Labels and Credits
 LABEL \
@@ -18,8 +18,6 @@ ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
 
 # Install Python
 RUN apt update -y && \
-    apt install -y software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
     apt update -y && \
     apt install -y \
     python3.10 \

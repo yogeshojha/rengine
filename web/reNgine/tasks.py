@@ -4212,6 +4212,8 @@ def save_metadata_info(meta_dict):
 	"""
 	logger.warning(f'Getting metadata for {meta_dict.osint_target}')
 
+	scan_history = ScanHistory.objects.get(meta_dict.scan_id)
+
 	# Proxy settings
 	get_random_proxy()
 
@@ -4231,7 +4233,7 @@ def save_metadata_info(meta_dict):
 		meta_finder_document = MetaFinderDocument(
 			subdomain=subdomain,
 			target_domain=meta_dict.domain,
-			scan_history=meta_dict.scan_id,
+			scan_history=scan_history,
 			url=metadata.url,
 			doc_name=metadata_name,
 			http_status=metadata.status_code,
