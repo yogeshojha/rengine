@@ -30,7 +30,6 @@ RUN apt update -y && \
 RUN apt install -y  --no-install-recommends \
     build-essential \
     cmake \
-    firefox \
     geoip-bin \
     geoip-database \
     gcc \
@@ -50,12 +49,6 @@ RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
 RUN tar -xvf go1.20.linux-amd64.tar.gz
 RUN rm go1.20.linux-amd64.tar.gz
 RUN mv go /usr/local
-
-# Download geckodriver
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
-RUN tar -xvf geckodriver-v0.32.0-linux64.tar.gz
-RUN rm geckodriver-v0.32.0-linux64.tar.gz
-RUN mv geckodriver /usr/bin
 
 # Make directory for app
 WORKDIR /usr/src/app
@@ -83,7 +76,7 @@ RUN go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest
 RUN go install -v github.com/hahwul/dalfox/v2@latest
 RUN go install -v github.com/projectdiscovery/katana/cmd/katana@latest
 RUN go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest
-RUN go install -v github.com/sa7mon/s3scanner@latest 
+RUN go install -v github.com/sa7mon/s3scanner@latest
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update
