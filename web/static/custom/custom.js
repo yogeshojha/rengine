@@ -938,24 +938,19 @@ function delete_subscan(subscan_id) {
 function show_subscan_results(subscan_id) {
 	// This function will popup a modal and show the subscan results
 	// modal being used is from base
-	var api_url = '/api/fetch/results/subscan/?format=json';
-	var data = {
-		'subscan_id': subscan_id
-	};
+	var api_url = '/api/fetch/results/subscan/?format=json&subscan_id=' + subscan_id;
 	Swal.fire({
 		title: 'Fetching Results...'
 	});
 	swal.showLoading();
 	fetch(api_url, {
-		method: 'POST',
+		method: 'GET',
 		credentials: "same-origin",
 		headers: {
 			"X-CSRFToken": getCookie("csrftoken"),
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(data)
 	}).then(response => response.json()).then(function(response) {
-		console.log(response);
 		swal.close();
 		if (response['subscan']['status'] == -1) {
 			swal.fire("Error!", "Scan has not yet started! Please wait for other scans to complete...", "warning", {
@@ -996,23 +991,24 @@ function show_subscan_results(subscan_id) {
 			scan_status = 'Unknown';
 		}
 		$('#xl-modal-content').append(`<div>Scan Status: <span class="badge bg-${badge_color}">${scan_status}</span></div>`);
-		console.log(response);
 		$('#xl-modal-content').append(`<div class="mt-1">Engine Used: <span class="badge bg-primary">${htmlEncode(response['subscan']['engine'])}</span></div>`);
 		if (response['result'].length > 0) {
 			if (response['subscan']['task'] == 'port_scan') {
 				$('#xl-modal-content').append(`<div id="port_results_li"></div>`);
 				for (var ip in response['result']) {
 					var ip_addr = response['result'][ip]['address'];
-					var id_name = `ip_${ip_addr}`;
+					var underscore_ip = ip_addr.replaceAll('.', '_');
+					var id_name = `ip_${underscore_ip}`;
 					$('#port_results_li').append(`<h5>IP Address: ${ip_addr}</br></br>${response['result'][ip]['ports'].length} Ports Open</h5>`);
 					$('#port_results_li').append(`<ul id="${id_name}"></ul>`);
 					for (var port_obj in response['result'][ip]['ports']) {
+						console.log(port_obj);
 						var port = response['result'][ip]['ports'][port_obj];
 						var port_color = 'primary';
 						if (port["is_uncommon"]) {
 							port_color = 'danger';
 						}
-						$('#port_results_li ul').append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['description']}</span></li>`);
+						$(`#${id_name}`).append(`<li><span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['number']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['service_name']}</span>/<span class="ms-1 mt-1 me-1 badge badge-soft-${port_color}">${port['description']}</span></li>`);
 					}
 				}
 				$('#xl-modal-footer').append(`<span class="text-danger">* Uncommon Ports</span>`);

@@ -564,10 +564,10 @@ class AddTarget(APIView):
 
 
 class FetchSubscanResults(APIView):
-	def post(self, request):
+	def get(self, request):
 		req = self.request
-		data = req.data
-		subscan_id = data['subscan_id']
+		# data = req.data
+		subscan_id = req.query_params.get('subscan_id')
 		subscan = SubScan.objects.filter(id=subscan_id)
 		if not subscan.exists():
 			return Response({
