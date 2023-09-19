@@ -131,7 +131,7 @@ echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
 # watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
 echo "Starting Workers..."
-celery -A reNgine.tasks worker --autoscale=4,0 --loglevel=info -Q main_scan_queue &
+celery -A reNgine.tasks worker --loglevel=info -Q main_scan_queue &
 celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q initiate_scan_queue -n initiate_scan_worker &
 celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q subscan_queue -n subscan_worker &
 celery -A reNgine.tasks worker --pool=gevent --concurrency=20 --loglevel=info -Q report_queue -n report_worker &
