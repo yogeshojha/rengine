@@ -1920,7 +1920,8 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	config = self.yaml_configuration.get(VULNERABILITY_SCAN) or {}
 	should_run_nuclei = config.get(RUN_NUCLEI, True)
 	should_run_crlfuzz = config.get(RUN_CRLFUZZ, False)
-	should_run_dalfox = config.get(RUN_CRLFUZZ, False)
+	should_run_dalfox = config.get(RUN_DALFOX, False)
+	should_run_s3scanner = config.get(RUN_S3SCANNER, True)
 
 	grouped_tasks = []
 	if should_run_nuclei:
@@ -1944,6 +1945,14 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 			urls=urls,
 			ctx=ctx,
 			description=f'Dalfox XSS Scan'
+		)
+		grouped_tasks.append(_task)
+
+	if should_run_s3scanner:
+		_task = s3scanner.si(
+			urls=urls,
+			ctx=ctx,
+			description=f'Misconfigured S3 Scanner'
 		)
 		grouped_tasks.append(_task)
 

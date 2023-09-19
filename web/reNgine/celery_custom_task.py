@@ -101,7 +101,7 @@ class RengineTask(Task):
 					'crlfuzz': 'vulnerability_scan',
 					'nuclei_scan': 'vulnerability_scan',
 					'nuclei_individual_severity_module': 'vulnerability_scan',
-					# 's3scanner': 'vulnerability_scan',
+					's3scanner': 'vulnerability_scan',
 				}
 				if self.track and self.task_name not in self.engine.tasks and dependent_tasks.get(self.task_name) not in self.engine.tasks:
 					logger.debug(f'Task {self.name} is not part of engine "{self.engine.engine_name}" tasks. Skipping.')
