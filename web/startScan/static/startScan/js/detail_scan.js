@@ -749,10 +749,16 @@ function get_metadata(scan_id){
 				$(`#${rand_id}`).append('<td></td>')
 			}
 			if (doc['producer'] || doc['creator'] || doc['os']) {
-				metadata = ''
-				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : ''
-				metadata += doc['creator'] ? '/' + doc['creator'] : ''
-				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': ''
+				metadata = '';
+				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : '';
+				metadata += doc['creator'] ? '/' + doc['creator'] : 'dsdd';
+				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': '';
+				if (doc['creation_date']) {
+					metadata += `<br>Created On: ${doc['creation_date']}`;
+				}
+				if (doc['modified_date']) {
+					metadata += `<br>Modified On: ${doc['modified_date']}`;
+				}
 				$(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
 			}
 			else{
