@@ -1137,7 +1137,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		<th>CVSS Score</th>
 		<th>CVE/CWE</th>
 		<th>Vulnerable URL</th>
-		<th>Description</th>
 		<th class="text-center dt-no-sorting">Action</th>
 		</tr>
 		</thead>
@@ -1211,33 +1210,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 		}
 		cve_cwe_badge += '</div>';
 		var http_url = vuln_obj['http_url'].includes('http') ? "<a href='" + htmlEncode(vuln_obj['http_url']) + "' target='_blank' class='text-danger'>" + htmlEncode(vuln_obj['http_url']) + "</a>" : vuln_obj['http_url'];
-		var description = vuln_obj['description'] ? `<div>${split_into_lines(vuln_obj['description'], 30)}</div>` : '';
-		// show extracted results, and show matcher names, matcher names can be in badges
-		if (vuln_obj['matcher_name']) {
-			description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${vuln_obj['matcher_name']}</span>`;
-		}
-		if (vuln_obj['extracted_results'] && vuln_obj['extracted_results'].length > 0) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${vuln_obj['id']}" aria-expanded="false" aria-controls="results_${vuln_obj['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-			description += `<div class="collapse" id="results_${vuln_obj['id']}"><ul>`;
-			vuln_obj['extracted_results'].forEach(results => {
-				description += `<li>${results}</li>`;
-			});
-			description += '</ul></div>';
-		}
-		if (vuln_obj['references'] && vuln_obj['references'].length > 0) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${vuln_obj['id']}" aria-expanded="false" aria-controls="references_${vuln_obj['id']}">References <i class="fe-chevron-down"></i></a>`;
-			description += `<div class="collapse" id="references_${vuln_obj['id']}"><ul>`;
-			vuln_obj['references'].forEach(reference => {
-				description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
-			});
-			description += '</ul></div>';
-		}
-		if (vuln_obj['curl_command']) {
-			description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${vuln_obj['id']}" aria-expanded="false" aria-controls="curl_command_${vuln_obj['id']}">CURL command <i class="fe-terminal"></i></a>`;
-			description += `<div class="collapse" id="curl_command_${vuln_obj['id']}"><ul>`;
-			description += `<li><code>${split_into_lines(htmlEncode(vuln_obj['curl_command']), 30)}</code></li>`;
-			description += '</ul></div>';
-		}
 		var action_icon = vuln_obj['hackerone_report_id'] ? '' : `
 		<div class="btn-group mb-2 dropstart">
 		<a href="#" class="text-dark dropdown-toggle float-end" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -1255,7 +1227,6 @@ function render_vulnerability_in_xl_modal(vuln_count, subdomain_name, result) {
 			<td class="text-center">${cvss_score}</td>
 			<td>${cve_cwe_badge}</td>
 			<td>${http_url}</td>
-			<td>${description}</td>
 			<td>${action_icon}</td>
 			</tr>
 		`);
