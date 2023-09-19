@@ -958,12 +958,6 @@ function show_subscan_results(subscan_id) {
 			});
 			return;
 		}
-		// else if (response['subscan']['status'] == 1) {
-		// 	swal.fire("Error!", "Scan is in progress! Please come back later...", "warning", {
-		// 		button: "Okay",
-		// 	});
-		// 	return;
-		// }
 		$('#xl-modal-title').empty();
 		$('#xl-modal-content').empty();
 		$('#xl-modal-footer').empty();
@@ -980,7 +974,11 @@ function show_subscan_results(subscan_id) {
 		$('#xl-modal_title').html(`${task_name} Results on ${response['subscan']['subdomain_name']}`);
 		var scan_status = '';
 		var badge_color = 'danger';
-		if (response['subscan']['status'] == 0) {
+		if (response['subscan']['status'] == 1) {
+			var badge_color = 'info';
+			scan_status = 'Running';
+		}
+		else if (response['subscan']['status'] == 0) {
 			scan_status = 'Failed';
 		} else if (response['subscan']['status'] == 2) {
 			scan_status = 'Successful';
