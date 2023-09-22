@@ -17,7 +17,6 @@ from api.serializers import SubdomainSerializer
 from celery import chain, chord, group
 from celery.result import allow_join_result
 from celery.utils.log import get_task_logger
-from degoogle import degoogle
 from django.db.models import Count
 from dotted_dict import DottedDict
 from django.utils import timezone
@@ -589,18 +588,33 @@ def osint(self, host=None, ctx={}, description=None):
 	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
 	results = {}
 
-	if 'discover' in config:
-		ctx['track'] = False
-		results = osint_discovery(host=host, ctx=ctx)
-
-	# if 'dork' in config:
+	grouped_tasks = []
+	#
+	# if 'discover' in config:
 	# 	ctx['track'] = False
-	# 	results['dorks'] = dorking(host=host, ctx=ctx)
+	# 	results = osint_discovery(host=host, ctx=ctx)
 
-	with open(self.output_path, 'w') as f:
-		json.dump(results, f, indent=4)
+	if 'dork' in config:
+		_task = dorking.si(
+			config=config,
+			host=self.scan.domain.name,
+			scan_history_id=self.scan.id,
+			results_dir=self.results_dir
+		)
+		grouped_tasks.append(_task)
 
-	return results
+	celery_group = group(grouped_tasks)
+	job = celery_group.apply_async()
+	while not job.ready():
+		# wait for all jobs to complete
+		time.sleep(5)
+
+	logger.info('OSINT Tasks finished...')
+
+	# with open(self.output_path, 'w') as f:
+	# 	json.dump(results, f, indent=4)
+	#
+	# return results
 
 
 @app.task(name='osint_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
@@ -663,295 +677,217 @@ def osint_discovery(self, host=None, ctx={}):
 	return results
 
 
-@app.task(name='dorking', queue='main_scan_queue', base=RengineTask, bind=True)
-def dorking(self, host=None, ctx={}):
+@app.task(name='dorking', bind=False, queue='dorking_queue')
+def dorking(config, host, scan_history_id, results_dir):
 	"""Run Google dorks.
 
 	Args:
-		host (str): Hostname to scan.
+		config (dict): yaml_configuration
+		host (str): target name
+		scan_history_id (startScan.ScanHistory): Scan History ID
+		results_dir (str): Path to store scan results
 
 	Returns:
 		list: Dorking results for each dork ran.
 	"""
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
-	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
+	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	dorks = config.get(OSINT_DORK, [])
 	results = []
-	for dork in dorks:
-		if dork == 'stackoverflow':
-			dork_name = 'site:stackoverflow.com'
-			dork_type = 'stackoverflow'
-			results = get_and_save_dork_results(
-				dork,
-				dork_type,
-				host=host,
-				scan_history=self.scan,
-				in_target=False)
+	try:
+		for dork in dorks:
+			logger.info(f'Getting dork information for {dork}')
+			if dork == 'stackoverflow':
+				results = get_and_save_dork_results(
+					lookup_target='stackoverflow.com',
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords=host,
+					scan_history=scan_history
+				)
 
-		elif dork == '3rdparty' :
-			# look in 3rd party sitee
-			dork_type = '3rdparty'
-			lookup_websites = [
-				'gitter.im',
-				'papaly.com',
-				'productforums.google.com',
-				'coggle.it',
-				'replt.it',
-				'ycombinator.com',
-				'libraries.io',
-				'npm.runkit.com',
-				'npmjs.com',
-				'scribd.com',
-				'gitter.im'
-			]
-			dork_name = ''
-			for website in lookup_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=False)
-				results.extend(tmp_results)
+			elif dork == 'social_media' :
+				social_websites = [
+					'tiktok.com',
+					'facebook.com',
+					'twitter.com',
+					'youtube.com',
+					'pinterest.com',
+					'tumblr.com',
+					'reddit.com'
+				]
+				for site in social_websites:
+					results = get_and_save_dork_results(
+						lookup_target=site,
+						results_dir=results_dir,
+						type=dork,
+						lookup_keywords=host,
+						scan_history=scan_history
+					)
 
-		elif dork == 'social_media' :
-			dork_type = 'Social Media'
-			social_websites = [
-				'tiktok.com',
-				'facebook.com',
-				'twitter.com',
-				'youtube.com',
-				'pinterest.com',
-				'tumblr.com',
-				'reddit.com'
-			]
-			dork_name = ''
-			for website in social_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=False)
-				results.extend(tmp_results)
+			elif dork == 'project_management' :
+				project_websites = [
+					'trello.com',
+					'atlassian.net'
+				]
+				for site in project_websites:
+					results = get_and_save_dork_results(
+						lookup_target=site,
+						results_dir=results_dir,
+						type=dork,
+						lookup_keywords=host,
+						scan_history=scan_history
+					)
 
-		elif dork == 'project_management' :
-			dork_type = 'Project Management'
-			project_websites = [
-				'trello.com',
-				'*.atlassian.net'
-			]
-			dork_name = ''
-			for website in project_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=False)
-				results.extend(tmp_results)
+			elif dork == 'code_sharing' :
+				project_websites = [
+					'github.com',
+					'gitlab.com',
+					'bitbucket.org'
+				]
+				for site in project_websites:
+					results = get_and_save_dork_results(
+						lookup_target=site,
+						results_dir=results_dir,
+						type=dork,
+						lookup_keywords=host,
+						scan_history=scan_history
+					)
 
-		elif dork == 'code_sharing' :
-			dork_type = 'Code Sharing Sites'
-			code_websites = [
-				'github.com',
-				'gitlab.com',
-				'bitbucket.org'
-			]
-			dork_name = ''
-			for website in code_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=False)
-				results.extend(tmp_results)
+			elif dork == 'config_files' :
+				config_file_exts = [
+					'env',
+					'xml',
+					'conf',
+					'toml',
+					'yml',
+					'yaml',
+					'cnf',
+					'inf',
+					'rdp',
+					'ora',
+					'txt',
+					'cfg',
+					'ini'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_extensions=','.join(config_file_exts),
+					page_count=4,
+					scan_history=scan_history
+				)
 
-		elif dork == 'config_files' :
-			dork_type = 'Config Files'
-			config_file_ext = [
-				'env',
-				'xml',
-				'conf',
-				'cnf',
-				'inf',
-				'rdp',
-				'ora',
-				'txt',
-				'cfg',
-				'ini'
-			]
+			elif dork == 'jenkins' :
+				lookup_keyword = 'Jenkins'
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords=lookup_keyword,
+					page_count=1,
+					scan_history=scan_history
+				)
 
-			dork_name = ''
-			results = []
-			for extension in config_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
+			elif dork == 'wordpress_files' :
+				lookup_keywords = [
+					'/wp-content/',
+					'/wp-includes/'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords=','.join(lookup_keywords),
+					page_count=5,
+					scan_history=scan_history
+				)
 
-		if dork == 'jenkins' :
-			dork_type = 'Jenkins'
-			dork_name = 'intitle:\"Dashboard [Jenkins]\"'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				host=host,
-				scan_history=self.scan,
-				in_target=True)
-			results.extend(tmp_results)
+			elif dork == 'php_error' :
+				lookup_keywords = [
+					'PHP Parse error',
+					'PHP Warning',
+					'PHP Error'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords=','.join(lookup_keywords),
+					page_count=5,
+					scan_history=scan_history
+				)
 
-		elif dork == 'wordpress_files' :
-			dork_type = 'Wordpress Files'
-			inurl_lookup = [
-				'wp-content',
-				'wp-includes'
-			]
-			dork_name = ''
-			for lookup in inurl_lookup:
-				dork_name = dork + ' | ' + 'inurl:' + lookup
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
+			elif dork == 'jenkins' :
+				lookup_keywords = [
+					'PHP Parse error',
+					'PHP Warning',
+					'PHP Error'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords=','.join(lookup_keywords),
+					page_count=5,
+					scan_history=scan_history
+				)
 
-		elif dork == 'cloud_buckets':
-			dork_type = 'Cloud Buckets'
-			cloud_websites = [
-				'.s3.amazonaws.com',
-				'storage.googleapis.com',
-				'amazonaws.com'
-			]
+			elif dork == 'exposed_documents' :
+				docs_file_ext = [
+					'doc',
+					'docx',
+					'odt',
+					'pdf',
+					'rtf',
+					'sxw',
+					'psw',
+					'ppt',
+					'pptx',
+					'pps',
+					'csv'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_extensions=','.join(docs_file_ext),
+					page_count=7,
+					scan_history=scan_history
+				)
 
-			dork_name = ''
-			for website in cloud_websites:
-				dork_name = dork + ' | ' + 'site:' + website
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=False)
-				results.extend(tmp_results)
+			elif dork == 'db_files' :
+				file_ext = [
+					'sql',
+					'db',
+					'dbf',
+					'mdb'
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_extensions=','.join(file_ext),
+					page_count=1,
+					scan_history=scan_history
+				)
 
-		elif dork == 'php_error':
-			dork_type = 'PHP Error'
-			error_words = [
-				'\"PHP Parse error\"',
-				'\"PHP Warning\"',
-				'\"PHP Error\"'
-			]
+			elif dork == 'git_exposed' :
+				file_ext = [
+					'git',
+				]
+				results = get_and_save_dork_results(
+					lookup_target=site,
+					results_dir=results_dir,
+					type=dork,
+					lookup_extensions=','.join(file_ext),
+					page_count=1,
+					scan_history=scan_history
+				)
 
-			dork_name = ''
-			for word in error_words:
-				dork_name = dork + ' | ' + word
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'exposed_documents':
-			dork_type = 'Exposed Documents'
-			docs_file_ext = [
-				'doc',
-				'docx',
-				'odt',
-				'pdf',
-				'rtf',
-				'sxw',
-				'psw',
-				'ppt',
-				'pptx',
-				'pps',
-				'csv'
-			]
-
-			dork_name = ''
-			for extension in docs_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'struts_rce':
-			dork_type = 'Apache Struts RCE'
-			struts_file_ext = [
-				'action',
-				'struts',
-				'do'
-			]
-
-			dork_name = ''
-			for extension in struts_file_ext:
-				dork_name = dork + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'db_files':
-			dork_type = 'Database Files'
-			db_file_ext = [
-				'sql',
-				'db',
-				'dbf',
-				'mdb'
-			]
-
-			dork_name = ''
-			for extension in db_file_ext:
-				dork_name = dork_name + ' | ' + 'ext:' + extension
-				tmp_results = get_and_save_dork_results(
-					dork_name[3:],
-					dork_type,
-					host=host,
-					scan_history=self.scan,
-					in_target=True)
-				results.extend(tmp_results)
-
-		elif dork == 'traefik':
-			dork_name = 'intitle:traefik inurl:8080/dashboard'
-			dork_type = 'Traefik'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				host=host,
-				scan_history=self.scan,
-				in_target=True)
-			results.extend(tmp_results)
-
-		elif dork == 'git_exposed':
-			dork_name = 'inurl:\"/.git\"'
-			dork_type = '.git Exposed'
-			tmp_results = get_and_save_dork_results(
-				dork_name,
-				dork_type,
-				host=host,
-				scan_history=self.scan,
-				in_target=True)
-			results.extend(tmp_results)
+	except Exception as e:
+		logger.exception(e)
 	return results
 
 
@@ -4127,32 +4063,58 @@ def extract_httpx_url(line):
 # OSInt utils #
 #-------------#
 
-def get_and_save_dork_results(dork, type, host=None, scan_history=None, in_target=False):
-	degoogle_obj = degoogle.dg()
-	get_random_proxy()
-	host = scan_history.domain.name if scan_history else host
-	if in_target:
-		query = f'{dork} site:{host}'
-	else:
-		query = f'{dork} \"{host}\"'
-	degoogle_obj.query = query
-	logger.info(f'Running degoogle with query "{query}" ...')
-	results = degoogle_obj.run()
-	dorks = []
-	if not results:
-		logger.warning('No data recovered from degoogle.')
-		return []
-	for result in results:
-		dork, created = Dork.objects.get_or_create(
-			type=type,
-			description=result['desc'],
-			url=result['url']
+def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=None, lookup_extensions=None, delay=3, page_count=2, scan_history=None):
+	"""
+		Uses gofuzz to dork and store information
+
+		Args:
+			lookup_target (str): target to look into such as stackoverflow or even the target itself
+			results_dir (str): Results directory
+			type (str): Dork Type Title
+			lookup_keywords (str): comma separated keywords or paths to look for
+			lookup_extensions (str): comma separated extensions to look for
+			delay (int): delay between each requests
+			page_count (int): pages in google to extract information
+			scan_history (startScan.ScanHistory): Scan History Object
+	"""
+	results = []
+	gofuzz_command = f'{GOFUZZ_EXEC_PATH} -t {lookup_target} -d {delay} -p {page_count}'
+
+	if lookup_extensions:
+		gofuzz_command += f' -e {lookup_extensions}'
+	elif lookup_keywords:
+		gofuzz_command += f' -w {lookup_keywords}'
+
+	output_file = f'{results_dir}/gofuzz.txt'
+	gofuzz_command += f' -o {output_file}'
+	history_file = f'{results_dir}/commands.txt'
+
+	try:
+		run_command(
+			gofuzz_command,
+			shell=False,
+			history_file=history_file,
+			scan_id=scan_history.id,
 		)
-		if created:
-			logger.warning(f'Found dork {dork}')
-		if scan_history:
-			scan_history.dorks.add(dork)
-		dorks.append(dork)
+
+		if not os.path.isfile(output_file):
+			return
+
+		with open(output_file) as f:
+			for line in f.readlines():
+				url = line.strip()
+				if url:
+					results.append(url)
+					dork, created = Dork.objects.get_or_create(
+						type=type,
+						url=url
+					)
+					if scan_history:
+						scan_history.dorks.add(dork)
+
+	except Exception as e:
+		logger.exception(e)
+
 	return results
 
 

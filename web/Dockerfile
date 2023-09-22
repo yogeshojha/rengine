@@ -40,7 +40,8 @@ RUN apt install -y  --no-install-recommends \
     nmap \
     x11-utils \
     xvfb \
-    wget
+    wget \
+    curl
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz

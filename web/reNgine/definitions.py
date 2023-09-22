@@ -475,3 +475,7 @@ ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT = """
     Please provide a detailed list of these attack types and their underlying technical rationales on every attacks you suggested.
     Also suggest if any CVE ID, known exploits, existing vulnerabilities, any news articles URL related to the information provided to you.
 """
+
+
+# OSINT GooFuzz Path
+GOFUZZ_EXEC_PATH = '/usr/src/github/goofuzz/GooFuzz'

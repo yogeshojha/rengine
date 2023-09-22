@@ -626,7 +626,6 @@ class Employee(models.Model):
 class Dork(models.Model):
 	id = models.AutoField(primary_key=True)
 	type = models.CharField(max_length=500, null=True, blank=True)
-	description = models.CharField(max_length=1500, null=True, blank=True)
 	url = models.CharField(max_length=10000, null=True, blank=True)
 
 

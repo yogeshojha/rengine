@@ -123,6 +123,14 @@ then
   git clone https://github.com/UnaPibaGeek/ctfr /usr/src/github/ctfr
 fi
 
+# clone gooFuzz
+if [ ! -d "/usr/src/github/goofuzz" ]
+then
+  echo "Cloning GooFuzz"
+  git clone https://github.com/m3n0sd0n4ld/GooFuzz.git /usr/src/github/goofuzz
+  chmod +x /usr/src/github/goofuzz/GooFuzz
+fi
+
 exec "$@"
 
 # httpx seems to have issue, use alias instead!!!
@@ -147,5 +155,6 @@ watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/re
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=50 --loglevel=info -Q run_command_queue -n run_command_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q query_reverse_whois_queue -n query_reverse_whois_worker &
 watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q query_ip_history_queue -n query_ip_history_worker &
-watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q gpt_queue -n gpt_worker
+watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=30 --loglevel=info -Q gpt_queue -n gpt_worker &
+watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --pool=gevent --concurrency=10 --loglevel=info -Q dorking_queue -n dorking_worker
 exec "$@"
