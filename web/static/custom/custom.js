@@ -1,4 +1,4 @@
-$(document).ready(function() {
+/* $(document).ready(function() {
 	$.extend( true, $.fn.dataTable.defaults, {
 		"bAutoWidth": false,
 		responsive: {
@@ -10,7 +10,7 @@ $(document).ready(function() {
 		},
 		searching: false,
 	});
-});
+}); */
 
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);

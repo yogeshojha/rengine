@@ -383,7 +383,7 @@ mark{
   padding-right: 0.8rem !important;
 }
 
-.table-responsive ul.dtr-details {
+/* .table-responsive ul.dtr-details {
   width: 100%;
   padding-left: 50px !important;
   padding-right: 10px !important;
@@ -404,4 +404,4 @@ mark{
 .table-responsive span.dtr-data {
   padding-left: 15px;
   display: block;
-}
+} */
