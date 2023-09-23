@@ -1983,7 +1983,6 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 
 	if should_run_s3scanner:
 		_task = s3scanner.si(
-			urls=urls,
 			ctx=ctx,
 			description=f'Misconfigured S3 Scanner'
 		)
@@ -2639,7 +2638,7 @@ def s3scanner(self, ctx={}, description=None):
 			if not isinstance(line, dict):
 				continue
 
-			if line['bucket']['exists'] == 1:
+			if line.get('bucket', {}).get('exists', 0) == 1:
 				result = parse_s3scanner_result(line)
 				s3bucket, created = S3Bucket.objects.get_or_create(**result)
 				scan_history.buckets.add(s3bucket)
