@@ -589,10 +589,18 @@ def osint(self, host=None, ctx={}, description=None):
 	results = {}
 
 	grouped_tasks = []
-	#
-	# if 'discover' in config:
-	# 	ctx['track'] = False
-	# 	results = osint_discovery(host=host, ctx=ctx)
+
+	if 'discover' in config:
+		ctx['track'] = False
+		# results = osint_discovery(host=host, ctx=ctx)
+		_task = osint_discovery.si(
+			config=config,
+			host=self.scan.domain.name,
+			scan_history_id=self.scan.id,
+			activity_id=self.activity_id,
+			results_dir=self.results_dir
+		)
+		grouped_tasks.append(_task)
 
 	if OSINT_DORK in config or OSINT_CUSTOM_DORK in config:
 		_task = dorking.si(
@@ -617,17 +625,20 @@ def osint(self, host=None, ctx={}, description=None):
 	# return results
 
 
-@app.task(name='osint_discovery', queue='main_scan_queue', base=RengineTask, bind=True)
-def osint_discovery(self, host=None, ctx={}):
-	"""Run OSInt discovery.
+@app.task(name='osint_discovery', queue='osint_discovery_queue', bind=False)
+def osint_discovery(config, host, scan_history_id, activity_id, results_dir):
+	"""Run OSINT discovery.
 
 	Args:
-		host (str): Hostname to scan.
+		config (dict): yaml_configuration
+		host (str): target name
+		scan_history_id (startScan.ScanHistory): Scan History ID
+		results_dir (str): Path to store scan results
 
 	Returns:
 		dict: osint metadat and theHarvester and h8mail results.
 	"""
-	config = self.yaml_configuration.get(OSINT) or OSINT_DEFAULT_CONFIG
+	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	osint_lookup = config.get(OSINT_DISCOVER, [])
 	osint_intensity = config.get(INTENSITY, 'normal')
 	documents_limit = config.get(OSINT_DOCUMENTS_LIMIT, 50)
@@ -635,41 +646,42 @@ def osint_discovery(self, host=None, ctx={}):
 	meta_info = []
 	emails = []
 	creds = []
-	host = self.domain.name if self.domain else host
 
 	# Get and save meta info
 	if 'metainfo' in osint_lookup:
 		if osint_intensity == 'normal':
 			meta_dict = DottedDict({
 				'osint_target': host,
-				'domain': self.domain if self.domain else host,
-				'scan_id': self.scan_id,
+				'domain': host,
+				'scan_id': scan_history_id,
 				'documents_limit': documents_limit
 			})
 			meta_info.append(save_metadata_info(meta_dict))
-		elif osint_intensity == 'deep':
-			subdomains = Subdomain.objects
-			if self.scan:
-				subdomains = subdomains.filter(scan_history=self.scan)
-			for subdomain in subdomains:
-				meta_dict = DottedDict({
-					'osint_target': subdomain.name,
-					'domain': self.domain,
-					'scan_id': self.scan_id,
-					'documents_limit': documents_limit
-				})
-				meta_info.append(save_metadata_info(meta_dict))
+
+		# TODO: disabled for now
+		# elif osint_intensity == 'deep':
+		# 	subdomains = Subdomain.objects
+		# 	if self.scan:
+		# 		subdomains = subdomains.filter(scan_history=self.scan)
+		# 	for subdomain in subdomains:
+		# 		meta_dict = DottedDict({
+		# 			'osint_target': subdomain.name,
+		# 			'domain': self.domain,
+		# 			'scan_id': self.scan_id,
+		# 			'documents_limit': documents_limit
+		# 		})
+		# 		meta_info.append(save_metadata_info(meta_dict))
 
 	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(self.scan, self.activity_id, self.results_dir)
+		emails = get_and_save_emails(scan_history, activity_id, results_dir)
 		emails_str = '\n'.join([f'• `{email}`' for email in emails])
-		self.notify(fields={'Emails': emails_str})
-		ctx['track'] = False
-		creds = h8mail(ctx=ctx)
+		# self.notify(fields={'Emails': emails_str})
+		# ctx['track'] = False
+		# creds = h8mail(ctx=ctx)
 
-	if 'employees' in osint_lookup:
-		ctx['track'] = False
-		results = theHarvester(host=host, ctx=ctx)
+	# if 'employees' in osint_lookup:
+		# ctx['track'] = False
+		# results = theHarvester(host=host, ctx=ctx)
 
 	results['emails'] = results.get('emails', []) + emails
 	results['creds'] = creds
