@@ -383,25 +383,25 @@ mark{
   padding-right: 0.8rem !important;
 }
 
-ul.dtr-details {
+/* .table-responsive ul.dtr-details {
   width: 100%;
   padding-left: 50px !important;
   padding-right: 10px !important;
 }
 
-ul.dtr-details li {
+.table-responsive ul.dtr-details li {
   text-align: left !important;
 }
 
-tr.child {
+.table-responsive tr.child {
   box-shadow: inset 0px 0px 2px rgba(0,0,0,0.4);
 }
 
-tr.dt-hasChild {
+.table-responsive tr.parent {
   background-color: #efefef !important;
 }
 
-span.dtr-data {
+.table-responsive span.dtr-data {
   padding-left: 15px;
   display: block;
-}
+} */

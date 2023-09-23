@@ -1,16 +1,16 @@
-$(document).ready(function() {
-	Object.assign(DataTable.defaults, {
-			"bAutoWidth": false,
-			responsive: {
-				details: {
-					display: DataTable.Responsive.display.childRowImmediate,
-					target: '',
-					type: 'none'
-				}
-			},
-			searching: false,
+/* $(document).ready(function() {
+	$.extend( true, $.fn.dataTable.defaults, {
+		"bAutoWidth": false,
+		responsive: {
+			details: {
+				display: $.fn.dataTable.Responsive.display.childRowImmediate,
+				target: '',
+				type: 'none'
+			}
+		},
+		searching: false,
 	});
-});
+}); */
 
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);
