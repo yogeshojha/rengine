@@ -598,7 +598,8 @@ def osint(self, host=None, ctx={}, description=None):
 			host=self.scan.domain.name,
 			scan_history_id=self.scan.id,
 			activity_id=self.activity_id,
-			results_dir=self.results_dir
+			results_dir=self.results_dir,
+			ctx=ctx
 		)
 		grouped_tasks.append(_task)
 
@@ -626,7 +627,7 @@ def osint(self, host=None, ctx={}, description=None):
 
 
 @app.task(name='osint_discovery', queue='osint_discovery_queue', bind=False)
-def osint_discovery(config, host, scan_history_id, activity_id, results_dir):
+def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx={}):
 	"""Run OSINT discovery.
 
 	Args:
@@ -672,20 +673,36 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir):
 		# 		})
 		# 		meta_info.append(save_metadata_info(meta_dict))
 
+	grouped_tasks = []
+
 	if 'emails' in osint_lookup:
 		emails = get_and_save_emails(scan_history, activity_id, results_dir)
 		emails_str = '\n'.join([f'• `{email}`' for email in emails])
 		# self.notify(fields={'Emails': emails_str})
 		# ctx['track'] = False
-		# creds = h8mail(ctx=ctx)
+		_task = h8mail.si(
+			config=config,
+			host=host,
+			scan_history_id=scan_history_id,
+			activity_id=activity_id,
+			results_dir=results_dir,
+			ctx=ctx
+		)
+		grouped_tasks.append(_task)
 
 	# if 'employees' in osint_lookup:
 		# ctx['track'] = False
 		# results = theHarvester(host=host, ctx=ctx)
 
-	results['emails'] = results.get('emails', []) + emails
-	results['creds'] = creds
-	results['meta_info'] = meta_info
+	celery_group = group(grouped_tasks)
+	job = celery_group.apply_async()
+	while not job.ready():
+		# wait for all jobs to complete
+		time.sleep(5)
+
+	# results['emails'] = results.get('emails', []) + emails
+	# results['creds'] = creds
+	# results['meta_info'] = meta_info
 	return results
 
 
@@ -1073,8 +1090,8 @@ def theHarvester(self, host=None, ctx={}):
 	return data
 
 
-@app.task(name='h8mail', queue='main_scan_queue', base=RengineTask, bind=True)
-def h8mail(self, input_path=None, ctx={}):
+@app.task(name='h8mail', queue='h8mail_queue', bind=False)
+def h8mail(config, host, scan_history_id, activity_id, results_dir, ctx={}):
 	"""Run h8mail.
 
 	Args:
@@ -1084,18 +1101,18 @@ def h8mail(self, input_path=None, ctx={}):
 		list[dict]: List of credentials info.
 	"""
 	logger.warning('Getting leaked credentials')
-	results_dir = self.results_dir
-	scan = self.scan
-	input_path = input_path if input_path else f'{self.results_dir}/emails.txt'
-	output_path = self.output_path
-	cmd = f'h8mail -t {input_path} --json {output_path}'
+	scan_history = ScanHistory.objects.get(pk=scan_history_id)
+	input_path = f'{results_dir}/emails.txt'
+	output_file = f'{results_dir}/h8mail.json'
+
+	cmd = f'h8mail -t {input_path} --json {output_file}'
 	history_file = f'{results_dir}/commands.txt'
 
 	run_command(
 		cmd,
 		history_file=history_file,
-		scan_id=self.scan_id,
-		activity_id=self.activity_id)
+		scan_id=scan_history_id,
+		activity_id=activity_id)
 
 	with open(output_path) as f:
 		data = json.load(f)
@@ -1108,8 +1125,8 @@ def h8mail(self, input_path=None, ctx={}):
 		pwn_num = cred['pwn_num']
 		pwn_data = cred.get('data', [])
 		email, created = save_email(email_address, scan_history=scan)
-		if email:
-			self.notify(fields={'Emails': f'• `{email.address}`'})
+		# if email:
+		# 	self.notify(fields={'Emails': f'• `{email.address}`'})
 	return creds
 
 
