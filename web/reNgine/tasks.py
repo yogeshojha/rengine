@@ -690,9 +690,17 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx
 		)
 		grouped_tasks.append(_task)
 
-	# if 'employees' in osint_lookup:
-		# ctx['track'] = False
-		# results = theHarvester(host=host, ctx=ctx)
+	if 'employees' in osint_lookup:
+		ctx['track'] = False
+		_task = theHarvester.si(
+			config=config,
+			host=host,
+			scan_history_id=scan_history_id,
+			activity_id=activity_id,
+			results_dir=results_dir,
+			ctx=ctx
+		)
+		grouped_tasks.append(_task)
 
 	celery_group = group(grouped_tasks)
 	job = celery_group.apply_async()
@@ -975,26 +983,26 @@ def dorking(config, host, scan_history_id, results_dir):
 	return results
 
 
-@app.task(name='theHarvester', queue='main_scan_queue', base=RengineTask, bind=True)
-def theHarvester(self, host=None, ctx={}):
+@app.task(name='theHarvester', queue='theHarvester_queue', bind=False)
+def theHarvester(config, host, scan_history_id, activity_id, results_dir, ctx={}):
 	"""Run theHarvester to get save emails, hosts, employees found in domain.
 
 	Args:
-		host (str): Hostname to scan.
+		config (dict): yaml_configuration
+		host (str): target name
+		scan_history_id (startScan.ScanHistory): Scan History ID
+		activity_id: ScanActivity ID
+		results_dir (str): Path to store scan results
+		ctx (dict): context of scan
 
 	Returns:
 		dict: Dict of emails, employees, hosts and ips found during crawling.
 	"""
-	config = self.yaml_configuration.get(OSINT) or {}
+	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
-	host = self.domain.name if self.domain else host
-	if not host:
-		logger.error('No host found in context.')
-		return {}
-
-	output_path_json = self.output_path.replace('.txt', '.json')
+	output_path_json = f'{results_dir}/theHarvester.json'
 	theHarvester_dir = '/usr/src/github/theHarvester'
-	history_file = f'{self.results_dir}/commands.txt'
+	history_file = f'{results_dir}/commands.txt'
 	cmd  = f'python3 {theHarvester_dir}/theHarvester.py -d {host} -b all -f {output_path_json}'
 
 	# Update proxies.yaml
@@ -1013,8 +1021,8 @@ def theHarvester(self, host=None, ctx={}):
 		shell=False,
 		cwd=theHarvester_dir,
 		history_file=history_file,
-		scan_id=self.scan_id,
-		activity_id=self.activity_id)
+		scan_id=scan_history_id,
+		activity_id=activity_id)
 
 	# Get file location
 	if not os.path.isfile(output_path_json):
@@ -1031,27 +1039,27 @@ def theHarvester(self, host=None, ctx={}):
 
 	emails = data.get('emails', [])
 	for email_address in emails:
-		email, _ = save_email(email_address, scan_history=self.scan)
-		if email:
-			self.notify(fields={'Emails': f'• `{email.address}`'})
+		email, _ = save_email(email_address, scan_history=scan_history)
+		# if email:
+		# 	self.notify(fields={'Emails': f'• `{email.address}`'})
 
 	linkedin_people = data.get('linkedin_people', [])
 	for people in linkedin_people:
 		employee, _ = save_employee(
 			people,
 			designation='linkedin',
-			scan_history=self.scan)
-		if employee:
-			self.notify(fields={'LinkedIn people': f'• {employee.name}'})
+			scan_history=scan_history)
+		# if employee:
+		# 	self.notify(fields={'LinkedIn people': f'• {employee.name}'})
 
 	twitter_people = data.get('twitter_people', [])
 	for people in twitter_people:
 		employee, _ = save_employee(
 			people,
 			designation='twitter',
-			scan_history=self.scan)
-		if employee:
-			self.notify(fields={'Twitter people': f'• {employee.name}'})
+			scan_history=scan_history)
+		# if employee:
+		# 	self.notify(fields={'Twitter people': f'• {employee.name}'})
 
 	hosts = data.get('hosts', [])
 	urls = []
@@ -1065,13 +1073,13 @@ def theHarvester(self, host=None, ctx={}):
 			crawl=False,
 			ctx=ctx,
 			subdomain=subdomain)
-		if endpoint:
-			urls.append(endpoint.http_url)
-			self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
+		# if endpoint:
+		# 	urls.append(endpoint.http_url)
+			# self.notify(fields={'Hosts': f'• {endpoint.http_url}'})
 
-	if enable_http_crawl:
-		ctx['track'] = False
-		http_crawl(urls, ctx=ctx)
+	# if enable_http_crawl:
+	# 	ctx['track'] = False
+	# 	http_crawl(urls, ctx=ctx)
 
 	# TODO: Lots of ips unrelated with our domain are found, disabling
 	# this for now.
@@ -1095,7 +1103,12 @@ def h8mail(config, host, scan_history_id, activity_id, results_dir, ctx={}):
 	"""Run h8mail.
 
 	Args:
-		input_path (str): Emails input file.
+		config (dict): yaml_configuration
+		host (str): target name
+		scan_history_id (startScan.ScanHistory): Scan History ID
+		activity_id: ScanActivity ID
+		results_dir (str): Path to store scan results
+		ctx (dict): context of scan
 
 	Returns:
 		list[dict]: List of credentials info.
@@ -1114,7 +1127,7 @@ def h8mail(config, host, scan_history_id, activity_id, results_dir, ctx={}):
 		scan_id=scan_history_id,
 		activity_id=activity_id)
 
-	with open(output_path) as f:
+	with open(output_file) as f:
 		data = json.load(f)
 		creds = data.get('targets', [])
 
