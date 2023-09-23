@@ -629,10 +629,10 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 function get_interesting_endpoints(project, target_id, scan_history_id) {
 	var non_orderable_targets = [];
 	if (target_id) {
-		url = `/api/listInterestingEndpoints/?project={project}&target_id=${target_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&target_id=${target_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	} else if (scan_history_id) {
-		url = `/api/listInterestingEndpoints/?project={project}&scan_id=${scan_history_id}&format=datatables`;
+		url = `/api/listInterestingEndpoints/?project=${project}&scan_id=${scan_history_id}&format=datatables`;
 		// non_orderable_targets = [0, 1, 2, 3];
 	}
 	$('#interesting_endpoints').DataTable({
