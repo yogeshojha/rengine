@@ -594,7 +594,7 @@ def osint(self, host=None, ctx={}, description=None):
 	# 	ctx['track'] = False
 	# 	results = osint_discovery(host=host, ctx=ctx)
 
-	if 'dork' in config:
+	if OSINT_DORK in config or OSINT_CUSTOM_DORK in config:
 		_task = dorking.si(
 			config=config,
 			host=self.scan.domain.name,
@@ -693,7 +693,34 @@ def dorking(config, host, scan_history_id, results_dir):
 	# Some dork sources: https://github.com/six2dez/degoogle_hunter/blob/master/degoogle_hunter.sh
 	scan_history = ScanHistory.objects.get(pk=scan_history_id)
 	dorks = config.get(OSINT_DORK, [])
+	custom_dorks = config.get(OSINT_CUSTOM_DORK, [])
 	results = []
+	# custom dorking has higher priority
+	try:
+		for custom_dork in custom_dorks:
+			lookup_target = custom_dork.get('lookup_site')
+			# replace with original host if $target$
+			lookup_target = host if lookup_target == '_target_' else lookup_target
+			if 'lookup_extensions' in custom_dork:
+				results = get_and_save_dork_results(
+					lookup_target=lookup_target,
+					results_dir=results_dir,
+					type='custom_dork',
+					lookup_extensions=custom_dork.get('lookup_extensions'),
+					scan_history=scan_history
+				)
+			elif 'lookup_keywords' in custom_dork:
+				results = get_and_save_dork_results(
+					lookup_target=lookup_target,
+					results_dir=results_dir,
+					type='custom_dork',
+					lookup_keywords=custom_dork.get('lookup_keywords'),
+					scan_history=scan_history
+				)
+	except Exception as e:
+		logger.exception(e)
+
+	# default dorking
 	try:
 		for dork in dorks:
 			logger.info(f'Getting dork information for {dork}')
