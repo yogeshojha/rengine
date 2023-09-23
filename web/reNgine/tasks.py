@@ -712,8 +712,6 @@ def dorking(config, host, scan_history_id, results_dir):
 					'facebook.com',
 					'twitter.com',
 					'youtube.com',
-					'pinterest.com',
-					'tumblr.com',
 					'reddit.com'
 				]
 				for site in social_websites:
@@ -771,7 +769,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'ini'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_extensions=','.join(config_file_exts),
@@ -782,7 +780,7 @@ def dorking(config, host, scan_history_id, results_dir):
 			elif dork == 'jenkins' :
 				lookup_keyword = 'Jenkins'
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_keywords=lookup_keyword,
@@ -796,7 +794,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'/wp-includes/'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_keywords=','.join(lookup_keywords),
@@ -811,7 +809,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'PHP Error'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_keywords=','.join(lookup_keywords),
@@ -826,7 +824,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'PHP Error'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_keywords=','.join(lookup_keywords),
@@ -849,7 +847,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'csv'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_extensions=','.join(docs_file_ext),
@@ -865,7 +863,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'mdb'
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_extensions=','.join(file_ext),
@@ -878,7 +876,7 @@ def dorking(config, host, scan_history_id, results_dir):
 					'git',
 				]
 				results = get_and_save_dork_results(
-					lookup_target=site,
+					lookup_target=host,
 					results_dir=results_dir,
 					type=dork,
 					lookup_extensions=','.join(file_ext),
@@ -4111,6 +4109,9 @@ def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=
 					)
 					if scan_history:
 						scan_history.dorks.add(dork)
+
+		# remove output file
+		os.remove(output_file)
 
 	except Exception as e:
 		logger.exception(e)
