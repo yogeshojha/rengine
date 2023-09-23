@@ -706,6 +706,36 @@ def dorking(config, host, scan_history_id, results_dir):
 					scan_history=scan_history
 				)
 
+			elif dork == 'login_pages':
+				results = get_and_save_dork_results(
+					lookup_target=host,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords='/login/,login.html',
+					page_count=5,
+					scan_history=scan_history
+				)
+
+			elif dork == 'admin_panels':
+				results = get_and_save_dork_results(
+					lookup_target=host,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords='/admin/,admin.html',
+					page_count=5,
+					scan_history=scan_history
+				)
+
+			elif dork == 'dashboard_pages':
+				results = get_and_save_dork_results(
+					lookup_target=host,
+					results_dir=results_dir,
+					type=dork,
+					lookup_keywords='/dashboard/,dashboard.html',
+					page_count=5,
+					scan_history=scan_history
+				)
+
 			elif dork == 'social_media' :
 				social_websites = [
 					'tiktok.com',
