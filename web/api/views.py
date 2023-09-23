@@ -1345,7 +1345,13 @@ class ListDorks(APIView):
 		if scan_id and type:
 			dork = dork.filter(type=type)
 		serializer = DorkSerializer(dork, many=True)
-		return Response({"dorks": serializer.data})
+		grouped_res = {}
+		for item in serializer.data:
+			item_type = item['type']
+			if item_type not in grouped_res:
+				grouped_res[item_type] = []
+			grouped_res[item_type].append(item)
+		return Response({"dorks": grouped_res})
 
 
 class ListEmployees(APIView):

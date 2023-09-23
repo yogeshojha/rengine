@@ -1088,6 +1088,22 @@ Scan Findings
 	{# OSINT Section #}
 	{% if 'osint' in history.tasks %}
 	<div class="tab-pane" id="osint-tab">
+		<div class="card" id="dorking_result_card">
+			<div class="card-body">
+				<h4 class="header-title mb-4">Dorking Results</h4>
+				<div class="row">
+					<div class="col-sm-3">
+						<div class="nav flex-column nav-pills nav-pills-tab" id="dork_type_vertical_tablist" role="tablist" aria-orientation="vertical">
+						</div>
+					</div>
+					<!-- end col-->
+					<div class="col-sm-9">
+						<div class="tab-content pt-0" id="dork_tab_content">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<div class="row">
 			<div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
 				<div class="card">
@@ -1151,29 +1167,6 @@ Scan Findings
 								</tr>
 							</thead>
 							<tbody id="metadata-table-body">
-							</tbody>
-						</table>
-					</div>
-				</div>
-			</div>
-			<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
-				<div class="card">
-					<div class="card-body">
-						<h4 class="header-title mb-0">
-							<span id="dorks-count">
-								<span class="spinner-border spinner-border-sm me-1"></span>
-							</span>
-							Dork Data
-						</h4>
-						<table class="table mt-3">
-							<thead class="table-light">
-								<tr>
-									<th><div class="th-content text-center">Dork Type</div></th>
-									<th><div class="th-content text-center">Description</div></th>
-									<th><div class="th-content">URL</div></th>
-								</tr>
-							</thead>
-							<tbody id="dorks-table-body">
 							</tbody>
 						</table>
 					</div>

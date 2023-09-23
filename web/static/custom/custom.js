@@ -522,7 +522,6 @@ function get_interesting_subdomains(project, target_id, scan_history_id) {
 		url = `/api/listInterestingSubdomains/?project=${project}&scan_id=${scan_history_id}&format=datatables`;
 		non_orderable_targets = [];
 	}
-	console.log(url);
 	var interesting_subdomain_table = $('#interesting_subdomains').DataTable({
 		"drawCallback": function(settings, start, end, max, total, pre) {
 			// if no interesting subdomains are found, hide the datatable and show no interesting subdomains found badge
@@ -3239,4 +3238,16 @@ async function show_attack_surface_modal(id){
 			text: 'Something went wrong!',
 		});
 	}
+}
+
+
+function convertToCamelCase(inputString) {
+	// Converts camel case string to title
+	// Split the input string by underscores
+	const words = inputString.split('_');
+
+	// Capitalize the first letter of each word and join them with a space
+	const camelCaseString = words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+	return camelCaseString;
 }

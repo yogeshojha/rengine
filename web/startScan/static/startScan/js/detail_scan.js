@@ -717,15 +717,6 @@ function get_screenshot(scan_id){
 }
 
 function get_metadata(scan_id){
-	// populate categories
-	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
-		for (var val in data['dorks']){
-			dork = data['dorks'][val]
-			$("#osint-categories-badge").append(`<span class='badge badge-soft-info  ml-1 mr-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
-		}
-		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-	});
-
 	// populate detail table
 	$.getJSON(`/api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#metadata-count').empty();
@@ -811,33 +802,48 @@ function get_employees(scan_id){
 
 
 function get_dorks(scan_id){
+	$("#dorking_result_card").hide();
 	$.getJSON(`/api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
-		$('#dorks-count').empty();
-		$('#dorks-table-body').empty();
-		for (var val in data['dorks']){
-			dork = data['dorks'][val];
-			rand_id = get_randid();
-			$('#dorks-table-body').append(`<tr id=${rand_id}></tr>`);
-			$(`#${rand_id}`).append(`<td class="td-content text-center">${dork['type']}</td>`);
-			$(`#${rand_id}`).append(`<td class="td-content">${truncate(dork['description'], 120)}</td>`);
-			$(`#${rand_id}`).append(`<td class="td-content"><a href="${dork['url']}" target="_blank" class="text-primary">${truncate(dork['url'], 60)}</a></td>`);
+		if ($.isEmptyObject(data['dorks'])) {
+			return
 		}
-		$('#dorks-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
+		// unhide div
+		$("#dorking_result_card").show();
+		var is_first = true;
+		for (var val in data['dorks']){
+			var dorks = data['dorks'][val];
+			if (is_first) {
+				active = 'active show';
+			}
+			else {
+				active = '';
+			}
+			$("#dork_type_vertical_tablist").append(`<a class="nav-link ${active} mb-1" id="v-${val}-tab" data-bs-toggle="pill" href="#v-${val}" role="tab" aria-controls="v-${val}" aria-selected="true"> ${convertToCamelCase(val)}</a>`);
+			// create tab content
+			var tab_content = `<div class="tab-pane fade ${active}" id="v-${val}" role="tabpanel" aria-labelledby="v-${val}-tab"><ul>`;
+			for (var dork in dorks) {
+				var dork_data = dorks[dork];
+				tab_content += `<li><a href="${dork_data.url}" target="_blank">${dork_data.url}</a></li>`;
+			}
+			tab_content += `</ul></div>`;
+			$('#dork_tab_content').append(tab_content);
+			is_first = false;
+		}
 	});
 }
 
-
-function get_dork_summary(scan_id){
-	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
-		$('#dork-category-count').empty();
-		for (var val in data['dorks']){
-			dork = data['dorks'][val]
-			$("#osint-dork").append(`<span class='badge badge-soft-info  m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
-		}
-		$('#dork-category-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
-		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-	});
-}
+//
+// function get_dork_summary(scan_id){
+// 	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
+// 		$('#dork-category-count').empty();
+// 		for (var val in data['dorks']){
+// 			dork = data['dorks'][val]
+// 			$("#osint-dork").append(`<span class='badge badge-soft-info  m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
+// 		}
+// 		$('#dork-category-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
+// 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+// 	});
+// }
 
 
 function get_dork_details(dork_type, scan_id){
