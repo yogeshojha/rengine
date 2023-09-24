@@ -38,16 +38,24 @@ RUN apt install -y  --no-install-recommends \
     libpcap-dev \
     netcat \
     nmap \
+    firefox \
     x11-utils \
     xvfb \
     wget \
-    curl
+    curl \
+    python3-netaddr
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
 RUN tar -xvf go1.20.linux-amd64.tar.gz
 RUN rm go1.20.linux-amd64.tar.gz
 RUN mv go /usr/local
+
+# Download geckodriver
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
+RUN tar -xvf geckodriver-v0.32.0-linux64.tar.gz
+RUN rm geckodriver-v0.32.0-linux64.tar.gz
+RUN mv geckodriver /usr/bin
 
 # Make directory for app
 WORKDIR /usr/src/app
@@ -85,6 +93,15 @@ RUN nuclei -update-templates
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools pip && \
     pip3 install -r /tmp/requirements.txt
+
+
+# install eyewitness
+
+RUN python3 -m pip install fuzzywuzzy \
+    selenium==4.9.1 \
+    python-Levenshtein \
+    pyvirtualdisplay \
+    netaddr
 
 # Copy source code
 COPY . /usr/src/app/
