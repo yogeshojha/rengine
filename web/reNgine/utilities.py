@@ -68,3 +68,14 @@ def get_gpt_vuln_input_description(title, path):
 	vulnerability_description += f'\nVulnerable URL: {path}'
 
 	return vulnerability_description
+
+
+def replace_nulls(obj):
+	if isinstance(obj, str):
+		return obj.replace("\x00", "")
+	elif isinstance(obj, list):
+		return [replace_nulls(item) for item in obj]
+	elif isinstance(obj, dict):
+		return {key: replace_nulls(value) for key, value in obj.items()}
+	else:
+		return obj

@@ -4336,6 +4336,9 @@ def save_vulnerability(**vuln_data):
 	tags = vuln_data.pop('tags', [])
 	subscan = vuln_data.pop('subscan', None)
 
+	# remove nulls
+	vuln_data = replace_nulls(vuln_data)
+
 	# Create vulnerability
 	vuln, created = Vulnerability.objects.get_or_create(**vuln_data)
 	if created:
@@ -4403,6 +4406,9 @@ def save_endpoint(
 		tuple: (startScan.models.EndPoint, created) where `created` is a boolean
 			indicating if the object is new or already existed.
 	"""
+	# remove nulls
+	endpoint_data = replace_nulls(endpoint_data)
+
 	scheme = urlparse(http_url).scheme
 	endpoint = None
 	created = False
