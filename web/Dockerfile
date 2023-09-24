@@ -38,12 +38,14 @@ RUN apt install -y  --no-install-recommends \
     libpcap-dev \
     netcat \
     nmap \
-    firefox \
     x11-utils \
     xvfb \
     wget \
     curl \
-    python3-netaddr
+    python3-netaddr \
+    software-properties-common
+
+RUN add-apt-repository ppa:mozillateam/ppa
 
 # Download and install go 1.20
 RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz

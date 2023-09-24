@@ -9,6 +9,18 @@ python3 manage.py loaddata fixtures/default_scan_engines.yaml --app scanEngine.E
 python3 manage.py loaddata fixtures/default_keywords.yaml --app scanEngine.InterestingLookupModel
 python3 manage.py loaddata fixtures/external_tools.yaml --app scanEngine.InstalledExternalTool
 
+# install firefox https://askubuntu.com/a/1404401
+echo '
+Package: *
+Pin: release o=LP-PPA-mozillateam
+Pin-Priority: 1001
+
+Package: firefox
+Pin: version 1:1snap1-0ubuntu2
+Pin-Priority: -1
+' | tee /etc/apt/preferences.d/mozilla-firefox
+apt install firefox -y
+
 # update whatportis
 yes | whatportis --update
 
