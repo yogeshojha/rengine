@@ -25,7 +25,7 @@
       \ 'remove_duplicate_endpoints': true,\r\n  'duplicate_fields': ['content_length',
       'page_title'],\r\n  'enable_http_crawl': true,\r\n  'gf_patterns': ['debug_logic',
       'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce',
-      'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],\r\n  'ignore_file_extension': ['png',
+      'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],\r\n  'ignore_file_extensions': ['png',
       'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']\r\n}\r\nvulnerability_scan: {\r\n
       \ 'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
       \ 'enable_http_crawl': false,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
