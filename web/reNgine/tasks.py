@@ -457,6 +457,8 @@ def subdomain_discovery(
 			elif tool == 'netlas':
 				results_file = self.results_dir + '/subdomains_netlas.txt'
 				cmd = f'netlas search -d domain -i domain domain:"*.{host}" -f json'
+				netlas_key = get_netlas_key()
+				cmd += f' -a {netlas_key}' if netlas_key else ''
 				cmd_extract = f"grep -oE '([a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?\.)+{host}'"
 				cmd += f' | {cmd_extract} > {results_file}'
 
@@ -3654,6 +3656,10 @@ def query_whois(ip_domain, force_reload_whois=False):
 			domain.save()
 
 		command = f'netlas host {ip_domain} -f json'
+		# check if netlas key is provided
+		netlas_key = get_netlas_key()
+		command += f' -a {netlas_key}' if netlas_key else ''
+
 		result = subprocess.check_output(command.split()).decode('utf-8')
 		if 'Failed to parse response data' in result:
 			# do fallback
