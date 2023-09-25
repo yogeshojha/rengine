@@ -1,3 +1,7 @@
+function getCurrentProjectSlug(){
+	return document.querySelector('input[name="current_project"]').value;
+}
+
 function checkall(clickchk, relChkbox) {
 	var checker = $('#' + clickchk);
 	var multichk = $('.' + relChkbox);
@@ -1511,7 +1515,6 @@ function get_domain_whois(domain_name, show_add_target_btn=false) {
 }
 
 function display_whois_on_modal(response, show_add_target_btn=false) {
-	console.log(response);
 	// this function will display whois data on modal, should be followed after get_domain_whois()
 	$('#modal_dialog').modal('show');
 	$('#modal-content').empty();
@@ -1871,12 +1874,12 @@ function add_quick_target() {
 	var domain_name = $('#target_name_modal').val();
 	var description = $('#target_description_modal').val();
 	var h1_handle = $('#h1_handle_modal').val();
-	var current_slug = document.querySelector('input[name="current_project"]').value;
-	add_target(domain_name, current_slug, h1_handle = h1_handle, description = description);
+	add_target(domain_name, h1_handle = h1_handle, description = description);
 }
 
 
-function add_target(domain_name, current_slug, h1_handle = null, description = null) {
+function add_target(domain_name, h1_handle = null, description = null) {
+	var current_slug = getCurrentProjectSlug();
 	// this function will add domain_name as target
 	console.log('Adding new target ' + domain_name)
 	const add_api = '/api/add/target/?format=json';
