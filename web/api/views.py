@@ -543,13 +543,17 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		slug = data.get('slug')
 
 		# Validate domain name
 		if not validators.domain(domain_name):
 			return Response({'status': False, 'message': 'Invalid domain or IP'})
 
+		project = Project.objects.get(slug=slug)
+
 		# Create domain object in DB
-		domain, _ = Domain.objets.get_or_create(name=domain_name)
+		domain, _ = Domain.objects.get_or_create(name=domain_name)
+		domain.project = project
 		domain.h1_team_handle = h1_team_handle
 		domain.description = description
 		if not domain.insert_date:

@@ -1871,18 +1871,20 @@ function add_quick_target() {
 	var domain_name = $('#target_name_modal').val();
 	var description = $('#target_description_modal').val();
 	var h1_handle = $('#h1_handle_modal').val();
-	add_target(domain_name, h1_handle = h1_handle, description = description);
+	var current_slug = document.querySelector('input[name="current_project"]').value;
+	add_target(domain_name, current_slug, h1_handle = h1_handle, description = description);
 }
 
 
-function add_target(domain_name, h1_handle = null, description = null) {
+function add_target(domain_name, current_slug, h1_handle = null, description = null) {
 	// this function will add domain_name as target
 	console.log('Adding new target ' + domain_name)
 	const add_api = '/api/add/target/?format=json';
 	const data = {
 		'domain_name': domain_name,
 		'h1_team_handle': h1_handle,
-		'description': description
+		'description': description,
+		'slug': current_slug
 	};
 	swal.queue([{
 		title: 'Add Target',
@@ -1916,7 +1918,7 @@ function add_target(domain_name, h1_handle = null, description = null) {
 						padding: '2em',
 						showLoaderOnConfirm: true,
 						preConfirm: function() {
-							window.location = `/scan/start/${data.domain_id}`;
+							window.location = `/scan/${current_slug}/start/${data.domain_id}`;
 						}
 					}]);
 				} else {
