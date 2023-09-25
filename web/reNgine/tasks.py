@@ -178,7 +178,6 @@ def initiate_scan(
 		port_scan.si(ctx=ctx, description='Port scan'),
 		fetch_url.si(ctx=ctx, description='Fetch URL'),
 		group(
-			s3scanner.si(ctx=ctx, description='S3 Buckets Scanner'),
 			dir_file_fuzz.si(ctx=ctx, description='Directories & files fuzz'),
 			vulnerability_scan.si(ctx=ctx, description='Vulnerability scan'),
 			screenshot.si(ctx=ctx, description='Screenshot'),
@@ -1984,7 +1983,7 @@ def vulnerability_scan(self, urls=[], ctx={}, description=None):
 	if should_run_s3scanner:
 		_task = s3scanner.si(
 			ctx=ctx,
-			description=f'Misconfigured S3 Scanner'
+			description=f'Misconfigured S3 Buckets Scanner'
 		)
 		grouped_tasks.append(_task)
 
@@ -4244,6 +4243,10 @@ def get_and_save_emails(scan_history, activity_id, results_dir):
 			history_file=history_file,
 			scan_id=scan_history.id,
 			activity_id=activity_id)
+
+		if not os.path.isfile(output_file):
+			logger.info('No Email results')
+			return []
 
 		with open(output_file) as f:
 			for line in f.readlines():
