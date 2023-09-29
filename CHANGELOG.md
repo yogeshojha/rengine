@@ -30,11 +30,11 @@
  - Added Dalfox for XSS Vulnerability Scan
  - Added CRLFuzz for CRLF Vulnerability Scan
  - Added S3Scanner for scanning misconfigured S3 buckets
- - Improve OSINT Dork results, now detects login pages and dashboard pages
- - Added Option for Custom Dorks
+ - Improve OSINT Dork results, now detects admin panels, login pages and dashboards
+ - Added Custom Dorks
  - Improved UI for vulnerability results, clicking on each vulnerability will open up a sidebar with vulnerability details.
  - Added HTTP Request and Response in vulnerability Results
- - Uder Admin Settings, added option to allow add/remove/deactivate additional users
+ - Under Admin Settings, added an option to allow add/remove/deactivate additional users
  - Added Option to Preview Scan Report instead of forcing to download
  - Added Katana for crawling and spidering URLs
  - Added Netlas for Whois and subdomain gathering
