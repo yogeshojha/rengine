@@ -1,5 +1,44 @@
 # Changelog
 
+
+## 2.0.0
+
+**Release Date: Sept 30, 2023**
+
+###  Added
+ - Projects: Projects allows you to efficiently organize their web application reconnaissance efforts. With this feature, you can create distinct project spaces, each tailored to a specific purpose, such as personal bug bounty hunting, client engagements, or any other specialized recon task.
+ - Roles and Permissions: assign distinct roles to your team members: Sys Admin, Penetration Tester, and Auditor—each with precisely defined permissions to tailor their access and actions within the reNgine ecosystem.
+ - GPT powered Report Generation: With the power of OpenAI's GPT, reNgine now provides you with detailed vulnerability descriptions, remediation strategies, and impact assessments.
+ - API Vault: This feature allows you to organize your API keys such as OpenAI or Netlas API keys.
+ - GPT powered Attack Surface Generation
+ - URLs gathering now is much more efficient, removes duplicate endpoints based on similar HTTP Response, having same content_lenth, or page_title. Custom duplicate fields can also be set from scan engine configuration.
+ - URL Path filtering while initiating scan: For instance, if we want to scan only endpoints starting with https://example.com/start/, we can pass the /start as a path filter while starting the scan. @ocervell
+ - Expanding Target Concept: reNgine 2.0 now accepts IPs, URLS, etc as targets. (#678, #658) Excellent work by @ocervell
+ - A ton of refactoring on reNgine's core to improve scan efficiency. Massive kudos to @ocervell
+ - Created a custom celery workflow to be able to run several tasks on parallel that are not dependent on each other, such OSINT task and subdomain discovery will run in parallel, and directory and file fuzzing, vulnerability scan, screenshot gathering etc will run in parallel after port scan or url fetching is completed. This will increase the efficiency of scans and instead of having one long flow of tasks, they can run independently on their own. @ocervell
+ - Refactored all tasks to run asynchronously @ocervell
+ - Added a stream_command that allows to read the output of a command live: this means the UI is updated with results while the command runs and does not have to wait until the task completes. Excellent work by @ocervell
+ - Pwndb is now replaced by h8mail. @ocervell
+ - Group Scan Results: reNgine 2.0 allows to group subdomains based on similar page titles and http status, and also vulnerability grouping based on same vulnerability title and severity.
+ - Added Support for nmap: reNgine 2.0 allows to run nmap scripts and vuln scans on ports found by naabu. @ocervell
+ - Added support for Shared Scan Variables in Scan Engine Configuration:
+    - `enable_http_crawl`: (true/false) You can disable it to be more stealthy or focus on something different than HTTP
+    - `timeout`: set timeout for all tasks
+    - `rate_limit` : set rate limit for all tasks
+    - `retries`: set retries for all tasks
+    - `custom_header`: set custom header for all tasks
+
+
+### Fixes
+ - GF patterns do not run on 404 endpoints (#574 closed)
+ - Fixes for retrieving whois data (#693 closed)
+ -
+
+
+### Removed
+ - Removed pwndb and tor related to it.
+
+
 ## 1.3.6
 **Release Date: March 2, 2023**
 
@@ -15,21 +54,21 @@
 ## 1.3.4
 **Release Date: November 16, 2022**
 
-# Fixes
+### Fixes
 - Fixed #748 , #743 , #738, #739
 
 
 ## 1.3.3
 **Release Date: October 9, 2022**
 
-# Fixes
+### Fixes
 - #723, Upgraded Go to 1.18.2
 
 
 ## 1.3.2
 **Release Date: August 20, 2022**
 
-# Fixes
+### Fixes
 - #683 For Filtering GF tags
 - #669 Where Directory UI had to be collapsed
 
@@ -37,7 +76,7 @@
 ## 1.3.1
 **Release Date: August 12, 2022**
 
-# Fixes
+### Fixes
 - Fix for #643 Downloading issue for Subdomain and Endpoints
 - Fix for #627 Too many Targets causes issues while loading datatable
 - Fix version Numbering issue
@@ -46,12 +85,12 @@
 ## 1.3.0
 **Release Date: July 11, 2022**
 
-## Added
+### Added
 
 - Geographic Distribution of Assets Map
 - Added WAF Detector as an optional tool in Scan Engine
 
-## Fixes
+### Fixes
 
 - WHOIS Provider Changed
 - Fixed Dark UI Issues
@@ -153,7 +192,7 @@ And more...
 
 ### Verion 1.0 Major release
 
-#### Features/Additions
+### Additions
 - Dark Mode
 - Recon Data visualization
 - Improved correlation among recon data
@@ -219,7 +258,7 @@ And more...
 
 ### V0.5 29 Nov 2020
 
-#### Features
+### Features
 - Nuclei Integration: v0.5 is primarily focused on vulnerability scanner using Nuclei. This was a long pending due and we've finally integrated it.
 
 - Powerful search queries across endpoints, subdomains and vulnerability scan results: reNgine reconnaissance data can now be queried using operators like <,>,&,| and !, namely greater than, less than, and, or, and not. This is extremely useful in querying the recon data. More details can be found at Instructions to perform Queries on Recon data
@@ -247,12 +286,12 @@ Checkbox next to Subdomains and Vulnerability report list to change the status, 
 - Sometimes due to timeout, aquatone was skipping the screenshots and due to that, navigations between screenshots was little annoying. We have fixed it as well.
 Ability to delete multiple targets and initiate multiple scans.
 
-#### Abandoned
+### Abandoned
 - Subdomain Takeover: As we decided to use Nuclei for Vulnerability Scanner, and also, since Subjack wasn't giving enough results, I decided to remove Subjack. The subdomain Takeover will now be part of Nuclei Vulnerability Scanner.
 
 ### V0.4 Release 2020-10-08
 
-#### Features
+### Features
 - Background tasks migrated to Celery and redis
 - Periodic and clocked scan added
 - Ability to Stop and delete the scan
@@ -262,21 +301,21 @@ Ability to delete multiple targets and initiate multiple scans.
 
 ### V0.3 Release 2020-07-21
 
-#### Features
+### Features
 - YAML based Customization Engine
 - Ability to add wordlists
 - Login Feature
 
 ### V0.2 Release 2020-07-11
 
-#### Features
+### Features
 - Directory Search Enabled
 - Fetch URLS using hakrawler
 - Subdomain takeover using Subjack
 - Add Bulk urls
 - Delete Scan functionality
 
-#### Fix
+### Fix
 - Windows Installation issue fixed
 - Scrollbar Issue on small screens fixed
 
