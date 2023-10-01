@@ -256,7 +256,7 @@ def admin_interface_update(request, slug):
                 logger.error(e)
                 messageData = {'status': False, 'error': str(e)}
         return JsonResponse(messageData)
-    return HttpResponseRedirect(reverse('admin_interface'))
+    return HttpResponseRedirect(reverse('admin_interface', kwargs={'slug': slug}))
 
 
 @receiver(user_logged_out)
