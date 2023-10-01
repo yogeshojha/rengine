@@ -279,78 +279,82 @@ class FetchMostCommonVulnerability(APIView):
 		req = self.request
 		data = req.data
 
-		limit = data.get('limit', 20)
-		project_slug = data.get('slug')
-		scan_history_id = data.get('scan_history_id')
-		target_id = data.get('target_id')
-		is_ignore_info = data.get('ignore_info', False)
+		try:
+			limit = data.get('limit', 20)
+			project_slug = data.get('slug')
+			scan_history_id = data.get('scan_history_id')
+			target_id = data.get('target_id')
+			is_ignore_info = data.get('ignore_info', False)
 
-		response = {}
-		response['status'] = False
+			response = {}
+			response['status'] = False
 
-		if project_slug:
-			project = Project.objects.get(slug=project_slug)
-			vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
-		else:
-			vulnerabilities = Vulnerability.objects.all()
-
-
-		if scan_history_id:
-			vuln_query = (
-				vulnerabilities
-				.filter(scan_history__id=scan_history_id)
-				.values("name", "severity")
-			)
-			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query
-					.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+			if project_slug:
+				project = Project.objects.get(slug=project_slug)
+				vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
 			else:
-				most_common_vulnerabilities = (
-					vuln_query
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				vulnerabilities = Vulnerability.objects.all()
 
-		elif target_id:
-			vuln_query = vulnerabilities.filter(target_domain__id=target_id).values("name", "severity")
-			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query
-					.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
+
+			if scan_history_id:
+				vuln_query = (
+					vulnerabilities
+					.filter(scan_history__id=scan_history_id)
+					.values("name", "severity")
 				)
+				if is_ignore_info:
+					most_common_vulnerabilities = (
+						vuln_query
+						.exclude(severity=0)
+						.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
+				else:
+					most_common_vulnerabilities = (
+						vuln_query
+						.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
+
+			elif target_id:
+				vuln_query = vulnerabilities.filter(target_domain__id=target_id).values("name", "severity")
+				if is_ignore_info:
+					most_common_vulnerabilities = (
+						vuln_query
+						.exclude(severity=0)
+						.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
+				else:
+					most_common_vulnerabilities = (
+						vuln_query
+						.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
+
 			else:
-				most_common_vulnerabilities = (
-					vuln_query
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
-
-		else:
-			vuln_query = vulnerabilities.values("name", "severity")
-			if is_ignore_info:
-				most_common_vulnerabilities = (
-					vuln_query.exclude(severity=0)
-					.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
-			else:
-				most_common_vulnerabilities = (
-					vuln_query.annotate(count=Count('name'))
-					.order_by("-count")[:limit]
-				)
+				vuln_query = vulnerabilities.values("name", "severity")
+				if is_ignore_info:
+					most_common_vulnerabilities = (
+						vuln_query.exclude(severity=0)
+						.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
+				else:
+					most_common_vulnerabilities = (
+						vuln_query.annotate(count=Count('name'))
+						.order_by("-count")[:limit]
+					)
 
 
-		most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
+			most_common_vulnerabilities = [vuln for vuln in most_common_vulnerabilities]
 
-		if most_common_vulnerabilities:
-			response['status'] = True
-			response['result'] = most_common_vulnerabilities
+			if most_common_vulnerabilities:
+				response['status'] = True
+				response['result'] = most_common_vulnerabilities
+		except Exception as e:
+			print(str(e))
+			response = {}
 
 		return Response(response)
 

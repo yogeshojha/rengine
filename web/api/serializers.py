@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from dashboard.models import *
 from django.contrib.humanize.templatetags.humanize import (naturalday,
 														   naturaltime)
@@ -1850,4 +1849,3 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
 		model = Vulnerability
 		fields = '__all__'
 		depth = 2
->>>>>>> eba9d936 (update)
