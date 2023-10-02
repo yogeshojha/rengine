@@ -27,10 +27,6 @@
 <img style="width: 282px; height: 56px" src="https://opensourcesecurityindex.io/badge.svg" alt="Open Source Security Index - Fastest Growing Open Source Security Projects" width="282" height="56" /> </a>
 </p>
 
-<h3>reNgine 2.0<br>Redefining the future of reconnaissance!</h3>
-
-reNgine 2.0 is out now, you can [watch reNgine 2.0 release trailer here.](https://www.youtube.com/watch?v=iy_6F7Vq8Lo)
-
 <h4>What is reNgine?</h4>
 <p align="left">reNgine is your go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
 
@@ -38,6 +34,16 @@ Traditional reconnaissance tools often fall short in terms of configurability an
 
 reNgine was created to address the limitations of traditional reconnaissance tools and provide a better alternative, even surpassing some commercial offerings. Whether you're a bug bounty hunter, a penetration tester, or a corporate security team, reNgine is your go-to solution for automating and enhancing your information-gathering efforts.
 </p>
+
+<h3>reNgine 2.0-jasper<br>Redefining the future of reconnaissance!</h3>
+
+reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://www.youtube.com/watch?v=iy_6F7Vq8Lo)
+
+reNgine 2.0-Jasper would not have been possible without @ocervell valuable contributions. @ocervell did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like @ocervell and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
+
+Thank you, @ocervell, for your outstanding work and unwavering commitment to reNgine.
+
+Checkout our contributers here: [Contributers](https://github.com/yogeshojha/rengine/graphs/contributors)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
