@@ -39,9 +39,9 @@ reNgine was created to address the limitations of traditional reconnaissance too
 
 reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://www.youtube.com/watch?v=iy_6F7Vq8Lo)
 
-reNgine 2.0-Jasper would not have been possible without [@AnonymousWP](https://github.com/ocervell) valuable contributions. [@AnonymousWP](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@AnonymousWP](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
+reNgine 2.0-Jasper would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
 
-Thank you, [@AnonymousWP](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
+Thank you, [@ocervell](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
 
 Checkout our contributers here: [Contributers](https://github.com/yogeshojha/rengine/graphs/contributors)
 
@@ -359,7 +359,7 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 1. Updating is as simple as running the following command:
 
     ```bash
-    sudo ./update.sh
+    cd rengine &&  sudo ./update.sh
     ```
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
