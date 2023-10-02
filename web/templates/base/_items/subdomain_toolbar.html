@@ -1,0 +1,96 @@
+<div class="col-9 float-start">
+    <a class="disabled btn btn-soft-primary ms-0" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Initiate Multiple Subscans" onclick="initiateMultipleSubscan()">
+      <i class="fe-zap"></i>
+      <span class="d-none d-md-inline">Initiate Subscan</span>
+    </a>
+    <a class="disabled btn btn-soft-info" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Download Selected Subdomains" onclick="downloadSelectedSubdomains('{{history.domain.name}}')">
+      <i class="fe-download"></i>
+      <span class="d-none d-md-inline">Download Selected Subdomains</span>
+    </a>
+    <a class="disabled btn btn-soft-danger" data-button="subdomain_btns" data-toggle="tooltip" data-placement="top" title="Delete Multiple Subdomains" onclick="deleteMultipleSubdomains()">
+      <i class="fe-trash"></i>
+      <span class="d-none d-md-inline">Delete Multiple Subdomains</span>
+    </a>
+    <div class="ms-2 mt-2" id="">
+      <a href="#" class="badge badge-soft-primary" id="subdomain_selected_count" onclick="uncheckSubdomains()"  data-toggle="tooltip" data-placement="top" title="Clear Subdomains"></a>
+    </div>
+  </div>
+  <div class="col-3">
+    <div class="btn-group mb-2 float-end dropstart">
+      <button class="btn btn-soft-primary dropdown-toggle ms-1" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Filter Columns">
+        <i class="fe-filter"></i>
+      </button>
+      <div class="dropdown-menu" style="">
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_http_status_filter_checkbox" name="sub_http_status_filter_checkbox" checked>
+            <label class="form-check-label" for="http_status_filter_checkbox">HTTP Status</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_page_title_filter_checkbox" name="sub_page_title_filter_checkbox" checked>
+            <label class="form-check-label" for="page_title_filter_checkbox">Page Title</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_ip_filter_checkbox" name="sub_ip_filter_checkbox" checked>
+            <label class="form-check-label" for="ip_filter_checkbox">IP Address</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_ports_filter_checkbox" name="sub_ports_filter_checkbox" checked>
+            <label class="form-check-label" for="ports_filter_checkbox">Ports</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_content_length_filter_checkbox" name="sub_content_length_filter_checkbox" checked>
+            <label class="form-check-label" for="content_length_filter_checkbox">Content Length</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_response_time_filter_checkbox" name="sub_response_time_filter_checkbox" checked>
+            <label class="form-check-label" for="response_time_filter_checkbox">Response Time</label>
+          </div>
+        </div>
+        <div class="dropdown-item">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="sub_screenshot_filter_checkbox" name="sub_screenshot_filter_checkbox" checked>
+            <label class="form-check-label" for="sub_screenshot_filter_checkbox">Screenshot</label>
+          </div>
+        </div>
+      </div>
+
+      <a class="btn btn-soft-primary ms-2 me-2" data-toggle="tooltip" data-placement="top" title="Reload Subdomains" id="reload_subdomain_table_btn">
+        <i class="fe-refresh-cw"></i>
+      </a>
+
+      <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-toggle="tooltip" data-placement="left" title="Download Subdomains">
+        <i class="fe-download"></i>
+      </button>
+      <div class="dropdown-menu" style="">
+        {% if detail_scan %}
+          <a class="dropdown-item" href="javascript:download_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}')">Download All Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">Download Interesting Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_important_subdomains(scan_id={{scan_history_id}}, domain_id=null, domain_name='{{history.domain.name}}');">Download Important Subdomains</a>
+        {% endif %}
+
+        {% if target_summary %}
+          <a class="dropdown-item" href="javascript:download_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}')">Download All Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_interesting_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">Download Interesting Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_important_subdomains(scan_id=null, domain_id={{target.id}}, domain_name='{{target.name}}');">Download Important Subdomains</a>
+        {% endif %}
+
+        {% if all_subdomains %}
+          <a class="dropdown-item" href="javascript:download_subdomains()">Download All Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_interesting_subdomains()">Download Interesting Subdomains</a>
+          <a class="dropdown-item" href="javascript:download_important_subdomains()">Download Important Subdomains</a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>

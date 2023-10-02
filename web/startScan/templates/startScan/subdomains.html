@@ -81,10 +81,10 @@ $(document).ready(function() {
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+			{"className": "text-start text-lg-center", "targets": [2, 3, 4, 8, 10]},
 			// checkbox
 			{
-				"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+				"targets":0, "width":"15px", "className":"", "orderable":!1, render:function(e, a, t, n) {
 					return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
 				}},
 				// subdomain Name
@@ -299,9 +299,9 @@ $(document).ready(function() {
 					"targets": 24,
 				},
 			],
-			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+			"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 			"<'table-responsive'tr>" +
-			"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+			"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
 			"initComplete": function(settings, json) {
 				api = this.api();
 				subdomain_datatable_col_visibility(subdomain_datatables);

@@ -381,3 +381,8 @@ mark{
 .offcanvas-size-lg {
   width: min(95vw, 700px) !important;
 }
+
+.tab-content .card-body {
+  padding-left: 0.8rem !important;
+  padding-right: 0.8rem !important;
+}
