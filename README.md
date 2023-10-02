@@ -47,7 +47,7 @@ You can find detailed documentation at [https://rengine.wiki](https://rengine.wi
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Table of Contents
+### Table of Contents
 
 * [About reNgine](#about-rengine)
 * [Workflow](#workflow)
@@ -64,7 +64,7 @@ You can find detailed documentation at [https://rengine.wiki](https://rengine.wi
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## About reNgine
+### About reNgine
 
 reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turbocharged the traditional workflow with groundbreaking features that is sure to ease your reconnaissance game. reNgine redefines the art of reconnaissance with highly configurable scan engines, recon data correlation, continuous monitoring, GPT powered Vulnerability Report, Project Management and role based access control etc.
 
@@ -94,13 +94,13 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Workflow
+### Workflow
 
 <img src="https://github.com/yogeshojha/rengine/assets/17223002/10c475b8-b4a8-440d-9126-77fe2038a386">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Features
+### Features
 
 * Reconnaissance:
   * Subdomain Discovery
@@ -152,7 +152,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Scan Engine
+### Scan Engine
 
 ```yaml
 subdomain_discovery: {
@@ -301,7 +301,7 @@ screenshot: {
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Quick Installation
+### Quick Installation
 
 **Note:** Only Ubuntu/VPS
 
@@ -342,11 +342,11 @@ screenshot: {
 
 **Unless you are on development branch, please do not access reNgine via any ports**
 
-## Installation (Mac/Windows/Other)
+### Installation (Mac/Windows/Other)
 
 Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/2.0/install/detailed/)
 
-## Updating
+### Updating
 
 1. Updating is as simple as running the following command:
 
@@ -356,45 +356,45 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
 
-## Changelog
+### Changelog
 
 [Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
 
-## Screenshots
+### Screenshots
 
-### Scan Results
+#### Scan Results
 
 ![](.github/screenshots/scan_results.gif)
 
-### General Usage
+#### General Usage
 
 <img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
 
-### Initiating Subscan
+#### Initiating Subscan
 
 <img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
 
-### Recon Data filtering
+#### Recon Data filtering
 
 <img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
 
-### Report Generation
+#### Report Generation
 
 <img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
 
-### Toolbox
+#### Toolbox
 
 <img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
 
-### Adding Custom tool in Tools Arsenal
+#### Adding Custom tool in Tools Arsenal
 
 <img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Contributing
+### Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire and create. Every contributions you make is **greatly appreciated**. Your contributions can be as simple as fixing the indentation or UI, or as complex as adding new modules and features.
 
@@ -412,13 +412,13 @@ You can start by resolving any [open issues](https://github.com/yogeshojha/rengi
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## reNgine Support
+### reNgine Support
 
 Please do not use GitHub for support requests. Instead, [join our Discord channel #support](https://discord.gg/azv6fzhNCE).
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## Support and Sponsoring
+### Support and Sponsoring
 
 Over the past few years, I have been working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. I spend most of my free time and weekends working on reNgine. I do this in addition to my day job. I am happy to have received such overwhelming support from the community. But to keep this project alive, I am looking for financial support.
 
@@ -439,7 +439,7 @@ Any support is greatly appreciated! Thank you!
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## reNgine Bug Bounty Program
+### reNgine Bug Bounty Program
 
 [![huntr](https://cdn.huntr.dev/huntr_security_badge_mono.svg)](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine)
 
@@ -468,7 +468,7 @@ Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure pol
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-## License
+### License
 
 Distributed under the GNU GPL v3 License. See [LICENSE](LICENSE) for more information.
 
