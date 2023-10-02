@@ -63,6 +63,7 @@ $(document).ready(function() {
   'threads': 30,
   'timeout': 5,
 }
+http_crawl: {}
 port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
@@ -79,8 +80,31 @@ port_scan: {
   # 'nmap_script_args': ''
 }
 osint: {
-  'discover': ['emails', 'metainfo', 'employees'],
-  'dork': ['stackoverflow', '3rdparty', 'social_media', 'project_management', 'code_sharing', 'config_files', 'jenkins', 'wordpress_files', 'cloud_buckets', 'php_error', 'exposed_documents', 'struts_rce', 'db_files', 'traefik', 'git_exposed'],
+  'discover': [
+      'emails',
+      'metainfo',
+      'employees'
+    ],
+  'dorks': [
+    'login_pages',
+    'admin_panels',
+    'dashboard_pages',
+    'stackoverflow',
+    'social_media',
+    'project_management',
+    'code_sharing',
+    'config_files',
+    'jenkins',
+    'wordpress_files',
+    'php_error',
+    'exposed_documents',
+    'db_files',
+    'git_exposed'
+  ],
+  'custom_dorks': [
+    {'lookup_site': 'shodan.com', 'lookup_keywords': '/home/,/india/'},
+    {'lookup_site': '$target$', 'lookup_extensions': 'jpg,png'}
+  ],
   'intensity': 'normal',
   'documents_limit': 50
 }
@@ -104,10 +128,14 @@ fetch_url: {
   'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extension': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
   # 'exclude_subdomains': []
 }
 vulnerability_scan: {
+  'run_nuclei': false,
+  'run_dalfox': false,
+  'run_crlfuzz': false,
+  'run_s3scanner': true,
   'enable_http_crawl': false,
   'concurrency': 50,
   'intensity': 'normal',
@@ -119,8 +147,14 @@ vulnerability_scan: {
   # 'tags': [],
   # 'templates': [],
   # 'custom_templates': [],
-  'use_nuclei_conf': false,
-  'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical']
+  'nuclei': {
+    'use_conf': false,
+    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical']
+  },
+  's3scanner': {
+    'threads': 100,
+    'providers': ['aws', 'gcp', 'digitalocean', 'dreamhost', 'linode']
+  }
 }
 waf_detection: {
 
@@ -133,7 +167,6 @@ screenshot: {
 }
 
 # custom_header: "Cookie: Test"
-
 `;
 });
 </script>
