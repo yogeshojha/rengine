@@ -60,3 +60,6 @@ secret
 /secrets
 
 get-docker.sh
+
+# Environment variables
+.env
