@@ -27,6 +27,8 @@
 <img style="width: 282px; height: 56px" src="https://opensourcesecurityindex.io/badge.svg" alt="Open Source Security Index - Fastest Growing Open Source Security Projects" width="282" height="56" /> </a>
 </p>
 
+<h3>reNgine 2.0-jasper<br>Redefining the future of reconnaissance!</h3>
+
 <h4>What is reNgine?</h4>
 <p align="left">reNgine is your go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
 
@@ -35,13 +37,11 @@ Traditional reconnaissance tools often fall short in terms of configurability an
 reNgine was created to address the limitations of traditional reconnaissance tools and provide a better alternative, even surpassing some commercial offerings. Whether you're a bug bounty hunter, a penetration tester, or a corporate security team, reNgine is your go-to solution for automating and enhancing your information-gathering efforts.
 </p>
 
-<h3>reNgine 2.0-jasper<br>Redefining the future of reconnaissance!</h3>
-
 reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://www.youtube.com/watch?v=iy_6F7Vq8Lo)
 
-reNgine 2.0-Jasper would not have been possible without @ocervell valuable contributions. @ocervell did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like @ocervell and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
+reNgine 2.0-Jasper would not have been possible without [@AnonymousWP](https://github.com/ocervell) valuable contributions. [@AnonymousWP](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@AnonymousWP](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
 
-Thank you, @ocervell, for your outstanding work and unwavering commitment to reNgine.
+Thank you, [@AnonymousWP](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
 
 Checkout our contributers here: [Contributers](https://github.com/yogeshojha/rengine/graphs/contributors)
 
@@ -79,7 +79,9 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 🗃️&nbsp; &nbsp; Say goodbye to recon data chaos! reNgine seamlessly integrates with a database, providing you with unmatched data correlation and organization. Forgot the hassle of grepping through json, txt or csv files. Plus, our custom query language lets you filter reconnaissance data effortlessly using natural language like operators such as filtering all alive subdomains with `http_status=200` and also filter all subdomains that are alive and has admin in name `http_status=200&name=admin`
 
-🔧&nbsp;&nbsp; reNgine offers unparalleled flexibility through its highly configurable scan engines, based on a YAML-based configuration. It offers the freedom to create and customize recon scan engines based on any kind of requirement, users can tailor them to their specific objectives and preferences, from thread management to timeout settings and rate-limit configurations, everything is Customizable. Additionally, reNgine offers a range of pre-configured scan engines right out of the box, including Full Scan, Passive Scan, Screenshot Gathering, and the OSINT Scan Engine. These ready-to-use engines eliminate the need for extensive manual setup, aligning perfectly with reNgine's core mission of simplifying the reconnaissance process and enabling users to effortlessly access the right reconnaissance data with minimal effort.
+🔧&nbsp;&nbsp; reNgine offers unparalleled flexibility through its highly configurable scan engines, based on a YAML-based configuration. It offers the freedom to create and customize recon scan engines based on any kind of requirement, users can tailor them to their specific objectives and preferences, from thread management to timeout settings and rate-limit configurations, everything is customizable. Additionally, reNgine offers a range of pre-configured scan engines right out of the box, including Full Scan, Passive Scan, Screenshot Gathering, and the OSINT Scan Engine. These ready-to-use engines eliminate the need for extensive manual setup, aligning perfectly with reNgine's core mission of simplifying the reconnaissance process and enabling users to effortlessly access the right reconnaissance data with minimal effort.
+
+💎&nbsp;&nbsp;Subscans: Subscan is a game-changing feature in reNgine, setting it apart as the only open-source tool of its kind to offer this capability. With Subscan, waiting for the entire pipeline to complete is a thing of the past. Now, users can swiftly respond to newfound discoveries during reconnaissance. Whether you've stumbled upon an intriguing subdomain and wish to conduct a focused port scan or want to delve deeper with a vulnerability assessment, reNgine has you covered.
 
 📃&nbsp;&nbsp; PDF Reports: In addition to its robust reconnaissance capabilities, reNgine goes the extra mile by simplifying the report generation process, recognizing the crucial role that PDF reports play in the realm of end-to-end reconnaissance. Users can effortlessly generate and customize PDF reports to suit their exact needs. Whether it's a Full Scan Report, Vulnerability Report, or a concise reconnaissance report, reNgine provides the flexibility to choose the report type that best communicates your findings. Moreover, the level of customization is unparalleled, allowing users to select report colors, fine-tune executive summaries, and even add personalized touches like company names and footers. With GPT integration, your reports aren't just a report, with remediation steps, and impacts, you get 360-degree view of the vulnerabilities you've uncovered.
 

@@ -12,15 +12,15 @@
  - API Vault: This feature allows you to organize your API keys such as OpenAI or Netlas API keys.
  - GPT-powered Attack Surface Generation
  - URL gathering now is much more efficient, removing duplicate endpoints based on similar HTTP Responses, having the same content_lenth, or page_title. Custom duplicate fields can also be set from the scan engine configuration.
- - URL Path filtering while initiating scan: For instance, if we want to scan only endpoints starting with https://example.com/start/, we can pass the /start as a path filter while starting the scan. @ocervell
- - Expanding Target Concept: reNgine 2.0 now accepts IPs, URLS, etc as targets. (#678, #658) Excellent work by @ocervell
- - A ton of refactoring on reNgine's core to improve scan efficiency. Massive kudos to @ocervell
- - Created a custom celery workflow to be able to run several tasks in parallel that are not dependent on each other, such OSINT task and subdomain discovery will run in parallel, and directory and file fuzzing, vulnerability scan, screenshot gathering etc. will run in parallel after port scan or url fetching is completed. This will increase the efficiency of scans and instead of having one long flow of tasks, they can run independently on their own. @ocervell
- - Refactored all tasks to run asynchronously @ocervell
- - Added a stream_command that allows to read the output of a command live: this means the UI is updated with results while the command runs and does not have to wait until the task completes. Excellent work by @ocervell
- - Pwndb is now replaced by h8mail. @ocervell
+ - URL Path filtering while initiating scan: For instance, if we want to scan only endpoints starting with https://example.com/start/, we can pass the /start as a path filter while starting the scan. [@ocervell](https://github.com/ocervell)
+ - Expanding Target Concept: reNgine 2.0 now accepts IPs, URLS, etc as targets. (#678, #658) Excellent work by [@ocervell](https://github.com/ocervell)
+ - A ton of refactoring on reNgine's core to improve scan efficiency. Massive kudos to [@ocervell](https://github.com/ocervell)
+ - Created a custom celery workflow to be able to run several tasks in parallel that are not dependent on each other, such OSINT task and subdomain discovery will run in parallel, and directory and file fuzzing, vulnerability scan, screenshot gathering etc. will run in parallel after port scan or url fetching is completed. This will increase the efficiency of scans and instead of having one long flow of tasks, they can run independently on their own. [@ocervell](https://github.com/ocervell)
+ - Refactored all tasks to run asynchronously [@ocervell](https://github.com/ocervell)
+ - Added a stream_command that allows to read the output of a command live: this means the UI is updated with results while the command runs and does not have to wait until the task completes. Excellent work by [@ocervell](https://github.com/ocervell)
+ - Pwndb is now replaced by h8mail. [@ocervell](https://github.com/ocervell)
  - Group Scan Results: reNgine 2.0 allows to group of subdomains based on similar page titles and HTTP status, and also vulnerability grouping based on the same vulnerability title and severity.
- - Added Support for Nmap: reNgine 2.0 allows to run Nmap scripts and vuln scans on ports found by Naabu. @ocervell
+ - Added Support for Nmap: reNgine 2.0 allows to run Nmap scripts and vuln scans on ports found by Naabu. [@ocervell](https://github.com/ocervell)
  - Added support for Shared Scan Variables in Scan Engine Configuration:
     - `enable_http_crawl`: (true/false) You can disable it to be more stealthy or focus on something different than HTTP
     - `timeout`: set timeout for all tasks
@@ -41,15 +41,15 @@
  - Added TLSX for subdomain gathering
  - Added CTFR for subdomain gathering
  - Added historical IP in whois section
- - Added Pagination on Large datatables such as subdomains, endpoints, vulnerabilitiese etc #949 @psyray
+ - Added Pagination on Large datatables such as subdomains, endpoints, vulnerabilities etc #949 [@psyray](https://github.com/psyray)
 
 
 ### Fixes
  - GF patterns do not run on 404 endpoints (#574 closed)
  - Fixes for retrieving whois data (#693 closed)
  - Related/Associated Domains in Whois section is now fixed
- - Fixed missing lightbox css & js on target screenshot page #947 #948 @psyray
- - Issue in Port-scan: int object is not subscriptable Fixed #939, #938 @AnonymousWP
+ - Fixed missing lightbox css & js on target screenshot page #947 #948 [@psyray](https://github.com/psyray)
+ - Issue in Port-scan: int object is not subscriptable Fixed #939, #938 [@AnonymousWP](https://github.com/AnonymousWP)
 
 
 ### Removed
