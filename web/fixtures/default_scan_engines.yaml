@@ -28,7 +28,7 @@
       'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],\r\n  'ignore_file_extensions': ['png',
       'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']\r\n}\r\nvulnerability_scan: {\r\n
       \ 'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
-      \ 'enable_http_crawl': false,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
+      \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
       true,\r\n  'nuclei': {\r\n    'use_conf': false,\r\n    'severities': ['unknown',
       'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}\r\nwaf_detection: {\r\n\r\n}\r\nscreenshot:
@@ -70,7 +70,7 @@
       \   'php_error',\r\n    'exposed_documents',\r\n    'db_files',\r\n    'git_exposed'\r\n
       \ ],\r\n  'intensity': 'normal',\r\n  'documents_limit': 50\r\n}\r\nvulnerability_scan:
       {\r\n  'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
-      \ 'enable_http_crawl': false,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
+      \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
       true,\r\n  'nuclei': {\r\n    'use_conf': false,\r\n    'severities': ['unknown',
       'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}"

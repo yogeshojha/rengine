@@ -181,7 +181,7 @@ port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
   # 'exclude_ports': [],
-  # 'exclude_subdomains': [],
+  # 'exclude_subdomains': true,
   'ports': ['top-100'],
   'rate_limit': 150,
   'threads': 30,
@@ -220,7 +220,7 @@ osint: {
       'lookup_keywords': '/home/'
     },
     {
-      'lookup_site': '$target$',
+      'lookup_site': '_target_',
       'lookup_extensions': 'jpg,png'
     }
   ],
@@ -257,23 +257,20 @@ fetch_url: {
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
   'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
-  # 'exclude_subdomains': []
+  # 'exclude_subdomains': true
 }
 vulnerability_scan: {
   'run_nuclei': false,
   'run_dalfox': false,
   'run_crlfuzz': false,
   'run_s3scanner': true,
-  'enable_http_crawl': false,
+  'enable_http_crawl': true,
   'concurrency': 50,
   'intensity': 'normal',
   'rate_limit': 150,
   'retries': 1,
   'timeout': 5,
   'fetch_gpt_report': true,
-  # 'tags': [],
-  # 'templates': [],
-  # 'custom_templates': [],
   'nuclei': {
     'use_conf': false,
     'severities': [
@@ -283,7 +280,10 @@ vulnerability_scan: {
       'medium',
       'high',
       'critical'
-    ]
+    ],
+    # 'tags': [],
+    # 'templates': [],
+    # 'custom_templates': [],
   },
   's3scanner': {
     'threads': 100,

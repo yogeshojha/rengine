@@ -737,7 +737,7 @@ def dorking(config, host, scan_history_id, results_dir):
 	try:
 		for custom_dork in custom_dorks:
 			lookup_target = custom_dork.get('lookup_site')
-			# replace with original host if $target$
+			# replace with original host if _target_
 			lookup_target = host if lookup_target == '_target_' else lookup_target
 			if 'lookup_extensions' in custom_dork:
 				results = get_and_save_dork_results(
@@ -2263,14 +2263,14 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	timeout = config.get(TIMEOUT) or self.yaml_configuration.get(TIMEOUT, DEFAULT_HTTP_TIMEOUT)
 	custom_header = config.get(CUSTOM_HEADER) or self.yaml_configuration.get(CUSTOM_HEADER)
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
-	tags = config.get(NUCLEI_TAGS, [])
-	tags = ','.join(tags)
-	nuclei_templates = config.get(NUCLEI_TEMPLATE)
-	custom_nuclei_templates = config.get(NUCLEI_CUSTOM_TEMPLATE)
 	proxy = get_random_proxy()
 	nuclei_specific_config = config.get('nuclei', {})
 	use_nuclei_conf = nuclei_specific_config.get(USE_CONFIG, False)
 	severities = nuclei_specific_config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
+	tags = nuclei_specific_config.get(NUCLEI_TAGS, [])
+	tags = ','.join(tags)
+	nuclei_templates = nuclei_specific_config.get(NUCLEI_TEMPLATE)
+	custom_nuclei_templates = nuclei_specific_config.get(NUCLEI_CUSTOM_TEMPLATE)
 	# severities_str = ','.join(severities)
 
 	# Get alive endpoints
