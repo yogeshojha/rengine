@@ -41,6 +41,7 @@
  - Added TLSX for subdomain gathering
  - Added CTFR for subdomain gathering
  - Added historical IP in whois section
+ - Added Pagination on Large datatables such as subdomains, endpoints, vulnerabilitiese etc #949 @psyray
 
 
 ### Fixes
