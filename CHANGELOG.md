@@ -48,6 +48,7 @@
  - GF patterns do not run on 404 endpoints (#574 closed)
  - Fixes for retrieving whois data (#693 closed)
  - Related/Associated Domains in Whois section is now fixed
+ - Fixed missing lightbox css & js on target screenshot page #947 #948 @psyray
 
 
 ### Removed
