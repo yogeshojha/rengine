@@ -96,14 +96,23 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ## Workflow
 
-<img src="https://github.com/yogeshojha/rengine/assets/17223002/8d6621b6-4506-4b4d-a16b-c871ecebe407">
+<img src="https://github.com/yogeshojha/rengine/assets/17223002/a47df0af-7757-4cd4-853c-9bf5b8f86958">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Features
 
 * Reconnaissance:
-Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
+  * Subdomain Discovery
+  * IP and Open Ports Identification
+  * Endpoints Discovery
+  * Directory/Files fuzzing
+  * Screenshot Gathering
+  * Vulnerability Scan
+    * Nuclei
+    * Dalfox XSS Scanner
+    *
+  * WHOIS Identification, WAF Detection etc.
 * Highly configurable YAML-based Scan Engines
 * Support for Parallel Scans and Subscans
 * Automatically report Vulnerabilities to HackerOne
