@@ -50,7 +50,9 @@ You can find detailed documentation at [https://rengine.wiki](https://rengine.wi
 ## Table of Contents
 
 * [About reNgine](#about-rengine)
+* [Workflow](#workflow)
 * [Features](#features)
+* [Scan Engine](#scan-engine)
 * [Quick Installation](#quick-installation)
 * [What's new in reNgine 2.0](#changelog)
 * [Screenshots](#screenshots)
@@ -87,12 +89,21 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 🥷&nbsp;&nbsp; GPT-Powered Attack Surface Generation: With reNgine 2.0, reNgine seamlessly integrates with GPT to identify the attacks that you can likely perform on a subdomain. By making use of reconnaissance data such as page title, open ports, subdomain name etc, reNgine can advice you the attacks you could perform on a target. reNgine will also provide you the rationale on why the specific attack is likely to be successful.
 
+🧭&nbsp;&nbsp;Continuous monitoring: Continuous monitoring is at the core of reNgine's mission, and it's robust continuous monitoring feature ensures that their targets are under constant scrutiny. With the flexibility to schedule scans at regular intervals, penetration testers can effortlessly stay informed about their targets. What sets reNgine apart is its seamless integration with popular notification channels such as Discord, Slack, and Telegram, delivering real-time alerts for newly discovered subdomains, vulnerabilities, or any changes in reconnaissance data.
+
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## Workflow
+
+<img src="https://github.com/yogeshojha/rengine/assets/17223002/8d6621b6-4506-4b4d-a16b-c871ecebe407">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ## Features
 
-* Reconnaissance: Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
+* Reconnaissance:
+Subdomain Discovery, IP and Open Ports Identification, Endpoints Discovery, Directory and Files fuzzing, - Screenshot gathering, Vulnerability scan using Nuclei, WHOIS Identification, WAF Detection etc.
 * Highly configurable YAML-based Scan Engines
 * Support for Parallel Scans and Subscans
 * Automatically report Vulnerabilities to HackerOne
@@ -117,6 +128,10 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 * Toolbox: Comes bundled with most commonly used tools such as whois lookup, CMS detector, CVE lookup, etc.
 * Identification of related domains and related TLDs for targets
 * Find actionable insights such as Most Common Vulnerability, Most Common CVE ID, Most Vulnerable Target/Subdomain, etc.
+
+![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
+
+## Scan Engine
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
