@@ -6,6 +6,7 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 media
+.env
 
 ### Django.Python Stack ###
 # Byte-compiled / optimized / DLL files
@@ -55,3 +56,5 @@ secret
 /secrets
 
 get-docker.sh
+
+filter_dns_leak.sh
