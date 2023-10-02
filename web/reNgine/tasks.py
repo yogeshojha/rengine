@@ -1315,7 +1315,7 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		if not isinstance(line, dict):
 			continue
 		results.append(line)
-		port_number = line['port']['Port']
+		port_number = line['port']
 		ip_address = line['ip']
 		host = line.get('host') or ip_address
 		if port_number == 0:

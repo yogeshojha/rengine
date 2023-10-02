@@ -49,6 +49,7 @@
  - Fixes for retrieving whois data (#693 closed)
  - Related/Associated Domains in Whois section is now fixed
  - Fixed missing lightbox css & js on target screenshot page #947 #948 @psyray
+ - Issue in Port-scan: int object is not subscriptable Fixed #939, #938 @AnonymousWP
 
 
 ### Removed
