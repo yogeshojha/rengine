@@ -51,6 +51,7 @@
 
 ### Removed
  - Removed pwndb and tor related to it.
+ - Removed tor for pwndb
 
 
 ## 1.3.6
