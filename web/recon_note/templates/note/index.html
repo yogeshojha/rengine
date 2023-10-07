@@ -21,7 +21,7 @@ Recon Todo
         <div class="row">
           <div class="col-md-12 col-sm-12 col-12 text-center">
             <h5 class="app-title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</h5>
-            <a class="btn" id="addTask" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Task</a>
+            <a class="btn" id="addTask" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> New Todo</a>
           </div>
           <div class="todoList-sidebar-scroll">
             <div class="col-md-12 col-sm-12 col-12 mt-4 pl-0">
@@ -73,7 +73,7 @@ Recon Todo
       <div class="modal-body">
         <div class="compose-box">
           <div class="compose-content" id="addTaskModalTitle">
-            <h5 class="">Add Task</h5>
+            <h5 class="">Add Todo</h5>
             <form>
               <input id="task" type="text" placeholder="Todo Title" class="form-control" name="task">
               <div class="mt-2">
@@ -98,7 +98,7 @@ Recon Todo
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn add-tsk">Add Task</button>
+        <button class="btn add-tsk">Add Todo</button>
         <button class="btn edit-tsk">Save</button>
       </div>
     </div>
@@ -123,7 +123,7 @@ $('#subdomainDropdown').select2({
 $('#scanHistoryIDropdown').on('change', function() {
   $('#subdomainDropdown').find('option:not(:first)').remove();
   subdomain_dropdown = document.getElementById('subdomainDropdown');
-  $.getJSON(`/api/querySubdomains?scan_id=${this.value}&no_lookup_interesting&format=json`, function(data) {
+  $.getJSON(`/api/querySubdomains?project={{current_project.slug}}&scan_id=${this.value}&no_lookup_interesting&format=json`, function(data) {
     document.querySelector("#selectedSubdomainCount").innerHTML = data['subdomains'].length + ' Subdomains in selected history for domain ' + $("#scanHistoryIDropdown option:selected").text().split('-')[0];
     for (var subdomain in data['subdomains']){
       subdomain_obj = data['subdomains'][subdomain];
@@ -134,7 +134,7 @@ $('#scanHistoryIDropdown').on('change', function() {
     }
   });
 });
-$.getJSON(`/api/listTodoNotes?format=json`, function(data) {
+$.getJSON(`/api/listTodoNotes?format=json&project={{current_project.slug}}`, function(data) {
   for (var note in data['notes']){
     var note_obj = data['notes'][note];
     var todo_item = document.createElement("div");
@@ -151,7 +151,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
     if (note_obj['is_important']) {
       is_important_badge = `<div class="priority-dropdown custom-dropdown-icon" id="important-badge-${note_obj['id']}">
       <div class="dropdown p-dropdown">
-      <span class="text-danger bs-tooltip" title="Important Task">
+      <span class="text-danger bs-tooltip" title="Important Todo">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-alert-octagon"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12" y2="16"></line></svg>
       </span>
       </div>
@@ -193,7 +193,7 @@ $.getJSON(`/api/listTodoNotes?format=json`, function(data) {
       todo_item.classList.add("todo-task-important");
     }
   };
-  populateTodofunction();
+  populateTodofunction(project='{{current_project.slug}}');
   $('.bs-tooltip').tooltip();
 });
 </script>

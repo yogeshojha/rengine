@@ -1,22 +1,21 @@
-from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from . import views
 
 urlpatterns = [
     path(
-        'history/scan',
+        '<slug:slug>/history/scan',
         views.scan_history,
         name="scan_history"),
     path(
-        'history/subscan',
+        '<slug:slug>/history/subscan',
         views.subscan_history,
         name="subscan_history"),
     path(
-        'scheduled/',
+        '<slug:slug>/scheduled/',
         views.scheduled_scan_view,
         name="scheduled_scan_view"),
     path(
-        'detail/<int:id>',
+        '<slug:slug>/detail/<int:id>',
         views.detail_scan,
         name='detail_scan'),
     path(
@@ -24,7 +23,7 @@ urlpatterns = [
         views.create_report,
         name='create_report'),
     path(
-        'all/subdomains',
+        '<slug:slug>/all/subdomains',
         views.all_subdomains,
         name='all_subdomains'),
     path(
@@ -32,7 +31,7 @@ urlpatterns = [
         views.detail_vuln_scan,
         name='detail_vuln_scan'),
     path(
-        'detail/vuln',
+        '<slug:slug>/detail/vuln',
         views.detail_vuln_scan,
         name='all_vulns'),
     path(
@@ -40,11 +39,11 @@ urlpatterns = [
         views.visualise,
         name='visualise'),
     path(
-        'detail/all/endpoint',
+        '<slug:slug>/detail/all/endpoint',
         views.all_endpoints,
         name='all_endpoints'),
     path(
-        'start/<int:domain_id>',
+        '<slug:slug>/start/<int:domain_id>',
         views.start_scan_ui,
         name='start_scan'),
     path(
@@ -88,11 +87,11 @@ urlpatterns = [
         views.change_vuln_status,
         name='change_vuln_status'),
     path(
-        'start/multiple/',
+        '<slug:slug>/start/multiple/',
         views.start_multiple_scan,
         name='start_multiple_scan'),
     path(
-        'start/organization/<int:id>',
+        '<slug:slug>/start/organization/<int:id>',
         views.start_organization_scan,
         name='start_organization_scan'),
     path(
@@ -104,7 +103,7 @@ urlpatterns = [
         views.delete_all_screenshots,
         name='delete_all_screenshots'),
     path(
-        'delete/multiple',
+        '<slug:slug>/delete/multiple',
         views.delete_scans,
         name='delete_multiple_scans'),
 ]

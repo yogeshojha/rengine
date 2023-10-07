@@ -1,5 +1,5 @@
 function delete_target(id, domain_name) {
-  const delAPI = "../delete/target/"+id;
+  const delAPI = "../../delete/target/" + id;
   swal.queue([{
     title: 'Are you sure you want to delete '+ domain_name +'?',
     text: "You won't be able to revert this!",
@@ -45,7 +45,7 @@ function checkedCount () {
   return count;
 }
 
-function scanMultipleTargets() {
+function scanMultipleTargets(slug) {
   if (!checkedCount()) {
     swal({
       title: '',
@@ -57,12 +57,12 @@ function scanMultipleTargets() {
   else {
     // atleast one target is selected
     multipleScanForm = document.getElementById("multiple_targets_form");
-    multipleScanForm.action = '../../scan/start/multiple/';
+    multipleScanForm.action = `/scan/${slug}/start/multiple/`;
     multipleScanForm.submit();
   }
 }
 
-function deleteMultipleTargets() {
+function deleteMultipleTargets(slug) {
   if (!checkedCount()) {
     swal({
       title: '',
@@ -83,7 +83,7 @@ function deleteMultipleTargets() {
       showLoaderOnConfirm: true,
       preConfirm: function() {
         deleteForm = document.getElementById("multiple_targets_form");
-        deleteForm.action = "../delete/multiple";
+        deleteForm.action = `/target/${slug}/delete/multiple`;
         deleteForm.submit();
       }
     }])

@@ -1,11 +1,11 @@
 from django.contrib import admin
-from django.urls import path, include
-from . import views
+from django.urls import include, path
 
+from . import views
 
 urlpatterns = [
     path(
-        'list_note',
+        '<slug:slug>/list_note',
         views.list_note,
         name='list_note'),
     path(

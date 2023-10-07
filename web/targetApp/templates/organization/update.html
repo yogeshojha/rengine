@@ -11,7 +11,7 @@ Update Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' %}">Organization</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug %}">Organization</a></li>
 <li class="breadcrumb-item active">Update Organization</li>
 {% endblock breadcrumb_title %}
 

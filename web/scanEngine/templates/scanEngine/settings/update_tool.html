@@ -6,7 +6,7 @@ Update Tool
 {% block custom_js_css_link %}
 {% endblock custom_js_css_link %}
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'tool_arsenal' %}">Tool Arsenal</a></li>
+<li class="breadcrumb-item"><a href="{% url 'tool_arsenal' current_project.slug %}">Tool Arsenal</a></li>
 <li class="breadcrumb-item active">Update Tool</li>
 {% endblock breadcrumb_title %}
 {% block page_title %}

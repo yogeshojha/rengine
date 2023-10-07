@@ -1,18 +1,16 @@
 {% extends 'base/base.html' %}
 {% load static %}
+{% load permission_tags %}
 
 {% block title %}
 Scan Engine
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' %}">Engines</a></li>
+<li class="breadcrumb-item"><a href="{% url 'scan_engine_index' current_project.slug %}">Engines</a></li>
 <li class="breadcrumb-item active">All Scan Engines</li>
 {% endblock breadcrumb_title %}
 
@@ -29,7 +27,9 @@ Scan Engines
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_engine' %}" data-toggle="tooltip" data-placement="top" title="Add New Scan Engine">Add Scan Engine</a>
+            {% if user|can:'add_modify_scan_settings' %}
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_engine' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add New Scan Engine">Add Scan Engine</a>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -39,7 +39,7 @@ Scan Engines
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="scan_engine_table" class="table style-3 table-hover">
+      <table id="scan_engine_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th>ID</th>
@@ -57,86 +57,88 @@ Scan Engines
           </tr>
         </thead>
         <tbody>
-          {% for engine_type in engine_type.all %}
+          {% for engine in engine_type.all %}
           <tr>
-            <td>{{engine_type.id}}</td>
-            <td class="text-primary">{{engine_type.engine_name}}</td>
+            <td>{{engine.id}}</td>
+            <td class="text-primary">{{engine.engine_name}}</td>
             <td class="text-center">
-              {% if engine_type.default_engine %}
+              {% if engine.default_engine %}
               <span class="badge badge-soft-primary p-1">Default Engine</span>
               {% else %}
               <span class="badge badge-soft-danger p-1">Custom Engine</span>
               {% endif %}
             </td>
             <td class="text-center">
-              {% if engine_type.subdomain_discovery %}
+              {% if 'subdomain_discovery' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.waf_detection %}
+              {% if 'waf_detection' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.screenshot %}
+              {% if 'screenshot' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.osint %}
+              {% if 'osint' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.port_scan %}
+              {% if 'port_scan' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.dir_file_fuzz %}
+              {% if 'dir_file_fuzz' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.fetch_url %}
+              {% if 'fetch_url' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              {% if engine_type.vulnerability_scan %}
+              {% if 'vulnerability_scan' in engine.tasks %}
               {% include 'base/_items/green_tick.html' %}
               {% else %}
               {% include 'base/_items/red_cross.html' %}
               {%endif%}
             </td>
             <td class="text-center">
-              <a href="{% url 'update_engine' engine_type.id %}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
-                  <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                </svg>
-              </a>
-              <a onclick="delete_api({{ engine_type.id }}, 'engine')" class="btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete {{engine_type.engine_name}} Engine">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="15" y1="9" x2="9" y2="15"></line>
-                  <line x1="9" y1="9" x2="15" y2="15"></line>
-                </svg>
-              </a>
+              {% if user|can:'add_modify_scan_settings' %}
+                <a href="/scanEngine/{{current_project.slug}}/update/{{engine.id}}" class="open-domain" data-toggle="tooltip" data-placement="top" title="Edit Engine">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-edit feather-edit-2">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                  </svg>
+                </a>
+                <a onclick="delete_api({{ engine.id }}, 'engine')" class="btnDelDomain text-danger" href="#" data-toggle="tooltip" data-placement="top" title="Delete {{engine.engine_name}} Engine">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                  </svg>
+                </a>
+              {% endif %}
             </td>
           </tr>
           {% endfor %}
@@ -150,7 +152,6 @@ Scan Engines
 
 {% block page_level_script %}
 <script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script type="text/javascript">
   $(document).ready(function() {
     var scan_engine_table = $('#scan_engine_table').DataTable({

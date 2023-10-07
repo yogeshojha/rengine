@@ -42,8 +42,11 @@ function render_ips(data)
 }
 
 
-function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
-	var lookup_url = '/api/listEndpoints/?format=datatables';
+function get_endpoints(project, scan_history_id=null, domain_id=null, gf_tags=null){
+	var is_endpoint_grouping = false;
+	var endpoint_grouping_col = 6;
+
+	var lookup_url = '/api/listEndpoints/?format=datatables&project=' + project;
 
 	if (scan_history_id) {
 		lookup_url += `&scan_history=${scan_history_id}`;
@@ -55,6 +58,18 @@ function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
 	if (gf_tags){
 		lookup_url += `&gf_tag=${gf_tags}`
 	}
+	var endpoint_datatable_columns = [
+		{'data': 'id'},
+		{'data': 'http_url'},
+		{'data': 'http_status'},
+		{'data': 'page_title'},
+		{'data': 'matched_gf_patterns'},
+		{'data': 'content_type'},
+		{'data': 'content_length', 'searchable': false},
+		{'data': 'techs'},
+		{'data': 'webserver'},
+		{'data': 'response_time', 'searchable': false},
+	];
 	var endpoint_table = $('#endpoint_results').DataTable({
 		"destroy": true,
 		"processing": true,
@@ -64,27 +79,23 @@ function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
 			"sLengthMenu": "Results :  _MENU_",
 			"sProcessing": "Processing... Please wait..."
 		},
-		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
-		"<'row'<'col'tr>>" +
-		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
+		"<'table-responsive'tr>" +
+		"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
 		"stripeClasses": [],
 		"lengthMenu": [100, 200, 300, 500, 1000],
 		"pageLength": 100,
 		'serverSide': true,
-		"ajax": lookup_url,
+		"ajax": {
+				'url': lookup_url,
+		},
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Endpoints)';
+			}
+		},
 		"order": [[ 6, "desc" ]],
-		"columns": [
-			{'data': 'id'},
-			{'data': 'http_url'},
-			{'data': 'http_status'},
-			{'data': 'page_title'},
-			{'data': 'matched_gf_patterns'},
-			{'data': 'content_type'},
-			{'data': 'content_length', 'searchable': false},
-			{'data': 'technologies'},
-			{'data': 'webserver'},
-			{'data': 'response_time', 'searchable': false},
-		],
+		"columns": endpoint_datatable_columns,
 		"columnDefs": [
 			{
 				"targets": [ 0 ],
@@ -100,8 +111,8 @@ function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
 				"render": function ( data, type, row ) {
 					var tech_badge = '';
 					var web_server = '';
-					if (row['technologies']){
-						tech_badge = `</br>` + parse_technology(row['technologies'], "primary", outline=true);
+					if (row['techs']){
+						tech_badge = `</br>` + parse_technology(row['techs'], "primary", outline=true);
 					}
 
 					if (row['webserver']) {
@@ -163,35 +174,49 @@ function get_endpoints(scan_history_id=null, domain_id=null, gf_tags=null){
 				"targets": 9,
 			},
 		],
-		drawCallback: function () {
+		"initComplete": function(settings, json) {
+			api = this.api();
+			endpoint_datatable_col_visibility(endpoint_table);
+			$(".dtrg-group th:contains('No group')").remove();
+		},
+		"drawCallback": function () {
 			$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-			$('.dataTables_wrapper table').removeClass('table-striped');
+			// $('.dataTables_wrapper table').removeClass('table-striped');
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.dtrg-group').remove();
+			$('.bs-tooltip').tooltip();
 			var clipboard = new Clipboard('.copyable');
 			$('.bs-tooltip').tooltip();
 			clipboard.on('success', function(e) {
 				setTooltip(e.trigger, 'Copied!');
 				hideTooltip(e.trigger);
 			});
-			if(!$('#end_http_status_filter_checkbox').is(":checked")){
-				endpoint_table.column(2).visible(false);
-			}
-			if(!$('#end_page_title_filter_checkbox').is(":checked")){
-				endpoint_table.column(3).visible(false);
-			}
-			if(!$('#end_tags_filter_checkbox').is(":checked")){
-				endpoint_table.column(4).visible(false);
-			}
-			if(!$('#end_content_type_filter_checkbox').is(":checked")){
-				endpoint_table.column(5).visible(false);
-			}
-			if(!$('#end_content_length_filter_checkbox').is(":checked")){
-				endpoint_table.column(6).visible(false);
-			}
-			if(!$('#end_response_time_filter_checkbox').is(":checked")){
-				endpoint_table.column(9).visible(false);
-			}
+			drawCallback_api = this.api();
+			setTimeout(function() {
+				$(".dtrg-group th:contains('No group')").remove();
+			}, 1);
 		}
 	});
+
+	var radioGroup = document.getElementsByName('grouping_endpoint_row');
+	radioGroup.forEach(function(radioButton) {
+	  radioButton.addEventListener('change', function() {
+	    if (this.checked) {
+	      var groupRows = document.querySelectorAll('tr.group');
+	      // Remove each group row
+				var col_index = get_datatable_col_index(this.value, endpoint_datatable_columns);
+				api.page.len(-1).draw();
+				api.order([col_index, 'asc']).draw();
+				endpoint_table.rowGroup().dataSrc(this.value);
+	      Snackbar.show({
+	        text: 'Endpoints grouped by ' + this.value,
+	        pos: 'top-right',
+	        duration: 2500
+	      });
+	    }
+	  });
+	});
+
 	$('#endpoint-search-button').click(function () {
 		endpoint_table.search($('#endpoints-search').val()).draw() ;
 	});
@@ -267,9 +292,9 @@ function get_subdomain_changes(scan_history_id){
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"processing": true,
-		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 		"<'table-responsive'tr>" +
-		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
 		"destroy": true,
 		"stripeClasses": [],
 		'serverSide': true,
@@ -384,9 +409,9 @@ function get_endpoint_changes(scan_history_id){
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"processing": true,
-		"dom": "<'dt--top-section'<'row'<'col-12 col-sm-6 d-flex justify-content-sm-start justify-content-center'f><'col-12 col-sm-6 d-flex justify-content-sm-end justify-content-center'l>>>" +
+		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 		"<'table-responsive'tr>" +
-		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
 		"destroy": true,
 		"stripeClasses": [],
 		'serverSide': true,
@@ -692,15 +717,6 @@ function get_screenshot(scan_id){
 }
 
 function get_metadata(scan_id){
-	// populate categories
-	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
-		for (var val in data['dorks']){
-			dork = data['dorks'][val]
-			$("#osint-categories-badge").append(`<span class='badge badge-soft-info  ml-1 mr-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
-		}
-		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-	});
-
 	// populate detail table
 	$.getJSON(`/api/queryMetadata/?scan_id=${scan_id}&format=json`, function(data) {
 		$('#metadata-count').empty();
@@ -710,13 +726,13 @@ function get_metadata(scan_id){
 			rand_id = get_randid();
 			$('#metadata-table-body').append(`<tr id=${rand_id}></tr>`);
 			if (doc['doc_name']) {
-				file_name = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
+				filename = `<a href=${doc['url']} target="_blank" class="text-primary">${truncate(doc['doc_name'], 30)}</a>`;
 			}
 			else{
-				file_name = ''
+				filename = ''
 			}
 			subdomain = `<span class='text-muted bs-tooltip' title='Subdomain'>${doc['subdomain']['name']}</span>`;
-			$(`#${rand_id}`).append(`<td class="td-content">${file_name}</br>${subdomain}</td>`);
+			$(`#${rand_id}`).append(`<td class="td-content">${filename}</br>${subdomain}</td>`);
 			if (doc['author']){
 				$(`#${rand_id}`).append(`<td class="td-content text-center">${doc['author']}</td>`);
 			}
@@ -724,10 +740,16 @@ function get_metadata(scan_id){
 				$(`#${rand_id}`).append('<td></td>')
 			}
 			if (doc['producer'] || doc['creator'] || doc['os']) {
-				metadata = ''
-				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : ''
-				metadata += doc['creator'] ? '/' + doc['creator'] : ''
-				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': ''
+				metadata = '';
+				metadata += doc['producer'] ? 'Software: ' + doc['producer'] : '';
+				metadata += doc['creator'] ? '/' + doc['creator'] : 'dsdd';
+				metadata += doc['os'] ? `<br> <span class='badge badge-soft-danger'> OS: ` + doc['os'] + '</span>': '';
+				if (doc['creation_date']) {
+					metadata += `<br>Created On: ${doc['creation_date']}`;
+				}
+				if (doc['modified_date']) {
+					metadata += `<br>Modified On: ${doc['modified_date']}`;
+				}
 				$(`#${rand_id}`).append(`<td class="td-content">${metadata}</td>`);
 			}
 			else{
@@ -780,33 +802,48 @@ function get_employees(scan_id){
 
 
 function get_dorks(scan_id){
+	$("#dorking_result_card").hide();
 	$.getJSON(`/api/queryDorks/?scan_id=${scan_id}&format=json`, function(data) {
-		$('#dorks-count').empty();
-		$('#dorks-table-body').empty();
-		for (var val in data['dorks']){
-			dork = data['dorks'][val];
-			rand_id = get_randid();
-			$('#dorks-table-body').append(`<tr id=${rand_id}></tr>`);
-			$(`#${rand_id}`).append(`<td class="td-content text-center">${dork['type']}</td>`);
-			$(`#${rand_id}`).append(`<td class="td-content">${truncate(dork['description'], 120)}</td>`);
-			$(`#${rand_id}`).append(`<td class="td-content"><a href="${dork['url']}" target="_blank" class="text-primary">${truncate(dork['url'], 60)}</a></td>`);
+		if ($.isEmptyObject(data['dorks'])) {
+			return
 		}
-		$('#dorks-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
+		// unhide div
+		$("#dorking_result_card").show();
+		var is_first = true;
+		for (var val in data['dorks']){
+			var dorks = data['dorks'][val];
+			if (is_first) {
+				active = 'active show';
+			}
+			else {
+				active = '';
+			}
+			$("#dork_type_vertical_tablist").append(`<a class="nav-link ${active} mb-1" id="v-${val}-tab" data-bs-toggle="pill" href="#v-${val}" role="tab" aria-controls="v-${val}" aria-selected="true"> ${convertToCamelCase(val)}</a>`);
+			// create tab content
+			var tab_content = `<div class="tab-pane fade ${active}" id="v-${val}" role="tabpanel" aria-labelledby="v-${val}-tab"><ul>`;
+			for (var dork in dorks) {
+				var dork_data = dorks[dork];
+				tab_content += `<li><a href="${dork_data.url}" target="_blank">${dork_data.url}</a></li>`;
+			}
+			tab_content += `</ul></div>`;
+			$('#dork_tab_content').append(tab_content);
+			is_first = false;
+		}
 	});
 }
 
-
-function get_dork_summary(scan_id){
-	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
-		$('#dork-category-count').empty();
-		for (var val in data['dorks']){
-			dork = data['dorks'][val]
-			$("#osint-dork").append(`<span class='badge badge-soft-info  m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
-		}
-		$('#dork-category-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
-		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
-	});
-}
+//
+// function get_dork_summary(scan_id){
+// 	$.getJSON(`/api/queryDorkTypes/?scan_id=${scan_id}&format=json`, function(data) {
+// 		$('#dork-category-count').empty();
+// 		for (var val in data['dorks']){
+// 			dork = data['dorks'][val]
+// 			$("#osint-dork").append(`<span class='badge badge-soft-info  m-1' data-toggle="tooltip" title="${dork['count']} Results found in this dork category." onclick="get_dork_details('${dork['type']}', ${scan_id})">${dork['type']}</span>`);
+// 		}
+// 		$('#dork-category-count').html(`<span class="badge badge-soft-primary">${data['dorks'].length}</span>`);
+// 		$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+// 	});
+// }
 
 
 function get_dork_details(dork_type, scan_id){
@@ -972,6 +1009,60 @@ function get_directory_modal(scan_id=null, subdomain_id=null, subdomain_name=nul
 		selector: '[data-toggle=tooltip]'
 	});
 
+}
+
+function create_log_element(log) {
+	let logElement = document.createElement("p");
+	innerHTML = `
+	<p>
+	  <p data-bs-toggle="collapse" data-bs-target="#collapse${log.id}">
+		<b>${log.command}</b>
+	  </p>
+	</p>`
+	if (log.output != ''){
+		innerHTML += `<div class="collapse" id="collapse${log.id}"><div style="white-space: pre-line" class="card card-body">${log.output}</div></div>`;
+	}
+	logElement.innerHTML = innerHTML;
+	return logElement;
+}
+
+function get_logs_modal(scan_id=null, activity_id=null) {
+
+	// This function will display a xl modal with datatable for displaying endpoints
+	// associated with the subdomain
+	$('#xl-modal-title').empty();
+	$('#xl-modal-content').empty();
+	$('#xl-modal-footer').empty();
+
+	if (scan_id) {
+		url = `/api/listScanLogs?scan_id=${scan_id}&format=json`
+		title = `Fetching logs for scan ${scan_id}`
+	}
+	else{
+		url = `/api/listActivityLogs?activity_id=${activity_id}&format=json`
+		title = `Fetching logs for activity ${activity_id}`
+	}
+
+	Swal.fire({
+		title: title
+	});
+	swal.showLoading();
+
+	// Get the initial logs
+	fetch(url)
+	.then(response => response.json())
+	.then(data => {
+		console.log(data);
+		swal.close();
+		$('#xl-modal_title').html(`Logs for scan #${scan_history_id}`);
+		data.results.forEach(log => {
+			$('#xl-modal-content').append(create_log_element(log));
+		})
+	});
+	$('#modal_xl_scroll_dialog').modal('show');
+	$("body").tooltip({
+		selector: '[data-toggle=tooltip]'
+	});
 }
 
 function add_todo_for_scanhistory_modal(scan_history_id){
@@ -1145,20 +1236,19 @@ function download_subdomains(scan_id=null, domain_id=null, domain_name=null){
 	});
 }
 
-function download_interesting_subdomains(scan_id=null, domain_id=null, domain_name=null){
+function download_interesting_subdomains(project, scan_id=null, domain_id=null, domain_name=null){
 	Swal.fire({
 		title: 'Querying Interesting Subdomains...'
 	});
 	swal.showLoading();
 	count = `<span class="modal_count"></span>`;
-	var url = `/api/queryInterestingSubdomains/?format=json`;
+	var url = `/api/queryInterestingSubdomains/?format=json&project=${project}`;
 	if (scan_id) {
-		url = `/api/queryInterestingSubdomains/?scan_id=${scan_id}&format=json`;
+		url += `&scan_id=${scan_id}`;
 	}
 	else if(domain_id){
-		url = `/api/queryInterestingSubdomains/?target_id=${domain_id}&format=json`;
+		url += `&target_id=${domain_id}`;
 	}
-	console.log(url);
 
 	if (domain_name) {
 		$('.modal-title').html( count + ' Interesting Subdomains for : <b>' + domain_name + '</b>');
@@ -1349,33 +1439,31 @@ function download_endpoints(scan_id=null, domain_id=null, domain_name='', patter
 	});
 }
 
-
-function initiate_subtask(subdomain_ids){
-	var port_scan = $('#port_scan_subtask').is(':checked');
-	var osint = $('#osint_subtask').is(':checked');
-	var endpoint = $('#endpoint_subtask').is(':checked');
-	var dir_fuzz = $('#dir_fuzz_subtask').is(':checked');
-	var vuln_scan = $('#vuln_subtask').is(':checked');
+function initiate_subscan(subdomain_ids){
 	var engine_id = $('#subtaskScanEngine').val();
-	if (!port_scan && !osint && !endpoint && !dir_fuzz && !vuln_scan) {
+	var tasks = []
+	var $engine_tasks = $('#engineTasks').find('input')
+	$engine_tasks.each(function(i){
+		if ($(this).is(':checked')){
+			tasks.push(this.id)
+		}
+	})
+	console.log(tasks)
+	if (tasks.length === 0) {
 		Swal.fire({
 			title: 'Oops!',
-			text: 'No Subtasks Selected. Please choose atleast one subtask!',
+			text: 'No subtasks selected. Please choose at least one subtask !',
 			icon: 'error'
 		});
 		return;
 	}
 	var data = {
 		'subdomain_ids': subdomain_ids,
-		'port_scan': port_scan,
-		'osint': osint,
-		'endpoint': endpoint,
-		'dir_fuzz': dir_fuzz,
-		'vuln_scan': vuln_scan,
+		'tasks': tasks,
 		'engine_id': engine_id,
 	};
 	Swal.fire({
-		title: 'Initiating Subtask...',
+		title: 'Initiating subtask...',
 		allowOutsideClick: false
 	});
 	swal.showLoading();
@@ -1420,13 +1508,56 @@ $('#btn-initiate-subtask').on('click', function(){
 				subdomain_ids.push($(subdomain_item[i]).val());
 			}
 		}
-		initiate_subtask(subdomain_ids);
+		initiate_subscan(subdomain_ids);
 	}
 	else{
 		var subdomain_id = $('#subtask_subdomain_id').val();
-		initiate_subtask([subdomain_id]);
+		initiate_subscan([subdomain_id]);
 	}
 });
+
+
+// Load engine tasks on modal load and engine input change
+function load_engine_tasks(engine_name){
+	var tasks = []
+	var html = ''
+	var url = `/api/listEngines/?format=json`;
+	console.log(url);
+	$.getJSON(url, function(data) {
+		console.log(data);
+		var engines = data.engines
+		console.log(engines);
+		console.log(engine_name);
+		$.each(engines, function(i, engine){
+			console.log(`${engine.engine_name} == ${engine_name}`)
+			if (engine.engine_name === engine_name){
+				tasks = engine.tasks
+				console.log(tasks)
+			}
+		})
+		$.each(tasks, function(i, task){
+			html += `
+			<div class="mt-1">
+				<div class="form-check">
+					<input type="checkbox" class="form-check-input" id="${task}">
+					<label class="form-check-label" for="${task}">${task}</label>
+				</div>
+			</div>`
+		});
+		console.log(html)
+		$('#engineTasks').html(html);
+	})
+}
+
+$('#subscan-modal').on('shown.bs.modal', function () {
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
+
+$('#subtaskScanEngine').on('change', function(){
+	var engine_name = $('#subtaskScanEngine option:selected').text();
+	load_engine_tasks(engine_name);
+})
 
 // download subdomains
 function downloadSelectedSubdomains(domain_name){

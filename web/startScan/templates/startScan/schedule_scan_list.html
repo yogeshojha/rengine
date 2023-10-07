@@ -1,15 +1,13 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load custom_tags %}
+{% load permission_tags %}
 
 {% block title %}
 Scheduled Scan
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'plugins/switches/switches.min.css' %}">
 {% endblock custom_js_css_link %}
 
@@ -25,7 +23,7 @@ Scheduled Scans
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="scheduled_scan_table" class="table style-3 table-hover">
+      <table id="scheduled_scan_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th>Description</th>
@@ -66,6 +64,7 @@ Scheduled Scans
                 <span class="slider round"></span>
               </label>
             </td>
+            {% if user|can:'modify_scan_results' %}
             <td class="text-center">
               <a onclick="deleteScheduledScan({{ task.id }})" class="text-danger btnDelTask" href="#" data-toggle="tooltip" data-placement="top" title="" data-original-title="Delete Scheduled Task">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather table-delete feather-x-circle">
@@ -75,6 +74,7 @@ Scheduled Scans
                 </svg>
               </a>
             </td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>
@@ -84,7 +84,6 @@ Scheduled Scans
 </div>
 {% endblock main_content %}
 {% block page_level_script %}
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 // var e;
 $(document).ready(function() {

@@ -37,31 +37,8 @@ table.dataTable {
   border-spacing: 0 5px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
-  border-collapse: collapse !important; }
-  table.dataTable thead .sorting:before, table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_asc_disabled:before, table.dataTable thead .sorting_desc_disabled:before {
-    color: #d3d3d3;
-    content: '';
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b2e4b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-up'%3E%3Cpolyline points='18 15 12 9 6 15'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 12px;
-    width: 14px;
-    height: 14px;
-    content: '';
-    right: .3rem;
-    top: .5rem; }
-  table.dataTable thead .sorting:after, table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_asc_disabled:after, table.dataTable thead .sorting_desc:after, table.dataTable thead .sorting_desc_disabled:after {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231b2e4b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-down'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 12px;
-    width: 14px;
-    height: 14px;
-    content: '';
-    right: .3rem;
-    top: 1.3rem; }
-  table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_desc:after {
-    color: #0e1726; }
+  border-collapse: collapse !important;
+}
 
 .table > tbody tr {
   border-radius: 4px;
@@ -70,6 +47,7 @@ table.dataTable {
   border-bottom: 1px solid #e0e6ed; }
 
 .table > thead > tr > th {
+  background: rgba(234, 241, 255, 1);
   text-transform: initial;
   font-weight: 600;
   border-top: none;
@@ -81,7 +59,7 @@ table.dataTable {
   padding-left: 0;
   -webkit-transition: all 0.1s ease;
   transition: all 0.1s ease;
-  padding: 10px 21px 10px 21px;
+  padding: 10px 8px;
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 1px;
@@ -105,7 +83,7 @@ table.dataTable {
   font-size: 13px;
   border: none;
   padding: 0;
-  padding: 10px 21px 10px 21px;
+  padding: 10px 8px;
   letter-spacing: normal;
 }
 
@@ -114,7 +92,7 @@ table.dataTable {
 
 .table > tfoot > tr > th {
   border: none;
-  padding: 10px 21px 10px 21px; }
+  padding: 10px 8px; }
 
 .table-hover:not(.table-dark) tbody tr:hover {
   background-color: transparent !important; }
@@ -164,9 +142,6 @@ div.dataTables_wrapper button:hover {
 div.dataTables_wrapper .table-responsive {
   overflow-x: auto;
   overflow-y: hidden; }
-
-.table > thead > tr > th.dt-no-sorting:before, .table > thead > tr > th.dt-no-sorting:after {
-  display: none; }
 
 .dataTables_wrapper .form-control::-webkit-input-placeholder, .dataTables_wrapper .form-control::-ms-input-placeholder, .dataTables_wrapper .form-control::-moz-placeholder {
   color: #bfc9d4;

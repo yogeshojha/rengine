@@ -25,7 +25,7 @@ Search Results
 				<div class="row">
 					<div class="col-md-8 offset-md-2">
 						<div class="pt-3 pb-4">
-							<form class="app-search" method="get" action="/search">
+							<form class="app-search" method="get" action="/{{current_project.slug}}/search">
 							<div class="input-group">
 								{% if request.GET.query %}
 								<input type="search" class="form-control" placeholder="Universal Search..." id="top-search" name="query" value="{{request.GET.query}}">
@@ -137,7 +137,7 @@ $(document).ready(function() {
 						var subdomain_obj = response.results.subdomains[subdomain];
 						var http_url = subdomain_obj.http_url ? subdomain_obj.http_url : 'https://' + subdomain_obj.name;
 
-						var append_content = `<div class="search-item"><a href="/scan/all/subdomains?name=${subdomain_obj.name}" target="_blank">`;
+						var append_content = `<div class="search-item"><a href="/scan/{{current_project.slug}}/all/subdomains?name=${subdomain_obj.name}" target="_blank">`;
 
 						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, subdomain_obj.name)}</span>${get_http_status_badge(subdomain_obj.http_status)}</h4>`;
 
@@ -176,7 +176,7 @@ $(document).ready(function() {
 					for (var endpoint in response.results.endpoints) {
 						var endpoint_obj = response.results.endpoints[endpoint];
 
-						var append_content = `<div class="search-item"><a href="/scan/detail/all/endpoint?url=${endpoint_obj.http_url}" target="_blank">`;
+						var append_content = `<div class="search-item"><a href="/scan/{{current_project.slug}}/detail/all/endpoint?url=${endpoint_obj.http_url}" target="_blank">`;
 
 						append_content += `<h4 class="mb-1"><span class="me-2 text-primary">${highlight_search(search_val, endpoint_obj.http_url)}</span>${get_http_status_badge(endpoint_obj.http_status)}</h4>`;
 

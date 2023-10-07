@@ -3,13 +3,10 @@
 {% load humanize %}
 {% load custom_tags %}
 {% block title %}
-All Subdomains
+All subdomains
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 <link href="{% static 'plugins/lightbox/css/lightbox.css' %}" rel="stylesheet" />
 {% endblock custom_js_css_link %}
@@ -29,80 +26,53 @@ All Subdomains
 <script src="{% static 'custom/todo.js' %}"></script>
 <script src="{% static 'note/js/todo.js' %}"></script>
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/lightbox/js/lightbox.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
 <script src="{% static 'assets/js/clipboard.min.js' %}"></script>
 <script src="{% static 'startScan/js/subdomains-suggestions.js' %}"></script>
 <script src="{% static 'custom/subdomain.js' %}"></script>
+<script src="{% static 'custom/subdomain_datatable.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	const ps = new PerfectScrollbar(document.querySelector('.mt-container'));
 	var clipboard = new Clipboard('.copyable');
-
+	var is_subd_grouping = false;
+	var subd_grouping_col = 8;
+	{% if request.GET.ip_address %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&ip_address={{request.GET.ip_address}}';
+	{% elif request.GET.name %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables&name={{request.GET.name}}';
+	{% else %}
+	var url = '/api/listDatatableSubdomain/?&project={{current_project.slug}}&format=datatables';
+	{% endif %}
 	var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 		"headerCallback": function(e, a, t, n, s) {
 			e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 		},
 		"destroy": true,
 		"processing": true,
-		"oLanguage": {
-			"oPaginate": { "sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>', "sNext": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-right"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>' },
-			"sInfo": "Showing page _PAGE_ of _PAGES_",
-			"sSearch": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
-			"sSearchPlaceholder": "Search...",
-			"sLengthMenu": "Results :  _MENU_",
-			"sProcessing": "Fetching Subdomains... Please wait..."
-		},
+		"oLanguage": subdomain_oLanguage,
 		"fnCreatedRow": function (nRow, aData, iDataIndex) {
 			$(nRow).attr('id', 'subdomain_row_' + aData['id']);
 		},
 		"stripeClasses": [],
-		"lengthMenu": [50, 100, 500, 1000],
-		"pageLength": 50,
-		'serverSide': true,
-		{% if request.GET.ip_address %}
-		"ajax": '/api/listDatatableSubdomain/?&format=datatables&ip_address={{request.GET.ip_address}}',
-		{% elif request.GET.name %}
-		"ajax": '/api/listDatatableSubdomain/?&format=datatables&name={{request.GET.name}}',
-		{% else %}
-		"ajax": '/api/listDatatableSubdomain/?&format=datatables',
-		{% endif %}
+		"lengthMenu": subdomain_datatable_length_menu,
+		"pageLength": subdomain_datatable_page_length,
+		"serverSide": true,
+		"ajax": {
+				'url': url
+		},
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Subdomains)';
+			}
+		},
 		"order": [[ 8, "desc" ]],
-		"columns": [
-			{'data': 'id'},
-			{'data': 'name'},
-			{'data': 'endpoint_count'},
-			{'data': 'endpoint_count'},
-			{'data': 'http_status'},
-			{'data': 'page_title'},
-			{'data': 'ip_addresses'},
-			{'data': 'ip_addresses'},
-			{'data': 'content_length', 'searchable': false},
-			{'data': 'screenshot_path', 'searchable': false},
-			{'data': 'response_time'},
-			{'data': 'technologies'},
-			{'data': 'http_url'},
-			{'data': 'cname'},
-			{'data': 'is_interesting'},
-			{'data': 'info_count'},
-			{'data': 'low_count'},
-			{'data': 'medium_count'},
-			{'data': 'high_count'},
-			{'data': 'critical_count'},
-			{'data': 'todos_count'},
-			{'data': 'is_important'},
-			{'data': 'webserver'},
-			{'data': 'content_type'},
-			{'data': 'id'},
-			{'data': 'directories_count'},
-			{'data': 'subscan_count'},
-			{'data': 'waf'},
-		],
+		"columns": subdomain_datatable_columns,
 		"columnDefs": [
 			{ "orderable": false, "targets": [2, 3, 6, 7, 9]},
 			{
-				"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27],
+				"targets": [ 2, 3, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28],
 				"visible": false,
 				"searchable": false,
 			},
@@ -111,10 +81,10 @@ $(document).ready(function() {
 				"visible": false,
 				"searchable": true,
 			},
-			{"className": "text-center", "targets": [2, 3, 4, 8, 10]},
+			{"className": "text-start text-lg-center", "targets": [2, 3, 4, 8, 10]},
 			// checkbox
 			{
-				"targets":0, "width":"20px", "className":"", "orderable":!1, render:function(e, a, t, n) {
+				"targets":0, "width":"15px", "className":"", "orderable":!1, render:function(e, a, t, n) {
 					return'<div class="form-check ms-1 form-check-primary"><input type="checkbox" name="subdomain_checkbox['+ e + ']" class="float-start form-check-input subdomain_checkbox" value="' + e + '" onchange=toggleMultipleSubdomainButton()>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>';
 				}},
 				// subdomain Name
@@ -314,8 +284,9 @@ $(document).ready(function() {
 						const cms_detector_http_url = row['http_url'] ? row['http_url'] : 'https://' + row['name'];
 						return `
 						<div class="btn-group mt-2">
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1" id="${row['id']}"><i class="fe-zap"></i></button>
-							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Show Attack Surface" class="btn btn-primary me-1 bs-tooltip" onclick="show_attack_surface_modal(${row['id']})"><i class="fe-eye"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Further Scan Subdomain" class="btn btn-primary btn-scan-subdomain me-1 bs-tooltip" id="${row['id']}"><i class="fe-zap"></i></button>
+							<button type="button" data-toggle="tooltip" data-placement="top" title="Add Recon Todo/Note" class="btn btn-primary me-1 bs-tooltip" id="${row['id']}" onclick="add_note_for_subdomain(${row['id']}, '${row['name']}')"><i class="fe-file-plus"></i></button>
 							<button class="btn btn-primary me-1 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-horizontal"></i></button>
 							<div class="dropdown-menu dropdown-menu-end">
 							<a class="dropdown-item" href="#" onclick="mark_important_subdomain(this, ${row['id']})" id="${row['id']}"><i class="mdi mdi-alert-rhombus-outline me-2 text-muted font-18 vertical-middle"></i>Mark Important Subdomain</a>
@@ -328,44 +299,46 @@ $(document).ready(function() {
 					"targets": 24,
 				},
 			],
-			"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+			"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 			"<'table-responsive'tr>" +
-			"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
-			drawCallback: function () {
+			"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
+			"initComplete": function(settings, json) {
+				api = this.api();
+				subdomain_datatable_col_visibility(subdomain_datatables);
+				$(".dtrg-group th:contains('No group')").remove();
+			},
+			"drawCallback": function () {
 				$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
 				$('.bs-tooltip').tooltip();
-
-				if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(4).visible(false);
-				}
-				if(!$('#sub_page_title_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(5).visible(false);
-				}
-				if(!$('#sub_ip_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(6).visible(false);
-				}
-				if(!$('#sub_ports_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(7).visible(false);
-				}
-				if(!$('#sub_content_length_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(8).visible(false);
-				}
-				if(!$('#sub_http_status_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(8).visible(false);
-				}
-				if(!$('#sub_response_time_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(10).visible(false);
-				}
-				if(!$('#sub_screenshot_filter_checkbox').is(":checked")){
-					subdomain_datatables.column(9).visible(false);
-				}
-
+				$('.dtrg-group').remove();
+				drawCallback_api = this.api();
+				setTimeout(function() {
+					$(".dtrg-group th:contains('No group')").remove();
+				}, 1);
 			},
 			"rowCallback": function( row, data, dataIndex ) {
 				if (data['is_important']){
 					$(row).addClass('table-danger');
 				}
 			},
+		});
+
+		var radioGroup = document.getElementsByName('grouping_subd_row');
+		radioGroup.forEach(function(radioButton) {
+			radioButton.addEventListener('change', function() {
+				if (this.checked) {
+					var groupRows = document.querySelectorAll('tr.group');
+					var col_index = get_datatable_col_index(this.value, subdomain_datatable_columns);
+					api.page.len(-1).draw();
+					api.order([col_index, 'asc']).draw();
+					subdomain_datatables.rowGroup().dataSrc(this.value);
+					Snackbar.show({
+						text: 'Subdomains grouped by ' + this.value,
+						pos: 'top-right',
+						duration: 2500
+					});
+				}
+			});
 		});
 
 		$('#reload_subdomain_table_btn').click(function () {
