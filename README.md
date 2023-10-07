@@ -37,7 +37,7 @@ Traditional reconnaissance tools often fall short in terms of configurability an
 reNgine was created to address the limitations of traditional reconnaissance tools and provide a better alternative, even surpassing some commercial offerings. Whether you're a bug bounty hunter, a penetration tester, or a corporate security team, reNgine is your go-to solution for automating and enhancing your information-gathering efforts.
 </p>
 
-reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://www.youtube.com/watch?v=iy_6F7Vq8Lo)
+reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://youtu.be/VwkOWqiWW5g)
 
 reNgine 2.0-Jasper would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
 
