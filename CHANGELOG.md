@@ -3,7 +3,7 @@
 
 ## 2.0.0
 
-**Release Date: October 3, 2023**
+**Release Date: October 7, 2023**
 
 ###  Added
  - Projects: Projects allow you to efficiently organize their web application reconnaissance efforts. With this feature, you can create distinct project spaces, each tailored to a specific purpose, such as personal bug bounty hunting, client engagements, or any other specialized recon task.
