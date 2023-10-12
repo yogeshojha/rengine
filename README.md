@@ -359,7 +359,7 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 1. Updating is as simple as running the following command:
 
     ```bash
-    cd rengine &&  sudo ./update.sh
+    cd rengine && sudo ./update.sh
     ```
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
