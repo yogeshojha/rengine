@@ -378,30 +378,11 @@ mark{
   color: #000;
 }
 
+.offcanvas-size-lg {
+  width: min(95vw, 700px) !important;
+}
+
 .tab-content .card-body {
   padding-left: 0.8rem !important;
   padding-right: 0.8rem !important;
 }
-
-/* .table-responsive ul.dtr-details {
-  width: 100%;
-  padding-left: 50px !important;
-  padding-right: 10px !important;
-}
-
-.table-responsive ul.dtr-details li {
-  text-align: left !important;
-}
-
-.table-responsive tr.child {
-  box-shadow: inset 0px 0px 2px rgba(0,0,0,0.4);
-}
-
-.table-responsive tr.parent {
-  background-color: #efefef !important;
-}
-
-.table-responsive span.dtr-data {
-  padding-left: 15px;
-  display: block;
-} */

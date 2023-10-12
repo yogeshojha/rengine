@@ -1,5 +1,62 @@
 # Changelog
 
+
+## 2.0.0
+
+**Release Date: October 7, 2023**
+
+###  Added
+ - Projects: Projects allow you to efficiently organize their web application reconnaissance efforts. With this feature, you can create distinct project spaces, each tailored to a specific purpose, such as personal bug bounty hunting, client engagements, or any other specialized recon task.
+ - Roles and Permissions: assign distinct roles to your team members: Sys Admin, Penetration Tester, and Auditor—each with precisely defined permissions to tailor their access and actions within the reNgine ecosystem.
+ - GPT-powered Report Generation: With the power of OpenAI's GPT, reNgine now provides you with detailed vulnerability descriptions, remediation strategies, and impact assessments.
+ - API Vault: This feature allows you to organize your API keys such as OpenAI or Netlas API keys.
+ - GPT-powered Attack Surface Generation
+ - URL gathering now is much more efficient, removing duplicate endpoints based on similar HTTP Responses, having the same content_lenth, or page_title. Custom duplicate fields can also be set from the scan engine configuration.
+ - URL Path filtering while initiating scan: For instance, if we want to scan only endpoints starting with https://example.com/start/, we can pass the /start as a path filter while starting the scan. [@ocervell](https://github.com/ocervell)
+ - Expanding Target Concept: reNgine 2.0 now accepts IPs, URLS, etc as targets. (#678, #658) Excellent work by [@ocervell](https://github.com/ocervell)
+ - A ton of refactoring on reNgine's core to improve scan efficiency. Massive kudos to [@ocervell](https://github.com/ocervell)
+ - Created a custom celery workflow to be able to run several tasks in parallel that are not dependent on each other, such OSINT task and subdomain discovery will run in parallel, and directory and file fuzzing, vulnerability scan, screenshot gathering etc. will run in parallel after port scan or url fetching is completed. This will increase the efficiency of scans and instead of having one long flow of tasks, they can run independently on their own. [@ocervell](https://github.com/ocervell)
+ - Refactored all tasks to run asynchronously [@ocervell](https://github.com/ocervell)
+ - Added a stream_command that allows to read the output of a command live: this means the UI is updated with results while the command runs and does not have to wait until the task completes. Excellent work by [@ocervell](https://github.com/ocervell)
+ - Pwndb is now replaced by h8mail. [@ocervell](https://github.com/ocervell)
+ - Group Scan Results: reNgine 2.0 allows to group of subdomains based on similar page titles and HTTP status, and also vulnerability grouping based on the same vulnerability title and severity.
+ - Added Support for Nmap: reNgine 2.0 allows to run Nmap scripts and vuln scans on ports found by Naabu. [@ocervell](https://github.com/ocervell)
+ - Added support for Shared Scan Variables in Scan Engine Configuration:
+    - `enable_http_crawl`: (true/false) You can disable it to be more stealthy or focus on something different than HTTP
+    - `timeout`: set timeout for all tasks
+    - `rate_limit`: set rate limit for all tasks
+    - `retries`: set retries for all tasks
+    - `custom_header`: set the custom header for all tasks
+ - Added Dalfox for XSS Vulnerability Scan
+ - Added CRLFuzz for CRLF Vulnerability Scan
+ - Added S3Scanner for scanning misconfigured S3 buckets
+ - Improve OSINT Dork results, now detects admin panels, login pages and dashboards
+ - Added Custom Dorks
+ - Improved UI for vulnerability results, clicking on each vulnerability will open up a sidebar with vulnerability details.
+ - Added HTTP Request and Response in vulnerability Results
+ - Under Admin Settings, added an option to allow add/remove/deactivate additional users
+ - Added Option to Preview Scan Report instead of forcing to download
+ - Added Katana for crawling and spidering URLs
+ - Added Netlas for Whois and subdomain gathering
+ - Added TLSX for subdomain gathering
+ - Added CTFR for subdomain gathering
+ - Added historical IP in whois section
+ - Added Pagination on Large datatables such as subdomains, endpoints, vulnerabilities etc #949 [@psyray](https://github.com/psyray)
+
+
+### Fixes
+ - GF patterns do not run on 404 endpoints (#574 closed)
+ - Fixes for retrieving whois data (#693 closed)
+ - Related/Associated Domains in Whois section is now fixed
+ - Fixed missing lightbox css & js on target screenshot page #947 #948 [@psyray](https://github.com/psyray)
+ - Issue in Port-scan: int object is not subscriptable Fixed #939, #938 [@AnonymousWP](https://github.com/AnonymousWP)
+
+
+### Removed
+ - Removed pwndb and tor related to it.
+ - Removed tor for pwndb
+
+
 ## 1.3.6
 **Release Date: March 2, 2023**
 
@@ -15,21 +72,21 @@
 ## 1.3.4
 **Release Date: November 16, 2022**
 
-# Fixes
+### Fixes
 - Fixed #748 , #743 , #738, #739
 
 
 ## 1.3.3
 **Release Date: October 9, 2022**
 
-# Fixes
+### Fixes
 - #723, Upgraded Go to 1.18.2
 
 
 ## 1.3.2
 **Release Date: August 20, 2022**
 
-# Fixes
+### Fixes
 - #683 For Filtering GF tags
 - #669 Where Directory UI had to be collapsed
 
@@ -37,7 +94,7 @@
 ## 1.3.1
 **Release Date: August 12, 2022**
 
-# Fixes
+### Fixes
 - Fix for #643 Downloading issue for Subdomain and Endpoints
 - Fix for #627 Too many Targets causes issues while loading datatable
 - Fix version Numbering issue
@@ -46,12 +103,12 @@
 ## 1.3.0
 **Release Date: July 11, 2022**
 
-## Added
+### Added
 
 - Geographic Distribution of Assets Map
 - Added WAF Detector as an optional tool in Scan Engine
 
-## Fixes
+### Fixes
 
 - WHOIS Provider Changed
 - Fixed Dark UI Issues
@@ -153,7 +210,7 @@ And more...
 
 ### Verion 1.0 Major release
 
-#### Features/Additions
+### Additions
 - Dark Mode
 - Recon Data visualization
 - Improved correlation among recon data
@@ -219,7 +276,7 @@ And more...
 
 ### V0.5 29 Nov 2020
 
-#### Features
+### Features
 - Nuclei Integration: v0.5 is primarily focused on vulnerability scanner using Nuclei. This was a long pending due and we've finally integrated it.
 
 - Powerful search queries across endpoints, subdomains and vulnerability scan results: reNgine reconnaissance data can now be queried using operators like <,>,&,| and !, namely greater than, less than, and, or, and not. This is extremely useful in querying the recon data. More details can be found at Instructions to perform Queries on Recon data
@@ -247,12 +304,12 @@ Checkbox next to Subdomains and Vulnerability report list to change the status, 
 - Sometimes due to timeout, aquatone was skipping the screenshots and due to that, navigations between screenshots was little annoying. We have fixed it as well.
 Ability to delete multiple targets and initiate multiple scans.
 
-#### Abandoned
+### Abandoned
 - Subdomain Takeover: As we decided to use Nuclei for Vulnerability Scanner, and also, since Subjack wasn't giving enough results, I decided to remove Subjack. The subdomain Takeover will now be part of Nuclei Vulnerability Scanner.
 
 ### V0.4 Release 2020-10-08
 
-#### Features
+### Features
 - Background tasks migrated to Celery and redis
 - Periodic and clocked scan added
 - Ability to Stop and delete the scan
@@ -262,21 +319,21 @@ Ability to delete multiple targets and initiate multiple scans.
 
 ### V0.3 Release 2020-07-21
 
-#### Features
+### Features
 - YAML based Customization Engine
 - Ability to add wordlists
 - Login Feature
 
 ### V0.2 Release 2020-07-11
 
-#### Features
+### Features
 - Directory Search Enabled
 - Fetch URLS using hakrawler
 - Subdomain takeover using Subjack
 - Add Bulk urls
 - Delete Scan functionality
 
-#### Fix
+### Fix
 - Windows Installation issue fixed
 - Scrollbar Issue on small screens fixed
 

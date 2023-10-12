@@ -24,7 +24,7 @@
             <div id="completed" class="">
             </div>
             <div class="">
-              <a href="{% url 'scan_history' %}" class="float-end">Show All</a>
+              <a href="{% url 'scan_history' current_project.slug %}" class="float-end">Show All</a>
             </div>
             <br>
             <h6 class="fw-medium mt-2 text-uppercase">Upcoming</h6>
@@ -44,7 +44,7 @@
             <div id="completed_tasks" class="">
             </div>
             <div class="">
-              <a href="{% url 'subscan_history' %}" class="float-end">Show All</a>
+              <a href="{% url 'subscan_history' current_project.slug %}" class="float-end">Show All</a>
             </div>
             <br>
             <h6 class="fw-medium mt-2 text-uppercase">Upcoming</h6>
@@ -55,7 +55,7 @@
             </div>
           </div>
           <div class="text-center mt-3 mb-4">
-            <a href="javascript:getScanStatusSidebar(reload=true)" class="btn btn-md btn-primary">
+            <a href="javascript:getScanStatusSidebar(project='{{current_project.slug}}', reload=true)" class="btn btn-md btn-primary">
               Reload
             </a>
           </div>

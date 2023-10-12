@@ -11,7 +11,7 @@ Initiating Scan for Organization
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'list_organization' %}">Organization</a></li>
+<li class="breadcrumb-item"><a href="{% url 'list_organization' current_project.slug">Organization</a></li>
 <li class="breadcrumb-item active">Initiate Scan</li>
 <li class="breadcrumb-item active" aria-current="page">{{organization.name}}</li>
 {% endblock breadcrumb_title %}
@@ -37,7 +37,7 @@ Initiating scan for {{organization.name}}
               {% if custom_engine_count == 0 %}
               <div class="alert bg-soft-primary border-0 mb-4" role="alert">
                 <span><b>Tips! </b> You do not have any custom scan engines. Would you like to create your own scan engine?</span>
-                <a href="{% url 'add_engine' %}" class="text-primary">Create Custom Scan Engine</a>
+                <a href="{% url 'add_engine' current_project.slug %}" class="text-primary">Create Custom Scan Engine</a>
               </div>
               {% endif %}
               {% include "startScan/_items/scanEngine_select.html" %}

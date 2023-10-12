@@ -7,7 +7,6 @@ Profile
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link href="{% static 'assets/css/users/account-setting.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
 {% block page_title %}
@@ -15,7 +14,7 @@ My Profile
 {% endblock page_title %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/dashboard">Dashboard</a></li>
 <li class="breadcrumb-item active">My Profile</li>
 {% endblock breadcrumb_title %}
 

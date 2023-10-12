@@ -1,0 +1,63 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+reNgine Settings
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">API Vault</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+API Vault
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" autocomplete="off">
+          {% csrf_token %}
+          <div class="col-12">
+            <div class="p-sm-3">
+              <div class="mb-3">
+                <label for="key_openai" class="form-label">OpenAI <span class="ms-1 badge bg-soft-danger text-danger">🔥 Recommended</span><span class="ms-1 badge bg-soft-primary text-primary">Experimental</span></label>
+                <p class="text-muted">OpenAI keys will be used to generate vulnerability description, remediation, impact and vulnerability report writing using ChatGPT.</p>
+                {% if openai_key %}
+                  <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key" value="{{openai_key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_openai" name="key_openai" placeholder="Enter OpenAI Key">
+                {% endif %}
+                <span class="text-muted float-end">This is optional but recommended.</span>
+              </div>
+              <div class="mb-3">
+                <label for="key_netlas" class="form-label">Netlas</label>
+                <p class="text-muted">Netlas keys will be used to get whois information and other OSINT data.</p>
+                {% if netlas_key %}
+                  <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key" value="{{netlas_key}}">
+                {% else %}
+                  <input class="form-control" type="text" id="key_netlas" name="key_netlas" placeholder="Enter Netlas Key">
+                {% endif %}
+                <span class="text-muted float-end">This is optional</span>
+              </div>
+              <div class="mb-0">
+                <button class="btn btn-info float-sm-end my-4" type="submit"> Update API Keys</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+{% endblock page_level_script %}

@@ -6,13 +6,10 @@ Wordlist
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
-<li class="breadcrumb-item"><a href="{% url 'wordlist_list' %}">Wordlist</a></li>
+<li class="breadcrumb-item"><a href="{% url 'wordlist_list' current_project.slug %}">Wordlist</a></li>
 <li class="breadcrumb-item active">All Worldlists</li>
 {% endblock breadcrumb_title %}
 
@@ -29,7 +26,7 @@ Add New Wordlist
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
           </div>
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
-            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_wordlist' %}" data-toggle="tooltip" data-placement="top" title="Add New Wordlist">Add New Wordlist</a>
+            <a class="btn btn-soft-primary float-end ms-1" href="{% url 'add_wordlist' current_project.slug %}" data-toggle="tooltip" data-placement="top" title="Add New Wordlist">Add New Wordlist</a>
           </div>
         </div>
       </div>
@@ -39,7 +36,7 @@ Add New Wordlist
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="wordlist_table" class="table style-3 table-hover">
+      <table id="wordlist_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th>Wordlist Name</th>
@@ -75,7 +72,6 @@ Add New Wordlist
 
 {% block page_level_script %}
 <script src="{% static 'scanEngine/js/custom_scan_engine.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'custom/custom.js' %}"></script>
 <script src="{% static 'targetApp/js/custom_organization.js' %}"></script>
 <script>

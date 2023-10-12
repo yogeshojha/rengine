@@ -1,3 +1,7 @@
+web/custom_engines*
+Pipfile*
+resume.cfg
+*.txt
 *.log
 *.pot
 *.pyc

@@ -6,7 +6,7 @@
 COMPOSE_PREFIX_CMD := COMPOSE_DOCKER_CLI_BUILD=1
 
 COMPOSE_ALL_FILES := -f docker-compose.yml
-SERVICES          := db web proxy redis celery celery-beat tor
+SERVICES          := db web proxy redis celery celery-beat
 
 # --------------------------
 
@@ -45,6 +45,9 @@ restart:		## Restart all services.
 
 rm:				## Remove all services containers.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) rm -f ${SERVICES}
+
+test:
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) exec celery python3 -m unittest tests/test_scan.py
 
 logs:			## Tail all logs with -n 1000.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${SERVICES}

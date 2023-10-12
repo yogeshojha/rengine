@@ -1,15 +1,13 @@
 {% extends 'base/base.html' %}
 {% load static %}
 {% load humanize %}
+{% load permission_tags %}
 
 {% block title %}
 Subscan History
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 {% endblock custom_js_css_link %}
 
 {% block breadcrumb_title %}
@@ -60,9 +58,11 @@ SubScan History
               <a href="#" class="dropdown-ite text-primary float-end" id="resetFilters">Reset Filters</a>
             </div>
           </div>
+          {% if user|can:'modify_scan_results' %}
           <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-12">
             <a class="btn btn-soft-danger float-end disabled ms-1" href="#" onclick="deleteMultipleSubScan()" id="delete_multiple_button">Delete Multiple SubScans</a>
           </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -71,7 +71,7 @@ SubScan History
 <div class="row">
   <div class="col-12">
     <div class="card">
-      <table id="subscan_history_table" class="table style-3 table-hover">
+      <table id="subscan_history_table" class="table dt-responsive w-100">
         <thead>
           <tr>
             <th class="checkbox-column text-center">Serial Number</th>
@@ -92,12 +92,12 @@ SubScan History
             <td class="">
               <span class="" data-toggle="tooltip" data-placement="top" title="Scanned Subdomain">{{ subscan.subdomain.name }}</span>
             </br>
-            <span class="badge bg-dark text-light" data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span>
+            <b><span data-toggle="tooltip" data-placement="top" title="Domain">{{ subscan.scan_history.domain.name }}</span></b>
             {% for organization in subscan.scan_history.domain.get_organization %}
               <span class="badge badge-soft-dark mt-1 me-1" data-toggle="tooltip" data-placement="top" title="Domain {{domain.name}} belongs to organization {{organization.name}}">{{ organization.name }}</span>
             {% endfor %}
           </br>
-          <a href="{% url 'detail_scan' subscan.scan_history.id %}" class="text-info">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>< svg></a>
+          <a href="/scan/{{current_project.slug}}/detail/{{subscan.scan_history.id}}" class="text-info">Recent Scan&nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-external-link"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>< svg></a>
           </td>
           <td class="text-center">
             <span class="badge badge-soft-primary">{{ subscan.get_task_name_str }}</span>
@@ -132,10 +132,14 @@ SubScan History
                     <i class="mdi mdi-chevron-right"></i>
                   </button>
                   <div class="dropdown-menu" style="">
-                    {% if subscan.status == 1 %}
-                      <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                    {% if user|can:'initiate_scans_subscans' %}
+                      {% if subscan.status == 1 %}
+                        <a href="#" class="dropdown-item text-danger" onclick="stop_scan(scan_id=null, subscan_id={{subscan.id}}, reload_scan_bar=false, reload_location=true)"><i class="fe-alert-triangle"></i>&nbsp;Stop Subscan</a>
+                      {% endif %}
                     {% endif %}
+                    {% if user|can:'modify_scan_results' %}
                     <a href="#" class="dropdown-item text-danger" onclick="delete_subscan('{{ subscan.id }}')"><i class="fe-trash-2"></i>&nbsp;Delete Subscan</a>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -152,7 +156,6 @@ SubScan History
 
 
 {% block page_level_script %}
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script>
 $(document).ready(function() {
   var table = $('#subscan_history_table').DataTable({

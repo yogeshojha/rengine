@@ -7,9 +7,6 @@ All Vulnerabilities
 {% endblock title %}
 
 {% block custom_js_css_link %}
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/datatables.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/global.css' %}">
-<link rel="stylesheet" type="text/css" href="{% static 'plugins/datatable/custom.css' %}">
 <link href="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.css' %}" rel="stylesheet" type="text/css" />
 {% endblock custom_js_css_link %}
 
@@ -22,13 +19,23 @@ All Vulnerabilities
 
 {% block page_level_script %}
 <script src="{% static 'startScan/js/detail_scan.js' %}"></script>
-<script src="{% static 'plugins/datatable/datatables.js' %}"></script>
 <script src="{% static 'plugins/perfect-scrollbar/perfect-scrollbar.min.js' %}"></script>
-<script src="//cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js" charset="utf-8"></script>
 <script src="{% static 'startScan/js/vulnerability-datatables-suggestions.js' %}"></script>
+<script src="{% static 'custom/vuln_datatables.js' %}"></script>
 <script type="text/javascript">
 $(document).ready(function() {
 	const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
+	var is_vuln_grouping = false;
+	var vuln_grouping_col = 3;
+	{% if request.GET.domain %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&domain={{request.GET.domain}}';
+	{% elif request.GET.vulnerability_name %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&vulnerability_name={{request.GET.vulnerability_name}}';
+	{% elif request.GET.subdomain %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables&subdomain={{request.GET.subdomain}}';
+	{% else %}
+		var vuln_ajax_url = '/api/listVulnerability/?project={{current_project.slug}}&format=datatables';
+	{% endif %}
 	var vulnerability_table = $('#vulnerability_results').DataTable({
 		"destroy": true,
 		"oLanguage": {
@@ -39,58 +46,34 @@ $(document).ready(function() {
 			"sLengthMenu": "Results :  _MENU_",
 		},
 		"processing": true,
-		"dom": "<'row'<'col-lg-12 col-md-12 col-12 mb-2'l>>" +
+		"dom": "<'dt--top-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>" +
 		"<'table-responsive'tr>" +
-		"<'dt--bottom-section d-sm-flex justify-content-sm-between text-center'<'dt--pages-count  mb-sm-0 mb-3'i><'dt--pagination'p>>",
+		"<'dt--bottom-section'<'row'<'col-12 mb-3 mb-sm-0 col-sm-4 col-md-3 col-lg-4 d-flex justify-content-sm-start justify-content-center'l><'dt--pages-count col-12 col-sm-6 col-md-4 col-lg-4 d-flex justify-content-sm-middle justify-content-center'i><'dt--pagination col-12 col-sm-2 col-md-5 col-lg-4 d-flex justify-content-sm-end justify-content-center'p>>>",
 		"stripeClasses": [],
-		"lengthMenu": [50, 100, 500, 1000],
-		"pageLength": 50,
+		"lengthMenu": vuln_datatable_length_menu,
+		"pageLength": vuln_datatable_page_length,
 		'serverSide': true,
-		{% if request.GET.domain %}
-		"ajax": '/api/listVulnerability/?format=datatables&domain={{request.GET.domain}}',
-		{% elif request.GET.vulnerability_name %}
-		"ajax": '/api/listVulnerability/?format=datatables&vulnerability_name={{request.GET.vulnerability_name}}',
-		{% elif request.GET.subdomain %}
-		"ajax": '/api/listVulnerability/?format=datatables&subdomain={{request.GET.subdomain}}',
-		{% else %}
-		"ajax": '/api/listVulnerability/?format=datatables',
-		{% endif %}
-		"order": [[ 4, "desc" ]],
-		"columns": [
-			{'data': 'id'},
-			{'data': 'type'},
-
-			{'data': 'name'},
-			{'data': 'cvss_metrics'},
-			{'data': 'tags'},
-			{'data': 'hackerone_report_id'},
-
-			{'data': 'severity'},
-			{'data': 'cvss_score'},
-			{'data': 'cve_ids'},
-			{'data': 'cwe_ids'},
-			{'data': 'http_url'},
-
-			{'data': 'description'},
-			{'data': 'references'},
-
-			{'data': 'discovered_date'},
-
-			{'data': 'open_status'},
-
-			{'data': 'hackerone_report_id'},
-
-			// extras
-			{'data': 'extracted_results'},
-			{'data': 'curl_command'},
-			{'data': 'matcher_name'},
-		],
+		"ajax": {
+				'url': vuln_ajax_url
+		},
+		"order": [[ 7, "desc" ]],
+		"rowGroup": {
+			"startRender": function(rows, group) {
+				return group + ' (' + rows.count() + ' Vulnerabilities)';
+			}
+		},
+		"columns": vuln_datatable_columns,
 		"columnDefs": [
-			{ "orderable": false, "targets": [8, 11]},
+			{ "orderable": false, "targets": [16]},
 			{
-				"targets": [3, 4, 5, 9, 12, 16, 17, 18],
+				"targets": [2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 17, 18, 19],
 				"visible": false,
 				"searchable": true,
+			},
+			{
+				"targets": [20, 21, 22, 23, 24, 25, 26, 27],
+				"visible": false,
+				"searchable": false,
 			},
 			{"className": "text-center", "targets": []},
 			{
@@ -107,15 +90,24 @@ $(document).ready(function() {
 			{
 				"render": function ( data, type, row ) {
 					if (data) {
-						return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
+						return `<span class="badge badge-outline-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
 					}
 				},
 				"targets": 1,
 			},
 			{
 				"render": function ( data, type, row ) {
+					if (data) {
+						return `<span class="badge badge-soft-primary">&nbsp;&nbsp;${data.toUpperCase()}&nbsp;&nbsp;</span>`;
+					}
+				},
+				"targets": 2,
+			},
+			{
+				"render": function ( data, type, row ) {
 					var tags = '';
 					var cvss_metrics_badge = '';
+					var cve_cwe_badge = '';
 					switch (row['severity']) {
 						case 'Info':
 						color = 'primary';
@@ -146,23 +138,39 @@ $(document).ready(function() {
 					if (row['tags']) {
 						tags = '<div>';
 						row['tags'].forEach(tag => {
-							tags += `<span class="badge badge-${badge_color} me-1 mb-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
+							tags += `<span class="badge badge-${badge_color} me-1 mt-1" data-toggle="tooltip" data-placement="top" title="Tags">${tag.name}</span>`;
 						});
 						tags += '</div>';
 					}
 					if (row['cvss_metrics']) {
-						cvss_metrics_badge = `<div><span class="badge badge-outline-primary my-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
+						cvss_metrics_badge = `<div><span class="badge badge-outline-primary mt-1" data-toggle="tooltip" data-placement="top" title="CVSS Metrics">${row['cvss_metrics']}</span></div>`;
 					}
+					if (row['cve_ids'] || row['cwe_ids']) {
+						cve_cwe_badge += '<br>';
+					}
+					if (row['cve_ids']) {
+						row['cve_ids'].forEach(cve => {
+							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
+						});
+					}
+					if (row['cwe_ids']) {
+						row['cwe_ids'].forEach(cwe => {
+							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary mt-1 me-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
+						});
+					}
+					// if (cve_cwe_badge != "") {
+					// 	cve_cwe_badge += "";
+					// }
 					hackerone_report = row['hackerone_report_id'] ? `<div><a class="badge badge-soft-danger mt-1 me-1" href="https://hackerone.com/reports/${row['hackerone_report_id']}" target="_blank">Reported to hackerone</a></div>` : "";
-					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + tags + hackerone_report;
+					return `<b class="text-${color}">` + data + `</b>` + cvss_metrics_badge + cve_cwe_badge + tags + hackerone_report;
 				},
-				"targets": 2,
+				"targets": 3,
 			},
 			{
 				"render": function ( data, type, row ) {
 					return get_severity_badge(data);
 				},
-				"targets": 6,
+				"targets": 7,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -183,69 +191,14 @@ $(document).ready(function() {
 					}
 					return '';
 				},
-				"targets": 7,
-			},
-			{
-				"render": function ( data, type, row ) {
-					cve_cwe_badge = '<div>';
-
-					if (row['cve_ids']) {
-						row['cve_ids'].forEach(cve => {
-							cve_cwe_badge += `<a href="#" onclick="get_and_render_cve_details('${cve.name.toUpperCase()}')" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CVE ID">${cve.name.toUpperCase()}</a>`;
-						});
-					}
-					if (row['cwe_ids']) {
-						row['cwe_ids'].forEach(cwe => {
-							cve_cwe_badge += `<a href="https://google.com/search?q=${cwe.name.toUpperCase()}" target="_blank" class="badge badge-outline-primary me-1 mt-1" data-toggle="tooltip" data-placement="top" title="CWE ID">${cwe.name.toUpperCase()}</a>`;
-						});
-					}
-					return cve_cwe_badge + '</div>';
-				},
 				"targets": 8,
 			},
 			{
 				"render": function ( data, type, row ) {
 					if (data.includes('http')) {
-						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+htmlEncode(data)+"</a>";
+						return "<a href='"+htmlEncode(data)+"' target='_blank' class='text-danger'>"+split_into_lines(htmlEncode(data), 150)+"</a>";
 					}
-					return data;
-				},
-				"targets": 10,
-			},
-			{
-				"render": function ( data, type, row ) {
-					description = row['description'] ? `<div>${row['description']}</div>` : '';
-					// show extracted results, and show matcher names, matcher names can be in badges
-					if (row['matcher_name']) {
-						description += `<span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Matcher Name">${row['matcher_name']}</span>`;
-					}
-
-					if (row['extracted_results'] && row['extracted_results'].length > 0) {
-						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#results_${row['id']}" aria-expanded="false" aria-controls="results_${row['id']}">Extracted Results <i class="fe-chevron-down"></i></a>`;
-						description += `<div class="collapse" id="results_${row['id']}"><ul>`;
-						row['extracted_results'].forEach(results => {
-							description += `<li>${results}</li>`;
-						});
-						description += '</ul></div>';
-					}
-
-					if (row['references'] && row['references'].length > 0) {
-						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#references_${row['id']}" aria-expanded="false" aria-controls="references_${row['id']}">References <i class="fe-chevron-down"></i></a>`;
-						description += `<div class="collapse" id="references_${row['id']}"><ul>`;
-						row['references'].forEach(reference => {
-							description += `<li><a href="${reference.url}" target="_blank">${reference.url}</a></li>`;
-						});
-						description += '</ul></div>';
-					}
-
-					if (row['curl_command']) {
-						description += `<br><a class="mt-2" data-bs-toggle="collapse" href="#curl_command_${row['id']}" aria-expanded="false" aria-controls="curl_command_${row['id']}">CURL command <i class="fe-terminal"></i></a>`;
-						description += `<div class="collapse" id="curl_command_${row['id']}"><ul>`;
-						description += `<li><code>${htmlEncode(row['curl_command'])}</code></li>`;
-						description += '</ul></div>';
-					}
-
-					return description;
+					return htmlEncode(data);
 				},
 				"targets": 11,
 			},
@@ -258,7 +211,7 @@ $(document).ready(function() {
 						return '<span class="badge badge-soft-success">&nbsp;&nbsp;RESOLVED&nbsp;&nbsp;</span>'
 					}
 				},
-				"targets": 14,
+				"targets": 15,
 			},
 			{
 				"render": function ( data, type, row ) {
@@ -269,7 +222,9 @@ $(document).ready(function() {
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-horizontal"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
 						</a>
 						<div class="dropdown-menu" style="">
+						<a class="dropdown-item" href="javascript:fetch_gpt_vuln_details(${row['id']}, '${row['name']}');">Fetch GPT Vulnerability Details</a>
 						<a class="dropdown-item" href="javascript:report_hackerone(${row['id']}, '${row['severity']}');">Report to Hackerone</a>
+						<a class="text-danger dropdown-item btn-delete-vulnerability" href="#" id="${row['id']}">Delete Vulnerability</a>
 						</div>
 						</div>`;
 					}
@@ -277,38 +232,22 @@ $(document).ready(function() {
 						return '';
 					}
 				},
-				"targets": 15,
+				"targets": 16,
 			},
 		],
+		"initComplete": function(settings, json) {
+			api = this.api();
+			// column visibility
+			vulnerability_datatable_col_visibility(vulnerability_table);
+			$(".dtrg-group th:contains('No group')").remove();
+		},
 		drawCallback: function (settings) {
+			$('.badge').tooltip({ template: '<div class="tooltip status" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' })
+			$('.bs-tooltip').tooltip();
 			drawCallback_api = this.api();
-
-			if(!$('#vuln_type_checkbox').is(":checked")){
-				vulnerability_table.column(1).visible(false);
-			}
-
-			if(!$('#vuln_severity_checkbox').is(":checked")){
-				vulnerability_table.column(6).visible(false);
-			}
-			if(!$('#vuln_cvss_score_checkbox').is(":checked")){
-				vulnerability_table.column(7).visible(false);
-			}
-			if(!$('#vuln_cve_cwe_checkbox').is(":checked")){
-				vulnerability_table.column(8).visible(false);
-			}
-			if(!$('#vuln_vulnerable_url_checkbox').is(":checked")){
-				vulnerability_table.column(10).visible(false);
-			}
-			if(!$('#vuln_description_checkbox').is(":checked")){
-				vulnerability_table.column(11).visible(false);
-			}
-			if(!$('#vuln_discovered_on_checkbox').is(":checked")){
-				vulnerability_table.column(13).visible(false);
-			}
-			if(!$('#vuln_status_checkbox').is(":checked")){
-				vulnerability_table.column(14).visible(false);
-			}
-
+			setTimeout(function() {
+				$(".dtrg-group th:contains('No group')").remove();
+			}, 1);
 		},
 		createdRow: function( row, data, dataIndex ) {
 			if (!data['open_status']){
@@ -321,123 +260,83 @@ $(document).ready(function() {
 		vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 	});
 
-	$('input[name=vuln_type_checkbox]').change(function() {
+	$('input[name=vuln_source_checkbox]').change(function() {
 		if ($(this).is(':checked')) {
 			vulnerability_table.column(1).visible(true);
 		} else {
 			vulnerability_table.column(1).visible(false);
 		}
-		window.localStorage.setItem('vuln_type_checkbox', $(this).is(':checked'));
+		window.localStorage.setItem('vuln_source_checkbox', $(this).is(':checked'));
 	});
 
 	$('input[name=vuln_severity_checkbox]').change(function() {
-		if ($(this).is(':checked')) {
-			vulnerability_table.column(6).visible(true);
-		} else {
-			vulnerability_table.column(6).visible(false);
-		}
-		window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
-	});
-
-	$('input[name=vuln_cvss_score_checkbox]').change(function() {
 		if ($(this).is(':checked')) {
 			vulnerability_table.column(7).visible(true);
 		} else {
 			vulnerability_table.column(7).visible(false);
 		}
-		window.localStorage.setItem('vuln_cvss_score_checkbox', $(this).is(':checked'));
-	});
-
-	$('input[name=vuln_cve_cwe_checkbox]').change(function() {
-		if ($(this).is(':checked')) {
-			vulnerability_table.column(8).visible(true);
-		} else {
-			vulnerability_table.column(8).visible(false);
-		}
-		window.localStorage.setItem('vuln_cve_cwe_checkbox', $(this).is(':checked'));
+		window.localStorage.setItem('vuln_severity_checkbox', $(this).is(':checked'));
 	});
 
 	$('input[name=vuln_vulnerable_url_checkbox]').change(function() {
-		if ($(this).is(':checked')) {
-			vulnerability_table.column(10).visible(true);
-		} else {
-			vulnerability_table.column(10).visible(false);
-		}
-		window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
-	});
-
-	$('input[name=vuln_description_checkbox]').change(function() {
 		if ($(this).is(':checked')) {
 			vulnerability_table.column(11).visible(true);
 		} else {
 			vulnerability_table.column(11).visible(false);
 		}
-		window.localStorage.setItem('vuln_description_checkbox', $(this).is(':checked'));
-	});
-
-	$('input[name=vuln_discovered_on_checkbox]').change(function() {
-		if ($(this).is(':checked')) {
-			vulnerability_table.column(13).visible(true);
-		} else {
-			vulnerability_table.column(13).visible(false);
-		}
-		window.localStorage.setItem('vuln_discovered_on_checkbox', $(this).is(':checked'));
+		window.localStorage.setItem('vuln_vulnerable_url_checkbox', $(this).is(':checked'));
 	});
 
 	$('input[name=vuln_status_checkbox]').change(function() {
 		if ($(this).is(':checked')) {
-			vulnerability_table.column(14).visible(true);
+			vulnerability_table.column(15).visible(true);
 		} else {
-			vulnerability_table.column(14).visible(false);
+			vulnerability_table.column(15).visible(false);
 		}
 		window.localStorage.setItem('vuln_status_checkbox', $(this).is(':checked'));
 	});
-	// TODO: Add Grouping
-	// $('input[name="grouping_type"]').on('change', function(e) {
-	// 	var groupColumn = 2;
-	// 	switch (this.value) {
-	// 		case 'name':
-	// 			groupColumn = 2;
-	// 			break;
-	// 		case 'type':
-	// 			groupColumn = 1;
-	// 			break;
-	// 		case 'url':
-	// 			groupColumn = 10;
-	// 			break;
-	// 	}
-	// 	vulnerability_table.order([[groupColumn, 'asc']]).draw();
-	// 	var api = $(`#vulnerability_results`).dataTable().api();
-	// 	var rows = api.rows( {page:'current'} ).nodes();
-	// 	var last=null;
-	// 	api.column(groupColumn, {page:'current'} ).data().each( function ( group, i ) {
-	// 		if ( last !== group ) {
-	// 			$(rows).eq( i ).before(
-	// 				'<tr class="group"><td colspan="11">'+group+'</td></tr>'
-	// 			);
-	// 			last = group;
-	// 		}
-	// 	});
-	// });
 
+	$('#vulnerability_results').on('click', 'tr' , function (e) {
+		console.log(e.target);
+		if ($(e.target).is('input[type="checkbox"]') || $(e.target).is('svg') || $(e.target).is('a') || $(e.target).is('th')) {
+			return;
+		}
+		var data = vulnerability_table.row(this).data();
+		render_vuln_offcanvas(data);
+	});
+
+	var radioGroup = document.getElementsByName('grouping_vuln_row');
+	radioGroup.forEach(function(radioButton) {
+		radioButton.addEventListener('change', function() {
+			if (this.checked) {
+				var groupRows = document.querySelectorAll('tr.group');
+				// grouping code here
+				var col_index = get_datatable_col_index(this.value, vuln_datatable_columns);
+				api.page.len(-1).draw();
+				api.order([col_index, 'asc']).draw();
+				vulnerability_table.rowGroup().dataSrc(this.value);
+				Snackbar.show({
+					text: 'Vulnerabilities grouped by ' + this.value,
+					pos: 'top-right',
+					duration: 2500
+				});
+			}
+		});
+	});
 });
 
 var vulnerability_cols = [
-		'vuln_type_checkbox',
+		'vuln_source_checkbox',
 		'vuln_severity_checkbox',
-		'vuln_cvss_score_checkbox',
-		'vuln_cve_cwe_checkbox',
 		'vuln_vulnerable_url_checkbox',
-		'vuln_description_checkbox',
-		'vuln_discovered_on_checkbox',
 		'vuln_status_checkbox'
 	];
 
-	for (var col in vulnerability_cols) {
-		if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
-			$('#' + vulnerability_cols[col]).prop('checked', false);
-		}
+for (var col in vulnerability_cols) {
+	if(window.localStorage.getItem(vulnerability_cols[col]) != null && window.localStorage.getItem(vulnerability_cols[col]) === 'false'){
+		$('#' + vulnerability_cols[col]).prop('checked', false);
 	}
+}
 
 </script>
 {% endblock page_level_script %}

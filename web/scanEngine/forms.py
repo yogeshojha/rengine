@@ -1,7 +1,7 @@
 from django import forms
-from scanEngine.models import *
 from django_ace import AceWidget
 from reNgine.validators import validate_short_name
+from scanEngine.models import *
 
 
 class AddEngineForm(forms.ModelForm):
@@ -15,49 +15,6 @@ class AddEngineForm(forms.ModelForm):
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Engine Name"}))
-    subdomain_discovery = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    waf_detection = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    screenshot = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    dir_file_fuzz = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    port_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    fetch_url = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    vulnerability_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "checked": "",
-            "class": "switch",
-        }))
-    osint = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -80,46 +37,6 @@ class UpdateEngineForm(forms.ModelForm):
                 "class": "form-control form-control-lg",
                 "id": "scan_engine_name",
                 "placeholder": "Custom Engine"}))
-    subdomain_discovery = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    waf_detection = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    screenshot = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    dir_file_fuzz = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    port_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    fetch_url = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    vulnerability_scan = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
-    osint = forms.BooleanField(
-        required=False,
-        widget=forms.CheckboxInput(attrs={
-            "class": "switch",
-        }))
     yaml_configuration = forms.CharField(widget=AceWidget(
         mode="yaml",
         theme="tomorrow_night_eighties",
@@ -129,19 +46,6 @@ class UpdateEngineForm(forms.ModelForm):
         fontsize='17px',
         showinvisibles=True,
         attrs={"id": "editor"}))
-
-    def set_value(self, engine):
-        self.initial['engine_name'] = engine.engine_name
-        self.initial['subdomain_discovery'] = engine.subdomain_discovery
-        self.initial['waf_detection'] = engine.waf_detection
-        self.initial['dir_file_fuzz'] = engine.dir_file_fuzz
-        self.initial['port_scan'] = engine.port_scan
-        self.initial['fetch_url'] = engine.fetch_url
-        self.initial['yaml_configuration'] = engine.yaml_configuration
-        self.initial['vulnerability_scan'] = engine.vulnerability_scan
-        self.initial['osint'] = engine.osint
-        self.initial['screenshot'] = engine.screenshot
-
 
 class AddWordlistForm(forms.Form):
     name = forms.CharField(
@@ -365,6 +269,14 @@ class NotificationForm(forms.ModelForm):
                 "id": "send_scan_output_file",
             }))
 
+    send_scan_tracebacks = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "form-check-input",
+                "id": "send_scan_tracebacks",
+            }))
+
 
     def set_value(self, key):
         self.initial['send_to_slack'] = key.send_to_slack
@@ -382,6 +294,7 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_subdomain_changes_notif'] = key.send_subdomain_changes_notif
 
         self.initial['send_scan_output_file'] = key.send_scan_output_file
+        self.initial['send_scan_tracebacks'] = key.send_scan_tracebacks
 
         if not key.send_to_slack:
             self.fields['slack_hook_url'].widget.attrs['readonly'] = True
@@ -408,6 +321,7 @@ class NotificationForm(forms.ModelForm):
         self.initial['send_subdomain_changes_notif'] = True
 
         self.initial['send_scan_output_file'] = True
+        self.initial['send_scan_tracebacks'] = True
 
 
 class ProxyForm(forms.ModelForm):

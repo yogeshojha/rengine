@@ -1,79 +1,83 @@
 from django.contrib import admin
-from django.urls import path, include
-from . import views
+from django.urls import include, path
 
+from . import views
 
 urlpatterns = [
     path(
-        '',
+        '<slug:slug>/',
         views.index,
         name='scan_engine_index'),
     path(
-        'add/',
+        '<slug:slug>/add/',
         views.add_engine,
         name='add_engine'),
     path(
-        'delete/<int:id>',
+        '<slug:slug>/delete/<int:id>',
         views.delete_engine,
         name='delete_engine_url'),
     path(
-        'update/<int:id>',
+        '<slug:slug>/update/<int:id>',
         views.update_engine,
         name='update_engine'),
     path(
-        'tool_arsenal/update/<int:id>',
+        '<slug:slug>/tool_arsenal/update/<int:id>',
         views.modify_tool_in_arsenal,
         name='update_tool_in_arsenal'),
     path(
-        'wordlist/',
+        '<slug:slug>/wordlist/',
         views.wordlist_list,
         name='wordlist_list'),
     path(
-        'wordlist/add/',
+        '<slug:slug>/wordlist/add/',
         views.add_wordlist,
         name='add_wordlist'),
     path(
-        'tool_arsenal/add/',
+        '<slug:slug>/tool_arsenal/add/',
         views.add_tool,
         name='add_tool'),
     path(
-        'wordlist/delete/<int:id>',
+        '<slug:slug>/wordlist/delete/<int:id>',
         views.delete_wordlist,
         name='delete_wordlist'),
     path(
-        'interesting/lookup/',
+        '<slug:slug>/interesting/lookup/',
         views.interesting_lookup,
         name='interesting_lookup'),
     path(
-        'tool_settings',
+        '<slug:slug>/tool_settings',
         views.tool_specific_settings,
         name='tool_settings'),
     path(
-        'tool_arsenal',
+        '<slug:slug>/api_vault',
+        views.api_vault,
+        name='api_vault'),
+    path(
+        '<slug:slug>/tool_arsenal',
         views.tool_arsenal_section,
         name='tool_arsenal'),
     path(
-        'rengine_settings',
+        '<slug:slug>/rengine_settings',
         views.rengine_settings,
         name='rengine_settings'),
     path(
-        'notification_settings',
+        '<slug:slug>/notification_settings',
         views.notification_settings,
         name='notification_settings'),
     path(
-        'proxy_settings',
+        '<slug:slug>/proxy_settings',
         views.proxy_settings,
         name='proxy_settings'),
     path(
-        'hackerone_settings',
+        '<slug:slug>/hackerone_settings',
         views.hackerone_settings,
         name='hackerone_settings'),
     path(
-        'report_settings',
+        '<slug:slug>/report_settings',
         views.report_settings,
         name='report_settings'),
     path(
-        'testHackerone/',
+        '<slug:slug>/testHackerone/',
         views.test_hackerone,
         name='testHackerone'
     ),
