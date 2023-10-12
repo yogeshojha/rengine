@@ -344,6 +344,12 @@ screenshot: {
     sudo ./install.sh
     ```
 
+    Or for a non-interactive installation (make sure you've modified the .env file before launching the installation).
+
+    ```bash
+    sudo ./install.sh -n
+    ```
+
     If `install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
