@@ -312,7 +312,7 @@ def notification_settings(request, slug):
                 request,
                 messages.INFO,
                 'Notification Settings updated successfully and test message was sent.')
-            return http.HttpResponseRedirect(reverse('notification_settings'))
+            return http.HttpResponseRedirect(reverse('notification_settings', kwargs={'slug': slug}))
 
     context['settings_nav_active'] = 'active'
     context['notification_settings_li'] = 'active'
