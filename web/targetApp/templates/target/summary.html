@@ -1184,6 +1184,24 @@ $(document).ready(function(){
 				},
 			});
 
+			var radioGroup = document.getElementsByName('grouping_subd_row');
+			radioGroup.forEach(function(radioButton) {
+				radioButton.addEventListener('change', function() {
+					if (this.checked) {
+						var groupRows = document.querySelectorAll('tr.group');
+						var col_index = get_datatable_col_index(this.value, subdomain_datatable_columns);
+						api.page.len(-1).draw();
+						api.order([col_index, 'asc']).draw();
+						subdomain_datatables.rowGroup().dataSrc(this.value);
+						Snackbar.show({
+							text: 'Subdomains grouped by ' + this.value,
+							pos: 'top-right',
+							duration: 2500
+						});
+					}
+				});
+			});
+			
 		$('#reload_subdomain_table_btn').click(function() {
 			subdomain_datatables.ajax.reload();
 		});
