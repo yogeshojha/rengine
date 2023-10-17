@@ -1279,7 +1279,7 @@ function render_directories_in_xl_modal(directory_count, subdomain_name, result)
 		var dir = result[dir_obj];
 		$('#directory_tbody').append(`
 			<tr>
-			<td><a href="${dir.url}" target="_blank">${dir.name}</a></td>
+			<td><a href="${dir.url}" target="_blank">${atob(dir.name)}</a></td>
 			<td class="text-center">${get_http_status_badge(dir.http_status)}</td>
 			<td>${dir.length}</td>
 			<td>${dir.lines}</td>
@@ -2542,7 +2542,7 @@ function get_most_vulnerable_target(slug=null, scan_id=null, target_id=null, ign
 				</tr>
 				</thead>
 				<tbody id="most_vulnerable_target_tbody">
-				</tbody>
+				</tbody>²
 				</table>
 				`);
 
