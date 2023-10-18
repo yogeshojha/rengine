@@ -319,11 +319,26 @@ screenshot: {
     git clone https://github.com/yogeshojha/rengine && cd rengine
     ```
 
-1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
+1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!** 
 
     ```bash
     nano .env
     ```
+
+1. **Optional, only for Non-interractive install**: In the dotenv file, **please make sure to change the super admin informations!**
+
+    ```bash
+    DJANGO_SUPERUSER_USERNAME=yourUsername
+    DJANGO_SUPERUSER_EMAIL=YourMail@example.com
+    DJANGO_SUPERUSER_PASSWORD=yourStrongPassword
+    ```
+    If you need to carry out a non-interactive installation, you can setup the login, email and password of the web interface admin directly from the .env file (instead of manually setting them from prompts during the installation process). This option can be interesting for automated installation (via ansible, vagrant, etc.).
+
+    DJANGO_SUPERUSER_USERNAME: Web interface admin username (Used to login to the web interface).
+
+    DJANGO_SUPERUSER_EMAIL: Web interface admin email.
+
+    DJANGO_SUPERUSER_PASSWORD: Web interface admin password (Used to login to the web interface).
 
 1. In the dotenv file, you may also modify the Scaling Configurations
 
@@ -344,7 +359,7 @@ screenshot: {
     sudo ./install.sh
     ```
 
-    Or for a non-interactive installation (make sure you've modified the .env file before launching the installation).
+    Or for a non-interactive installation, use `-n` argument (make sure you've modified the .env file before launching the installation).
 
     ```bash
     sudo ./install.sh -n
