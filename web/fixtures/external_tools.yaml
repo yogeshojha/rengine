@@ -31,7 +31,7 @@
     version_lookup_command: nuclei -version
     update_command: nuclei -update
     install_command: go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
-    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
@@ -70,7 +70,7 @@
     version_lookup_command: naabu -version
     update_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
     install_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
+    version_match_regex: ' (\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
@@ -79,7 +79,7 @@
 - model: scanEngine.installedexternaltool
   pk: 5
   fields:
-    logo_url: null
+    logo_url: https://raw.githubusercontent.com/osmedeus/assets/main/logo-transparent.png
     name: gospider
     description: Fast web spider written in Go
     github_url: https://github.com/jaeles-project/gospider
@@ -115,13 +115,13 @@
 - model: scanEngine.installedexternaltool
   pk: 7
   fields:
-    logo_url: null
+    logo_url: https://github.com/ffuf/ffuf/raw/master/_img/ffuf_run_logo_600.png
     name: ffuf
     description: A fast web fuzzer written in Go.
     github_url: https://github.com/ffuf/ffuf
     license_url: https://github.com/ffuf/ffuf/blob/master/LICENSE
     version_lookup_command: ffuf -V
-    update_command: go install -v github.com/ffuf/ffuf@latest
+    update_command: go install github.com/ffuf/ffuf/v2@latest
     install_command: ''
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
@@ -148,8 +148,8 @@
     version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: true
-    is_github_cloned: false
-    github_clone_path: null
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/Sublist3r
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
   pk: 9
@@ -178,13 +178,13 @@
     github_url: https://github.com/bp0lr/gauplus
     license_url: https://github.com/bp0lr/gauplus/blob/main/LICENSE
     version_lookup_command: null
-    update_command: go install -v github.com/bp0lr/gauplus@latest
-    install_command: go install -v github.com/bp0lr/gauplus@latest
+    update_command: go install -v -v github.com/bp0lr/gauplus@latest
+    install_command: go install -v -v github.com/bp0lr/gauplus@latest
     version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
-    is_github_cloned: false
-    github_clone_path: null
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/gauplus
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
   pk: 11
@@ -200,8 +200,8 @@
     version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: true
-    is_github_cloned: false
-    github_clone_path: null
+    is_github_cloned: true
+    github_clone_path: /usr/src/github/OneForAll
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
   pk: 12
@@ -215,7 +215,7 @@
       names, subdomains, IPs and URLs using multiple public data sources.
     github_url: https://github.com/laramies/theHarvester
     license_url: https://github.com/laramies/theHarvester/blob/master/README/LICENSES
-    version_lookup_command: python3 /usr/src/github/theHarvester/lib/version.py
+    version_lookup_command: null
     update_command: git pull
     install_command: git clone https://github.com/laramies/theHarvester
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
