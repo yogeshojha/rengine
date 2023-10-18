@@ -956,6 +956,9 @@ class GithubToolCheckGetLatestRelease(APIView):
 			return Response({'status': False, 'message': 'RateLimited'})
 		elif 'message' in response and response['message'] == 'Not Found':
 			return Response({'status': False, 'message': 'Not Found'})
+		elif not response:
+			return Response({'status': False, 'message': 'Not Found'})
+		
 		# only send latest release
 		response = response[0]
 
