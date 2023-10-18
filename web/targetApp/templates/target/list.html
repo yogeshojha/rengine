@@ -222,7 +222,7 @@ $(document).ready(function(){
 						<i class="mdi mdi-chevron-right"></i>
 						</button>
 						<div class="dropdown-menu" style="">
-						<a class="dropdown-item" href="/scan/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
+						<a class="dropdown-item" href="/scan/{{slug}}/schedule/target/${row.id}"><i class="fe-clock"></i>&nbsp;&nbsp;Schedule Scan</a>
 						<div class="dropdown-divider"></div>
 						<a class="dropdown-item" href="/target/{{slug}}/update/target/${row.id}"><i class="fe-edit-2"></i>&nbsp;&nbsp;Edit Target</a>
 						<a class="dropdown-item text-danger" href="#" onclick="delete_target(${row.id}, '${row.name}')"><i class="fe-trash-2"></i>&nbsp;&nbsp;Delete target</a>
