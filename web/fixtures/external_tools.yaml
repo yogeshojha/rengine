@@ -104,8 +104,8 @@
     github_url: https://github.com/owasp-amass/amass
     license_url: https://github.com/owasp-amass/amass/blob/master/LICENSE
     version_lookup_command: amass -version
-    update_command: go install -v github.com/owasp-amass/amass/v3/...@latest
-    install_command: go install -v github.com/owasp-amass/amass/v3/...@latest
+    update_command: go install -v github.com/owasp-amass/amass/v4/...@latest
+    install_command: go install -v github.com/owasp-amass/amass/v4/...@latest
     version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: true
