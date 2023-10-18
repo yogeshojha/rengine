@@ -141,7 +141,8 @@ fetch_url: {
     'hakrawler',
     'waybackurls',
     'gospider',
-    'katana'
+    'katana',
+    'gau'
   ],
   'remove_duplicate_endpoints': true,
   'duplicate_fields': [
@@ -150,7 +151,8 @@ fetch_url: {
   ],
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30
   # 'exclude_subdomains': true
 }
 vulnerability_scan: {
