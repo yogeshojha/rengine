@@ -325,7 +325,7 @@ screenshot: {
     nano .env
     ```
 
-1. **Optional, only for Non-interractive install**: In the dotenv file, **please make sure to change the super admin informations!**
+1. **Optional, only for Non-interactive install**: In the dotenv file, **please make sure to change the super admin informations!**
 
     ```bash
     DJANGO_SUPERUSER_USERNAME=yourUsername
