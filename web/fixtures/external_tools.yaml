@@ -177,7 +177,7 @@
     description: Get all URLs
     github_url: https://github.com/bp0lr/gauplus
     license_url: https://github.com/bp0lr/gauplus/blob/main/LICENSE
-    version_lookup_command: null
+    version_lookup_command: gauplus -version
     update_command: go install -v -v github.com/bp0lr/gauplus@latest
     install_command: go install -v -v github.com/bp0lr/gauplus@latest
     version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
@@ -194,10 +194,10 @@
     description: A powerful subdomain integration tool.
     github_url: https://github.com/shmilylty/OneForAll
     license_url: https://github.com/shmilylty/OneForAll/blob/master/LICENSE
-    version_lookup_command: null
+    version_lookup_command: python3 /usr/src/github/OneForAll/oneforall.py version
     update_command: git pull
     install_command: git clone https://github.com/shmilylty/OneForAll
-    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    version_match_regex: 'v(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: true
     is_github_cloned: true
@@ -234,10 +234,10 @@
       it just abuses of Certificate Transparency logs.
     github_url: https://github.com/UnaPibaGeek/ctfr
     license_url: https://github.com/UnaPibaGeek/ctfr/blob/master/LICENSE
-    version_lookup_command: null
+    version_lookup_command: python3 /usr/src/github/ctfr/ctfr.py --help
     update_command: git pull
     install_command: git clone https://github.com/UnaPibaGeek/ctfr/
-    version_match_regex: null
+    version_match_regex: (\d+\.)?(\d+\.).
     is_default: true
     is_subdomain_gathering: true
     is_github_cloned: true
@@ -249,7 +249,7 @@
     logo_url: https://user-images.githubusercontent.com/8293321/174841003-01a62bad-2ecf-4874-89c4-efa53dd56884.png
     name: tlsx
     description: A fast and configurable TLS grabber focused on TLS based data collection and analysis.
-    github_url: https://github.com/projectdiscovery/tlsx/blob/main/README.md
+    github_url: https://github.com/projectdiscovery/tlsx
     license_url: https://github.com/projectdiscovery/tlsx/blob/main/LICENSE
     version_lookup_command: tlsx -version
     update_command: tlsx -update
@@ -286,10 +286,10 @@
       As for the name, Dal(달) is the Korean word for "moon," while "Fox" stands for "Finder Of XSS".
     github_url: https://github.com/hahwul/dalfox
     license_url: https://github.com/hahwul/dalfox/blob/main/LICENSE.txt
-    version_lookup_command: null
+    version_lookup_command: dalfox version
     update_command: go install -v github.com/hahwul/dalfox/v2@latest
     install_command: go install -v github.com/hahwul/dalfox/v2@latest
-    version_match_regex: null
+    version_match_regex: v(\d+\.)?(\d+\.)?(\*|\d+)
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
@@ -306,7 +306,7 @@
     version_lookup_command: katana -version
     update_command: go install -v github.com/projectdiscovery/katana/cmd/katana@latest
     install_command: go install -v github.com/projectdiscovery/katana/cmd/katana@latest
-    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    version_match_regex: 'v(\d+\.)?(\d+\.)?(\*|\d+)'
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
