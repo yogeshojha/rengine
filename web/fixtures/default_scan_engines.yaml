@@ -21,12 +21,12 @@
       \ 'follow_redirect': false,\r\n  'max_time': 0,\r\n  'match_http_status': [200,
       204],\r\n  'recursive_level': 2,\r\n  'stop_on_error': false,\r\n  'timeout':
       5,\r\n  'threads': 30,\r\n  'wordlist_name': 'dicc'\r\n}\r\nfetch_url: {\r\n
-      \ 'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'gospider', 'katana'],\r\n
+      \ 'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'gospider', 'katana', 'gau'],\r\n
       \ 'remove_duplicate_endpoints': true,\r\n  'duplicate_fields': ['content_length',
       'page_title'],\r\n  'enable_http_crawl': true,\r\n  'gf_patterns': ['debug_logic',
       'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce',
       'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],\r\n  'ignore_file_extensions': ['png',
-      'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']\r\n}\r\nvulnerability_scan: {\r\n
+      'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],\r\n  'threads': 30\r\n}\r\nvulnerability_scan: {\r\n
       \ 'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
       \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
