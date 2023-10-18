@@ -204,6 +204,11 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
     'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'errors.log',
+        },
         'null': {
             'class': 'logging.NullHandler'
         },
@@ -243,6 +248,11 @@ LOGGING = {
         }
     },
     'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR' if DEBUG else 'CRITICAL',
+            'propagate': True,
+        },
         '': {
             'handlers': ['brief'],
             'level': 'DEBUG' if DEBUG else 'INFO',
