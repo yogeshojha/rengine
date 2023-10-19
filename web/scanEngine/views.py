@@ -211,7 +211,7 @@ def tool_specific_settings(request, slug):
                 file.write(gf_file.read().decode("utf-8"))
                 file.close()
                 messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nucleiFileUpload' in request.FILES:
             nuclei_file = request.FILES['nucleiFileUpload']
@@ -225,37 +225,37 @@ def tool_specific_settings(request, slug):
                 file.write(nuclei_file.read().decode("utf-8"))
                 file.close()
                 messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nuclei_config_text_area' in request.POST:
             with open('/root/.config/nuclei/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('nuclei_config_text_area'))
             messages.add_message(request, messages.INFO, 'Nuclei config updated!')
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'subfinder_config_text_area' in request.POST:
             with open('/root/.config/subfinder/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('subfinder_config_text_area'))
             messages.add_message(request, messages.INFO, 'Subfinder config updated!')
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'naabu_config_text_area' in request.POST:
             with open('/root/.config/naabu/config.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('naabu_config_text_area'))
             messages.add_message(request, messages.INFO, 'Naabu config updated!')
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'amass_config_text_area' in request.POST:
             with open('/root/.config/amass.ini', "w") as fhandle:
                 fhandle.write(request.POST.get('amass_config_text_area'))
             messages.add_message(request, messages.INFO, 'Amass config updated!')
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'theharvester_config_text_area' in request.POST:
             with open('/usr/src/github/theHarvester/api-keys.yaml', "w") as fhandle:
                 fhandle.write(request.POST.get('theharvester_config_text_area'))
             messages.add_message(request, messages.INFO, 'theHarvester config updated!')
-            return http.HttpResponseRedirect(reverse('tool_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
     context['settings_nav_active'] = 'active'
     context['tool_settings_li'] = 'active'
@@ -312,7 +312,7 @@ def notification_settings(request, slug):
                 request,
                 messages.INFO,
                 'Notification Settings updated successfully and test message was sent.')
-            return http.HttpResponseRedirect(reverse('notification_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('notification_settings', kwargs={'slug': slug}))
 
     context['settings_nav_active'] = 'active'
     context['notification_settings_li'] = 'active'
@@ -347,7 +347,7 @@ def proxy_settings(request, slug):
                 request,
                 messages.INFO,
                 'Proxies updated.')
-            return http.HttpResponseRedirect(reverse('proxy_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('proxy_settings', kwargs={'slug': slug}))
     context['settings_nav_active'] = 'active'
     context['proxy_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
@@ -399,7 +399,7 @@ def hackerone_settings(request, slug):
                 request,
                 messages.INFO,
                 'Hackerone Settings updated.')
-            return http.HttpResponseRedirect(reverse('hackerone_settings'), kwargs={'slug': slug})
+            return http.HttpResponseRedirect(reverse('hackerone_settings', kwargs={'slug': slug}))
     context['settings_nav_active'] = 'active'
     context['hackerone_settings_li'] = 'active'
     context['settings_ul_show'] = 'show'
@@ -437,7 +437,7 @@ def report_settings(request, slug):
                 request,
                 messages.INFO,
                 'Report Settings updated.')
-            return http.HttpResponseRedirect(reverse('report_settings'))
+            return http.HttpResponseRedirect(reverse('report_settings', kwargs={'slug': slug}))
 
 
     context['settings_nav_active'] = 'active'
