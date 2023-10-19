@@ -37,6 +37,13 @@ def get_time_taken(latest, earlier):
 		return '{} hours'.format(hours)
 	return '{} hours {} minutes'.format(hours, minutes)
 
+# Check if value is a simple string, a string with commas, a list [], a tuple (), a set {} and return an iterable
+def return_iterable(string):
+	if not isinstance(string, (list, tuple)):
+		string = [string]
+
+	return string
+
 
 # Logging formatters
 

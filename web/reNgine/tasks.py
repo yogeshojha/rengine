@@ -30,6 +30,7 @@ from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from reNgine.gpt import *
+from reNgine.utilities import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain, Vulnerability
@@ -1262,12 +1263,12 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	passive = config.get(NAABU_PASSIVE, False)
 	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
-	exclude_ports_str = ','.join(exclude_ports)
+	exclude_ports_str = ','.join(return_iterable(exclude_ports))
 	# nmap args
 	nmap_enabled = config.get(ENABLE_NMAP, False)
 	nmap_cmd = config.get(NMAP_COMMAND, '')
 	nmap_script = config.get(NMAP_SCRIPT, '')
-	nmap_script = ','.join(nmap_script)
+	nmap_script = ','.join(return_iterable(nmap_script))
 	nmap_script_args = config.get(NMAP_SCRIPT_ARGS)
 
 	if hosts:
@@ -1707,7 +1708,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 @app.task(name='fetch_url', queue='main_scan_queue', base=RengineTask, bind=True)
 def fetch_url(self, urls=[], ctx={}, description=None):
-	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
+	"""Fetch URLs using different tools like gauplus, gau, gospider, waybackurls ...
 
 	Args:
 		urls (list): List of URLs to start from.
@@ -1748,18 +1749,21 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 	# Tools cmds
 	cmd_map = {
-		'gauplus': f'gauplus --random-agent -t {threads}',
+		'gau': f'gau',
+		'gauplus': f'gauplus -random-agent',
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
 		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn',
 	}
 	if proxy:
+		cmd_map['gau'] += f' --proxy "{proxy}"'
 		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
 		cmd_map['katana'] += f' -proxy {proxy}'
 	if threads > 0:
+		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gauplus'] += f' -t {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
