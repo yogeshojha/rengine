@@ -1708,7 +1708,7 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 @app.task(name='fetch_url', queue='main_scan_queue', base=RengineTask, bind=True)
 def fetch_url(self, urls=[], ctx={}, description=None):
-	"""Fetch URLs using different tools like gauplus, gau, gospider, waybackurls ...
+	"""Fetch URLs using different tools like gauplus, gospider, waybackurls ...
 
 	Args:
 		urls (list): List of URLs to start from.
@@ -1749,21 +1749,18 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 
 	# Tools cmds
 	cmd_map = {
-		'gau': f'gau',
-		'gauplus': f'gauplus -random-agent',
+		'gauplus': f'gauplus --random-agent -t {threads}',
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
 		'katana': f'katana -list {input_path} -silent -jc -kf all -d 3 -fs rdn',
 	}
 	if proxy:
-		cmd_map['gau'] += f' --proxy "{proxy}"'
 		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
 		cmd_map['katana'] += f' -proxy {proxy}'
 	if threads > 0:
-		cmd_map['gau'] += f' --threads {threads}'
 		cmd_map['gauplus'] += f' -t {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
