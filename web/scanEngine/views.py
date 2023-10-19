@@ -437,7 +437,7 @@ def report_settings(request, slug):
                 request,
                 messages.INFO,
                 'Report Settings updated.')
-            return http.HttpResponseRedirect(reverse('report_settings'))
+            return http.HttpResponseRedirect(reverse('report_settings', kwargs={'slug': slug}))
 
 
     context['settings_nav_active'] = 'active'
