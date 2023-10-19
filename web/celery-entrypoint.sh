@@ -76,6 +76,16 @@ then
 fi
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
 
+# clone vulscan
+if [ ! -d "/usr/src/github/scipag_vulscan" ]
+then
+  echo "Cloning Nmap Vulscan script"
+  git clone https://github.com/scipag/vulscan scipag_vulscan
+  echo "Symlinking to nmap script dir"
+  ln -s `pwd`/scipag_vulscan /usr/share/nmap/scripts/vulscan
+  echo "Usage in reNgine, set vulscan/vulscan.nse in nmap_script scanEngine port_scan config parameter"
+fi
+
 # install h8mail
 python3 -m pip install h8mail
 
