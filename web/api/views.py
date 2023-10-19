@@ -1803,6 +1803,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 
 		subdomains = Subdomain.objects.filter(target_domain__project__slug=project)
 
+		if 'is_important' in req.query_params:
+			subdomains = subdomains.filter(is_important=True)
+
 		if target_id:
 			self.queryset = (
 				subdomains
