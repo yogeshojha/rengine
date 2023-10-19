@@ -81,9 +81,9 @@ python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
 if [ ! -d "/usr/src/github/scipag_vulscan" ]
 then
   echo "Cloning Nmap Vulscan script"
-  git clone https://github.com/scipag/vulscan scipag_vulscan
+  git clone https://github.com/scipag/vulscan /usr/src/github/scipag_vulscan
   echo "Symlinking to nmap script dir"
-  ln -s `pwd`/scipag_vulscan /usr/share/nmap/scripts/vulscan
+  ln -s /usr/src/github/scipag_vulscan /usr/share/nmap/scripts/vulscan
   echo "Usage in reNgine, set vulscan/vulscan.nse in nmap_script scanEngine port_scan config parameter"
 fi
 
