@@ -19,6 +19,7 @@ Package: firefox
 Pin: version 1:1snap1-0ubuntu2
 Pin-Priority: -1
 ' | tee /etc/apt/preferences.d/mozilla-firefox
+apt update
 apt install firefox -y
 
 # update whatportis
