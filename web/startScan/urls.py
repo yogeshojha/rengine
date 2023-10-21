@@ -51,7 +51,7 @@ urlpatterns = [
         views.schedule_scan,
         name='schedule_scan'),
     path(
-        'schedule/organization/<int:id>',
+        '<slug:slug>/schedule/organization/<int:id>',
         views.schedule_organization_scan,
         name='schedule_organization_scan'),
     path(

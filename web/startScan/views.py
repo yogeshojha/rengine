@@ -724,7 +724,7 @@ def start_organization_scan(request, id, slug):
 
 
 @has_permission_decorator(PERM_INITATE_SCANS_SUBSCANS, redirect_url=FOUR_OH_FOUR_URL)
-def schedule_organization_scan(request, id):
+def schedule_organization_scan(request, slug, id):
     organization =Organization.objects.get(id=id)
     if request.method == "POST":
         engine_type = int(request.POST['scan_mode'])
@@ -796,7 +796,7 @@ def schedule_organization_scan(request, id):
             messages.INFO,
             f'Scan started for {ndomains} domains in organization {organization.name}'
         )
-        return HttpResponseRedirect(reverse('scheduled_scan_view'))
+        return HttpResponseRedirect(reverse('scheduled_scan_view', kwargs={'slug': slug, 'id': id}))
 
     # GET request
     engine = EngineType.objects
