@@ -56,7 +56,7 @@ Tool Arsenal
             </a>
             <div class="dropdown-menu dropdown-menu-end" style="">
               <a class="dropdown-item" href="javascript:uninstall_tool({{tool.id}}, '{{tool.name}}')">Uninstall Tool</a>
-              <a class="dropdown-item" href="{% url 'update_tool_in_arsenal' tool.id %}">Modify Tool</a>
+              <a class="dropdown-item" href="{% url 'update_tool_in_arsenal' current_project.slug tool.id %}">Modify Tool</a>
             </div>
           </div>
           {% endif %}
