@@ -536,7 +536,7 @@ def modify_tool_in_arsenal(request, slug, id):
                 request,
                 messages.INFO,
                 'Tool modified successfully')
-            return http.HttpResponseRedirect(reverse('tool_arsenal', kwargs={'slug': slug, 'id': id}))
+            return http.HttpResponseRedirect(reverse('tool_arsenal', kwargs={'slug': slug}))
     else:
         form.set_value(external_tool)
     context = {
