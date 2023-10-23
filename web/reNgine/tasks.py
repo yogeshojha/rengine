@@ -2032,6 +2032,12 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 		http_url = sanitize_url(line.get('matched-at'))
 		subdomain_name = get_subdomain_from_url(http_url)
 
+		# Look for duplicate vulnerabilities by excluding records that might change but are irrelevant.
+		object_comparison_exclude = ['response', 'curl_command']
+		if record_exists(Vulnerability, vuln_data, object_comparison_exclude):
+			logger.warning(f'Nuclei vulnerability of severity {severity} : {vuln_data.name} for {subdomain_name} already exists')
+			continue
+
 		# TODO: this should be get only
 		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
@@ -3997,6 +4003,23 @@ def remove_duplicate_endpoints(
 					ep.delete()
 				logger.warning(msg)
 
+def record_exists(model, data, exclude_keys=[]):
+	"""
+	Check if a record already exists in the database based on the given data and exclusion criteria.
+
+	Args:
+		model (django.db.models.Model): The Django model to check against.
+		data (dict): Data dictionary containing fields and values.
+		exclude_keys (list): List of keys to exclude from the lookup.
+
+	Returns:
+		bool: True if the record exists, False otherwise.
+	"""
+	# Extract the keys that will be used for the lookup
+	lookup_fields = {key: data[key] for key in data if key not in exclude_keys}
+	
+	# Return True if a record exists based on the lookup fields, False otherwise
+	return model.objects.filter(**lookup_fields).exists()
 
 @app.task(name='run_command', bind=False, queue='run_command_queue')
 def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
