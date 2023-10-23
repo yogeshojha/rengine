@@ -2032,12 +2032,6 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 		http_url = sanitize_url(line.get('matched-at'))
 		subdomain_name = get_subdomain_from_url(http_url)
 
-		# Look for duplicate vulnerabilities by excluding records that might change but are irrelevant.
-		object_comparison_exclude = ['response', 'curl_command']
-		if record_exists(Vulnerability, vuln_data, object_comparison_exclude):
-			logger.warning(f'Nuclei vulnerability of severity {severity} : {vuln_data.name} for {subdomain_name} already exists')
-			continue
-
 		# TODO: this should be get only
 		subdomain, _ = Subdomain.objects.get_or_create(
 			name=subdomain_name,
