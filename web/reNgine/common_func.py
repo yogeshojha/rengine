@@ -416,9 +416,12 @@ def get_subdomain_from_url(url):
 	Returns:
 		str: Subdomain name.
 	"""
+	# Check if the URL has a scheme. If not, add a temporary one to prevent empty netloc.
+	if "://" not in url:
+		url = "http://" + url
+
 	url_obj = urlparse(url.strip())
-	url_str = url_obj.netloc if url_obj.scheme else url_obj.path
-	return url_str.split(':')[0]
+	return url_obj.netloc.split(':')[0]
 
 
 def get_domain_from_subdomain(subdomain):
