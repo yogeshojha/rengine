@@ -446,6 +446,10 @@ def sanitize_url(http_url):
 	Returns:
 		str: Stripped HTTP URL.
 	"""
+	# Check if the URL has a scheme. If not, add a temporary one to prevent empty netloc.
+	if "://" not in url:
+		url = "http://" + url
+
 	url = urlparse(http_url)
 	if url.netloc.endswith(':80'):
 		url = url._replace(netloc=url.netloc.replace(':80', ''))
