@@ -416,13 +416,14 @@ You can also [join our Discord channel #development](https://discord.gg/JuhHdHTt
 
 You can submit issues related to this project, but you should do it in a way that helps developers to resolve it as quickly as possible.
 
-For that, you need to add as much valuable informations as possible.
+For that, you need to add as much valuable information as possible.
 
-You can have this valuable informations by doing this steps :
+You can have this valuable information by following these steps:
 
 - Go to the root of the git cloned project
-- Edit `web/entrypoint.sh` and add at the top `export DEBUG=1`
+- Edit `web/entrypoint.sh` and add `export DEBUG=1` at the top
 This should give you this result
+
   ```python
   #!/bin/bash
 
@@ -433,12 +434,13 @@ This should give you this result
 
   exec "$@"
   ```
-- Restart the web container `docker-compose restart web`
-- To deactivate set **DEBUG** to **0** and restart web container again
+- Restart the web container: `docker-compose restart web`
+- To deactivate, set **DEBUG** to **0** and restart the web container again
 
 Then, with **DEBUG** set to **1**, in the `make logs` output you could see the full stack trace to debug reNgine.
 
 Example with the tool arsenal version check API bug.
+
 ```
 web_1          |   File "/usr/local/lib/python3.10/dist-packages/celery/app/task.py", line 411, in __call__
 web_1          |     return self.run(*args, **kwargs)
@@ -448,9 +450,9 @@ Now you know the real error is `TypeError: run_command() got an unexpected keywo
 
 And you can post the full stack trace to your newly created issue to help developers to track the root cause of the bug and correct the bug easily
 
-__Activating debug like this also give you the full stack trace in the browser__ instead of a 500 Error without any details.
-So don't forget to open the developer console and check for any XHR request with 500 error.
-If there's any check the response of this request to get your detailed error.
+**Activating debug like this also give you the full stack trace in the browser** instead of an error 500 without any details.
+So don't forget to open the developer console and check for any XHR request with error 500.
+If there's any, check the response of this request to get your detailed error.
 
 <img src="https://user-images.githubusercontent.com/1230954/276260955-ed1e1168-7c8f-43a3-b54d-b6285d52b771.png">
 
