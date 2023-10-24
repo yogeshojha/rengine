@@ -19,6 +19,7 @@ Package: firefox
 Pin: version 1:1snap1-0ubuntu2
 Pin-Priority: -1
 ' | tee /etc/apt/preferences.d/mozilla-firefox
+apt update
 apt install firefox -y
 
 # update whatportis
@@ -75,6 +76,16 @@ then
   git clone https://github.com/laramies/theHarvester /usr/src/github/theHarvester
 fi
 python3 -m pip install -r /usr/src/github/theHarvester/requirements/base.txt
+
+# clone vulscan
+if [ ! -d "/usr/src/github/scipag_vulscan" ]
+then
+  echo "Cloning Nmap Vulscan script"
+  git clone https://github.com/scipag/vulscan /usr/src/github/scipag_vulscan
+  echo "Symlinking to nmap script dir"
+  ln -s /usr/src/github/scipag_vulscan /usr/share/nmap/scripts/vulscan
+  echo "Usage in reNgine, set vulscan/vulscan.nse in nmap_script scanEngine port_scan config parameter"
+fi
 
 # install h8mail
 python3 -m pip install h8mail

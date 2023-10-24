@@ -3248,9 +3248,17 @@ def parse_nmap_vulscan_output(script_output):
 		if not line:
 			continue
 		if not line.startswith('['): # provider line
-			provider_name, provider_url = tuple(line.split(' - '))
-			data[provider_name] = {'url': provider_url.rstrip(':'), 'entries': []}
-			continue
+			if "No findings" in line:
+				logger.info(f"No findings: {line}")
+				continue
+			elif ' - ' in line:
+				provider_name, provider_url = tuple(line.split(' - '))
+				data[provider_name] = {'url': provider_url.rstrip(':'), 'entries': []}
+				continue
+			else:
+				# Log a warning
+				logger.warning(f"Unexpected line format: {line}")
+				continue
 		reg = r'\[(.*)\] (.*)'
 		matches = re.match(reg, line)
 		id, title = matches.groups()
