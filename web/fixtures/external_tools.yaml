@@ -329,3 +329,20 @@
     is_github_cloned: false
     github_clone_path: null
     subdomain_gathering_command: null
+- model: scanEngine.installedexternaltool
+  pk: 19
+  fields:
+    logo_url: null
+    name: gau
+    description: Get all URLs
+    github_url: https://github.com/lc/gau
+    license_url: https://github.com/lc/gau/blob/main/LICENSE
+    version_lookup_command: gau --version
+    update_command: go install github.com/lc/gau/v2/cmd/gau@latest
+    install_command: go install github.com/lc/gau/v2/cmd/gau@latest
+    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
+    is_default: true
+    is_subdomain_gathering: false
+    is_github_cloned: false
+    github_clone_path: null
+    subdomain_gathering_command: null
