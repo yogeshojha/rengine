@@ -424,7 +424,7 @@ You can also [join our Discord channel #development](https://discord.gg/JuhHdHTt
 
 ### Submitting issues
 
-You can submit issue to the project but you should do it in a way that helps developers to resolve it as quickly as possible.
+You can submit issues related to this project, but you should do it in a way that helps developers to resolve it as quickly as possible.
 
 For that, you need to add as much valuable informations as possible.
 
