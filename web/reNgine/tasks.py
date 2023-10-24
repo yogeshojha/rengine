@@ -3168,58 +3168,65 @@ def parse_nmap_results(xml_file, output_file=None):
 
 	for host in hosts:
 		# Grab hostname / IP from output
-		hostnames = host.get('hostnames', {})
-		if hostnames:
-			hostname = hostnames.get('hostname', {}).get('@name')
+		hostnames_dict = host.get('hostnames', {})
+		if hostnames_dict:
+			# Ensure that hostnames['hostname'] is a list for consistency
+			hostnames_list = hostnames_dict['hostname'] if isinstance(hostnames_dict['hostname'], list) else [hostnames_dict['hostname']]
+			
+			# Extract all the @name values from the list of dictionaries
+			hostnames = [entry.get('@name') for entry in hostnames_list]
 		else:
-			hostname = host.get('address')['@addr']
+			hostnames = [host.get('address')['@addr']]
 
-		# Grab ports from output
-		ports = host.get('ports', {}).get('port', [])
-		if isinstance(ports, dict):
-			ports = [ports]
+		# Iterate over each hostname for each port
+		for hostname in hostnames:
 
-		for port in ports:
-			url_vulns = []
-			port_number = port['@portid']
-			url = sanitize_url(f'{hostname}:{port_number}')
-			logger.info(f'Parsing nmap results for {hostname}:{port_number} ...')
-			if not port_number or not port_number.isdigit():
-				continue
-			port_protocol = port['@protocol']
-			scripts = port.get('script', [])
-			if isinstance(scripts, dict):
-				scripts = [scripts]
+			# Grab ports from output
+			ports = host.get('ports', {}).get('port', [])
+			if isinstance(ports, dict):
+				ports = [ports]
 
-			for script in scripts:
-				script_id = script['@id']
-				script_output = script['@output']
-				script_output_table = script.get('table', [])
-				logger.debug(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
-				if script_id == 'vulscan':
-					vulns = parse_nmap_vulscan_output(script_output)
-					url_vulns.extend(vulns)
-				elif script_id == 'vulners':
-					vulns = parse_nmap_vulners_output(script_output)
-					url_vulns.extend(vulns)
-				# elif script_id == 'http-server-header':
-				# 	TODO: nmap can help find technologies as well using the http-server-header script
-				# 	regex = r'(\w+)/([\d.]+)\s?(?:\((\w+)\))?'
-				# 	tech_name, tech_version, tech_os = re.match(regex, test_string).groups()
-				# 	Technology.objects.get_or_create(...)
-				# elif script_id == 'http_csrf':
-				# 	vulns = parse_nmap_http_csrf_output(script_output)
-				# 	url_vulns.extend(vulns)
-				else:
-					logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
+			for port in ports:
+				url_vulns = []
+				port_number = port['@portid']
+				url = sanitize_url(f'{hostname}:{port_number}')
+				logger.info(f'Parsing nmap results for {hostname}:{port_number} ...')
+				if not port_number or not port_number.isdigit():
+					continue
+				port_protocol = port['@protocol']
+				scripts = port.get('script', [])
+				if isinstance(scripts, dict):
+					scripts = [scripts]
 
-			# Add URL to vuln
-			for vuln in url_vulns:
-				# TODO: This should extend to any URL, not just HTTP
-				vuln['http_url'] = url
-				if 'http_path' in vuln:
-					vuln['http_url'] += vuln['http_path']
-				all_vulns.append(vuln)
+				for script in scripts:
+					script_id = script['@id']
+					script_output = script['@output']
+					script_output_table = script.get('table', [])
+					logger.debug(f'Ran nmap script "{script_id}" on {port_number}/{port_protocol}:\n{script_output}\n')
+					if script_id == 'vulscan':
+						vulns = parse_nmap_vulscan_output(script_output)
+						url_vulns.extend(vulns)
+					elif script_id == 'vulners':
+						vulns = parse_nmap_vulners_output(script_output)
+						url_vulns.extend(vulns)
+					# elif script_id == 'http-server-header':
+					# 	TODO: nmap can help find technologies as well using the http-server-header script
+					# 	regex = r'(\w+)/([\d.]+)\s?(?:\((\w+)\))?'
+					# 	tech_name, tech_version, tech_os = re.match(regex, test_string).groups()
+					# 	Technology.objects.get_or_create(...)
+					# elif script_id == 'http_csrf':
+					# 	vulns = parse_nmap_http_csrf_output(script_output)
+					# 	url_vulns.extend(vulns)
+					else:
+						logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
+
+				# Add URL to vuln
+				for vuln in url_vulns:
+					# TODO: This should extend to any URL, not just HTTP
+					vuln['http_url'] = url
+					if 'http_path' in vuln:
+						vuln['http_url'] += vuln['http_path']
+					all_vulns.append(vuln)
 
 	return all_vulns
 
