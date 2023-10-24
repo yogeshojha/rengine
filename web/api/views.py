@@ -919,7 +919,7 @@ class GetExternalToolCurrentVersion(APIView):
 			return Response({'status': False, 'message': 'Version Lookup command not provided.'})
 
 		version_number = None
-		_, stdout = run_command(tool.version_lookup_command, echo=True)
+		_, stdout = run_command(tool.version_lookup_command)
 		version_number = re.search(re.compile(tool.version_match_regex), str(stdout))
 		if not version_number:
 			return Response({'status': False, 'message': 'Invalid version lookup command.'})
@@ -956,6 +956,9 @@ class GithubToolCheckGetLatestRelease(APIView):
 			return Response({'status': False, 'message': 'RateLimited'})
 		elif 'message' in response and response['message'] == 'Not Found':
 			return Response({'status': False, 'message': 'Not Found'})
+		elif not response:
+			return Response({'status': False, 'message': 'Not Found'})
+		
 		# only send latest release
 		response = response[0]
 
