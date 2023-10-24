@@ -30,6 +30,7 @@ from reNgine.common_func import *
 from reNgine.definitions import *
 from reNgine.settings import *
 from reNgine.gpt import *
+from reNgine.utilities import *
 from scanEngine.models import (EngineType, InstalledExternalTool, Notification, Proxy)
 from startScan.models import *
 from startScan.models import EndPoint, Subdomain, Vulnerability
@@ -1262,12 +1263,12 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 	threads = config.get(THREADS) or self.yaml_configuration.get(THREADS, DEFAULT_THREADS)
 	passive = config.get(NAABU_PASSIVE, False)
 	use_naabu_config = config.get(USE_NAABU_CONFIG, False)
-	exclude_ports_str = ','.join(exclude_ports)
+	exclude_ports_str = ','.join(return_iterable(exclude_ports))
 	# nmap args
 	nmap_enabled = config.get(ENABLE_NMAP, False)
 	nmap_cmd = config.get(NMAP_COMMAND, '')
 	nmap_script = config.get(NMAP_SCRIPT, '')
-	nmap_script = ','.join(nmap_script)
+	nmap_script = ','.join(return_iterable(nmap_script))
 	nmap_script_args = config.get(NMAP_SCRIPT_ARGS)
 
 	if hosts:
