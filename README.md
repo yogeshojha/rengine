@@ -359,10 +359,12 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 1. Updating is as simple as running the following command:
 
     ```bash
-    cd rengine &&  sudo ./update.sh
+    cd rengine && sudo ./update.sh
     ```
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
+  
+    **NOTE:** if you're updating from 1.3.6 and you're getting a 'password authentication failed' error, consider uninstalling 1.3.6 first, then install 2.x.x as you'd normally do.
 
 ### Changelog
 
