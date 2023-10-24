@@ -47,11 +47,11 @@ urlpatterns = [
         views.start_scan_ui,
         name='start_scan'),
     path(
-        'schedule/target/<int:host_id>',
+        '<slug:slug>/schedule/target/<int:host_id>',
         views.schedule_scan,
         name='schedule_scan'),
     path(
-        'schedule/organization/<int:id>',
+        '<slug:slug>/schedule/organization/<int:id>',
         views.schedule_organization_scan,
         name='schedule_organization_scan'),
     path(
