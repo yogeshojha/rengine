@@ -2039,6 +2039,19 @@ def nuclei_individual_severity_module(self, cmd, severity, enable_http_crawl, sh
 			target_domain=self.domain
 		)
 
+		# Look for duplicate vulnerabilities by excluding records that might change but are irrelevant.
+		object_comparison_exclude = ['response', 'curl_command', 'tags', 'references', 'cve_ids', 'cwe_ids']
+
+		# Add subdomain and target domain to the duplicate check
+		vuln_data_copy = vuln_data.copy()
+		vuln_data_copy['subdomain'] = subdomain
+		vuln_data_copy['target_domain'] = self.domain
+
+		# Check if record exists, if exists do not save it
+		if record_exists(Vulnerability, data=vuln_data_copy, exclude_keys=object_comparison_exclude):
+			logger.warning(f'Nuclei vulnerability of severity {severity} : {vuln_data_copy["name"]} for {subdomain_name} already exists')
+			continue
+
 		# Get or create EndPoint object
 		response = line.get('response')
 		httpx_crawl = False if response else enable_http_crawl # avoid yet another httpx crawl
@@ -3467,6 +3480,25 @@ def parse_crlfuzz_result(url):
 	}
 
 
+def record_exists(model, data, exclude_keys=[]):
+	"""
+	Check if a record already exists in the database based on the given data.
+
+	Args:
+		model (django.db.models.Model): The Django model to check against.
+		data (dict): Data dictionary containing fields and values.
+		exclude_keys (list): List of keys to exclude from the lookup.
+
+	Returns:
+		bool: True if the record exists, False otherwise.
+	"""
+	
+	# Extract the keys that will be used for the lookup
+	lookup_fields = {key: data[key] for key in data if key not in exclude_keys}
+
+	# Return True if a record exists based on the lookup fields, False otherwise
+	return model.objects.filter(**lookup_fields).exists()
+
 @app.task(name='geo_localize', bind=False, queue='geo_localize_queue')
 def geo_localize(host, ip_id=None):
 	"""Uses geoiplookup to find location associated with host.
@@ -3996,7 +4028,6 @@ def remove_duplicate_endpoints(
 					msg += f'\n\t {ep.http_url} [{ep.http_status}] [{field_name}={field_value}]'
 					ep.delete()
 				logger.warning(msg)
-
 
 @app.task(name='run_command', bind=False, queue='run_command_queue')
 def run_command(cmd, cwd=None, shell=False, history_file=None, scan_id=None, activity_id=None):
