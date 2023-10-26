@@ -60,7 +60,6 @@ else
   tput setaf 2; echo "Docker installed!!!"
 fi
 
-
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -74,7 +73,6 @@ else
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "docker-compose installed!!!"
 fi
-
 
 echo " "
 tput setaf 4;
@@ -101,8 +99,6 @@ else
   echo "You can run docker service using sudo systemctl start docker"
   exit 1
 fi
-
-
 
 echo " "
 tput setaf 4;
