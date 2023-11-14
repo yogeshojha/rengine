@@ -903,7 +903,7 @@ $(document).ready(function(){
 	chart.render()
 
 	$("#pills-subdomain-tab").click(function() {
-		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{target.id}}&format=datatables';
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables';
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
@@ -958,7 +958,7 @@ $(document).ready(function(){
 							var web_server = '';
 							var waf_badge = '';
 							if (row['technologies']){
-								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{target.id}}, domain_id=null) + '</div>';
+								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id=null, domain_id=null) + '</div>';
 							}
 							if(row['is_interesting'])
 							{
