@@ -1568,6 +1568,9 @@ $(document).ready(function(){
 					}
 				});
 			});
+			$('#reload_vulnerabilities_table_btn').click(function() {
+				vulnerability_table.ajax.reload();
+			});
 			// column visibility
 			vulnerability_datatable_col_visibility(vulnerability_table);
 		},
