@@ -1536,6 +1536,11 @@ $(document).ready(function() {
 		// vulnerability datatable
 		const ps2 = new PerfectScrollbar(document.querySelector('.vulnerability-search'));
 		$("#pills-vulnerabilities-tab").click(function() {
+			// prevent table loading twice
+			// https://datatables.net/manual/tech-notes/3
+			if ( $.fn.dataTable.isDataTable( '#subdomain_scan_results' ) ) {
+				return false;
+			}
 			var is_grouping = false;
 			var grouping_col = 3;
 			var vuln_ajax_url = '/api/listVulnerability/?scan_history={{scan_history_id}}&format=datatables';
@@ -1777,6 +1782,10 @@ $(document).ready(function() {
 				});
 			});
 
+			$('#reload_vulnerabilities_table_btn').click(function () {
+				vulnerability_table.ajax.reload();
+			});
+			
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
