@@ -2020,8 +2020,7 @@ $(document).ready(function() {
 
 	{% if 'screenshot' in history.tasks %}
 		$("#pills-screenshot-tab").click(function() {
-			// prevent table loading twice because it loads image twice and fails search
-			if ( $.fn.dataTable.isDataTable( '#vulnerability_results' ) ) {
+			if($('#screenshots-table').children().length > 0) {
 				return false;
 			}
 			get_screenshot({{scan_history_id}});
