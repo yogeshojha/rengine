@@ -368,13 +368,13 @@ def onboarding(request):
 
     context['error'] = error
     # check is any projects exists, then redirect to project list else onboarding
-    projects = Project.objects.all()
+    project = Project.objects.first()
 
     context['openai_key'] = OpenAiAPIKey.objects.first()
     context['netlas_key'] = NetlasAPIKey.objects.first()
 
-    if len(projects):
-        slug = projects[0].slug
+    if projects:
+        slug = project.slug
         return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
 
     return render(request, 'dashboard/onboarding.html', context)
