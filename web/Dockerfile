@@ -48,9 +48,9 @@ RUN apt install -y  --no-install-recommends \
 RUN add-apt-repository ppa:mozillateam/ppa
 
 # Download and install go 1.20
-RUN wget https://golang.org/dl/go1.20.linux-amd64.tar.gz
-RUN tar -xvf go1.20.linux-amd64.tar.gz
-RUN rm go1.20.linux-amd64.tar.gz
+RUN wget https://golang.org/dl/go1.21.4.linux-amd64.tar.gz
+RUN tar -xvf go1.21.4.linux-amd64.tar.gz
+RUN rm go1.21.4.linux-amd64.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
@@ -74,7 +74,7 @@ RUN go install -v github.com/tomnomnom/unfurl@latest
 RUN go install -v github.com/tomnomnom/waybackurls@latest
 RUN go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
 RUN go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-RUN go install -v github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest
+RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
 RUN go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
 RUN go install -v github.com/hakluke/hakrawler@latest
 RUN go install -v github.com/lc/gau/v2/cmd/gau@latest
