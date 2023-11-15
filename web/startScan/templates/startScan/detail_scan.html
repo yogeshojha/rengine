@@ -1034,7 +1034,7 @@ Scan Findings
 								</div>
 							</div>
 							<div class="col-12">
-								<div class="gridzy">
+								<div class="gridzy" id="screenshots-table">
 								</div>
 							</div>
 						</div>
@@ -2020,6 +2020,10 @@ $(document).ready(function() {
 
 	{% if 'screenshot' in history.tasks %}
 		$("#pills-screenshot-tab").click(function() {
+			// prevent table loading twice because it loads image twice and fails search
+			if ( $.fn.dataTable.isDataTable( '#vulnerability_results' ) ) {
+				return false;
+			}
 			get_screenshot({{scan_history_id}});
 
 			//animate search placeholder

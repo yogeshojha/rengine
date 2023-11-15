@@ -483,6 +483,9 @@ function get_osint_users(scan_id){
 }
 
 function get_screenshot(scan_id){
+	if($('#screenshots-table').children().length > 0) {
+		return false;
+	}
 	var port_array = [];
 	var service_array = [];
 	var tech_array = [];
