@@ -159,6 +159,8 @@ exec "$@"
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
+# Install web interface to mnitor celery task (for debug)
+python3 -m pip install flower
 
 # watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
 echo "Starting Workers..."
