@@ -525,7 +525,7 @@ class VisualiseDorkSerializer(serializers.ModelSerializer):
 		return dork.type
 
 	def get_description(self, dork):
-		return dork.description
+		return dork.type
 
 	def get_http_url(self, dork):
 		return dork.url
