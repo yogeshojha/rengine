@@ -2107,6 +2107,9 @@ $(document).ready(function() {
 	});
 
 	$("#pills-visualisation-tab").click(function() {
+		if($('#visualisation').children().length > 0) {
+			return false;
+		}
 		visualise_scan_results({{scan_history_id}});
 	});
 
