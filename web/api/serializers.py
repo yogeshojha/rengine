@@ -870,7 +870,7 @@ class SubdomainSerializer(serializers.ModelSerializer):
 		return subdomain.get_subscan_count
 
 	def get_todos_count(self, subdomain):
-		return len(subdomain.get_todos)
+		return len(subdomain.get_todos.filter(is_done=False))
 
 	def get_vuln_count(self, obj):
 		try:
