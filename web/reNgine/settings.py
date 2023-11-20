@@ -231,7 +231,13 @@ LOGGING = {
             'filename': 'db.log',
             'maxBytes': 1024,
             'backupCount': 3
-        }
+        },
+        'celery': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'simple',
+            'filename': 'celery.log',
+            'maxBytes': 1024 * 1024 * 100,  # 100 mb
+        },
     },
     'formatters': {
         'default': {
@@ -242,6 +248,10 @@ LOGGING = {
         },
         'task': {
             '()': lambda : RengineTaskFormatter('%(task_name)-34s | %(levelname)s | %(message)s')
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+            'datefmt': '%y %b %d, %H:%M:%S',
         }
     },
     'loggers': {
@@ -254,6 +264,10 @@ LOGGING = {
             'handlers': ['brief'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False
+        },
+        'celery': {
+            'handlers': ['celery'],
+            'level': 'DEBUG' if DEBUG else 'ERROR',
         },
         'celery.app.trace': {
             'handlers': ['null'],
