@@ -86,7 +86,7 @@ NUCLEI = 'nuclei'
 CRLFUZZ = 'crlfuzz'
 WAF_EVASION = 'waf_evasion'
 BLIND_XSS_SERVER = 'blind_xss_server'
-USER_AGENT = 'blind_xss_server'
+USER_AGENT = 'user_agent'
 DELAY = 'delay'
 PROVIDERS = 'providers'
 
