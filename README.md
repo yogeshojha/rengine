@@ -318,11 +318,26 @@ screenshot: {
     git clone https://github.com/yogeshojha/rengine && cd rengine
     ```
 
-1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
+1. Edit the `.env` file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
 
     ```bash
     nano .env
     ```
+
+1. **Optional, only for non-interactive install**: In the `.env` file, **please make sure to change the super admin values!**
+
+    ```bash
+    DJANGO_SUPERUSER_USERNAME=yourUsername
+    DJANGO_SUPERUSER_EMAIL=YourMail@example.com
+    DJANGO_SUPERUSER_PASSWORD=yourStrongPassword
+    ```
+    If you need to carry out a non-interactive installation, you can setup the login, email and password of the web interface admin directly from the .env file (instead of manually setting them from prompts during the installation process). This option can be interesting for automated installation (via ansible, vagrant, etc.).
+
+    `DJANGO_SUPERUSER_USERNAME`: web interface admin username (used to login to the web interface).
+
+    `DJANGO_SUPERUSER_EMAIL`: web interface admin email.
+
+    `DJANGO_SUPERUSER_PASSWORD`: web interface admin password (used to login to the web interface).
 
 1. In the dotenv file, you may also modify the Scaling Configurations
 
@@ -352,6 +367,12 @@ screenshot: {
     sudo ./install.sh
     ```
 
+    Or for a non-interactive installation, use `-n` argument (make sure you've modified the `.env` file before launching the installation).
+
+    ```bash
+    sudo ./install.sh -n
+    ```
+
     If `install.sh` does not have install permission, please change it, `chmod +x install.sh`
 
 **reNgine can now be accessed from <https://127.0.0.1> or if you're on the VPS <https://your_vps_ip_address>**
@@ -367,12 +388,10 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 1. Updating is as simple as running the following command:
 
     ```bash
-    cd rengine && sudo ./update.sh
+    cd rengine &&  sudo ./update.sh
     ```
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
-  
-    **NOTE:** if you're updating from 1.3.6 and you're getting a 'password authentication failed' error, consider uninstalling 1.3.6 first, then install 2.x.x as you'd normally do.
 
 ### Changelog
 
