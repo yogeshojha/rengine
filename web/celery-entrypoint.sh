@@ -148,7 +148,7 @@ exec "$@"
 # httpx seems to have issue, use alias instead!!!
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
-loglevel='$loglevel'
+loglevel='info'
 if [ "$DEBUG" == "1" ]; then
     loglevel='debug'
 fi
