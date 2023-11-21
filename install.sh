@@ -1,15 +1,5 @@
 #!/bin/bash
 
-usageFunction()
-{
-  echo " "
-  tput setaf 2;
-  echo "Usage: $0 (-n) (-h)"
-  echo -e "\t-n Non-interactive installation (Optional)"
-  echo -e "\t-h Show usage"
-  exit 1
-}
-
 tput setaf 2;
 cat web/art/reNgine.txt
 
@@ -17,29 +7,15 @@ tput setaf 1; echo "Before running this script, please make sure Docker is runni
 tput setaf 2; echo "Changing the postgres username & password from .env is highly recommended."
 
 tput setaf 4;
-
-isNonInteractive=false
-while getopts nh opt; do
-   case $opt in
-      n) isNonInteractive=true ;;
-      h) usageFunction ;;
-      ?) usageFunction ;;
-   esac
-done
-
-if [ $isNonInteractive = false ]; then
-    read -p "Are you sure, you made changes to .env file (y/n)? " answer
-    case ${answer:0:1} in
-        y|Y|yes|YES|Yes )
-          echo "Continiuing Installation!"
-        ;;
-        * )
-          nano .env
-        ;;
-    esac
-else
-  echo "Non-interactive installation parameter set. Installation begins."
-fi
+read -p "Are you sure, you made changes to .env file (y/n)? " answer
+case ${answer:0:1} in
+    y|Y|yes|YES|Yes )
+      echo "Continiuing Installation!"
+    ;;
+    * )
+      nano .env
+    ;;
+esac
 
 echo " "
 tput setaf 3;
@@ -139,7 +115,7 @@ if [ "${failed}" -eq 0 ]; then
   echo "#########################################################################"
   echo "Creating an account"
   echo "#########################################################################"
-  make username isNonInteractive=$isNonInteractive
+  make username
 
   tput setaf 2 && printf "\n%s\n" "Thank you for installing reNgine, happy recon!!"
 else

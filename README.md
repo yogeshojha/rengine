@@ -319,26 +319,11 @@ screenshot: {
     git clone https://github.com/yogeshojha/rengine && cd rengine
     ```
 
-1. Edit the `.env` file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!** 
+1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
 
     ```bash
     nano .env
     ```
-
-1. **Optional, only for non-interactive install**: In the `.env` file, **please make sure to change the super admin values!**
-
-    ```bash
-    DJANGO_SUPERUSER_USERNAME=yourUsername
-    DJANGO_SUPERUSER_EMAIL=YourMail@example.com
-    DJANGO_SUPERUSER_PASSWORD=yourStrongPassword
-    ```
-    If you need to carry out a non-interactive installation, you can setup the login, email and password of the web interface admin directly from the .env file (instead of manually setting them from prompts during the installation process). This option can be interesting for automated installation (via ansible, vagrant, etc.).
-
-    `DJANGO_SUPERUSER_USERNAME`: web interface admin username (used to login to the web interface).
-
-    `DJANGO_SUPERUSER_EMAIL`: web interface admin email.
-
-    `DJANGO_SUPERUSER_PASSWORD`: web interface admin password (used to login to the web interface).
 
 1. In the dotenv file, you may also modify the Scaling Configurations
 
@@ -347,9 +332,9 @@ screenshot: {
     MIN_CONCURRENCY=10
     ```
 
-    `MAX_CONCURRENCY`: This parameter specifies the maximum number of reNgine's concurrent Celery worker processes that can be spawned. In this case, it's set to 80, meaning that the application can utilize up to 80 concurrent worker processes to execute tasks concurrently. This is useful for handling a high volume of scans or when you want to scale up processing power during periods of high demand. If you have more CPU cores, you will need to increase this for maximised performance.
+    MAX_CONCURRENCY: This parameter specifies the maximum number of reNgine's concurrent Celery worker processes that can be spawned. In this case, it's set to 80, meaning that the application can utilize up to 80 concurrent worker processes to execute tasks concurrently. This is useful for handling a high volume of scans or when you want to scale up processing power during periods of high demand. If you have more CPU cores, you will need to increase this for maximised performance.
 
-    `MIN_CONCURRENCY`: On the other hand, MIN_CONCURRENCY specifies the minimum number of concurrent worker processes that should be maintained, even during periods of lower demand. In this example, it's set to 10, which means that even when there are fewer tasks to process, at least 10 worker processes will be kept running. This helps ensure that the application can respond promptly to incoming tasks without the overhead of repeatedly starting and stopping worker processes.
+    MIN_CONCURRENCY: On the other hand, MIN_CONCURRENCY specifies the minimum number of concurrent worker processes that should be maintained, even during periods of lower demand. In this example, it's set to 10, which means that even when there are fewer tasks to process, at least 10 worker processes will be kept running. This helps ensure that the application can respond promptly to incoming tasks without the overhead of repeatedly starting and stopping worker processes.
 
     These settings allow for dynamic scaling of Celery workers, ensuring that the application efficiently manages its workload by adjusting the number of concurrent workers based on the workload's size and complexity
 
@@ -357,12 +342,6 @@ screenshot: {
 
     ```bash
     sudo ./install.sh
-    ```
-
-    Or for a non-interactive installation, use `-n` argument (make sure you've modified the `.env` file before launching the installation).
-
-    ```bash
-    sudo ./install.sh -n
     ```
 
     If `install.sh` does not have install permission, please change it, `chmod +x install.sh`
