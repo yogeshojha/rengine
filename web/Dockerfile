@@ -91,6 +91,13 @@ RUN go install -v github.com/sa7mon/s3scanner@latest
 RUN nuclei -update
 RUN nuclei -update-templates
 
+# Update project discovery tools
+RUN httpx -up
+RUN naabu -up
+RUN subfinder -up
+RUN tlsx -up
+RUN katana -up
+
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools pip && \
