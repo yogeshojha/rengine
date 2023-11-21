@@ -84,7 +84,6 @@ else
   tput setaf 2; echo "Docker installed!!!"
 fi
 
-
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -93,12 +92,11 @@ echo "#########################################################################"
 if [ -x "$(command -v docker-compose)" ]; then
   tput setaf 2; echo "docker-compose already installed, skipping."
 else
-  curl -L "https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "docker-compose installed!!!"
 fi
-
 
 echo " "
 tput setaf 4;
@@ -125,8 +123,6 @@ else
   echo "You can run docker service using sudo systemctl start docker"
   exit 1
 fi
-
-
 
 echo " "
 tput setaf 4;
