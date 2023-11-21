@@ -1148,11 +1148,15 @@ function add_note_for_subdomain(subdomain_id, subdomain_name){
 function add_note_for_subdomain_handler(subdomain_id){
 	var title = document.getElementById('subdomainTodoTitle').value;
 	var description = document.getElementById('subdomainTodoDescription').value;
+	var project = document.querySelector('input[name="current_project"]').value;
+	var scan_id = parseInt(document.getElementById('summary_identifier_val').value);
 
 	data = {
 		'title': title,
 		'description': description,
-		'subdomain_id': subdomain_id
+		'subdomain_id': subdomain_id,
+		'project': project,
+		'scan_history_id': scan_id
 	}
 
 	fetch('/api/add/recon_note/', {
