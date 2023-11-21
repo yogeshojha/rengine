@@ -3,7 +3,7 @@ argh==0.26.2
 beautifulsoup4==4.9.3
 celery==5.3.4
 discord-webhook==1.3.0
-Django==3.2.4
+Django==3.2.23
 django-ace==1.0.11
 django-celery-beat==2.2.1
 django-login-required-middleware==0.6.1
