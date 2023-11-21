@@ -4123,15 +4123,21 @@ def stream_command(cmd, cwd=None, shell=False, history_file=None, encoding='utf-
 	process = subprocess.Popen(
 		command,
 		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE,
+		stderr=subprocess.STDOUT,
+		universal_newlines=True,
 		shell=shell)
 
 	# Log the output in real-time to the database
 	output = ""
 
 	# Process the output
-	for line in iter(lambda: process.stdout.readline() or process.stderr.readline(), b''):
-		line = re.sub(r'\x1b[^m]*m', '', line.decode('utf-8').strip())
+	for line in iter(lambda: process.stdout.readline(), b''):
+		if not line:
+			break
+		line = line.strip()
+		ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+		line = ansi_escape.sub('', line)
+		line = line.replace('\\x0d\\x0a', '\n')
 		if trunc_char and line.endswith(trunc_char):
 			line = line[:-1]
 		item = line
