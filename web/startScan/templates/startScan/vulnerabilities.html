@@ -323,6 +323,9 @@ $(document).ready(function() {
 			}
 		});
 	});
+	$('#reload_vulnerabilities_table_btn').click(function () {
+		vulnerability_table.ajax.reload();
+	});
 });
 
 var vulnerability_cols = [

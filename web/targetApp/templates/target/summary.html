@@ -903,14 +903,19 @@ $(document).ready(function(){
 	chart.render()
 
 	$("#pills-subdomain-tab").click(function() {
-		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables';
+		// prevent table loading twice
+		// https://datatables.net/manual/tech-notes/3
+		if ( $.fn.dataTable.isDataTable( '#subdomain_scan_results' ) ) {
+			return false;
+		}
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{target.id}}&format=datatables';
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
 			"headerCallback": function(e, a, t, n, s) {
 				e.getElementsByTagName("th")[0].innerHTML='<div class="form-check ms-1 form-check-primary"><input type="checkbox" class="float-start form-check-input chk-parent" id="head_checkbox" onclick=mainCheckBoxSelected(this)>\n<span class="new-control-indicator"></span><span style="visibility:hidden">c</span></div>\n'
 			},
-			"destroy": true,
+			"destroy": false,
 			"processing": true,
 			"oLanguage": subdomain_oLanguage,
 			"fnCreatedRow": function (nRow, aData, iDataIndex) {
@@ -1335,11 +1340,16 @@ $(document).ready(function(){
 	});
 
 	$("#pills-vulnerabilities-tab").click(function() {
+		// prevent table loading twice
+		// https://datatables.net/manual/tech-notes/3
+		if ( $.fn.dataTable.isDataTable( '#vulnerability_results' ) ) {
+			return false;
+		}
 		var is_grouping = false;
 		var grouping_col = 3;
 		var vuln_ajax_url = '/api/listVulnerability/?target_id={{target.id}}&format=datatables';
 		var vulnerability_table = $('#vulnerability_results').DataTable({
-			"destroy": true,
+			"destroy": false,
 			"oLanguage": {
 				"oPaginate": {
 					"sPrevious": '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather feather-arrow-left"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>',
@@ -1557,6 +1567,9 @@ $(document).ready(function(){
 						});
 					}
 				});
+			});
+			$('#reload_vulnerabilities_table_btn').click(function() {
+				vulnerability_table.ajax.reload();
 			});
 			// column visibility
 			vulnerability_datatable_col_visibility(vulnerability_table);
