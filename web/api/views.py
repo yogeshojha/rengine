@@ -2116,7 +2116,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 		subdomain_id = req.query_params.get('subdomain_id')
 		project = req.query_params.get('project')
 
-		endpoints_obj = EndPoint.objects.filter(target_domain__project__slug=project)
+		endpoints_obj = EndPoint.objects.filter(scan_history__domain__project__slug=project)
 
 		gf_tag = req.query_params.get(
 			'gf_tag') if 'gf_tag' in req.query_params else None
@@ -2125,12 +2125,6 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			endpoints = (
 				endpoints_obj
 				.filter(scan_history__id=scan_id)
-				.distinct()
-			)
-		elif target_id:
-			endpoints = (
-				endpoints_obj
-				.filter(target_domain__id=target_id)
 				.distinct()
 			)
 		else:

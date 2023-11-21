@@ -37,10 +37,10 @@ def index(request, slug):
         return HttpResponseRedirect(reverse('four_oh_four'))
 
     domains = Domain.objects.filter(project=project)
-    subdomains = Subdomain.objects.filter(target_domain__project=project)
-    endpoints = EndPoint.objects.filter(target_domain__project=project)
+    subdomains = Subdomain.objects.filter(scan_history__domain__project__slug=project)
+    endpoints = EndPoint.objects.filter(scan_history__domain__project__slug=project)
     scan_histories = ScanHistory.objects.filter(domain__project=project)
-    vulnerabilities = Vulnerability.objects.filter(target_domain__project=project)
+    vulnerabilities = Vulnerability.objects.filter(scan_history__domain__project__slug=project)
     scan_activities = ScanActivity.objects.filter(scan_of__in=scan_histories)
 
     domain_count = domains.count()
