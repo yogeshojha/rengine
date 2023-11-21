@@ -963,7 +963,7 @@ $(document).ready(function(){
 							var web_server = '';
 							var waf_badge = '';
 							if (row['technologies']){
-								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id={{target.id}}, domain_id=null) + '</div>';
+								tech_badge = '<div>' + parse_technology(row['technologies'], "primary", scan_id=null, domain_id=null) + '</div>';
 							}
 							if(row['is_interesting'])
 							{
