@@ -4496,7 +4496,7 @@ def save_endpoint(
 		if not validators.url(http_url):
 			return None, False
 		http_url = sanitize_url(http_url)
-		if os.environ.get('DEBUG')
+		if os.environ.get('DEBUG'):
 			logger.warning(f'================== URL : '+http_url+' 						==================')
 		try:
 			endpoint, created = EndPoint.objects.get_or_create(
