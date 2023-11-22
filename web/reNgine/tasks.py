@@ -4496,8 +4496,6 @@ def save_endpoint(
 		if not validators.url(http_url):
 			return None, False
 		http_url = sanitize_url(http_url)
-		if os.environ.get('DEBUG'):
-			logger.warning(f'================== URL : '+http_url)
 		try:
 			endpoint, created = EndPoint.objects.get_or_create(
 				scan_history=scan,
@@ -4505,7 +4503,7 @@ def save_endpoint(
 				http_url=http_url,
 				**endpoint_data)
 		except Exception as e:
-			logger.error(e)
+			logger.error(f'/!\ - URL : '+http_url+', exception: '+e)
 			return None, False
 
 	if created:
