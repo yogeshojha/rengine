@@ -18,7 +18,7 @@ docker rm rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 reng
 echo "Removed all containers"
 
 echo "Removing all volumes related to reNgine"
-docker volume rm rengine_gf_patterns rengine_github_repos rengine_nuclei_templates rengine_postgres_data rengine_scan_results rengine_tool_config
+docker volume rm rengine_gf_patterns rengine_github_repos rengine_nuclei_templates rengine_postgres_data rengine_scan_results rengine_tool_config rengine_static_volume rengine_wordlist
 echo "Removed all volumes"
 
 echo "Removing all networks related to reNgine"
