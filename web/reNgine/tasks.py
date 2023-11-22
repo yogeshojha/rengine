@@ -4509,7 +4509,7 @@ def save_endpoint(
 			created = False
 		else:
 			# No existing record, create a new one
-			endpoint, created = EndPoint.objects.get_or_create(
+			endpoint, created = EndPoint.objects.create(
 				scan_history=scan,
 				target_domain=domain,
 				http_url=http_url,
