@@ -10,9 +10,6 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
-echo "Stopping reNgine"
-docker stop rengine-web-1 rengine-db-1 rengine-celery-1 rengine-celery-beat-1 rengine-redis-1 rengine-tor-1 rengine-proxy-1
-
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Stopping reNgine"
