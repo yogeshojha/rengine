@@ -1575,6 +1575,8 @@ def dir_file_fuzz(self, ctx={}, description=None):
 	enable_http_crawl = config.get(ENABLE_HTTP_CRAWL, DEFAULT_ENABLE_HTTP_CRAWL)
 	rate_limit = config.get(RATE_LIMIT) or self.yaml_configuration.get(RATE_LIMIT, DEFAULT_RATE_LIMIT)
 	extensions = config.get(EXTENSIONS, DEFAULT_DIR_FILE_FUZZ_EXTENSIONS)
+	# prepend . on extensions
+	extensions = [ext if ext.startswith('.') else '.' + ext for ext in extensions]
 	extensions_str = ','.join(map(str, extensions))
 	follow_redirect = config.get(FOLLOW_REDIRECT, FFUF_DEFAULT_FOLLOW_REDIRECT)
 	max_time = config.get(MAX_TIME, 0)
@@ -3176,7 +3178,7 @@ def parse_nmap_results(xml_file, output_file=None):
 		if hostnames_dict:
 			# Ensure that hostnames['hostname'] is a list for consistency
 			hostnames_list = hostnames_dict['hostname'] if isinstance(hostnames_dict['hostname'], list) else [hostnames_dict['hostname']]
-			
+
 			# Extract all the @name values from the list of dictionaries
 			hostnames = [entry.get('@name') for entry in hostnames_list]
 		else:
@@ -3511,7 +3513,7 @@ def record_exists(model, data, exclude_keys=[]):
 	Returns:
 		bool: True if the record exists, False otherwise.
 	"""
-	
+
 	# Extract the keys that will be used for the lookup
 	lookup_fields = {key: data[key] for key in data if key not in exclude_keys}
 
