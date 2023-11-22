@@ -1666,38 +1666,37 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
-			if endpoint:
-				# endpoint.is_default = False
-				endpoint.http_status = status
-				endpoint.content_length = length
-				endpoint.response_time = duration / 1000000000
-				endpoint.save()
-				if created:
-					urls.append(endpoint.http_url)
-				endpoint.status = status
-				endpoint.content_type = content_type
-				endpoint.content_length = length
-				dfile, created = DirectoryFile.objects.get_or_create(
-					name=name,
-					length=length,
-					words=words,
-					lines=lines,
-					content_type=content_type,
-					url=url)
-				dfile.http_status = status
-				dfile.save()
-				# if created:
-				# 	logger.warning(f'Found new directory or file {url}')
-				dirscan.directory_files.add(dfile)
-				dirscan.save()
+			# endpoint.is_default = False
+			endpoint.http_status = status
+			endpoint.content_length = length
+			endpoint.response_time = duration / 1000000000
+			endpoint.save()
+			if created:
+				urls.append(endpoint.http_url)
+			endpoint.status = status
+			endpoint.content_type = content_type
+			endpoint.content_length = length
+			dfile, created = DirectoryFile.objects.get_or_create(
+				name=name,
+				length=length,
+				words=words,
+				lines=lines,
+				content_type=content_type,
+				url=url)
+			dfile.http_status = status
+			dfile.save()
+			# if created:
+			# 	logger.warning(f'Found new directory or file {url}')
+			dirscan.directory_files.add(dfile)
+			dirscan.save()
 
-				if self.subscan:
-					dirscan.dir_subscan_ids.add(self.subscan)
+			if self.subscan:
+				dirscan.dir_subscan_ids.add(self.subscan)
 
-				subdomain_name = get_subdomain_from_url(endpoint.http_url)
-				subdomain = Subdomain.objects.get(name=subdomain_name, scan_history=self.scan)
-				subdomain.directories.add(dirscan)
-				subdomain.save()
+			subdomain_name = get_subdomain_from_url(endpoint.http_url)
+			subdomain = Subdomain.objects.get(name=subdomain_name, scan_history=self.scan)
+			subdomain.directories.add(dirscan)
+			subdomain.save()
 
 	# Crawl discovered URLs
 	if enable_http_crawl:
@@ -4496,15 +4495,26 @@ def save_endpoint(
 		if not validators.url(http_url):
 			return None, False
 		http_url = sanitize_url(http_url)
-		try:
+
+		# Try to get the first matching record (prevent duplicate error)
+		endpoints = EndPoint.objects.filter(
+			scan_history=scan,
+			target_domain=domain,
+			http_url=http_url,
+			**endpoint_data
+		)
+
+		if endpoints.exists():
+			endpoint = endpoints.first()
+			created = False
+		else:
+			# No existing record, create a new one
 			endpoint, created = EndPoint.objects.get_or_create(
 				scan_history=scan,
 				target_domain=domain,
 				http_url=http_url,
-				**endpoint_data)
-		except Exception as e:
-			logger.error(f'/!\ - URL : '+http_url+', exception: '+str(e))
-			return None, False
+				**endpoint_data
+			)
 
 	if created:
 		endpoint.is_default = is_default
