@@ -4503,7 +4503,7 @@ def save_endpoint(
 				http_url=http_url,
 				**endpoint_data)
 		except Exception as e:
-			logger.error(f'/!\ - URL : '+http_url+', exception: '+e)
+			logger.error(f'/!\ - URL : '+http_url+', exception: '+str(e))
 			return None, False
 
 	if created:
