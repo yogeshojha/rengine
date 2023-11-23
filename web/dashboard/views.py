@@ -1,69 +1,88 @@
+import json
+import logging
+
 from datetime import timedelta
 
-from targetApp.models import Domain
-from startScan.models import *
-
-from django.utils import timezone
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from django.db.models.functions import TruncDay
-from django.contrib.auth.decorators import login_required
-from django.dispatch import receiver
-from django.contrib.auth.signals import user_logged_out, user_logged_in
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from django.db.models import Count, Value, CharField, Q
+from django.contrib.auth.signals import user_logged_in, user_logged_out
+from django.contrib import messages
+from django.db.models import Count
+from django.db.models.functions import TruncDay
+from django.dispatch import receiver
+from django.shortcuts import redirect, render, get_object_or_404
+from django.utils import timezone
+from django.http import HttpResponseRedirect, JsonResponse
+from django.urls import reverse
+from rolepermissions.roles import assign_role, clear_roles
+from rolepermissions.decorators import has_permission_decorator
+from django.template.defaultfilters import slugify
 
 
-def index(request):
-    domain_count = Domain.objects.all().count()
-    endpoint_count = EndPoint.objects.all().count()
-    scan_count = ScanHistory.objects.all().count()
-    subdomain_count = Subdomain.objects.all().count()
-    subdomain_with_ip_count = Subdomain.objects.filter(ip_addresses__isnull=False).count()
-    alive_count = \
-        Subdomain.objects.all().exclude(http_status__exact=0).count()
-    endpoint_alive_count = \
-        EndPoint.objects.filter(http_status__exact=200).count()
-    recent_completed_scans = ScanHistory.objects.all().order_by(
-        '-start_scan_date').filter(Q(scan_status=0) | Q(scan_status=2) | Q(scan_status=3))[:5]
-    currently_scanning = ScanHistory.objects.order_by(
-        '-start_scan_date').filter(scan_status=1)[:5]
-    pending_scans = ScanHistory.objects.filter(scan_status=-1)[:5]
-    info_count = Vulnerability.objects.filter(severity=0).count()
-    low_count = Vulnerability.objects.filter(severity=1).count()
-    medium_count = Vulnerability.objects.filter(severity=2).count()
-    high_count = Vulnerability.objects.filter(severity=3).count()
-    critical_count = Vulnerability.objects.filter(severity=4).count()
-    vulnerability_feed = Vulnerability.objects.all().order_by(
-        '-discovered_date')[:20]
-    activity_feed = ScanActivity.objects.all().order_by('-time')[:20]
+from startScan.models import *
+from targetApp.models import Domain
+from dashboard.models import *
+from reNgine.definitions import *
+
+
+logger = logging.getLogger(__name__)
+
+def index(request, slug):
+    try:
+        project = Project.objects.get(slug=slug)
+    except Exception as e:
+        # if project not found redirect to 404
+        return HttpResponseRedirect(reverse('four_oh_four'))
+
+    domains = Domain.objects.filter(project=project)
+    subdomains = Subdomain.objects.filter(scan_history__domain__project__slug=project)
+    endpoints = EndPoint.objects.filter(scan_history__domain__project__slug=project)
+    scan_histories = ScanHistory.objects.filter(domain__project=project)
+    vulnerabilities = Vulnerability.objects.filter(scan_history__domain__project__slug=project)
+    scan_activities = ScanActivity.objects.filter(scan_of__in=scan_histories)
+
+    domain_count = domains.count()
+    endpoint_count = endpoints.count()
+    scan_count = scan_histories.count()
+    subdomain_count = subdomains.count()
+    subdomain_with_ip_count = subdomains.filter(ip_addresses__isnull=False).count()
+    alive_count = subdomains.exclude(http_status__exact=0).count()
+    endpoint_alive_count = endpoints.filter(http_status__exact=200).count()
+
+    info_count = vulnerabilities.filter(severity=0).count()
+    low_count = vulnerabilities.filter(severity=1).count()
+    medium_count = vulnerabilities.filter(severity=2).count()
+    high_count = vulnerabilities.filter(severity=3).count()
+    critical_count = vulnerabilities.filter(severity=4).count()
+    unknown_count = vulnerabilities.filter(severity=-1).count()
+
+    vulnerability_feed = vulnerabilities.order_by('-discovered_date')[:50]
+    activity_feed = scan_activities.order_by('-time')[:50]
     total_vul_count = info_count + low_count + \
+        medium_count + high_count + critical_count + unknown_count
+    total_vul_ignore_info_count = low_count + \
         medium_count + high_count + critical_count
-    most_vulnerable_target = Domain.objects.annotate(num_vul=Count(
-        'subdomain__vulnerability__name')).order_by('-num_vul')[:7]
-    most_common_vulnerability = Vulnerability.objects.values("name", "severity").exclude(
-        severity=0).annotate(count=Count('name')).order_by("-count")[:7]
     last_week = timezone.now() - timedelta(days=7)
 
-    count_targets_by_date = Domain.objects.filter(
+    count_targets_by_date = domains.filter(
         insert_date__gte=last_week).annotate(
         date=TruncDay('insert_date')).values("date").annotate(
             created_count=Count('id')).order_by("-date")
-    count_subdomains_by_date = Subdomain.objects.filter(
+    count_subdomains_by_date = subdomains.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_vulns_by_date = Vulnerability.objects.filter(
+    count_vulns_by_date = vulnerabilities.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_scans_by_date = ScanHistory.objects.filter(
+    count_scans_by_date = scan_histories.filter(
         start_scan_date__gte=last_week).annotate(
         date=TruncDay('start_scan_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
-    count_endpoints_by_date = EndPoint.objects.filter(
+    count_endpoints_by_date = endpoints.filter(
         discovered_date__gte=last_week).annotate(
         date=TruncDay('discovered_date')).values("date").annotate(
             count=Count('id')).order_by("-date")
@@ -119,17 +138,14 @@ def index(request):
         'subdomain_with_ip_count': subdomain_with_ip_count,
         'alive_count': alive_count,
         'endpoint_alive_count': endpoint_alive_count,
-        'recent_completed_scans': recent_completed_scans,
-        'pending_scans': pending_scans,
-        'currently_scanning': currently_scanning,
         'info_count': info_count,
         'low_count': low_count,
         'medium_count': medium_count,
         'high_count': high_count,
         'critical_count': critical_count,
-        'most_vulnerable_target': most_vulnerable_target,
-        'most_common_vulnerability': most_common_vulnerability,
+        'unknown_count': unknown_count,
         'total_vul_count': total_vul_count,
+        'total_vul_ignore_info_count': total_vul_ignore_info_count,
         'vulnerability_feed': vulnerability_feed,
         'activity_feed': activity_feed,
         'targets_in_last_week': targets_in_last_week,
@@ -138,17 +154,26 @@ def index(request):
         'scans_in_last_week': scans_in_last_week,
         'endpoints_in_last_week': endpoints_in_last_week,
         'last_7_dates': last_7_dates,
+        'project': project
     }
 
-    context['total_ips'] = IpAddress.objects.all().count()
-    context['most_used_port'] = Port.objects.annotate(count=Count('ports')).order_by('-count')[:7]
-    context['most_used_ip'] = IpAddress.objects.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
-    context['most_used_tech'] = Technology.objects.annotate(count=Count('technologies')).order_by('-count')[:7]
+    ip_addresses = IpAddress.objects.filter(ip_addresses__in=subdomains)
+
+    context['total_ips'] = ip_addresses.count()
+    context['most_used_port'] = Port.objects.filter(ports__in=ip_addresses).annotate(count=Count('ports')).order_by('-count')[:7]
+    context['most_used_ip'] = ip_addresses.annotate(count=Count('ip_addresses')).order_by('-count').exclude(ip_addresses__isnull=True)[:7]
+    context['most_used_tech'] = Technology.objects.filter(technologies__in=subdomains).annotate(count=Count('technologies')).order_by('-count')[:7]
+
+    context['most_common_cve'] = CveId.objects.filter(cve_ids__in=vulnerabilities).annotate(nused=Count('cve_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_cwe'] = CweId.objects.filter(cwe_ids__in=vulnerabilities).annotate(nused=Count('cwe_ids')).order_by('-nused').values('name', 'nused')[:7]
+    context['most_common_tags'] = VulnerabilityTags.objects.filter(vuln_tags__in=vulnerabilities).annotate(nused=Count('vuln_tags')).order_by('-nused').values('name', 'nused')[:7]
+
+    context['asset_countries'] = CountryISO.objects.filter(ipaddress__in=ip_addresses).annotate(count=Count('ipaddress')).order_by('-count')
 
     return render(request, 'dashboard/index.html', context)
 
 
-def profile(request):
+def profile(request, slug):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
@@ -165,6 +190,73 @@ def profile(request):
     return render(request, 'dashboard/profile.html', {
         'form': form
     })
+
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def admin_interface(request, slug):
+    UserModel = get_user_model()
+    users = UserModel.objects.all().order_by('date_joined')
+    return render(
+        request,
+        'dashboard/admin.html',
+        {
+            'users': users
+        }
+    )
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def admin_interface_update(request, slug):
+    mode = request.GET.get('mode')
+    user_id = request.GET.get('user')
+    if user_id:
+        UserModel = get_user_model()
+        user = UserModel.objects.get(id=user_id)
+    if request.method == 'GET':
+        if mode == 'change_status':
+            user.is_active = not user.is_active
+            user.save()
+    elif request.method == 'POST':
+        if mode == 'delete':
+            try:
+                user.delete()
+                messages.add_message(
+                request,
+                messages.INFO,
+                    f'User {user.username} successfully deleted.'
+                )
+                messageData = {'status': True}
+            except Exception as e:
+                logger.error(e)
+                messageData = {'status': False}
+        elif mode == 'update':
+            try:
+                response = json.loads(request.body)
+                role = response.get('role')
+                change_password = response.get('change_password')
+                clear_roles(user)
+                assign_role(user, role)
+                if change_password:
+                    user.set_password(change_password)
+                    user.save()
+                messageData = {'status': True}
+            except Exception as e:
+                logger.error(e)
+                messageData = {'status': False, 'error': str(e)}
+        elif mode == 'create':
+            try:
+                response = json.loads(request.body)
+                UserModel = get_user_model()
+                user = UserModel.objects.create_user(
+                    username=response.get('username'),
+                    password=response.get('password')
+                )
+                assign_role(user, response.get('role'))
+                messageData = {'status': True}
+            except Exception as e:
+                logger.error(e)
+                messageData = {'status': False, 'error': str(e)}
+        return JsonResponse(messageData)
+    return HttpResponseRedirect(reverse('admin_interface', kwargs={'slug': slug}))
 
 
 @receiver(user_logged_out)
@@ -184,3 +276,105 @@ def on_user_logged_in(sender, request, **kwargs):
         'Hi @' +
         request.user.username +
         ' welcome back!')
+
+
+def search(request, slug):
+    return render(request, 'dashboard/search.html')
+
+
+def four_oh_four(request):
+    return render(request, '404.html')
+
+
+def projects(request, slug):
+    context = {}
+    context['projects'] = Project.objects.all()
+    return render(request, 'dashboard/projects.html', context)
+
+
+def delete_project(request, id):
+    obj = get_object_or_404(Project, id=id)
+    if request.method == "POST":
+        obj.delete()
+        responseData = {
+            'status': 'true'
+        }
+        messages.add_message(
+            request,
+            messages.INFO,
+            'Project successfully deleted!')
+    else:
+        responseData = {'status': 'false'}
+        messages.add_message(
+            request,
+            messages.ERROR,
+            'Oops! Project could not be deleted!')
+    return JsonResponse(responseData)
+
+
+def onboarding(request):
+    context = {}
+    error = ''
+
+    if request.method == "POST":
+        project_name = request.POST.get('project_name')
+        slug = slugify(project_name)
+        create_username = request.POST.get('create_username')
+        create_password = request.POST.get('create_password')
+        create_user_role = request.POST.get('create_user_role')
+        key_openai = request.POST.get('key_openai')
+        key_netlas = request.POST.get('key_netlas')
+
+        insert_date = timezone.now()
+
+        try:
+            Project.objects.create(
+                name=project_name,
+                slug=slug,
+                insert_date=insert_date
+            )
+        except Exception as e:
+            error = ' Could not create project, Error: ' + str(e)
+
+
+        try:
+            if create_username and create_password and create_user_role:
+                UserModel = get_user_model()
+                user = UserModel.objects.create_user(
+                    username=create_username,
+                    password=create_password
+                )
+                assign_role(user, create_user_role)
+        except Exception as e:
+            error = ' Could not create User, Error: ' + str(e)
+
+
+
+        if key_openai:
+            openai_api_key = OpenAiAPIKey.objects.first()
+            if openai_api_key:
+                openai_api_key.key = key_openai
+                openai_api_key.save()
+            else:
+                OpenAiAPIKey.objects.create(key=key_openai)
+
+        if key_netlas:
+            netlas_api_key = NetlasAPIKey.objects.first()
+            if netlas_api_key:
+                netlas_api_key.key = key_netlas
+                netlas_api_key.save()
+            else:
+                NetlasAPIKey.objects.create(key=key_netlas)
+
+    context['error'] = error
+    # check is any projects exists, then redirect to project list else onboarding
+    projects = Project.objects.all()
+
+    context['openai_key'] = OpenAiAPIKey.objects.first()
+    context['netlas_key'] = NetlasAPIKey.objects.first()
+
+    if len(projects):
+        slug = projects[0].slug
+        return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
+
+    return render(request, 'dashboard/onboarding.html', context)

@@ -1,15 +1,28 @@
+import yaml
 from django.db import models
+
+
+class hybrid_property:
+    def __init__(self, func):
+        self.func = func
+        self.name = func.__name__
+        self.exp = None
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return self.func(instance)
+
+    def __set__(self, instance, value):
+        pass
+
+    def expression(self, exp):
+        self.exp = exp
+        return self
 
 class EngineType(models.Model):
     id = models.AutoField(primary_key=True)
     engine_name = models.CharField(max_length=200)
-    subdomain_discovery = models.BooleanField()
-    dir_file_search = models.BooleanField()
-    port_scan = models.BooleanField()
-    fetch_url = models.BooleanField()
-    vulnerability_scan = models.BooleanField(null=True, default=False)
-    osint = models.BooleanField(null=True, default=False)
-    screenshot = models.BooleanField(null=True, default=True)
     yaml_configuration = models.TextField()
     default_engine = models.BooleanField(null=True, default=False)
 
@@ -17,17 +30,11 @@ class EngineType(models.Model):
         return self.engine_name
 
     def get_number_of_steps(self):
-        engine_list = [
-            self.subdomain_discovery,
-            self.dir_file_search,
-            self.port_scan,
-            self.fetch_url,
-            self.vulnerability_scan,
-            self.osint,
-            self.screenshot
-            ]
-        return sum(bool(item) for item in engine_list)
+        return len(self.tasks) if self.tasks else 0
 
+    @hybrid_property
+    def tasks(self):
+        return list(yaml.safe_load(self.yaml_configuration).keys())
 
 class Wordlist(models.Model):
     id = models.AutoField(primary_key=True)
@@ -75,6 +82,7 @@ class Notification(models.Model):
     send_subdomain_changes_notif = models.BooleanField(default=True)
 
     send_scan_output_file = models.BooleanField(default=True)
+    send_scan_tracebacks = models.BooleanField(default=True)
 
 
 class Proxy(models.Model):
@@ -91,3 +99,39 @@ class Hackerone(models.Model):
     send_high = models.BooleanField(default=True)
     send_medium = models.BooleanField(default=False)
     report_template = models.TextField(blank=True, null=True)
+
+
+class VulnerabilityReportSetting(models.Model):
+    id = models.AutoField(primary_key=True)
+    primary_color = models.CharField(max_length=10, null=True, blank=True, default='#FFB74D')
+    secondary_color = models.CharField(max_length=10, null=True, blank=True, default='#212121')
+    company_name = models.CharField(max_length=100, null=True, blank=True)
+    company_address = models.CharField(max_length=200, null=True, blank=True)
+    company_email = models.CharField(max_length=100, null=True, blank=True)
+    company_website = models.CharField(max_length=100, null=True, blank=True)
+    show_rengine_banner = models.BooleanField(default=True)
+    show_executive_summary = models.BooleanField(default=True)
+    executive_summary_description = models.TextField(blank=True, null=True)
+    show_footer = models.BooleanField(default=False)
+    footer_text = models.CharField(max_length=200, null=True, blank=True)
+
+
+class InstalledExternalTool(models.Model):
+    id = models.AutoField(primary_key=True)
+    logo_url = models.CharField(max_length=200, null=True, blank=True)
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=2000)
+    github_url = models.CharField(max_length=500)
+    license_url = models.CharField(max_length=500, null=True, blank=True)
+    version_lookup_command = models.CharField(max_length=200, null=True, blank=True)
+    update_command = models.CharField(max_length=200, null=True, blank=True)
+    install_command = models.CharField(max_length=200)
+    version_match_regex = models.CharField(max_length=100, default='[vV]*(\d+\.)?(\d+\.)?(\*|\d+)', null=True, blank=True)
+    is_default = models.BooleanField(default=False)
+    is_subdomain_gathering = models.BooleanField(default=False)
+    is_github_cloned = models.BooleanField(default=False)
+    github_clone_path = models.CharField(max_length=1500, null=True, blank=True)
+    subdomain_gathering_command = models.CharField(max_length=300, null=True, blank=True)
+
+    def __str__(self):
+        return self.name

@@ -14,7 +14,7 @@ if "%1" == "up" docker-compose %COMPOSE_ALL_FILES% up -d --build %SERVICES%
 :: Build all services.
 if "%1" == "build" docker-compose %COMPOSE_ALL_FILES% build %SERVICES%
 :: Generate Username (Use only after make up).
-if "%1" == "username" docker-compose %COMPOSE_ALL_FILES% exec web python manage.py createsuperuser
+if "%1" == "username" docker-compose %COMPOSE_ALL_FILES% exec web python3 manage.py createsuperuser
 :: Pull Docker images.
 if "%1" == "pull" docker login docker.pkg.github.com & docker-compose %COMPOSE_ALL_FILES% pull
 :: Down all services.

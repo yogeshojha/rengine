@@ -1,0 +1,117 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+Tool Arsenal
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">Tool Arsenal</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+Tool Arsenal
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row mb-2">
+  <div class="col-sm-4">
+    <a href="{% url 'add_tool' current_project.slug %}" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new tool</a>
+    {# <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new Script</a> #}
+  </div>
+  <div class="col-sm-8">
+    <div class="text-sm-end">
+      <div class="btn-group mb-3">
+        <button type="button" class="btn btn-primary" id="btn_show_all_tools">All</button>
+      </div>
+      <div class="btn-group mb-3 ms-1">
+        <button type="button" class="btn btn-light" id="btn_show_default_tools">Default</button>
+        <button type="button" class="btn btn-light" id="btn_show_custom_tools">Custom</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  {% for tool in installed_tools %}
+  {% if tool.is_default %}
+  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2 default_tool" id="tool_card_{{tool.name}}">
+  {% else %}
+  <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12 mt-2 custom_tool" id="tool_card_{{tool.name}}">
+  {% endif %}
+
+    <div class="card ribbon-box h-100">
+      <div class="card-body d-flex flex-column">
+        <div class="">
+          {% if tool.is_default %}
+          <div class="ribbon ribbon-primary float-start"><i class="mdi mdi-hammer-screwdriver me-1"></i> Default Tool</div>
+          {% else %}
+          <div class="ribbon ribbon-danger float-start"><i class="mdi mdi-hammer-screwdriver me-1"></i> Custom Tool</div>
+          <div class="dropdown float-end">
+            <a href="#" class="dropdown-toggle card-drop arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="mdi mdi-dots-horizontal m-0 text-muted h3"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end" style="">
+              <a class="dropdown-item" href="javascript:uninstall_tool({{tool.id}}, '{{tool.name}}')">Uninstall Tool</a>
+              <a class="dropdown-item" href="{% url 'update_tool_in_arsenal' current_project.slug tool.id %}">Modify Tool</a>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-center">
+          {% if tool.logo_url %}
+          <img src="{{tool.logo_url}}" alt="logo" height="40">
+          {% endif %}
+
+          <h4 class="mb-1 font-20">{{tool.name}}</h4>
+          <p>
+            {% if tool.is_subdomain_gathering %}
+            <span class="badge badge-soft-primary" data-toggle="tooltip" data-placement="top" title="Tool Category">Subdomain Enumeration Tool</span>
+            <br>
+            {% endif %}
+            {% if tool.active_passive %}
+            <span class="badge badge-soft-primary ms-1" data-toggle="tooltip" data-placement="top" title="Tool Type">{{tool.active_passive}}</span>
+            {% endif %}
+            <a href="{{tool.github_url}}" target="_blank" class="ms-1">Github <i class="fe-external-link"></i></a>
+            {% if tool.license_url %}
+            <a href="{{tool.license_url}}" class="ms-1" target="_blank">License <i class="fe-external-link"></i></a>
+            {% endif %}
+          </p>
+        </div>
+        <div class="row mt-1 justify-content-center text-center">
+          <div class="col-6">
+            <h5 class="fw-normal">Current Installed Version</h5>
+            <span id="{{tool.name}}_current"></span>
+          </div>
+        </div>
+        <hr>
+        <p class="mt-1 font-14 text-center text-muted">
+          {{tool.description}}
+        </p>
+        <div class="text-center mt-auto">
+          <button type="button" class="btn btn-primary waves-effect waves-light me-1" onclick="get_external_tool_latest_version('{{tool.id}}', '{{tool.name}}')"><i class="mdi mdi-download me-1"></i> Check Update</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script src="{% static 'scanEngine/js/tool_arsenal.js' %}" charset="utf-8"></script>
+<script src="{% static 'custom/custom.js' %}" charset="utf-8"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+  $("body").tooltip({ selector: '[data-toggle=tooltip]' });
+  // fetch latest version information
+  {% for tool in installed_tools %}
+  get_external_tool_current_version('{{tool.id}}', '{{tool.name}}_current');
+  {% endfor %}
+});
+</script>
+{% endblock page_level_script %}

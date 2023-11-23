@@ -1,5 +1,5 @@
 
-function populateTodofunction(){
+function populateTodofunction(project=null){
   $('.input-search').on('keyup', function() {
     var rex = new RegExp($(this).val(), 'i');
     $('.todo-box .todo-item').hide();
@@ -41,7 +41,7 @@ function populateTodofunction(){
       suppressScrollX : true
     });
 
-    populateScanHistory();
+    populateScanHistory(project=project);
 
   });
   const ps = new PerfectScrollbar('.todo-box-scroll', {
@@ -93,7 +93,7 @@ function populateTodofunction(){
     '<div class="todo-item-inner">'+
     '<div class="n-chk text-center">'+
     '<label class="new-control new-checkbox checkbox-primary">'+
-    '<input type="checkbox" class="new-control-input inbox-chkbox">'+
+    '<input type="checkbox" class="form-check-input inbox-chkbox">'+
     '<span class="new-control-indicator"></span>'+
     '</label>'+
     '</div>'+
@@ -104,14 +104,13 @@ function populateTodofunction(){
     "<p class='todo-text' >"+htmlEncode($_taskDescriptionText)+"</p>"+
     '</div>'+
 
-    '<div class="action-dropdown">'+
-    '<div class="dropdown">'+
-    '<a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink-4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">'+
+    '<div class="action-dropdown custom-dropdown-icon">'+
+    '<div class="dropdown dropstart">'+
+    '<a class="dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">'+
     '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-more-vertical"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>'+
     '</a>'+
 
-    '<div class="dropdown-menu" aria-labelledby="dropdownMenuLink-4">'+
-    '<a class="dropdown-item edit" href="javascript:void(0);">Edit</a>'+
+    '<div class="dropdown-menu">'+
     '<a class="important dropdown-item" href="javascript:void(0);">Toggle Important</a>'+
     '<a class="dropdown-item delete" href="javascript:void(0);">Delete</a>'+
     '</div>'+
@@ -144,16 +143,19 @@ function populateTodofunction(){
       data['subdomain'] = parseInt($("#subdomainDropdown").val());
     }
 
+    if (project) {
+      data['project'] = project;
+    }
 
-    fetch('add_note', {
+    fetch('/api/add/recon_note/', {
       method: 'post',
       headers: {
-        "X-CSRFToken": getCookie("csrftoken")
+        "X-CSRFToken": getCookie("csrftoken"),
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(data)
     }).then(res => res.json())
     .then(res => console.log(res));
-
   });
 
   $('.tab-title .nav-pills a.nav-link').on('click', function(event) {
@@ -246,7 +248,7 @@ function deleteDropdown() {
       padding: '2em',
       showLoaderOnConfirm: true,
       preConfirm: function() {
-        return fetch('delete_note', {
+        return fetch('../delete_note', {
           method: 'POST',
           credentials: "same-origin",
           headers: {
@@ -293,7 +295,7 @@ function deleteDropdown() {
   });
 }
 function checkCheckbox() {
-  $('.todo-item input[type="checkbox"]').click(function() {
+  $('.inbox-chkbox').click(function() {
     if ($(this).is(":checked")) {
       $(this).parents('.todo-item').addClass('todo-task-done');
     }
@@ -301,7 +303,7 @@ function checkCheckbox() {
       $(this).parents('.todo-item').removeClass('todo-task-done');
     }
     new dynamicBadgeNotification('completedList');
-    fetch('flip_todo_status', {
+    fetch('../flip_todo_status', {
       method: 'post',
       headers: {
         "X-CSRFToken": getCookie("csrftoken")
@@ -342,7 +344,7 @@ function importantDropdown() {
       $("#important-badge-"+badge_id).empty();
     }
     new dynamicBadgeNotification('importantList');
-    fetch('flip_important_status', {
+    fetch('../flip_important_status', {
       method: 'post',
       headers: {
         "X-CSRFToken": getCookie("csrftoken")
@@ -372,11 +374,11 @@ function todoItem() {
   });
 }
 
-function populateScanHistory() {
+function populateScanHistory(project) {
   scan_history_select = document.getElementById('scanHistoryIDropdown');
-  $.getJSON(`/api/listScanHistory?format=json`, function(data) {
-    for (var history in data['scan_histories']){
-      history_object = data['scan_histories'][history];
+  $.getJSON(`/api/listScanHistory/?format=json&project=${project}`, function(data) {
+    for (var history in data){
+      history_object = data[history];
       var option = document.createElement('option');
       option.value = history_object['id'];
       option.innerHTML = history_object['domain']['name'] + ' - Scanned ' + moment.utc(history_object['start_scan_date']).fromNow();

@@ -3,10 +3,11 @@
 import os
 import sys
 
+
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')
     # show rengine artwork
-    f = open('art/1.0.txt', 'r')
+    f = open('art/reNgine.txt', 'r')
     file_contents = f.read()
     print (file_contents)
     f.close()

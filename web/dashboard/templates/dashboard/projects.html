@@ -1,0 +1,104 @@
+{% extends 'base/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+Projects
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block page_title %}
+All Projects
+{% endblock page_title %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="/{{current_project.slug}}/">Dashboard</a></li>
+<li class="breadcrumb-item active">Projects</li>
+{% endblock breadcrumb_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+           <table class="table table-borderless table-hover table-nowrap table-centered m-0">
+              <thead class="table-light">
+                 <tr>
+                    <th>Project Name</th>
+                    <th>Slug</th>
+                    <th>Action</th>
+                 </tr>
+              </thead>
+              <tbody>
+                {% for project in projects %}
+                  <tr>
+                    <td>
+                      <h5 class="m-0 fw-normal">{{project.name}}</h5>
+                      {% if current_project.slug == project.slug %}
+                          <span class="badge bg-soft-primary text-primary mt-1">Current Project</span>
+                      {% endif %}
+                      <p class="mb-0 text-muted"><small>Created {{project.insert_date|naturaltime}}</small></p>
+                    </td>
+                    <td>
+                      <span class="badge bg-soft-info text-info">{{project.slug}}</span>
+                    </td>
+                    <td>
+                      {% if current_project.slug == project.slug %}
+                      <span class="badge bg-info text-white">Current Project cannot be deleted.</span>
+                      {% else %}
+                      <a href="#" onclick="delete_project({{project.id}}, '{{project.name}}')" class="btn btn-xs btn-danger"><i class="mdi mdi-trash-can-outline"></i></a>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+<script type="text/javascript">
+  function delete_project(id, project_name){
+    const delAPI = "../../delete/project/" + id;
+    swal.queue([{
+      title: 'Are you sure you want to delete '+project_name +'?',
+      text: "You won't be able to revert this, all targets and scan results also will be deleted!",
+      type: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Delete',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(delAPI, {
+          method: 'POST',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        })
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function(data) {
+          // TODO Look for better way
+          return location.reload();
+        })
+        .catch(function() {
+          swal.insertQueueStep({
+            type: 'error',
+            title: 'Oops! Unable to delete the target!'
+          })
+        })
+      }
+    }]);
+  }
+</script>
+{% endblock page_level_script %}

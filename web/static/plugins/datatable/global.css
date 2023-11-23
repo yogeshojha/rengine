@@ -1,0 +1,222 @@
+.widget-content-area {
+  border: 1px solid #e0e6ed;
+  box-shadow: 0 0 40px 0 rgba(94, 92, 154, 0.06);
+  padding: 0; }
+
+.no-content:before, .no-content:after {
+  display: none !important; }
+
+.dataTables_wrapper {
+  padding: 0; }
+
+.dt--top-section {
+  margin: 20px 21px 20px 21px; }
+
+.dt--bottom-section {
+  padding: 15px; }
+
+.table-form {
+  display: flex;
+  margin: 17px 21px 25px 21px;
+  justify-content: space-between; }
+  .table-form .form-group {
+    margin-bottom: 0; }
+    .table-form .form-group label {
+      font-size: 14px;
+      align-self: center; }
+    .table-form .form-group input {
+      padding: 7px 18px 7px 14px;
+      height: auto;
+    }
+
+table.dt-table-hover tbody tr:hover {
+  background: #fafafa; }
+
+table.dataTable {
+  border-collapse: separate;
+  border-spacing: 0 5px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border-collapse: collapse !important;
+}
+
+.table > tbody tr {
+  border-radius: 4px;
+  -webkit-transition: all 0.1s ease;
+  transition: all 0.1s ease;
+  border-bottom: 1px solid #e0e6ed; }
+
+.table > thead > tr > th {
+  background: rgba(234, 241, 255, 1);
+  text-transform: initial;
+  font-weight: 600;
+  border-top: none;
+  background: rgba(234, 241, 255, 0.74);
+  border-right: none;
+  border-left: none;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  -webkit-transition: all 0.1s ease;
+  transition: all 0.1s ease;
+  padding: 10px 8px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.dataTable.table-striped.table > thead > tr > th {
+  background: transparent;
+  border-top: 1px solid #e0e6ed !important;
+  border-bottom: 1px solid #e0e6ed !important; }
+
+.dataTable.table-striped tbody tr:nth-of-type(odd) {
+  background-color: #fafafa !important; }
+
+.table > tbody > tr:last-child > td .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu, .table > tbody > tr:nth-last-child(2) > td .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu {
+  top: -94px !important; }
+
+.table > tbody > tr:last-child > td .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu.show, .table > tbody > tr:nth-last-child(2) > td .dropdown:not(.custom-dropdown-icon):not(.custom-dropdown) .dropdown-menu.show {
+  top: -108px !important; }
+
+.table > tbody > tr > td {
+  font-size: 13px;
+  border: none;
+  padding: 0;
+  padding: 10px 8px;
+  letter-spacing: normal;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: transparent !important; }
+
+.table > tfoot > tr > th {
+  border: none;
+  padding: 10px 8px; }
+
+.table-hover:not(.table-dark) tbody tr:hover {
+  background-color: transparent !important; }
+
+.table-hover.non-hover:not(.table-dark) tbody tr:hover {
+  -webkit-transform: none;
+  transform: none; }
+
+div.dataTables_wrapper div.dataTables_info {
+  padding-top: 0.85em;
+  white-space: normal;
+  color: #4361ee;
+  font-weight: 600;
+  border: 1px solid #e0e6ed;
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px; }
+
+div.dataTables_wrapper div.dataTables_filter label {
+  position: relative;
+  margin-bottom: 0; }
+
+div.dataTables_wrapper div.dataTables_filter svg {
+  position: absolute;
+  top: 5px;
+  right: 9px;
+  width: 20px;
+  color: #d3d3d3; }
+
+.dataTables_wrapper .form-control {
+  background: #fff;
+  border: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  border-radius: 6px;
+  border: 1px solid #e0e6ed;
+  padding: 6px 29px 8px 14px;
+  height: auto;}
+  .dataTables_wrapper .form-control:focus {
+    border: 1px solid #888ea8; }
+
+div.dataTables_wrapper button:hover {
+  -webkit-transform: none;
+  transform: none; }
+
+div.dataTables_wrapper .table-responsive {
+  overflow-x: auto;
+  overflow-y: hidden; }
+
+.dataTables_wrapper .form-control::-webkit-input-placeholder, .dataTables_wrapper .form-control::-ms-input-placeholder, .dataTables_wrapper .form-control::-moz-placeholder {
+  color: #bfc9d4;
+  font-size: 12px; }
+
+div.dataTables_wrapper div.dataTables_filter input {
+  width: 150px; }
+
+div.dataTables_wrapper div.dataTables_length label {
+  font-size: 13px;
+  margin-bottom: 0; }
+
+.dataTables_wrapper .dataTables_length select.form-control {
+  padding: 8px 17px 8px 14px;
+  -moz-appearance: none;
+  /* Firefox */
+  -webkit-appearance: none;
+  /* Safari and Chrome */
+  appearance: none;
+  background: #fff url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23d3d3d3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-down'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") 54px 8px no-repeat;
+  padding: 7px 18px 7px 14px;
+  height: auto;
+  font-size: 12px; }
+
+div.dataTables_wrapper div.dataTables_paginate {
+  margin: 0;
+  text-align: right;
+  display: inline-block; }
+
+.page-link {
+  margin-right: 5px;
+  border-radius: 50%;
+  padding: 8px 12px;
+  background: rgba(0, 23, 55, 0.08);
+  border: none;
+  color: #888ea8; }
+  .page-link:focus {
+    box-shadow: none; }
+
+div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+  margin: 3px 0;
+  flex-wrap: wrap; }
+
+.page-item.disabled .page-link {
+  background: #f1f2f3; }
+  .page-item.disabled .page-link svg {
+    color: #e3e4eb; }
+
+.page-item:first-child .page-link, .page-item:last-child .page-link {
+  border-radius: 50%;
+  padding: 5px 9px; }
+  .page-item:first-child .page-link svg, .page-item:last-child .page-link svg {
+    width: 17px; }
+
+.page-item.active .page-link {
+  background-color: #4361ee; }
+
+#alter_pagination_next a, #alter_pagination_previous a {
+  border-radius: 50%;
+  padding: 5px 9px; }
+
+#alter_pagination_next a svg, #alter_pagination_previous a svg {
+  width: 17px; }
+
+.table-cancel {
+  margin-right: 6px;
+  vertical-align: middle;
+  cursor: pointer;
+  stroke-width: 1.5; }
+
+.table-hover:not(.table-dark) tbody tr:hover .table-cancel {
+  color: #e7515a; }
+
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  /* IE10+ CSS styles go here */
+  .dataTables_wrapper .dataTables_length select.form-control {
+    background: transparent;
+    padding: 8px 10px 8px 14px; } }

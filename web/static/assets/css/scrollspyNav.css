@@ -1,7 +1,6 @@
 .sidenav {
   position: fixed;
   right: -30px;
-  top: 125px;
   width: 236px;
   border-left: 1px solid #e0e6ed; }
   .sidenav .sidenav-header:after {

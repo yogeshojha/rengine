@@ -27,7 +27,7 @@ services:
       context: ./web
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
-    command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine worker -l INFO
+    # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -40,11 +40,14 @@ services:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
+      - DOMAIN_NAME=${DOMAIN_NAME}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+      - MIN_CONCURRENCY=${MIN_CONCURRENCY}
     depends_on:
       - db
       - redis
@@ -53,13 +56,19 @@ services:
 
   celery-beat:
     build: ./web
+    entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    depends_on:
+      - celery
     environment:
       - DEBUG=1
-    depends_on:
-      - db
-      - redis
-      - celery
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -81,11 +90,15 @@ services:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
+      - DOMAIN_NAME=${DOMAIN_NAME}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+      # THIS IS A MUST FOR CHECKING UPDATE, EVERYTIME A COMMIT IS MERGED INTO
+      # MASTER, UPDATE THIS!!! MAJOR.MINOR.PATCH https://semver.org/
+      - RENGINE_CURRENT_VERSION='2.0.1'
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -102,14 +115,6 @@ services:
       - celery-beat
     networks:
       - rengine_network
-
-  tor:
-    image: peterdavehello/tor-socks-proxy
-    restart: always
-    networks:
-      - rengine_network
-    depends_on:
-      - web
 
 networks:
   rengine_network:

@@ -1,5 +1,7 @@
 from django.db import models
 from startScan.models import *
+from dashboard.models import Project
+
 
 class TodoNote(models.Model):
     id = models.AutoField(primary_key=True)
@@ -19,3 +21,4 @@ class TodoNote(models.Model):
     )
     is_done = models.BooleanField(default=False)
     is_important = models.BooleanField(default=False)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
