@@ -933,7 +933,7 @@ function get_vulnerability_modal(scan_id=null, severity=null, subdomain_id=null,
 }
 
 
-function get_endpoint_modal(scan_id, subdomain_id, subdomain_name){
+function get_endpoint_modal(project, scan_id, subdomain_id, subdomain_name){
 	// This function will display a xl modal with datatable for displaying endpoints
 	// associated with the subdomain
 	$('#xl-modal-title').empty();
@@ -941,10 +941,10 @@ function get_endpoint_modal(scan_id, subdomain_id, subdomain_name){
 	$('#xl-modal-footer').empty();
 
 	if (scan_id) {
-		url = `/api/listEndpoints/?scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
+		url = `/api/listEndpoints/?project=${project}&scan_id=${scan_id}&subdomain_id=${subdomain_id}&format=json`
 	}
 	else{
-		url = `/api/listEndpoints/?subdomain_id=${subdomain_id}&format=json`
+		url = `/api/listEndpoints/?project=${project}&subdomain_id=${subdomain_id}&format=json`
 	}
 
 	Swal.fire({
