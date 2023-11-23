@@ -145,6 +145,9 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Temporary fix for celery beat crash
+# See https://github.com/yogeshojha/rengine/issues/971
+DJANGO_CELERY_BEAT_TZ_AWARE = False
 
 MEDIA_URL = '/media/'
 FILE_UPLOAD_MAX_MEMORY_SIZE = 100000000
