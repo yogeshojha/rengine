@@ -220,9 +220,10 @@ def initiate_subscan(
 		url_filter (str): URL path. Default: ''
 	"""
 
-	# Get Subdomain and ScanHistory
+	# Get Subdomain, Domain and ScanHistory
 	subdomain = Subdomain.objects.get(pk=subdomain_id)
 	scan = ScanHistory.objects.get(pk=subdomain.scan_history.id)
+	domain = Domain.objects.get(pk=subdomain.target_domain.id)
 
 	# Get EngineType
 	engine_id = engine_id or scan.scan_type.id
@@ -270,6 +271,7 @@ def initiate_subscan(
 		'scan_history_id': scan.id,
 		'subscan_id': subscan.id,
 		'engine_id': engine_id,
+		'domain_id': domain.id,
 		'subdomain_id': subdomain.id,
 		'yaml_configuration': config,
 		'results_dir': results_dir,
