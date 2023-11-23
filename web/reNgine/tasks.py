@@ -1372,6 +1372,12 @@ def port_scan(self, hosts=[], ctx={}, description=None):
 		# Send notification
 		logger.warning(f'Found opened port {port_number} on {ip_address} ({host})')
 
+	if len(ports_data) == 0:
+		logger.info('Finished running naabu port scan - No open ports found.')
+		if nmap_enabled:
+			logger.info('Nmap scans skipped')
+		return ports_data
+
 	# Send notification
 	fields_str = ''
 	for host, ports in ports_data.items():
