@@ -2140,6 +2140,9 @@ class EndPointViewSet(viewsets.ModelViewSet):
 		if gf_tag:
 			endpoints = endpoints.filter(matched_gf_patterns__icontains=gf_tag)
 
+		if target_id:
+			endpoints = endpoints.filter(target_domain__id=target_id)
+
 		if subdomain_id:
 			endpoints = endpoints.filter(subdomain__id=subdomain_id)
 
