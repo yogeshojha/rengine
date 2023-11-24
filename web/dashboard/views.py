@@ -373,7 +373,7 @@ def onboarding(request):
     context['openai_key'] = OpenAiAPIKey.objects.first()
     context['netlas_key'] = NetlasAPIKey.objects.first()
 
-    if projects:
+    if project:
         slug = project.slug
         return HttpResponseRedirect(reverse('dashboardIndex', kwargs={'slug': slug}))
 
