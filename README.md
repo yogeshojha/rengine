@@ -43,7 +43,7 @@ reNgine 2.0-Jasper would not have been possible without [@ocervell](https://gith
 
 Thank you, [@ocervell](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
 
-Checkout our contributers here: [Contributers](https://github.com/yogeshojha/rengine/graphs/contributors)
+Checkout our contributors here: [Contributors](https://github.com/yogeshojha/rengine/graphs/contributors)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -87,7 +87,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 🔖&nbsp; &nbsp; Say Hello to Projects! reNgine 2.0 introduces a powerful addition that enables you to efficiently organize your web application reconnaissance efforts. With this feature, you can create distinct project spaces, each tailored to a specific purpose, such as personal bug bounty hunting, client engagements, or any other specialized recon task. Each projects will have separate dashboard and all the scan results will be separated from each projects, while scan engines and configuration will be shared across all the projects.
 
-⚙️&nbsp; &nbsp; Roles and Permissions! Begining reNgine 2.0, we've taken your web application reconnaissance to a whole new level of control and security. Now, you can assign distinct roles to your team members—Sys Admin, Penetration Tester, and Auditor—each with precisely defined permissions to tailor their access and actions within the reNgine ecosystem.
+⚙️&nbsp; &nbsp; Roles and Permissions! In reNgine 2.0, we've taken your web application reconnaissance to a whole new level of control and security. Now, you can assign distinct roles to your team members—Sys Admin, Penetration Tester, and Auditor—each with precisely defined permissions to tailor their access and actions within the reNgine ecosystem.
 
   - 🔐 Sys Admin: Sys Admin is a super user that has permission to modify system and scan related configurations, scan engines, create new users, add new tools etc. Super user can initiate scans and subscans effortlessly.
   - 🔍 Penetration Tester: Penetration Tester will be allowed to modify and initiate scans and subscans, add or update targets, etc. A penetration tester will not be allowed to modify system configurations.
@@ -331,11 +331,20 @@ screenshot: {
     MIN_CONCURRENCY=10
     ```
 
-    MAX_CONCURRENCY: This parameter specifies the maximum number of reNgine's concurrent Celery worker processes that can be spawned. In this case, it's set to 80, meaning that the application can utilize up to 80 concurrent worker processes to execute tasks concurrently. This is useful for handling a high volume of scans or when you want to scale up processing power during periods of high demand. If you have more CPU cores, you will need to increase this for maximised performance.
+    `MAX_CONCURRENCY`: This parameter specifies the maximum number of reNgine's concurrent Celery worker processes that can be spawned. In this case, it's set to 80, meaning that the application can utilize up to 80 concurrent worker processes to execute tasks concurrently. This is useful for handling a high volume of scans or when you want to scale up processing power during periods of high demand. If you have more CPU cores, you will need to increase this for maximised performance.
 
-    MIN_CONCURRENCY: On the other hand, MIN_CONCURRENCY specifies the minimum number of concurrent worker processes that should be maintained, even during periods of lower demand. In this example, it's set to 10, which means that even when there are fewer tasks to process, at least 10 worker processes will be kept running. This helps ensure that the application can respond promptly to incoming tasks without the overhead of repeatedly starting and stopping worker processes.
+    `MIN_CONCURRENCY`: On the other hand, `MIN_CONCURRENCY` specifies the minimum number of concurrent worker processes that should be maintained, even during periods of lower demand. In this example, it's set to 10, which means that even when there are fewer tasks to process, at least 10 worker processes will be kept running. This helps ensure that the application can respond promptly to incoming tasks without the overhead of repeatedly starting and stopping worker processes.
 
-    These settings allow for dynamic scaling of Celery workers, ensuring that the application efficiently manages its workload by adjusting the number of concurrent workers based on the workload's size and complexity
+    These settings allow for dynamic scaling of Celery workers, ensuring that the application efficiently manages its workload by adjusting the number of concurrent workers based on the workload's size and complexity.
+
+    Here is the ideal value for `MIN_CONCURRENCY` and `MAX_CONCURRENCY` depending on the number of RAM your machine has:
+
+    * 4GB: `MAX_CONCURRENCY=10`
+    * 8GB: `MAX_CONCURRENCY=30`
+    * 16GB: `MAX_CONCURRENCY=50`
+
+    This is just an ideal value which developers have tested and tried out and works! But feel free to play around with the values.
+    Maximum number of scans is determined by various factors, your network bandwidth, RAM, number of CPUs available. etc
 
 1. Run the installation script, Please keep an eye for any prompt, you will also be asked for username and password for reNgine.
 
