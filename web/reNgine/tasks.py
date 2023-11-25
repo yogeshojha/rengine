@@ -1666,7 +1666,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
-			# endpoint.is_default = False
 			endpoint.http_status = status
 			endpoint.content_length = length
 			endpoint.response_time = duration / 1000000000
