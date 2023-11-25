@@ -1,5 +1,5 @@
 name: 🚀 Feature request
-description: File a bug/issue
+description: File a feature request
 title: "feat: <title>"
 labels: [feature_request]
 body:
