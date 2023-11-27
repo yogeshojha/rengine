@@ -70,7 +70,7 @@
     version_lookup_command: naabu -version
     update_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
     install_command: go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest
-    version_match_regex: ' (\d+\.)?(\d+\.)?(\*|\d+)'
+    version_match_regex: '(\b\d+\.\d+\.\d+\b)'
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: false
