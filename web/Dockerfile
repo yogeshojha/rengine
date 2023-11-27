@@ -67,7 +67,6 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Download Go packages
-RUN go install -v -v github.com/bp0lr/gauplus@latest
 RUN go install -v github.com/jaeles-project/gospider@latest
 RUN go install -v github.com/tomnomnom/gf@latest
 RUN go install -v github.com/tomnomnom/unfurl@latest

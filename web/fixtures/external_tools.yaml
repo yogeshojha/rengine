@@ -173,23 +173,6 @@
   pk: 10
   fields:
     logo_url: null
-    name: gauplus
-    description: Get all URLs
-    github_url: https://github.com/bp0lr/gauplus
-    license_url: https://github.com/bp0lr/gauplus/blob/main/LICENSE
-    version_lookup_command: gauplus -version
-    update_command: go install -v -v github.com/bp0lr/gauplus@latest
-    install_command: go install -v -v github.com/bp0lr/gauplus@latest
-    version_match_regex: '[vV]*(\d+\.)?(\d+\.)?(\*|\d+)'
-    is_default: true
-    is_subdomain_gathering: false
-    is_github_cloned: true
-    github_clone_path: /usr/src/github/gauplus
-    subdomain_gathering_command: null
-- model: scanEngine.installedexternaltool
-  pk: 11
-  fields:
-    logo_url: null
     name: OneForAll
     description: A powerful subdomain integration tool.
     github_url: https://github.com/shmilylty/OneForAll
@@ -204,7 +187,7 @@
     github_clone_path: /usr/src/github/OneForAll
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 12
+  pk: 11
   fields:
     logo_url: https://raw.githubusercontent.com/laramies/theHarvester/master/theHarvester-logo.png
     name: theHarvester
@@ -225,7 +208,7 @@
     github_clone_path: /usr/src/github/theHarvester
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 13
+  pk: 12
   fields:
     logo_url: null
     name: ctfr
@@ -244,7 +227,7 @@
     github_clone_path: /usr/src/github/ctfr
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 14
+  pk: 13
   fields:
     logo_url: https://user-images.githubusercontent.com/8293321/174841003-01a62bad-2ecf-4874-89c4-efa53dd56884.png
     name: tlsx
@@ -261,7 +244,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 15
+  pk: 14
   fields:
     logo_url: https://avatars.githubusercontent.com/u/79084675?v=4
     name: netlas
@@ -278,7 +261,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 16
+  pk: 15
   fields:
     logo_url: https://github.githubassets.com/images/icons/emoji/unicode/1f98a.png
     name: dalfox
@@ -296,7 +279,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 17
+  pk: 16
   fields:
     logo_url: https://user-images.githubusercontent.com/8293321/196779266-421c79d4-643a-4f73-9b54-3da379bbac09.png
     name: katana
@@ -313,7 +296,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 18
+  pk: 17
   fields:
     logo_url: https://user-images.githubusercontent.com/25837540/90128972-fc3bdf00-dd91-11ea-8c3b-0d6f4e8c6ba3.png
     name: crlfuzz
@@ -330,7 +313,7 @@
     github_clone_path: null
     subdomain_gathering_command: null
 - model: scanEngine.installedexternaltool
-  pk: 19
+  pk: 18
   fields:
     logo_url: null
     name: gau
