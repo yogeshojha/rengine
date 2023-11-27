@@ -1676,7 +1676,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
-			# endpoint.is_default = False
 			endpoint.http_status = status
 			endpoint.content_length = length
 			endpoint.response_time = duration / 1000000000
@@ -4511,11 +4510,27 @@ def save_endpoint(
 		if not validators.url(http_url):
 			return None, False
 		http_url = sanitize_url(http_url)
-		endpoint, created = EndPoint.objects.get_or_create(
+
+		# Try to get the first matching record (prevent duplicate error)
+		endpoints = EndPoint.objects.filter(
 			scan_history=scan,
 			target_domain=domain,
 			http_url=http_url,
-			**endpoint_data)
+			**endpoint_data
+		)
+
+		if endpoints.exists():
+			endpoint = endpoints.first()
+			created = False
+		else:
+			# No existing record, create a new one
+			endpoint = EndPoint.objects.create(
+				scan_history=scan,
+				target_domain=domain,
+				http_url=http_url,
+				**endpoint_data
+			)
+			created = True
 
 	if created:
 		endpoint.is_default = is_default
