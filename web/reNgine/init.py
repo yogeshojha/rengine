@@ -22,7 +22,7 @@ def first_run(secret_file, base_dir):
             secret = open(secret_file, 'w')
             secret.write(secret_key)
             secret.close()
-        except IOError:
+        except OSError:
             raise Exception(f'Secret file generation failed. Path: {secret_file}')
     return secret_key
 
