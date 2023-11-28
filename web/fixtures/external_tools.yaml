@@ -198,10 +198,10 @@
       names, subdomains, IPs and URLs using multiple public data sources.
     github_url: https://github.com/laramies/theHarvester
     license_url: https://github.com/laramies/theHarvester/blob/master/README/LICENSES
-    version_lookup_command: null
+    version_lookup_command: grep -oP '(?<=theHarvester )\d+\.\d+\.\d+' <<< "$(python3 theHarvester.py -h)"
     update_command: git pull
     install_command: git clone https://github.com/laramies/theHarvester
-    version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
+    version_match_regex: (\d+\.\d+\.\d+)
     is_default: true
     is_subdomain_gathering: false
     is_github_cloned: true
