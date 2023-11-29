@@ -1785,7 +1785,7 @@ $(document).ready(function() {
 			$('#reload_vulnerabilities_table_btn').click(function () {
 				vulnerability_table.ajax.reload();
 			});
-			
+
 			$('#vulnerability-search-button').click(function () {
 				vulnerability_table.search($('#vulnerability-search').val()).draw() ;
 			});
@@ -1924,7 +1924,7 @@ $(document).ready(function() {
 									// has been scanned multiple times
 									html_treeview += `<p class="text-dark">Directory Scan has been performed ${data.length} times.</p>`;
 								}
-								html_treeview += `<ul>`;
+								html_treeview += `<ul class="list-unstyled">`;
 								var item_pos = 0;
 								data.forEach(function(item){
 									var aria_expanded = 'false';
@@ -1934,12 +1934,12 @@ $(document).ready(function() {
 										show = 'hide';
 									}
 									if(item['directory_files'].length == 0){
-										html_treeview += `<br><span class="text-muted"><i class="fe-folder"></i> No Directories Discovered during the Scan Performed on ${item.scanned_date}</span>`;
-										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+										html_treeview += `<li class="mt-1"><span class="text-muted"><i class="fe-folder"></i> No Directories Discovered during the Scan Performed on ${item.scanned_date}</span></li>`;
+										html_treeview += `<div class="ml-2 collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
 									}
 									else{
-										html_treeview += `<br><a class="mt-2" data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder-plus"></i> Directory Scan Performed on ${item.scanned_date}</a>`;
-										html_treeview += `<div class="collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
+										html_treeview += `<li class="mt-1"><a data-bs-toggle="collapse" href="#dir_${item.formatted_date_for_id}_${item.id}" aria-expanded="${aria_expanded}" aria-controls="dir_${item.formatted_date_for_id}_${item.id}"><i class="fe-folder-plus"></i> <span class="me-1 badge badge-soft-primary badge-link bs-tooltip" title="Directories">${item['directory_files'].length} <i class="far fa-folder"></i></span> found on ${item.scanned_date}</a></li>`;
+										html_treeview += `<div class="ml-2 collapse ${show}" id="dir_${item.formatted_date_for_id}_${item.id}">`;
 										var interesting_badge = '';
 										// console.log(item['directory_files'][i]['name']);
 										item['directory_files'].forEach(function(file){
