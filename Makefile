@@ -20,7 +20,7 @@ setup:			## Generate certificates.
 
 up:				## Build and start all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} up -d --build ${SERVICES}
-
+	docker exec -it ollama ollama run llama2
 build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 

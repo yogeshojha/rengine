@@ -149,8 +149,6 @@ services:
       - "11434:11434"
     networks:
       - rengine_network
-    restart: always
-    command: ["ollama", "run", "llama2-uncensored"]
 
 networks:
   rengine_network:
