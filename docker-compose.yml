@@ -140,7 +140,17 @@ services:
       - scan_results:/usr/src/scan_results
     networks:
       - rengine_network
-
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - rengine_network
+    restart: always
+    command: ["ollama", "run", "llama2-uncensored"]
 
 networks:
   rengine_network:
@@ -154,6 +164,7 @@ volumes:
   wordlist:
   scan_results:
   static_volume:
+  ollama_data:
 
 secrets:
   proxy.ca:
