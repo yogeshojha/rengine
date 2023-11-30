@@ -10,7 +10,7 @@ class GPTVulnerabilityReportGenerator:
 		self.api_key = get_open_ai_key()
 		self.model_name = 'gpt-3.5-turbo'
 		if not self.api_key:
-			self.ollama = Ollama(base_url='http://localhost:11434', model="llama2-uncensored")
+			self.ollama = Ollama(base_url='http://ollama:11434', model="llama2-uncensored")
 	
 	def get_vulnerability_description(self, description):
 		"""Generate Vulnerability Description using GPT.
@@ -82,7 +82,7 @@ class GPTAttackSuggestionGenerator:
 		self.api_key = get_open_ai_key()
 		self.model_name = 'gpt-3.5-turbo'
 		if not self.api_key:
-			self.ollama = Ollama(base_url='http://localhost:11434', model="llama2-uncensored")
+			self.ollama = Ollama(base_url='http://ollama:11434', model="llama2-uncensored")
 
 	def get_attack_suggestion(self, input):
 		'''
