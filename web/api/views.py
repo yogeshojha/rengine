@@ -712,6 +712,7 @@ class StopScan(APIView):
 				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
+				scan.aborted_by = request.user
 				scan.save()
 				create_scan_activity(
 					scan.id,
@@ -958,7 +959,7 @@ class GithubToolCheckGetLatestRelease(APIView):
 			return Response({'status': False, 'message': 'Not Found'})
 		elif not response:
 			return Response({'status': False, 'message': 'Not Found'})
-		
+
 		# only send latest release
 		response = response[0]
 
