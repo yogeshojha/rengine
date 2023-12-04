@@ -272,7 +272,7 @@ vulnerability_scan: {
   'timeout': 5,
   'fetch_gpt_report': true,
   'nuclei': {
-    'use_conf': false,
+    'use_nuclei_config': false,
     'severities': [
       'unknown',
       'info',
