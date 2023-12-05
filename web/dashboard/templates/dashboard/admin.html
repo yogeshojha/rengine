@@ -279,6 +279,13 @@ function create_user_modal(){
           var create_username = document.getElementById('create_username').value;
           var role_selected = document.getElementById('create_user_role').value;
           var create_password = document.getElementById('create_password').value;
+          if (!create_password) {
+            Swal.fire({
+              title: "Oops! Passwords can't be empty!",
+              icon: 'error',
+            })
+            return
+          }
           const data = {
             'username': create_username,
             'role': role_selected,
