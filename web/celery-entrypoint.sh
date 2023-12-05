@@ -133,12 +133,6 @@ then
   pip install -r /usr/src/github/CMSeeK/requirements.txt
 fi
 
-if [ ! -d "/usr/src/github/Infoga" ]
-then
-  echo "Cloning Infoga"
-  git clone https://github.com/GiJ03/Infoga /usr/src/github/Infoga
-fi
-
 # clone ctfr
 if [ ! -d "/usr/src/github/ctfr" ]
 then
