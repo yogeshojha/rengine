@@ -220,8 +220,8 @@ def admin_interface_update(request, slug):
             try:
                 user.delete()
                 messages.add_message(
-                request,
-                messages.INFO,
+                    request,
+                    messages.INFO,
                     f'User {user.username} successfully deleted.'
                 )
                 messageData = {'status': True}
@@ -245,6 +245,9 @@ def admin_interface_update(request, slug):
         elif mode == 'create':
             try:
                 response = json.loads(request.body)
+                if not response.get('password'):
+                    messageData = {'status': False, 'error': 'Empty passwords are not allowed'}
+                    return JsonResponse(messageData)
                 UserModel = get_user_model()
                 user = UserModel.objects.create_user(
                     username=response.get('username'),
