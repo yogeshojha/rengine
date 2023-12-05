@@ -1001,7 +1001,7 @@
                 <br>
                 <span class="mini-heading">Vulnerable URL(s)</span><br>
                 <ul>
-                    <li class="text-blue"><a href="{{vulnerability.http_url}}" target="_blank">{{vulnerability.http_url}}</a></li>
+                    <li class="text-blue"><a href="{{vulnerability.http_url}}" target="_blank" rel="noopener noreferrer">{{vulnerability.http_url}}</a></li>
                 </ul>
                 <!-- {% regroup vulnerability.list by http_url as vuln_http_url_list %} -->
                 <!-- <ul>
@@ -1025,7 +1025,7 @@
                   <ul>
                     {% for ref in vulnerability.references.all %}
                     <li>
-                      <span class="text-blue"><a href="{{ref}}" target="_blank">{{ref}}</a></span>
+                      <span class="text-blue"><a href="{{ref}}" target="_blank" rel="noopener noreferrer">{{ref}}</a></span>
                     </li>
                     {% endfor %}
                   </ul>
