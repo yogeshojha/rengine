@@ -3233,8 +3233,9 @@ def parse_nmap_results(xml_file, output_file=None):
 					else:
 						logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
 
-				# Add URL to vuln
+				# Add URL & source to vuln
 				for vuln in url_vulns:
+					vuln['source'] = NMAP
 					# TODO: This should extend to any URL, not just HTTP
 					vuln['http_url'] = url
 					if 'http_path' in vuln:
