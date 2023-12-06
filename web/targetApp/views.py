@@ -52,6 +52,7 @@ def add_target(request, slug):
                 logger.info(f'Adding multiple targets: {bulk_targets}')
                 description = request.POST.get('targetDescription', '')
                 h1_team_handle = request.POST.get('targetH1TeamHandle')
+                organization_name = request.POST.get('targetOrganization')
                 for target in bulk_targets:
                     target = target.rstrip('\n')
                     http_urls = []
@@ -120,6 +121,18 @@ def add_target(request, slug):
                             added_target_count += 1
                             if created:
                                 logger.info(f'Added new domain {domain.name}')
+
+                            if organization_name:
+                                organization = None
+                                if Organization.objects.filter(name=organization_name).exists():
+                                    organization = organization_query[0]
+                                else:
+                                    organization = Organization.objects.create(
+                                        name=organization_name,
+                                        project=project,
+                                        insert_date=timezone.now())
+                                organization.domains.add(domain)
+
 
                     for http_url in http_urls:
                         http_url = sanitize_url(http_url)
