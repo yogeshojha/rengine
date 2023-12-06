@@ -251,7 +251,7 @@
     description: Non-intrusive Internet Scanner.
     github_url: https://github.com/netlas-io/netlas-python
     license_url: https://github.com/netlas-io/netlas-python/blob/master/LICENSE
-    version_lookup_command: null
+    version_lookup_command: pip3 show netlas
     update_command: pip3 install netlas --update
     install_command: pip3 install netlas
     version_match_regex: (\d+\.)?(\d+\.)?(\*|\d+)
