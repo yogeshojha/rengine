@@ -1,7 +1,13 @@
 import openai
 import re
+import os
 from reNgine.common_func import get_open_ai_key, extract_between
 from reNgine.definitions import VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE, ATTACK_SUGGESTION_GPT_SYSTEM_PROMPT
+
+#sets custom api base url if provided in .env to enable users to use their own openai instance
+custom_api_base_url = os.getenv('OPENAI_API_BASE_URL')
+if custom_api_base_url:
+    openai.api_base = custom_api_base_url
 
 class GPTVulnerabilityReportGenerator:
 
