@@ -2291,7 +2291,7 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	proxy = get_random_proxy()
 	nuclei_specific_config = config.get('nuclei', {})
-	use_nuclei_conf = nuclei_specific_config.get(USE_CONFIG, False)
+	use_nuclei_conf = nuclei_specific_config.get(USE_NUCLEI_CONFIG, False)
 	severities = nuclei_specific_config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
 	tags = nuclei_specific_config.get(NUCLEI_TAGS, [])
 	tags = ','.join(tags)
@@ -3233,8 +3233,9 @@ def parse_nmap_results(xml_file, output_file=None):
 					else:
 						logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
 
-				# Add URL to vuln
+				# Add URL & source to vuln
 				for vuln in url_vulns:
+					vuln['source'] = NMAP
 					# TODO: This should extend to any URL, not just HTTP
 					vuln['http_url'] = url
 					if 'http_path' in vuln:

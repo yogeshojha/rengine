@@ -34,6 +34,8 @@ class EngineType(models.Model):
 
     @hybrid_property
     def tasks(self):
+        if not self.yaml_configuration or not yaml.safe_load(self.yaml_configuration):
+            return []
         return list(yaml.safe_load(self.yaml_configuration).keys())
 
 class Wordlist(models.Model):

@@ -38,7 +38,7 @@ class AddOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):
         project = kwargs.pop('project')
         super(AddOrganizationForm, self).__init__(*args, **kwargs)
-        self.fields['domains'].choices = [(domain.id, domain.name) for domain in Domain.objects.filter(project__slug=project)]
+        self.fields['domains'].choices = [(domain.id, domain.name) for domain in Domain.objects.filter(project__slug=project) if not domain.get_organization()]
 
     name = forms.CharField(
         required=True,
