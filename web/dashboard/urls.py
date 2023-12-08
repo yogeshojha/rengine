@@ -40,4 +40,5 @@ urlpatterns = [
         'delete/project/<int:id>',
         views.delete_project,
         name='delete_project'),
+    path("__debug__/", include("debug_toolbar.urls")),
 ]

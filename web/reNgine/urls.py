@@ -53,5 +53,6 @@ urlpatterns = [
         include(
             'api.urls',
             'api')),
+    path("__debug__/", include("debug_toolbar.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.RENGINE_RESULTS) + \
     static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
