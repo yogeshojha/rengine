@@ -177,10 +177,10 @@
     description: A powerful subdomain integration tool.
     github_url: https://github.com/shmilylty/OneForAll
     license_url: https://github.com/shmilylty/OneForAll/blob/master/LICENSE
-    version_lookup_command: python3 /usr/src/github/OneForAll/oneforall.py version
+    version_lookup_command: cat /usr/src/github/OneForAll/oneforall.py
     update_command: git pull
     install_command: git clone https://github.com/shmilylty/OneForAll
-    version_match_regex: 'v(\d+\.)?(\d+\.)?(\*|\d+)'
+    version_match_regex: v\d+\.\d+\.\d+\b
     is_default: true
     is_subdomain_gathering: true
     is_github_cloned: true
