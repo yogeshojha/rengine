@@ -20,5 +20,4 @@ urlpatterns = [
         'delete_note',
         views.delete_note,
         name='delete_note'),
-    path("__debug__/", include("debug_toolbar.urls")),
 ]

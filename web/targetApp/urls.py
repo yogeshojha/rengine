@@ -47,5 +47,4 @@ urlpatterns = [
         '<slug:slug>/summary/<int:id>',
         views.target_summary,
         name='target_summary'),
-    path("__debug__/", include("debug_toolbar.urls")),
 ]

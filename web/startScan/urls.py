@@ -106,5 +106,4 @@ urlpatterns = [
         '<slug:slug>/delete/multiple',
         views.delete_scans,
         name='delete_multiple_scans'),
-    path("__debug__/", include("debug_toolbar.urls")),
 ]
