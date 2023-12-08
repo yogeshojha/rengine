@@ -81,5 +81,4 @@ urlpatterns = [
         views.test_hackerone,
         name='testHackerone'
     ),
-    path("__debug__/", include("debug_toolbar.urls")),
 ]
