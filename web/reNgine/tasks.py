@@ -10,6 +10,7 @@ import xmltodict
 import yaml
 import tldextract
 import concurrent.futures
+import base64
 
 from datetime import datetime
 from urllib.parse import urlparse
@@ -1671,11 +1672,13 @@ def dir_file_fuzz(self, ctx={}, description=None):
 			results.append(line)
 
 			# Retrieve FFUF output
-			name = line['input'].get('FUZZ')
+			url = line['url']
+			url_fuzzed = urlparse(url)
+			# convert to base64 (need byte string encode & decode)
+			name = base64.b64encode(url_fuzzed.path.encode()).decode()
 			length = line['length']
 			status = line['status']
 			words = line['words']
-			url = line['url']
 			lines = line['lines']
 			content_type = line['content-type']
 			duration = line['duration']
