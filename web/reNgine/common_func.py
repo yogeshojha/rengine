@@ -451,6 +451,19 @@ def sanitize_url(http_url):
 		url = url._replace(netloc=url.netloc.replace(':443', ''))
 	return url.geturl().rstrip('/')
 
+def extract_path_from_url(url):
+	parsed_url = urlparse(url)
+
+	# Reconstruct the URL without scheme and netloc
+	reconstructed_url = parsed_url.path
+	if parsed_url.params:
+		reconstructed_url += ';' + parsed_url.params
+	if parsed_url.query:
+		reconstructed_url += '?' + parsed_url.query
+	if parsed_url.fragment:
+		reconstructed_url += '#' + parsed_url.fragment
+
+	return reconstructed_url
 
 #-------#
 # Utils #
