@@ -456,6 +456,10 @@ def extract_path_from_url(url):
 
 	# Reconstruct the URL without scheme and netloc
 	reconstructed_url = parsed_url.path
+
+	if reconstructed_url.startswith('/'):
+		reconstructed_url = reconstructed_url[1:]  # Remove the first slash
+
 	if parsed_url.params:
 		reconstructed_url += ';' + parsed_url.params
 	if parsed_url.query:
