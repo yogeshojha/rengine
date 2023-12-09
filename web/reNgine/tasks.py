@@ -1672,9 +1672,8 @@ def dir_file_fuzz(self, ctx={}, description=None):
 
 			# Retrieve FFUF output
 			url = line['url']
-			url_fuzzed = urlparse(url)
-			# convert to base64 (need byte string encode & decode)
-			name = base64.b64encode(url_fuzzed.path.encode()).decode()
+			# Extract path and convert to base64 (need byte string encode & decode)
+			name = base64.b64encode(extract_path_from_url(url).encode()).decode()
 			length = line['length']
 			status = line['status']
 			words = line['words']
