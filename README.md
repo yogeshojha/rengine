@@ -393,6 +393,8 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 
     If `update.sh` does not have execution permissions, please change it, `sudo chmod +x update.sh`
 
+    **NOTE:** if you're updating from 1.3.6, and you're getting a 'password authentication failed' error, consider uninstalling 1.3.6 first, then install 2.x.x as you'd normally do.
+
 ### Changelog
 
 [Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
