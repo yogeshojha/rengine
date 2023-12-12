@@ -6,7 +6,7 @@ def projects(request):
     try:
         slug = request.resolver_match.kwargs.get('slug')
         project = Project.objects.get(slug=slug)
-    except Exception as e:
+    except Exception:
         project = None
     return {
         'projects': projects,
