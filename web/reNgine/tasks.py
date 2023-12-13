@@ -2906,6 +2906,7 @@ def send_notif(
 		message = enrich_notification(message, scan_history_id, subscan_id)
 	send_discord_message(message, **options)
 	send_slack_message(message)
+	send_lark_message(message)
 	send_telegram_message(message)
 
 
