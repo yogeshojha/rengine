@@ -8,9 +8,10 @@ tput setaf 2; echo "Changing the postgres username & password from .env is highl
 
 tput setaf 4;
 read -p "Are you sure, you made changes to .env file (y/n)? " answer
+answer=$(echo $answer | tr '[:upper:]' '[:lower:]')
 case ${answer:0:1} in
-    y|Y|yes|YES|Yes )
-      echo "Continiuing Installation!"
+    y|yes )
+      echo "Continuing Installation!"
     ;;
     * )
       if [ -x "$(command -v nano)" ]; then
