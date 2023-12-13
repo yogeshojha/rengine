@@ -579,7 +579,7 @@ def send_lark_message(message):
 		message (str): Message.
 	"""
 	headers = {'content-type': 'application/json'}
-	message = {'msg_type': 'text', 'content':{'text': message}}
+	message = {"msg_type":"interactive","card":{"elements":[{"tag":"div","text":{"content":message,"tag":"lark_md"}}]}}
 	notif = Notification.objects.first()
 	do_send = (
 		notif and
