@@ -39,7 +39,7 @@ reNgine was created to address the limitations of traditional reconnaissance too
 
 reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://youtu.be/VwkOWqiWW5g)
 
-reNgine 2.0-Jasper would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did the majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
+reNgine 2.0-Jasper would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did the majority of the refactoring (if not all) and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
 
 Thank you, [@ocervell](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
 
