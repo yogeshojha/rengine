@@ -464,7 +464,6 @@ The bounty reward is determined by an industry-first equation developed by huntr
 
 **What do I expect from security researchers?**
 
-* Patience: Please note that I am currently the only maintainer in reNgine, and it will take some time to validate your report. I ask for your patience during this process.
 * Respect for privacy and security reports: Please do not publicly disclose any vulnerabilities (including GitHub issues) before or after reporting them on huntr.dev! This is against the disclosure policy and will not be rewarded.
 * Respect the rules
 
