@@ -88,15 +88,15 @@ fi
 echo " "
 tput setaf 4;
 echo "#########################################################################"
-echo "Installing docker-compose"
+echo "Installing docker compose"
 echo "#########################################################################"
-if [ -x "$(command -v docker-compose)" ]; then
-  tput setaf 2; echo "docker-compose already installed, skipping."
+if [ -x "$(command -v docker compose)" ]; then
+  tput setaf 2; echo "docker compose already installed, skipping."
 else
   curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-  tput setaf 2; echo "docker-compose installed!!!"
+  tput setaf 2; echo "docker compose installed!!!"
 fi
 
 
