@@ -47,6 +47,8 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    ports:
+      - "5555:5555"
     depends_on:
       - db
       - redis
