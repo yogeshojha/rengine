@@ -1,0 +1,28 @@
+# Folders to exclude from linting
+exclude = [
+	".github",
+	"certs",
+	"scripts",
+	"env",
+	"venv",
+	"__pycache__"
+]
+
+indent-width = 4
+
+[lint]
+ignore = [
+	"E402", # Import not at top of file
+	"F403", # unable to detect undefined names
+	"F405" # may be undefined, or defined from star imports
+]
+
+[format]
+# Indent with tabs
+indent-style = "tab"
+
+# Use double quotes for strings
+quote-style = "double"
+
+# Automatically detect the appropriate line ending
+line-ending = "auto"
