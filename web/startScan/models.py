@@ -263,6 +263,13 @@ class Subdomain(models.Model):
 		return vulns
 
 	@property
+	def get_vulnerabilities_without_info(self):
+		vulns = Vulnerability.objects.filter(subdomain__name=self.name).exclude(severity=0)
+		if self.scan_history:
+			vulns = vulns.filter(scan_history=self.scan_history)
+		return vulns
+
+	@property
 	def get_directories_count(self):
 		subdomains = (
 			Subdomain.objects

@@ -1759,7 +1759,6 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	# Tools cmds
 	cmd_map = {
 		'gau': f'gau',
-		'gauplus': f'gauplus -random-agent',
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
@@ -1767,13 +1766,11 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	}
 	if proxy:
 		cmd_map['gau'] += f' --proxy "{proxy}"'
-		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
 		cmd_map['katana'] += f' -proxy {proxy}'
 	if threads > 0:
 		cmd_map['gau'] += f' --threads {threads}'
-		cmd_map['gauplus'] += f' -t {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
 	if custom_header:

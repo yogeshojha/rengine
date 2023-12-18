@@ -908,6 +908,7 @@ def create_report(request, id):
         'scan_object': scan,
         'unique_vulnerabilities': unique_vulns,
         'all_vulnerabilities': vulns,
+        'all_vulnerabilities_count': vulns.count(),
         'subdomain_alive_count': subdomain_alive_count,
         'interesting_subdomains': interesting_subdomains,
         'subdomains': subdomains,
@@ -915,6 +916,7 @@ def create_report(request, id):
         'show_recon': show_recon,
         'show_vuln': show_vuln,
         'report_name': report_name,
+        'is_ignore_info_vuln': is_ignore_info_vuln,
     }
 
     # Get report related config
