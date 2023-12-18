@@ -1,3 +1,4 @@
+include .env
 .DEFAULT_GOAL:=help
 
 # Credits: https://github.com/sherifabdlnaby/elastdocker/
@@ -25,7 +26,11 @@ build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
 username:		## Generate Username (Use only after make up).
+ifeq ($(isNonInteractive), true)
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser --username ${DJANGO_SUPERUSER_USERNAME} --email ${DJANGO_SUPERUSER_EMAIL} --noinput
+else
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser
+endif
 
 migrate:		## Apply migrations
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py migrate
