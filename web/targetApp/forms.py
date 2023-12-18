@@ -33,6 +33,15 @@ class AddTargetForm(forms.Form):
                 "placeholder": "team_handle"
             }
         ))
+    organization_name = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control form-control-lg",
+                "id": "organizationName",
+                "placeholder": "Organization Name"
+            }
+        ))
 
 class AddOrganizationForm(forms.Form):
     def __init__(self, *args, **kwargs):
