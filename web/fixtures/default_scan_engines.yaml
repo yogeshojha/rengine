@@ -30,7 +30,7 @@
       \ 'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
       \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
-      true,\r\n  'nuclei': {\r\n    'use_conf': false,\r\n    'severities': ['unknown',
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['unknown',
       'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}\r\nwaf_detection: {\r\n\r\n}\r\nscreenshot:
       {\r\n  'enable_http_crawl': true,\r\n  'intensity': 'normal',\r\n  'timeout':
       10,\r\n  'threads': 40\r\n}\r\n\r\n# custom_header: \"Cookie: Test\""
@@ -72,7 +72,7 @@
       {\r\n  'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
       \ 'enable_http_crawl': true,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
-      true,\r\n  'nuclei': {\r\n    'use_conf': false,\r\n    'severities': ['unknown',
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['unknown',
       'info', 'low', 'medium', 'high', 'critical']\r\n  }\r\n}"
     default_engine: true
 - model: scanEngine.enginetype
@@ -99,6 +99,6 @@
       {\r\n  'run_nuclei': true,\r\n  'run_dalfox': true,\r\n  'run_crlfuzz': true,\r\n
       \ 'enable_http_crawl': false,\r\n  'concurrency': 50,\r\n  'intensity': 'normal',\r\n
       \ 'rate_limit': 150,\r\n  'retries': 1,\r\n  'timeout': 5,\r\n  'fetch_gpt_report':
-      true,\r\n  'nuclei': {\r\n    'use_conf': false,\r\n    'severities': ['low',
+      true,\r\n  'nuclei': {\r\n    'use_nuclei_config': false,\r\n    'severities': ['low',
       'medium', 'high', 'critical']\r\n  }\r\n}"
     default_engine: true

@@ -80,6 +80,7 @@ Quick Scan History
               <th>Summary</th>
               <th class="">Scan Engine Used</th>
               <th>Last Scan</th>
+              <th>Initiated By</th>
               <th class="text-center">Status</th>
               <th class="text-center">Progress</th>
               <th class="text-center no-sorting">Action</th>
@@ -108,6 +109,9 @@ Quick Scan History
               <td>
                 <span data-toggle="tooltip" data-placement="top" title="{{scan_history.start_scan_date}}">{{scan_history.start_scan_date|naturaltime}}</span>
               </td>
+              <td>
+                <span class="badge badge-soft-secondary">{{scan_history.initiated_by.username}}</span>
+              </td>
               <td class="text-center">
                 {% if scan_history.scan_status == -1 %}
                 <span class="badge badge-soft-warning" data-placement="top" data-toggle="tooltip" data-placement="top" title="Waiting for other scans to complete"><span class="spinner-border spinner-border-sm"></span> Pending</span>
@@ -120,6 +124,8 @@ Quick Scan History
                 <span class="badge badge-soft-success">Successful</span>
                 {% elif scan_history.scan_status == 3 %}
                 <span class="badge badge-soft-danger">Aborted</span>
+                <br>
+                <small class="text-muted">Aborted by: {{scan_history.aborted_by}}</small>
                 {% else %}
                 <span class="badge badge-soft-danger">Unknown</span>
                 {% endif %}

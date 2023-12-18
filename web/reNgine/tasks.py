@@ -680,10 +680,6 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx
 	grouped_tasks = []
 
 	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(scan_history, activity_id, results_dir)
-		emails_str = '\n'.join([f'• `{email}`' for email in emails])
-		# self.notify(fields={'Emails': emails_str})
-		# ctx['track'] = False
 		_task = h8mail.si(
 			config=config,
 			host=host,
@@ -1676,7 +1672,6 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
-			# endpoint.is_default = False
 			endpoint.http_status = status
 			endpoint.content_length = length
 			endpoint.response_time = duration / 1000000000
@@ -1760,7 +1755,6 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	# Tools cmds
 	cmd_map = {
 		'gau': f'gau',
-		'gauplus': f'gauplus -random-agent',
 		'hakrawler': 'hakrawler -subs -u',
 		'waybackurls': 'waybackurls',
 		'gospider': f'gospider -S {input_path} --js -d 2 --sitemap --robots -w -r',
@@ -1768,13 +1762,11 @@ def fetch_url(self, urls=[], ctx={}, description=None):
 	}
 	if proxy:
 		cmd_map['gau'] += f' --proxy "{proxy}"'
-		cmd_map['gauplus'] += f' -p "{proxy}"'
 		cmd_map['gospider'] += f' -p {proxy}'
 		cmd_map['hakrawler'] += f' -proxy {proxy}'
 		cmd_map['katana'] += f' -proxy {proxy}'
 	if threads > 0:
 		cmd_map['gau'] += f' --threads {threads}'
-		cmd_map['gauplus'] += f' -t {threads}'
 		cmd_map['gospider'] += f' -t {threads}'
 		cmd_map['katana'] += f' -c {threads}'
 	if custom_header:
@@ -2292,7 +2284,7 @@ def nuclei_scan(self, urls=[], ctx={}, description=None):
 	should_fetch_gpt_report = config.get(FETCH_GPT_REPORT, DEFAULT_GET_GPT_REPORT)
 	proxy = get_random_proxy()
 	nuclei_specific_config = config.get('nuclei', {})
-	use_nuclei_conf = nuclei_specific_config.get(USE_CONFIG, False)
+	use_nuclei_conf = nuclei_specific_config.get(USE_NUCLEI_CONFIG, False)
 	severities = nuclei_specific_config.get(NUCLEI_SEVERITY, NUCLEI_DEFAULT_SEVERITIES)
 	tags = nuclei_specific_config.get(NUCLEI_TAGS, [])
 	tags = ','.join(tags)
@@ -3234,8 +3226,9 @@ def parse_nmap_results(xml_file, output_file=None):
 					else:
 						logger.warning(f'Script output parsing for script "{script_id}" is not supported yet.')
 
-				# Add URL to vuln
+				# Add URL & source to vuln
 				for vuln in url_vulns:
+					vuln['source'] = NMAP
 					# TODO: This should extend to any URL, not just HTTP
 					vuln['http_url'] = url
 					if 'http_path' in vuln:
@@ -4287,56 +4280,6 @@ def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=
 
 	return results
 
-
-def get_and_save_emails(scan_history, activity_id, results_dir):
-	"""Get and save emails from Google, Bing and Baidu.
-
-	Args:
-		scan_history (startScan.ScanHistory): Scan history object.
-		activity_id: ScanActivity Object
-		results_dir (str): Results directory.
-
-	Returns:
-		list: List of emails found.
-	"""
-	emails = []
-
-	# Proxy settings
-	# get_random_proxy()
-
-	# Gather emails from Google, Bing and Baidu
-	output_file = f'{results_dir}/emails_tmp.txt'
-	history_file = f'{results_dir}/commands.txt'
-	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
-	try:
-		run_command(
-			command,
-			shell=False,
-			history_file=history_file,
-			scan_id=scan_history.id,
-			activity_id=activity_id)
-
-		if not os.path.isfile(output_file):
-			logger.info('No Email results')
-			return []
-
-		with open(output_file) as f:
-			for line in f.readlines():
-				if 'Email' in line:
-					split_email = line.split(' ')[2]
-					emails.append(split_email)
-
-		output_path = f'{results_dir}/emails.txt'
-		with open(output_path, 'w') as output_file:
-			for email_address in emails:
-				save_email(email_address, scan_history)
-				output_file.write(f'{email_address}\n')
-
-	except Exception as e:
-		logger.exception(e)
-	return emails
-
-
 def save_metadata_info(meta_dict):
 	"""Extract metadata from Google Search.
 
@@ -4511,11 +4454,27 @@ def save_endpoint(
 		if not validators.url(http_url):
 			return None, False
 		http_url = sanitize_url(http_url)
-		endpoint, created = EndPoint.objects.get_or_create(
+
+		# Try to get the first matching record (prevent duplicate error)
+		endpoints = EndPoint.objects.filter(
 			scan_history=scan,
 			target_domain=domain,
 			http_url=http_url,
-			**endpoint_data)
+			**endpoint_data
+		)
+
+		if endpoints.exists():
+			endpoint = endpoints.first()
+			created = False
+		else:
+			# No existing record, create a new one
+			endpoint = EndPoint.objects.create(
+				scan_history=scan,
+				target_domain=domain,
+				http_url=http_url,
+				**endpoint_data
+			)
+			created = True
 
 	if created:
 		endpoint.is_default = is_default
