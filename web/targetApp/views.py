@@ -191,18 +191,31 @@ def add_target(request, slug):
                     io_string = io.StringIO(csv_content)
                     for column in csv.reader(io_string, delimiter=','):
                         domain = column[0]
-                        description = None if len(column) == 1 else column[1]
+                        description = None if len(column) <= 1 else column[1]
+                        organization = None if len(column) <= 2 else column[2]
                         domain_query = Domain.objects.filter(name=domain)
                         if not domain_query.exists():
                             if not validators.domain(domain):
                                 messages.add_message(request, messages.ERROR, f'Domain {domain} is not a valid domain name. Skipping.')
                                 continue
-                            Domain.objects.create(
+                            domain_obj = Domain.objects.create(
                                 name=domain,
                                 project=project,
                                 description=description,
                                 insert_date=timezone.now())
                             added_target_count += 1
+                        
+                            # Optionally add domain to organization
+                            if organization:
+                                organization_query = Organization.objects.filter(name=organization)
+                                if organization_query.exists():
+                                    organization = organization_query[0]
+                                else:
+                                    organization = Organization.objects.create(
+                                        name=organization,
+                                        project=project,
+                                        insert_date=timezone.now())
+                                organization.domains.add(domain_obj)
 
         except Exception as e:
             logger.exception(e)
