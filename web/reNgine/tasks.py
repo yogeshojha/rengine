@@ -416,6 +416,7 @@ def subdomain_discovery(
 		proxy = get_random_proxy()
 		if tool in default_subdomain_tools:
 			if tool == 'amass-passive':
+				use_amass_config = config.get(USE_AMASS_CONFIG, False)
 				cmd = f'amass enum -passive -d {host} -o {self.results_dir}/subdomains_amass.txt'
 				cmd += ' -config /root/.config/amass.ini' if use_amass_config else ''
 
