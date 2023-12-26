@@ -28,5 +28,5 @@ def first_run(secret_file, base_dir):
 
 
 def get_random():
-    wordlist = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-    return ''.join(secrets.choice(wordlist) for _ in range(50))
+    charlist = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    return ''.join(secrets.choice(charlist) for _ in range(50))
