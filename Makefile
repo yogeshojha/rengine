@@ -27,6 +27,9 @@ build:			## Build all services.
 username:		## Generate Username (Use only after make up).
 	${COMPOSE_PREFIX_CMD} docker compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser
 
+changepassword:	## Change password for user
+
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py changepassword
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com
 	${COMPOSE_PREFIX_CMD} docker compose ${COMPOSE_ALL_FILES} pull
