@@ -163,7 +163,7 @@ LOGIN_REQUIRED_IGNORE_VIEW_NAMES = [
 ]
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'dashboardIndex'
+LOGIN_REDIRECT_URL = 'onboarding'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Tool Location
