@@ -6,8 +6,8 @@
 COMPOSE_PREFIX_CMD := COMPOSE_DOCKER_CLI_BUILD=1
 
 COMPOSE_ALL_FILES := -f docker-compose.yml
-COMPOSE_CLOUD_ALL_FILES := -f docker-compose-cloud.yml
 SERVICES          := db web proxy redis celery celery-beat
+CLOUD_SERVICES := db cloud-web cloud-proxy redis celery celery-beat
 
 # --------------------------
 
@@ -23,19 +23,19 @@ up:				## Build and start all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} up -d --build ${SERVICES}
 
 cloud_up:		## Build and start all services.
-	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_CLOUD_ALL_FILES} up -d --build ${SERVICES}
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} up -d --build ${CLOUD_SERVICES}
 
 build:			## Build all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${SERVICES}
 
-cloud_build:	## Build all services.
-	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_CLOUD_ALL_FILES} build ${SERVICES}
+cloud_build: ## Build all services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} build ${CLOUD_SERVICES}
 
 username:		## Generate Username (Use only after make up).
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec web python3 manage.py createsuperuser
 
 cloud_username:
-	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_CLOUD_ALL_FILES} exec web python3 manage.py createsuperuser --noinput
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec cloud-web python3 manage.py createsuperuser --noinput
 
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com
@@ -47,11 +47,20 @@ down:			## Down all services.
 stop:			## Stop all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} stop ${SERVICES}
 
+cloud_stop: ## Stop all cloud services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} stop ${CLOUD_SERVICES}
+
 restart:		## Restart all services.
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} restart ${SERVICES}
 
+cloud_restart: ## Restart all cloud services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} restart ${CLOUD_SERVICES}
+
 rm:				## Remove all services containers.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) rm -f ${SERVICES}
+
+cloud_rm:		## Remove all cloud services containers.
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) rm -f ${CLOUD_SERVICES}
 
 test:
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) exec celery python3 -m unittest tests/test_scan.py
@@ -59,11 +68,20 @@ test:
 logs:			## Tail all logs with -n 1000.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${SERVICES}
 
+cloud_logs:			## Tail all logs with -n 1000.
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) logs --follow --tail=1000 ${CLOUD_SERVICES}
+
 images:			## Show all Docker images.
 	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) images ${SERVICES}
 
+cloud_images:			## Show all Docker cloud images.
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_ALL_FILES) images ${CLOUD_SERVICES}
+
 prune:			## Remove containers and delete volume data.
 	@make stop && make rm && docker volume prune -f
+
+cloud_prune: ## Remove containers and delete volume data.
+	@make cloud_stop && make cloud_rm && docker volume prune -f
 
 help:			## Show this help.
 	@echo "Make application docker images and manage containers using docker-compose files."
