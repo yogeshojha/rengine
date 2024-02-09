@@ -84,3 +84,5 @@ if [ "${failed}" -eq 0 ]; then
 	print_and_log "#########################################################################"
 	make cloud_username
 fi
+
+make cloud_update

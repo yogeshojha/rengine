@@ -37,6 +37,9 @@ username:		## Generate Username (Use only after make up).
 cloud_username:
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec cloud-web python3 manage.py createsuperuser --noinput
 
+cloud_update:
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} exec cloud-web python3 mange.py migrate
+
 pull:			## Pull Docker images.
 	docker login docker.pkg.github.com
 	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_ALL_FILES} pull
