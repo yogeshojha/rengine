@@ -71,13 +71,11 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'mathfilters',
     'drf_yasg',
-    'rolepermissions',
-    'debug_toolbar'
+    'rolepermissions'
 ]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -285,7 +283,12 @@ def show_toolbar(request):
         return True
     return False
 
-DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': 'reNgine.settings.show_toolbar',
-}
+if DEBUG:
+    DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': 'reNgine.settings.show_toolbar',
+    }
+
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
+
 
