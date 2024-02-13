@@ -824,6 +824,19 @@ def fmt_traceback(exc):
 # CLI BUILDERS #
 #--------------#
 
+def _build_cmd(cmd, options, flags, sep=" "):
+	for k,v in options.items():
+		if not v:
+			continue
+		cmd += f" {k}{sep}{v}"
+
+	for flag in flags:
+		if not flag:
+			continue
+		cmd += f" --{flag}"
+
+	return cmd
+
 def get_nmap_cmd(
 		input_file,
 		cmd=None,
@@ -837,32 +850,23 @@ def get_nmap_cmd(
 		flags=[]):
 	if not cmd:
 		cmd = 'nmap'
-	cmd += f' -sV' if service_detection else ''
-	cmd += f' -p {ports}' if ports else ''
-	for flag in flags:
-		cmd += flag
-	cmd += f' --script {script}' if script else ''
-	cmd += f' --script-args {script_args}' if script_args else ''
-	cmd += f' --max-rate {max_rate}' if max_rate else ''
-	cmd += f' -oX {output_file}' if output_file else ''
-	if input_file:
-		cmd += f' -iL {input_file}'
-	elif host:
-		cmd += f' {host}'
-	return cmd
 
-# TODO: replace all cmd += ' -{proxy}' if proxy else '' by this function
-# def build_cmd(cmd, options, flags, sep=' '):
-# 	for k, v in options.items():
-# 		if v is None:
-# 			continue
-#		cmd += f' {k}{sep}{v}'
-#	for flag in flags:
-#		if not flag:
-#			continue
-#		cmd += f' --{flag}'
-# 	return cmd
-# build_cmd(cmd, proxy=proxy, option_prefix='-')
+	options = {
+		"-sV": service_detection,
+		"-p": ports,
+		"--script": script,
+		"--script-args": script_args,
+		"--max-rate": max_rate,
+		"-oX": output_file
+	}
+	cmd = _build_cmd(cmd, options, flags)
+
+	if not input_file:
+		cmd += f" {host}" if host else ""
+	else:
+		cmd += f" -iL {input_file}"
+
+	return cmd
 
 
 def xml2json(xml):
