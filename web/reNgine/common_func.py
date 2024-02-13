@@ -444,7 +444,7 @@ def sanitize_url(http_url):
 	if "://" not in http_url:
 		http_url = "http://" + http_url
 	url = urlparse(http_url)
-	
+
 	if url.netloc.endswith(':80'):
 		url = url._replace(netloc=url.netloc.replace(':80', ''))
 	elif url.netloc.endswith(':443'):
@@ -495,10 +495,57 @@ def get_random_proxy():
 def remove_ansi_escape_sequences(text):
 	# Regular expression to match ANSI escape sequences
 	ansi_escape_pattern = r'\x1b\[.*?m'
-	
+
 	# Use re.sub() to replace the ANSI escape sequences with an empty string
 	plain_text = re.sub(ansi_escape_pattern, '', text)
 	return plain_text
+
+def get_cms_details(url):
+	"""Get CMS details using cmseek.py.
+
+	Args:
+		url (str): HTTP URL.
+
+	Returns:
+		dict: Response.
+	"""
+	# this function will fetch cms details using cms_detector
+	response = {}
+	cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
+	os.system(cms_detector_command)
+
+	response['status'] = False
+	response['message'] = 'Could not detect CMS!'
+
+	parsed_url = urlparse(url)
+
+	domain_name = parsed_url.hostname
+	port = parsed_url.port
+
+	find_dir = domain_name
+
+	if port:
+		find_dir += f'_{port}'
+
+	# subdomain may also have port number, and is stored in dir as _port
+
+	cms_dir_path =  f'/usr/src/github/CMSeeK/Result/{find_dir}'
+	cms_json_path =  cms_dir_path + '/cms.json'
+
+	if os.path.isfile(cms_json_path):
+		cms_file_content = json.loads(open(cms_json_path, 'r').read())
+		if not cms_file_content.get('cms_id'):
+			return response
+		response = {}
+		response = cms_file_content
+		response['status'] = True
+		# remove cms dir path
+		try:
+			shutil.rmtree(cms_dir_path)
+		except Exception as e:
+			print(e)
+
+	return response
 
 
 #--------------------#
@@ -642,7 +689,7 @@ def send_discord_message(
 
 		webhook.add_embed(embed)
 
-		# Add webhook and embed objects to cache so we can pick them up later
+		# Add webhook and embed objects to cache, so we can pick them up later
 		DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
 		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
 
