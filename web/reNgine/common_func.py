@@ -103,12 +103,9 @@ def get_subdomains(write_filepath=None, exclude_subdomains=False, ctx={}):
 	"""Get Subdomain objects from DB.
 
 	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
 		write_filepath (str): Write info back to a file.
-		subdomain_id (int): Subdomain id.
 		exclude_subdomains (bool): Exclude subdomains, only return subdomain matching domain.
-		path (str): Add URL path to subdomain.
+		ctx (dict): ctx
 
 	Returns:
 		list: List of subdomains matching query.
@@ -289,11 +286,8 @@ def get_http_urls(
 	specific path.
 
 	Args:
-		target_domain (startScan.models.Domain): Target Domain object.
-		scan_history (startScan.models.ScanHistory, optional): ScanHistory object.
 		is_alive (bool): If True, select only alive urls.
 		is_uncrawled (bool): If True, select only urls that have not been crawled.
-		path (str): URL path.
 		write_filepath (str): Write info back to a file.
 		get_only_default_urls (bool):
 
