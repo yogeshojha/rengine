@@ -4,7 +4,6 @@ import pickle
 import random
 import shutil
 import traceback
-import uuid
 from time import sleep
 
 import humanize
