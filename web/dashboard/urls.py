@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
+import os
 
 from . import views
 
@@ -40,5 +41,8 @@ urlpatterns = [
         'delete/project/<int:id>',
         views.delete_project,
         name='delete_project'),
-    path("__debug__/", include("debug_toolbar.urls")),
 ]
+
+DEBUG = bool(int(os.environ.get('DEBUG', '0')))
+if DEBUG:
+    urlpatterns.append(path("__debug__/", include("debug_toolbar.urls")))
