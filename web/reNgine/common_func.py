@@ -848,12 +848,9 @@ def get_nmap_cmd(
 
 
 def xml2json(xml):
-	xmlfile = open(xml)
-	xml_content = xmlfile.read()
-	xmlfile.close()
-	xmljson = json.dumps(xmltodict.parse(xml_content), indent=4, sort_keys=True)
-	jsondata = json.loads(xmljson)
-	return jsondata
+	with open(xml) as xml_file:
+		xml_content = xml_file.read()
+	return xmltodict.parse(xml_content)
 
 
 def reverse_whois(lookup_keyword):
