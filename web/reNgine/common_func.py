@@ -500,11 +500,11 @@ def get_cms_details(url):
 	find_dir = domain_name
 
 	if port:
-		find_dir += '_{}'.format(port)
+		find_dir += f'_{port}'
 
 	# subdomain may also have port number, and is stored in dir as _port
 
-	cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
+	cms_dir_path =  f'/usr/src/github/CMSeeK/Result/{find_dir}'
 	cms_json_path =  cms_dir_path + '/cms.json'
 
 	if os.path.isfile(cms_json_path):
@@ -664,7 +664,7 @@ def send_discord_message(
 
 		webhook.add_embed(embed)
 
-		# Add webhook and embed objects to cache so we can pick them up later
+		# Add webhook and embed objects to cache, so we can pick them up later
 		DISCORD_WEBHOOKS_CACHE.set(title + '_webhook', pickle.dumps(webhook))
 		DISCORD_WEBHOOKS_CACHE.set(title + '_embed', pickle.dumps(embed))
 
