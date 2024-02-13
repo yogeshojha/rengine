@@ -171,7 +171,7 @@ class ListTargetsDatatableViewSet(viewsets.ModelViewSet):
 
 
 			if _order_direction == 'desc':
-				order_col = '-{}'.format(order_col)
+				order_col = f'-{order_col}'
 
 			qs = self.queryset.filter(
 				Q(name__icontains=search_value) |
@@ -965,7 +965,7 @@ class GithubToolCheckGetLatestRelease(APIView):
 		# if tool_github_url has https://github.com/ remove and also remove trailing /
 		tool_github_url = tool.github_url.replace('http://github.com/', '').replace('https://github.com/', '')
 		tool_github_url = remove_lead_and_trail_slash(tool_github_url)
-		github_api = 'https://api.github.com/repos/{}/releases'.format(tool_github_url)
+		github_api = f'https://api.github.com/repos/{tool_github_url}/releases'
 		response = requests.get(github_api).json()
 		# check if api rate limit exceeded
 		if 'message' in response and response['message'] == 'RateLimited':
@@ -1158,7 +1158,7 @@ class IPToDomain(APIView):
 			response = {
 				'status': False,
 				'ip_address': ip_address,
-				'message': 'Exception {}'.format(e)
+				'message': f'Exception {e}'
 			}
 		finally:
 			return Response(response)
@@ -1804,7 +1804,7 @@ class InterestingSubdomainViewSet(viewsets.ModelViewSet):
 			order_col = 'content_length'
 
 		if _order_direction == 'desc':
-			order_col = '-{}'.format(order_col)
+			order_col = f'-{order_col}'
 
 		if search_value:
 			qs = self.queryset.filter(
@@ -1914,7 +1914,7 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		elif _order_col == '10':
 			order_col = 'response_time'
 		if _order_direction == 'desc':
-			order_col = '-{}'.format(order_col)
+			order_col = f'-{order_col}'
 		# if the search query is separated by = means, it is a specific lookup
 		# divide the search query into two half and lookup
 		if search_value:
@@ -2244,7 +2244,7 @@ class EndPointViewSet(viewsets.ModelViewSet):
 			elif _order_col == '9':
 				order_col = 'response_time'
 			if _order_direction == 'desc':
-				order_col = '-{}'.format(order_col)
+				order_col = f'-{order_col}'
 			# if the search query is separated by = means, it is a specific lookup
 			# divide the search query into two half and lookup
 			if '=' in search_value or '&' in search_value or '|' in search_value or '>' in search_value or '<' in search_value or '!' in search_value:
