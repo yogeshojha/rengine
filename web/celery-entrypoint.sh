@@ -154,9 +154,6 @@ then
   chmod +x /usr/src/github/goofuzz/GooFuzz
 fi
 
-# Django debug toolbar
-pip install django-debug-toolbar
-
 exec "$@"
 
 # httpx seems to have issue, use alias instead!!!
