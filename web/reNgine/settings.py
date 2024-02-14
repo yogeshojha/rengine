@@ -18,8 +18,12 @@ RENGINE_CACHE_ENABLED = bool(int(os.environ.get('RENGINE_CACHE_ENABLED', '0')))
 RENGINE_RECORD_ENABLED = bool(int(os.environ.get('RENGINE_RECORD_ENABLED', '1')))
 RENGINE_RAISE_ON_ERROR = bool(int(os.environ.get('RENGINE_RAISE_ON_ERROR', '0')))
 
-# Common env vars
+# Debug env vars
 DEBUG = bool(int(os.environ.get('DEBUG', '0')))
+REMOTE_DEBUG = bool(int(os.environ.get('REMOTE_DEBUG', '0')))
+REMOTE_DEBUG_PORT = int(os.environ.get('REMOTE_DEBUG_PORT', 5678))
+
+# Common env vars
 DOMAIN_NAME = os.environ.get('DOMAIN_NAME', 'localhost:8000')
 TEMPLATE_DEBUG = bool(int(os.environ.get('TEMPLATE_DEBUG', '0')))
 SECRET_FILE = os.path.join(RENGINE_HOME, 'secret')
@@ -204,6 +208,11 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
     'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'errors.log',
+        },
         'null': {
             'class': 'logging.NullHandler'
         },
@@ -243,6 +252,11 @@ LOGGING = {
         }
     },
     'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR' if DEBUG else 'CRITICAL',
+            'propagate': True,
+        },
         '': {
             'handlers': ['brief'],
             'level': 'DEBUG' if DEBUG else 'INFO',

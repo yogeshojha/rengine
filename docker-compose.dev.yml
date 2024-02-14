@@ -38,6 +38,8 @@ services:
       - static_volume:/usr/src/app/staticfiles/
     environment:
       - DEBUG=1
+      - REMOTE_DEBUG=1
+      - REMOTE_DEBUG_PORT=5679
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -48,6 +50,8 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    ports:
+      - "127.0.0.1:5679:5679"
     depends_on:
       - db
       - redis
@@ -88,6 +92,8 @@ services:
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:
       - DEBUG=1
+      - REMOTE_DEBUG=1
+      - REMOTE_DEBUG_PORT=5678
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -110,6 +116,7 @@ services:
       - static_volume:/usr/src/app/staticfiles
     ports:
       - "8000:8000"
+      - "127.0.0.1:5678:5678"
     depends_on:
       - db
       - celery
