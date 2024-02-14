@@ -36,7 +36,6 @@ services:
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
     environment:
-      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -85,7 +84,6 @@ services:
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:
-      - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}

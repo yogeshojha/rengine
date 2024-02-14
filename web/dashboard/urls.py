@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import include, path
-import os
+from reNgine.settings import DEBUG
 
 from . import views
 
@@ -43,6 +43,5 @@ urlpatterns = [
         name='delete_project'),
 ]
 
-DEBUG = bool(int(os.environ.get('DEBUG', '0')))
 if DEBUG:
     urlpatterns.append(path("__debug__/", include("debug_toolbar.urls")))
