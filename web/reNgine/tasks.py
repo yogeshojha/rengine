@@ -4787,9 +4787,9 @@ def debug():
 	try:
 		# Activate remote debug for scan worker
 		if REMOTE_DEBUG:
-				logger.error('================= Debug activated, wainting attach =============')
+				logger.info('================= Debug activated, task paused, waiting attach from IDE =============')
 				os.environ['GEVENT_SUPPORT'] = 'True'
-				debugpy.listen(('0.0.0.0',5679))
+				debugpy.listen(('0.0.0.0',REMOTE_DEBUG_PORT))
 				debugpy.wait_for_client()
 	except  Exception as e:
 		logger.error(e)
