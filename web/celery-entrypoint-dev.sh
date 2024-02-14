@@ -3,6 +3,7 @@
 if [ "$DEBUG" == "1" ]; then
     # Django debug toolbar
     pip install django-debug-toolbar
+    export CELERY_LOGLEVEL='debug'
 fi
 
 # Check if remote debugging is enabled and set concurrency to 1 for easier debug
