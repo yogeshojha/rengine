@@ -21,6 +21,16 @@ jobs:
       - name: Checkout to the branch
         uses: actions/checkout@v2
 
+      # Ensure executable permissions for install.sh
+      - name: Set executable permissions for install.sh
+        run: chmod +x install.sh
+      
+      # # Additional steps for building and deploying Docker containers
+      # - name: Build and push Docker image
+      #   run: |
+      #     docker build -t my-image .
+      #     docker push my-image
+
       - name: Azure Login
         uses: azure/login@v1
         with:
