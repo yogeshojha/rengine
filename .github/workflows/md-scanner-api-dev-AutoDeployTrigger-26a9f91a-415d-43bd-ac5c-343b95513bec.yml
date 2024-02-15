@@ -1,0 +1,43 @@
+name: Trigger auto deployment for md-scanner-api-dev
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ master ]
+    paths:
+    - '**'
+    - '.github/workflows/md-scanner-api-dev-AutoDeployTrigger-26a9f91a-415d-43bd-ac5c-343b95513bec.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:
+      
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.MDSCANNERAPIDEV_AZURE_CREDENTIALS }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }} 
+          registryUrl: containerregistryfrportaldev.azurecr.io
+          registryUsername: ${{ secrets.MDSCANNERAPIDEV_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.MDSCANNERAPIDEV_REGISTRY_PASSWORD }}
+          containerAppName: md-scanner-api-dev
+          resourceGroup: FR-Portal-Dev
+          imageToBuild: containerregistryfrportaldev.azurecr.io/md-scanner-api-dev:${{ github.sha }}
+          
+            
+
+     
+
