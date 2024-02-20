@@ -163,7 +163,7 @@ exec "$@"
 echo 'alias httpx="/go/bin/httpx"' >> ~/.bashrc
 
 if [ ! "$CELERY_LOGLEVEL" ]; then
-  CELERY_LOGLEVEL='info'
+  export CELERY_LOGLEVEL='info'
 fi
 
 # watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO -Q scan_queue &
