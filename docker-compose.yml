@@ -16,13 +16,14 @@ services:
 
   redis:
     image: "redis:alpine"
+    restart: always
     hostname: redis
     networks:
       - rengine_network
 
   celery:
-    build:
-      context: ./web
+    build: ./web
+    image: yogeshojha/rengine:master
     restart: always
     entrypoint: /usr/src/app/celery-entrypoint.sh
     # command: celery -A reNgine worker --autoscale=${MAX_CONCURRENCY},${MIN_CONCURRENCY} -l INFO
@@ -55,6 +56,8 @@ services:
 
   celery-beat:
     build: ./web
+    image: yogeshojha/rengine:master
+    restart: always
     entrypoint: /usr/src/app/beat-entrypoint.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
@@ -79,11 +82,10 @@ services:
       - rengine_network
 
   web:
-    build:
-      context: ./web
+    build: ./web
     entrypoint: /usr/src/app/entrypoint.sh
     restart: always
-    image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
+    image: yogeshojha/rengine:master
     environment:
       - DEBUG=0
       - CELERY_BROKER=redis://redis:6379/0
@@ -106,8 +108,6 @@ services:
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
       - static_volume:/usr/src/app/staticfiles/
-    ports:
-      - "8000:8000"
     depends_on:
       - db
       - celery
