@@ -470,14 +470,20 @@ def subdomain_discovery(
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
 			if not tool_query.exists():
-				logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+				logger.error(f'{tool} configuration does not exists. Skipping.')
 				continue
+			if '{TARGET}' not in cmd:
+				logger.error(f'Missing {{TARGET}} placeholders in {tool} configuration. Skipping.')
+				continue
+			if '{OUTPUT}' not in cmd:
+				logger.error(f'Missing {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+				continue
+
 			custom_tool = tool_query.first()
 			cmd = custom_tool.subdomain_gathering_command
-			if '{TARGET}' in cmd and '{OUTPUT}' in cmd:
-				cmd = cmd.replace('{TARGET}', host)
-				cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
-				cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
+			cmd = cmd.replace('{TARGET}', host)
+			cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
+			cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
 		else:
 			logger.warning(
 				f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
