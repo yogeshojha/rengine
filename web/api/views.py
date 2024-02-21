@@ -547,6 +547,7 @@ class AddTarget(APIView):
 		h1_team_handle = data.get('h1_team_handle')
 		description = data.get('description')
 		domain_name = data.get('domain_name')
+		organization_name = data.get('organization')
 		slug = data.get('slug')
 
 		# Validate domain name
@@ -563,6 +564,20 @@ class AddTarget(APIView):
 		if not domain.insert_date:
 			domain.insert_date = timezone.now()
 		domain.save()
+
+		# Create org object in DB
+		if organization_name:
+			organization_obj = None
+			organization_query = Organization.objects.filter(name=organization_name)
+			if organization_query.exists():
+				organization_obj = organization_query[0]
+			else:
+				organization_obj = Organization.objects.create(
+					name=organization_name,
+					project=project,
+					insert_date=timezone.now())
+			organization_obj.domains.add(domain)
+
 		return Response({
 			'status': True,
 			'message': 'Domain successfully added as target !',
@@ -712,6 +727,7 @@ class StopScan(APIView):
 				task_ids = scan.celery_ids
 				scan.scan_status = ABORTED_TASK
 				scan.stop_scan_date = timezone.now()
+				scan.aborted_by = request.user
 				scan.save()
 				create_scan_activity(
 					scan.id,
@@ -958,7 +974,7 @@ class GithubToolCheckGetLatestRelease(APIView):
 			return Response({'status': False, 'message': 'Not Found'})
 		elif not response:
 			return Response({'status': False, 'message': 'Not Found'})
-		
+
 		# only send latest release
 		response = response[0]
 
@@ -1805,6 +1821,9 @@ class SubdomainDatatableViewSet(viewsets.ModelViewSet):
 		project = req.query_params.get('project')
 
 		subdomains = Subdomain.objects.filter(target_domain__project__slug=project)
+
+		if 'is_important' in req.query_params:
+			subdomains = subdomains.filter(is_important=True)
 
 		if target_id:
 			self.queryset = (
