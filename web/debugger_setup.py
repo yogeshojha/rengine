@@ -2,7 +2,7 @@ import os
 import socket
 from reNgine.settings import REMOTE_DEBUG_PORT
 
-def is_port_in_use(port, host='0.0.0.0'):
+def is_port_in_use(port, host='127.0.0.1'):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.bind((host, port))
@@ -18,7 +18,7 @@ def setup_debugger(wait=False, gevent='False'):
         os.environ['GEVENT_SUPPORT'] = gevent
         if not is_port_in_use(REMOTE_DEBUG_PORT):
             try:
-                debugpy.listen(('0.0.0.0', REMOTE_DEBUG_PORT))
+                debugpy.listen(('127.0.0.1', REMOTE_DEBUG_PORT))
                 print(f"\n⚡ Debugger started on port "+ str(REMOTE_DEBUG_PORT) +" ⚡\n")
                 if wait:
                     debugpy.wait_for_client()
