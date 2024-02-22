@@ -92,8 +92,8 @@ def add_target(request, slug):
                         domains.append(target)
 
                     elif is_range:
-                        ips = get_ips_from_cidr_range(target)
-                        for ip_address in ips:
+                        _ips = get_ips_from_cidr_range(target)
+                        for ip_address in _ips:
                             ips.append(ip_address)
                             domains.append(ip_address)
                     else:
