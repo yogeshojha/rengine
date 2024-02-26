@@ -203,6 +203,35 @@ def add_target(request, slug):
                                 description=description,
                                 insert_date=timezone.now())
                             added_target_count += 1
+            elif ip_target:
+                # add ip's from "resolve and add ip address" tab
+                resolved_ips = [ip.rstrip() for ip in request.POST.getlist('resolved_ip_domains') if ip]
+                for ip in resolved_ips:
+                    is_domain = bool(validators.domain(ip))
+                    is_ip = bool(validators.ipv4(ip)) or bool(validators.ipv6(ip))
+                    description = request.POST.get('targetDescription', '')
+                    h1_team_handle = request.POST.get('targetH1TeamHandle')
+                    if not Domain.objects.filter(name=ip).exists():
+                        domain, created = Domain.objects.get_or_create(
+                            name=ip,
+                            description=description,
+                            h1_team_handle=h1_team_handle,
+                            project=project,
+                            ip_address_cidr=ip if is_ip else None)
+                        domain.insert_date = timezone.now()
+                        domain.save()
+                        added_target_count += 1
+                        if created:
+                            logger.info(f'Added new domain {domain.name}')
+                        if is_ip:
+                            ip_data = get_ip_info(ip)
+                            ip, created = IpAddress.objects.get_or_create(address=ip)
+                            ip.reverse_pointer = ip_data.reverse_pointer
+                            ip.is_private = ip_data.is_private
+                            ip.version = ip_data.version
+                            ip.save()
+                            if created:
+                                logger.info(f'Added new IP {ip}')
 
         except Exception as e:
             logger.exception(e)
