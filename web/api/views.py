@@ -1086,7 +1086,7 @@ class IPToDomain(APIView):
 		try:
 			logger.info(f'Resolving IP address {ip_address} ...')
 			resolved_ips = []
-			for ip in IPv4Network(ip_address):
+			for ip in IPv4Network(ip_address, False):
 				domains = []
 				ips = []
 				try:
