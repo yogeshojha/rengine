@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 from django.apps import apps
+from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils import timezone
@@ -45,6 +46,9 @@ class ScanHistory(models.Model):
 	employees = models.ManyToManyField('Employee', related_name='employees', blank=True)
 	buckets = models.ManyToManyField('S3Bucket', related_name='buckets', blank=True)
 	dorks = models.ManyToManyField('Dork', related_name='dorks', blank=True)
+	initiated_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='initiated_scans', blank=True, null=True)
+	aborted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='aborted_scans')
+
 
 	def __str__(self):
 		return self.domain.name

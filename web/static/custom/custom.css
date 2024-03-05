@@ -3,6 +3,11 @@ body[data-layout-mode=horizontal] .container-fluid {
   max-width: 100% !important;
 }
 
+#topnav-menu-content .navbar-nav .nav-link {
+  font-size: .90rem !important;
+  padding: calc(33px / 2) 0.7rem !important;
+}
+
 .navbar-light .navbar-nav .nav-link.active, .navbar-light .navbar-nav .show>.nav-link{
   color: #3283f6;
 }

@@ -908,7 +908,7 @@ $(document).ready(function(){
 		if ( $.fn.dataTable.isDataTable( '#subdomain_scan_results' ) ) {
 			return false;
 		}
-		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&scan_id={{target.id}}&format=datatables';
+		var subdomain_ajax_url = '/api/listDatatableSubdomain/?project={{current_project.slug}}&target_id={{target.id}}&format=datatables';
 		var is_subd_grouping = false;
 		var subd_grouping_col = 8;
 		var subdomain_datatables = $('#subdomain_scan_results').DataTable({
@@ -1213,6 +1213,10 @@ $(document).ready(function(){
 
 		$('#subdomain-search-button').click(function() {
 			subdomain_datatables.search($("#subdomains-search").val()).draw();
+		});
+
+		$('#load_important_subdomain_table_btn').click(function() {
+			subdomain_datatables.search('is_important=true').draw();
 		});
 
 		$('input[name=sub_http_status_filter_checkbox]').change(function() {
