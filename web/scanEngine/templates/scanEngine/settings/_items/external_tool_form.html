@@ -153,11 +153,11 @@
     <div class="">
       <span class="font-16">
         reNgine needs to know how this tool accepts target and output the subdomain results.<br>
-        <strong>Use the below syntax wherever required.</strong>
+        <strong>Use the below syntax wherever required, but remember that <code>{TARGET}</code> and <code>{OUTPUT}</code> <strong>are mandatory placeholders</strong>.</strong>
         <ul>
+          <li><code>{TARGET}</code> (mandatory), Use this for the command-line arg that takes in domain as input target. Example. <code>subfinder -d {TARGET}</code></li>
+          <li><code>{OUTPUT}</code> (mandatory), Use this for the command-line arg that takes the output arg. Example. <code>subfinder -d {TARGET} -o {OUTPUT}</code></li>
           <li><code>{PATH}</code>, Use this if your tool is github cloned. Example. <code>python3 {PATH}/subdomain.py</code></li>
-          <li><code>{TARGET}</code>, Use this for the command-line arg that takes in domain as input target. Example. <code>subfinder -d {TARGET}</code></li>
-          <li><code>{OUTPUT}</code>, Use this for the command-line arg that takes the output arg. Example. <code>subfinder -d {TARGET} -o {OUTPUT}</code></li>
           <li><code>{PROXY}</code>, Use this if your tool supports proxy. Example. <code>tool_name -p {PROXY}</code></li>
         </ul>
         You can use the combinations of the above syntax and also you can use any other command-line argument that your tool supports.

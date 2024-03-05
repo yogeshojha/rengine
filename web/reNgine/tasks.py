@@ -10,6 +10,7 @@ import xmltodict
 import yaml
 import tldextract
 import concurrent.futures
+import base64
 
 from datetime import datetime
 from urllib.parse import urlparse
@@ -469,14 +470,20 @@ def subdomain_discovery(
 		elif tool in custom_subdomain_tools:
 			tool_query = InstalledExternalTool.objects.filter(name__icontains=tool.lower())
 			if not tool_query.exists():
-				logger.error(f'Missing {{TARGET}} and {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+				logger.error(f'{tool} configuration does not exists. Skipping.')
 				continue
+			if '{TARGET}' not in cmd:
+				logger.error(f'Missing {{TARGET}} placeholders in {tool} configuration. Skipping.')
+				continue
+			if '{OUTPUT}' not in cmd:
+				logger.error(f'Missing {{OUTPUT}} placeholders in {tool} configuration. Skipping.')
+				continue
+
 			custom_tool = tool_query.first()
 			cmd = custom_tool.subdomain_gathering_command
-			if '{TARGET}' in cmd and '{OUTPUT}' in cmd:
-				cmd = cmd.replace('{TARGET}', host)
-				cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
-				cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
+			cmd = cmd.replace('{TARGET}', host)
+			cmd = cmd.replace('{OUTPUT}', f'{self.results_dir}/subdomains_{tool}.txt')
+			cmd = cmd.replace('{PATH}', custom_tool.github_clone_path) if '{PATH}' in cmd else cmd
 		else:
 			logger.warning(
 				f'Subdomain discovery tool "{tool}" is not supported by reNgine. Skipping.')
@@ -681,10 +688,6 @@ def osint_discovery(config, host, scan_history_id, activity_id, results_dir, ctx
 	grouped_tasks = []
 
 	if 'emails' in osint_lookup:
-		emails = get_and_save_emails(scan_history, activity_id, results_dir)
-		emails_str = '\n'.join([f'• `{email}`' for email in emails])
-		# self.notify(fields={'Emails': emails_str})
-		# ctx['track'] = False
 		_task = h8mail.si(
 			config=config,
 			host=host,
@@ -1216,7 +1219,7 @@ def screenshot(self, ctx={}, description=None):
 
 	# Remove all db, html extra files in screenshot results
 	run_command(
-		'rm -rf {0}/*.csv {0}/*.db {0}/*.js {0}/*.html {0}/*.css'.format(screenshots_path),
+		f'rm -rf {screenshots_path}/*.csv {screenshots_path}/*.db {screenshots_path}/*.js {screenshots_path}/*.html {screenshots_path}/*.css',
 		shell=True,
 		history_file=self.history_file,
 		scan_id=self.scan_id,
@@ -1662,49 +1665,75 @@ def dir_file_fuzz(self, ctx={}, description=None):
 				history_file=self.history_file,
 				scan_id=self.scan_id,
 				activity_id=self.activity_id):
+
+			# Empty line, continue to the next record
 			if not isinstance(line, dict):
 				continue
+
+			# Append line to results
 			results.append(line)
-			name = line['input'].get('FUZZ')
+
+			# Retrieve FFUF output
+			url = line['url']
+			# Extract path and convert to base64 (need byte string encode & decode)
+			name = base64.b64encode(extract_path_from_url(url).encode()).decode()
 			length = line['length']
 			status = line['status']
 			words = line['words']
-			url = line['url']
 			lines = line['lines']
 			content_type = line['content-type']
 			duration = line['duration']
+
+			# If name empty log error and continue
 			if not name:
 				logger.error(f'FUZZ not found for "{url}"')
 				continue
+
+			# Get or create endpoint from URL
 			endpoint, created = save_endpoint(url, crawl=False, ctx=ctx)
+
+			# Continue to next line if endpoint returned is None
+			if endpoint == None:
+				continue
+
+			# Save endpoint data from FFUF output
 			endpoint.http_status = status
 			endpoint.content_length = length
 			endpoint.response_time = duration / 1000000000
-			endpoint.save()
-			if created:
-				urls.append(endpoint.http_url)
-			endpoint.status = status
 			endpoint.content_type = content_type
 			endpoint.content_length = length
+			endpoint.save()
+
+			# Save directory file output from FFUF output
 			dfile, created = DirectoryFile.objects.get_or_create(
 				name=name,
 				length=length,
 				words=words,
 				lines=lines,
 				content_type=content_type,
-				url=url)
-			dfile.http_status = status
-			dfile.save()
-			# if created:
-			# 	logger.warning(f'Found new directory or file {url}')
-			dirscan.directory_files.add(dfile)
-			dirscan.save()
+				url=url,
+				http_status=status)
 
+			# Log newly created file or directory if debug activated
+			if created and DEBUG:
+				logger.warning(f'Found new directory or file {url}')
+
+			# Add file to current dirscan
+			dirscan.directory_files.add(dfile)
+
+			# Add subscan relation to dirscan if exists
 			if self.subscan:
 				dirscan.dir_subscan_ids.add(self.subscan)
 
-			subdomain_name = get_subdomain_from_url(endpoint.http_url)
-			subdomain = Subdomain.objects.get(name=subdomain_name, scan_history=self.scan)
+			# Save dirscan datas
+			dirscan.save()
+
+			# Get subdomain and add dirscan
+			if ctx['subdomain_id'] > 0:
+				subdomain = Subdomain.objects.get(id=ctx['subdomain_id'])
+			else:
+				subdomain_name = get_subdomain_from_url(endpoint.http_url)
+				subdomain = Subdomain.objects.get(name=subdomain_name, scan_history=self.scan)
 			subdomain.directories.add(dirscan)
 			subdomain.save()
 
@@ -3111,7 +3140,7 @@ def send_hackerone_report(vulnerability_id):
 				"type": "report",
 				"attributes": {
 				  "team_handle": vulnerability.target_domain.h1_team_handle,
-				  "title": '{} found in {}'.format(vulnerability.name, vulnerability.http_url),
+				  "title": f'{vulnerability.name} found in {vulnerability.http_url}',
 				  "vulnerability_information": tpl,
 				  "severity_rating": severity_value,
 				  "impact": "More information about the impact and vulnerability can be found here: \n" + vulnerability.reference if vulnerability.reference else "NA",
@@ -4284,56 +4313,6 @@ def get_and_save_dork_results(lookup_target, results_dir, type, lookup_keywords=
 		logger.exception(e)
 
 	return results
-
-
-def get_and_save_emails(scan_history, activity_id, results_dir):
-	"""Get and save emails from Google, Bing and Baidu.
-
-	Args:
-		scan_history (startScan.ScanHistory): Scan history object.
-		activity_id: ScanActivity Object
-		results_dir (str): Results directory.
-
-	Returns:
-		list: List of emails found.
-	"""
-	emails = []
-
-	# Proxy settings
-	# get_random_proxy()
-
-	# Gather emails from Google, Bing and Baidu
-	output_file = f'{results_dir}/emails_tmp.txt'
-	history_file = f'{results_dir}/commands.txt'
-	command = f'python3 /usr/src/github/Infoga/infoga.py --domain {scan_history.domain.name} --source all --report {output_file}'
-	try:
-		run_command(
-			command,
-			shell=False,
-			history_file=history_file,
-			scan_id=scan_history.id,
-			activity_id=activity_id)
-
-		if not os.path.isfile(output_file):
-			logger.info('No Email results')
-			return []
-
-		with open(output_file) as f:
-			for line in f.readlines():
-				if 'Email' in line:
-					split_email = line.split(' ')[2]
-					emails.append(split_email)
-
-		output_path = f'{results_dir}/emails.txt'
-		with open(output_path, 'w') as output_file:
-			for email_address in emails:
-				save_email(email_address, scan_history)
-				output_file.write(f'{email_address}\n')
-
-	except Exception as e:
-		logger.exception(e)
-	return emails
-
 
 def save_metadata_info(meta_dict):
 	"""Extract metadata from Google Search.

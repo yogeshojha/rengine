@@ -13,8 +13,12 @@ if "%1" == "setup" docker compose -f docker-compose.setup.yml run --rm certs
 if "%1" == "up" docker compose %COMPOSE_ALL_FILES% up -d --build %SERVICES%
 :: Build all services.
 if "%1" == "build" docker compose %COMPOSE_ALL_FILES% build %SERVICES%
-:: Generate Username (Use only after make up).
+:: Generate Username (use only after make up).
 if "%1" == "username" docker compose %COMPOSE_ALL_FILES% exec web python3 manage.py createsuperuser
+:: Change password for user
+if "%1" == "changepassword" docker compose %COMPOSE_ALL_FILES% exec web python3 manage.py changepassword
+:: Apply migrations
+if "%1" == "migrate" docker compose %COMPOSE_ALL_FILES% exec web python3 manage.py migrate
 :: Pull Docker images.
 if "%1" == "pull" docker login docker.pkg.github.com & docker-compose %COMPOSE_ALL_FILES% pull
 :: Down all services.
