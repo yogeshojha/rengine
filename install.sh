@@ -13,7 +13,13 @@ case ${answer:0:1} in
       echo "Continiuing Installation!"
     ;;
     * )
-      nano .env
+      if [ -x "$(command -v nano)" ]; then
+        tput setaf 2; echo "nano already installed, skipping."
+      else
+        sudo apt update && sudo apt install nano -y
+        tput setaf 2; echo "nano installed!!!"
+      fi
+    nano .env
     ;;
 esac
 
@@ -63,15 +69,15 @@ fi
 echo " "
 tput setaf 4;
 echo "#########################################################################"
-echo "Installing docker-compose"
+echo "Installing docker compose"
 echo "#########################################################################"
-if [ -x "$(command -v docker-compose)" ]; then
-  tput setaf 2; echo "docker-compose already installed, skipping."
+if [ -x "$(command -v docker compose)" ]; then
+  tput setaf 2; echo "docker compose already installed, skipping."
 else
   curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-  tput setaf 2; echo "docker-compose installed!!!"
+  tput setaf 2; echo "docker compose installed!!!"
 fi
 
 echo " "
