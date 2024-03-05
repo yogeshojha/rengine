@@ -1,5 +1,15 @@
 #!/bin/bash
 
+usageFunction()
+{
+  echo " "
+  tput setaf 2;
+  echo "Usage: $0 (-n) (-h)"
+  echo -e "\t-n Non-interactive installation (Optional)"
+  echo -e "\t-h Show usage"
+  exit 1
+}
+
 tput setaf 2;
 cat web/art/reNgine.txt
 
@@ -7,15 +17,29 @@ tput setaf 1; echo "Before running this script, please make sure Docker is runni
 tput setaf 2; echo "Changing the postgres username & password from .env is highly recommended."
 
 tput setaf 4;
-read -p "Are you sure, you made changes to .env file (y/n)? " answer
-case ${answer:0:1} in
-    y|Y|yes|YES|Yes )
-      echo "Continiuing Installation!"
-    ;;
-    * )
-      nano .env
-    ;;
-esac
+
+isNonInteractive=false
+while getopts nh opt; do
+   case $opt in
+      n) isNonInteractive=true ;;
+      h) usageFunction ;;
+      ?) usageFunction ;;
+   esac
+done
+
+if [ $isNonInteractive = false ]; then
+    read -p "Are you sure, you made changes to .env file (y/n)? " answer
+    case ${answer:0:1} in
+        y|Y|yes|YES|Yes )
+          echo "Continiuing Installation!"
+        ;;
+        * )
+          nano .env
+        ;;
+    esac
+else
+  echo "Non-interactive installation parameter set. Installation begins."
+fi
 
 echo " "
 tput setaf 3;
@@ -26,7 +50,7 @@ echo "#########################################################################"
 
 echo " "
 tput setaf 4;
-echo "Installing reNgine and it's dependencies"
+echo "Installing reNgine and its dependencies"
 
 echo " "
 if [ "$EUID" -ne 0 ]
@@ -60,6 +84,7 @@ else
   tput setaf 2; echo "Docker installed!!!"
 fi
 
+
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -68,11 +93,12 @@ echo "#########################################################################"
 if [ -x "$(command -v docker-compose)" ]; then
   tput setaf 2; echo "docker-compose already installed, skipping."
 else
-  curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  curl -L "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
   chmod +x /usr/local/bin/docker-compose
   ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
   tput setaf 2; echo "docker-compose installed!!!"
 fi
+
 
 echo " "
 tput setaf 4;
@@ -100,6 +126,8 @@ else
   exit 1
 fi
 
+
+
 echo " "
 tput setaf 4;
 echo "#########################################################################"
@@ -115,9 +143,10 @@ if [ "${failed}" -eq 0 ]; then
   echo "#########################################################################"
   echo "Creating an account"
   echo "#########################################################################"
-  make username
+  make username isNonInteractive=$isNonInteractive
 
   tput setaf 2 && printf "\n%s\n" "Thank you for installing reNgine, happy recon!!"
+  echo "In case you have unapplied migrations (see above in red), run 'make migrate'"
 else
   tput setaf 1 && printf "\n%s\n" "reNgine installation failed!!"
 fi
