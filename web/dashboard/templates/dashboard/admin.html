@@ -216,7 +216,7 @@ function update_user_modal(user_id, permission){
           .catch(function() {
             swal.insertQueueStep({
               type: 'error',
-              title: 'Oops! Unable to updte user!'
+              title: 'Oops! Unable to update user!'
             })
           })
           resolve()
@@ -246,6 +246,9 @@ function create_user_modal(){
     <label for="create_username" class="form-label float-start">Username</label>
     <input id="create_username" class="form-control" placeholder="Username" autocomplete="off">
   </div>
+  <i class="fa fa-info-circle text-muted float-end" data-bs-container="#tooltip-container" data-bs-toggle="tooltip" data-bs-placement="bottom" title="- Sys Admin: Sys Admin is a super user that has permission to modify system and scan related configurations, scan engines, create new users, add new tools etc. Super user can initiate scans and subscans effortlessly.
+- Penetration Tester: Penetration Tester will be allowed to modify and initiate scans and subscans, add or update targets, etc. A penetration tester will not be allowed to modify system configurations.
+- Auditor: Auditor can only view and download the report. An auditor can not change any system or scan related configurations nor can initiate any scans or subscans."></i>
   <div class="form mb-3">
     <label for="create_user_role" class="form-label float-start">Role</label>
     <select class="form-select" id="create_user_role">
@@ -318,7 +321,7 @@ function create_user_modal(){
           .catch(function() {
             swal.insertQueueStep({
               type: 'error',
-              title: 'Oops! Unable to updte user!'
+              title: 'Oops! Unable to update user!'
             })
           })
           resolve()

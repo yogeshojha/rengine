@@ -1,6 +1,6 @@
 import logging
+import secrets
 import os
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,6 @@ def first_run(secret_file, base_dir):
     return secret_key
 
 
-
 def get_random():
-    choice = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
-    return ''.join([random.SystemRandom().choice(choice) for i in range(50)])
+    charlist = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    return ''.join(secrets.choice(charlist) for _ in range(64))

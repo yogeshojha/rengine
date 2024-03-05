@@ -61,36 +61,39 @@
     <!-- Topbar begins -->
     {% include 'base/_items/top_bar.html' %}
     {# topbar ends #}
-    {# top nav begins #}
-    {% include 'base/_items/top_nav.html' %}
-    {# top nav ends #}
-    <input type="hidden" name="current_project" value="{{current_project.slug}}">
-    <div class="content-page">
-      <div class="content">
-        <div class="container-fluid">
-          <div class="row">
-            <div class="col-12">
-              <div class="page-title-box">
-                <div class="page-title-right">
-                  <ol class="breadcrumb m-0">
-                    {% block breadcrumb_title %}
-                    {% endblock breadcrumb_title %}
-                  </ol>
+    <div id="wrapper"></div>
+      {# top nav begins #}
+      {% include 'base/_items/top_nav.html' %}
+      {# top nav ends #}
+      <input type="hidden" name="current_project" value="{{current_project.slug}}">
+      <div class="content-page">
+        <div class="content">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-12">
+                <div class="page-title-box">
+                  <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                      {% block breadcrumb_title %}
+                      {% endblock breadcrumb_title %}
+                    </ol>
+                  </div>
+                  <h4 class="page-title">{% block page_title %}{% endblock page_title %}</h4>
                 </div>
-                <h4 class="page-title">{% block page_title %}{% endblock page_title %}</h4>
               </div>
             </div>
+            {% block main_content %}
+            {% endblock main_content %}
           </div>
-          {% block main_content %}
-          {% endblock main_content %}
+          <div id="additional-content"></div>
         </div>
-        <div id="additional-content"></div>
+        {% include 'base/_items/modal.html' %}
+        {% include 'base/_items/xl_scrollable_modal.html' %}
+        {% include 'base/_items/offcanvas.html' %}
       </div>
-      {% include 'base/_items/modal.html' %}
-      {% include 'base/_items/xl_scrollable_modal.html' %}
-      {% include 'base/_items/offcanvas.html' %}
+      {% include 'base/_items/right_bar.html' %}
+      {% include 'base/_items/footer.html' %}
     </div>
-    {% include 'base/_items/right_bar.html' %}
     <script src="{% static 'assets/js/vendor.min.js' %}"></script>
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>

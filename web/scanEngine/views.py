@@ -210,7 +210,7 @@ def tool_specific_settings(request, slug):
                 file = open(file_path, "w")
                 file.write(gf_file.read().decode("utf-8"))
                 file.close()
-                messages.add_message(request, messages.INFO, 'Pattern {} successfully uploaded'.format(gf_file.name[:4]))
+                messages.add_message(request, messages.INFO, f'Pattern {gf_file.name[:4]} successfully uploaded')
             return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nucleiFileUpload' in request.FILES:
@@ -224,7 +224,7 @@ def tool_specific_settings(request, slug):
                 file = open(file_path, "w")
                 file.write(nuclei_file.read().decode("utf-8"))
                 file.close()
-                messages.add_message(request, messages.INFO, 'Nuclei Pattern {} successfully uploaded'.format(nuclei_file.name[:-5]))
+                messages.add_message(request, messages.INFO, f'Nuclei Pattern {nuclei_file.name[:-5]} successfully uploaded')
             return http.HttpResponseRedirect(reverse('tool_settings', kwargs={'slug': slug}))
 
         elif 'nuclei_config_text_area' in request.POST:
