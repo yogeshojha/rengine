@@ -12,13 +12,11 @@ ENV DEBIAN_FRONTEND="noninteractive" \
     DATABASE="postgres"
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV GOROOT="/usr/local/go"
 ENV GOPATH=$HOME/go
-ENV PATH="${PATH}:${GOROOT}/bin:${GOPATH}/bin"
+ENV PATH="${PATH}:${GOPATH}/bin"
 
 # Install Python
-RUN apt update -y && \
-    apt update -y && \
+RUN apt update && \
     apt install -y \
     python3.10 \
     python3-dev \
@@ -48,16 +46,15 @@ RUN apt install -y  --no-install-recommends \
 RUN add-apt-repository ppa:mozillateam/ppa
 
 # Download and install go 1.20
-RUN wget https://golang.org/dl/go1.21.4.linux-amd64.tar.gz
-RUN tar -xvf go1.21.4.linux-amd64.tar.gz
-RUN rm go1.21.4.linux-amd64.tar.gz
-RUN mv go /usr/local
+RUN wget https://golang.org/dl/go1.21.4.linux-amd64.tar.gz && \
+    tar -xvf go1.21.4.linux-amd64.tar.gz go/bin/go --strip-components=2 && \
+    rm go1.21.4.linux-amd64.tar.gz && \
+    mv go /usr/local/bin/
 
 # Download geckodriver
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
-RUN tar -xvf geckodriver-v0.32.0-linux64.tar.gz
-RUN rm geckodriver-v0.32.0-linux64.tar.gz
-RUN mv geckodriver /usr/bin
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz && \
+    tar -xvf geckodriver-v0.32.0-linux64.tar.gz -C /usr/bin/ && \
+    rm geckodriver-v0.32.0-linux64.tar.gz
 
 # Make directory for app
 WORKDIR /usr/src/app
