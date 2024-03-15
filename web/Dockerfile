@@ -102,42 +102,24 @@ ENV PYTHONUNBUFFERED 1
 
 
 RUN ARCH=$(dpkg --print-architecture) \
-    && if [ "$ARCH" = "arm64" ]; then \
-        GOARCH=arm64 go install -v github.com/jaeles-project/gospider@latest \
-        && GOARCH=arm64 go install -v github.com/tomnomnom/gf@latest \
-        && GOARCH=arm64 go install -v github.com/tomnomnom/unfurl@latest \
-        && GOARCH=arm64 go install -v github.com/tomnomnom/waybackurls@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest \
-        && GOARCH=arm64 go install -v github.com/lc/gau/v2/cmd/gau@latest \
-        && GOARCH=arm64 go install -v github.com/jaeles-project/gospider@latest \
-        && GOARCH=arm64 go install -v github.com/owasp-amass/amass/v3/...@latest \
-        && GOARCH=arm64 go install -v github.com/ffuf/ffuf@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
-        && GOARCH=arm64 go install -v github.com/hahwul/dalfox/v2@latest \
-        && GOARCH=arm64 go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
-        && GOARCH=arm64 go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest \
-        && GOARCH=arm64 go install -v github.com/sa7mon/s3scanner@latest; \
-    elif [ "$ARCH" = "amd64" ]; then \
-        go install -v github.com/jaeles-project/gospider@latest \
-        && go install -v github.com/tomnomnom/gf@latest \
-        && go install -v github.com/tomnomnom/unfurl@latest \
-        && go install -v github.com/tomnomnom/waybackurls@latest \
-        && go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
-        && go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
-        && go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest \
-        && go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest \
-        && go install -v github.com/lc/gau/v2/cmd/gau@latest \
-        && go install -v github.com/jaeles-project/gospider@latest \
-        && go install -v github.com/owasp-amass/amass/v3/...@latest \
-        && go install -v github.com/ffuf/ffuf@latest \
-        && go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
-        && go install -v github.com/hahwul/dalfox/v2@latest \
-        && go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
-        && go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest \
-        && go install -v github.com/sa7mon/s3scanner@latest; \
+    && if [[ "$ARCH" = "arm64" || "$ARCH" = "amd64" ]]; then
+        GOARCH=$ARCH go install -v github.com/jaeles-project/gospider@latest \
+        && GOARCH=$ARCH go install -v github.com/tomnomnom/gf@latest \
+        && GOARCH=$ARCH go install -v github.com/tomnomnom/unfurl@latest \
+        && GOARCH=$ARCH go install -v github.com/tomnomnom/waybackurls@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/naabu/v2/cmd/naabu@latest \
+        && GOARCH=$ARCH go install -v github.com/lc/gau/v2/cmd/gau@latest \
+        && GOARCH=$ARCH go install -v github.com/jaeles-project/gospider@latest \
+        && GOARCH=$ARCH go install -v github.com/owasp-amass/amass/v3/...@latest \
+        && GOARCH=$ARCH go install -v github.com/ffuf/ffuf@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/tlsx/cmd/tlsx@latest \
+        && GOARCH=$ARCH go install -v github.com/hahwul/dalfox/v2@latest \
+        && GOARCH=$ARCH go install -v github.com/projectdiscovery/katana/cmd/katana@latest \
+        && GOARCH=$ARCH go install -v github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest \
+        && GOARCH=$ARCH go install -v github.com/sa7mon/s3scanner@latest; \
     else \
         echo "Unknown architecture: $ARCH" ; \
         exit 1; \
