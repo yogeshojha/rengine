@@ -24,7 +24,7 @@ RUN apt update && \
     python3-pip
 
 # Install essential packages
-RUN apt install -y  --no-install-recommends \
+RUN apt install -y --no-install-recommends \
     build-essential \
     cmake \
     geoip-bin \
@@ -64,6 +64,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Download Go packages
+ENV GO111MODULE=on 
 RUN printf "\
     github.com/jaeles-project/gospider@latest\n\
     github.com/tomnomnom/gf@latest\n\
@@ -83,8 +84,8 @@ RUN printf "\
     github.com/projectdiscovery/katana/cmd/katana@latest\n\
     github.com/dwisiswant0/crlfuzz/cmd/crlfuzz@latest\n\
     github.com/sa7mon/s3scanner@latest\n" | \
-    xargs -L1 go install -v && \
-    rm -rf /go/pkg/*
+    xargs -L1 go install -ldflags="-s -w" -v && \
+    rm -rf /go/pkg/* && rm -rf /root/.cache/go-build
 
 # Update Nuclei and Nuclei-Templates
 RUN nuclei -update-templates
@@ -92,10 +93,10 @@ RUN nuclei -update-templates
 # Copy requirements
 COPY ./requirements.txt /tmp/requirements.txt
 RUN pip3 install --upgrade setuptools pip && \
-    pip3 install -r /tmp/requirements.txt
+    pip3 install -r /tmp/requirements.txt --no-cache-dir
 
 # install eyewitness
-RUN python3 -m pip install fuzzywuzzy \
+RUN python3 -m pip install --no-cache-dir fuzzywuzzy \
     selenium==4.9.1 \
     python-Levenshtein \
     pyvirtualdisplay \
