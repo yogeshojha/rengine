@@ -6,7 +6,9 @@
 COMPOSE_PREFIX_CMD := COMPOSE_DOCKER_CLI_BUILD=1
 
 COMPOSE_ALL_FILES := -f docker-compose.yml
+COMPOSE_DEV_ALL_FILES := -f docker-compose.dev.yml
 SERVICES          := db web proxy redis celery celery-beat
+SERVICES_DEV          := db web proxy redis celery celery-beat
 
 # --------------------------
 
@@ -58,3 +60,15 @@ prune:			## Remove containers and delete volume data.
 help:			## Show this help.
 	@echo "Make application docker images and manage containers using docker-compose files."
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+dev_build:			## Build all services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_DEV_ALL_FILES} build ${SERVICES_DEV}
+
+dev_up:				## Build and start all services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_DEV_ALL_FILES} up -d --build ${SERVICES_DEV}
+
+dev_down:			## Down all services.
+	${COMPOSE_PREFIX_CMD} docker-compose ${COMPOSE_DEV_ALL_FILES} down
+
+dev_logs:			## Tail all logs with -n 1000.
+	${COMPOSE_PREFIX_CMD} docker-compose $(COMPOSE_DEV_ALL_FILES) logs --follow --tail=1000 ${SERVICES_DEV}

@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Remote Attach Web",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/web",
+                    "remoteRoot": "/usr/src/app"
+                }
+            ]
+        },
+        {
+            "name": "Python: Remote Attach Celery",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5679
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/web",
+                    "remoteRoot": "/usr/src/app"
+                }
+            ]
+        }
+    ]
+}

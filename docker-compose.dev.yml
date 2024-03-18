@@ -14,7 +14,7 @@ services:
     networks:
       - rengine_network
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   redis:
     image: "redis:alpine"
@@ -26,8 +26,7 @@ services:
     build:
       context: ./web
     restart: always
-    entrypoint: /usr/src/app/celery-entrypoint.sh
-    # command: watchmedo auto-restart --recursive --pattern="*.py" --directory="/usr/src/app/reNgine/" -- celery -A reNgine.tasks worker --autoscale=10,0 -l INFO
+    entrypoint: /usr/src/app/celery-entrypoint-dev.sh
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -36,8 +35,11 @@ services:
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
+      - static_volume:/usr/src/app/staticfiles/
     environment:
       - DEBUG=1
+      - REMOTE_DEBUG=0
+      - REMOTE_DEBUG_PORT=5679
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -48,6 +50,8 @@ services:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
       - MIN_CONCURRENCY=${MIN_CONCURRENCY}
+    ports:
+      - "127.0.0.1:5679:5679"
     depends_on:
       - db
       - redis
@@ -56,10 +60,8 @@ services:
 
   celery-beat:
     build: ./web
-    entrypoint: /usr/src/app/beat-entrypoint.sh
+    entrypoint: /usr/src/app/beat-entrypoint-dev.sh
     command: celery -A reNgine beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    depends_on:
-      - celery
     environment:
       - DEBUG=1
       - CELERY_BROKER=redis://redis:6379/0
@@ -69,6 +71,8 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_HOST=${POSTGRES_HOST}
+    depends_on:
+      - celery
     volumes:
       - ./web:/usr/src/app
       - github_repos:/usr/src/github
@@ -83,11 +87,13 @@ services:
   web:
     build:
       context: ./web
-    entrypoint: /usr/src/app/entrypoint.sh
+    entrypoint: /usr/src/app/entrypoint-dev.sh
     restart: always
     image: docker.pkg.github.com/yogeshojha/rengine/rengine:latest
     environment:
       - DEBUG=1
+      - REMOTE_DEBUG=0
+      - REMOTE_DEBUG_PORT=5678
       - CELERY_BROKER=redis://redis:6379/0
       - CELERY_BACKEND=redis://redis:6379/0
       - DOMAIN_NAME=${DOMAIN_NAME}
@@ -107,17 +113,47 @@ services:
       - gf_patterns:/root/.gf
       - nuclei_templates:/root/nuclei-templates
       - tool_config:/root/.config
+      - static_volume:/usr/src/app/staticfiles
     ports:
       - "8000:8000"
+      - "127.0.0.1:5678:5678"
     depends_on:
       - db
       - celery
       - celery-beat
     networks:
+      rengine_network:
+        aliases:
+          - rengine
+
+  proxy:
+    restart: always
+    image: nginx:alpine
+    ports:
+      - 8082:8082/tcp
+      - 443:443/tcp
+    depends_on:
+      - web
+      - db
+      - redis
+    secrets:
+      - source: proxy.ca
+        target: /etc/nginx/certs/rengine_chain.pem
+      - source: proxy.cert
+        target: /etc/nginx/certs/rengine.pem
+      - source: proxy.key
+        target: /etc/nginx/certs/rengine_rsa.key
+    volumes:
+      - ./config/nginx/rengine.conf:/etc/nginx/conf.d/rengine.conf:ro
+      - static_volume:/usr/src/app/staticfiles
+      - scan_results:/usr/src/scan_results
+    networks:
       - rengine_network
+
 
 networks:
   rengine_network:
+
 volumes:
   tool_config:
   postgres_data:
@@ -126,3 +162,12 @@ volumes:
   github_repos:
   wordlist:
   scan_results:
+  static_volume:
+
+secrets:
+  proxy.ca:
+    file: ./secrets/certs/rengine_chain.pem
+  proxy.key:
+    file: ./secrets/certs/rengine_rsa.key
+  proxy.cert:
+    file: ./secrets/certs/rengine.pem
