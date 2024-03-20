@@ -52,6 +52,7 @@ docs/_build/
 # pyenv
 .python-version
 
+.idea/
 **/.DS_Store
 staticfiles/
 
@@ -62,3 +63,7 @@ get-docker.sh
 
 # Environment variables
 .env
+
+# Python environment
+env/
+venv/
