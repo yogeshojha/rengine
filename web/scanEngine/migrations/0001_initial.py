@@ -84,9 +84,11 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('send_to_slack', models.BooleanField(default=False)),
+                ('send_to_lark', models.BooleanField(default=False)),
                 ('send_to_discord', models.BooleanField(default=False)),
                 ('send_to_telegram', models.BooleanField(default=False)),
                 ('slack_hook_url', models.CharField(blank=True, max_length=200, null=True)),
+                ('lark_hook_url', models.CharField(blank=True, max_length=200, null=True)),
                 ('discord_hook_url', models.CharField(blank=True, max_length=200, null=True)),
                 ('telegram_bot_token', models.CharField(blank=True, max_length=100, null=True)),
                 ('telegram_bot_chat_id', models.CharField(blank=True, max_length=100, null=True)),
