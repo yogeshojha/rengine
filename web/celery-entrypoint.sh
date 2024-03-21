@@ -4,6 +4,9 @@ python3 manage.py makemigrations
 python3 manage.py migrate
 python3 manage.py collectstatic --no-input --clear
 
+# To create a user (Non-interactive) - default user
+python3 manage.py createsuperuser --username "admin" --email "admin@rengine.com" --noinput
+
 # Load Custom Scan Engines
 python3 manage.py loadcustomengines
 
