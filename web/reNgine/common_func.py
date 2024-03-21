@@ -35,6 +35,7 @@ DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
 #------------------#
 def dump_custom_scan_engines(results_dir):
     """Dump custom scan engines to YAML files.
+
     Args:
         results_dir (str): Results directory (will be created if non-existent).
     """
@@ -48,6 +49,7 @@ def dump_custom_scan_engines(results_dir):
 def load_custom_scan_engines(results_dir):
     """Load custom scan engines from YAML files. The filename without .yaml will
     be used as the engine name.
+
     Args:
         results_dir (str): Results directory containing engines configs.
     """
