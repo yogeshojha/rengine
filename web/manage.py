@@ -2,11 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-from reNgine.settings import REMOTE_DEBUG
 
-if REMOTE_DEBUG and sys.argv[1] == 'runserver':
-    from debugger_setup import setup_debugger
-    setup_debugger()
 
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reNgine.settings')

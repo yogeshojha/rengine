@@ -412,39 +412,6 @@ See the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
 You can also [join our Discord channel #development](https://discord.gg/JuhHdHTtwd) for any development related questions.
 
-### Submitting issues
-
-You can submit issues related to this project, but you should do it in a way that helps developers to resolve it as quickly as possible.
-
-For that, you need to add as much valuable information as possible.
-
-You can have this valuable information by following these steps:
-
-- Go to the root of the git cloned project
-- Shutdown you current production instance by launching `make down`
-- Launch the dev environment by launching `make dev_up`
-- Then you can start `make logs` and run into your issue, you should have more detailed log (stack trace ...)
-- To deactivate the dev environment, run `make dev_down`, then restart the prod with `make up`
-
-Example with the tool arsenal version check API bug.
-
-```
-web_1          |   File "/usr/local/lib/python3.10/dist-packages/celery/app/task.py", line 411, in __call__
-web_1          |     return self.run(*args, **kwargs)
-web_1          | TypeError: run_command() got an unexpected keyword argument 'echo'
-```
-Now you know the real error is `TypeError: run_command() got an unexpected keyword argument 'echo'`
-
-And you can post the full stack trace to your newly created issue to help developers to track the root cause of the bug and correct the bug easily
-
-**Activating debug like this also give you the Django Debug Toolbar on the left side & full stack trace in the browser** instead of an error 500 without any details.
-So don't forget to open the developer console and check for any XHR request with error 500.
-If there's any, check the response of this request to get your detailed error.
-
-<img src="https://user-images.githubusercontent.com/1230954/276260955-ed1e1168-7c8f-43a3-b54d-b6285d52b771.png">
-
-Happy issuing ;)
-
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ### First-time Open Source contributors
