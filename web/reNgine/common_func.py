@@ -12,6 +12,7 @@ import redis
 import requests
 import tldextract
 import xmltodict
+import subprocess
 
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
@@ -510,8 +511,8 @@ def get_cms_details(url):
 	"""
 	# this function will fetch cms details using cms_detector
 	response = {}
-	cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
-	os.system(cms_detector_command)
+	cms_detector_command = ['python3', '/usr/src/github/CMSeeK/cmseek.py', '--random-agent', '--batch', '--follow-redirect', '-u', f'{url}']
+	subprocess.run(cms_detector_command)
 
 	response['status'] = False
 	response['message'] = 'Could not detect CMS!'
