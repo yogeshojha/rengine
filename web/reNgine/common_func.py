@@ -511,7 +511,7 @@ def get_cms_details(url):
 	"""
 	# this function will fetch cms details using cms_detector
 	response = {}
-	cms_detector_command = ['python3', '/usr/src/github/CMSeeK/cmseek.py', '--random-agent', '--batch', '--follow-redirect', '-u', f'{url}']
+	cms_detector_command = ['python3', '/usr/src/github/CMSeeK/cmseek.py', '--random-agent', '--batch', '--follow-redirect', '-u', url]
 	subprocess.run(cms_detector_command)
 
 	response['status'] = False
