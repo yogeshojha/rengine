@@ -1067,10 +1067,50 @@ class CMSDetector(APIView):
 		#save_db = True if 'save_db' in req.query_params else False
 		response = {'status': False}
 		try:
-			response = get_cms_details(url)
+			# response = get_cms_details(url)
+			response = {}
+			cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py'
+			cms_detector_command += ' --random-agent --batch --follow-redirect'
+			cms_detector_command += f' -u {url}'
+
+			_, output = run_command(cms_detector_command, remove_ansi_sequence=True)
+
+			response['message'] = 'Could not detect CMS!'
+
+			parsed_url = urlparse(url)
+
+			domain_name = parsed_url.hostname
+			port = parsed_url.port
+
+			find_dir = domain_name
+
+			if port:
+				find_dir += '_{}'.format(port)
+			# cms_dir_path = '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
+			# cms_json_path = cms_dir_path + '/cms.json'
+			# look for result path in output
+			path_regex = r"Result: (\/usr\/src[^\"\s]*)"
+			match = re.search(path_regex, output)
+			if match:
+				cms_json_path = match.group(1)
+				print(cms_json_path)
+				if os.path.isfile(cms_json_path):
+					cms_file_content = json.loads(open(cms_json_path, 'r').read())
+					if not cms_file_content.get('cms_id'):
+						return response
+					response = {}
+					response = cms_file_content
+					response['status'] = True
+					try:
+						# remove results
+						shutil.rmtree(cms_dir_path)
+					except Exception as e:
+						logger.error(e)
+					return Response(response)
+			return Response(response)
 		except Exception as e:
 			response = {'status': False, 'message': str(e)}
-		return Response(response)
+			return Response(response)
 
 
 class IPToDomain(APIView):
