@@ -1091,7 +1091,6 @@ class CMSDetector(APIView):
 			match = re.search(path_regex, output)
 			if match:
 				cms_json_path = match.group(1)
-				print(cms_json_path)
 				if os.path.isfile(cms_json_path):
 					cms_file_content = json.loads(open(cms_json_path, 'r').read())
 					if not cms_file_content.get('cms_id'):
