@@ -1086,8 +1086,6 @@ class CMSDetector(APIView):
 
 			if port:
 				find_dir += '_{}'.format(port)
-			# cms_dir_path = '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
-			# cms_json_path = cms_dir_path + '/cms.json'
 			# look for result path in output
 			path_regex = r"Result: (\/usr\/src[^\"\s]*)"
 			match = re.search(path_regex, output)
@@ -1103,6 +1101,7 @@ class CMSDetector(APIView):
 					response['status'] = True
 					try:
 						# remove results
+						cms_dir_path = os.path.dirname(cms_json_path)
 						shutil.rmtree(cms_dir_path)
 					except Exception as e:
 						logger.error(e)
