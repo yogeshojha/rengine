@@ -4,7 +4,6 @@ import pickle
 import random
 import shutil
 import traceback
-import uuid
 from time import sleep
 
 import humanize
@@ -26,6 +25,7 @@ from scanEngine.models import *
 from dashboard.models import *
 from startScan.models import *
 from targetApp.models import *
+
 
 logger = get_task_logger(__name__)
 DISCORD_WEBHOOKS_CACHE = redis.Redis.from_url(CELERY_BROKER_URL)
@@ -498,53 +498,13 @@ def get_random_proxy():
 	# os.environ['HTTPS_PROXY'] = proxy_name
 	return proxy_name
 
-
-def get_cms_details(url):
-	"""Get CMS details using cmseek.py.
-
-	Args:
-		url (str): HTTP URL.
-
-	Returns:
-		dict: Response.
-	"""
-	# this function will fetch cms details using cms_detector
-	response = {}
-	cms_detector_command = f'python3 /usr/src/github/CMSeeK/cmseek.py --random-agent --batch --follow-redirect -u {url}'
-	os.system(cms_detector_command)
-
-	response['status'] = False
-	response['message'] = 'Could not detect CMS!'
-
-	parsed_url = urlparse(url)
-
-	domain_name = parsed_url.hostname
-	port = parsed_url.port
-
-	find_dir = domain_name
-
-	if port:
-		find_dir += '_{}'.format(port)
-
-	# subdomain may also have port number, and is stored in dir as _port
-
-	cms_dir_path =  '/usr/src/github/CMSeeK/Result/{}'.format(find_dir)
-	cms_json_path =  cms_dir_path + '/cms.json'
-
-	if os.path.isfile(cms_json_path):
-		cms_file_content = json.loads(open(cms_json_path, 'r').read())
-		if not cms_file_content.get('cms_id'):
-			return response
-		response = {}
-		response = cms_file_content
-		response['status'] = True
-		# remove cms dir path
-		try:
-			shutil.rmtree(cms_dir_path)
-		except Exception as e:
-			print(e)
-
-	return response
+def remove_ansi_escape_sequences(text):
+	# Regular expression to match ANSI escape sequences
+	ansi_escape_pattern = r'\x1b\[.*?m'
+	
+	# Use re.sub() to replace the ANSI escape sequences with an empty string
+	plain_text = re.sub(ansi_escape_pattern, '', text)
+	return plain_text
 
 
 #--------------------#
