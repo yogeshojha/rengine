@@ -120,12 +120,12 @@ services:
     container_name: ollama
     volumes:
       - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
+    # ports:
+    #   - "11434:11434"
     networks:
       - rengine_network
     restart: always
-    command: ["ollama", "run", "llama2-uncensored"]
+    # command: ["ollama", "run", "llama2-uncensored"]
 
 networks:
   rengine_network:
