@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% load custom_tags %}
+{% block title %}
+LLM Toolkit
+{% endblock title %}
+
+{% block custom_js_css_link %}
+{% endblock custom_js_css_link %}
+
+{% block breadcrumb_title %}
+<li class="breadcrumb-item"><a href="#">Settings</a></li>
+<li class="breadcrumb-item active">LLM Toolkit</li>
+{% endblock breadcrumb_title %}
+
+{% block page_title %}
+LLM Toolkit
+{% endblock page_title %}
+
+{% block main_content %}
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <p>reNgine makes use of various LLMs to enhance reporting process. Using various LLM AI Models penetration testers will be able to to generate detailed, insightful penetration testing reports. 
+          <br>
+          <b>LLM Toolkit</b> includes the ability to download new LLMs, view available models, and delete models no longer needed, and also choose between various models.
+        </p>
+      </div>
+    </div>
+  </div>
+  <h5> {{installed_models|len}} Installed LLM Models</h5>
+  <div class="row mt-2">
+    {% for model in installed_models %}
+    <div class="col-lg-4">
+      <div class="card project-box">
+        <div class="card-body">
+          <div class="dropdown float-end">
+            <a href="#" class="dropdown-toggle card-drop arrow-none" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="mdi mdi-dots-horizontal m-0 text-muted h3"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end">
+              <a class="dropdown-item" href="#">Delete</a>
+            </div>
+          </div>
+          <h4 class="mt-0">
+            <span>{{model.name}}</span>
+          </h4>
+          </p>
+          <!-- Task info-->
+          <p class="mb-1">
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-calendar-range text-primary"></i>
+              <b>{{model.modified_at}}</b> Modified at 
+            </span>
+            <br>
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-numeric text-info"></i>
+              <b>{{model.details.parameter_size}}</b> Parameters 
+            </span>
+            <span class="text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-family-tree text-success"></i>
+              <b>{{model.details.family}}</b> Family 
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock main_content %}
+
+
+{% block page_level_script %}
+{% endblock page_level_script %}

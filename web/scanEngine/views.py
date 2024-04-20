@@ -11,6 +11,7 @@ from django.urls import reverse
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
+from reNgine.llm import CustomOllamaClient
 from reNgine.tasks import (run_command, send_discord_message, send_slack_message, send_telegram_message)
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
@@ -454,6 +455,17 @@ def tool_arsenal_section(request, slug):
     tools = InstalledExternalTool.objects.all().order_by('id')
     context['installed_tools'] = tools
     return render(request, 'scanEngine/settings/tool_arsenal.html', context)
+
+
+@has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
+def llm_toolkit_section(request, slug):
+    context = {}
+    ollama = CustomOllamaClient()
+    res = ollama.connect()
+    if not res.get('status'):
+        
+    context['installed_models'] = ollama.list_models()
+    return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 
 
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)

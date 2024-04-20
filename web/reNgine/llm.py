@@ -22,6 +22,7 @@ class CustomOllamaClient:
 			}
 		
 	def list_models(self,):
+		models = self.client.list()
 		return self.client.list()
 	
 	def pull_model(self, model_name):
