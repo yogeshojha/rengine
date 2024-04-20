@@ -463,7 +463,7 @@ def llm_toolkit_section(request, slug):
     ollama = CustomOllamaClient()
     res = ollama.connect()
     if not res.get('status'):
-        
+        pass
     context['installed_models'] = ollama.list_models()
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 

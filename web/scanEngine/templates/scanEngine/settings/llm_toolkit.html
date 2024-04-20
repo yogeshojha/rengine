@@ -29,7 +29,12 @@ LLM Toolkit
       </div>
     </div>
   </div>
-  <h5> {{installed_models|len}} Installed LLM Models</h5>
+  <div class="row mb-2">
+    <div class="col-sm-4">
+      <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add New LLM</a>
+    </div>
+  </div>
+  <h5>{{installed_models|length}} Installed LLM Models</h5>
   <div class="row mt-2">
     {% for model in installed_models %}
     <div class="col-lg-4">
@@ -47,7 +52,6 @@ LLM Toolkit
             <span>{{model.name}}</span>
           </h4>
           </p>
-          <!-- Task info-->
           <p class="mb-1">
             <span class="pe-2 text-nowrap mb-2 d-inline-block">
               <i class="mdi mdi-calendar-range text-primary"></i>
@@ -65,6 +69,10 @@ LLM Toolkit
           </p>
         </div>
       </div>
+    </div>
+    {% empty %}
+    <div class="alert alert-danger border-0" role="alert">
+      No LLM Models are installed. You can install models using the 'Add New LLM' button.
     </div>
     {% endfor %}
   </div>
