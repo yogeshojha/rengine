@@ -436,6 +436,12 @@ PERM_INITATE_SCANS_SUBSCANS = 'initiate_scans_subscans'
 FOUR_OH_FOUR_URL = '/404/'
 
 
+###############################################################################
+# OLLAMA DEFINITIONS
+###############################################################################
+OLLAMA_INSTANCE = 'http://ollama:11434'
+
+
 # GPT Vulnerability Report Generator
 VULNERABILITY_DESCRIPTION_SYSTEM_MESSAGE = """
     You are a highly skilled penetration tester who has recently completed a penetration testing.
