@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.5
+
+**Release Date: April 20, 2024**
+
+* Fix #1234 reNgine unable to load celery tasks due to mismatched celery and redis versions
+
 ## 2.0.4
 
 **Release Date: April 18, 2024**
