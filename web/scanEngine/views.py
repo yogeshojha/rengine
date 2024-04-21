@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 
+from datetime import datetime
 from django import http
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, render
@@ -11,7 +12,6 @@ from django.urls import reverse
 from rolepermissions.decorators import has_permission_decorator
 
 from reNgine.common_func import *
-from reNgine.llm import CustomOllamaClient
 from reNgine.tasks import (run_command, send_discord_message, send_slack_message, send_telegram_message)
 from scanEngine.forms import *
 from scanEngine.forms import ConfigurationForm
@@ -460,11 +460,17 @@ def tool_arsenal_section(request, slug):
 @has_permission_decorator(PERM_MODIFY_SYSTEM_CONFIGURATIONS, redirect_url=FOUR_OH_FOUR_URL)
 def llm_toolkit_section(request, slug):
     context = {}
-    ollama = CustomOllamaClient()
-    res = ollama.connect()
-    if not res.get('status'):
-        pass
-    context['installed_models'] = ollama.list_models()
+    list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
+    response = requests.get(list_all_models_url)
+    if response.status_code == 200:
+        models = response.json()
+        models = models.get('models')
+        date_format = "%Y-%m-%dT%H:%M:%S"
+        models = [{**model, 'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format)} for model in models]
+        context['installed_models'] = models
+        print(context['installed_models'])
+    else:
+        context['installed_models'] = []
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 
 
