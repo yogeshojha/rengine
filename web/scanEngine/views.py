@@ -462,15 +462,28 @@ def llm_toolkit_section(request, slug):
     context = {}
     list_all_models_url = f'{OLLAMA_INSTANCE}/api/tags'
     response = requests.get(list_all_models_url)
+    all_models = []
+    all_models = DEFAULT_GPT_MODELS.copy()
     if response.status_code == 200:
         models = response.json()
-        models = models.get('models')
+        ollama_models = models.get('models')
         date_format = "%Y-%m-%dT%H:%M:%S"
-        models = [{**model, 'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format)} for model in models]
-        context['installed_models'] = models
-        print(context['installed_models'])
+        for model in ollama_models:
+           all_models.append({**model, 
+                'modified_at': datetime.strptime(model['modified_at'].split('.')[0], date_format),
+                'is_local': True
+            })
+    # find selected model name from db
+    selected_model = OllamaSettings.objects.first()
+    if selected_model:
+        selected_model = {'selected_model': selected_model.selected_model}
     else:
-        context['installed_models'] = []
+        # use gpt3.5-turbo as default
+        selected_model = {'selected_model': 'gpt-3.5-turbo'}
+    for models in all_models:
+        if models['name'] == selected_model['selected_model']:
+            models['selected'] = True
+    context['installed_models'] = all_models
     return render(request, 'scanEngine/settings/llm_toolkit.html', context)
 
 

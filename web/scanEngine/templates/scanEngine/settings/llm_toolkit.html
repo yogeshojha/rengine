@@ -34,7 +34,7 @@ LLM Toolkit
       <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3" onclick="showAddNewModelModal()"><i class="mdi mdi-plus"></i> Add new model</a>
     </div>
   </div>
-  <h5>{{installed_models|length}} Installed LLM Models</h5>
+  <h5>{{installed_models|length}} available Models</h5>
   <div class="row mt-2">
     {% for model in installed_models %}
     <div class="col-lg-4">
@@ -45,17 +45,31 @@ LLM Toolkit
               <i class="mdi mdi-dots-horizontal m-0 text-muted h3"></i>
             </a>
             <div class="dropdown-menu dropdown-menu-end">
-              <a class="dropdown-item" href="#" onClick=deleteModel('{{model.name}}')>Delete</a>
+              {% if model.is_local %}
+                <a class="dropdown-item" href="#" onClick=deleteModel('{{model.name}}')>Delete</a>
+              {% endif %}
+              {% if not model.selected %}
+                <a class="dropdown-item" href="#" onClick=selectModel('{{model.name}}')>Use Model</a>
+              {% endif %}
             </div>
           </div>
           <h4 class="mt-0">
-            <span>{{model.name}}</span>
+            <span class="{% if model.selected %}text-success{% endif %}">{{model.name}} {% if model.selected %}<span class="badge bg-soft-primary text-primary ms-4">Selected Model</span>{% endif %}</span>
           </h4>
           </p>
           <p class="mb-1">
             <span class="pe-2 text-nowrap mb-2 d-inline-block">
               <i class="mdi mdi-calendar-range text-primary"></i>
-              Modified <b>{{model.modified_at|naturaltime}}</b>
+              Modified <b>{% if model.modified_at %}{{model.modified_at|naturaltime}} {% else %} NA{% endif %}</b>
+            </span>
+            <br>
+            <span class="pe-2 text-nowrap mb-2 d-inline-block">
+              <i class="mdi mdi-database text-info"></i>
+              {% if model.is_local %}
+              Locally installed model
+              {% else %}
+              Open AI Model
+              {% endif %}
             </span>
             <br>
             <span class="pe-2 text-nowrap mb-2 d-inline-block">
@@ -67,7 +81,6 @@ LLM Toolkit
               <b>{{model.details.family}}</b> Family 
             </span>
           </p>
-
         </div>
       </div>
     </div>
@@ -210,7 +223,55 @@ LLM Toolkit
       }
     }])
   }
-  
 
+  function selectModel(model_name){
+    var url = "/api/tool/ollama/?model=" + model_name;
+    swal.queue([{
+      title: 'Are you sure you want to select this model?',
+      text: "This model will be used to generate Scan Reports and Attack Suggestions.",
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Select',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(url, {
+          method: 'PUT',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          if (!data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to select the model!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully selected!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
+        }).catch(function() {
+          swal.insertQueueStep({
+            icon: 'error',
+            title: 'Oops! Unable to select the model!'
+          })
+        })
+      }
+    }])
+  }
 </script>
 {% endblock page_level_script %}
