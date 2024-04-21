@@ -31,7 +31,7 @@ LLM Toolkit
   </div>
   <div class="row mb-2">
     <div class="col-sm-4">
-      <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3"><i class="mdi mdi-plus"></i> Add new tool</a>
+      <a href="#" class="btn btn-primary rounded-pill waves-effect waves-light mb-3" onclick="showAddNewModelModal()"><i class="mdi mdi-plus"></i> Add new model</a>
     </div>
   </div>
   <h5>{{installed_models|length}} Installed LLM Models</h5>
@@ -105,7 +105,26 @@ LLM Toolkit
         }).then(function(response) {
           return response.json();
         }).then(function(data) {
-          return location.reload();
+          if (data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to delete the model!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully deleted!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
         }).catch(function() {
           swal.insertQueueStep({
             icon: 'error',
@@ -115,5 +134,83 @@ LLM Toolkit
       }
     }])
   }
+
+  function showAddNewModelModal(){
+    $('#modal_title').html('Add new LLM Model');
+    $('#modal-content').empty();
+    $('#modal-content').append(`
+      <p>You can find the list of supported models in <a href="https://ollama.com/library" target="_blank">Ollama Library</a></p>
+      <p>We recommend using llama2-uncensored model for better results.</p>
+      <div class="mb-3">
+        <label for="model_name" class="form-label">Model name</label>
+        <input class="form-control" type="text" id="model_name" required="" placeholder="llama2">
+      </div>
+      <div class="mb-3 text-center">
+        <button class="btn btn-primary float-end" type="submit" onclick="download_model()">Download Model</button>
+      </div>
+    `);
+    $('#modal_dialog').modal('show');
+  }
+
+  function download_model(){
+    var model_name = $('#model_name').val();
+    if (model_name == ""){
+      Swal.fire({
+        title: 'Oops!',
+        text: 'Model name is required',
+        icon: 'error'
+      });
+      return;
+    }
+    var url = "/api/tool/ollama/?model=" + model_name;
+    swal.queue([{
+      title: 'Are you sure you want to download this model?',
+      text: "Downloading models can take a long time, sometimes a few minutes. Please be patient.",
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Download',
+      padding: '2em',
+      showLoaderOnConfirm: true,
+      preConfirm: function() {
+        return fetch(url, {
+          method: 'GET',
+          credentials: "same-origin",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken")
+          }
+        }).then(function(response) {
+          return response.json();
+        }).then(function(data) {
+          if (!data.status){
+            swal.insertQueueStep({
+              icon: 'error',
+              title: 'Oops! Unable to download the model, model does not exist!'
+            })
+          }
+          else{
+            swal.queue([{
+              title: 'Model Successfully downloaded!',
+              icon: 'success',
+              showCancelButton: false,
+              confirmButtonText: 'Okay',
+              padding: '2em',
+              showLoaderOnConfirm: true,
+              preConfirm: function() {
+                location.reload();
+              }
+            }]);
+          }
+          //return location.reload();
+        }).catch(function() {
+          swal.insertQueueStep({
+            icon: 'error',
+            title: 'Oops! Unable to download the model!'
+          })
+        })
+      }
+    }])
+  }
+  
+
 </script>
 {% endblock page_level_script %}
