@@ -84,6 +84,22 @@ class OllamaManager(APIView):
 		except Exception as e:
 			response['error'] = str(e)
 		return Response(response)
+	
+	def put(self, request):
+		req = self.request
+		model_name = req.query_params.get('model')
+		response = {
+			'status': False
+		}
+		try:
+			OllamaSettings.objects.update_or_create(
+				defaults={'selected_model': model_name},
+				id=1
+			)
+			response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)
+		return Response(response)
 
 
 class GPTAttackSuggestion(APIView):
