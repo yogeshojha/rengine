@@ -33,6 +33,59 @@ from .serializers import *
 logger = logging.getLogger(__name__)
 
 
+class OllamaManager(APIView):
+	def get(self, request):
+		"""
+		API to download Ollama Models
+		sends a POST request to download the model
+		"""
+		req = self.request
+		model_name = req.query_params.get('model')
+		response = {
+			'status': False
+		}
+		try:
+			pull_model_api = f'{OLLAMA_INSTANCE}/api/pull'
+			_response = requests.post(
+				pull_model_api, 
+				json={
+					'name': model_name,
+					'stream': False
+				}
+			).json()
+			if _response.get('error'):
+				response['status'] = False
+				response['error'] = _response.get('error')
+			else:
+				response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)		
+		return Response(response)
+	
+	def delete(self, request):
+		req = self.request
+		model_name = req.query_params.get('model')
+		delete_model_api = f'{OLLAMA_INSTANCE}/api/delete'
+		response = {
+			'status': False
+		}
+		try:
+			_response = requests.delete(
+				delete_model_api, 
+				json={
+					'name': model_name
+				}
+			).json()
+			if _response.get('error'):
+				response['status'] = False
+				response['error'] = _response.get('error')
+			else:
+				response['status'] = True
+		except Exception as e:
+			response['error'] = str(e)
+		return Response(response)
+
+
 class GPTAttackSuggestion(APIView):
 	def get(self, request):
 		req = self.request
