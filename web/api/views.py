@@ -88,12 +88,19 @@ class OllamaManager(APIView):
 	def put(self, request):
 		req = self.request
 		model_name = req.query_params.get('model')
+		# check if model_name is in DEFAULT_GPT_MODELS
 		response = {
 			'status': False
 		}
+		use_ollama = True
+		if any(model['name'] == model_name for model in DEFAULT_GPT_MODELS):
+			use_ollama = False
 		try:
 			OllamaSettings.objects.update_or_create(
-				defaults={'selected_model': model_name},
+				defaults={
+					'selected_model': model_name,
+					'use_ollama': use_ollama
+				},
 				id=1
 			)
 			response['status'] = True
