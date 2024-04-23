@@ -1,19 +1,6 @@
 version: "3.8"
 
 services:
-  db:
-    restart: always
-    image: "postgres:12.3-alpine"
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    networks:
-      - rengine_network
-
   redis:
     image: "redis:alpine"
     hostname: redis
