@@ -1,10 +1,11 @@
 <p align="center">
-<a href="https://rengine.wiki"><img src=".github/screenshots/banner.gif" alt=""/></a>
+<img src=".github/images/banner-rengine-ng.png" alt=""/>
 </p>
 
-<p align="center"><a href="https://github.com/yogeshojha/rengine/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.0.0-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;<a href="https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine" target="_blank"><img src="https://cdn.huntr.dev/huntr_security_badge_mono.svg" alt="" /></a>&nbsp;</p>
+<p align="center"><a href="https://github.com/Security-Tools-Alliance/rengine-ng/releases" target="_blank"><img src="https://img.shields.io/badge/version-v2.0.5-informational?&logo=none" alt="reNgine Latest Version" /></a>&nbsp;<a href="https://www.gnu.org/licenses/gpl-3.0" target="_blank"><img src="https://img.shields.io/badge/License-GPLv3-red.svg?&logo=none" alt="License" /></a>&nbsp;<a href="#" target="_blank"><img src="https://img.shields.io/badge/first--timers--only-friendly-blue.svg?&logo=none" alt="" /></a>&nbsp;</p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/Cycom-2024-blue.svg?logo=none" alt="" /></a>
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/BlackHat--Arsenal--Asia-2023-blue.svg?logo=none" alt="" /></a>&nbsp;
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/BlackHat--Arsenal--USA-2022-blue.svg?logo=none" alt="" /></a>&nbsp;
   <a href="https://www.youtube.com/watch?v=Xk_YH83IQgg" target="_blank"><img src="https://img.shields.io/badge/Open--Source--Summit-2022-blue.svg?logo=none" alt="" /></a>&nbsp;
@@ -15,11 +16,11 @@
 </p>
 
 <p align="center">
-<a href="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/codeql-analysis.yml/badge.svg" alt="" /></a>&nbsp;<a href="https://github.com/yogeshojha/rengine/actions/workflows/build.yml" target="_blank"><img src="https://github.com/yogeshojha/rengine/actions/workflows/build.yml/badge.svg" alt="" /></a>&nbsp;
+<a href="https://github.com/Security-Tools-Alliance/rengine-ng/actions/workflows/codeql-analysis.yml" target="_blank"><img src="https://github.com/Security-Tools-Alliance/rengine-ng/actions/workflows/codeql-analysis.yml/badge.svg" alt="" /></a>&nbsp;<a href="https://github.com/Security-Tools-Alliance/rengine-ng/actions/workflows/build.yml" target="_blank"><img src="https://github.com/Security-Tools-Alliance/rengine-ng/actions/workflows/build.yml/badge.svg" alt="" /></a>&nbsp;
 </p>
 
 <p align="center">
-<a href="https://discord.gg/H6WzebwX3H" target="_blank"><img src="https://img.shields.io/discord/880363103689277461" alt="" /></a>&nbsp;
+<a href="https://discord.gg/Yxq8DR9X" target="_blank"><img src="https://img.shields.io/discord/1227920361564143766" alt="" /></a>&nbsp;
 </p>
 
 <p align="center">
@@ -27,7 +28,7 @@
 <img style="width: 282px; height: 56px" src="https://opensourcesecurityindex.io/badge.svg" alt="Open Source Security Index - Fastest Growing Open Source Security Projects" width="282" height="56" /> </a>
 </p>
 
-<h3>reNgine 2.0-jasper<br>Redefining the future of reconnaissance!</h3>
+<h3>reNgine NG<br>Redefining the future of reconnaissance!</h3>
 
 <h4>What is reNgine?</h4>
 <p align="left">reNgine is your go-to web application reconnaissance suite that's designed to simplify and streamline the reconnaissance process for security professionals, penetration testers, and bug bounty hunters. With its highly configurable engines, data correlation capabilities, continuous monitoring, database-backed reconnaissance data, and an intuitive user interface, reNgine redefines how you gather critical information about your target web applications.
@@ -37,19 +38,19 @@ Traditional reconnaissance tools often fall short in terms of configurability an
 reNgine was created to address the limitations of traditional reconnaissance tools and provide a better alternative, even surpassing some commercial offerings. Whether you're a bug bounty hunter, a penetration tester, or a corporate security team, reNgine is your go-to solution for automating and enhancing your information-gathering efforts.
 </p>
 
-reNgine 2.0-jasper is out now, you can [watch reNgine 2.0-jasper release trailer here!](https://youtu.be/VwkOWqiWW5g)
+reNgine 2.0 is out now, you can [watch reNgine 2.0 release trailer here!](https://youtu.be/VwkOWqiWW5g)
 
-reNgine 2.0-Jasper would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/yogeshojha/rengine/graphs/contributors) who inspire and drive us forward.
+reNgine 2.0 would not have been possible without [@ocervell](https://github.com/ocervell) valuable contributions. [@ocervell](https://github.com/ocervell) did majority of the refactoring if not all and also added a ton of features. Together, we wish to shape the future of web application reconnaissance, and it's developers like [@ocervell](https://github.com/ocervell) and a [ton of other developers and hackers from our community](https://github.com/Security-Tools-Alliance/rengine-ng/graphs/contributors) who inspire and drive us forward.
 
 Thank you, [@ocervell](https://github.com/ocervell), for your outstanding work and unwavering commitment to reNgine.
 
-Checkout our contributers here: [Contributers](https://github.com/yogeshojha/rengine/graphs/contributors)
+Checkout our contributers here: [Contributers](https://github.com/Security-Tools-Alliance/rengine-ng/graphs/contributors)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ### Documentation
 
-You can find detailed documentation at [https://rengine.wiki](https://rengine.wiki)
+You can find detailed documentation in the repository [Wiki](https://github.com/Security-Tools-Alliance/rengine-ng/wiki)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -104,7 +105,7 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 
 ### Workflow
 
-<img src="https://github.com/yogeshojha/rengine/assets/17223002/10c475b8-b4a8-440d-9126-77fe2038a386">
+<img src=".github/images/workflow.png">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -163,25 +164,36 @@ reNgine is not an ordinary reconnaissance suite; it's a game-changer! We've turb
 ### Scan Engine
 
 ```yaml
+# Global vars for all tools
+#
+# custom_header: 'Cookie: Test'     # FFUF, Nuclei, Dalfox, CRL Fuzz, HTTP Crawl, Fetch URL
+# user_agent: ''                    # Dalfox only
+# enable_http_crawl: true           # All tools
+# timeout: 10                       # Subdomain discovery, Screenshot, Port scan, FFUF, Nuclei                       
+# threads: 30                       # All tools
+# rate_limit: 150                   # Port scan, FFUF, Nuclei
+# intensity: 'normal'               # Screenshot (grab only the root endpoints of each subdomain), Nuclei (reduce number of endpoints to scan), OSINT (not implemented yet)
+# retries: 1                        # Nuclei
+
 subdomain_discovery: {
-  'uses_tools': [
-    'subfinder',
-    'ctfr',
-    'sublist3r',
-    'tlsx',
-    'oneforall',
-    'netlas'
-  ],
+  'uses_tools': ['subfinder', 'ctfr', 'sublist3r', 'tlsx', 'oneforall', 'netlas'],  # amass-passive, amass-active, All
   'enable_http_crawl': true,
   'threads': 30,
   'timeout': 5,
+  # 'use_subfinder_config': false,
+  # 'use_amass_config': false,
+  # 'amass_wordlist': 'deepmagic.com-prefixes-top50000'
 }
-http_crawl: {}
+http_crawl: {
+  # 'custom_header': 'Cookie: Test',
+  # 'threads': 30,
+  # 'follow_redirect': true
+}
 port_scan: {
   'enable_http_crawl': true,
   'timeout': 5,
   # 'exclude_ports': [],
-  # 'exclude_subdomains': true,
+  # 'exclude_subdomains': [],
   'ports': ['top-100'],
   'rate_limit': 150,
   'threads': 30,
@@ -214,16 +226,7 @@ osint: {
     'db_files',
     'git_exposed'
   ],
-  'custom_dorks': [
-    {
-      'lookup_site': 'google.com',
-      'lookup_keywords': '/home/'
-    },
-    {
-      'lookup_site': '_target_',
-      'lookup_extensions': 'jpg,png'
-    }
-  ],
+  # 'custom_dorks': [],
   'intensity': 'normal',
   'documents_limit': 50
 }
@@ -242,28 +245,20 @@ dir_file_fuzz: {
   'wordlist_name': 'dicc'
 }
 fetch_url: {
-  'uses_tools': [
-    'gospider',
-    'hakrawler',
-    'waybackurls',
-    'gospider',
-    'katana'
-  ],
+  'uses_tools': ['gospider', 'hakrawler', 'waybackurls', 'gospider', 'katana', 'gau'],
   'remove_duplicate_endpoints': true,
-  'duplicate_fields': [
-    'content_length',
-    'page_title'
-  ],
+  'duplicate_fields': ['content_length', 'page_title'],
   'enable_http_crawl': true,
   'gf_patterns': ['debug_logic', 'idor', 'interestingEXT', 'interestingparams', 'interestingsubs', 'lfi', 'rce', 'redirect', 'sqli', 'ssrf', 'ssti', 'xss'],
-  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3']
-  # 'exclude_subdomains': true
+  'ignore_file_extensions': ['png', 'jpg', 'jpeg', 'gif', 'mp4', 'mpeg', 'mp3'],
+  'threads': 30,
+  # 'exclude_subdomains': false
 }
 vulnerability_scan: {
-  'run_nuclei': false,
+  'run_nuclei': true,
   'run_dalfox': false,
   'run_crlfuzz': false,
-  'run_s3scanner': true,
+  'run_s3scanner': false,
   'enable_http_crawl': true,
   'concurrency': 50,
   'intensity': 'normal',
@@ -273,38 +268,21 @@ vulnerability_scan: {
   'fetch_gpt_report': true,
   'nuclei': {
     'use_nuclei_config': false,
-    'severities': [
-      'unknown',
-      'info',
-      'low',
-      'medium',
-      'high',
-      'critical'
-    ],
-    # 'tags': [],
-    # 'templates': [],
-    # 'custom_templates': [],
-  },
-  's3scanner': {
-    'threads': 100,
-    'providers': [
-      'aws',
-      'gcp',
-      'digitalocean',
-      'dreamhost',
-      'linode'
-    ]
+    'severities': ['unknown', 'info', 'low', 'medium', 'high', 'critical'],
+    # 'tags': [],                 # Nuclei tags (https://github.com/projectdiscovery/nuclei-templates)
+    # 'templates': [],            # Nuclei templates (https://github.com/projectdiscovery/nuclei-templates)
+    # 'custom_templates': []      # Nuclei custom templates uploaded in reNgine
   }
 }
-waf_detection: {}
+waf_detection: {
+  'enable_http_crawl': true
+}
 screenshot: {
   'enable_http_crawl': true,
   'intensity': 'normal',
   'timeout': 10,
   'threads': 40
 }
-
-# custom_header: "Cookie: Test"
 ```
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
@@ -316,7 +294,7 @@ screenshot: {
 1. Clone this repo
 
     ```bash
-    git clone https://github.com/yogeshojha/rengine && cd rengine
+    git clone https://github.com/Security-Tools-Alliance/rengine-ng && cd rengine
     ```
 
 1. Edit the dotenv file, **please make sure to change the password for postgresql `POSTGRES_PASSWORD`!**
@@ -352,7 +330,7 @@ screenshot: {
 
 ### Installation (Mac/Windows/Other)
 
-Installation instructions can be found at [https://reNgine.wiki/install/detailed/](https://reNgine.wiki/install/detailed/)
+Installation instructions can be found at [https://github.com/Security-Tools-Alliance/rengine-ng/wiki/install/detailed/](https://github.com/Security-Tools-Alliance/rengine-ng/wiki/install/detailed/)
 
 ### Updating
 
@@ -368,7 +346,7 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 
 ### Changelog
 
-[Please find the latest release notes and changelog here.](https://rengine.wiki/changelog/)
+[Please find the latest release notes and changelog here.](https://github.com/Security-Tools-Alliance/rengine-ng/wiki/changelog/)
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)  
 
@@ -380,27 +358,27 @@ Installation instructions can be found at [https://reNgine.wiki/install/detailed
 
 #### General Usage
 
-<img src="https://user-images.githubusercontent.com/17223002/164993781-b6012995-522b-480a-a8bf-911193d35894.gif">
+<img src=".github/screenshots/general-usage.gif">
 
 #### Initiating Subscan
 
-<img src="https://user-images.githubusercontent.com/17223002/164993749-1ad343d6-8ce7-43d6-aee7-b3add0321da7.gif">
+<img src=".github/screenshots/initiate-subscan.gif">
 
 #### Recon Data filtering
 
-<img src="https://user-images.githubusercontent.com/17223002/164993687-b63f3de8-e033-4ac0-808e-a2aa377d3cf8.gif">
+<img src=".github/screenshots/recon-data-filtering.gif">
 
 #### Report Generation
 
-<img src="https://user-images.githubusercontent.com/17223002/164993689-c796c6cd-eb61-43f4-800d-08aba9740088.gif">
+<img src=".github/screenshots/report-generation.gif">
 
 #### Toolbox
 
-<img src="https://user-images.githubusercontent.com/17223002/164993751-d687e88a-eb79-440f-9dc0-0ad006901620.gif">
+<img src=".github/screenshots/toolbox.gif">
 
 #### Adding Custom tool in Tools Arsenal
 
-<img src="https://user-images.githubusercontent.com/17223002/164993670-466f6459-9499-498b-a9bd-526476d735a7.gif">
+<img src=".github/screenshots/add-custom-tools.gif">
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -410,7 +388,7 @@ Contributions are what make the open-source community such an amazing place to l
 
 See the [Contributing Guide](.github/CONTRIBUTING.md) to get started.
 
-You can also [join our Discord channel #development](https://discord.gg/JuhHdHTtwd) for any development related questions.
+You can also [join our Discord channel #development](https://discord.gg/VUS8P9zF) for any development related questions.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
@@ -418,63 +396,26 @@ You can also [join our Discord channel #development](https://discord.gg/JuhHdHTt
 
 Please note that reNgine is beginner friendly. If you have never done open-source before, we encourage you to do so. **We will be happy and proud of your first PR ever.**
 
-You can start by resolving any [open issues](https://github.com/yogeshojha/rengine/issues).
+You can start by resolving any [open issues](https://github.com/Security-Tools-Alliance/rengine-ng/issues).
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
 ### reNgine Support
 
-Please do not use GitHub for support requests. Instead, [join our Discord channel #support](https://discord.gg/azv6fzhNCE).
+Please do not use GitHub for support requests. Instead, [join our Discord channel #support](https://discord.gg/Mh7GKz4x).
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
-### Support and Sponsoring
+### Support
 
-Over the past few years, I have been working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. I spend most of my free time and weekends working on reNgine. I do this in addition to my day job. I am happy to have received such overwhelming support from the community. But to keep this project alive, I am looking for financial support.
+We are volunteers, working hard on reNgine to add new features with the sole aim of making it the de facto standard for reconnaissance. Help is welcome, you could participate by creating PR, update docs ...
+Come to the Discord to discuss with the reNGine team.
 
-|                                                                       Paypal                                                                       |                                                            Bitcoin                                                             |                                                            Ethereum                                                            |
-| :-------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------: |
-|[https://www.paypal.com/paypalme/yogeshojha11](https://www.paypal.com/paypalme/yogeshojha11)                                 |                                              `35AiKyNswNZ4TZUSdriHopSCjNMPi63BCX`                                              |                                          `0xe7A337Da6ff98A28513C26A7Fec8C9b42A63d346`  
-
-OR
-
-* Add a [GitHub Star](https://github.com/yogeshojha/rengine) to the project.
+* Add a [GitHub Star](https://github.com/Security-Tools-Alliance/rengine-ng) to the project.
 * Tweet about this project, or maybe blogs?
-* Maybe nominate me for [GitHub Stars?](https://stars.github.com/nominate/)
-* Join DigitalOcean using my [referral link](https://m.do.co/c/e353502d19fc) your profit is **$100** and I get $25 DO credit. This will help me test reNgine on VPS before I release any major features.
-
-It takes a considerable amount of time to add new features and make sure everything works. Donating is your way of saying: **reNgine is awesome**.
+* Maybe nominate us for [GitHub Stars?](https://stars.github.com/nominate/)
 
 Any support is greatly appreciated! Thank you!
-
-![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
-
-### reNgine Bug Bounty Program
-
-[![huntr](https://cdn.huntr.dev/huntr_security_badge_mono.svg)](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine)
-
-Security researchers, welcome aboard! I'm excited to announce the reNgine bug bounty programme in collaboration with [huntr.dev](https://huntr.dev), which means that you will be rewarded for any vulnerabilities you find in reNgine.
-
-Thank you for your interest in reporting reNgine vulnerabilities! If you are aware of any potential security vulnerabilities in reNgine, we encourage you to report them immediately via [huntr.dev](https://huntr.dev/bounties/disclose/?target=https%3A%2F%2Fgithub.com%2Fyogeshojha%2Frengine).
-
-**Please do not disclose vulnerabilities via Github issues/blogs/tweets after/before reporting to huntr.dev as this is explicitly against the disclosure policy of huntr.dev and reNgine and will not be considered for monetary rewards.**
-
-Please note that the reNgine maintainer does not set the bounty amount.
-The bounty reward is determined by an industry-first equation developed by huntr.dev to understand the popularity, impact and value of repositories to the open-source community.
-
-**What do I expect from security researchers?**
-
-* Patience: Please note that I am currently the only maintainer in reNgine and it will take some time to validate your report. I ask for your patience during this process.
-* Respect for privacy and security reports: Please do not publicly disclose any vulnerabilities (including GitHub issues) before or after reporting them on huntr.dev! This is against the disclosure policy and will not be rewarded.
-* Respect the rules
-
-**What do you get in return?**
-
-* Thanks from the maintainer
-* Monetary rewards
-* CVE ID(s)
-
-Please find the [FAQ](https://www.huntr.dev/faq) and [Responsible disclosure policy](https://www.huntr.dev/policy/) from huntr.dev.
 
 ![-----------------------------------------------------](https://raw.githubusercontent.com/andreasbm/readme/master/assets/lines/aqua.png)
 
