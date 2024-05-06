@@ -1,5 +1,5 @@
 # Base image
-FROM --platform=linux/amd64 ubuntu:22.04
+FROM --platform=$BUILDPLATFORM ubuntu:22.04
 
 # Labels and Credits
 LABEL \
@@ -47,10 +47,14 @@ RUN apt install -y  --no-install-recommends \
 
 RUN add-apt-repository ppa:mozillateam/ppa
 
-# Download and install go 1.20
-RUN wget https://golang.org/dl/go1.21.4.linux-amd64.tar.gz
-RUN tar -xvf go1.21.4.linux-amd64.tar.gz
-RUN rm go1.21.4.linux-amd64.tar.gz
+# Download and install go
+ARG GOVERSION="1.21.4"
+RUN echo "GOVERSION: $GOVERSION"
+ARG TARGETARCH
+RUN echo "TARGETARCH: $TARGETARCH"
+RUN wget https://golang.org/dl/go$GOVERSION.linux-$TARGETARCH.tar.gz
+RUN tar -xvf go$GOVERSION.linux-$TARGETARCH.tar.gz
+RUN rm go$GOVERSION.linux-$TARGETARCH.tar.gz
 RUN mv go /usr/local
 
 # Download geckodriver
